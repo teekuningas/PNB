@@ -1,0 +1,36 @@
+INTRODUCTION
+
+This package has sources and necessary data files for PNB video game v1.0.1.   
+
+INSTALL
+
+This game utilizes proprietary software FMOD to play audio, so I decided not to make a simple installer. Makefile is included, so you can build and run the game with commands make and ./main, but to do that you need to get necessary libraries. Libraries I needed to download and install were:
+FMOD: http://www.fmod.org/
+GLEW: http://glew.sourceforge.net/
+GLFW: http://www.glfw.org/
+
+Makefile now works for 64-bit system, you have to use different fmod-library for 32-bit system.
+
+LICENSE
+
+For all sources and art but simplexml.c, simplexml.h this license applies:
+
+PNB is a video game of Finnish baseball
+Copyright (C) 2013 Erkka Heinilä
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Those exceptions come with their own licenses, you have to figure them out by yourself if you want to modify them.
+
+
