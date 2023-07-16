@@ -1,4 +1,4 @@
 PNB
 ===
 
-The original PNB sources from 2013.
+Finnish pesäpallo from 2013
