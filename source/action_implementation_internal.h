@@ -4,7 +4,7 @@
 extern StateInfo stateInfo;
 
 // here some constants used in the code
-#define PITCH_BASE_SPEED 0.065f 
+#define PITCH_BASE_SPEED 0.065f
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
 #define PITCH_POWER_CONSTANT 0.12f
 #define PITCH_ANGLE_CONSTANT 0.15f
@@ -21,8 +21,8 @@ extern StateInfo stateInfo;
 #define PITCH_DOWN_MAX 9
 #define PITCH_UP_MAX 13
 #define ANIMATION_FREQUENCY 3
-#define BAT_LOAD_MAX (4*9) 
-#define BAT_SWING_MAX (4*13) 
+#define BAT_LOAD_MAX (4*9)
+#define BAT_SWING_MAX (4*13)
 #define BAT_ANIMATION_FRAME_HIT_COUNT (20*ANIMATION_FREQUENCY)
 #define BAT_ANIMATION_FRAME_TOTAL_COUNT (34*ANIMATION_FREQUENCY)
 #define BALL_MAX_OFFSET 1.0f
@@ -94,7 +94,7 @@ static int aiThrowStage;
 static int aiActionEventLock;
 static int aiLockUpdate;
 static int aiMoveCounter;
-// we need timeouts as sometimes ai tries to do somthing too quickly before the other 
+// we need timeouts as sometimes ai tries to do somthing too quickly before the other
 // action implementation machinery is ready for it
 static int aiLockTimeoutCounter;
 static int aiPitchTime;

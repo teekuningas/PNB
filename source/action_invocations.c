@@ -19,7 +19,7 @@ void actionInvocations()
 		inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
 	int battingControl = stateInfo.globalGameInfo->teams[battingTeamIndex].control;
 	int catchingControl = stateInfo.globalGameInfo->teams[(battingTeamIndex+1)%2].control;
-	
+
 	if(stateInfo.localGameInfo->gAI.initLocals > 0)
 	{
 		initActionInvocations();
@@ -39,7 +39,7 @@ void actionInvocations()
 	{
 		checkChangePlayer(KEY_2, catchingControl);
 	}
-	else if(stateInfo.localGameInfo->pII.controlIndex != 
+	else if(stateInfo.localGameInfo->pII.controlIndex !=
 		stateInfo.localGameInfo->pII.catcherOnBaseIndex[0])
 	{
 		checkDrop(KEY_2, catchingControl);
@@ -71,7 +71,7 @@ void actionInvocations()
 	checkBattingTeamRun(KEY_LEFT, battingControl, 1);
 	checkBattingTeamRun(KEY_RIGHT, battingControl, 2);
 	checkBattingTeamRun(KEY_UP, battingControl, 3);
-	
+
 }
 
 static __inline void checkThrow(int key, int actionKey, int control, int base)
@@ -222,7 +222,7 @@ static __inline void checkBatterAngle(int increase, int decrease, int control)
 	{
 		if(stateInfo.localGameInfo->pRAI.battingGoingOn == 1)
 		{
-			if(stateInfo.localGameInfo->aF.bTAF.increaseBatterAngle != 0) 
+			if(stateInfo.localGameInfo->aF.bTAF.increaseBatterAngle != 0)
 			{
 				stateInfo.localGameInfo->aF.bTAF.increaseBatterAngle = 3;
 			}
@@ -242,7 +242,7 @@ static __inline void checkBatterAngle(int increase, int decrease, int control)
 	{
 		if(stateInfo.localGameInfo->pRAI.battingGoingOn == 1)
 		{
-			if(stateInfo.localGameInfo->aF.bTAF.decreaseBatterAngle != 0) 
+			if(stateInfo.localGameInfo->aF.bTAF.decreaseBatterAngle != 0)
 			{
 				stateInfo.localGameInfo->aF.bTAF.decreaseBatterAngle = 3;
 			}

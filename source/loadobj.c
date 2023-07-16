@@ -11,7 +11,7 @@
 static __inline int SeekToObject ( FILE* objfile, const char *objectname );
 
 
-int LoadObj (const char* path, const char *objectname, MeshObject *meshObj ) 
+int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 {
 	char line[MAX_LINE]  = { 0 };   // Buffer to hold each line.
 	char param[2]   = { 0,0 }; // Returned characters from a line
@@ -32,7 +32,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	u16 vcnt  = 0; // Vertex count
 	u16 vncnt = 0; // Vertex normal count
 	u16 vtcnt = 0; // Tex coord count
-	u16 fcnt  = 0; // Face count	
+	u16 fcnt  = 0; // Face count
 	#else
 	unsigned int uFaceCount     = 0;
 	unsigned int uPositionCount = 0;
@@ -44,14 +44,14 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	float *fNormalIndex   = NULL;
 	float *fColorIndex    = NULL;
 	float *fTexCoordIndex = NULL;
-	
+
 	unsigned int vcnt  = 0; // Vertex count
 	unsigned int vncnt = 0; // Vertex normal count
 	unsigned int vtcnt = 0; // Tex coord count
 	unsigned int fcnt  = 0; // Face count
 	#endif
 	FILE *objfile;
-	
+
 	objfile = fopen(path, "rb");
 	#if defined(__wii__)
 	setvbuf (objfile, NULL, _IOFBF, 0);
@@ -59,11 +59,11 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 
 	if ( objfile == NULL ) // Exit if we can't open it.
 		return OBJ_FILE_OPEN_FAILED;
-		
-	if ( objectname != NULL ) 
+
+	if ( objectname != NULL )
 	{
 		// First we need to find the object group.
-					
+
 		retval = SeekToObject (objfile, objectname);
 		if ( retval == 1 )
 			return OBJ_NAME_NOT_FOUND;
@@ -71,7 +71,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 
 
 	// Start counting the values.
-	while (1) 
+	while (1)
 	{
 		if(fgets ( line, MAX_LINE, objfile ) != NULL )
 		{
@@ -111,7 +111,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	// Now it's time to allocate the arrays.
 	#if defined(__wii__)
 	uFaceList      = malloc ( sizeof(u16) * 3 * 4 * uFaceCount );
-	
+
 	fPositionIndex = memalign ( 32, ( sizeof(f32) * 3 ) * uPositionCount );
 
 	if ( uNormalCount == 0 ) {
@@ -140,7 +140,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 		free ( fNormalIndex );
 		free ( fTexCoordIndex );
 		return OBJ_ALLOCATE_FAILED;
-	}	
+	}
 	#else
 	uFaceList = (int *)malloc ( ( sizeof(int) * 3 * 4 * uFaceCount ));
 
@@ -160,7 +160,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	fColorIndex[0] = 1.0f;
 	fColorIndex[1] = 1.0f;
 	fColorIndex[2] = 1.0f;
-	
+
 	fTexCoordIndex = (float *)malloc ( ( sizeof(float) * 2 ) * uTexCoordCount );
 
 	if ( uFaceList     == NULL ||
@@ -184,9 +184,9 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 			return OBJ_NAME_NOT_FOUND;
 	}
 	// Populate the arrays.
-		
+
 	while (1) {
-		
+
 		if(fgets ( line, MAX_LINE, objfile ) != NULL )
 		{
 			// Read in the line.
@@ -196,7 +196,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 			if ( param[0] == 'o' )
 				break; // Break out if it's a new object.
 			}
-			
+
 			if( param[0] == 's')
 			{
 				continue;
@@ -229,9 +229,9 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3],
 						&uFaceList[fcnt+4], &uFaceList[fcnt+7],
 
-						&uFaceList[fcnt+8], &uFaceList[fcnt+11] );						
+						&uFaceList[fcnt+8], &uFaceList[fcnt+11] );
 						#else
-						
+
 						sscanf ( line, "f %d//%d %d//%d %d//%d",
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3],
 						&uFaceList[fcnt+4], &uFaceList[fcnt+7],
@@ -250,7 +250,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 						sscanf ( line, "f %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu",
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3], &uFaceList[fcnt+1],
 						&uFaceList[fcnt+4], &uFaceList[fcnt+7], &uFaceList[fcnt+5],
-						&uFaceList[fcnt+8], &uFaceList[fcnt+11], &uFaceList[fcnt+9] );						
+						&uFaceList[fcnt+8], &uFaceList[fcnt+11], &uFaceList[fcnt+9] );
 						#else
 						sscanf ( line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3], &uFaceList[fcnt+1],
@@ -276,12 +276,12 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 
 					fcnt += 12;
 					break;
-			}			
+			}
 		}
 		else
 		{
 			break;
-		}		
+		}
 
 	}
 
@@ -310,10 +310,10 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 
 	if(objfile != NULL) fclose(objfile);
 
-	return OBJ_NO_ERROR;	
+	return OBJ_NO_ERROR;
 }
 
-__inline int SeekToObject (FILE* objfile, const char *objectname ) 
+__inline int SeekToObject (FILE* objfile, const char *objectname )
 {
 	char line[MAX_LINE] = { 0 };
 	char name[MAX_LINE] = { 0 }; // Buffer to hold the object name (for comparison)
@@ -328,19 +328,19 @@ __inline int SeekToObject (FILE* objfile, const char *objectname )
 			if ( param != 'o' )
 			{
 				continue;
-			}	
+			}
 			sscanf ( line, "o %s", name );
 			if ( strcmp ( objectname, name ) != 0 )
 				// Wrong name; continue to the next line.
 			{
 				continue;
-			}	
-			break;	
+			}
+			break;
 		}
 		else
 		{
 			return 1;
-		}	
+		}
 	}
 	return 0;
 }

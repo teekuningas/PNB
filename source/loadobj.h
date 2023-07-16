@@ -42,11 +42,11 @@ typedef struct _MeshObject
 	u16 uNormalCount;
 	u16 uColorCount;
 	u16 uTexCoordCount;
-	
+
 	f32 *fPositionIndex; /**< Pointer to the position data array. */
 	f32 *fNormalIndex; /**< Pointer to the normal data array. */
 	u8 *uColorIndex; /**< Pointer to the color data array. */
-	f32 *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */	
+	f32 *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */
 	#else
 	unsigned int uFaceCount; /**< The number of faces this object has. */
 	int *uFaceList; /**< Pointer to face array. Format should be:
@@ -56,13 +56,13 @@ typedef struct _MeshObject
 	unsigned int uNormalCount;
 	unsigned int uColorCount;
 	unsigned int uTexCoordCount;
-	
+
 	float *fPositionIndex; /**< Pointer to the position data array. */
 	float *fNormalIndex; /**< Pointer to the normal data array. */
 	float *fColorIndex; /**< Pointer to the color data array. */
 	float *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */
 	#endif
-	
+
 } MeshObject;
 
 int LoadObj (const char* filename, const char *objectname, MeshObject *meshObj ) ;

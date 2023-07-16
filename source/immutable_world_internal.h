@@ -34,10 +34,10 @@
 #define fence 0
 #include "plate_tpl.h"
 #define plate 0
-	
+
 #endif
 
-#define GROUND_UNIT_COUNT 30 
+#define GROUND_UNIT_COUNT 30
 #define FENCE_HEIGHT 3.0f
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
@@ -69,7 +69,7 @@ static void initFieldPositions();
 extern Mtx view;
 static Mtx model, modelview, mvi, rot;
 static Mtx fenceModel;
-static Mtx groundModel;	
+static Mtx groundModel;
 
 static MeshObject* planeMesh;
 static void *planeDisplayList;

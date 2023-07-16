@@ -7,9 +7,9 @@
 #define sky 0
 
 #include "lineTexture_tpl.h"
-#define lineTexture 0	
+#define lineTexture 0
 #include "lineTexture2_tpl.h"
-#define lineTexture2 0	
+#define lineTexture2 0
 
 #include "bases_tpl.h"
 #define bases 0
@@ -89,11 +89,11 @@ static TPLFile basesMarkerTPL;
 
 static MeshObject* skyMesh;
 static void *skyDisplayList;
-static u32 skyListSize;	
+static u32 skyListSize;
 
 static MeshObject* planeMesh;
 static void *planeDisplayList;
-static u32 planeListSize;	
+static u32 planeListSize;
 #else
 static GLuint skyTexture;
 static GLuint meterTexture;

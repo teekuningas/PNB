@@ -129,21 +129,21 @@ static __inline void runToTarget(int index, Vector3D *target)
 		// looking for target yeah
 		stateInfo.localGameInfo->playerInfo[index].cPI.looksForTarget = 1;
 		// find the direction
-		dx = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.x - 
+		dx = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.x -
 			stateInfo.localGameInfo->playerInfo[index].tPI.location.x;
-		dz = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.z - 
+		dz = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.z -
 			stateInfo.localGameInfo->playerInfo[index].tPI.location.z;
 		norm = (float)sqrt(dx*dx + dz*dz);
 		if(norm < EPSILON) norm = 1.0f;
 		// set the velocity
-	
+
 		speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED/16)*stateInfo.localGameInfo->playerInfo[index].bTPI.speed;
 		setVectorXZ(&stateInfo.localGameInfo->playerInfo[index].tPI.velocity, dx*speed/norm, dz*speed/norm);
 		// we are running now, ( so for example our orientation wont change now unless we stop running)
 		stateInfo.localGameInfo->playerInfo[index].cPI.running = 1;
 		// we are moving too
 		stateInfo.localGameInfo->playerInfo[index].cPI.moving = 1;
-		// orientation to our direction			
+		// orientation to our direction
 		stateInfo.localGameInfo->playerInfo[index].tPI.orientation.x = dx;
 		stateInfo.localGameInfo->playerInfo[index].tPI.orientation.z = dz;
 		// and set the running animation
@@ -161,8 +161,8 @@ static __inline void moveToTarget(int index, Vector3D *target)
 {
 	if(index != -1)
 	{
-		// cant start this if throw is going on. when ball is thrown the 
-		// control will often change automatically and we dont want the player to 
+		// cant start this if throw is going on. when ball is thrown the
+		// control will often change automatically and we dont want the player to
 		// start moving with walking animation before its throw animation has finished.
 		if(stateInfo.localGameInfo->playerInfo[index].cTPI.throwRecoil == 0)
 		{
@@ -179,9 +179,9 @@ static __inline void moveToTarget(int index, Vector3D *target)
 			stateInfo.localGameInfo->playerInfo[index].cPI.looksForTarget = 1;
 			// first find the unit vector for direction and then set player's
 			// velocity to be the direction vector times the walk_speed.
-			dx = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.x - 
+			dx = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.x -
 				stateInfo.localGameInfo->playerInfo[index].tPI.location.x;
-			dz = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.z - 
+			dz = stateInfo.localGameInfo->playerInfo[index].tPI.targetLocation.z -
 				stateInfo.localGameInfo->playerInfo[index].tPI.location.z;
 			norm = (float)sqrt(dx*dx + dz*dz);
 			if(norm < EPSILON) norm = 1.0f;
@@ -225,7 +225,7 @@ static __inline void movePlayerOut(int index)
 		target.x = stateInfo.fieldPositions->rightPoint.x + 5.0f;
 		target.z = stateInfo.fieldPositions->rightPoint.z + 10.0f;
 	}
-	// path point not passed yet. 
+	// path point not passed yet.
 	stateInfo.localGameInfo->playerInfo[index].bTPI.passedPathPoint = 0;
 	// and move to target takes care of the rest.
 	moveToTarget(index, &target);
@@ -246,7 +246,7 @@ static __inline void moveRankedToCatch()
 		{
 			// if we are throwing ( towards a base ) we dont want the baseman there to start moving
 			// as it would be nice that he is at the base when ball is caught if baserunner is going there.
-			if(stateInfo.localGameInfo->pRAI.throwGoingToBase == -1 || 
+			if(stateInfo.localGameInfo->pRAI.throwGoingToBase == -1 ||
 				(stateInfo.localGameInfo->pII.catcherOnBaseIndex[stateInfo.localGameInfo->pRAI.throwGoingToBase] != index))
 			{
 				int k;
@@ -313,13 +313,13 @@ static __inline void runToNextBase(int index, int base)
 			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.passedPathPoint == 1)
 			{
 				target.x = stateInfo.fieldPositions->homeRunPoint.x;
-				target.z = stateInfo.fieldPositions->homeRunPoint.z;		
+				target.z = stateInfo.fieldPositions->homeRunPoint.z;
 			}
 			else
 			{
 				return;
-			}					
-						
+			}
+
 
 		}
 		else
@@ -351,7 +351,7 @@ static __inline void runToPreviousBase(int index, int base)
 		{
 			// so when batter returns, he will go to his ready position again.
 			target.x = (float)(stateInfo.fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-			target.z = (float)(stateInfo.fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);		
+			target.z = (float)(stateInfo.fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 		}
 		else if(base == 1)
 		{
@@ -374,8 +374,8 @@ static __inline void runToPreviousBase(int index, int base)
 			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.passedPathPoint == 1)
 			{
 				target.x = stateInfo.fieldPositions->runLeftPoint.x;
-				target.z = stateInfo.fieldPositions->runLeftPoint.z;	
-			}	
+				target.z = stateInfo.fieldPositions->runLeftPoint.z;
+			}
 			else
 			{
 				return;
@@ -394,7 +394,7 @@ static __inline void runToPreviousBase(int index, int base)
 		// nor are we leading
 		stateInfo.localGameInfo->playerInfo[index].bTPI.leading = 0;
 		// and runToTarget can handle the rest
-		
+
 		runToTarget(index, &target);
 	}
 }
@@ -412,23 +412,23 @@ static __inline void lead(int index)
 			// lead target is selected by adding a small step to current location to next bases' direction
 			// using firstBase  instead of location in the difference is because we want the step size to stay
 			// same
-			target.x = stateInfo.localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(stateInfo.fieldPositions->secondBaseRun.x - 
+			target.x = stateInfo.localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(stateInfo.fieldPositions->secondBaseRun.x -
 				stateInfo.fieldPositions->firstBaseRun.x);
 			target.z = stateInfo.localGameInfo->playerInfo[index].tPI.location.z + LEAD_STEP*(stateInfo.fieldPositions->secondBaseRun.z -
 				stateInfo.fieldPositions->firstBaseRun.z);
 			// if we go over half way, we disallow any leading, you should just run from there.
-			if(stateInfo.localGameInfo->playerInfo[index].tPI.location.x > stateInfo.fieldPositions->firstBaseRun.x + 
+			if(stateInfo.localGameInfo->playerInfo[index].tPI.location.x > stateInfo.fieldPositions->firstBaseRun.x +
 				0.5f*(stateInfo.fieldPositions->secondBaseRun.x - stateInfo.fieldPositions->firstBaseRun.x))
 				done = 1;
 		}
 		else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 2)
 		{
 			// same as in previous but from second to third base
-			target.x = stateInfo.localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(stateInfo.fieldPositions->thirdBaseRun.x - 
+			target.x = stateInfo.localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(stateInfo.fieldPositions->thirdBaseRun.x -
 				stateInfo.fieldPositions->secondBaseRun.x);
 			target.z = stateInfo.localGameInfo->playerInfo[index].tPI.location.z + LEAD_STEP*(stateInfo.fieldPositions->thirdBaseRun.z -
 				stateInfo.fieldPositions->secondBaseRun.z);
-			if(stateInfo.localGameInfo->playerInfo[index].tPI.location.x < stateInfo.fieldPositions->secondBaseRun.x + 
+			if(stateInfo.localGameInfo->playerInfo[index].tPI.location.x < stateInfo.fieldPositions->secondBaseRun.x +
 				0.5f*(stateInfo.fieldPositions->thirdBaseRun.x - stateInfo.fieldPositions->secondBaseRun.x))
 				done = 1;
 		}
@@ -443,15 +443,15 @@ static __inline void lead(int index)
 			moveToTarget(index, &target);
 			// now we in fact are leading
 			stateInfo.localGameInfo->playerInfo[index].bTPI.leading = 1;
-			// but we dont set going forward flag. 
+			// but we dont set going forward flag.
 			stateInfo.localGameInfo->playerInfo[index].bTPI.goingForward = 0;
 			// we arent in any base
 			stateInfo.localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
 		}
-		
+
 	}
 }
-// so a little function to check if ball's x and z coordinates indicate that ball is out of the 
+// so a little function to check if ball's x and z coordinates indicate that ball is out of the
 // playing field.
 static __inline int checkIfBallIsOutOfBounds()
 {
@@ -472,7 +472,7 @@ static __inline int checkIfBallIsOutOfBounds()
 		x = -stateInfo.fieldPositions->leftPoint.x;
 		z = -(stateInfo.fieldPositions->leftPoint.z - z0);
 		slope2 = z/x;
-		// then here we just have basic line equations to check if the ball is 
+		// then here we just have basic line equations to check if the ball is
 		// out or inside the lines from pitchPlate to rightPoint and leftPoint.
 		if(stateInfo.localGameInfo->ballInfo.location.z - slope1*stateInfo.localGameInfo->ballInfo.location.x - z0 < 0 &&
 			stateInfo.localGameInfo->ballInfo.location.z - slope2*stateInfo.localGameInfo->ballInfo.location.x - z0 < 0)
@@ -493,7 +493,7 @@ static __inline void changePlayer()
 	// so cant change pitch if pitch is going on
 	if(stateInfo.localGameInfo->pRAI.pitchGoingOn == 0)
 	{
-			// again we must ensure that the movement of previous player stops because user 
+			// again we must ensure that the movement of previous player stops because user
 			// initiated movement cant stop without user explicitly stopping it and we dont want
 			// that the player will start randomly floating after control changes to next player.
 			if(stateInfo.localGameInfo->pII.controlIndex != -1)
@@ -520,17 +520,17 @@ static __inline void changePlayer()
 				}
 				// move others to catch( so that the previous one for example doesnt just stop if its near the ball )
 				moveRankedToCatch();
-				// stop player who has the selection now	
+				// stop player who has the selection now
 				stopMovement(stateInfo.localGameInfo->pII.controlIndex);
 				// but start moving again if movement key being held at the same time. for smooth movement.
 				smoothOutMovement();
 			}
 	}
-	
+
 }
 
 static __inline void prepareBatter()
-{	
+{
 	if(stateInfo.localGameInfo->pII.batterIndex != -1)
 	{
 		// batter ready model
@@ -598,7 +598,7 @@ static __inline void initializeSpatialPlayerInformation()
 	int i;
 	Vector3D* fieldPosition;
 	int battingTeamPlacement[PLAYERS_IN_TEAM + JOKER_COUNT];
-	// create array that has 0-11 in random order to give batting players in home 
+	// create array that has 0-11 in random order to give batting players in home
 	// circle a nicer visual feelin'
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
 	{
@@ -614,7 +614,7 @@ static __inline void initializeSpatialPlayerInformation()
 			i++;
 		}
 	}
-	// when out of bounds situation or inning ends, we swing the ball in the air and let the pitcher 
+	// when out of bounds situation or inning ends, we swing the ball in the air and let the pitcher
 	// catch it
 	stateInfo.localGameInfo->ballInfo.velocity.x = BALL_INIT_SPEED_X;
 	stateInfo.localGameInfo->ballInfo.velocity.y = BALL_INIT_SPEED_Y;
@@ -625,17 +625,17 @@ static __inline void initializeSpatialPlayerInformation()
 
 	stateInfo.localGameInfo->ballInfo.lastLocation.x = stateInfo.localGameInfo->ballInfo.location.x;
 	stateInfo.localGameInfo->ballInfo.lastLocation.y = stateInfo.localGameInfo->ballInfo.location.y;
-	stateInfo.localGameInfo->ballInfo.lastLocation.z = stateInfo.localGameInfo->ballInfo.location.z;	
+	stateInfo.localGameInfo->ballInfo.lastLocation.z = stateInfo.localGameInfo->ballInfo.location.z;
 	// set locations and models for batting team players
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
 	{
 		float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i])/20.0f);
 		stateInfo.localGameInfo->playerInfo[i].cPI.model = 10;
 
-		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x = (float)(stateInfo.fieldPositions->pitchPlate.x + 
+		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x = (float)(stateInfo.fieldPositions->pitchPlate.x +
 			(HOME_RADIUS) * radiusFix * cos(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
 		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.y = BALL_HEIGHT_WITH_PLAYER;
-		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.z = (float)(stateInfo.fieldPositions->pitchPlate.z + 
+		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.z = (float)(stateInfo.fieldPositions->pitchPlate.z +
 			(HOME_RADIUS) * radiusFix * sin(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
 		stateInfo.localGameInfo->playerInfo[i].tPI.location.x = stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x;
 		stateInfo.localGameInfo->playerInfo[i].tPI.location.y = stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.y;
@@ -664,12 +664,12 @@ static __inline void initializeSpatialPlayerInformation()
 			case 7: fieldPosition = &(stateInfo.fieldPositions->backLeftCatcher); break;
 			case 8: fieldPosition = &(stateInfo.fieldPositions->backRightCatcher); break;
 			default: fieldPosition = &(stateInfo.fieldPositions->pitchPlate); break;
-			
+
 		}
 		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x = fieldPosition->x;
 		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.y = fieldPosition->y;
 		stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.z = fieldPosition->z;
-		
+
 		stateInfo.localGameInfo->playerInfo[i].tPI.location.x = stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x;
 		stateInfo.localGameInfo->playerInfo[i].tPI.location.y = stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.y;
 		stateInfo.localGameInfo->playerInfo[i].tPI.location.z = stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.z;
@@ -677,7 +677,7 @@ static __inline void initializeSpatialPlayerInformation()
 		stateInfo.localGameInfo->playerInfo[i].tPI.orientation.x = stateInfo.localGameInfo->ballInfo.location.x - stateInfo.localGameInfo->playerInfo[i].tPI.location.x;
 		stateInfo.localGameInfo->playerInfo[i].tPI.orientation.y = stateInfo.localGameInfo->ballInfo.location.y - stateInfo.localGameInfo->playerInfo[i].tPI.location.y;
 		stateInfo.localGameInfo->playerInfo[i].tPI.orientation.z = stateInfo.localGameInfo->ballInfo.location.z - stateInfo.localGameInfo->playerInfo[i].tPI.location.z;
-		
+
 		stateInfo.localGameInfo->playerInfo[i].tPI.lastLocation.x = stateInfo.localGameInfo->playerInfo[i].tPI.location.x;
 		stateInfo.localGameInfo->playerInfo[i].tPI.lastLocation.y = stateInfo.localGameInfo->playerInfo[i].tPI.location.y;
 		stateInfo.localGameInfo->playerInfo[i].tPI.lastLocation.z = stateInfo.localGameInfo->playerInfo[i].tPI.location.z;
@@ -739,13 +739,13 @@ static __inline void initializeInningPermanentPlayerInformation()
 		stateInfo.localGameInfo->playerInfo[i].bTPI.speed = stateInfo.teamData[(stateInfo.globalGameInfo->teams[battingTeamIndex]
 			.value - 1)].players[i].speed;
 
-		
+
 	}
 	// initialize fielders
 	for(i = 12; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++)
 	{
 		stateInfo.localGameInfo->playerInfo[i].cPI.team = catchingTeamIndex;
-		
+
 		// here we set catcherOnBaseIndices and catcherReplacerOnBaseIndices.
 		switch(i-12)
 		{
@@ -753,11 +753,11 @@ static __inline void initializeInningPermanentPlayerInformation()
 			case 1: stateInfo.localGameInfo->pII.catcherOnBaseIndex[1] = i; break;
 			case 2: stateInfo.localGameInfo->pII.catcherOnBaseIndex[2] = i; break;
 			case 3: stateInfo.localGameInfo->pII.catcherOnBaseIndex[3] = i; break;
-			case 4: stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[0] = i; 
+			case 4: stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[0] = i;
 				stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[1] = i; break;
 			case 5: stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[3] = i; break;
 			case 6: stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[2] = i; break;
-			
+
 		}
 	}
 }
@@ -810,7 +810,7 @@ static __inline void initializeNonCriticalPlayerInformation()
 			stateInfo.localGameInfo->playerInfo[i].bTPI.base = -1;
 		}
 	}
-	
+
 }
 // this information is important for correct continuity after foul play.
 static __inline void initializeCriticalBattingTeamInformation()
@@ -871,7 +871,7 @@ static __inline void initializeTemporaryGameAnalysisInfo()
 	stateInfo.localGameInfo->gAI.woundingCatch = 0;
 	stateInfo.localGameInfo->gAI.woundingCatchHandled = 0;
 	stateInfo.localGameInfo->gAI.batterStartedRunning = 0;
-	
+
 	stateInfo.localGameInfo->gAI.gameInfoEvent = 0;
 	stateInfo.localGameInfo->gAI.checkForRun = 0;
 	stateInfo.localGameInfo->gAI.freeWalkIndex = -1;
@@ -879,7 +879,7 @@ static __inline void initializeTemporaryGameAnalysisInfo()
 	stateInfo.localGameInfo->gAI.playerArrivedToBase = 0;
 	stateInfo.localGameInfo->gAI.firstCatchMade = 0;
 	stateInfo.localGameInfo->gAI.pause = 0;
-	stateInfo.localGameInfo->gAI.initLocals = 1;	
+	stateInfo.localGameInfo->gAI.initLocals = 1;
 	stateInfo.localGameInfo->gAI.forceNextPair = 0;
 	stateInfo.localGameInfo->gAI.homeRunCameraFlag = 0;
 	stateInfo.localGameInfo->gAI.canMakeRunOfHonor = 0;
@@ -900,13 +900,13 @@ static __inline void initializeCriticalGameInfo()
 	stateInfo.localGameInfo->gAI.jokersLeft = 3;
 	stateInfo.localGameInfo->gAI.battingTeamPlayersOnFieldCount = 0;
 	stateInfo.localGameInfo->gAI.runsInTheInning = 0;
-	stateInfo.localGameInfo->pII.batterSelectionIndex = 
+	stateInfo.localGameInfo->pII.batterSelectionIndex =
 		stateInfo.globalGameInfo->teams[battingTeamIndex].batterOrder[stateInfo.globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
 	for(i = 0; i < BASE_COUNT; i++)
 	{
 		stateInfo.localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 	}
-	
+
 }
 // index information initialization, can be called when out of bounds
 static __inline void initializeIndexInformation()
@@ -967,7 +967,7 @@ static __inline void setRunnerAndBatter()
 			stateInfo.localGameInfo->playerInfo[batterIndex].bTPI.base = 0;
 			stateInfo.localGameInfo->playerInfo[batterIndex].bTPI.isOnBase = 1;
 			stateInfo.localGameInfo->playerInfo[batterIndex].bTPI.originalBase = 0;
-			stateInfo.localGameInfo->playerInfo[batterIndex].bTPI.number = stateInfo.localGameInfo->gAI.runnerBatterPairCounter + 1;	
+			stateInfo.localGameInfo->playerInfo[batterIndex].bTPI.number = stateInfo.localGameInfo->gAI.runnerBatterPairCounter + 1;
 			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
 			// the batting location
 			stateInfo.localGameInfo->pII.batterIndex = batterIndex;
@@ -984,22 +984,22 @@ static __inline void setRunnerAndBatter()
 			stateInfo.localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 3;
 			stateInfo.localGameInfo->pII.safeOnBaseIndex[3] = runnerIndex;
 
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.x = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.x =
 				stateInfo.fieldPositions->thirdBaseRun.x;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.y = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.y =
 				stateInfo.fieldPositions->thirdBaseRun.y;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.z = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.z =
 				stateInfo.fieldPositions->thirdBaseRun.z;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.x = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.x =
 				stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.x;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.y = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.y =
 				stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.y;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.z = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.lastLocation.z =
 				stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.z;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.orientation.x = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.orientation.x =
 				-stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.x;
 			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.orientation.y = 0.0f;
-			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.orientation.z = 
+			stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.orientation.z =
 				-stateInfo.localGameInfo->playerInfo[runnerIndex].tPI.location.x;
 		}
 		// set other runners next to the third base.
@@ -1008,22 +1008,22 @@ static __inline void setRunnerAndBatter()
 			int index = stateInfo.globalGameInfo->teams[battingTeamIndex].batterRunnerIndices[1][i];
 			if(index != -1)
 			{
-				stateInfo.localGameInfo->playerInfo[index].tPI.location.x = stateInfo.fieldPositions->thirdBaseRun.x - 
+				stateInfo.localGameInfo->playerInfo[index].tPI.location.x = stateInfo.fieldPositions->thirdBaseRun.x -
 					2.0f - (i-(stateInfo.localGameInfo->gAI.runnerBatterPairCounter + 1))*1.5f;
-				stateInfo.localGameInfo->playerInfo[index].tPI.location.y = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.location.y =
 					stateInfo.fieldPositions->thirdBaseRun.y;
-				stateInfo.localGameInfo->playerInfo[index].tPI.location.z = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.location.z =
 					stateInfo.fieldPositions->thirdBaseRun.z;
-				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.x = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.x =
 					stateInfo.localGameInfo->playerInfo[index].tPI.location.x;
-				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.y = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.y =
 					stateInfo.localGameInfo->playerInfo[index].tPI.location.y;
-				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.z = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.lastLocation.z =
 					stateInfo.localGameInfo->playerInfo[index].tPI.location.z;
-				stateInfo.localGameInfo->playerInfo[index].tPI.orientation.x = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.orientation.x =
 					-stateInfo.localGameInfo->playerInfo[index].tPI.location.x;
 				stateInfo.localGameInfo->playerInfo[index].tPI.orientation.y = 0.0f;
-				stateInfo.localGameInfo->playerInfo[index].tPI.orientation.z = 
+				stateInfo.localGameInfo->playerInfo[index].tPI.orientation.z =
 					-stateInfo.localGameInfo->playerInfo[index].tPI.location.x;
 			}
 		}
@@ -1033,7 +1033,7 @@ static __inline void setRunnerAndBatter()
 static __inline void loadMutableWorldSettings()
 {
 /*
-* called always when half-inning starts. 
+* called always when half-inning starts.
 *
 */
 	// initialize ball flags
@@ -1059,9 +1059,9 @@ static __inline void loadMutableWorldSettings()
 
 	if(stateInfo.globalGameInfo->period >= 4)
 	{
-		if(!(stateInfo.localGameInfo->gAI.runnerBatterPairCounter > 0 && 
-			stateInfo.localGameInfo->gAI.runnerBatterPairCounter < 
-			stateInfo.globalGameInfo->pairCount)) 
+		if(!(stateInfo.localGameInfo->gAI.runnerBatterPairCounter > 0 &&
+			stateInfo.localGameInfo->gAI.runnerBatterPairCounter <
+			stateInfo.globalGameInfo->pairCount))
 		{
 			stateInfo.localGameInfo->gAI.runnerBatterPairCounter = 0;
 		}

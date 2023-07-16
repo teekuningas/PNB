@@ -18,25 +18,25 @@
 int initMutableWorld()
 {
 	int result;
-	
+
 	stateInfo.localGameInfo = &localGameInfo;
 	stateInfo.globalGameInfo = &globalGameInfo;
-	
+
 	result = initPlayer();
 	if(result != 0)
 	{
 		printf("Could not init player. Exiting.");
 		return -1;
 	}
-		
-		
+
+
 	result = initBall();
 	if(result != 0)
 	{
 		printf("Could not init ball. Exiting.");
 		return -1;
-	}	
-	
+	}
+
 	initActionImplementation();
 	initActionInvocations();
 	initGameAnalysis();
@@ -77,6 +77,6 @@ int cleanMutableWorld()
 	{
 		printf("Could not clean player properly.\n");
 		return -1;
-	}	
+	}
 		return 0;
 }

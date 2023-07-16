@@ -13,14 +13,14 @@ extern "C" {
 
 /**
  * The simple xml parser structure.
- * 
+ *
  * SimpleXmlParsers should be created and destroyed using the functions
  * simpleXmlCreateParser, simpleXmlDestoryParser.
  */
 typedef void *SimpleXmlParser;
 
 /**
- * Enumeration describing the event types that are sent to an SimpleXmlHandler 
+ * Enumeration describing the event types that are sent to an SimpleXmlHandler
  * by an SimpleXmlParser.
  *
  * @see #SimpleXmlTagHandler
@@ -39,27 +39,27 @@ char* ownstrdup (const char *s);
  * The SimpleXmlTagHandler is invoked by a SimpleXmlParser
  * whenever one of the following event types occur:
  *
- * FINISH_TAG 
+ * FINISH_TAG
  *   indicates that parsing of this tag has finished, szName contains the tag
- *   name, szAttribute and szValue are NULL, the result of the handler is 
+ *   name, szAttribute and szValue are NULL, the result of the handler is
  *   ignored.
  * ADD_ATTRIBUTE
  *   indicates that an attribute for this tag has been parsed, szName contains
- *   the tag name, szAttribute the attribute name and szValue contains the 
+ *   the tag name, szAttribute the attribute name and szValue contains the
  *   attribute contents, the result of the handler is ignored.
  * FINISH_ATTRIBUTES,
- *   indicates that parsing of attributes for this tag is finished, szName 
- *   contains the tag name, szAttribute and szValue are NULL, the result of 
+ *   indicates that parsing of attributes for this tag is finished, szName
+ *   contains the tag name, szAttribute and szValue are NULL, the result of
  *   the handler is ignored.
  * ADD_CONTENT
- *   indicates that content of this tag has been parsed and should be added, 
- *   szName contains the tag name and szValue contains the data to add, 
+ *   indicates that content of this tag has been parsed and should be added,
+ *   szName contains the tag name and szValue contains the data to add,
  *   szAttribute is NULL and the result of the handler is ignored.
  * ADD_SUBTAG
- *   indicates that a subtag has been parsed, szName contains the name of the 
- *   subtag read, szAttribute and szValue are NULL, the result of the handler 
- *   should either be NULL to indicate that this subtag is not of interest 
- *   and should be skipped a SimpleXmlTagHandler that is used for handling 
+ *   indicates that a subtag has been parsed, szName contains the name of the
+ *   subtag read, szAttribute and szValue are NULL, the result of the handler
+ *   should either be NULL to indicate that this subtag is not of interest
+ *   and should be skipped a SimpleXmlTagHandler that is used for handling
  *   the subtag.
  *
  * @see #SimpleXmlEvent
@@ -78,15 +78,15 @@ typedef void* (*SimpleXmlTagHandler) (
  *
  * The input data may be parsed with simpleXmlParse and the parser returned
  * by this function as parameter.
- * 
+ *
  * Note: The parser will not copy the input data or in any way modify it.
  * However any modifications of the input data in a callback handler while
  * parsing will have an undefined result!
- * 
+ *
  * @param sData the input data to parse (must no be NULL).
- * @param nDataSize the size of the input data buffer (sData) to parse (must 
+ * @param nDataSize the size of the input data buffer (sData) to parse (must
  * be greater than 0).
- * @return the new simple xml parser or NULL if there is not enough memory or 
+ * @return the new simple xml parser or NULL if there is not enough memory or
  * the input data specified cannot be parsed.
  */
 extern SimpleXmlParser simpleXmlCreateParser (
@@ -95,8 +95,8 @@ extern SimpleXmlParser simpleXmlCreateParser (
 
 /**
  * Destroys the specified simple xml parser.
- * 
- * @param parser the parser to destroy (must have been created using 
+ *
+ * @param parser the parser to destroy (must have been created using
  * simpleXmlCreateParser).
  */
 extern void simpleXmlDestroyParser (
@@ -104,14 +104,14 @@ extern void simpleXmlDestroyParser (
 );
 
 /**
- * Reinitializes the specified simple xml parser for parsing the specified 
+ * Reinitializes the specified simple xml parser for parsing the specified
  * input data.
- * 
+ *
  * @param parser the parser to initialize.
  * @param sData the input data to parse (must no be NULL).
- * @param nDataSize the size of the input data buffer (sData) to parse (must 
+ * @param nDataSize the size of the input data buffer (sData) to parse (must
  * be greater than 0).
- * @return 0 if the parser could not be initialized, > 0 if the parser was 
+ * @return 0 if the parser could not be initialized, > 0 if the parser was
  * initialized successfully and parsing may be started using simpleXmlParse.
  */
 extern int simpleXmlInitializeParser (
@@ -119,14 +119,14 @@ extern int simpleXmlInitializeParser (
 );
 
 /**
- * Starts an initialized (or newly created) xml parser with the specified 
+ * Starts an initialized (or newly created) xml parser with the specified
  * document tag handler.
  *
- * Note: This function may only be called once after creation or 
+ * Note: This function may only be called once after creation or
  * initialization of a parser. To reuse the parser it has to be freshly
- * initialized (using simpleXmlInitializeParser) prior to calling the 
+ * initialized (using simpleXmlInitializeParser) prior to calling the
  * function again.
- * 
+ *
  * @param parser the parser to start.
  * @param handler the handler to use for the document tag.
  * @return 0 if there was no error, and error code > 0 if there was an error.
@@ -149,7 +149,7 @@ char* simpleXmlGetErrorDescription (SimpleXmlParser parser);
  *
  * If called from a handler during parsing this function will return the
  * current line number.
- * 
+ *
  * If called after a successfull simpleXmlParse run this function will return
  * the line number of the last line parsed in the xml data.
  *
@@ -167,11 +167,11 @@ long simpleXmlGetLineNumber (SimpleXmlParser parser);
  * Causes the simple xml parser to abort parsing of the input data.
  *
  * This method may only be called from a tag handler.
- * 
+ *
  * The active simpleXmlParse run will be aborted and the simpleXmlParse
  * function will return with the specified error code.
  *
- * @param nErrorCode the error code with which to abort (the error code must 
+ * @param nErrorCode the error code with which to abort (the error code must
  * be >= SIMPLE_XML_USER_ERROR else the abort request is ignored!)
  */
 void simpleXmlParseAbort (SimpleXmlParser parser, int nErrorCode);
@@ -205,7 +205,7 @@ void* simpleXmlPopUserData (SimpleXmlParser parser);
  * simpleXmlGetUserDataAt(parser, 0);
  *
  * @param parser the parser from which to get the user data pointer.
- * @return the value of the user data pointer or NULL if the pointer has not 
+ * @return the value of the user data pointer or NULL if the pointer has not
  * been set yet.
  */
 void* simpleXmlGetUserData (SimpleXmlParser parser);

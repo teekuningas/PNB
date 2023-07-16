@@ -34,14 +34,14 @@
 		unsigned int uNormalCount;
 		unsigned int uColorCount;
 		unsigned int uTexCoordCount;
-		
+
 		float *fPositionIndex; /**< Pointer to the position data array. */
 		float *fNormalIndex; /**< Pointer to the normal data array. */
 		float *fColorIndex; /**< Pointer to the color data array. */
 		float *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */
-		
+
 	} MeshObjectGL;
-	
+
 	int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj ) ;
 
 #endif

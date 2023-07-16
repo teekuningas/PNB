@@ -39,7 +39,7 @@
 #include "selectionBall2_tpl.h"
 #define selectionBall2 0
 #include "selectionBall3_tpl.h"
-#define selectionBall3 0	
+#define selectionBall3 0
 
 #endif
 

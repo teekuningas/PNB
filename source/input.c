@@ -23,7 +23,7 @@ int initInput()
 	#endif
 	return 0;
 }
-// so in these key checking function the idea is the following. we will have a keyStates array that is used to read the 
+// so in these key checking function the idea is the following. we will have a keyStates array that is used to read the
 // states in other parts of code.
 // if button is held now, keyStates.down will be 1.
 // if button is not held down but it was held down in last frame, we set released to 1 and down to 0.
@@ -32,11 +32,11 @@ int initInput()
 #if defined(__wii__)
 static __inline void keyCheckWii(int special, int keyCode, int index)
 {
-	if(buttonsHeld[index] & special) 
+	if(buttonsHeld[index] & special)
 	{
 		keyStates.down[index][keyCode] = 1;
 	}
-	else 
+	else
 	{
 
 		if(keyStates.down[index][keyCode] == 1)
@@ -55,11 +55,11 @@ static __inline void keyCheckWii(int special, int keyCode, int index)
 #else
 static __inline void keyCheckL(const char letter, int keyCode, int index)
 {
-	if(glfwGetKey(letter) == GLFW_PRESS) 
+	if(glfwGetKey(letter) == GLFW_PRESS)
 	{
 		keyStates.down[index][keyCode] = 1;
 	}
-	else 
+	else
 	{
 		if(keyStates.down[index][keyCode] == 1)
 		{
@@ -77,7 +77,7 @@ static __inline void keyCheckL(const char letter, int keyCode, int index)
 
 static __inline void keyCheckS(int special, int keyCode, int index)
 {
-	if(glfwGetKey(special) == GLFW_PRESS) 
+	if(glfwGetKey(special) == GLFW_PRESS)
 	{
 		keyStates.down[index][keyCode] = 1;
 	}
@@ -103,7 +103,7 @@ static __inline void checkKeyImitations()
 	int i;
 	for(i = 0; i < KEY_COUNT; i++)
 	{
-		if(stateInfo.keyStates->imitateKeyPress[i] == 1) 
+		if(stateInfo.keyStates->imitateKeyPress[i] == 1)
 		{
 			keyStates.down[2][i] = 1;
 		}
@@ -131,7 +131,7 @@ void updateInput()
 	WPAD_ScanPads();
 	buttonsHeld[0] = WPAD_ButtonsHeld(0);
 	buttonsHeld[1] = WPAD_ButtonsHeld(1);
-	
+
 	keyCheckWii(WPAD_BUTTON_PLUS, KEY_PLUS, 0);
 	keyCheckWii(WPAD_BUTTON_MINUS, KEY_MINUS, 0);
 	keyCheckWii(WPAD_BUTTON_1, KEY_1, 0);

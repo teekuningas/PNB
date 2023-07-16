@@ -4,7 +4,7 @@
 #include "globals.h"
 
 #if defined(__wii__)
-	
+
 #include "pallo_tpl.h"
 #define pallo 0
 

@@ -7,7 +7,7 @@
 #include "common_logic.h"
 
 /*
-	game divides into two sections, menus and the game. this is the main menu. only main.c is higher but lots of initialization code is still hidden to 
+	game divides into two sections, menus and the game. this is the main menu. only main.c is higher but lots of initialization code is still hidden to
 	main.c. here i utilize my font rendering a lot, i just render a background and text in it. the purpose of main menu is to let player determine
 	which teams are gonna play, who are controlling them and what are the batting orders etc. also cup mode is traversed through here.
 
@@ -29,45 +29,45 @@ int initMainMenu()
 	up.z = -1.0f;
 	look.x = 0.0f;
 	look.y = 0.0f;
-	look.z = 0.0f;	
-	#if defined(__wii__)			
-	
+	look.z = 0.0f;
+	#if defined(__wii__)
+
 	// we load textures and meshes
 	TPL_OpenTPLFromMemory(&arrowTPL, (void *)arrow_tpl, arrow_tpl_size);
-	TPL_GetTexture(&arrowTPL, arrow, &arrowTexture);	
+	TPL_GetTexture(&arrowTPL, arrow, &arrowTexture);
 	TPL_OpenTPLFromMemory(&batterTPL, (void *)batter_tpl, batter_tpl_size);
-	TPL_GetTexture(&batterTPL, batter, &batterTexture);	
+	TPL_GetTexture(&batterTPL, batter, &batterTexture);
 	TPL_OpenTPLFromMemory(&catcherTPL, (void *)catcher_tpl, catcher_tpl_size);
 	TPL_GetTexture(&catcherTPL, catcher, &catcherTexture);
 	TPL_OpenTPLFromMemory(&team1TPL, (void *)team1_huttu_tpl, team1_huttu_tpl_size);
-	TPL_GetTexture(&team1TPL, team1_huttu, &team1Texture);		
+	TPL_GetTexture(&team1TPL, team1_huttu, &team1Texture);
 	TPL_OpenTPLFromMemory(&team2TPL, (void *)team2_huttu_tpl, team2_huttu_tpl_size);
-	TPL_GetTexture(&team2TPL, team2_huttu, &team2Texture);		
+	TPL_GetTexture(&team2TPL, team2_huttu, &team2Texture);
 	TPL_OpenTPLFromMemory(&team3TPL, (void *)team3_huttu_tpl, team3_huttu_tpl_size);
-	TPL_GetTexture(&team3TPL, team3_huttu, &team3Texture);		
+	TPL_GetTexture(&team3TPL, team3_huttu, &team3Texture);
 	TPL_OpenTPLFromMemory(&team4TPL, (void *)team4_huttu_tpl, team4_huttu_tpl_size);
-	TPL_GetTexture(&team4TPL, team4_huttu, &team4Texture);	
+	TPL_GetTexture(&team4TPL, team4_huttu, &team4Texture);
 	TPL_OpenTPLFromMemory(&team5TPL, (void *)team5_huttu_tpl, team5_huttu_tpl_size);
-	TPL_GetTexture(&team5TPL, team5_huttu, &team5Texture);		
+	TPL_GetTexture(&team5TPL, team5_huttu, &team5Texture);
 	TPL_OpenTPLFromMemory(&team6TPL, (void *)team6_huttu_tpl, team6_huttu_tpl_size);
-	TPL_GetTexture(&team6TPL, team6_huttu, &team6Texture);		
+	TPL_GetTexture(&team6TPL, team6_huttu, &team6Texture);
 	TPL_OpenTPLFromMemory(&team7TPL, (void *)team7_huttu_tpl, team7_huttu_tpl_size);
-	TPL_GetTexture(&team7TPL, team7_huttu, &team7Texture);		
+	TPL_GetTexture(&team7TPL, team7_huttu, &team7Texture);
 	TPL_OpenTPLFromMemory(&team8TPL, (void *)team8_huttu_tpl, team8_huttu_tpl_size);
-	TPL_GetTexture(&team8TPL, team8_huttu, &team8Texture);	
+	TPL_GetTexture(&team8TPL, team8_huttu, &team8Texture);
 	TPL_OpenTPLFromMemory(&slotTPL, (void *)slot_tpl, slot_tpl_size);
-	TPL_GetTexture(&slotTPL, slot_texture, &slotTexture);		
+	TPL_GetTexture(&slotTPL, slot_texture, &slotTexture);
 	TPL_OpenTPLFromMemory(&trophyTPL, (void *)menu_trophy_tpl, menu_trophy_tpl_size);
-	TPL_GetTexture(&trophyTPL, menu_trophy_texture, &trophyTexture);		
+	TPL_GetTexture(&trophyTPL, menu_trophy_texture, &trophyTexture);
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/Plane.obj", "Plane", 
+	if(tryPreparingMeshGX("data/Plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/hutunkeitto_bat.obj", "Sphere.001", 
+	if(tryPreparingMeshGX("data/hutunkeitto_bat.obj", "Sphere.001",
 		batMesh, &batListSize, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/hutunkeitto_hand.obj", "Cube.001", 
-		handMesh, &handListSize, &handDisplayList) != 0) return -1;		
+	if(tryPreparingMeshGX("data/hutunkeitto_hand.obj", "Cube.001",
+		handMesh, &handListSize, &handDisplayList) != 0) return -1;
 
 	#else
 	if(tryLoadingTextureGL(&arrowTexture, "../../pc_textures/arrow.tga", "arrow") != 0) return -1;
@@ -84,11 +84,11 @@ int initMainMenu()
 	if(tryLoadingTextureGL(&team7Texture, "../../pc_textures/team7.tga", "team7") != 0) return -1;
 	if(tryLoadingTextureGL(&team8Texture, "../../pc_textures/team8.tga", "team8") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1; 
+	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1; 
+	if(tryPreparingMeshGL("data/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1; 
+	if(tryPreparingMeshGL("data/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
 	#endif
 
 	if(refreshLoadCups() != 0)
@@ -111,7 +111,7 @@ int initMainMenu()
 	treeCoordinates[11].x =  0.45f; treeCoordinates[11].y =  0.3f;
 	treeCoordinates[12].x = -0.25f; treeCoordinates[12].y = 0.0f;
 	treeCoordinates[13].x =  0.25f; treeCoordinates[13].y = 0.0f;
-	
+
 	return 0;
 }
 
@@ -120,8 +120,8 @@ void drawLoadingScreen()
 	loadMenuScreenSettings();
 	#if defined(__wii__)
 	#else
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);	
-	#endif	
+	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
+	#endif
 	drawFontBackground();
 	drawLoadingTexts();
 }
@@ -139,7 +139,7 @@ void updateMainMenu()
 	// main main menu.
 	if(stage == 0)
 	{
-		
+
 		if(keyStates->released[0][KEY_DOWN])
 		{
 			pointer +=1;
@@ -152,7 +152,7 @@ void updateMainMenu()
 		}
 		if(keyStates->released[0][KEY_2])
 		{
-			if(pointer == 0) 
+			if(pointer == 0)
 			{
 				stage = 1;
 				rem = TEAM_COUNT;
@@ -169,9 +169,9 @@ void updateMainMenu()
 			{
 				stage = 9;
 			}
-			else if(pointer == 3) stateInfo.screen = -1; 
-		}				
-	
+			else if(pointer == 3) stateInfo.screen = -1;
+		}
+
 	}
 	// play mode, team and control selections
 	else if(stage == 1)
@@ -183,8 +183,8 @@ void updateMainMenu()
 				stage = 0;
 				rem = 4;
 				pointer = 0;
-			
-			}		
+
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				stage_1_state = 1;
@@ -201,7 +201,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}			
+			}
 		}
 		else if(stage_1_state == 1)
 		{
@@ -210,8 +210,8 @@ void updateMainMenu()
 				stage_1_state = 0;
 				pointer = 0;
 				rem = TEAM_COUNT;
-			
-			}		
+
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				stage_1_state = 2;
@@ -228,8 +228,8 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}				
-		
+			}
+
 		}
 		else if(stage_1_state == 2)
 		{
@@ -238,8 +238,8 @@ void updateMainMenu()
 				stage_1_state = 1;
 				rem = 3;
 				pointer = 0;
-			
-			}		
+
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				stage_1_state = 3;
@@ -261,9 +261,9 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}				
-		
-		}		
+			}
+
+		}
 		else if(stage_1_state == 3)
 		{
 			if(keyStates->released[0][KEY_1])
@@ -271,8 +271,8 @@ void updateMainMenu()
 				stage_1_state = 2;
 				rem = TEAM_COUNT;
 				pointer = 0;
-			
-			}		
+
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				stage_1_state = 4;
@@ -284,7 +284,7 @@ void updateMainMenu()
 			{
 				pointer +=1;
 				pointer = (pointer+rem)%rem;
-				if(pointer == team1_control) 
+				if(pointer == team1_control)
 				{
 					pointer++;
 					pointer = (pointer+rem)%rem;
@@ -294,13 +294,13 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-				if(pointer == team1_control) 
+				if(pointer == team1_control)
 				{
 					pointer--;
 					pointer = (pointer+rem)%rem;
 				}
-			}				
-		
+			}
+
 		}
 		else if(stage_1_state == 4)
 		{
@@ -308,13 +308,13 @@ void updateMainMenu()
 			{
 				stage_1_state = 3;
 				rem = 3;
-				pointer = 0;	
+				pointer = 0;
 				if(pointer == team1_control)
 				{
 					pointer++;
 					pointer = (pointer+rem)%rem;
 				}
-			}		
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				stage = 2;
@@ -322,7 +322,7 @@ void updateMainMenu()
 				if(pointer == 0) inningsInPeriod = 2;
 				else if(pointer == 1) inningsInPeriod = 4;
 				else if(pointer == 2) inningsInPeriod = 8;
-				
+
 				pointer = 0;
 				rem = 13;
 			}
@@ -335,7 +335,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}	
+			}
 		}
 	}
 	// batting order for team 1
@@ -346,7 +346,7 @@ void updateMainMenu()
 			stage = 3;
 		}
 		else
-		{	
+		{
 			if(keyStates->released[team1_control][KEY_2])
 			{
 				if(pointer == 0)
@@ -367,7 +367,7 @@ void updateMainMenu()
 					{
 						mark = pointer;
 					}
-					else 
+					else
 					{
 						int temp = batting_order[pointer-1];
 						batting_order[pointer-1] = batting_order[mark-1];
@@ -385,7 +385,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}			
+			}
 		}
 	}
 	// batting order for team 2
@@ -406,7 +406,7 @@ void updateMainMenu()
 			}
 		}
 		else
-		{	
+		{
 			if(keyStates->released[team2_control][KEY_2])
 			{
 				if(pointer == 0)
@@ -435,7 +435,7 @@ void updateMainMenu()
 					{
 						mark = pointer;
 					}
-					else 
+					else
 					{
 						int temp = batting_order[pointer-1];
 						batting_order[pointer-1] = batting_order[mark-1];
@@ -453,7 +453,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}						
+			}
 		}
 	}
 	// hutunkeitto
@@ -530,7 +530,7 @@ void updateMainMenu()
 						rightScaleCount -= 1;
 						leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - rightScaleCount*POSITION_SCALE_ADDITION;
 					}
-				}	
+				}
 				if(keyStates->released[team2_control][KEY_2])
 				{
 					rightReady = 1;
@@ -616,7 +616,7 @@ void updateMainMenu()
 		}
 		// finally all that messy stuff is over and we just decide the winner
 		else if(stage_4_state == 6)
-		{	
+		{
 			int control;
 			if(turnCount%2 == 0)
 			{
@@ -647,7 +647,7 @@ void updateMainMenu()
 				{
 					pointer -=1;
 					pointer = (pointer+rem)%rem;
-				}	
+				}
 			}
 			else
 			{
@@ -681,7 +681,7 @@ void updateMainMenu()
 		{
 			menuInfo.state = 0;
 			loadMenuScreenSettings();
-			
+
 			if(cupGame == 1)
 			{
 				int i, j;
@@ -694,7 +694,7 @@ void updateMainMenu()
 						if(stateInfo.cupInfo->schedule[i][j] == stateInfo.cupInfo->userTeamIndexInTree)
 						{
 							scheduleSlot = i;
-							if( j == stateInfo.globalGameInfo->winner) playerWon = 1; 
+							if( j == stateInfo.globalGameInfo->winner) playerWon = 1;
 						}
 					}
 				}
@@ -708,7 +708,7 @@ void updateMainMenu()
 						{
 							if(stateInfo.cupInfo->dayCount >= 11)
 								advance = 1;
-							
+
 						}
 					}
 					else if(stateInfo.cupInfo->gameStructure == 1)
@@ -721,7 +721,7 @@ void updateMainMenu()
 					}
 					if(advance == 1) stage_8_state = 7;
 				}
-				// update cup and schedule. 
+				// update cup and schedule.
 				updateCupTreeAfterDay(scheduleSlot, stateInfo.globalGameInfo->winner);
 				updateSchedule();
 			}
@@ -791,15 +791,15 @@ void updateMainMenu()
 			stage = 7;
 		}
 		else
-		{	
+		{
 			if(keyStates->released[team1_control][KEY_1])
 			{
 				if(choiceCounter != 0)
 				{
 					team_1_choices[(choiceCounter-1)/(choiceCount/2)][(choiceCounter-1)%(choiceCount/2)] = -1;
-					choiceCounter--;	
+					choiceCounter--;
 				}
-			}	
+			}
 			if(keyStates->released[team1_control][KEY_2])
 			{
 				if(pointer == 0)
@@ -844,7 +844,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}			
+			}
 		}
 	}
 	// works similarly as 6, just for other team. for sure there would have been a way to fuse these. didnt do it hah.
@@ -864,7 +864,7 @@ void updateMainMenu()
 				}
 			}
 
-			
+
 			while(counter < 5)
 			{
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
@@ -911,13 +911,13 @@ void updateMainMenu()
 			moveToGame();
 		}
 		else
-		{	
+		{
 			if(keyStates->released[team2_control][KEY_1])
 			{
 				if(choiceCounter != 0)
 				{
 					team_2_choices[(choiceCounter-1)/(choiceCount/2)][(choiceCounter-1)%(choiceCount/2)] = -1;
-					choiceCounter--;	
+					choiceCounter--;
 				}
 				else
 				{
@@ -925,7 +925,7 @@ void updateMainMenu()
 					stage = 6;
 					pointer = 0;
 				}
-			}	
+			}
 			if(keyStates->released[team2_control][KEY_2])
 			{
 				if(pointer == 0)
@@ -968,7 +968,7 @@ void updateMainMenu()
 			{
 				pointer -=1;
 				pointer = (pointer+rem)%rem;
-			}			
+			}
 		}
 	}
 	// cup mode
@@ -988,7 +988,7 @@ void updateMainMenu()
 			}
 			if(keyStates->released[0][KEY_2])
 			{
-				if(pointer == 0) 
+				if(pointer == 0)
 				{
 					stage_8_state = 1;
 					stage_8_state_1_level = 0;
@@ -1001,7 +1001,7 @@ void updateMainMenu()
 					rem = 5;
 					pointer = 0;
 				}
-			}	
+			}
 			if(keyStates->released[0][KEY_1])
 			{
 				stage = 0;
@@ -1029,7 +1029,7 @@ void updateMainMenu()
 					teamSelection = pointer;
 					pointer = 0;
 					rem = 2;
-				}	
+				}
 				if(keyStates->released[0][KEY_1])
 				{
 					pointer = 0;
@@ -1055,7 +1055,7 @@ void updateMainMenu()
 					stage_8_state_1_level = 2;
 					pointer = 0;
 					rem = 3;
-				}	
+				}
 				if(keyStates->released[0][KEY_1])
 				{
 					pointer = 0;
@@ -1115,12 +1115,12 @@ void updateMainMenu()
 						cupInfo.schedule[i][0] = i*2;
 						cupInfo.schedule[i][1] = i*2+1;
 					}
-					
+
 					stage_8_state = 2;
 					pointer = 0;
 					rem = 5;
 
-				}	
+				}
 				if(keyStates->released[0][KEY_1])
 				{
 					pointer = 0;
@@ -1179,7 +1179,7 @@ void updateMainMenu()
 						stage = 2;
 						pointer = 0;
 						rem = 13;
-						if(userPosition == 0) 
+						if(userPosition == 0)
 						{
 							team1 = userTeamIndex;
 							team2 = opponentTeamIndex;
@@ -1224,7 +1224,7 @@ void updateMainMenu()
 					rem = 4;
 				}
 
-			}	
+			}
 		}
 		else if(stage_8_state == 3)
 		{
@@ -1256,7 +1256,7 @@ void updateMainMenu()
 				pointer = 1;
 				rem = 2;
 
-			}	
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				if(stateInfo.saveData[pointer].userTeamIndexInTree != -1)
@@ -1266,7 +1266,7 @@ void updateMainMenu()
 					pointer = 0;
 					rem = 5;
 				}
-			}	
+			}
 		}
 		else if(stage_8_state == 6)
 		{
@@ -1287,11 +1287,11 @@ void updateMainMenu()
 				pointer = 2;
 				rem = 5;
 
-			}	
+			}
 			if(keyStates->released[0][KEY_2])
 			{
 				saveCup(pointer);
-			}	
+			}
 		}
 		else if(stage_8_state == 4)
 		{
@@ -1389,7 +1389,7 @@ void drawMainMenu(double alpha)
 {
 	#if defined(__wii__)
 	#else
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);	
+	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	#endif
 	if(stage == 0)
 	{
@@ -1402,50 +1402,50 @@ void drawMainMenu(double alpha)
 		else if(pointer == 1) guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
 		else if(pointer == 2) guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
 		else guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-		GX_CallDispList(planeDisplayList, planeListSize);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+		GX_CallDispList(planeDisplayList, planeListSize);
 		//catcher
 		guMtxIdentity(model);
 		guMtxScaleApply(model, model, FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
 		guMtxTransApply(model, model, 0.7f, 1.0f, 0.0f);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);	
-		GX_CallDispList(planeDisplayList, planeListSize);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);
+		GX_CallDispList(planeDisplayList, planeListSize);
 		//batter
 		guMtxIdentity(model);
 		guMtxScaleApply(model, model, FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
 		guMtxTransApply(model, model, -0.6f, 1.0f, 0.0f);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&batterTexture, GX_TEXMAP0);	
-		GX_CallDispList(planeDisplayList, planeListSize);			
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&batterTexture, GX_TEXMAP0);
+		GX_CallDispList(planeDisplayList, planeListSize);
 		#else
 		// arrow
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
 		if(pointer == 0) glTranslatef(FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
 		else if(pointer == 1) glTranslatef(FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
 		else if(pointer == 2) glTranslatef(FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
 		else glTranslatef(FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
 		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		// catcher
-		glBindTexture(GL_TEXTURE_2D, catcherTexture);  
+		glBindTexture(GL_TEXTURE_2D, catcherTexture);
 		glPushMatrix();
 		glTranslatef(0.7f, 1.0f, 0.0f);
 		glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		// batter
-		glBindTexture(GL_TEXTURE_2D, batterTexture);  
+		glBindTexture(GL_TEXTURE_2D, batterTexture);
 		glPushMatrix();
 		glTranslatef(-0.6f, 1.0f, 0.0f);
 		glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		#endif
 		drawFront();
@@ -1453,12 +1453,12 @@ void drawMainMenu(double alpha)
 	else if(stage == 1)
 	{
 		drawFontBackground();
-		
+
 		#if defined(__wii__)
 		guMtxIdentity(model);
 		guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 		#else
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
 		#endif
 		if(stage_1_state == 0 || stage_1_state == 1)
@@ -1486,18 +1486,18 @@ void drawMainMenu(double alpha)
 			#endif
 		}
 		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-		GX_CallDispList(planeDisplayList, planeListSize);			
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+		GX_CallDispList(planeDisplayList, planeListSize);
 		#else
 		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		#endif
 		drawSelection();
-		
+
 	}
 	else if((stage == 2 && team1_control != 2) || (stage == 3 && team2_control != 2))
 	{
@@ -1505,10 +1505,10 @@ void drawMainMenu(double alpha)
 		#if defined(__wii__)
 		guMtxIdentity(model);
 		#else
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
 		#endif
-		if(pointer == 0) 
+		if(pointer == 0)
 		{
 			#if defined(__wii__)
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
@@ -1529,33 +1529,33 @@ void drawMainMenu(double alpha)
 			#endif
 		}
 		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
 		GX_CallDispList(planeDisplayList, planeListSize);
 		#else
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		#endif
-		
+
 		if(mark != 0)
 		{
 			#if defined(__wii__)
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
 			guMtxTransApply(model, model, PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
 			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			// sticky
 			#endif
@@ -1574,7 +1574,7 @@ void drawMainMenu(double alpha)
 		#else
 		glEnable(GL_LIGHTING);
 		glEnable(GL_DEPTH_TEST);
-		glLightfv(GL_LIGHT0, GL_POSITION, lightPos); 
+		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 		#endif
 		// bat
 		#if defined(__wii__)
@@ -1583,17 +1583,17 @@ void drawMainMenu(double alpha)
 		guMtxConcat(rot, model, model);
 		guMtxScaleApply(model, model, 0.6f, 0.5f, 0.45f);
 		guMtxTransApply(model, model, batPosition, handsZ, batHeight);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&team1Texture, GX_TEXMAP0);	
-		GX_CallDispList(batDisplayList, batListSize);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
+		GX_CallDispList(batDisplayList, batListSize);
 		#else
-		glBindTexture(GL_TEXTURE_2D, team1Texture);  
+		glBindTexture(GL_TEXTURE_2D, team1Texture);
 		glPushMatrix();
 		glTranslatef(batPosition, handsZ, batHeight);
 		glScalef(0.6f, 0.5f, 0.45f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(batDisplayList); 
+		glCallList(batDisplayList);
 		glPopMatrix();
 		#endif
 		// right hand
@@ -1606,34 +1606,34 @@ void drawMainMenu(double alpha)
 		guMtxTransApply(model, model, 0.0f, 0.0f, -0.35f);
 		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f*(1.0f+rightScaleCount*SCALE_FACTOR));
 		guMtxTransApply(model, model, rightHandPosition, handsZ, rightHandHeight);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-		if(team2 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);  
-		else if(team2 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0); 
-		else if(team2 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0); 	
-		else if(team2 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0); 	
-		else if(team2 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0); 
-		else if(team2 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0); 	
-		else if(team2 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0); 	
-		else if(team2 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0); 
-		GX_CallDispList(handDisplayList, handListSize);	
-		#else		
-		if(team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);  
-		else if(team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);  
-		else if(team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture); 
-		else if(team2 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture); 
-		else if(team2 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);  
-		else if(team2 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture); 
-		else if(team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture); 
-		else if(team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture); 
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+		if(team2 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
+		else if(team2 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
+		else if(team2 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0);
+		else if(team2 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0);
+		else if(team2 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0);
+		else if(team2 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0);
+		else if(team2 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0);
+		else if(team2 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0);
+		GX_CallDispList(handDisplayList, handListSize);
+		#else
+		if(team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
+		else if(team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
+		else if(team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
+		else if(team2 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
+		else if(team2 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
+		else if(team2 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
+		else if(team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
+		else if(team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
 		glPushMatrix();
 		glTranslatef(rightHandPosition, handsZ, rightHandHeight);
 		glScalef(0.5f, 0.5f, 0.5f*(1.0f+rightScaleCount*SCALE_FACTOR));
 		glTranslatef(0.0f, 0.0f, -0.35f);
 		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList); 
+		glCallList(handDisplayList);
 		glPopMatrix();
 		#endif
 		// left hand
@@ -1646,34 +1646,34 @@ void drawMainMenu(double alpha)
 		guMtxTransApply(model, model, 0.0f, 0.0f, -0.35f);
 		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f*(1.0f+leftScaleCount*SCALE_FACTOR));
 		guMtxTransApply(model, model, leftHandPosition, handsZ, leftHandHeight);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-		if(team1 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);  
-		else if(team1 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0); 
-		else if(team1 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0); 	
-		else if(team1 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0); 	
-		else if(team1 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0); 
-		else if(team1 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0); 	
-		else if(team1 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0); 	
-		else if(team1 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0); 
-		GX_CallDispList(handDisplayList, handListSize);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+		if(team1 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
+		else if(team1 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
+		else if(team1 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0);
+		else if(team1 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0);
+		else if(team1 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0);
+		else if(team1 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0);
+		else if(team1 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0);
+		else if(team1 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0);
+		GX_CallDispList(handDisplayList, handListSize);
 		#else
-		if(team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);  
-		else if(team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);  
-		else if(team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);  
-		else if(team1 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture); 
-		else if(team1 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);  
-		else if(team1 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);  
-		else if(team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture); 
-		else if(team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture); 
+		if(team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
+		else if(team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
+		else if(team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
+		else if(team1 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
+		else if(team1 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
+		else if(team1 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
+		else if(team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
+		else if(team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
 		glPushMatrix();
 		glTranslatef(leftHandPosition, handsZ, leftHandHeight);
 		glScalef(0.5f, 0.5f, 0.5f*(1.0f+leftScaleCount*SCALE_FACTOR));
 		glTranslatef(0.0f, 0.0f, -0.35f);
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList); 
+		glCallList(handDisplayList);
 		glPopMatrix();
 		#endif
 		// referee hand
@@ -1685,21 +1685,21 @@ void drawMainMenu(double alpha)
 		guMtxConcat(rot, model, model);
 		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f);
 		guMtxTransApply(model, model, 0.0f, 1.0f, refereeHandHeight);
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-		GX_LoadTexObj(&team2Texture, GX_TEXMAP0);	
-		GX_CallDispList(handDisplayList, handListSize);	
-		#else		
-		glBindTexture(GL_TEXTURE_2D, team2Texture);  
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+		GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
+		GX_CallDispList(handDisplayList, handListSize);
+		#else
+		glBindTexture(GL_TEXTURE_2D, team2Texture);
 		glPushMatrix();
 		glTranslatef(0.0f, 1.0f, refereeHandHeight);
 		glScalef(0.5f, 0.5f, 0.5f);
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList); 
+		glCallList(handDisplayList);
 		glPopMatrix();
 		#endif
-		
+
 		#if defined(__wii__)
 		GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
 		GX_SetZMode(GX_DISABLE, GX_LEQUAL, GX_TRUE);
@@ -1716,18 +1716,18 @@ void drawMainMenu(double alpha)
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			if(pointer == 0) guMtxTransApply(model, model, HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
 			else guMtxTransApply(model, model, HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
 			// arrow
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			if(pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
 			else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1744,10 +1744,10 @@ void drawMainMenu(double alpha)
 		#if defined(__wii__)
 		guMtxIdentity(model);
 		#else
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
 		#endif
-		if(pointer == 0) 
+		if(pointer == 0)
 		{
 			#if defined(__wii__)
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
@@ -1757,7 +1757,7 @@ void drawMainMenu(double alpha)
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			#endif
 		}
-		else 
+		else
 		{
 			#if defined(__wii__)
 			guMtxScaleApply(model, model, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
@@ -1767,15 +1767,15 @@ void drawMainMenu(double alpha)
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
 			#endif
 		}
-		
+
 		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);	
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+		guMtxConcat(view,model,modelview);
+		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
+		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
 		GX_CallDispList(planeDisplayList, planeListSize);
 		#else
-		glCallList(planeDisplayList); 
+		glCallList(planeDisplayList);
 		glPopMatrix();
 		#endif
 
@@ -1783,19 +1783,19 @@ void drawMainMenu(double alpha)
 		{
 			for(j = 0; j < 5; j++)
 			{
-				char str[2]; 
+				char str[2];
 				int choice;
 				if(stage == 6) choice = team_1_choices[i][j];
 				else choice = team_2_choices[i][j];
 				str[0] = (char)(((int)'0')+j+1);
 				if(choice != -1)
 				{
-				printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + 
+				printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
 					(choice+1)*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET, 2);
 				}
 			}
 		}
-		
+
 		drawPlayerList();
 	}
 	else if(stage == 8)
@@ -1809,48 +1809,48 @@ void drawMainMenu(double alpha)
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			if(pointer == 0) guMtxTransApply(model, model, FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
 			else if(pointer == 1) guMtxTransApply(model, model, FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			//catcher
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
 			guMtxTransApply(model, model, 0.7f, 1.0f, 0.0f);
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-			GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+			GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			//batter
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
 			guMtxTransApply(model, model, -0.6f, 1.0f, 0.0f);
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
-			GX_LoadTexObj(&batterTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);			
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+			GX_LoadTexObj(&batterTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
 			// arrow
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			if(pointer == 0) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
 			else if(pointer == 1) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			// catcher
-			glBindTexture(GL_TEXTURE_2D, catcherTexture);  
+			glBindTexture(GL_TEXTURE_2D, catcherTexture);
 			glPushMatrix();
 			glTranslatef(0.7f, 1.0f, 0.0f);
 			glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			// batter
-			glBindTexture(GL_TEXTURE_2D, batterTexture);  
+			glBindTexture(GL_TEXTURE_2D, batterTexture);
 			glPushMatrix();
 			glTranslatef(-0.6f, 1.0f, 0.0f);
 			glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1859,18 +1859,18 @@ void drawMainMenu(double alpha)
 			#if defined(__wii__)
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_ALT_OFFSET);		
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_ALT_OFFSET);
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1879,18 +1879,18 @@ void drawMainMenu(double alpha)
 			#if defined(__wii__)
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);		
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1902,18 +1902,18 @@ void drawMainMenu(double alpha)
 				#if defined(__wii__)
 				guMtxIdentity(model);
 				guMtxScaleApply(model, model, 0.2f, 0.15f, 0.10f);
-				guMtxTransApply(model, model, treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);		
-				guMtxConcat(view,model,modelview);	
-				GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+				guMtxTransApply(model, model, treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
+				guMtxConcat(view,model,modelview);
+				GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 				// and we render
-				GX_LoadTexObj(&slotTexture, GX_TEXMAP0);	
-				GX_CallDispList(planeDisplayList, planeListSize);	
+				GX_LoadTexObj(&slotTexture, GX_TEXMAP0);
+				GX_CallDispList(planeDisplayList, planeListSize);
 				#else
-				glBindTexture(GL_TEXTURE_2D, slotTexture);  
+				glBindTexture(GL_TEXTURE_2D, slotTexture);
 				glPushMatrix();
 				glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
 				glScalef(0.2f, 0.15f, 0.10f);
-				glCallList(planeDisplayList); 
+				glCallList(planeDisplayList);
 				glPopMatrix();
 				#endif
 			}
@@ -1923,18 +1923,18 @@ void drawMainMenu(double alpha)
 			#if defined(__wii__)
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);		
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);  
+			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1943,18 +1943,18 @@ void drawMainMenu(double alpha)
 			#if defined(__wii__)
 			guMtxIdentity(model);
 			guMtxScaleApply(model, model, 0.3f, 0.3f, 0.3f);
-			guMtxTransApply(model, model, 0.0f, 1.0f, -0.25f);		
-			guMtxConcat(view,model,modelview);	
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);	
+			guMtxTransApply(model, model, 0.0f, 1.0f, -0.25f);
+			guMtxConcat(view,model,modelview);
+			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 			// and we render
-			GX_LoadTexObj(&trophyTexture, GX_TEXMAP0);	
-			GX_CallDispList(planeDisplayList, planeListSize);	
+			GX_LoadTexObj(&trophyTexture, GX_TEXMAP0);
+			GX_CallDispList(planeDisplayList, planeListSize);
 			#else
-			glBindTexture(GL_TEXTURE_2D, trophyTexture);  
+			glBindTexture(GL_TEXTURE_2D, trophyTexture);
 			glPushMatrix();
 			glTranslatef(0.0f, 1.0f, -0.25f);
 			glScalef(0.3f, 0.3f, 0.3f);
-			glCallList(planeDisplayList); 
+			glCallList(planeDisplayList);
 			glPopMatrix();
 			#endif
 		}
@@ -1981,7 +1981,7 @@ static void drawFront()
 	printText("Play", 4, -0.1f, PLAY_TEXT_HEIGHT, 3);
 	printText("Cup", 3, -0.085f, CUP_TEXT_HEIGHT, 3);
 	printText("Help", 4, -0.1f, HELP_TEXT_HEIGHT, 3);
-	printText("Quit", 4, -0.1f, QUIT_TEXT_HEIGHT, 3);		
+	printText("Quit", 4, -0.1f, QUIT_TEXT_HEIGHT, 3);
 }
 
 static void drawHutunkeitto()
@@ -2066,7 +2066,7 @@ static void drawCup()
 		{
 			index1 = -1;
 			index2 = -1;
-			if(stateInfo.cupInfo->schedule[i][0] != -1) 
+			if(stateInfo.cupInfo->schedule[i][0] != -1)
 				index1 = cupInfo.cupTeamIndexTree[(stateInfo.cupInfo->schedule[i][0])];
 			if(stateInfo.cupInfo->schedule[i][1] != -1)
 				index2 = cupInfo.cupTeamIndexTree[(stateInfo.cupInfo->schedule[i][1])];
@@ -2216,7 +2216,7 @@ static void drawHelp()
 static void drawSelection()
 {
 	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
-	
+
 	if(stage_1_state == 0)
 	{
 		int i;
@@ -2234,18 +2234,18 @@ static void drawSelection()
 		printText("Pad 2", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
 	}
-	
+
 	else if(stage_1_state == 2)
 	{
 		int i;
-		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4); 
+		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
 		for(i = 0; i < TEAM_COUNT; i++)
 		{
 			char* str = stateInfo.teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
-	}	
+	}
 	else if(stage_1_state == 3)
 	{
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
@@ -2253,7 +2253,7 @@ static void drawSelection()
 		printText("Pad 1", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT, 2);
 		printText("Pad 2", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	}		
+	}
 	else if(stage_1_state == 4)
 	{
 		printText("select number of innings", 24, -0.45f, -0.25f, 3);
@@ -2309,25 +2309,25 @@ static void drawGameOverTexts()
 	runs1 = stateInfo.globalGameInfo->teams[0].period0Runs;
 	runs2 = stateInfo.globalGameInfo->teams[1].period0Runs;
 	calculateRuns(&str2[13], &str2[14], &str2[16], &str2[17], runs1, runs2);
-	printText(str2, 18, -0.22f, 0.0f, 2); 
+	printText(str2, 18, -0.22f, 0.0f, 2);
 
 	runs1 = stateInfo.globalGameInfo->teams[0].period1Runs;
 	runs2 = stateInfo.globalGameInfo->teams[1].period1Runs;
 	calculateRuns(&str3[14], &str3[15], &str3[17], &str3[18], runs1, runs2);
-	printText(str3, 19, -0.22f, 0.1f, 2); 
+	printText(str3, 19, -0.22f, 0.1f, 2);
 	if(stateInfo.globalGameInfo->period >= 2)
 	{
 		runs1 = stateInfo.globalGameInfo->teams[0].period2Runs;
 		runs2 = stateInfo.globalGameInfo->teams[1].period2Runs;
 		calculateRuns(&str4[13], &str4[14], &str4[16], &str4[17], runs1, runs2);
-		printText(str4, 18, -0.22f, 0.2f, 2); 
+		printText(str4, 18, -0.22f, 0.2f, 2);
 	}
 	if(stateInfo.globalGameInfo->period >= 4)
 	{
 		runs1 = stateInfo.globalGameInfo->teams[0].period3Runs;
 		runs2 = stateInfo.globalGameInfo->teams[1].period3Runs;
 		calculateRuns(&str5[16], &str5[17], &str5[19], &str5[20], runs1, runs2);
-		printText(str5, 21, -0.22f, 0.3f, 2); 
+		printText(str5, 21, -0.22f, 0.3f, 2);
 	}
 }
 
@@ -2335,13 +2335,13 @@ static void drawGameOverTexts()
 
 static void drawPlayerList()
 {
-	
+
 	TeamData* teamData = stateInfo.teamData;
 	int i;
 	int team = team1;
 	if(stage == 2 || stage == 6) team = team1;
 	else if(stage == 3 ||stage == 7) team = team2;
-	
+
 	printText("name", 4, PLAYER_LIST_INFO_FIRST, PLAYER_LIST_INFO_HEIGHT, 2);
 	printText("speed", 5, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_NAME_OFFSET + PLAYER_LIST_INFO_OFFSET, PLAYER_LIST_INFO_HEIGHT, 2);
 	printText("power", 5, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_NAME_OFFSET + 2*PLAYER_LIST_INFO_OFFSET, PLAYER_LIST_INFO_HEIGHT, 2);
@@ -2354,13 +2354,13 @@ static void drawPlayerList()
 		printText("choose batters and runners", 26, -0.42f, -0.5f, 3);
 	}
 	if(stage == 2 || stage == 6) printText("team 1", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
-	else printText("team 2", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);		
+	else printText("team 2", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
 	printText("continue", 8, -0.05f, PLAYER_LIST_CONTINUE_HEIGHT, 3);
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
 	{
-		
+
 		char str[2];
-		char* str2; 
+		char* str2;
 		int index;
 		if(stage < 4)
 		{
@@ -2386,22 +2386,22 @@ static void drawPlayerList()
 			}
 			index = i;
 		}
-		printText(str, 1, PLAYER_LIST_INFO_FIRST - PLAYER_LIST_NUMBER_OFFSET, 
-			PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);	
-		
+		printText(str, 1, PLAYER_LIST_INFO_FIRST - PLAYER_LIST_NUMBER_OFFSET,
+			PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
+
 		str2  = teamData[team].players[index].name;
-		printText(str2, strlen(str2), PLAYER_LIST_INFO_FIRST, 
+		printText(str2, strlen(str2), PLAYER_LIST_INFO_FIRST,
 			PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-		
+
 		str[0] = (char)(((int)'0')+teamData[team].players[index].speed);
-		printText(str, 1, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET, 
+		printText(str, 1, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET,
 			PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-		
+
 		str[0] = (char)(((int)'0')+teamData[team].players[index].power);
-		printText(str, 1, PLAYER_LIST_INFO_FIRST + 2*PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET, 
+		printText(str, 1, PLAYER_LIST_INFO_FIRST + 2*PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET,
 			PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
 	}
-	
+
 }
 
 int cleanMainMenu()
@@ -2422,17 +2422,17 @@ static void loadMenuScreenSettings()
 	int i;
 	#if defined(__wii__)
 	GXColor background = {0x0, 0x0, 0x0, 0xff};
-	GX_SetCopyClear(background, 0x00ffffff);	
+	GX_SetCopyClear(background, 0x00ffffff);
 	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-	guLookAt(view, &cam, &up, &look);	
-		
+	guLookAt(view, &cam, &up, &look);
+
 	memcpy(&light, &lightPos, sizeof (guVector));
-	guVecMultiply(view, &light, &light);	
+	guVecMultiply(view, &light, &light);
 	GX_InitLightPos (&lo, light.x, light.y, light.z);
-	GX_LoadLightObj (&lo, GX_LIGHT0);	
+	GX_LoadLightObj (&lo, GX_LIGHT0);
 	#else
 	glDisable(GL_LIGHTING);
-	#endif	
+	#endif
 	if(menuInfo.state == 0)
 	{
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
@@ -2545,7 +2545,7 @@ static void initHutunkeitto()
 	leftHandPosition = -0.075f;
 	rightHandHeight = 0.25f;
 	rightHandPosition = 0.075f;
-	refereeHandHeight = 0.15f; 
+	refereeHandHeight = 0.15f;
 	tempLeftHeight = 0.0f;
 	leftScaleCount = 0;
 	rightScaleCount = 0;
@@ -2554,9 +2554,9 @@ static void initHutunkeitto()
 // and we initialize the game.
 static void moveToGame()
 {
-	
+
 	stateInfo.screen = 1;
-	stateInfo.changeScreen = 1;	
+	stateInfo.changeScreen = 1;
 	stateInfo.updated = 0;
 	// when first starting the game, we se teams and inning and period settings.
 	if(stateInfo.menuInfo->state == 0)

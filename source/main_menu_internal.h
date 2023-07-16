@@ -209,7 +209,7 @@ static CupInfo cupInfo;
 
 static int cupGame;
 static int stage; // 0 front, 1 team selection, 2 player order for team 1, 3 player order for team 2
-static int pointer; 
+static int pointer;
 static int rem;
 static int mark;
 static int stage_1_state;
@@ -220,7 +220,7 @@ static int stage_8_state_1_level;
 static int batTimer;
 static int batTimerLimit;
 static int batTimerCount;
-static int updatingCanStart; 
+static int updatingCanStart;
 static int team1;
 static int team2;
 static int team1_control;
@@ -279,7 +279,7 @@ static int refreshLoadCups()
 	int i = 0;
 	int j;
 	int valid = 1;
-   
+
     /* open the file */
     file = fopen("saves.dat", "r");
     if (file == NULL) {
@@ -288,7 +288,7 @@ static int refreshLoadCups()
         return 1;
     }
     // read file to char array
-	do 
+	do
 	{
 		i = fgetc(file);
 		*p = (char)i;
@@ -296,7 +296,7 @@ static int refreshLoadCups()
 		p++;
 	} while(i != EOF);
 	*p = '\0';
-   
+
     /* close the file */
     fclose(file);
 	// if we found correct type of end of file
@@ -322,7 +322,7 @@ static int refreshLoadCups()
 				int i;
 				for(i = 0; i < SLOT_COUNT; i++)
 				{
-					char str[3] = "  "; 
+					char str[3] = "  ";
 					int index;
 					str[1] = content[counter + i*3 + 3];
 					str[0] = content[counter + i*3 + 3 - 1];
@@ -382,7 +382,7 @@ static int refreshLoadCups()
 	return 0;
 }
 /*
-	stores information in cupInfo-structure to saveData-structure's specified slot and 
+	stores information in cupInfo-structure to saveData-structure's specified slot and
 	then writes saveData-info to data-file.
 */
 static void saveCup(int slot)
@@ -392,7 +392,7 @@ static void saveCup(int slot)
 	int i;
 	int counter;
 	CupInfo* saveDataPtr;
-   
+
 	fp = fopen("saves.dat", "w");
 	if (fp == NULL) {
 		printf("I couldn't open saves.dat for writing.\n");
@@ -481,7 +481,7 @@ static void updateSchedule()
 		{
 			if(stateInfo.cupInfo->slotWins[j*2] < 3 && stateInfo.cupInfo->slotWins[j*2+1] < 3)
 			{
-				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 5) || 
+				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 5) ||
 					(j == 6 && stateInfo.cupInfo->dayCount >= 10))
 				{
 					stateInfo.cupInfo->schedule[counter][0] = j*2;
@@ -494,7 +494,7 @@ static void updateSchedule()
 		{
 			if(stateInfo.cupInfo->slotWins[j*2] < 1 && stateInfo.cupInfo->slotWins[j*2+1] < 1)
 			{
-				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 1) || 
+				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 1) ||
 					(j == 6 && stateInfo.cupInfo->dayCount >= 2))
 				{
 					stateInfo.cupInfo->schedule[counter][0] = j*2;
@@ -537,7 +537,7 @@ static void loadCup(int slot)
 		else if(stateInfo.cupInfo->slotWins[13] == 1)
 		{
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[13];
-		}		
+		}
 	}
 	else if(stateInfo.cupInfo->gameStructure == 0)
 	{
@@ -548,7 +548,7 @@ static void loadCup(int slot)
 		else if(stateInfo.cupInfo->slotWins[13] == 3)
 		{
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[13];
-		}		
+		}
 	}
 
 	// here we should fill the schedule array
@@ -634,7 +634,7 @@ static void updateCupTreeAfterDay(int scheduleSlot, int winningSlot)
 						stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
 					}
 				}
-			}			
+			}
 			counter++;
 		}
 		else

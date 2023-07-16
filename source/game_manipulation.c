@@ -22,14 +22,14 @@ void gameManipulation()
 
 	updateBallStatus(); // update ball's location due to velocity, also update ball's velocity due to gravity, and set some flags related to ball
 	checkIfBallCanBeCatched(); //  if no one has the ball, it could be catched, couldn't it?
-	checkIfNearHomeLocation(); // 
-	baseRunnerMovementsOnBaseArrivals(); 
+	checkIfNearHomeLocation(); //
+	baseRunnerMovementsOnBaseArrivals();
 	basemenReplacements();
 	moveIdlingPlayersToHomeLocation();
 	rankPlayersAndMoveThem(); // ranks players and moves them when needed. its ranked lists are also used for changing players.
 	playerLocationOrientationAndTargets(); // update every players' location and orientation according to player's velocity and ball's location.
 	updateBallToPlayer(); // if some player has the ball, update ball velocity so that the ball will follow the player
-	updateModels();	
+	updateModels();
 }
 
 void initGameManipulation()
@@ -78,7 +78,7 @@ static __inline void updateBallStatus()
 				if(stateInfo.localGameInfo->ballInfo.location.y < BALL_SIZE / 2)
 				{
 					int outOfBounds = 0;
-					// we check out of bounds situation only if we are close to ground to avoid 
+					// we check out of bounds situation only if we are close to ground to avoid
 					// unnecesaary overhead
 					if(closeToGround == 0)
 					{
@@ -90,11 +90,11 @@ static __inline void updateBallStatus()
 					{															// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
 						stateInfo.localGameInfo->ballInfo.hasHitGround = 1;
 						stateInfo.localGameInfo->gAI.woundingCatch = 0;
-						// this is used to track if ball has been dropped after a catch to avoid wounding 
+						// this is used to track if ball has been dropped after a catch to avoid wounding
 						stateInfo.localGameInfo->ballInfo.hitsGroundToUnWound = 1;
 						// if no catch made and bat hit and we hit the ground and ball is out of bounds,
 						// we are going to have a foul play.
-						if(stateInfo.localGameInfo->pRAI.batHit == 1 && 
+						if(stateInfo.localGameInfo->pRAI.batHit == 1 &&
 							stateInfo.localGameInfo->gAI.firstCatchMade == 0)
 						{
 							if(outOfBounds == 1)
@@ -133,14 +133,14 @@ static __inline void updateBallStatus()
 						stateInfo.localGameInfo->pRAI.pitchInAir = 0;
 						stateInfo.localGameInfo->pRAI.pitchGoingOn = 0;
 					}
-					// if ball has enough y-velocity it will bounce 
+					// if ball has enough y-velocity it will bounce
 					if(stateInfo.localGameInfo->ballInfo.velocity.y < -BALL_BOUNCE_THRESHOLD)
 					{
 						// so try to update ranks of fielders
 						stateInfo.localGameInfo->pRAI.refreshCatchAndChange = 1;
 						// change the direction of y-velocity
 						stateInfo.localGameInfo->ballInfo.velocity.y = -stateInfo.localGameInfo->ballInfo.velocity.y;
-						setVectorXYZ(&(stateInfo.localGameInfo->ballInfo.velocity), BALL_SLOW_FACTOR_X*stateInfo.localGameInfo->ballInfo.velocity.x, 
+						setVectorXYZ(&(stateInfo.localGameInfo->ballInfo.velocity), BALL_SLOW_FACTOR_X*stateInfo.localGameInfo->ballInfo.velocity.x,
 							BALL_SLOW_FACTOR_Y*stateInfo.localGameInfo->ballInfo.velocity.y, BALL_SLOW_FACTOR_Z*stateInfo.localGameInfo->ballInfo.velocity.z);
 
 					}
@@ -166,8 +166,8 @@ static __inline void updateBallStatus()
 			else
 			{
 				// if we are rolling on the ground already, slow down the velocity a bit and stop ball if x and z -velocities are small enough
-				setVectorXZ(&(stateInfo.localGameInfo->ballInfo.velocity), BALL_ON_GROUND_SLOW_FACTOR*stateInfo.localGameInfo->ballInfo.velocity.x, 
-					BALL_ON_GROUND_SLOW_FACTOR*stateInfo.localGameInfo->ballInfo.velocity.z);	
+				setVectorXZ(&(stateInfo.localGameInfo->ballInfo.velocity), BALL_ON_GROUND_SLOW_FACTOR*stateInfo.localGameInfo->ballInfo.velocity.x,
+					BALL_ON_GROUND_SLOW_FACTOR*stateInfo.localGameInfo->ballInfo.velocity.z);
 				if(isVectorSmallEnoughCircleXZV(&(stateInfo.localGameInfo->ballInfo.velocity), EPSILON))
 				{
 					setVectorXZ(&(stateInfo.localGameInfo->ballInfo.velocity), 0.0f, 0.0f);
@@ -222,7 +222,7 @@ static __inline void checkIfBallCanBeCatched()
 	{
 		for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++)
 		{
-			// so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex. 
+			// so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.
 			// its purpose is to deny players catching balls right after throwing them.
 			// but if ball has hit ground, we dont care about lastHadBallIndex anymore.
 			// allow players to drop balls and catch if thrown close to them by themselves.
@@ -256,7 +256,7 @@ static __inline void checkIfBallCanBeCatched()
 						{
 							baseCatcherFlag = 1;
 						}
-						
+
 					}
 					// to avoid annyoing twitching we need to check that catching player is far enough
 					if(stateInfo.localGameInfo->pII.lastHadBallIndex == -1 || stateInfo.localGameInfo->ballInfo.hasHitGround == 1 ||
@@ -267,7 +267,7 @@ static __inline void checkIfBallCanBeCatched()
 						// note this could be different player than the one who caught the ball.
 						if(stateInfo.localGameInfo->pII.controlIndex != -1 && stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cPI.moving == 1)
 						{
-							stopMovement(stateInfo.localGameInfo->pII.controlIndex);			
+							stopMovement(stateInfo.localGameInfo->pII.controlIndex);
 						}
 						// if throwRecoil is 1, model will be automatically set to 0 when animation ends
 						// but if its 0, we must change it from having ball to not having ball.
@@ -285,7 +285,7 @@ static __inline void checkIfBallCanBeCatched()
 								// also stop them so that decisions about moving to home location can be made.
 								stopMovement(j);
 							}
-						
+
 						}
 						// stop the guy who caught the ball
 						stopMovement(i);
@@ -302,8 +302,8 @@ static __inline void checkIfBallCanBeCatched()
 						// make sound
 						stateInfo.playSoundEffect = SOUND_CATCH;
 						// this could be the fifth but the first is still made.
-						stateInfo.localGameInfo->gAI.firstCatchMade = 1; 
-						stateInfo.localGameInfo->pRAI.throwGoingToBase = -1; 
+						stateInfo.localGameInfo->gAI.firstCatchMade = 1;
+						stateInfo.localGameInfo->pRAI.throwGoingToBase = -1;
 						stateInfo.localGameInfo->pII.controlIndex = i;
 						stateInfo.localGameInfo->pII.hasBallIndex = i;
 
@@ -312,7 +312,7 @@ static __inline void checkIfBallCanBeCatched()
 
 						// and set running flag
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cPI.running = 1;
-						// stop the ball and hide it. if player starts to move again, 
+						// stop the ball and hide it. if player starts to move again,
 						// then ball's velocity will also be updated agian.
 						stateInfo.localGameInfo->ballInfo.visible = 0;
 						stateInfo.localGameInfo->ballInfo.moving = 0;
@@ -322,22 +322,22 @@ static __inline void checkIfBallCanBeCatched()
 						setVectorV(&(stateInfo.localGameInfo->ballInfo.location), &(stateInfo.localGameInfo->playerInfo[i].tPI.location));
 					}
 				}
-				
+
 			}
 		}
 	}
 }
 // when moving fielders automatically, we often use the knowledge of whether we are near home location or not
 // so here we check if we thats the case
-static __inline void checkIfNearHomeLocation() 
+static __inline void checkIfNearHomeLocation()
 {
 	int i;
 	for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++)
 	{
-		// we check it only for moving players to reduce overhead a bit. 
+		// we check it only for moving players to reduce overhead a bit.
 		if(stateInfo.localGameInfo->playerInfo[i].cPI.moving == 1)
 		{
-			
+
 			float dx = stateInfo.localGameInfo->playerInfo[i].tPI.location.x -
 				stateInfo.localGameInfo->playerInfo[i].tPI.homeLocation.x;
 			float dz = stateInfo.localGameInfo->playerInfo[i].tPI.location.z -
@@ -384,7 +384,7 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 				if(stateInfo.localGameInfo->playerInfo[index].bTPI.out != 1)
 				{
 					int j;
-					// so after we have a valid player, we are going to check to which base he arrived 
+					// so after we have a valid player, we are going to check to which base he arrived
 					// and after that do the actions corresponding to base and direction.
 					// we dont have the code handling batter arriving homebase here as
 					// it didn't need much of a work, so its handled in target checking function.
@@ -444,20 +444,20 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 								}
 								// we are now safe here.
 								stateInfo.localGameInfo->pII.safeOnBaseIndex[j] = index;
-								// if we were safe on previous base ( no other player arrived there before we arrived here 
-								// or our safety was removed from there by a fielder), we set that that -1 
+								// if we were safe on previous base ( no other player arrived there before we arrived here
+								// or our safety was removed from there by a fielder), we set that that -1
 								// to indicate we arent there anymore.
 								if(stateInfo.localGameInfo->pII.safeOnBaseIndex[j-1] == index)
 								{
-									stateInfo.localGameInfo->pII.safeOnBaseIndex[j-1] = -1; 
+									stateInfo.localGameInfo->pII.safeOnBaseIndex[j-1] = -1;
 								}
 								// if we arrived to base 3 and were originally from homebase
-								if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 3 && 
+								if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 3 &&
 									stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase == 0 &&
 									stateInfo.localGameInfo->gAI.outs < 3)
 								{
 									// set flag to check if our run is valid. difficult to imagine situation where
-									// it wasnt right away, ball had to be swinged to like heaven and back again 
+									// it wasnt right away, ball had to be swinged to like heaven and back again
 									// so that it could be caught or be determined to be foul play after
 									// player has run all the way from base 0 to 3. but anyway.
 									stateInfo.localGameInfo->gAI.checkForRun = 1;
@@ -465,7 +465,7 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 							}
 						}
 					}
-					// whether we got safely to first base or were wounded, we have to set batterIndex to -1 
+					// whether we got safely to first base or were wounded, we have to set batterIndex to -1
 					// so that next player can go batting.
 					if(stateInfo.localGameInfo->pII.batterIndex == index) stateInfo.localGameInfo->pII.batterIndex = -1;
 					// if the player arrived to a base and had it marked as 4, it means that it possibly a run.
@@ -478,8 +478,8 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 						}
 						// if our originalBase was 0, we would have had a run at base 3 already so this wont be run
 						// unless a new pitch is pitched and then our originalBase changes.
-						if((stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase != 0 || 
-							stateInfo.localGameInfo->gAI.canMakeRunOfHonor == 0) && 
+						if((stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase != 0 ||
+							stateInfo.localGameInfo->gAI.canMakeRunOfHonor == 0) &&
 							stateInfo.localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0)
 						{
 							stateInfo.localGameInfo->gAI.checkForRun = 1;
@@ -492,7 +492,7 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 							stateInfo.localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 							stateInfo.localGameInfo->playerInfo[index].bTPI.base = -1;
 						}
-							
+
 					}
 				}
 			}
@@ -515,7 +515,7 @@ static __inline void basemenReplacements()
 			{
 				if(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage == 0)
 				{
-					moveToTarget(stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i], 
+					moveToTarget(stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 						&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherOnBaseIndex[i]].tPI.homeLocation));
 
 					stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 1;
@@ -535,9 +535,9 @@ static __inline void basemenReplacements()
 				{
 					if(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == i)
 					{
-						moveToTarget(stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i], 
+						moveToTarget(stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 							&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].tPI.homeLocation));
-					
+
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 0;
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = -1;
 					}
@@ -588,16 +588,16 @@ static __inline void rankPlayersAndMoveThem()
 		float a = -GRAVITY;
 		float s = 0.0f;
 		float ballDropX; // where the ball will land
-		float ballDropZ; 
+		float ballDropZ;
 		float evalBallX; // place that we use to calculate player rankings
 		float evalBallZ;
 		float dirX; // ball's velocity's direction
 		float dirZ;
 		float time; // used to calculate ballDrop. framecount it takes from ball to land after movement's start ( like in throwin or batting )
-		float dot; 
+		float dot;
 		float speed;
 		float distance;
-		float evaluation; 
+		float evaluation;
 		if(stateInfo.localGameInfo->ballInfo.hasHitGround == 0)
 		{
 			if(stateInfo.localGameInfo->pRAI.throwGoingToBase == -1)
@@ -653,7 +653,7 @@ static __inline void rankPlayersAndMoveThem()
 		{
 			stateInfo.localGameInfo->gAI.targetPoint.x = ballDropX + stateInfo.localGameInfo->ballInfo.velocity.x*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
 			stateInfo.localGameInfo->gAI.targetPoint.z = ballDropZ + stateInfo.localGameInfo->ballInfo.velocity.z*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
-			
+
 			evalBallX = stateInfo.localGameInfo->gAI.targetPoint.x;
 			evalBallZ = stateInfo.localGameInfo->gAI.targetPoint.z;
 		}
@@ -661,7 +661,7 @@ static __inline void rankPlayersAndMoveThem()
 		{
 			stateInfo.localGameInfo->gAI.targetPoint.x = ballDropX + stateInfo.localGameInfo->ballInfo.velocity.x*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
 			stateInfo.localGameInfo->gAI.targetPoint.z = ballDropZ + stateInfo.localGameInfo->ballInfo.velocity.z*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
-			
+
 			evalBallX = stateInfo.localGameInfo->gAI.targetPoint.x;
 			evalBallZ = stateInfo.localGameInfo->gAI.targetPoint.z;
 		}
@@ -718,20 +718,20 @@ static __inline void rankPlayersAndMoveThem()
 			stateInfo.localGameInfo->pII.fielderRankedIndices[j] = rankedIndices[j];
 		}
 
-		
+
 		// then change cursor to best choice of players if flags says so
 		// set for example when ball is first bat/thrown etc or when change player key is pressed.
 		if(stateInfo.localGameInfo->pRAI.initPlayerSelection == 1)
 		{
 			stateInfo.localGameInfo->pII.changePlayerArrayIndex = 0;
-			changePlayer();	
+			changePlayer();
 			stateInfo.localGameInfo->pRAI.initPlayerSelection = 0;
 		}
 		else
 		{
 			stateInfo.localGameInfo->pII.changePlayerArrayIndex = -1;
 		}
-		
+
 		// move these critical players to ball's final position
 		moveRankedToCatch();
 
@@ -746,7 +746,7 @@ static __inline void playerLocationOrientationAndTargets()
 	int i;
 
 	for(i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++)
-	{	
+	{
 		// orientation updated only if ball or player moving
 		if(stateInfo.localGameInfo->ballInfo.moving == 1 ||
 			stateInfo.localGameInfo->playerInfo[i].cPI.moving == 1)
@@ -765,7 +765,7 @@ static __inline void playerLocationOrientationAndTargets()
 	}
 	// move players
 	for(i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++)
-	{	
+	{
 		// players only moved if moving-flag is set to 1.
 		if(stateInfo.localGameInfo->playerInfo[i].cPI.moving == 1)
 		{
@@ -805,8 +805,8 @@ static __inline void playerLocationOrientationAndTargets()
 				if(isVectorSmallEnoughCircleXZ(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1)
 				{
 					int needToStop = 1;
-					if(	i == stateInfo.localGameInfo->pII.batterIndex && 
-						stateInfo.localGameInfo->playerInfo[i].bTPI.goingForward == 0) 
+					if(	i == stateInfo.localGameInfo->pII.batterIndex &&
+						stateInfo.localGameInfo->playerInfo[i].bTPI.goingForward == 0)
 					{
 						prepareBatter();
 					}
@@ -826,16 +826,16 @@ static __inline void playerLocationOrientationAndTargets()
 					if(i < PLAYERS_IN_TEAM + JOKER_COUNT)
 					{
 						// so if we are moving out of the field after being wounded or tagged.
-						// here we first move to a some point outside the limits of game area 
+						// here we first move to a some point outside the limits of game area
 						// and then back to a point in homebase, and then to own place on the circle.
 						// check for running because otherwise we players who were wounded before arriving a base
 						// would be handled by this, which is of course a mistake.
-						if(stateInfo.localGameInfo->playerInfo[i].bTPI.out == 1 || 
+						if(stateInfo.localGameInfo->playerInfo[i].bTPI.out == 1 ||
 							(stateInfo.localGameInfo->playerInfo[i].bTPI.wounded == 1 &&
 							stateInfo.localGameInfo->playerInfo[i].cPI.running == 0))
 						{
 							Vector3D target;
-				
+
 							if(stateInfo.localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0)
 							{
 								stateInfo.localGameInfo->playerInfo[i].bTPI.passedPathPoint = 1;
@@ -863,7 +863,7 @@ static __inline void playerLocationOrientationAndTargets()
 						{
 							// if we are at homebase, first base or second base and not leading
 							if(stateInfo.localGameInfo->playerInfo[i].bTPI.base >= 0 &&
-								stateInfo.localGameInfo->playerInfo[i].bTPI.base < 3 && 
+								stateInfo.localGameInfo->playerInfo[i].bTPI.base < 3 &&
 								stateInfo.localGameInfo->playerInfo[i].bTPI.leading == 0)
 							{
 								// and moving forward
@@ -872,20 +872,20 @@ static __inline void playerLocationOrientationAndTargets()
 									// set going forward flag to 0 as we are stopped now
 									stateInfo.localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 									// set new base-value and isOnBase-vaule to 1.
-									stateInfo.localGameInfo->playerInfo[i].bTPI.base = 
+									stateInfo.localGameInfo->playerInfo[i].bTPI.base =
 										stateInfo.localGameInfo->playerInfo[i].bTPI.base + 1;
 									stateInfo.localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 									// also these are needed to do continued calculations only when needed.
 									stateInfo.localGameInfo->gAI.playerArrivedToBase = 1;
 									stateInfo.localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
-									
+
 								}
 								else
 								{
 									stateInfo.localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 								}
 							}
-							// so if we are on base 3 
+							// so if we are on base 3
 							else if(stateInfo.localGameInfo->playerInfo[i].bTPI.base == 3)
 							{
 								if(stateInfo.localGameInfo->playerInfo[i].bTPI.goingForward == 1)
@@ -897,13 +897,13 @@ static __inline void playerLocationOrientationAndTargets()
 										runToNextBase(i, 3);
 										needToStop = 0;
 									}
-									// if have passed the flag we are at homebase, so set the base to 4 
+									// if have passed the flag we are at homebase, so set the base to 4
 									// and move player to its circle.
 									else if(stateInfo.localGameInfo->playerInfo[i].bTPI.passedPathPoint == 1)
 									{
 										Vector3D target;
 										stateInfo.localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
-								
+
 										stateInfo.localGameInfo->playerInfo[i].bTPI.base = 4;
 										stateInfo.localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										stateInfo.localGameInfo->playerInfo[i].bTPI.goingForward = 0;
@@ -927,7 +927,7 @@ static __inline void playerLocationOrientationAndTargets()
 									else
 									{
 										// otherwise we are at the third base
-								
+
 										stateInfo.localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										stopTargetLookingPlayer(i);
 										needToStop = 0;
@@ -941,7 +941,7 @@ static __inline void playerLocationOrientationAndTargets()
 					if(needToStop == 1)
 					{
 						stopTargetLookingPlayer(i);
-						setOrientation(i); 
+						setOrientation(i);
 					}
 				}
 			}
@@ -970,7 +970,7 @@ static __inline void updateModels()
 			// so first animations for walking and running. they are loops, the stage will be in range of 0 to count*freq.
 			// reason this seemingly complicated way of doing this is just to provide possibility to have animations
 			// with same meshcounts to have animations of different speeds.
-			stateInfo.localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo.localGameInfo->playerInfo[i].cPI.animationStage + 1) % 
+			stateInfo.localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo.localGameInfo->playerInfo[i].cPI.animationStage + 1) %
 				(stateInfo.localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo.localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
 		case 6:
@@ -997,7 +997,7 @@ static __inline void updateModels()
 		case 11:
 		case 12:
 			// running and walking animations for batting team
-			stateInfo.localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo.localGameInfo->playerInfo[i].cPI.animationStage + 1) % 
+			stateInfo.localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo.localGameInfo->playerInfo[i].cPI.animationStage + 1) %
 				(stateInfo.localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo.localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
 		case 14:

@@ -17,7 +17,7 @@
 int main ( int argc, char *argv[] )
 {
 	double alpha;
-	int done = 0;	
+	int done = 0;
 	int result;
 
 	#if defined(__wii__)
@@ -58,43 +58,43 @@ int main ( int argc, char *argv[] )
 			return -1;
 		}
 	#endif
-	
+
 	result = fillPlayerData(&(teamData[0]));
 	if(result != 0)
 	{
 		printf("Could not init team data. Exiting.");
 		return -1;
 	}
-	stateInfo.teamData = &(teamData[0]);	
+	stateInfo.teamData = &(teamData[0]);
 
 	srand ( (unsigned int)time(NULL) );
-	
+
 	result = initMainMenu();
 	if(result != 0)
 	{
 		printf("Could not init main menu. Exiting.");
 		return -1;
-	}	
-	
+	}
+
 	result = initInput();
 	if(result != 0)
 	{
 		printf("Could not init input. Exiting.");
 		return -1;
-	}		
+	}
 	result = initSound();
 	if(result != 0)
 	{
 		printf("Could not init sound system. Exiting.");
 		return -1;
-	}		
+	}
 	result = initFont();
 	if(result != 0)
 	{
 		printf("Could not init font. Exiting.");
 		return -1;
-	}	
-	
+	}
+
 	// draw loading screen before loading all the player meshes which will take time
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
@@ -108,12 +108,12 @@ int main ( int argc, char *argv[] )
 	{
 		printf("Could not init game screen. Exiting.");
 		return -1;
-	}	
-	
+	}
+
 	stateInfo.screen = 0;
 	stateInfo.changeScreen = 1;
 	stateInfo.updated = 0;
-	
+
 	// to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
 	while(done == 0)
 	{
@@ -132,12 +132,12 @@ int main ( int argc, char *argv[] )
 			#if defined(__wii__)
 			if (result != 0) done = 1;
 			#else
-			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;			
+			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;
 			#endif
             accumulator -= updateInterval;
-        }			
-		
-		alpha = (double)accumulator / updateInterval;	
+        }
+
+		alpha = (double)accumulator / updateInterval;
 		// draw the scene, alpha will give us nice little smoothing effect.
 		// like if we are in the middle of updateInterval, the "real" position of the object
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
@@ -147,7 +147,7 @@ int main ( int argc, char *argv[] )
 			draw(alpha);
 		}
 
-		
+
 	}
 	// and we will clean up when everything ends
 	result = clean();
@@ -157,11 +157,11 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 	return 0;
-	
+
 }
 
 static int update()
-{	
+{
 	updateInput();
 	updateSound();
 	switch(stateInfo.screen) {
@@ -172,7 +172,7 @@ static int update()
 			updateMainMenu();
 			break;
 		default:
-			return 1;	
+			return 1;
 	}
 	return 0;
 }
@@ -188,16 +188,16 @@ static void draw(double alpha)
 			drawMainMenu(alpha);
 			break;
 	}
-	#if defined(__wii__)	
+	#if defined(__wii__)
 	GX_DrawDone();
-	// flip framebuffer and get ready for the next one	
-	fb ^= 1;		
+	// flip framebuffer and get ready for the next one
+	fb ^= 1;
 	GX_CopyDisp(frameBuffer[fb],GX_TRUE);
 	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
 	VIDEO_Flush();
 	#else
 	glfwSwapBuffers();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	#endif
 }
@@ -208,10 +208,10 @@ static int initGX()
 	// initialization code for GX of libogc
 	f32 yscale;
 	u32 xfbHeight;
-	
+
 	VIDEO_Init();
 	rmode = VIDEO_GetPreferredMode(NULL);
-	
+
 	// allocate 2 framebuffers for double buffering
 	frameBuffer[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
 	frameBuffer[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
@@ -225,11 +225,11 @@ static int initGX()
 	gp_fifo = memalign(32,DEFAULT_FIFO_SIZE);
 	memset(gp_fifo,0,DEFAULT_FIFO_SIZE);
 	GX_Init(gp_fifo,DEFAULT_FIFO_SIZE);
- 
+
 	// clears the bg to color and clears the z buffer
 	GXColor background = {0xa0, 0xff, 0xff, 0xff};
 	GX_SetCopyClear(background, 0x00ffffff);
- 
+
 	// other gx setup
 	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
 	yscale = GX_GetYScaleFactor(rmode->efbHeight,rmode->xfbHeight);
@@ -240,7 +240,7 @@ static int initGX()
 	GX_SetCopyFilter(rmode->aa,rmode->sample_pattern,GX_TRUE,rmode->vfilter);
 	GX_SetFieldMode(rmode->field_rendering,((rmode->viHeight==2*rmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
 	GX_SetColorUpdate(GX_TRUE);
-	
+
 	if (rmode->aa) {
 		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
 	}
@@ -248,27 +248,27 @@ static int initGX()
 	{
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 	}
- 
+
 	GX_CopyDisp(frameBuffer[fb],GX_TRUE);
 	GX_SetDispCopyGamma(GX_GM_1_0);
-	
+
 	GX_SetNumChans(1);
 	GX_SetNumTexGens(1);
 	GX_SetNumTevStages(1);
 	// basic texture unit settings
 	GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	
+
 	guMtxIdentity(mt);
 	guMtxScaleApply(mt, mt, 1.0f, -1.0f, 1.0f);
 	GX_LoadTexMtxImm(mt, GX_TEXMTX0, GX_MTX2x4);
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0);
-	
+
 	GX_SetCullMode(GX_CULL_FRONT);
-	
+
 	// set the format for meshes
 	GX_ClearVtxDesc();
-		
+
 	GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
@@ -276,18 +276,18 @@ static int initGX()
 
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);	
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	
+
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
-		
+
 	guPerspective(perspective, 45, PERSPECTIVE_ASPECT_RATIO, 0.1F, 250.0F);
 	GX_LoadProjectionMtx(perspective, GX_PERSPECTIVE);
 
 	// init filesystem
 
-	if (!fatInitDefault()) 
+	if (!fatInitDefault())
 	{
 		printf("fatInitDefault failure: terminating\n");
 		return -1;
@@ -300,7 +300,7 @@ static int initGX()
 	    printf ("opendir() failure; terminating\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 #else
@@ -317,7 +317,7 @@ static int initGL()
 		return -1;
 	}
 	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4); // 4x antialiasing
-	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE); 
+	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
 	// Open a window and create its OpenGL context
 	if(fullscreen == 0)
 	{
@@ -333,7 +333,7 @@ static int initGL()
 		}
 		glfwSetWindowTitle( "PNB" );
 		glfwSetWindowSize(width, height);
-		glfwSetWindowPos( (mode.Width - width) / 2, 0);	
+		glfwSetWindowPos( (mode.Width - width) / 2, 0);
 
 	}
 	else
@@ -349,7 +349,7 @@ static int initGL()
 			return -1;
 		}
 	}
-	 
+
 	// Initialize GLEW
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
@@ -357,7 +357,7 @@ static int initGL()
 		return -1;
 	}
 
-	glfwSwapInterval(0);	
+	glfwSwapInterval(0);
 	// and then initialize openGL settings. nothing really weird here.
 	glEnable( GL_TEXTURE_2D );
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
@@ -365,9 +365,9 @@ static int initGL()
 	glClearDepth(1.0f);									// Depth Buffer Setup
 	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
 	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
-	glEnable(GL_CULL_FACE);  
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations		
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
 	glViewport(0, 0, width, height);						// Reset The Current Viewport
 	// this blendfunc works like that it doesnt draw anything with color data from shadow mesh, but it will
 	// use this alpha value to reduce intensity of the background of the mesh.
@@ -380,7 +380,7 @@ static int initGL()
 	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
 	glLoadIdentity();									// Reset The Modelview Matrix
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	return 0;
 }
 #endif
@@ -399,26 +399,26 @@ static int clean()
 	{
 		printf("Could not clean game screen completely\n");
 		return -1;
-	}	
-	
+	}
+
 	result = cleanMainMenu();
 	if(result != 0)
 	{
 		printf("Could not clean main menu completely\n");
 		return -1;
-	}			
+	}
 	result = cleanFont();
 	if(result != 0)
 	{
 		printf("Could not clean font completely\n");
 		return -1;
-	}		
+	}
 	result = cleanSound();
 	if(result != 0)
 	{
 		printf("Could not clean sound completely\n");
 		return -1;
-	}	
+	}
 	#if defined(__wii__)
 	closedir(pdir);
 	#else

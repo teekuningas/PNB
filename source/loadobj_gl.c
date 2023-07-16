@@ -16,7 +16,7 @@ static int lastN = 0;
 static __inline int SeekToObject ( char *objfile, const char *objectname );
 static __inline int ReadLine ( char* objfile, char *line );
 
-int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj ) 
+int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj )
 {
 	char line[255]  = { 0 };   // Buffer to hold each line.
 	char param[2]   = { 0,0 }; // Returned characters from a line
@@ -42,33 +42,33 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 	char* objfile;
 	int size = 0;
 	FILE *f = fopen(filename, "rb");
-	if (f == NULL) 
-	{ 
+	if (f == NULL)
+	{
 		objfile = NULL;
 		printf("opening model file failed; terminating\n");
-		return -1; // -1 means file opening fail 
-	} 
+		return -1; // -1 means file opening fail
+	}
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 	objfile = (char *)malloc(size+1);
-	if (size != fread(objfile, sizeof(char), size, f)) 
-	{ 
+	if (size != fread(objfile, sizeof(char), size, f))
+	{
 		free(objfile);
 		printf("opening model file failed; terminating\n");
-		return -1; 
-	} 
+		return -1;
+	}
 	fclose(f);
 	seekIndex = 0;
-	lastN = 0;	
+	lastN = 0;
 
 	if ( objfile == NULL ) // Exit if we can't open it.
 		return OBJ_FILE_OPEN_FAILED;
-		
-	if ( objectname != NULL ) 
+
+	if ( objectname != NULL )
 	{
 		// First we need to find the object group.
-					
+
 		retval = SeekToObject ( objfile, objectname );
 		if ( retval == 1 )
 			return OBJ_NAME_NOT_FOUND;
@@ -102,7 +102,7 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 				uFaceCount++;
 				break;
 		}
-			
+
 
 		if ( objectname != NULL ) {
 			if ( param[0] == 'o' )
@@ -136,7 +136,7 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 	fColorIndex[0] = 1.0f;
 	fColorIndex[1] = 1.0f;
 	fColorIndex[2] = 1.0f;
-	
+
 	fTexCoordIndex = (float *)malloc ( ( sizeof(float) * 2 ) * uTexCoordCount );
 
 	if ( uFaceList     == NULL ||
@@ -159,7 +159,7 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 			return OBJ_NAME_NOT_FOUND;
 	}
 	// Populate the arrays.
-		
+
 	while (1) {
 
 		retval = ReadLine ( objfile, line );
@@ -175,7 +175,7 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 		if ( param[0] == 'o' )
 			break; // Break out if it's a new object.
 		}
-			
+
 		if( param[0] == 's')
 		{
 			continue;
@@ -267,7 +267,7 @@ int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj
 	return OBJ_NO_ERROR;
 }
 
-__inline int ReadLine ( char* objfile, char *line ) 
+__inline int ReadLine ( char* objfile, char *line )
 {
 	while(1)
 	{
@@ -283,24 +283,24 @@ __inline int ReadLine ( char* objfile, char *line )
 		{
 			 return 1;
 		}
-		
+
 		seekIndex++;
 	}
 
 	return 0;
 }
 
-__inline int SeekToObject (char *objfile, const char *objectname ) 
+__inline int SeekToObject (char *objfile, const char *objectname )
 {
 	int retval = 0;
 	char line[255] = { 0 };
 	char name[255] = { 0 }; // Buffer to hold the object name (for comparison)
 	char param     = 0;
 
-	while (1) 
+	while (1)
 	{
 		retval = ReadLine ( objfile, line );
-		
+
 		if ( retval != 0 )
 			return retval;
 		// Skip this line if it isn't a name.

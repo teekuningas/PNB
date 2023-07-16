@@ -6,7 +6,7 @@
 #if defined(__wii__)
 #include "swing_mp3.h"
 #include "catch_mp3.h"
-#include "menu_mp3.h" 
+#include "menu_mp3.h"
 #else
 #include <fmod.h>
 #include <fmod_errors.h>

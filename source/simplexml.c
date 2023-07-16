@@ -17,10 +17,10 @@ char* ownstrdup (const char *s)
 {
   size_t len = strlen (s) + 1;
   void *newstr = malloc (len);
- 
+
   if (newstr == NULL)
     return NULL;
- 
+
   return (char *) memcpy (newstr, s, len);
 }
 
@@ -36,7 +36,7 @@ char* ownstrdup (const char *s)
 /* error code value indicating that the parser couldn't
  * grow one of its internal structures using malloc */
 #define OUT_OF_MEMORY 2
-/* error code value indicating that the XML data was early 
+/* error code value indicating that the XML data was early
  * terminated, i.e. the parser was expecting more data */
 #define EARLY_TERMINATION 3
 /* error code value indicating that the ampersand character
@@ -123,7 +123,7 @@ typedef struct simplexml_user_data {
  *
  * This structure holds all data necessary for the
  * simple xml parser to operate.
- * 
+ *
  * This struct describes the internal representation
  * of a SimpleXmlParserState.
  */
@@ -280,7 +280,7 @@ void* simpleXmlGetUserData (SimpleXmlParser parser) {
 /**
  * No operation handler (used internally).
  */
-void* simpleXmlNopHandler (SimpleXmlParser parser, SimpleXmlEvent event, 
+void* simpleXmlNopHandler (SimpleXmlParser parser, SimpleXmlEvent event,
 	const char* szName, const char* szAttribute, const char* szValue) {
 	/* simply return the nop handler again */
 	return simpleXmlNopHandler;
@@ -290,7 +290,7 @@ void* simpleXmlNopHandler (SimpleXmlParser parser, SimpleXmlEvent event,
  * Creates a new simple xml parser for the specified input data.
  *
  * @param sData the input data to parse (must no be NULL).
- * @param nDataSize the size of the input data buffer (sData) 
+ * @param nDataSize the size of the input data buffer (sData)
  * to parse (must be greater than 0).
  * @return the new simple xml parser or NULL if there
  * is not enough memory or the input data specified cannot
@@ -322,8 +322,8 @@ SimpleXmlParserState createSimpleXmlParser (const char *sData, long nDataSize) {
 
 /**
  * Destroys the specified simple xml parser.
- * 
- * @param parser the parser to destroy (must have been 
+ *
+ * @param parser the parser to destroy (must have been
  * created using createSimpleXmlParser).
  */
 void destroySimpleXmlParser (SimpleXmlParserState parser) {
@@ -350,10 +350,10 @@ void destroySimpleXmlParser (SimpleXmlParserState parser) {
 /**
  * Reinitializes the specified simple xml parser for
  * parsing the specified input data.
- * 
+ *
  * @param parser the parser to initialize.
  * @param sData the input data to parse (must no be NULL).
- * @param nDataSize the size of the input data buffer (sData) 
+ * @param nDataSize the size of the input data buffer (sData)
  * to parse (must be greater than 0).
  * @return 0 if the parser could not be initialized,
  * > 0 if the parser was initialized successfully.
@@ -424,7 +424,7 @@ int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler) {
 		parser->nError= ILLEGAL_HANDLER;
 		return FAIL;
 	}
-	
+
 	/* check if the parser was initialized properly */
 	if (parser->nError != NOT_PARSED) {
 		parser->nError= NOT_INITIALIZED;
@@ -467,7 +467,7 @@ int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler) {
 int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler) {
 	SimpleXmlTagHandler handler;
 	char* szTagName;
-		
+
 	if (getInternalSimpleXmlValueBufferContents(parser->vbNextToken) == NULL) {
 		parser->nError= OUT_OF_MEMORY;
 		return FAIL;
@@ -479,7 +479,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 		return FAIL;
 	}
 	clearSimpleXmlValueBuffer(parser->vbNextToken);
-	
+
 	handler= parentHandler((SimpleXmlParser) parser, ADD_SUBTAG, szTagName, NULL, NULL);
 	if (parser->nError != NO_ERROR) {
 		return FAIL;
@@ -487,7 +487,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 	if (handler == NULL) {
 		handler= simpleXmlNopHandler;
 	}
-	
+
 	if (readNextTagToken(parser) == FAIL) {
 		free(szTagName);
 		return FAIL;
@@ -503,7 +503,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 				free(szTagName);
 				return FAIL;
 			}
-			handler((SimpleXmlParser) parser, ADD_ATTRIBUTE, szTagName, parser->szAttribute, 
+			handler((SimpleXmlParser) parser, ADD_ATTRIBUTE, szTagName, parser->szAttribute,
 				getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
 			if (parser->nError != NO_ERROR) {
 				free(szTagName);
@@ -548,7 +548,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 					free(szTagName);
 					return FAIL;
 				}
-				handler((SimpleXmlParser) parser, ADD_CONTENT, szTagName, NULL, 
+				handler((SimpleXmlParser) parser, ADD_CONTENT, szTagName, NULL,
 					getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
 				if (parser->nError != NO_ERROR) {
 					free(szTagName);
@@ -604,17 +604,17 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
  * in such a case).
  *
  * The following token types are supported:
- * 
+ *
  * Type                   | ValueBuffer | Example
  * -----------------------+-------------+-------------
  * TAG_END                | <unchanged> | />
  * TAG_BEGIN_CLOSING      | <unchanged> | >
  * ATTRIBUTE              | bar         | foo="bar"
- * 
+ *
  * Note: The name of an attribute (e.g. foo in the above
  * example) is stored in the attribute name field of the
  * parser (szAttributeName).
- * 
+ *
  * @param parser the parser for which to read the next token.
  * @return SUCCESS or FAIL.
  */
@@ -706,15 +706,15 @@ int readNextTagToken (SimpleXmlParserState parser) {
 	return SUCCESS;
 }
 
-/** 
+/**
  * Scanner that reads the next token type and sets
  * the nNextToken type and the value buffer of the
  * parser. Must not be invoked when the last token
  * read was a TAG_BEGIN (use readNextTagToken in
  * such a case).
- * 
+ *
  * The following token types are supported:
- * 
+ *
  * Type                   | ValueBuffer | Example
  * -----------------------+-------------+-------------
  * TAG_BEGIN_OPENING      | foo         | <foo
@@ -724,7 +724,7 @@ int readNextTagToken (SimpleXmlParserState parser) {
  * UNKNOWN                | WHATEVER    | <!WHATEVER>
  * COMMENT                | foo         | <!--foo-->
  * DOCTYPE                | foo         | <!DOCTYPEfoo>
- * 
+ *
  * @param parser the parser for which to read the next token.
  * @return SUCCESS or FAIL.
  */
@@ -865,10 +865,10 @@ int readNextContentToken (SimpleXmlParserState parser) {
 /**
  * Reads the next character from the input data and
  * appends it to the next token value buffer of the parser.
- * 
+ *
  * Note: This method does not support unicode and 8-bit
  * characters are read using the default platform encoding.
- * 
+ *
  * @param parser the parser for which to read the next input character.
  * @return SUCCESS or FAIL.
  */
@@ -982,7 +982,7 @@ int readChar (SimpleXmlParserState parser) {
  *
  * Note: To peek at the next character that will be read
  * use and offset of 0.
- * 
+ *
  * @param parser the parser for which to peek.
  * @param nOffset the peek offset relative to the
  * position of the last char read.
@@ -1012,7 +1012,7 @@ char peekInputChar (SimpleXmlParserState parser) {
 /**
  * Skips any whitespace at the cursor position of the
  * parser specified.
- * 
+ *
  * Note: All characters smaller than the space character
  * are considered to be whitespace.
  *
@@ -1073,11 +1073,11 @@ void skipInputChar (SimpleXmlParserState parser) {
 /**
  * Reads the next input character from the specified parser
  * and returns it.
- * 
+ *
  * Note: If an error is encountered '\0' is returned and the
  * nError flag of the parser is set to EARLY_TERMINATION.
- * 
- * @param parser the parser from which to read the next 
+ *
+ * @param parser the parser from which to read the next
  * input character.
  * @return the next input character or '\0' if there is none.
  */
@@ -1138,10 +1138,10 @@ int addNextTokenStringValue (SimpleXmlParserState parser, char *szInput) {
  * The value buffer uses 'malloc' to allocate buffer space.
  * The user is responsible for freeing the value buffer created
  * using destroySimpleXmlValueBuffer.
- * 
+ *
  * @param nInitialSize the initial size of the value buffer in chars.
- * @return NULL if the value buffer could not be allocated, 
- * the newly allocated value buffer otherwise (to be freed by the 
+ * @return NULL if the value buffer could not be allocated,
+ * the newly allocated value buffer otherwise (to be freed by the
  * caller).
  * @see #destroySimpleXmlValueBuffer
  */
@@ -1266,7 +1266,7 @@ int clearSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
 }
 
 /**
- * Returns the content length of the value buffer 
+ * Returns the content length of the value buffer
  * (including a trailing zero termination character).
  *
  * @param vb the value buffer whose content length should
@@ -1308,7 +1308,7 @@ int getSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb, char* szOutput, lo
  * Returns the zero terminated internal string buffer of
  * the value buffer specified.
  *
- * Warning: Modifying the array returned modifies the 
+ * Warning: Modifying the array returned modifies the
  * internal data of the value buffer!
  *
  * @param vb the value buffer whose string buffer should

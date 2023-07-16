@@ -10,10 +10,10 @@
 	static GXRModeObj *rmode;
 	static u32	fb = 0; 	// initial framebuffer index
 	static Mtx mt;
-	static Mtx44 perspective;	
+	static Mtx44 perspective;
 
 	static DIR *pdir;
-	
+
 #else
 	static int initGL();
 	int fullscreen;

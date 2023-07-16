@@ -4,7 +4,7 @@
 #include <time.h>
 
 /*
-	And here we have our wii or gc specific rendering code that is utilized by a ton of .c:s, 
+	And here we have our wii or gc specific rendering code that is utilized by a ton of .c:s,
 	like ball.c, player.c, main_menu.c etc.
 	Drawing is done in immediate mode but using indexing.
 */
@@ -26,7 +26,7 @@ void drawMesh(MeshObject* mesh)
 	GX_SetArray(GX_VA_NRM,  mesh->fNormalIndex,   ( sizeof(f32) * 3 ) );
 	GX_SetArray(GX_VA_CLR0, mesh->uColorIndex,    ( sizeof(u8)  * 4 ) );
 	GX_SetArray(GX_VA_TEX0, mesh->fTexCoordIndex, ( sizeof(f32) * 2 ) );
-	
+
 	GX_InvVtxCache();
 	GX_Begin( GX_TRIANGLES, GX_VTXFMT0, (mesh->uFaceCount*3) );
 		int i;
@@ -35,8 +35,8 @@ void drawMesh(MeshObject* mesh)
 						mesh->uFaceList[i+1],
 						mesh->uFaceList[i+2],
 						mesh->uFaceList[i+3]);
-		}	
-	GX_End();	
+		}
+	GX_End();
 }
 
 u32 prepareMesh(MeshObject* mesh, void** displayList)
@@ -45,8 +45,8 @@ u32 prepareMesh(MeshObject* mesh, void** displayList)
 	DCFlushRange(mesh->fPositionIndex, ( sizeof(f32) * 3 ) * mesh->uPositionCount);
 	DCFlushRange(mesh->fNormalIndex, (sizeof(f32) * 3 ) * mesh->uNormalCount);
 	DCFlushRange(mesh->uColorIndex, (sizeof(u8) * 4 ) * mesh->uColorCount);
-	DCFlushRange(mesh->fTexCoordIndex, (sizeof(f32) * 2 ) * mesh->uTexCoordCount);	
-	
+	DCFlushRange(mesh->fTexCoordIndex, (sizeof(f32) * 2 ) * mesh->uTexCoordCount);
+
 	/*
 		Just random approximations, not particularly accurate.
 	*/
@@ -80,22 +80,22 @@ void cleanMesh(MeshObject* mesh)
 		free(mesh->fTexCoordIndex);
 		free(mesh);
 	}
-		
+
 }
 
 int tryPreparingMeshGX(const char* path, const char* name, MeshObject* mesh, u32* listSize, void* displayList)
 {
-	
+
 	int result;
 	result = LoadObj(path, name, mesh);
 	if(result != 0)
 	{
 		printf("\nError with LoadObj. Error code: %d\n", result);
 		return -1;
-	}	
-	
-	*listSize = prepareMesh(mesh, displayList);	
-	
+	}
+
+	*listSize = prepareMesh(mesh, displayList);
+
 	return 0;
 }
 
@@ -104,16 +104,16 @@ int tryPreparingMeshGX(const char* path, const char* name, MeshObject* mesh, u32
 void drawMesh(MeshObject* mesh)
 {
 	unsigned int i;
-	
-	glBegin(GL_TRIANGLES);	
+
+	glBegin(GL_TRIANGLES);
 	for (i = 0; i < (mesh->uFaceCount*12); i += 4)
 	{
 		glTexCoord2fv(&(mesh->fTexCoordIndex)[2*(mesh->uFaceList)[i+3]]);
 		glNormal3fv(&(mesh->fNormalIndex)[3*(mesh->uFaceList)[i+1]]);
 		glVertex3fv(&(mesh->fPositionIndex)[3*(mesh->uFaceList)[i]]);
-	}	
+	}
 	glEnd();
-	
+
 }
 
 void cleanMesh(MeshObject* mesh)
@@ -127,15 +127,15 @@ void cleanMesh(MeshObject* mesh)
 		free(mesh->fTexCoordIndex);
 		free(mesh);
 	}
-		
+
 }
 
 void prepareMesh(MeshObject* mesh, GLuint* displayList)
 {
 	*displayList=glGenLists(1);
-	glNewList(*displayList,GL_COMPILE); 
+	glNewList(*displayList,GL_COMPILE);
 	drawMesh(mesh);
-	glEndList();  
+	glEndList();
 }
 
 int tryLoadingTextureGL(GLuint* texture, const char* filename, const char* name)

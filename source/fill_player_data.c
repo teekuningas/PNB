@@ -16,18 +16,18 @@ static TeamData* teamDataPtr;
 static int teamCounter = 0;
 static int playerCounter = 0;
 
-void* handler (SimpleXmlParser parser, SimpleXmlEvent event, 
+void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 	const char* szName, const char* szAttribute, const char* szValue);
 void parse (char* sData, long nDataLen);
-	
+
 void trim (const char* szInput, char* szOutput);
 char* getReadFileDataErrorDescription (int nError);
 int readFileData (char* sFileName, char** sData, long *pnDataLen);
 
-void* handler (SimpleXmlParser parser, SimpleXmlEvent event, 
+void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 	const char* szName, const char* szAttribute, const char* szValue)
 {
-	
+
 	char szHandlerName[32], szHandlerAttribute[32], szHandlerValue[32];
 	if (szName != NULL) {
 		trim(szName, szHandlerName);
@@ -53,12 +53,12 @@ void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 			teamDataPtr[teamCounter-1].players[playerCounter].id = ownstrdup(szHandlerValue);
 			playerCounter++;
 		}
-		
-	} else if (event == ADD_CONTENT) {	
+
+	} else if (event == ADD_CONTENT) {
 
 		if(strcmp(szHandlerName, "player") == 0)
 		{
-			
+
 		}
 		else if(strcmp(szHandlerName, "players") == 0 || strcmp(szHandlerName, "teams") == 0
 			|| strcmp(szHandlerName, "team") == 0)
@@ -66,7 +66,7 @@ void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 		}
 		else
 		{
-	
+
 			if(strcmp(szHandlerName, "name") == 0)
 			{
 				teamDataPtr[teamCounter-1].players[playerCounter-1].name = ownstrdup(szHandlerValue);
@@ -87,9 +87,9 @@ void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 				teamDataPtr[teamCounter-1].players[playerCounter-1].power = i;
 			}
 		}
-		
+
 	}
-	
+
 	return handler;
 }
 
@@ -99,12 +99,12 @@ void parse (char* sData, long nDataLen) {
 		fprintf(stderr, "couldn't create parser");
 		return;
 	}
-	
+
 	if (simpleXmlParse(parser, handler) != 0) {
-		fprintf(stderr, "parse error on line %li:\n%s\n", 
+		fprintf(stderr, "parse error on line %li:\n%s\n",
 			simpleXmlGetLineNumber(parser), simpleXmlGetErrorDescription(parser));
 	}
-	
+
 }
 
 void trim (const char* szInput, char* szOutput) {
@@ -160,7 +160,7 @@ int readFileData (char* sFileName, char** psData, long *pnDataLen) {
 				return READ_FILE_NO_ERROR;
 			}
 		}
-	}	
+	}
 }
 
 char* getReadFileDataErrorDescription (int nError) {
@@ -185,13 +185,13 @@ int fillPlayerData(TeamData* teamData)
 	teamDataPtr = teamData;
 	nResult= readFileData(name, &sData, &nDataLen);
 	if (nResult != 0) {
-		fprintf(stderr, "couldn't read %s (%s).\n", name, 
+		fprintf(stderr, "couldn't read %s (%s).\n", name,
 			getReadFileDataErrorDescription(nResult));
 		return -1;
-	} 
+	}
 	parse(sData, nDataLen);
 	free(sData);
-	
+
 	// check if contents are "valid"
 	for(i = 0; i < TEAM_COUNT; i++)
 	{
@@ -209,8 +209,8 @@ int fillPlayerData(TeamData* teamData)
 		printf("Invalid player data\n");
 		return -1;
 	}
-	
-	return 0;	
+
+	return 0;
 }
 
 int cleanPlayerData()
@@ -227,6 +227,6 @@ int cleanPlayerData()
 			free(teamDataPtr[i].players[j].name);
 		}
 	}
-	
+
 	return 0;
 }

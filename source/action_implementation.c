@@ -45,7 +45,7 @@ void initActionImplementation()
 	batterMoving = 0;
 	updateBatterLocationAndOrientation = 0;
 	runBatFlag = 0;
-	
+
 	//ai uses a few flags..
 
 	aiPitchStage = 0;
@@ -117,8 +117,8 @@ void actionImplementation()
 		}
 	}
 
-	/* 
-	 * CATCHING TEAM 
+	/*
+	 * CATCHING TEAM
 	 */
 
 	for(i = 0; i < BASE_COUNT; i++)
@@ -151,7 +151,7 @@ void actionImplementation()
 					// when pitching the ball is moved to the center of the plate so now when we are terminating the pitch
 					// to throw, we must move the ball back to the player
 					stateInfo.localGameInfo->ballInfo.location.x = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.x;
-					stateInfo.localGameInfo->ballInfo.location.z = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z;	
+					stateInfo.localGameInfo->ballInfo.location.z = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z;
 				}
 				// throwGoingToBase variables are used to have better control
 				// over basemen who are wanting go out of base catching the ball.
@@ -222,14 +222,14 @@ void actionImplementation()
 		if(stateInfo.localGameInfo->pII.hasBallIndex == -1)
 		{
 			// we go to next element in changePlayerArray.
-			stateInfo.localGameInfo->pII.changePlayerArrayIndex = 
+			stateInfo.localGameInfo->pII.changePlayerArrayIndex =
 				(stateInfo.localGameInfo->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
 			// and try to ensure that there is difference. we dont want to end up in a endless loop
 			// though so we do it only once.
 			if(stateInfo.localGameInfo->pII.controlIndex ==
 				stateInfo.localGameInfo->pII.fielderRankedIndices[stateInfo.localGameInfo->pII.changePlayerArrayIndex])
 			{
-				stateInfo.localGameInfo->pII.changePlayerArrayIndex = 
+				stateInfo.localGameInfo->pII.changePlayerArrayIndex =
 					(stateInfo.localGameInfo->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
 			}
 			// and then set the flag, so that other parts of code can handle
@@ -257,8 +257,8 @@ void actionImplementation()
 	{
 		releasePitch();
 	}
-	/* 
-	 * BATTING TEAM 
+	/*
+	 * BATTING TEAM
 	 */
 	// when there's no batter, user is prompted to select the next batter
 	if(stateInfo.localGameInfo->aF.bTAF.chooseBatter == 1)
@@ -292,7 +292,7 @@ void actionImplementation()
 	{
 		stopDecreaseBatterAngle();
 	}
-	// batting 
+	// batting
 	if(stateInfo.localGameInfo->aF.bTAF.swing == 2)
 	{
 		selectPower();
@@ -391,10 +391,10 @@ static __inline void takeFreeWalkDecision()
 					// set info to screen
 					stateInfo.localGameInfo->gAI.gameInfoEvent = 3;
 				}
-				
+
 				if((stateInfo.globalGameInfo->inning + 1)%2 == 0)
 				{
-					if(stateInfo.globalGameInfo->teams[battingTeamIndex].runs > 
+					if(stateInfo.globalGameInfo->teams[battingTeamIndex].runs >
 						stateInfo.globalGameInfo->teams[catchingTeamIndex].runs)
 					{
 						stateInfo.localGameInfo->gAI.endPeriod = 1;
@@ -404,7 +404,7 @@ static __inline void takeFreeWalkDecision()
 			}
 			else
 			{
-			
+
 				if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == base)
 				{
 					// we start running to the next base
@@ -428,7 +428,7 @@ static __inline void takeFreeWalkDecision()
 				// in out of bounds situations these players will be at correct bases in post foul play world
 				if(base != 3)
 				{
-					stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase = 
+					stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase =
 						base + 1;
 				}
 				else
@@ -450,18 +450,18 @@ static __inline void takeFreeWalkDecision()
 					// set info to screen
 					stateInfo.localGameInfo->gAI.gameInfoEvent = 3;
 
-					if((stateInfo.globalGameInfo->inning + 1)%stateInfo.globalGameInfo->inningsInPeriod == 0 || 
+					if((stateInfo.globalGameInfo->inning + 1)%stateInfo.globalGameInfo->inningsInPeriod == 0 ||
 						stateInfo.globalGameInfo->inning + 1 == stateInfo.globalGameInfo->inningsInPeriod*2 + 2)
 					{
-						if(stateInfo.globalGameInfo->teams[battingTeamIndex].runs > 
+						if(stateInfo.globalGameInfo->teams[battingTeamIndex].runs >
 							stateInfo.globalGameInfo->teams[catchingTeamIndex].runs)
 						{
 							stateInfo.localGameInfo->gAI.endPeriod = 1;
 						}
 						if(stateInfo.globalGameInfo->inning + 1 == stateInfo.globalGameInfo->inningsInPeriod*2 &&
-							stateInfo.globalGameInfo->teams[battingTeamIndex].period0Runs > 
-							stateInfo.globalGameInfo->teams[catchingTeamIndex].period0Runs && 
-							stateInfo.globalGameInfo->teams[catchingTeamIndex].runs == 
+							stateInfo.globalGameInfo->teams[battingTeamIndex].period0Runs >
+							stateInfo.globalGameInfo->teams[catchingTeamIndex].period0Runs &&
+							stateInfo.globalGameInfo->teams[catchingTeamIndex].runs ==
 							stateInfo.globalGameInfo->teams[battingTeamIndex].runs )
 						{
 							stateInfo.localGameInfo->gAI.endPeriod = 1;
@@ -485,7 +485,7 @@ static __inline void changeBatter()
 	int battingTeamIndex = (stateInfo.globalGameInfo->
 		inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
 	int index;
-	
+
 	stateInfo.localGameInfo->aF.bTAF.chooseBatter = 0;
 	// batterSelect variable will point to the current player in selection
 	// and now as we are changing the selection, we add one to it.
@@ -494,7 +494,7 @@ static __inline void changeBatter()
 	// the next one. batterSelect == 0 indicates that it is a normal player, batterSelect != 0 indicates
 	// it is a joker player.
 	// there must be at least one player as this function cannot get called without
-	// waitingForBatterDecision-flag, and that can flag cant be true if 
+	// waitingForBatterDecision-flag, and that can flag cant be true if
 	// there is not at least one player.
 	while(done == 0)
 	{
@@ -523,13 +523,13 @@ static __inline void changeBatter()
 		if(counter == 4) done = 1;
 		counter++;
 	}
-	// now we have the batterSelect value and we just need to find a corresponding index for that 
+	// now we have the batterSelect value and we just need to find a corresponding index for that
 	// player.
 	if(batterSelect == 0)
 	{
 		index = stateInfo.globalGameInfo->teams[battingTeamIndex].batterOrder[stateInfo.globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
 	}
-	else 
+	else
 	{
 		index = stateInfo.localGameInfo->pII.jokerIndices[batterSelect - 1];
 	}
@@ -542,7 +542,7 @@ static __inline void selectBatter()
 	int i = 0;
 	int battingTeamIndex = (stateInfo.globalGameInfo->
 		inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
-	// index cannot be -1 as we couldn't have got this far if it was	
+	// index cannot be -1 as we couldn't have got this far if it was
 	int index = stateInfo.localGameInfo->pII.batterSelectionIndex;
 	if(index != -1)
 	{
@@ -570,7 +570,7 @@ static __inline void selectBatter()
 				else
 					break;
 			}
-		
+
 		}
 		// new batting team player on the field.
 		stateInfo.localGameInfo->gAI.battingTeamPlayersOnFieldCount++;
@@ -585,7 +585,7 @@ static __inline void selectBatter()
 		stateInfo.localGameInfo->pII.batterIndex = index;
 		// cant advance yet
 		stateInfo.localGameInfo->pRAI.batterCanAdvance = 0;
-		// just set default values so that the player can have a fresh start at 
+		// just set default values so that the player can have a fresh start at
 		// the field.
 		stateInfo.localGameInfo->playerInfo[index].bTPI.goingForward = 0;
 		stateInfo.localGameInfo->playerInfo[index].bTPI.wounded = 0;
@@ -627,17 +627,17 @@ static __inline void genericThrowRelease()
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStageCount = 21;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationFrequency = 2;
-		// set flag to indicate that animation is still going on ( so no extra movement 
+		// set flag to indicate that animation is still going on ( so no extra movement
 		// until its over ).
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cTPI.throwRecoil = 1;
-	
+
 		// take power naturally from meterCounter value
 		power = 1.0f*meterCounter / meterCounterMax;
 		// update these values a bit
 		throwDirection.x = throwDirection.x / throwDistance;
 		throwDirection.z = throwDirection.z / throwDistance;
 		throwDirection.y = 0.06f;
-		// ... and then edit them a bit more and send them to genericSlingBall. 
+		// ... and then edit them a bit more and send them to genericSlingBall.
 		genericSlingBall(throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
 		// set lastHadBallIndex, its used for example to prevent this player of catching
 		// the ball right after throwing.
@@ -685,10 +685,10 @@ static __inline void genericThrowLoad(int base)
 			// set the flag that is used for example to determine can you move the player.
 			throwGoingOn = 1;
 			// to avoid twitching when moving key is still pressed and player cant move as hes throwing
-			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1; 
+			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
 			// and orient player to look at the base too.
 			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.orientation.x = throwDirection.x;
-			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.orientation.z = throwDirection.z;	
+			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.orientation.z = throwDirection.z;
 		}
 		else
 		{
@@ -708,10 +708,10 @@ static __inline void genericMove(int direction)
 	if(throwGoingOn == 0 && stateInfo.localGameInfo->pRAI.pitchGoingOn == 0 &&
 		stateInfo.localGameInfo->pII.controlIndex != -1)
 	{
-		// stopping only possible when moving already going on 
+		// stopping only possible when moving already going on
 		// so thats the reason for this value 2
 		stateInfo.localGameInfo->aF.cTAF.move[direction] = 2;
-			
+
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cTPI.movesToDirection[direction] = 1;
 		// and we call this generic function that utilizes this movesToDirection to select
 		// velocity and orientation for the player
@@ -721,7 +721,7 @@ static __inline void genericMove(int direction)
 	{
 		stateInfo.localGameInfo->aF.cTAF.move[direction] = 0;
 	}
-	
+
 }
 static __inline void genericStopMove(int direction)
 {
@@ -770,7 +770,7 @@ static __inline void dropBall()
 			// and use genericSlingBall again to get the ball to the world.
 			genericSlingBall(dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
 			// and set the lastHadBallIndex so that this player cannot catch it before it hits ground
-			stateInfo.localGameInfo->pII.lastHadBallIndex = stateInfo.localGameInfo->pII.hasBallIndex; 
+			stateInfo.localGameInfo->pII.lastHadBallIndex = stateInfo.localGameInfo->pII.hasBallIndex;
 			// and no player has the ball anymore.
 			stateInfo.localGameInfo->pII.hasBallIndex = -1;
 		}
@@ -783,7 +783,7 @@ static __inline void updateControlledPlayerSpeed()
 {
 	if(stateInfo.localGameInfo->pII.controlIndex != -1)
 	{
-		// cant move when throw recoil going on. 
+		// cant move when throw recoil going on.
 		if(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cTPI.throwRecoil == 0)
 		{
 			float norm;
@@ -793,8 +793,8 @@ static __inline void updateControlledPlayerSpeed()
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cTPI.movesToDirection[3];
 			int directionZ = - stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cTPI.movesToDirection[0] +
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cTPI.movesToDirection[2];
-			// always when player's velocity changes, ball's velocity must change too.		
-			stateInfo.localGameInfo->ballInfo.needsMoveUpdate = 1; 
+			// always when player's velocity changes, ball's velocity must change too.
+			stateInfo.localGameInfo->ballInfo.needsMoveUpdate = 1;
 			// if every component vanishes
 			if(directionX*directionX + directionZ*directionZ == 0)
 			{
@@ -819,15 +819,15 @@ static __inline void updateControlledPlayerSpeed()
 				// set player's orientation so that player faces the direction he's moving to
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.orientation.x = (float)directionX;
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.orientation.z = (float)directionZ;
-				// there is only two alternatives anymore, either both x and z direction have non zero component or 
+				// there is only two alternatives anymore, either both x and z direction have non zero component or
 				// only one of them has and so norm will be sqrt(2) or 1
 				if(directionX*directionX + directionZ*directionZ == 2) norm = (float)sqrt(2.0f);
-				else norm = 1.0f;		
-			
+				else norm = 1.0f;
+
 				// running
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.velocity.x = (float)directionX*RUN_SPEED/norm;
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.velocity.z = (float)directionZ*RUN_SPEED/norm;
-				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cPI.animationStageCount = 20;			
+				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].cPI.animationStageCount = 20;
 				// if has ball, then running with ball model, otherwise running without ball
 				if(stateInfo.localGameInfo->pII.hasBallIndex == stateInfo.localGameInfo->pII.controlIndex)
 				{
@@ -865,12 +865,12 @@ static __inline void startPitch()
 		To start a pitch few things must hold:
 		i) pitcher must have the ball
 		ii) no pitch is already going on.
-		iii) batter is ready 
+		iii) batter is ready
 		iv) throw is not going on. we can stop pitch and throw but cant stop throw and pitch.
 		v) pitcher is close enough to pitching location.
 		vi) no free walk decisions pending
 	*/
-	if(stateInfo.localGameInfo->pII.hasBallIndex == stateInfo.localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo.localGameInfo->pRAI.pitchGoingOn == 0 && 
+	if(stateInfo.localGameInfo->pII.hasBallIndex == stateInfo.localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo.localGameInfo->pRAI.pitchGoingOn == 0 &&
 		stateInfo.localGameInfo->pRAI.batterReady == 1 && throwGoingOn == 0 &&
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
 		stateInfo.localGameInfo->gAI.waitingForFreeWalkDecision == 0)
@@ -880,42 +880,42 @@ static __inline void startPitch()
 		{
 			stopMovement(stateInfo.localGameInfo->pII.hasBallIndex);
 		}
-		// we choose animation of pitcher crouching. 
+		// we choose animation of pitcher crouching.
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.model = 6;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStageCount = PITCH_DOWN_MAX;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
-		// and we force pitcher to this specific pitching location as the pitching can be started even if 
+		// and we force pitcher to this specific pitching location as the pitching can be started even if
 		// pitcher is not exactly at this location.
-		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.x = 
+		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.x =
 			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.homeLocation.x;
-		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z = 
+		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z =
 			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.homeLocation.z;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
 		// and set the pitcher to look directly to pitchPlate's direction.
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.orientation.x = -1.0f;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.orientation.z = 0.0f;
-		// ball is moved to center of the pitchPlate so that pitchs will start 
+		// ball is moved to center of the pitchPlate so that pitchs will start
 		// rising from there.
 		setVectorXZ(&(stateInfo.localGameInfo->ballInfo.location), 0.0f, 0.0f);
-		
 
-		// we enter the next stage where the meter moves and user needs to 
+
+		// we enter the next stage where the meter moves and user needs to
 		// select the power to continue
 		stateInfo.localGameInfo->aF.cTAF.pitch = 2;
 		// we set pitchGoingOn flag to 1 which will hold to the moment
 		// of bat hitting ball, meter going all the way down ( no angle selected )
 		// or ball hitting ground.
 		stateInfo.localGameInfo->pRAI.pitchGoingOn = 1;
-		// so initialize meterCounter and meterCounterMax values. synchronization with the animation here is nice 
+		// so initialize meterCounter and meterCounterMax values. synchronization with the animation here is nice
 		// as it will let user press the buttons when its natural in the animation. But basically
 		// we start from the point 4/13 and go to 1 on the meter.
-		meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY; 
-		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY; 
+		meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY;
+		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
 	}
 	else
 	{
-		// if conditions dont hold then put pitch=0 so that user can try to 
+		// if conditions dont hold then put pitch=0 so that user can try to
 		// initiate new pitch if he wants.
 		stateInfo.localGameInfo->aF.cTAF.pitch = 0;
 		stateInfo.localGameInfo->aF.cTAF.actionKeyLock = 0;
@@ -929,30 +929,30 @@ static __inline void continuePitch()
 		// going from crouching to releasing and user to selecting the angle.
 		stateInfo.localGameInfo->aF.cTAF.pitch = 4;
 		// here we select pitchpower, and as selected it will be in the interval from
-		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.	
+		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
 		pitchPower = 1.0f*meterCounter / meterCounterMax;
 		// we select the animation
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.model = 7;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
-	
-		// current stage depends on the stage of the last animation. if user quickly selects 
+
+		// current stage depends on the stage of the last animation. if user quickly selects
 		// the power, the previous animation might have no time to finish, so if that happens
 		// we dont want to start the releasing animation from the beginning.
 		// this works quite fluently as the crouching animation's end consists of same frames
 		// as releasing animation's beginning.
 		//
-		// so here animationStageCount is PITCH_DOWN_MAX and we minus from that 
+		// so here animationStageCount is PITCH_DOWN_MAX and we minus from that
 		// the number of stages that we already did. as the animation implementation in the code works so that
 		// animationStage goes from 0 to stage count times frequency, to get our stage relative to
 		// animationStageCount, we divide by the frequency. then we multiply by new frequency
 		// to get new stage to range of 0 to PITCH_DOWN_MAX(and we extend to PITCH_UP_MAX after that)
 		// times the frequency.
-		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage = 
-			(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStageCount - 
-			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage / ANIMATION_FREQUENCY) * 
-			ANIMATION_FREQUENCY; 
+		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage =
+			(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStageCount -
+			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStage / ANIMATION_FREQUENCY) *
+			ANIMATION_FREQUENCY;
 		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationStageCount = PITCH_UP_MAX;
-	
+
 		// so now we initialize meterCounter to be what was left to the full amount in previous phase and set counterMax to full maximum.
 		// on the screen this meterCounter-value is kind of reversed so that we get a nice indicator going up, indicator going down -effect.
 		meterCounter = meterCounterMax - meterCounter;
@@ -965,7 +965,7 @@ static __inline void releasePitch()
 	Vector3D target;
 	float dx, dy;
 	int i;
-	float pitchAngle;	
+	float pitchAngle;
 	// as meterCounter goes from 0 to PITCH_UP_MAX and the zero point will be at the 9/13, we minus
 	// that to get the selected angle
 	pitchAngle = 1.0f*meterCounter / meterCounterMax - 1.0f*PITCH_DOWN_MAX/PITCH_UP_MAX;
@@ -979,7 +979,7 @@ static __inline void releasePitch()
 	// we prepare to move the pitcher a bit
 	target.x = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;
 	target.z = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z;
-	// set the ball visible and tell other code that is moving so its location 
+	// set the ball visible and tell other code that is moving so its location
 	// will be updated.
 	stateInfo.localGameInfo->ballInfo.visible = 1;
 	stateInfo.localGameInfo->ballInfo.moving = 1;
@@ -991,7 +991,7 @@ static __inline void releasePitch()
 	stateInfo.localGameInfo->pII.lastHadBallIndex = stateInfo.localGameInfo->pII.hasBallIndex; // to allow ball to avoid catching by same player when thrown
 	// pitcher doesnt have the ball anymore
 	stateInfo.localGameInfo->pII.hasBallIndex = -1;
-	// pitch in air so that for example the batting can be 
+	// pitch in air so that for example the batting can be
 	// updated.
 	stateInfo.localGameInfo->pRAI.pitchInAir = 1;
 	// this flag's purpose is to take care of batter who starts running towards first base and comes back
@@ -1003,7 +1003,7 @@ static __inline void releasePitch()
 	aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
 	stateInfo.localGameInfo->gAI.homeRunCameraFlag = 0;
-	// always when pitch reaches the stage of ball going to air, we update baserunners' 
+	// always when pitch reaches the stage of ball going to air, we update baserunners'
 	// original bases to their current bases, so that we can make decisions about
 	// foul plays and wounds etc.
 	for(i = 0; i < BASE_COUNT; i++)
@@ -1015,7 +1015,7 @@ static __inline void releasePitch()
 			// we dont do it though in the case of free walks, as we dont want players to return previous bases
 			// after taking a free walk, even if there is foul play. so thats the reason for conditions.
 			// free walks set original base to base that follows the base where player was when the
-			// free walk decision came available. 
+			// free walk decision came available.
 			if(stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase < base &&
 				!(stateInfo.localGameInfo->playerInfo[index].bTPI.originalBase == 4 && base == 3))
 			{
@@ -1096,12 +1096,12 @@ static __inline void selectAngle()
 	// simple enough, enter the state of waiting for animation to end
 	stateInfo.localGameInfo->aF.bTAF.swing = 5;
 	// and set angle to be the meterCounter value, its processed further afterwards.
-	selectedBattingAngleCount = meterCounter; 
+	selectedBattingAngleCount = meterCounter;
 }
 
 static __inline void baseRun(int base)
 {
-	// so baserunning. 
+	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
 	if(stateInfo.localGameInfo->pII.safeOnBaseIndex[base] != -1)
 	{
@@ -1173,7 +1173,7 @@ static __inline void updateBatting()
 		// used for animation and advancing.
 		if(increaseBattingFrameCount == 1)
 		{
-			battingFrameCount += 1;		
+			battingFrameCount += 1;
 		}
 
 		if(stateInfo.localGameInfo->pRAI.initBatter == 1)
@@ -1185,7 +1185,7 @@ static __inline void updateBatting()
 			batterAngle = 0.0f;
 			batterAngleSpeed = 0;
 			batterAdvance = 0.0f;
-			batterAdvanceSpeed = 0.0f; 
+			batterAdvanceSpeed = 0.0f;
 			// aren't moving yet
 			batterMoving = 0;
 			// swinging mode
@@ -1211,20 +1211,20 @@ static __inline void updateBatting()
 		{
 			// if the updated angle would be within limits, we can proceed updating the speed.
 			// batterAngleSpeed is just 1, 0 or -1 and speed is really given by BATTER_ANGLE_SPEED_CONSTANT.
-			if(batterAngle + batterAngleSpeed*BATTER_ANGLE_SPEED_CONSTANT < 
-				BATTER_ANGLE_LIMIT && batterAngle + batterAngleSpeed*BATTER_ANGLE_SPEED_CONSTANT > 
+			if(batterAngle + batterAngleSpeed*BATTER_ANGLE_SPEED_CONSTANT <
+				BATTER_ANGLE_LIMIT && batterAngle + batterAngleSpeed*BATTER_ANGLE_SPEED_CONSTANT >
 				-BATTER_ANGLE_LIMIT )
 			{
 				batterAngle += batterAngleSpeed*BATTER_ANGLE_SPEED_CONSTANT;
 				updateBatterLocationAndOrientation = 1;
-			}		
-			// if updated advanced location would be within limit that is originally SWING_ADVANCE but could 
-			// be changed to BUNT_ADVANCE given small power, then can proceed updating. 
+			}
+			// if updated advanced location would be within limit that is originally SWING_ADVANCE but could
+			// be changed to BUNT_ADVANCE given small power, then can proceed updating.
 			if(batterAdvance + batterAdvanceSpeed < batterAdvanceLimit)
 			{
 				batterAdvance += batterAdvanceSpeed;
 				updateBatterLocationAndOrientation = 1;
-			}		
+			}
 		}
 		// if need for update of location and orientation
 		if(updateBatterLocationAndOrientation == 1)
@@ -1234,16 +1234,16 @@ static __inline void updateBatting()
 			float dx2;
 			float dz2;
 			// update lastLocation for smooth movement
-			setVectorXZ(&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.lastLocation), 
-				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.location.x, 
+			setVectorXZ(&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.lastLocation),
+				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.location.x,
 				stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.location.z);
 			// update location with sine and cosine to new location on the circle centered at pitch plate.
 			// radius will be given by batterAdvance relative to batting radius
 			// angle is given by batterAngle and the default ZERO_BETTING_ANGLE
-			setVectorXZ(&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.location), 
+			setVectorXZ(&(stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].tPI.location),
 				(float)(stateInfo.fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE + batterAngle)*(BATTING_RADIUS *
-				(1 - batterAdvance))), 
-				(float)(stateInfo.fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE + batterAngle)*(BATTING_RADIUS * 
+				(1 - batterAdvance))),
+				(float)(stateInfo.fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE + batterAngle)*(BATTING_RADIUS *
 				(1 - batterAdvance))));
 			// and then set the orientation of batter. here we just first select the base direction to be
 			// vector from pitchplate to batter and then fix it a bit to make it look more realistic.
@@ -1267,25 +1267,25 @@ static __inline void updateBatting()
 			}
 			// so at the beginning swing==0. advancing and animation doesnt necessarily start
 			// immediately. if pitch is very high the batting animation will take a lot shorter time
-			// than what it takes for ball to get down, so the animation and advancing will start a bit 
+			// than what it takes for ball to get down, so the animation and advancing will start a bit
 			// later. meter updating on the hand will start immediately and power selection
 			// will be available too.
 			if(stateInfo.localGameInfo->aF.bTAF.swing == 0)
 			{
 				float v = stateInfo.localGameInfo->ballInfo.velocity.y;
 				float a = -GRAVITY;
-				float s = 0; 
-				// note decision s=0 makes the landing point actually to be in air, 
+				float s = 0;
+				// note decision s=0 makes the landing point actually to be in air,
 				// but thats convenient for our purposes. so here we count
 				// how many frames will it take for ball to go up and down again so that we can try
 				// to time our batting advancing and animation accordingly. just solve 0 = s + vt + (1/2)at^2
 				// and choose the correct branch and then add a little experience-based tweak.
-				pitchFrameTime = (int)((-v - sqrt(v*v - 2*a*s))/a) + PITCH_FRAME_TIME_TWEAK; 	
+				pitchFrameTime = (int)((-v - sqrt(v*v - 2*a*s))/a) + PITCH_FRAME_TIME_TWEAK;
 				// Here initialize meterCounter and meterCounter max in a way similar to how we initialized those in pitching.
 				// relative distance from the end of meter to the indicator is the same.
 				// difference is that these values are scaled a bit, to allow as slow movement of the indicator as possible
 				// for batting.
-				meterCounter = BAT_SWING_MAX - BAT_LOAD_MAX; 
+				meterCounter = BAT_SWING_MAX - BAT_LOAD_MAX;
 				meterCounterMax = BAT_SWING_MAX;
 				// so allow user to select power
 				stateInfo.localGameInfo->aF.bTAF.swing = 1;
@@ -1322,15 +1322,15 @@ static __inline void updateBatting()
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.model = 15;
 					}
 					// to stop the batting select the hands spread -animation
-					else 
+					else
 					{
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.model = 16;
 					}
 					stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.animationStage = 0;
-					stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.animationStageCount = 34; 
+					stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.animationStageCount = 34;
 					stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.animationFrequency = 3;
 					// give player some speed to use for advancing.
-					// basically we are just guessing some reasonable speed. 
+					// basically we are just guessing some reasonable speed.
 					// but it depends on frame hit count so its explicitly there
 					// for clarity
 					batterAdvanceSpeed = (float)GENERIC_BATTER_ADVANCE_SPEED_CONSTANT/BAT_ANIMATION_FRAME_HIT_COUNT;
@@ -1355,23 +1355,23 @@ static __inline void updateBatting()
 					// set flag to indicate that batting has stopped so that we there wont be checking for if the
 					// bat has hit the ball
 					battingStopped = 1;
-					// set swing to 5 to indicate that theres no 
+					// set swing to 5 to indicate that theres no
 					// further functionality, we just wait for the animation to end.
 					stateInfo.localGameInfo->aF.bTAF.swing = 5;
 				}
 			}
 
 		}
-		// so here we check if the animation has ended and if battingGoingOn is still on, 
-		// so that we dont do this but once. if it is, we set battingGoingOn to zero 
+		// so here we check if the animation has ended and if battingGoingOn is still on,
+		// so that we dont do this but once. if it is, we set battingGoingOn to zero
 		// and move the player towards ready position agian.
-		if((battingFrameCount > pitchFrameTime - 
-			BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) && 
+		if((battingFrameCount > pitchFrameTime -
+			BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
 			stateInfo.localGameInfo->pRAI.battingGoingOn == 1)
 		{
 			Vector3D target;
 			stateInfo.localGameInfo->pRAI.battingGoingOn = 0;
-				
+
 			target.x = (float)(stateInfo.fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(stateInfo.fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			moveToTarget(stateInfo.localGameInfo->pII.batterIndex, &target);
@@ -1391,7 +1391,7 @@ static __inline void updateBatting()
 					float scaleNumber;
 					float zeroNumber;
 					// here is an interesting process of finding the vertical angle ( angle with
-					// the horizontal plane ). we'll leave that as an exercise. 
+					// the horizontal plane ). we'll leave that as an exercise.
 					scaleNumber = (float)(selectedBattingPowerCount + (BAT_SWING_MAX - BAT_LOAD_MAX));
 					zeroNumber = BAT_SWING_MAX*(1.0f*selectedBattingPowerCount / scaleNumber);
 					// ball's y velocity affects the vertical angle
@@ -1430,11 +1430,11 @@ static __inline void updateBatting()
 							stateInfo.localGameInfo->ballInfo.location.x;
 						dy = (float)(sin(alfa) * cos(theta));
 						dz = - (float)(cos(alfa) * cos(theta));
-						dx = (float)sin(theta); 
+						dx = (float)sin(theta);
 
 
 						// make the ball fly in the air with new velocity
-						genericSlingBall(magnitude*dx, magnitude*dy, magnitude*dz); 
+						genericSlingBall(magnitude*dx, magnitude*dy, magnitude*dz);
 						// and the sound
 						stateInfo.playSoundEffect = SOUND_SWING;
 						// bat hits
@@ -1495,7 +1495,7 @@ static __inline void updateMeters()
 	{
 		if(meterCounter < meterCounterMax)
 		{
-			meterCounter += 1;	
+			meterCounter += 1;
 		}
 		// meterValue is used to render info to screen for user.
 		stateInfo.localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
@@ -1506,22 +1506,22 @@ static __inline void updateMeters()
 	{
 		if(meterCounter < meterCounterMax)
 		{
-			meterCounter += 1;	
+			meterCounter += 1;
 		}
 		else
 		{
 			// if counter reaches the maximum, it means animation has
 			// reached its end point and indicator on the meter would go off the meter.
-			// so when this happnes we terminate the pitch. 
+			// so when this happnes we terminate the pitch.
 			// first we set pitch=0 so that we can start a new pitch
 			stateInfo.localGameInfo->aF.cTAF.pitch = 0;
 			stateInfo.localGameInfo->aF.cTAF.actionKeyLock = 0;
 			// and we set pitchGoingOn to 0 to tell other functionality in the code
 			// what happened.
 			stateInfo.localGameInfo->pRAI.pitchGoingOn = 0;
-			// ball is returned to its position with player 
+			// ball is returned to its position with player
 			stateInfo.localGameInfo->ballInfo.location.x = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.x;
-			stateInfo.localGameInfo->ballInfo.location.z = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z;	
+			stateInfo.localGameInfo->ballInfo.location.z = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].tPI.location.z;
 			// and we choose the normal model of fielder having a ball.
 			stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.model = 1;
 		}
@@ -1532,7 +1532,7 @@ static __inline void updateMeters()
 	{
 		if(meterCounter < meterCounterMax)
 		{
-			meterCounter += 1;	
+			meterCounter += 1;
 		}
 		stateInfo.localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
 	}
@@ -1542,7 +1542,7 @@ static __inline void updateMeters()
 	{
 		if(meterCounter < meterCounterMax)
 		{
-			meterCounter += 1;	
+			meterCounter += 1;
 		}
 		stateInfo.localGameInfo->pRAI.swingMeterValue = 1.0f*meterCounter / meterCounterMax;
 	}
@@ -1554,7 +1554,7 @@ static __inline void updateMeters()
 		// if the value is still valid, increase it
 		if(meterCounter < meterCounterMax)
 		{
-			meterCounter += 1;	
+			meterCounter += 1;
 		}
 		// otherwise select angle to be the maximum.
 		else
@@ -1570,7 +1570,7 @@ static __inline void updateMeters()
 		upperLimit = (float)(selectedBattingPowerCount + (BAT_SWING_MAX - BAT_LOAD_MAX)) / BAT_SWING_MAX;
 		lowerLimit = 0.0f;
 		// then we just map the meterCounter value's range to upperLimit-lowerLimit and inverse it
-		stateInfo.localGameInfo->pRAI.swingMeterValue = upperLimit - (1.0f*meterCounter / meterCounterMax) * 
+		stateInfo.localGameInfo->pRAI.swingMeterValue = upperLimit - (1.0f*meterCounter / meterCounterMax) *
 			(upperLimit - lowerLimit);
 	}
 }
@@ -1694,7 +1694,7 @@ static __inline void aiLogic()
 					moveControlledPlayerToLocation(&(stateInfo.localGameInfo->gAI.targetPoint));
 				}
 			}
-			
+
 		}
 		// if someone has ball
 		if(stateInfo.localGameInfo->pII.hasBallIndex != -1)
@@ -1731,7 +1731,7 @@ static __inline void aiLogic()
 					int index = stateInfo.localGameInfo->pII.battingTeamOnFieldIndices[i];
 					if(index != -1)
 					{
-						if(stateInfo.localGameInfo->playerInfo[index].bTPI.isOnBase == 0 && 
+						if(stateInfo.localGameInfo->playerInfo[index].bTPI.isOnBase == 0 &&
 							stateInfo.localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0)
 						{
 							if(stateInfo.localGameInfo->playerInfo[index].bTPI.base > leadBase)
@@ -1754,7 +1754,7 @@ static __inline void aiLogic()
 				}
 				if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;
 				else throwBase = 0;
-			
+
 				if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0)
 				{
 					Vector3D target;
@@ -1766,8 +1766,8 @@ static __inline void aiLogic()
 				}
 				throwBallToBase(throwBase);
 			}
-		}	
-		// if pitcher has the ball and he is in correct position 
+		}
+		// if pitcher has the ball and he is in correct position
 		if(stateInfo.localGameInfo->pII.hasBallIndex == pitcherIndex &&
 			stateInfo.localGameInfo->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1)
 		{
@@ -1780,7 +1780,7 @@ static __inline void aiLogic()
 					int i;
 					int homeLocationFlag = 1;
 					int pitchFlag = 0;
-				
+
 					aiPitchTime++;
 					if(aiPitchTime >= 100)
 					{
@@ -1843,7 +1843,7 @@ static __inline void aiLogic()
 		}
 		aiPitchPreviousTime = aiPitchTime;
 		// this batterReadyTimer is used to give human player a bit more time before AI pitches.
-		if(stateInfo.localGameInfo->pRAI.batterReady == 1 && 
+		if(stateInfo.localGameInfo->pRAI.batterReady == 1 &&
 			stateInfo.localGameInfo->pII.catcherOnBaseIndex[0] == stateInfo.localGameInfo->pII.hasBallIndex &&
 			aiBatterReadyTimer == -1)
 		{
@@ -1908,7 +1908,7 @@ static __inline void aiLogic()
 		if(stateInfo.localGameInfo->gAI.waitingForBatterDecision == 1 && stateInfo.localGameInfo->gAI.ballHome == 1)
 		{
 			// we do this by brute force, we change player until we find a fit one or we are back to non joker.
-			// plan is that if there is a man on first base and current batter would not have a great power, 
+			// plan is that if there is a man on first base and current batter would not have a great power,
 			// we would try to find a joker that has power instead.
 			// and if field is empty we would change a joker with speed instead.
 			int firstBaseIndex = stateInfo.localGameInfo->pII.safeOnBaseIndex[1];
@@ -1920,7 +1920,7 @@ static __inline void aiLogic()
 			if(firstBaseIndex != -1) fieldStatus = 2;
 			else if(secondBaseIndex != -1 || thirdBaseIndex != -1) fieldStatus = 1;
 			else fieldStatus = 0;
-	
+
 
 			if(fieldStatus == 0)
 			{
@@ -1993,7 +1993,7 @@ static __inline void aiLogic()
 				aiChangeHasHappened = 0;
 
 			}
-			
+
 		}
 		else if(stateInfo.localGameInfo->pRAI.batterReady == 1 && stateInfo.localGameInfo->pRAI.pitchInAir == 0 && stateInfo.localGameInfo->gAI.ballHome == 1)
 		{
@@ -2177,7 +2177,7 @@ static __inline void aiLogic()
 			// if we decide that batter should run, we click down once.
 			if(aiRunningBatter == 1)
 			{
-				if(aiBaseRunnerDecisionMade[0] == 0 && aiBaseRunnerKeyDown[0] == 0 && aiBaseRunnerLock[0] == AI_NO_LOCK && 
+				if(aiBaseRunnerDecisionMade[0] == 0 && aiBaseRunnerKeyDown[0] == 0 && aiBaseRunnerLock[0] == AI_NO_LOCK &&
 					aiClickBreak[0] > CLICK_BREAK_CONSTANT)
 				{
 					aiBaseRunnerKeyDown[0] = 1;
@@ -2199,7 +2199,7 @@ static __inline void aiLogic()
 				int i;
 				for(i = 1; i < BASE_COUNT; i++)
 				{
-					if(aiBaseRunnerDecisionMade[i] == 0 && stateInfo.localGameInfo->pII.safeOnBaseIndex[i] != -1 && 
+					if(aiBaseRunnerDecisionMade[i] == 0 && stateInfo.localGameInfo->pII.safeOnBaseIndex[i] != -1 &&
 						stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.safeOnBaseIndex[i]].bTPI.isOnBase == 1 &&
 						aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT)
 					{
@@ -2274,7 +2274,7 @@ static __inline void aiLogic()
 				for(i = 1; i < BASE_COUNT; i++)
 				{
 					int index = stateInfo.localGameInfo->pII.safeOnBaseIndex[i];
-					if(index != -1 && stateInfo.localGameInfo->playerInfo[index].bTPI.goingForward == 1 && aiBaseRunnerKeyDown[i] == 0 && 
+					if(index != -1 && stateInfo.localGameInfo->playerInfo[index].bTPI.goingForward == 1 && aiBaseRunnerKeyDown[i] == 0 &&
 						aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT)
 					{
 						aiBaseRunnerKeyDown[i] = 1;
@@ -2350,7 +2350,7 @@ static __inline void aiLogic()
 						aiDecidedAngle = (float)random / 45.0f;
 					}
 					else
-					{				
+					{
 						random = rand()%33;
 						random = random - 16;
 						aiDecidedAngle = (float)random / 45.0f;
@@ -2427,7 +2427,7 @@ static __inline void aiLogic()
 			aiAngleDecided = 0;
 		}
 		//here we check if ball is going somewhere out of bounds so that players can try to run towards next bases.
-		if(stateInfo.localGameInfo->ballInfo.hasHitGroundOutOfBounds == 1 && stateInfo.localGameInfo->pRAI.batHit == 1 && 
+		if(stateInfo.localGameInfo->ballInfo.hasHitGroundOutOfBounds == 1 && stateInfo.localGameInfo->pRAI.batHit == 1 &&
 			stateInfo.localGameInfo->pRAI.throwGoingToBase == -1 && stateInfo.localGameInfo->pII.hasBallIndex == -1 &&
 			stateInfo.localGameInfo->ballInfo.moving == 1)
 		{
@@ -2479,7 +2479,7 @@ static __inline void aiLogic()
 			else if(aiBaseRunnerKeyDown[i] == 1 && aiBaseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK)
 			{
 				aiBaseRunnerKeyDown[i] = 0;
-				if(aiAmountOfClicks[i] == 1) 
+				if(aiAmountOfClicks[i] == 1)
 				{
 					aiBaseRunnerLock[i] = AI_NO_LOCK;
 					aiAmountOfClicks[i] = 0;
@@ -2495,7 +2495,7 @@ static __inline void aiLogic()
 				else if(i == 2) stateInfo.keyStates->imitateKeyPress[KEY_RIGHT] = 0;
 				else if(i == 3) stateInfo.keyStates->imitateKeyPress[KEY_UP] = 0;
 			}
-						
+
 		}
 
 	}
