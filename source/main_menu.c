@@ -60,13 +60,13 @@ int initMainMenu()
 	TPL_OpenTPLFromMemory(&trophyTPL, (void *)menu_trophy_tpl, menu_trophy_tpl_size);
 	TPL_GetTexture(&trophyTPL, menu_trophy_texture, &trophyTexture);
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/Plane.obj", "Plane",
+	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/hutunkeitto_bat.obj", "Sphere.001",
+	if(tryPreparingMeshGX("data/models/hutunkeitto_bat.obj", "Sphere.001",
 		batMesh, &batListSize, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/hutunkeitto_hand.obj", "Cube.001",
+	if(tryPreparingMeshGX("data/models/hutunkeitto_hand.obj", "Cube.001",
 		handMesh, &handListSize, &handDisplayList) != 0) return -1;
 
 	#else
@@ -84,11 +84,11 @@ int initMainMenu()
 	if(tryLoadingTextureGL(&team7Texture, "../../pc_textures/team7.tga", "team7") != 0) return -1;
 	if(tryLoadingTextureGL(&team8Texture, "../../pc_textures/team8.tga", "team8") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
 	#endif
 
 	if(refreshLoadCups() != 0)

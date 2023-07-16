@@ -22,13 +22,13 @@ int initFont()
 	TPL_OpenTPLFromMemory(&emptyTPL, (void *)empty_background_tpl, empty_background_tpl_size);
 	TPL_GetTexture(&emptyTPL, empty_background, &emptyTexture);
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/Plane.obj", "Plane",
+	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	#else
 	if(tryLoadingTextureGL(&fontTexture, "../../pc_textures/font.tga", "font") != 0) return -1;
 	if(tryLoadingTextureGL(&emptyTexture, "../../pc_textures/empty_background.tga", "empty background") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	#endif
 	return 0;
 }

@@ -383,13 +383,13 @@ static int initPlate()
 	TPL_OpenTPLFromMemory(&plateTPL, (void *)plate_tpl, plate_tpl_size);
 	TPL_GetTexture(&plateTPL, plate, &plateTexture);
 	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/plate.obj", "Cylinder",
+	if(tryPreparingMeshGX("data/models/plate.obj", "Cylinder",
 		plateMesh, &plateListSize, &plateDisplayList) != 0) return -1;
 	#else
 
 	if(tryLoadingTextureGL(&plateTexture, "../../pc_textures/plate.tga", "plate") != 0) return -1;
 	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plate.obj", "Cylinder", plateMesh, &plateDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plate.obj", "Cylinder", plateMesh, &plateDisplayList) != 0) return -1;
 
 	#endif
 	return 0;
@@ -464,7 +464,7 @@ static int initGround()
 	TPL_OpenTPLFromMemory(&groundTPL, (void *)grassTexture_tpl, grassTexture_tpl_size);
 	TPL_GetTexture(&groundTPL, grassTexture, &groundUnit[12].texture);
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/plane.obj", "Plane",
+	if(tryPreparingMeshGX("data/models/plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	#else
 	if(tryLoadingTextureGL(&(groundUnit[0].texture), "../../pc_textures/kentta/osa1.tga", "part1") != 0) return -1;
@@ -481,7 +481,7 @@ static int initGround()
 	if(tryLoadingTextureGL(&(groundUnit[11].texture), "../../pc_textures/kentta/osa12.tga", "part12") != 0) return -1;
 	if(tryLoadingTextureGL(&(groundUnit[12].texture), "../../pc_textures/grassTexture.tga", "grassTexture") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 
 	#endif
 	return 0;

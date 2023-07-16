@@ -38,10 +38,10 @@ int initGameScreen()
 	TPL_OpenTPLFromMemory(&basesMarkerTPL, (void *)basesMarker_tpl, basesMarker_tpl_size);
 	TPL_GetTexture(&basesMarkerTPL, basesMarker, &basesMarkerTexture);
 	skyMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/skybox.obj", "Cube",
+	if(tryPreparingMeshGX("data/models/skybox.obj", "Cube",
 		skyMesh, &skyListSize, &skyDisplayList) != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/Plane.obj", "Plane",
+	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 
 	#else
@@ -52,9 +52,9 @@ int initGameScreen()
 	if(tryLoadingTextureGL(&basesTexture, "../../pc_textures/bases.tga", "bases") != 0) return -1;
 	if(tryLoadingTextureGL(&basesMarkerTexture, "../../pc_textures/basesMarker.tga", "basesMarker") != 0) return -1;
 	skyMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/skybox.obj", "Cube", skyMesh, &skyDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/skybox.obj", "Cube", skyMesh, &skyDisplayList) != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	#endif
 
 	initCamSettings();

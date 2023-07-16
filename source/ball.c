@@ -17,11 +17,11 @@ int initBall()
 	TPL_GetTexture(&ballTPL, pallo, &ballTexture);
 
 	ballMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/pallo.obj", "Icosphere",
+	if(tryPreparingMeshGX("data/models/pallo.obj", "Icosphere",
 		ballMesh, &ballListSize, &ballDisplayList) != 0) return -1;
 	// shadow needs a bit special treatment
 	shadowMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	result = LoadObj("data/shadow.obj", "Circle", shadowMesh);
+	result = LoadObj("data/models/shadow.obj", "Circle", shadowMesh);
 	if(result != 0)
 	{
 		printf("\nError with LoadObj. Error code: %d\n", result);
@@ -39,9 +39,9 @@ int initBall()
 	#else
 	if(tryLoadingTextureGL(&ballTexture, "../../pc_textures/pallo.tga", "ball") != 0) return -1;
 	ballMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/pallo.obj", "Icosphere", ballMesh, &ballDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/pallo.obj", "Icosphere", ballMesh, &ballDisplayList) != 0) return -1;
 	shadowMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/shadow.obj", "Circle", shadowMesh, &shadowDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/shadow.obj", "Circle", shadowMesh, &shadowDisplayList) != 0) return -1;
 	#endif
 
 	return 0;
