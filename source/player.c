@@ -11,23 +11,9 @@
 
 int initPlayer()
 {
-	// here as we can see, there are a lot of .obj files. Not particularly efficient to do animations this way
-	// but i guess its ok. it shouldnt be too slow.
-	char bare_hands_walking_string[75] = "data/models/player_bare_hands_walking/player_bare_hands_walking_000001.obj";
-	char bare_hands_running_string[75] = "data/models/player_bare_hands_running/player_bare_hands_running_000001.obj";
-	char without_ball_walking_string[91] = "data/models/player_glove_without_ball_walking/player_glove_without_ball_walking_000001.obj";
-	char with_ball_walking_string[85] = "data/models/player_glove_with_ball_walking/player_glove_with_ball_walking_000001.obj";
-	char without_ball_running_string[91] = "data/models/player_glove_without_ball_running/player_glove_without_ball_running_000001.obj";
-	char with_ball_running_string[85] = "data/models/player_glove_with_ball_running/player_glove_with_ball_running_000001.obj";
-	char pitch_down_string[40] = "data/models/pitch/pitch_down_000001.obj";
-	char pitch_up_string[38] = "data/models/pitch/pitch_up_000001.obj";
-	char throw_load_string[40] = "data/models/throw/throw_load_000001.obj";
-	char throw_release_string[43] = "data/models/throw/throw_release_000001.obj";
-	char swing_string[37] = "data/models/batting/swing_000001.obj";
-	char bunt_string[36] = "data/models/batting/bunt_000001.obj";
-	char batting_stop_string[44] = "data/models/batting/batting_stop_000001.obj";
 	int i;
-	// 8, 16
+
+	char bare_hands_walking_string[75] = "data/models/player_bare_hands_walking/player_bare_hands_walking_000001.obj";
 	for(i = 0; i < 16; i++)
 	{
 		bare_hands_walking_string[69] = (char)(((int)'0')+(i+1)%10);
@@ -36,6 +22,7 @@ int initPlayer()
 		if(tryPreparingMeshGL(bare_hands_walking_string, "Sphere", playerBareHandsWalkingMesh[i], &(playerBareHandsWalkingDisplayList[i])) != 0) return -1;
 	}
 
+	char bare_hands_running_string[75] = "data/models/player_bare_hands_running/player_bare_hands_running_000001.obj";
 	for(i = 0; i < 20; i++)
 	{
 		bare_hands_running_string[69] = (char)(((int)'0')+(i+1)%10);
@@ -44,6 +31,7 @@ int initPlayer()
 		if(tryPreparingMeshGL(bare_hands_running_string, "Sphere", playerBareHandsRunningMesh[i], &playerBareHandsRunningDisplayList[i]) != 0) return -1;
 	}
 
+	char without_ball_walking_string[91] = "data/models/player_glove_without_ball_walking/player_glove_without_ball_walking_000001.obj";
 	for(i = 0; i < 16; i++)
 	{
 		without_ball_walking_string[85] = (char)(((int)'0')+(i+1)%10);
@@ -52,6 +40,7 @@ int initPlayer()
 		if(tryPreparingMeshGL(without_ball_walking_string, "Cube", playerGloveWithoutBallWalkingMesh[i], &playerGloveWithoutBallWalkingDisplayList[i]) != 0) return -1;
 	}
 
+	char with_ball_walking_string[85] = "data/models/player_glove_with_ball_walking/player_glove_with_ball_walking_000001.obj";
 	for(i = 0; i < 16; i++)
 	{
 		with_ball_walking_string[79] = (char)(((int)'0')+(i+1)%10);
@@ -60,6 +49,7 @@ int initPlayer()
 		if(tryPreparingMeshGL(with_ball_walking_string, "Cube", playerGloveWithBallWalkingMesh[i], &playerGloveWithBallWalkingDisplayList[i]) != 0) return -1;
 	}
 
+	char without_ball_running_string[91] = "data/models/player_glove_without_ball_running/player_glove_without_ball_running_000001.obj";
 	for(i = 0; i < 20; i++)
 	{
 		without_ball_running_string[85] = (char)(((int)'0')+(i+1)%10);
@@ -67,6 +57,8 @@ int initPlayer()
 		playerGloveWithoutBallRunningMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(without_ball_running_string, "Cube", playerGloveWithoutBallRunningMesh[i], &playerGloveWithoutBallRunningDisplayList[i]) != 0) return -1;
 	}
+
+	char with_ball_running_string[85] = "data/models/player_glove_with_ball_running/player_glove_with_ball_running_000001.obj";
 	for(i = 0; i < 20; i++)
 	{
 		with_ball_running_string[79] = (char)(((int)'0')+(i+1)%10);
@@ -74,6 +66,8 @@ int initPlayer()
 		playerGloveWithBallRunningMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(with_ball_running_string, "Cube", playerGloveWithBallRunningMesh[i], &playerGloveWithBallRunningDisplayList[i]) != 0) return -1;
 	}
+
+	char pitch_down_string[40] = "data/models/pitch/pitch_down_000001.obj";
 	for(i = 0; i < 9; i++)
 	{
 
@@ -82,6 +76,8 @@ int initPlayer()
 		pitchDownMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(pitch_down_string, "Cube", pitchDownMesh[i], &pitchDownDisplayList[i]) != 0) return -1;
 	}
+
+	char pitch_up_string[38] = "data/models/pitch/pitch_up_000001.obj";
 	for(i = 0; i < 13; i++)
 	{
 		pitch_up_string[32] = (char)(((int)'0')+(i+1)%10);
@@ -90,7 +86,7 @@ int initPlayer()
 		if(tryPreparingMeshGL(pitch_up_string, "Cube", pitchUpMesh[i], &pitchUpDisplayList[i]) != 0) return -1;
 	}
 
-
+	char throw_load_string[40] = "data/models/throw/throw_load_000001.obj";
 	for(i = 0; i < 11; i++)
 	{
 		throw_load_string[34] = (char)(((int)'0')+(i+1)%10);
@@ -98,6 +94,8 @@ int initPlayer()
 		throwLoadMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(throw_load_string, "Cube", throwLoadMesh[i], &throwLoadDisplayList[i]) != 0) return -1;
 	}
+
+	char throw_release_string[43] = "data/models/throw/throw_release_000001.obj";
 	for(i = 0; i < 21; i++)
 	{
 		throw_release_string[37] = (char)(((int)'0')+(i+1)%10);
@@ -105,6 +103,8 @@ int initPlayer()
 		throwReleaseMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(throw_release_string, "Cube", throwReleaseMesh[i], &throwReleaseDisplayList[i]) != 0) return -1;
 	}
+
+	char swing_string[37] = "data/models/batting/swing_000001.obj";
 	for(i = 0; i < 34; i++)
 	{
 		swing_string[31] = (char)(((int)'0')+(i+1)%10);
@@ -112,6 +112,8 @@ int initPlayer()
 		swingMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(swing_string, "Sphere", swingMesh[i], &swingDisplayList[i]) != 0) return -1;
 	}
+
+	char bunt_string[36] = "data/models/batting/bunt_000001.obj";
 	for(i = 0; i < 34; i++)
 	{
 		bunt_string[30] = (char)(((int)'0')+(i+1)%10);
@@ -119,6 +121,8 @@ int initPlayer()
 		buntMesh[i] = (MeshObject *)malloc ( sizeof(MeshObject));
 		if(tryPreparingMeshGL(bunt_string, "Sphere", buntMesh[i], &buntDisplayList[i]) != 0) return -1;
 	}
+
+	char batting_stop_string[44] = "data/models/batting/batting_stop_000001.obj";
 	for(i = 0; i < 34; i++)
 	{
 		batting_stop_string[38] = (char)(((int)'0')+(i+1)%10);
