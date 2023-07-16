@@ -45,12 +45,12 @@ int initGameScreen()
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 
 	#else
-	if(tryLoadingTextureGL(&skyTexture, "../../pc_textures/skybox.tga", "sky") != 0) return -1;
-	if(tryLoadingTextureGL(&meterTexture, "../../pc_textures/meter.tga", "meter") != 0) return -1;
-	if(tryLoadingTextureGL(&selectionTextureBatting, "../../pc_textures/selectionBall1.tga", "selection1") != 0) return -1;
-	if(tryLoadingTextureGL(&selectionTextureFielding, "../../pc_textures/selectionBall3.tga", "selection3") != 0) return -1;
-	if(tryLoadingTextureGL(&basesTexture, "../../pc_textures/bases.tga", "bases") != 0) return -1;
-	if(tryLoadingTextureGL(&basesMarkerTexture, "../../pc_textures/basesMarker.tga", "basesMarker") != 0) return -1;
+	if(tryLoadingTextureGL(&skyTexture, "data/textures/skybox.tga", "sky") != 0) return -1;
+	if(tryLoadingTextureGL(&meterTexture, "data/textures/meter.tga", "meter") != 0) return -1;
+	if(tryLoadingTextureGL(&selectionTextureBatting, "data/textures/selectionBall1.tga", "selection1") != 0) return -1;
+	if(tryLoadingTextureGL(&selectionTextureFielding, "data/textures/selectionBall3.tga", "selection3") != 0) return -1;
+	if(tryLoadingTextureGL(&basesTexture, "data/textures/bases.tga", "bases") != 0) return -1;
+	if(tryLoadingTextureGL(&basesMarkerTexture, "data/textures/basesMarker.tga", "basesMarker") != 0) return -1;
 	skyMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/skybox.obj", "Cube", skyMesh, &skyDisplayList) != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));

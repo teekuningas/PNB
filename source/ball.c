@@ -37,7 +37,7 @@ int initBall()
 	shadowListSize = prepareMesh(shadowMesh, &shadowDisplayList);
 
 	#else
-	if(tryLoadingTextureGL(&ballTexture, "../../pc_textures/pallo.tga", "ball") != 0) return -1;
+	if(tryLoadingTextureGL(&ballTexture, "data/textures/pallo.tga", "ball") != 0) return -1;
 	ballMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/pallo.obj", "Icosphere", ballMesh, &ballDisplayList) != 0) return -1;
 	shadowMesh = (MeshObject *)malloc ( sizeof(MeshObject));

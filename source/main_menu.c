@@ -70,19 +70,19 @@ int initMainMenu()
 		handMesh, &handListSize, &handDisplayList) != 0) return -1;
 
 	#else
-	if(tryLoadingTextureGL(&arrowTexture, "../../pc_textures/arrow.tga", "arrow") != 0) return -1;
-	if(tryLoadingTextureGL(&catcherTexture, "../../pc_textures/catcher.tga", "catcher") != 0) return -1;
-	if(tryLoadingTextureGL(&batterTexture, "../../pc_textures/batter.tga", "batter") != 0) return -1;
-	if(tryLoadingTextureGL(&slotTexture, "../../pc_textures/cup_tree_slot.tga", "slot") != 0) return -1;
-	if(tryLoadingTextureGL(&trophyTexture, "../../pc_textures/menu_trophy.tga", "trophy") != 0) return -1;
-	if(tryLoadingTextureGL(&team1Texture, "../../pc_textures/team1.tga", "team1") != 0) return -1;
-	if(tryLoadingTextureGL(&team2Texture, "../../pc_textures/team2.tga", "team2") != 0) return -1;
-	if(tryLoadingTextureGL(&team3Texture, "../../pc_textures/team3.tga", "team3") != 0) return -1;
-	if(tryLoadingTextureGL(&team4Texture, "../../pc_textures/team4.tga", "team4") != 0) return -1;
-	if(tryLoadingTextureGL(&team5Texture, "../../pc_textures/team5.tga", "team5") != 0) return -1;
-	if(tryLoadingTextureGL(&team6Texture, "../../pc_textures/team6.tga", "team6") != 0) return -1;
-	if(tryLoadingTextureGL(&team7Texture, "../../pc_textures/team7.tga", "team7") != 0) return -1;
-	if(tryLoadingTextureGL(&team8Texture, "../../pc_textures/team8.tga", "team8") != 0) return -1;
+	if(tryLoadingTextureGL(&arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
+	if(tryLoadingTextureGL(&catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
+	if(tryLoadingTextureGL(&batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
+	if(tryLoadingTextureGL(&slotTexture, "data/textures/cup_tree_slot.tga", "slot") != 0) return -1;
+	if(tryLoadingTextureGL(&trophyTexture, "data/textures/menu_trophy.tga", "trophy") != 0) return -1;
+	if(tryLoadingTextureGL(&team1Texture, "data/textures/team1.tga", "team1") != 0) return -1;
+	if(tryLoadingTextureGL(&team2Texture, "data/textures/team2.tga", "team2") != 0) return -1;
+	if(tryLoadingTextureGL(&team3Texture, "data/textures/team3.tga", "team3") != 0) return -1;
+	if(tryLoadingTextureGL(&team4Texture, "data/textures/team4.tga", "team4") != 0) return -1;
+	if(tryLoadingTextureGL(&team5Texture, "data/textures/team5.tga", "team5") != 0) return -1;
+	if(tryLoadingTextureGL(&team6Texture, "data/textures/team6.tga", "team6") != 0) return -1;
+	if(tryLoadingTextureGL(&team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
+	if(tryLoadingTextureGL(&team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));

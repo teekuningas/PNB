@@ -371,7 +371,7 @@ static int initFence()
 	TPL_OpenTPLFromMemory(&fenceTPL, (void *)fence_tpl, fence_tpl_size);
 	TPL_GetTexture(&fenceTPL, fence, &fenceTexture);
 	#else
-	if(tryLoadingTextureGL(&fenceTexture, "../../pc_textures/fence.tga", "fence") != 0) return -1;
+	if(tryLoadingTextureGL(&fenceTexture, "data/textures/fence.tga", "fence") != 0) return -1;
 	#endif
 
 	return 0;
@@ -387,7 +387,7 @@ static int initPlate()
 		plateMesh, &plateListSize, &plateDisplayList) != 0) return -1;
 	#else
 
-	if(tryLoadingTextureGL(&plateTexture, "../../pc_textures/plate.tga", "plate") != 0) return -1;
+	if(tryLoadingTextureGL(&plateTexture, "data/textures/plate.tga", "plate") != 0) return -1;
 	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plate.obj", "Cylinder", plateMesh, &plateDisplayList) != 0) return -1;
 
@@ -467,19 +467,19 @@ static int initGround()
 	if(tryPreparingMeshGX("data/models/plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	#else
-	if(tryLoadingTextureGL(&(groundUnit[0].texture), "../../pc_textures/kentta/osa1.tga", "part1") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[1].texture), "../../pc_textures/kentta/osa2.tga", "part2") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[2].texture), "../../pc_textures/kentta/osa3.tga", "part3") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[3].texture), "../../pc_textures/kentta/osa4.tga", "part4") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[4].texture), "../../pc_textures/kentta/osa5.tga", "part5") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[5].texture), "../../pc_textures/kentta/osa6.tga", "part6") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[6].texture), "../../pc_textures/kentta/osa7.tga", "part7") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[7].texture), "../../pc_textures/kentta/osa8.tga", "part8") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[8].texture), "../../pc_textures/kentta/osa9.tga", "part9") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[9].texture), "../../pc_textures/kentta/osa10.tga", "part10") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[10].texture), "../../pc_textures/kentta/osa11.tga", "part11") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[11].texture), "../../pc_textures/kentta/osa12.tga", "part12") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[12].texture), "../../pc_textures/grassTexture.tga", "grassTexture") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[0].texture), "data/textures/kentta/osa1.tga", "part1") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[1].texture), "data/textures/kentta/osa2.tga", "part2") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[2].texture), "data/textures/kentta/osa3.tga", "part3") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[3].texture), "data/textures/kentta/osa4.tga", "part4") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[4].texture), "data/textures/kentta/osa5.tga", "part5") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[5].texture), "data/textures/kentta/osa6.tga", "part6") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[6].texture), "data/textures/kentta/osa7.tga", "part7") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[7].texture), "data/textures/kentta/osa8.tga", "part8") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[8].texture), "data/textures/kentta/osa9.tga", "part9") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[9].texture), "data/textures/kentta/osa10.tga", "part10") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[10].texture), "data/textures/kentta/osa11.tga", "part11") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[11].texture), "data/textures/kentta/osa12.tga", "part12") != 0) return -1;
+	if(tryLoadingTextureGL(&(groundUnit[12].texture), "data/textures/grassTexture.tga", "grassTexture") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 

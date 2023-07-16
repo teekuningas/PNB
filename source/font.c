@@ -25,8 +25,8 @@ int initFont()
 	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
 		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
 	#else
-	if(tryLoadingTextureGL(&fontTexture, "../../pc_textures/font.tga", "font") != 0) return -1;
-	if(tryLoadingTextureGL(&emptyTexture, "../../pc_textures/empty_background.tga", "empty background") != 0) return -1;
+	if(tryLoadingTextureGL(&fontTexture, "data/textures/font.tga", "font") != 0) return -1;
+	if(tryLoadingTextureGL(&emptyTexture, "data/textures/empty_background.tga", "empty background") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	#endif
