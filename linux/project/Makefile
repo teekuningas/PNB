@@ -21,6 +21,10 @@ obj/%.o: ../../source/%.c
 main: $(OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
+.PHONY: run
+run:
+	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main
+
 .PHONY: clean
 clean:
 	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~ 
