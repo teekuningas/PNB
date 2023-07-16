@@ -1,9 +1,9 @@
-IDIR =../../src
+IDIR=./src
 CC=gcc
 CFLAGS=-I$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm
 ODIR=obj
-SRCDIR=../../src
+SRCDIR=./src
 
 _OBJ = main.o action_implementation.o action_invocations.o
 _OBJ += ai_logic.o ball.o fill_player_data.o font.o
@@ -14,7 +14,7 @@ _OBJ += player.o render.o simplexml.o
 _OBJ += sound.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-obj/%.o: ../../src/%.c
+obj/%.o: $(SRCDIR)/%.c
 	mkdir -p obj
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
