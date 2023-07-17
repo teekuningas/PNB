@@ -8,8 +8,7 @@ void drawMesh(MeshObject* mesh)
 	unsigned int i;
 
 	glBegin(GL_TRIANGLES);
-	for (i = 0; i < (mesh->uFaceCount*12); i += 4)
-	{
+	for (i = 0; i < (mesh->uFaceCount*12); i += 4) {
 		glTexCoord2fv(&(mesh->fTexCoordIndex)[2*(mesh->uFaceList)[i+3]]);
 		glNormal3fv(&(mesh->fNormalIndex)[3*(mesh->uFaceList)[i+1]]);
 		glVertex3fv(&(mesh->fPositionIndex)[3*(mesh->uFaceList)[i]]);
@@ -20,8 +19,7 @@ void drawMesh(MeshObject* mesh)
 
 void cleanMesh(MeshObject* mesh)
 {
-	if(mesh != NULL)
-	{
+	if(mesh != NULL) {
 		free(mesh->uFaceList);
 		free(mesh->fPositionIndex);
 		free(mesh->fNormalIndex);
@@ -46,8 +44,7 @@ int tryLoadingTextureGL(GLuint* texture, const char* filename, const char* name)
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
 	result = glfwLoadTexture2D(filename, GLFW_BUILD_MIPMAPS_BIT);
-	if(result != 1)
-	{
+	if(result != 1) {
 		printf("\n Couldn't load %s texture.", name);
 		return -1;
 	}
@@ -63,8 +60,7 @@ int tryPreparingMeshGL(char* filename, char* objectname, MeshObject* mesh, GLuin
 	int result;
 	// load from obj file to mesh-struct
 	result = LoadObj (filename, objectname, mesh) ;
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("\nError with LoadObj. Error code: %d\n", result);
 		return -1;
 	}

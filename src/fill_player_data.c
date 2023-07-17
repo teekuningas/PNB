@@ -17,7 +17,7 @@ static int teamCounter = 0;
 static int playerCounter = 0;
 
 void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
-	const char* szName, const char* szAttribute, const char* szValue);
+               const char* szName, const char* szAttribute, const char* szValue);
 void parse (char* sData, long nDataLen);
 
 void trim (const char* szInput, char* szOutput);
@@ -25,7 +25,7 @@ char* getReadFileDataErrorDescription (int nError);
 int readFileData (char* sFileName, char** sData, long *pnDataLen);
 
 void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
-	const char* szName, const char* szAttribute, const char* szValue)
+               const char* szName, const char* szAttribute, const char* szValue)
 {
 
 	char szHandlerName[32], szHandlerAttribute[32], szHandlerValue[32];
@@ -42,47 +42,32 @@ void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 	}
 
 	if (event == ADD_ATTRIBUTE) {
-		if(szHandlerValue[0] == 't')
-		{
+		if(szHandlerValue[0] == 't') {
 			teamDataPtr[teamCounter].id = ownstrdup(szHandlerValue);
 			teamCounter++;
 			playerCounter = 0;
-		}
-		else if(szHandlerValue[0] == 'p')
-		{
+		} else if(szHandlerValue[0] == 'p') {
 			teamDataPtr[teamCounter-1].players[playerCounter].id = ownstrdup(szHandlerValue);
 			playerCounter++;
 		}
 
 	} else if (event == ADD_CONTENT) {
 
-		if(strcmp(szHandlerName, "player") == 0)
-		{
+		if(strcmp(szHandlerName, "player") == 0) {
 
-		}
-		else if(strcmp(szHandlerName, "players") == 0 || strcmp(szHandlerName, "teams") == 0
-			|| strcmp(szHandlerName, "team") == 0)
-		{
-		}
-		else
-		{
+		} else if(strcmp(szHandlerName, "players") == 0 || strcmp(szHandlerName, "teams") == 0
+		          || strcmp(szHandlerName, "team") == 0) {
+		} else {
 
-			if(strcmp(szHandlerName, "name") == 0)
-			{
+			if(strcmp(szHandlerName, "name") == 0) {
 				teamDataPtr[teamCounter-1].players[playerCounter-1].name = ownstrdup(szHandlerValue);
-			}
-			else if(strcmp(szHandlerName, "team_name") == 0)
-			{
+			} else if(strcmp(szHandlerName, "team_name") == 0) {
 
 				teamDataPtr[teamCounter-1].name = ownstrdup(szHandlerValue);
-			}
-			else if(strcmp(szHandlerName, "speed") == 0)
-			{
+			} else if(strcmp(szHandlerName, "speed") == 0) {
 				int i = atoi (szHandlerValue);
 				teamDataPtr[teamCounter-1].players[playerCounter-1].speed = i;
-			}
-			else if(strcmp(szHandlerName, "power") == 0)
-			{
+			} else if(strcmp(szHandlerName, "power") == 0) {
 				int i = atoi (szHandlerValue);
 				teamDataPtr[teamCounter-1].players[playerCounter-1].power = i;
 			}
@@ -93,7 +78,8 @@ void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
 	return handler;
 }
 
-void parse (char* sData, long nDataLen) {
+void parse (char* sData, long nDataLen)
+{
 	SimpleXmlParser parser= simpleXmlCreateParser(sData, nDataLen);
 	if (parser == NULL) {
 		fprintf(stderr, "couldn't create parser");
@@ -102,12 +88,13 @@ void parse (char* sData, long nDataLen) {
 
 	if (simpleXmlParse(parser, handler) != 0) {
 		fprintf(stderr, "parse error on line %li:\n%s\n",
-			simpleXmlGetLineNumber(parser), simpleXmlGetErrorDescription(parser));
+		        simpleXmlGetLineNumber(parser), simpleXmlGetErrorDescription(parser));
 	}
 
 }
 
-void trim (const char* szInput, char* szOutput) {
+void trim (const char* szInput, char* szOutput)
+{
 	int i= 0;
 	while (szInput[i] != 0 && i < 32) {
 		if (szInput[i] < ' ') {
@@ -134,7 +121,8 @@ void trim (const char* szInput, char* szOutput) {
 #define READ_FILE_OUT_OF_MEMORY 3
 #define READ_FILE_READ_ERROR 4
 
-int readFileData (char* sFileName, char** psData, long *pnDataLen) {
+int readFileData (char* sFileName, char** psData, long *pnDataLen)
+{
 	struct stat fstat;
 	*psData= NULL;
 	*pnDataLen= 0;
@@ -163,13 +151,19 @@ int readFileData (char* sFileName, char** psData, long *pnDataLen) {
 	}
 }
 
-char* getReadFileDataErrorDescription (int nError) {
+char* getReadFileDataErrorDescription (int nError)
+{
 	switch (nError) {
-		case READ_FILE_NO_ERROR: return "no error";
-		case READ_FILE_STAT_ERROR: return "no such file";
-		case READ_FILE_OPEN_ERROR: return "couldn't open file";
-		case READ_FILE_OUT_OF_MEMORY: return "out of memory";
-		case READ_FILE_READ_ERROR: return "couldn't read file";
+	case READ_FILE_NO_ERROR:
+		return "no error";
+	case READ_FILE_STAT_ERROR:
+		return "no such file";
+	case READ_FILE_OPEN_ERROR:
+		return "couldn't open file";
+	case READ_FILE_OUT_OF_MEMORY:
+		return "out of memory";
+	case READ_FILE_READ_ERROR:
+		return "couldn't read file";
 	}
 	return "unknown error";
 }
@@ -186,26 +180,22 @@ int fillPlayerData(TeamData* teamData)
 	nResult= readFileData(name, &sData, &nDataLen);
 	if (nResult != 0) {
 		fprintf(stderr, "couldn't read %s (%s).\n", name,
-			getReadFileDataErrorDescription(nResult));
+		        getReadFileDataErrorDescription(nResult));
 		return -1;
 	}
 	parse(sData, nDataLen);
 	free(sData);
 
 	// check if contents are "valid"
-	for(i = 0; i < TEAM_COUNT; i++)
-	{
-		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++)
-		{
+	for(i = 0; i < TEAM_COUNT; i++) {
+		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
 			if(!(teamData[i].players[j].power >= 1 && teamData[i].players[j].power <= 5 &&
-				teamData[i].players[j].speed >= 1 && teamData[i].players[j].speed <= 5))
-			{
+			        teamData[i].players[j].speed >= 1 && teamData[i].players[j].speed <= 5)) {
 				valid = 0;
 			}
 		}
 	}
-	if(valid == 0)
-	{
+	if(valid == 0) {
 		printf("Invalid player data\n");
 		return -1;
 	}
@@ -217,12 +207,10 @@ int cleanPlayerData()
 {
 	int i, j;
 	// clean up
-	for(i = 0; i < TEAM_COUNT; i++)
-	{
+	for(i = 0; i < TEAM_COUNT; i++) {
 		free(teamDataPtr[i].id);
 		free(teamDataPtr[i].name);
-		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++)
-		{
+		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
 			free(teamDataPtr[i].players[j].id);
 			free(teamDataPtr[i].players[j].name);
 		}

@@ -9,10 +9,8 @@ int initInput()
 {
 	int i, j;
 	stateInfo.keyStates = &keyStates;
-	for(j = 0; j < 3; j++)
-	{
-		for(i = 0; i < KEY_COUNT; i++)
-		{
+	for(j = 0; j < 3; j++) {
+		for(i = 0; i < KEY_COUNT; i++) {
 			keyStates.released[j][i] = 0;
 			keyStates.down[j][i] = 0;
 			buttonsJustReleased[j][i] = 0;
@@ -28,20 +26,14 @@ int initInput()
 // and released is 1 only for one frame just after the key was released.
 static __inline void keyCheckL(const char letter, int keyCode, int index)
 {
-	if(glfwGetKey(letter) == GLFW_PRESS)
-	{
+	if(glfwGetKey(letter) == GLFW_PRESS) {
 		keyStates.down[index][keyCode] = 1;
-	}
-	else
-	{
-		if(keyStates.down[index][keyCode] == 1)
-		{
+	} else {
+		if(keyStates.down[index][keyCode] == 1) {
 			keyStates.released[index][keyCode] = 1;
 			keyStates.down[index][keyCode] = 0;
 			buttonsJustReleased[index][keyCode] = 1;
-		}
-		else if(buttonsJustReleased[index][keyCode] == 1)
-		{
+		} else if(buttonsJustReleased[index][keyCode] == 1) {
 			buttonsJustReleased[index][keyCode] = 0;
 			keyStates.released[index][keyCode] = 0;
 		}
@@ -50,20 +42,14 @@ static __inline void keyCheckL(const char letter, int keyCode, int index)
 
 static __inline void keyCheckS(int special, int keyCode, int index)
 {
-	if(glfwGetKey(special) == GLFW_PRESS)
-	{
+	if(glfwGetKey(special) == GLFW_PRESS) {
 		keyStates.down[index][keyCode] = 1;
-	}
-	else
-	{
-		if(keyStates.down[index][keyCode] == 1)
-		{
+	} else {
+		if(keyStates.down[index][keyCode] == 1) {
 			keyStates.released[index][keyCode] = 1;
 			keyStates.down[index][keyCode] = 0;
 			buttonsJustReleased[index][keyCode] = 1;
-		}
-		else if(buttonsJustReleased[index][keyCode] == 1)
-		{
+		} else if(buttonsJustReleased[index][keyCode] == 1) {
 			buttonsJustReleased[index][keyCode] = 0;
 			keyStates.released[index][keyCode] = 0;
 		}
@@ -73,22 +59,15 @@ static __inline void keyCheckS(int special, int keyCode, int index)
 static __inline void checkKeyImitations()
 {
 	int i;
-	for(i = 0; i < KEY_COUNT; i++)
-	{
-		if(stateInfo.keyStates->imitateKeyPress[i] == 1)
-		{
+	for(i = 0; i < KEY_COUNT; i++) {
+		if(stateInfo.keyStates->imitateKeyPress[i] == 1) {
 			keyStates.down[2][i] = 1;
-		}
-		else
-		{
-			if(keyStates.down[2][i] == 1)
-			{
+		} else {
+			if(keyStates.down[2][i] == 1) {
 				keyStates.released[2][i] = 1;
 				keyStates.down[2][i] = 0;
 				buttonsJustReleased[2][i] = 1;
-			}
-			else if(buttonsJustReleased[2][i] == 1)
-			{
+			} else if(buttonsJustReleased[2][i] == 1) {
 				buttonsJustReleased[2][i] = 0;
 				keyStates.released[2][i] = 0;
 			}

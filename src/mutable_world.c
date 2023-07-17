@@ -23,16 +23,14 @@ int initMutableWorld()
 	stateInfo.globalGameInfo = &globalGameInfo;
 
 	result = initPlayer();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init player. Exiting.");
 		return -1;
 	}
 
 
 	result = initBall();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init ball. Exiting.");
 		return -1;
 	}
@@ -46,8 +44,7 @@ int initMutableWorld()
 
 void updateMutableWorld()
 {
-	if(stateInfo.localGameInfo->gAI.pause == 0)
-	{
+	if(stateInfo.localGameInfo->gAI.pause == 0) {
 		gameAnalysis();
 		actionInvocations();
 		actionImplementation();
@@ -57,8 +54,7 @@ void updateMutableWorld()
 void drawMutableWorld(double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
-	if(stateInfo.localGameInfo->gAI.pause == 0)
-	{
+	if(stateInfo.localGameInfo->gAI.pause == 0) {
 		drawPlayer(alpha, localGameInfo.playerInfo);
 		drawBall(alpha, &(localGameInfo.ballInfo));
 	}
@@ -67,16 +63,14 @@ int cleanMutableWorld()
 {
 	int result;
 	result = cleanBall();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean ball properly.\n");
 		return -1;
 	}
 	result = cleanPlayer();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean player properly.\n");
 		return -1;
 	}
-		return 0;
+	return 0;
 }

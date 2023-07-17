@@ -12,6 +12,7 @@ static int update();
 
 StateInfo stateInfo;
 
-static TeamData teamData[TEAM_COUNT]; // 4 teams
+// 4 teams
+static TeamData teamData[TEAM_COUNT];
 
 #endif /* MAIN_INTERNAL */

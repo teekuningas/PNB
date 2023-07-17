@@ -9,14 +9,12 @@
 void aiLogic()
 {
 	int battingTeamIndex = (stateInfo.globalGameInfo->
-		inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
+	                        inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
 	int catchingTeamIndex = (battingTeamIndex+1)%2;
-	if(stateInfo.globalGameInfo->teams[battingTeamIndex].control == 2)
-	{
+	if(stateInfo.globalGameInfo->teams[battingTeamIndex].control == 2) {
 
 	}
-	if(stateInfo.globalGameInfo->teams[catchingTeamIndex].control == 2)
-	{
+	if(stateInfo.globalGameInfo->teams[catchingTeamIndex].control == 2) {
 
 	}
 }

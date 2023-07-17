@@ -23,29 +23,24 @@ int main ( int argc, char *argv[] )
 	unsigned int currentTime = 0;
 	unsigned int newTime;
 	unsigned int frameTime;
-    unsigned int accumulator = 0;
+	unsigned int accumulator = 0;
 	unsigned int updateInterval = UPDATE_INTERVAL;
-	if(argc >= 2)
-	{
+	if(argc >= 2) {
 		fullscreen = 0;
-	}
-	else
-	{
+	} else {
 		fullscreen = 1;
 	}
 
 	printf("v. 1.0.1\n");
 
-		result = initGL();
-		if(result != 0)
-		{
-			printf("Could not init GL. Exiting.");
-			return -1;
-		}
+	result = initGL();
+	if(result != 0) {
+		printf("Could not init GL. Exiting.");
+		return -1;
+	}
 
 	result = fillPlayerData(&(teamData[0]));
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init team data. Exiting.");
 		return -1;
 	}
@@ -54,27 +49,23 @@ int main ( int argc, char *argv[] )
 	srand ( (unsigned int)time(NULL) );
 
 	result = initMainMenu();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init main menu. Exiting.");
 		return -1;
 	}
 
 	result = initInput();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init input. Exiting.");
 		return -1;
 	}
 	result = initSound();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init sound system. Exiting.");
 		return -1;
 	}
 	result = initFont();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init font. Exiting.");
 		return -1;
 	}
@@ -88,8 +79,7 @@ int main ( int argc, char *argv[] )
 	draw(1.0);
 
 	result = initGameScreen();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init game screen. Exiting.");
 		return -1;
 	}
@@ -99,27 +89,24 @@ int main ( int argc, char *argv[] )
 	stateInfo.updated = 0;
 
 	// to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
-	while(done == 0)
-	{
+	while(done == 0) {
 		newTime = (unsigned int)(1000*glfwGetTime());
 		frameTime = newTime - currentTime;
 		currentTime = newTime;
 		accumulator += frameTime;
 		// update the scene every 20ms and if for some reason there is delay, keep updating until catched up
-        while ( accumulator >= updateInterval )
-        {
+		while ( accumulator >= updateInterval ) {
 			result = update();
 			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;
-            accumulator -= updateInterval;
-        }
+			accumulator -= updateInterval;
+		}
 
 		alpha = (double)accumulator / updateInterval;
 		// draw the scene, alpha will give us nice little smoothing effect.
 		// like if we are in the middle of updateInterval, the "real" position of the object
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
 		// so we will draw it to the middle.
-		if(stateInfo.updated == 1)
-		{
+		if(stateInfo.updated == 1) {
 			draw(alpha);
 		}
 
@@ -127,8 +114,7 @@ int main ( int argc, char *argv[] )
 	}
 	// and we will clean up when everything ends
 	result = clean();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Cleaning up unsuccessful. Exiting anyway.");
 		return -1;
 	}
@@ -141,14 +127,14 @@ static int update()
 	updateInput();
 	updateSound();
 	switch(stateInfo.screen) {
-		case GAME_SCREEN:
-			updateGameScreen();
-			break;
-		case MAIN_MENU:
-			updateMainMenu();
-			break;
-		default:
-			return 1;
+	case GAME_SCREEN:
+		updateGameScreen();
+		break;
+	case MAIN_MENU:
+		updateMainMenu();
+		break;
+	default:
+		return 1;
 	}
 	return 0;
 }
@@ -157,12 +143,12 @@ static int update()
 static void draw(double alpha)
 {
 	switch(stateInfo.screen) {
-		case GAME_SCREEN:
-			drawGameScreen(alpha);
-			break;
-		case MAIN_MENU:
-			drawMainMenu(alpha);
-			break;
+	case GAME_SCREEN:
+		drawGameScreen(alpha);
+		break;
+	case MAIN_MENU:
+		drawMainMenu(alpha);
+		break;
 	}
 	glfwSwapBuffers();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -175,22 +161,19 @@ static int initGL()
 	int width;
 	int height;
 	// First we'll just initialize GLFW so that we get a nice window.
-	if( !glfwInit() )
-	{
+	if( !glfwInit() ) {
 		fprintf( stderr, "Failed to initialize GLFW\n" );
 		printf("init");
 		return -1;
 	}
-	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4); // 4x antialiasing
+	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4);
 	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
 	// Open a window and create its OpenGL context
-	if(fullscreen == 0)
-	{
+	if(fullscreen == 0) {
 		glfwGetDesktopMode(&mode);
 		width = (int)(mode.Width * (3.0/4));
 		height = (int)(mode.Height * (3.0/4));
-		if( !glfwOpenWindow( 0, 0, 0,0,0,0, 32,0, GLFW_WINDOW ) )
-		{
+		if( !glfwOpenWindow( 0, 0, 0,0,0,0, 32,0, GLFW_WINDOW ) ) {
 			fprintf( stderr, "Failed to open GLFW window\n" );
 			printf("window");
 			glfwTerminate();
@@ -200,14 +183,11 @@ static int initGL()
 		glfwSetWindowSize(width, height);
 		glfwSetWindowPos( (mode.Width - width) / 2, 0);
 
-	}
-	else
-	{
+	} else {
 		glfwGetDesktopMode(&mode);
 		width = mode.Width;
 		height = mode.Height;
-		if( !glfwOpenWindow( width, height, 0,0,0,0, 32,0, GLFW_FULLSCREEN ) )
-		{
+		if( !glfwOpenWindow( width, height, 0,0,0,0, 32,0, GLFW_FULLSCREEN ) ) {
 			fprintf( stderr, "Failed to open GLFW window\n" );
 			printf("window");
 			glfwTerminate();
@@ -225,25 +205,25 @@ static int initGL()
 	glfwSwapInterval(0);
 	// and then initialize openGL settings. nothing really weird here.
 	glEnable( GL_TEXTURE_2D );
-	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);				// Black Background
-	glClearDepth(1.0f);									// Depth Buffer Setup
-	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
-	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
+	glShadeModel(GL_SMOOTH);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearDepth(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-	glViewport(0, 0, width, height);						// Reset The Current Viewport
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glViewport(0, 0, width, height);
 	// this blendfunc works like that it doesnt draw anything with color data from shadow mesh, but it will
 	// use this alpha value to reduce intensity of the background of the mesh.
 	glBlendFunc(GL_ZERO, GL_SRC_ALPHA);
 	glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 
-	glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
-	glLoadIdentity();									// Reset The Projection Matrix
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
 	gluPerspective(45.0f,PERSPECTIVE_ASPECT_RATIO,0.1f,250.0f);
-	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
-	glLoadIdentity();									// Reset The Modelview Matrix
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	return 0;
@@ -253,33 +233,28 @@ static int clean()
 {
 	int result;
 	result = cleanPlayerData();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean player data completely\n");
 		return -1;
 	}
 	result = cleanGameScreen();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean game screen completely\n");
 		return -1;
 	}
 
 	result = cleanMainMenu();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean main menu completely\n");
 		return -1;
 	}
 	result = cleanFont();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean font completely\n");
 		return -1;
 	}
 	result = cleanSound();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean sound completely\n");
 		return -1;
 	}

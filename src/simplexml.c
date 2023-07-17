@@ -15,13 +15,13 @@
 // own strdup implementation for porting issues. not from simplexmllib.
 char* ownstrdup (const char *s)
 {
-  size_t len = strlen (s) + 1;
-  void *newstr = malloc (len);
+	size_t len = strlen (s) + 1;
+	void *newstr = malloc (len);
 
-  if (newstr == NULL)
-    return NULL;
+	if (newstr == NULL)
+		return NULL;
 
-  return (char *) memcpy (newstr, s, len);
+	return (char *) memcpy (newstr, s, len);
 }
 
 /* result code for various functions indicating a failure */
@@ -183,44 +183,52 @@ char* getInternalSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb);
 
 /* ---- public api */
 
-SimpleXmlParser simpleXmlCreateParser (const char *sData, long nDataSize) {
+SimpleXmlParser simpleXmlCreateParser (const char *sData, long nDataSize)
+{
 	return (SimpleXmlParser) createSimpleXmlParser(sData, nDataSize);
 }
 
-void simpleXmlDestroyParser (SimpleXmlParser parser) {
+void simpleXmlDestroyParser (SimpleXmlParser parser)
+{
 	destroySimpleXmlParser((SimpleXmlParserState) parser);
 }
 
-int simpleXmlInitializeParser (SimpleXmlParser parser, const char *sData, long nDataSize) {
+int simpleXmlInitializeParser (SimpleXmlParser parser, const char *sData, long nDataSize)
+{
 	return initializeSimpleXmlParser((SimpleXmlParserState) parser, sData, nDataSize);
 }
 
-int simpleXmlParse (SimpleXmlParser parser, SimpleXmlTagHandler handler) {
+int simpleXmlParse (SimpleXmlParser parser, SimpleXmlTagHandler handler)
+{
 	if (parseSimpleXml((SimpleXmlParserState) parser, handler) == FAIL) {
 		return ((SimpleXmlParserState) parser)->nError;
 	}
 	return 0;
 }
 
-char* simpleXmlGetErrorDescription (SimpleXmlParser parser) {
+char* simpleXmlGetErrorDescription (SimpleXmlParser parser)
+{
 	return getSimpleXmlParseErrorDescription((SimpleXmlParserState) parser);
 }
 
-long simpleXmlGetLineNumber (SimpleXmlParser parser) {
+long simpleXmlGetLineNumber (SimpleXmlParser parser)
+{
 	if (parser == NULL) {
 		return -1;
 	}
 	return ((SimpleXmlParserState) parser)->nInputLineNumber + 1;
 }
 
-void simpleXmlParseAbort (SimpleXmlParser parser, int nErrorCode) {
+void simpleXmlParseAbort (SimpleXmlParser parser, int nErrorCode)
+{
 	if (parser == NULL || nErrorCode < SIMPLE_XML_USER_ERROR) {
 		return;
 	}
 	((SimpleXmlParserState) parser)->nError= nErrorCode;
 }
 
-int simpleXmlPushUserData (SimpleXmlParser parser, void* pData) {
+int simpleXmlPushUserData (SimpleXmlParser parser, void* pData)
+{
 	SimpleXmlUserData newUserData;
 	if (parser == NULL || pData == NULL) {
 		return 0;
@@ -239,7 +247,8 @@ int simpleXmlPushUserData (SimpleXmlParser parser, void* pData) {
 	return 1;
 }
 
-void* simpleXmlPopUserData (SimpleXmlParser parser) {
+void* simpleXmlPopUserData (SimpleXmlParser parser)
+{
 	if (parser == NULL) {
 		return NULL;
 	}
@@ -255,7 +264,8 @@ void* simpleXmlPopUserData (SimpleXmlParser parser) {
 	}
 }
 
-void* simpleXmlGetUserDataAt (SimpleXmlParser parser, int nLevel) {
+void* simpleXmlGetUserDataAt (SimpleXmlParser parser, int nLevel)
+{
 	if (parser == NULL) {
 		return NULL;
 	} else {
@@ -271,7 +281,8 @@ void* simpleXmlGetUserDataAt (SimpleXmlParser parser, int nLevel) {
 	return NULL;
 }
 
-void* simpleXmlGetUserData (SimpleXmlParser parser) {
+void* simpleXmlGetUserData (SimpleXmlParser parser)
+{
 	return simpleXmlGetUserDataAt(parser, 0);
 }
 
@@ -281,7 +292,8 @@ void* simpleXmlGetUserData (SimpleXmlParser parser) {
  * No operation handler (used internally).
  */
 void* simpleXmlNopHandler (SimpleXmlParser parser, SimpleXmlEvent event,
-	const char* szName, const char* szAttribute, const char* szValue) {
+                           const char* szName, const char* szAttribute, const char* szValue)
+{
 	/* simply return the nop handler again */
 	return simpleXmlNopHandler;
 }
@@ -296,7 +308,8 @@ void* simpleXmlNopHandler (SimpleXmlParser parser, SimpleXmlEvent event,
  * is not enough memory or the input data specified cannot
  * be parsed.
  */
-SimpleXmlParserState createSimpleXmlParser (const char *sData, long nDataSize) {
+SimpleXmlParserState createSimpleXmlParser (const char *sData, long nDataSize)
+{
 	if (sData != NULL && nDataSize > 0) {
 		SimpleXmlParserState parser= malloc(sizeof(TSimpleXmlParserState));
 		if (parser == NULL) {
@@ -326,7 +339,8 @@ SimpleXmlParserState createSimpleXmlParser (const char *sData, long nDataSize) {
  * @param parser the parser to destroy (must have been
  * created using createSimpleXmlParser).
  */
-void destroySimpleXmlParser (SimpleXmlParserState parser) {
+void destroySimpleXmlParser (SimpleXmlParserState parser)
+{
 	if (parser != NULL) {
 		if (parser->vbNextToken != NULL) {
 			free(parser->vbNextToken);
@@ -358,7 +372,8 @@ void destroySimpleXmlParser (SimpleXmlParserState parser) {
  * @return 0 if the parser could not be initialized,
  * > 0 if the parser was initialized successfully.
  */
-int initializeSimpleXmlParser (SimpleXmlParserState parser, const char *sData, long nDataSize) {
+int initializeSimpleXmlParser (SimpleXmlParserState parser, const char *sData, long nDataSize)
+{
 	if (parser != NULL && sData != NULL && nDataSize > 0) {
 		if (parser->vbNextToken == NULL) {
 			return FAIL;
@@ -384,25 +399,40 @@ int initializeSimpleXmlParser (SimpleXmlParserState parser, const char *sData, l
  * @return an error description or NULL if there was
  * no error during parsing.
  */
-char* getSimpleXmlParseErrorDescription (SimpleXmlParserState parser) {
+char* getSimpleXmlParseErrorDescription (SimpleXmlParserState parser)
+{
 	if (parser == NULL) {
 		return NULL;
 	}
 	switch (parser->nError) {
-		case NO_ERROR: return NULL;
-		case NOT_PARSED: return "parsing has not yet started";
-		case OUT_OF_MEMORY: return "out of memory";
-		case EARLY_TERMINATION: return "unexpected end of xml data";
-		case ILLEGAL_AMPERSAND: return "illegal use of ampersand (&)";
-		case NO_UNICODE_SUPPORT: return "unicode characters are not supported";
-		case GREATER_THAN_EXPECTED: return "greater than sign (>) expected";
-		case QUOTE_EXPECTED: return "quote (either \' or \") expected";
-		case ILLEGAL_HANDLER: return "illegal xml handler specified";
-		case NOT_INITIALIZED: return "xml parser not initialized";
-		case NO_DOCUMENT_TAG: return "no document tag found";
-		case MISMATCHED_END_TAG: return "mismatched end tag";
-		case ATTRIBUTE_EXPECTED: return "attribute expected";
-		case EQUAL_SIGN_EXPECTED: return "equal sign (=) expected";
+	case NO_ERROR:
+		return NULL;
+	case NOT_PARSED:
+		return "parsing has not yet started";
+	case OUT_OF_MEMORY:
+		return "out of memory";
+	case EARLY_TERMINATION:
+		return "unexpected end of xml data";
+	case ILLEGAL_AMPERSAND:
+		return "illegal use of ampersand (&)";
+	case NO_UNICODE_SUPPORT:
+		return "unicode characters are not supported";
+	case GREATER_THAN_EXPECTED:
+		return "greater than sign (>) expected";
+	case QUOTE_EXPECTED:
+		return "quote (either \' or \") expected";
+	case ILLEGAL_HANDLER:
+		return "illegal xml handler specified";
+	case NOT_INITIALIZED:
+		return "xml parser not initialized";
+	case NO_DOCUMENT_TAG:
+		return "no document tag found";
+	case MISMATCHED_END_TAG:
+		return "mismatched end tag";
+	case ATTRIBUTE_EXPECTED:
+		return "attribute expected";
+	case EQUAL_SIGN_EXPECTED:
+		return "equal sign (=) expected";
 	}
 	if (parser->nError > SIMPLE_XML_USER_ERROR) {
 		return "parsing aborted";
@@ -419,7 +449,8 @@ char* getSimpleXmlParseErrorDescription (SimpleXmlParserState parser) {
  * @return 0 if there was no error, and error code
  * > 0 if there was an error.
  */
-int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler) {
+int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler)
+{
 	if (parser == NULL || handler == NULL) {
 		parser->nError= ILLEGAL_HANDLER;
 		return FAIL;
@@ -446,9 +477,9 @@ int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler) {
 			return FAIL;
 		}
 	} while (
-		parser->nNextToken == PROCESSING_INSTRUCTION ||
-		parser->nNextToken == COMMENT ||
-		parser->nNextToken == DOCTYPE
+	    parser->nNextToken == PROCESSING_INSTRUCTION ||
+	    parser->nNextToken == COMMENT ||
+	    parser->nNextToken == DOCTYPE
 	);
 
 	/* parse main xml tag */
@@ -464,7 +495,8 @@ int parseSimpleXml (SimpleXmlParserState parser, SimpleXmlTagHandler handler) {
 /**
  * Parses exactly one tag.
  */
-int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler) {
+int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
+{
 	SimpleXmlTagHandler handler;
 	char* szTagName;
 
@@ -493,8 +525,8 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 		return FAIL;
 	}
 	while (
-		parser->nNextToken != TAG_END &&
-		parser->nNextToken != TAG_BEGIN_CLOSING
+	    parser->nNextToken != TAG_END &&
+	    parser->nNextToken != TAG_BEGIN_CLOSING
 	) {
 		/* read attributes */
 		if (parser->nNextToken == ATTRIBUTE) {
@@ -504,7 +536,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 				return FAIL;
 			}
 			handler((SimpleXmlParser) parser, ADD_ATTRIBUTE, szTagName, parser->szAttribute,
-				getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
+			        getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
 			if (parser->nError != NO_ERROR) {
 				free(szTagName);
 				return FAIL;
@@ -549,7 +581,7 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 					return FAIL;
 				}
 				handler((SimpleXmlParser) parser, ADD_CONTENT, szTagName, NULL,
-					getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
+				        getInternalSimpleXmlValueBufferContents(parser->vbNextToken));
 				if (parser->nError != NO_ERROR) {
 					free(szTagName);
 					return FAIL;
@@ -573,9 +605,9 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
 			return FAIL;
 		}
 		if (
-			strcmp(
-				szTagName, getInternalSimpleXmlValueBufferContents(parser->vbNextToken)
-			) != 0
+		    strcmp(
+		        szTagName, getInternalSimpleXmlValueBufferContents(parser->vbNextToken)
+		    ) != 0
 		) {
 			parser->nError= MISMATCHED_END_TAG;
 			free(szTagName);
@@ -618,7 +650,8 @@ int parseOneTag (SimpleXmlParserState parser, SimpleXmlTagHandler parentHandler)
  * @param parser the parser for which to read the next token.
  * @return SUCCESS or FAIL.
  */
-int readNextTagToken (SimpleXmlParserState parser) {
+int readNextTagToken (SimpleXmlParserState parser)
+{
 	/* read tag closing or attribute */
 	if (peekInputChar(parser) == '/') {
 		/* read tag closing (combined end tag) */
@@ -656,8 +689,8 @@ int readNextTagToken (SimpleXmlParserState parser) {
 		skipInputChar(parser);
 		/* copy contents of value buffer to attribute name */
 		if (
-			parser->szAttribute == NULL ||
-			parser->nAttributeBufferSize < getSimpleXmlValueBufferContentLength(parser->vbNextToken)
+		    parser->szAttribute == NULL ||
+		    parser->nAttributeBufferSize < getSimpleXmlValueBufferContentLength(parser->vbNextToken)
 		) {
 			if (parser->szAttribute != NULL) {
 				free(parser->szAttribute);
@@ -670,9 +703,9 @@ int readNextTagToken (SimpleXmlParserState parser) {
 			return FAIL;
 		}
 		if (
-			getSimpleXmlValueBufferContents(
-				parser->vbNextToken, parser->szAttribute, parser->nAttributeBufferSize
-			) == FAIL
+		    getSimpleXmlValueBufferContents(
+		        parser->vbNextToken, parser->szAttribute, parser->nAttributeBufferSize
+		    ) == FAIL
 		) {
 			parser->nError= OUT_OF_MEMORY;
 			return FAIL;
@@ -728,7 +761,8 @@ int readNextTagToken (SimpleXmlParserState parser) {
  * @param parser the parser for which to read the next token.
  * @return SUCCESS or FAIL.
  */
-int readNextContentToken (SimpleXmlParserState parser) {
+int readNextContentToken (SimpleXmlParserState parser)
+{
 	/* read markup or content */
 	if (peekInputChar(parser) == '<') {
 		/* read markup */
@@ -738,8 +772,8 @@ int readNextContentToken (SimpleXmlParserState parser) {
 			parser->nNextToken= TAG_END;
 			skipInputChar(parser);
 			while (
-				peekInputChar(parser) > SPACE &&
-				peekInputChar(parser) != '>'
+			    peekInputChar(parser) > SPACE &&
+			    peekInputChar(parser) != '>'
 			) {
 				/* read one character into next token value buffer */
 				if (readChar(parser) == FAIL) {
@@ -760,8 +794,8 @@ int readNextContentToken (SimpleXmlParserState parser) {
 			parser->nNextToken= PROCESSING_INSTRUCTION;
 			skipInputChar(parser);
 			while (
-				peekInputCharAt(parser, 0) != '?' ||
-				peekInputCharAt(parser, 1) != '>'
+			    peekInputCharAt(parser, 0) != '?' ||
+			    peekInputCharAt(parser, 1) != '>'
 			) {
 				/* read one character into next token value buffer */
 				if (readChar(parser) == FAIL) {
@@ -774,16 +808,16 @@ int readNextContentToken (SimpleXmlParserState parser) {
 			/* read comment, doctype or cdata */
 			skipInputChar(parser);
 			if (
-				peekInputCharAt(parser, 0) == '-' &&
-				peekInputCharAt(parser, 1) == '-'
+			    peekInputCharAt(parser, 0) == '-' &&
+			    peekInputCharAt(parser, 1) == '-'
 			) {
 				/* read comment */
 				parser->nNextToken= COMMENT;
 				skipInputChars(parser, 2);
 				while (
-					peekInputCharAt(parser, 0) != '-' ||
-					peekInputCharAt(parser, 1) != '-' ||
-					peekInputCharAt(parser, 2) != '>'
+				    peekInputCharAt(parser, 0) != '-' ||
+				    peekInputCharAt(parser, 1) != '-' ||
+				    peekInputCharAt(parser, 2) != '>'
 				) {
 					/* read one character into next token value buffer */
 					if (readChar(parser) == FAIL) {
@@ -793,13 +827,13 @@ int readNextContentToken (SimpleXmlParserState parser) {
 				/* skip closing '-->' */
 				skipInputChars(parser, 3);
 			} else if (
-				peekInputCharAt(parser, 0) == 'D' &&
-				peekInputCharAt(parser, 1) == 'O' &&
-				peekInputCharAt(parser, 2) == 'C' &&
-				peekInputCharAt(parser, 3) == 'T' &&
-				peekInputCharAt(parser, 4) == 'Y' &&
-				peekInputCharAt(parser, 5) == 'P' &&
-				peekInputCharAt(parser, 6) == 'E'
+			    peekInputCharAt(parser, 0) == 'D' &&
+			    peekInputCharAt(parser, 1) == 'O' &&
+			    peekInputCharAt(parser, 2) == 'C' &&
+			    peekInputCharAt(parser, 3) == 'T' &&
+			    peekInputCharAt(parser, 4) == 'Y' &&
+			    peekInputCharAt(parser, 5) == 'P' &&
+			    peekInputCharAt(parser, 6) == 'E'
 			) {
 				/* read doctype declaration (external only) */
 				int nCount= 1;
@@ -835,9 +869,9 @@ int readNextContentToken (SimpleXmlParserState parser) {
 			/* read tag opening (without '>' or '/>') */
 			parser->nNextToken= TAG_BEGIN_OPENING;
 			while (
-				peekInputChar(parser) > SPACE &&
-				peekInputChar(parser) != '/' &&
-				peekInputChar(parser) != '>'
+			    peekInputChar(parser) > SPACE &&
+			    peekInputChar(parser) != '/' &&
+			    peekInputChar(parser) != '>'
 			) {
 				/* read one character into next token value buffer */
 				if (readChar(parser) == FAIL) {
@@ -872,7 +906,8 @@ int readNextContentToken (SimpleXmlParserState parser) {
  * @param parser the parser for which to read the next input character.
  * @return SUCCESS or FAIL.
  */
-int readChar (SimpleXmlParserState parser) {
+int readChar (SimpleXmlParserState parser)
+{
 	char c= readInputChar(parser);
 	if (c == '\0' && parser->nError != NO_ERROR) {
 		return FAIL;
@@ -921,46 +956,46 @@ int readChar (SimpleXmlParserState parser) {
 			}
 			return addNextTokenCharValue(parser, (char) nCode);
 		} else if (
-			peekInputCharAt(parser, 0) == 'a' &&
-			peekInputCharAt(parser, 1) == 'm' &&
-			peekInputCharAt(parser, 2) == 'p' &&
-			peekInputCharAt(parser, 3) == ';'
+		    peekInputCharAt(parser, 0) == 'a' &&
+		    peekInputCharAt(parser, 1) == 'm' &&
+		    peekInputCharAt(parser, 2) == 'p' &&
+		    peekInputCharAt(parser, 3) == ';'
 		) {
 			/* &amp; -> & */
 			skipInputChars(parser, 4);
 			return addNextTokenCharValue(parser, '&');
 		} else if (
-			peekInputCharAt(parser, 0) == 'a' &&
-			peekInputCharAt(parser, 1) == 'p' &&
-			peekInputCharAt(parser, 2) == 'o' &&
-			peekInputCharAt(parser, 3) == 's' &&
-			peekInputCharAt(parser, 4) == ';'
+		    peekInputCharAt(parser, 0) == 'a' &&
+		    peekInputCharAt(parser, 1) == 'p' &&
+		    peekInputCharAt(parser, 2) == 'o' &&
+		    peekInputCharAt(parser, 3) == 's' &&
+		    peekInputCharAt(parser, 4) == ';'
 		) {
 			/* &apos; -> ' */
 			skipInputChars(parser, 5);
 			return addNextTokenCharValue(parser, '\'');
 		} else if (
-			peekInputCharAt(parser, 0) == 'q' &&
-			peekInputCharAt(parser, 1) == 'u' &&
-			peekInputCharAt(parser, 2) == 'o' &&
-			peekInputCharAt(parser, 3) == 't' &&
-			peekInputCharAt(parser, 4) == ';'
+		    peekInputCharAt(parser, 0) == 'q' &&
+		    peekInputCharAt(parser, 1) == 'u' &&
+		    peekInputCharAt(parser, 2) == 'o' &&
+		    peekInputCharAt(parser, 3) == 't' &&
+		    peekInputCharAt(parser, 4) == ';'
 		) {
 			/* &quot; -> " */
 			skipInputChars(parser, 5);
 			return addNextTokenCharValue(parser, '"');
 		} else if (
-			peekInputCharAt(parser, 0) == 'l' &&
-			peekInputCharAt(parser, 1) == 't' &&
-			peekInputCharAt(parser, 2) == ';'
+		    peekInputCharAt(parser, 0) == 'l' &&
+		    peekInputCharAt(parser, 1) == 't' &&
+		    peekInputCharAt(parser, 2) == ';'
 		) {
 			/* &lt; -> < */
 			skipInputChars(parser, 3);
 			return addNextTokenCharValue(parser, '<');
 		} else if (
-			peekInputCharAt(parser, 0) == 'g' &&
-			peekInputCharAt(parser, 1) == 't' &&
-			peekInputCharAt(parser, 2) == ';'
+		    peekInputCharAt(parser, 0) == 'g' &&
+		    peekInputCharAt(parser, 1) == 't' &&
+		    peekInputCharAt(parser, 2) == ';'
 		) {
 			/* &gt; -> > */
 			skipInputChars(parser, 3);
@@ -989,7 +1024,8 @@ int readChar (SimpleXmlParserState parser) {
  * @return the peeked character or '\0' if there are
  * no more data.
  */
-char peekInputCharAt (SimpleXmlParserState parser, int nOffset) {
+char peekInputCharAt (SimpleXmlParserState parser, int nOffset)
+{
 	int nPos= parser->nInputDataPos + nOffset;
 	if (nPos < 0 || nPos >= parser->nInputDataSize) {
 		return '\0';
@@ -1005,7 +1041,8 @@ char peekInputCharAt (SimpleXmlParserState parser, int nOffset) {
  * @return the peeked character or '\0' if there are
  * no more data.
  */
-char peekInputChar (SimpleXmlParserState parser) {
+char peekInputChar (SimpleXmlParserState parser)
+{
 	return peekInputCharAt(parser, 0);
 }
 
@@ -1019,7 +1056,8 @@ char peekInputChar (SimpleXmlParserState parser) {
  * @param parser the parser for which to skip whitespace.
  * @return SUCCESS or FAIL.
  */
-int skipWhitespace (SimpleXmlParserState parser) {
+int skipWhitespace (SimpleXmlParserState parser)
+{
 	while (peekInputChar(parser) <= SPACE) {
 		/* skip whitespace but make sure we don't
 			 read more than is available */
@@ -1038,7 +1076,8 @@ int skipWhitespace (SimpleXmlParserState parser) {
  * @param parser the parser whose read cursor is to be moved.
  * @param nAmount the amount by which to move the cursor (> 0).
  */
-void skipInputChars (SimpleXmlParserState parser, int nAmount) {
+void skipInputChars (SimpleXmlParserState parser, int nAmount)
+{
 	int i;
 	for (i= 0; i < nAmount; i++) {
 		skipInputChar(parser);
@@ -1052,7 +1091,8 @@ void skipInputChars (SimpleXmlParserState parser, int nAmount) {
  * @see #skipInputChars
  * @see #peekInputChar
  */
-void skipInputChar (SimpleXmlParserState parser) {
+void skipInputChar (SimpleXmlParserState parser)
+{
 	if (parser->nInputDataPos >= 0 && parser->nInputDataPos < parser->nInputDataSize) {
 		if (parser->sInputData[parser->nInputDataPos] == LF) {
 			/* always increment line counter on a linefeed */
@@ -1081,7 +1121,8 @@ void skipInputChar (SimpleXmlParserState parser) {
  * input character.
  * @return the next input character or '\0' if there is none.
  */
-char readInputChar (SimpleXmlParserState parser) {
+char readInputChar (SimpleXmlParserState parser)
+{
 	char cRead;
 	if (parser->nInputDataPos < 0 || parser->nInputDataPos >= parser->nInputDataSize) {
 		parser->nError= EARLY_TERMINATION;
@@ -1100,7 +1141,8 @@ char readInputChar (SimpleXmlParserState parser) {
  * @param c the character to append.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int addNextTokenCharValue (SimpleXmlParserState parser, char c) {
+int addNextTokenCharValue (SimpleXmlParserState parser, char c)
+{
 	if (appendCharToSimpleXmlValueBuffer(parser->vbNextToken, c) == FAIL) {
 		parser->nError= OUT_OF_MEMORY;
 		return FAIL;
@@ -1116,7 +1158,8 @@ int addNextTokenCharValue (SimpleXmlParserState parser, char c) {
  * @param szInput the zero terminated string to append.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int addNextTokenStringValue (SimpleXmlParserState parser, char *szInput) {
+int addNextTokenStringValue (SimpleXmlParserState parser, char *szInput)
+{
 	while (*szInput != '\0') {
 		if (addNextTokenCharValue(parser, *szInput) == FAIL) {
 			return FAIL;
@@ -1145,7 +1188,8 @@ int addNextTokenStringValue (SimpleXmlParserState parser, char *szInput) {
  * caller).
  * @see #destroySimpleXmlValueBuffer
  */
-SimpleXmlValueBuffer createSimpleXmlValueBuffer (long nInitialSize) {
+SimpleXmlValueBuffer createSimpleXmlValueBuffer (long nInitialSize)
+{
 	SimpleXmlValueBuffer vb= malloc(sizeof(TSimpleXmlValueBuffer));
 	if (vb == NULL) {
 		return NULL;
@@ -1166,7 +1210,8 @@ SimpleXmlValueBuffer createSimpleXmlValueBuffer (long nInitialSize) {
  * @param vb the value buffer to destroy.
  * @see #destroySimpleXmlValueBuffer
  */
-void destroySimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
+void destroySimpleXmlValueBuffer (SimpleXmlValueBuffer vb)
+{
 	if (vb != NULL) {
 		if (vb->sBuffer != NULL) {
 			free(vb->sBuffer);
@@ -1181,7 +1226,8 @@ void destroySimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
  * @param vb the value buffer to grow.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int growSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
+int growSimpleXmlValueBuffer (SimpleXmlValueBuffer vb)
+{
 	char* sOldBuffer= vb->sBuffer;
 	char* sNewBuffer= malloc(vb->nSize * 2);
 	if (sNewBuffer == NULL) {
@@ -1201,7 +1247,8 @@ int growSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
  * @param c the character to append.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int appendCharToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, char c) {
+int appendCharToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, char c)
+{
 	if (vb == NULL) {
 		return FAIL;
 	}
@@ -1221,7 +1268,8 @@ int appendCharToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, char c) {
  * @param szInput the input string to append.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int appendStringToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, const char *szInput) {
+int appendStringToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, const char *szInput)
+{
 	while (*szInput != '\0') {
 		if (appendCharToSimpleXmlValueBuffer(vb, *szInput) == FAIL) {
 			return FAIL;
@@ -1238,7 +1286,8 @@ int appendStringToSimpleXmlValueBuffer (SimpleXmlValueBuffer vb, const char *szI
  * @param vb the value buffer to zero terminate.
  * @return SUCCESS or FAIL (if there is not enough memory).
  */
-int zeroTerminateSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
+int zeroTerminateSimpleXmlValueBuffer (SimpleXmlValueBuffer vb)
+{
 	if (vb == NULL) {
 		return FAIL;
 	}
@@ -1257,7 +1306,8 @@ int zeroTerminateSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
  * @param vb the value buffer to clear.
  * @return SUCCESS or FAIL.
  */
-int clearSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
+int clearSimpleXmlValueBuffer (SimpleXmlValueBuffer vb)
+{
 	if (vb == NULL) {
 		return FAIL;
 	}
@@ -1274,7 +1324,8 @@ int clearSimpleXmlValueBuffer (SimpleXmlValueBuffer vb) {
  * @return the content length (i.e. 1 if the content is
  * empty, 0 in case of a failure).
  */
-int getSimpleXmlValueBufferContentLength (SimpleXmlValueBuffer vb) {
+int getSimpleXmlValueBufferContentLength (SimpleXmlValueBuffer vb)
+{
 	if (vb == NULL) {
 		return 0;
 	}
@@ -1292,7 +1343,8 @@ int getSimpleXmlValueBufferContentLength (SimpleXmlValueBuffer vb) {
  * the output array.
  * @return SUCCESS or FAIL.
  */
-int getSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb, char* szOutput, long nMaxLen) {
+int getSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb, char* szOutput, long nMaxLen)
+{
 	int nMax; /* max. number of chars to copy */
 	if (vb == NULL) {
 		return FAIL;
@@ -1315,7 +1367,8 @@ int getSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb, char* szOutput, lo
  * be returned.
  * @return the string buffer or NULL (if there is not enough memory).
  */
-char* getInternalSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb) {
+char* getInternalSimpleXmlValueBufferContents (SimpleXmlValueBuffer vb)
+{
 	if (zeroTerminateSimpleXmlValueBuffer(vb) == FAIL) {
 		return NULL;
 	}

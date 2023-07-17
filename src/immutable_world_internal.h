@@ -6,8 +6,7 @@
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
 
-typedef struct _GroundUnit
-{
+typedef struct _GroundUnit {
 	GLuint texture;
 	int x;
 	int y;

@@ -94,22 +94,19 @@
 #define SOUND_CATCH 3
 // down[i][j] is 1 when key is down
 // released[i][j] is 1 for one frame when key is released
-typedef struct _KeyStates
-{
+typedef struct _KeyStates {
 	int released[3][KEY_COUNT];
 	int down[3][KEY_COUNT];
 	int imitateKeyPress[KEY_COUNT];
 } KeyStates;
 // simple struct to keep spatial information
-typedef struct _Vector3D
-{
+typedef struct _Vector3D {
 	float x;
 	float y;
 	float z;
 } Vector3D;
 // relevant field positions. hardcoded in the immutable_world.c
-typedef struct _FieldPositions
-{
+typedef struct _FieldPositions {
 	Vector3D pitchPlate;
 	Vector3D homeRunPoint;
 	Vector3D pitcher;
@@ -132,8 +129,7 @@ typedef struct _FieldPositions
 } FieldPositions;
 
 // ball related information
-typedef struct _BallInfo
-{
+typedef struct _BallInfo {
 	Vector3D velocity;
 	Vector3D location;
 	Vector3D lastLocation;
@@ -147,16 +143,14 @@ typedef struct _BallInfo
 	int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
 } BallInfo;
 // struct to keep player data ( read from a file? )
-typedef struct _PlayerData
-{
+typedef struct _PlayerData {
 	char* id;
 	char* name;
 	int speed; // 0 to 9?
 	int power; // 0 to 9?
 } PlayerData;
 // struct keeps information about teams
-typedef struct _TeamData
-{
+typedef struct _TeamData {
 	char* id;
 	char* name;
 	PlayerData players[PLAYERS_IN_TEAM + JOKER_COUNT];
@@ -166,8 +160,7 @@ Action flags. used in action_invocation.c and action_implementation.c.
 flag is set when key event happens in action_invocation, then its set off or modified when its handled in
 action_implementation
 */
-typedef struct _BattingTeamActionFlags
-{
+typedef struct _BattingTeamActionFlags {
 	int baseRun[4];
 	int chooseBatter;
 	int takeFreeWalk;
@@ -176,8 +169,7 @@ typedef struct _BattingTeamActionFlags
 	int decreaseBatterAngle;
 } BattingTeamActionFlags;
 
-typedef struct _CatchingTeamActionFlags
-{
+typedef struct _CatchingTeamActionFlags {
 	int move[4];
 	int throwToBase[4];
 	int changePlayer;
@@ -187,14 +179,12 @@ typedef struct _CatchingTeamActionFlags
 	int actionKeyLock;
 } CatchingTeamActionFlags;
 
-typedef struct _ActionFlags
-{
+typedef struct _ActionFlags {
 	BattingTeamActionFlags bTAF;
 	CatchingTeamActionFlags cTAF;
 } ActionFlags;
 // spatial data for every player
-typedef struct _TechnicalPlayerInfo
-{
+typedef struct _TechnicalPlayerInfo {
 	Vector3D location;
 	Vector3D lastLocation;
 	Vector3D homeLocation;
@@ -203,8 +193,7 @@ typedef struct _TechnicalPlayerInfo
 	Vector3D orientation;
 } TechnicalPlayerInfo;
 // batting team related flags.
-typedef struct _BattingTeamPlayerInfo
-{
+typedef struct _BattingTeamPlayerInfo {
 	char* name; // some info to be shown in screen to guide player
 	int speed; // used to make some player a bit faster than others
 	int power; // used to make some players bat a bit harder than others
@@ -224,8 +213,7 @@ typedef struct _BattingTeamPlayerInfo
 	int hasMadeRunOnThirdBase; // cant make a run always when checkForRun flag is set.
 } BattingTeamPlayerInfo;
 
-typedef struct _CommonPlayerInfo
-{
+typedef struct _CommonPlayerInfo {
 	// player information. name is shown on the screen sometimes, team is used in players.c
 	// and stats are used to make players behave in different ways on some situations.
 	int team;
@@ -260,8 +248,7 @@ typedef struct _CommonPlayerInfo
 
 } CommonPlayerInfo;
 
-typedef struct _CatchingTeamPlayerInfo
-{
+typedef struct _CatchingTeamPlayerInfo {
 	int position; // pitcher, catcher, 1st baseman..
 	int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
 	int isNearHomeLocation; // used to do base replacing stuff.
@@ -271,8 +258,7 @@ typedef struct _CatchingTeamPlayerInfo
 	int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
 } CatchingTeamPlayerInfo;
 
-typedef struct _PlayerInfo
-{
+typedef struct _PlayerInfo {
 	TechnicalPlayerInfo tPI;
 	CommonPlayerInfo cPI;
 	CatchingTeamPlayerInfo cTPI;
@@ -280,8 +266,7 @@ typedef struct _PlayerInfo
 
 } PlayerInfo;
 
-typedef struct _TeamInfo
-{
+typedef struct _TeamInfo {
 	int value; // which team, like 1 for ankkurit, 2 for vimpeli etc.
 	int control; // who controls, 0 player 1, 1, player 2, 2 AI
 	int runs; // how many runs has this team
@@ -294,27 +279,25 @@ typedef struct _TeamInfo
 	int batterOrderIndex; // what player is next
 } TeamInfo;
 
-typedef struct _PlayerIndexInfo
-{
+typedef struct _PlayerIndexInfo {
 	int safeOnBaseIndex[4]; // who is safe on base i
 	int battingTeamOnFieldIndices[4]; // here is a list of batting team players currently on field.
-									  // they arent in particular order, and there can be gaps ( - 1 ).
+	// they arent in particular order, and there can be gaps ( - 1 ).
 	int catcherOnBaseIndex[4]; // whos is baseman on base i
 	int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
 	int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
-									  // these, and these are also used to select players for busyCatching.
+	// these, and these are also used to select players for busyCatching.
 	int jokerIndices[3]; // indices of all jokers.
 	int batterSelectionIndex; // index of the batter that would be selected if there was decision available
 	int hasBallIndex; // who has the ball
 	int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
-						  // set to -1 when someone catches.
+	// set to -1 when someone catches.
 	int controlIndex; // index of the controlled catching team player
 	int batterIndex; // index of batter.
 	int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
 } PlayerIndexInfo;
 
-typedef struct _GameAnalysisInfo
-{
+typedef struct _GameAnalysisInfo {
 	int battingTeamPlayersOnFieldCount; // how many batting team players on field
 	int nonJokerPlayersLeft; // number of nonJokers to be used for batting in this inning
 	int jokersLeft; // jokers to be used for batting in this inning
@@ -332,22 +315,22 @@ typedef struct _GameAnalysisInfo
 	int ballHome; // in that case ball also needed to be at homebase
 	int endPeriod;
 	int woundingCatch; // if some conditions hold, we will have a situation where we can check
-					   // if there are players not on their original bases that we could wound.
+	// if there are players not on their original bases that we could wound.
 	int woundingCatchHandled;
 	int batterStartedRunning; // used to help AI to drop ball sometimes
 	int gameInfoEvent; // used to give information for user about the events in game.
-					   // check game_screen.c for more information
+	// check game_screen.c for more information
 	int checkForRun; // if player arrives homebase or third base after running through all the base on same pitch
-					 // we can check if the run is valid. it is decided when ball lands.
+	// we can check if the run is valid. it is decided when ball lands.
 	int freeWalkIndex; // index used in free walk decision
 	int freeWalkBase; // base for the that player
 
 	int playerArrivedToBase; // if player arrives base we put this flag, so that we dont do useless
-							 // base-player-checking when nothing has changed.
+	// base-player-checking when nothing has changed.
 	int firstCatchMade; // first catch made. many decisions depend on knowledge of ball landing. but it is
-						// often ok if ball doesn hit ground but is caught instead.
+	// often ok if ball doesn hit ground but is caught instead.
 	int initLocals; // when foul play and when starting the game we need to init local variables of
-					// game analysis and action implementation
+	// game analysis and action implementation
 	int runnerBatterPairCounter; // what pair to be used in the homerun-batting contest
 	int canMakeRunOfHonor;
 	int forceNextPair;
@@ -359,8 +342,7 @@ typedef struct _GameAnalysisInfo
 
 } GameAnalysisInfo;
 
-typedef struct _PlayerRelatedActionInfo
-{
+typedef struct _PlayerRelatedActionInfo {
 	float meterValue; // meter for pitching and throwing
 	float swingMeterValue; // meter for batting
 
@@ -380,12 +362,11 @@ typedef struct _PlayerRelatedActionInfo
 
 	int refreshCatchAndChange; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
 	int initPlayerSelection; // and sometimes with refreshCatchAndChange we set also initPlayerSelection
-							 // so that
+	// so that
 
 } PlayerRelatedActionInfo;
 
-typedef struct _GlobalGameInfo
-{
+typedef struct _GlobalGameInfo {
 	TeamInfo teams[2];
 	int inningsInPeriod;
 	int inning;
@@ -395,8 +376,7 @@ typedef struct _GlobalGameInfo
 	int winner;
 } GlobalGameInfo;
 
-typedef struct _LocalGameInfo
-{
+typedef struct _LocalGameInfo {
 	PlayerInfo playerInfo[2*PLAYERS_IN_TEAM + JOKER_COUNT];
 	ActionFlags aF;
 	PlayerIndexInfo pII;
@@ -407,14 +387,12 @@ typedef struct _LocalGameInfo
 
 } LocalGameInfo;
 
-typedef struct _MenuInfo
-{
+typedef struct _MenuInfo {
 	int state; // 0 normal menu, 1 hutunkeitto, 2 batting order screen between periods
 } MenuInfo;
 
 
-typedef struct _CupInfo
-{
+typedef struct _CupInfo {
 	int inningCount;
 	int gameStructure;
 	int dayCount;
@@ -425,8 +403,7 @@ typedef struct _CupInfo
 	int winnerIndex;
 } CupInfo;
 
-typedef struct _StateInfo
-{
+typedef struct _StateInfo {
 	// Main menu or game screen active
 	int screen;
 	int changeScreen;

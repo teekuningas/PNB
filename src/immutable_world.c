@@ -15,20 +15,17 @@ int initImmutableWorld()
 	stateInfo.fieldPositions = &fieldPositions;
 
 	result = initGround();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Initialization of ground failed.");
 		return result;
 	}
 	result = initFence();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Initialization of fence failed.");
 		return result;
 	}
 	result = initPlate();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Initialization of plate failed.");
 		return result;
 	}
@@ -128,8 +125,7 @@ static void drawFence()
 	int i;
 	// BACK FENCE
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
-	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
-	{
+	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++) {
 		glPushMatrix();
 		glTranslatef(FENCE_PIECE_WIDTH/2 + FIELD_LEFT + i*FENCE_PIECE_WIDTH, 0.0f, FIELD_BACK);
 		glScalef(FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f); // again, width and height of the model is 2
@@ -140,8 +136,7 @@ static void drawFence()
 	}
 	// FRONT FENCE
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
-	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
-	{
+	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++) {
 		glPushMatrix();
 		glTranslatef(FENCE_PIECE_WIDTH/2 + FIELD_LEFT + i*FENCE_PIECE_WIDTH, 0.0f, FIELD_FRONT);
 		glScalef(FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f); // again, width and height of the model is 2
@@ -158,8 +153,7 @@ static void drawFence()
 	}
 	// LEFT FENCE
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
-	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH); i++)
-	{
+	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH); i++) {
 		glPushMatrix();
 		glTranslatef(FIELD_LEFT,0.0f, FIELD_BACK + FENCE_PIECE_WIDTH/2 + i*FENCE_PIECE_WIDTH);
 		glScalef(1.0f, FENCE_HEIGHT/2, FENCE_PIECE_WIDTH/2);
@@ -171,8 +165,7 @@ static void drawFence()
 	}
 	// RIGHT FENCE
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
-	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH) ; i++)
-	{
+	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH) ; i++) {
 		glPushMatrix();
 		glTranslatef(FIELD_RIGHT, 0.0f, FIELD_BACK + FENCE_PIECE_WIDTH/2 + i*FENCE_PIECE_WIDTH);
 		glScalef(1.0f, FENCE_HEIGHT/2, FENCE_PIECE_WIDTH/2);
@@ -188,14 +181,10 @@ static void drawGround()
 {
 	int i;
 	// here we use groundUnit[12].texture for all grass ground pieces.
-	for(i = 0; i < GROUND_UNIT_COUNT; i++)
-	{
-		if(i < 12)
-		{
+	for(i = 0; i < GROUND_UNIT_COUNT; i++) {
+		if(i < 12) {
 			glBindTexture(GL_TEXTURE_2D, groundUnit[i].texture);
-		}
-		else
-		{
+		} else {
 			glBindTexture(GL_TEXTURE_2D, groundUnit[12].texture);
 		}
 		glPushMatrix();
@@ -235,23 +224,18 @@ static int initGround()
 {
 	int i, j, counter;
 	// first we create the play area, in order of groundUnit[0] being lowerleft, groundUnit[1] being second in left etc.
-	for(i = 0; i < 3; i++)
-	{
-		for(j = 0; j < 4; j++)
-		{
+	for(i = 0; i < 3; i++) {
+		for(j = 0; j < 4; j++) {
 			groundUnit[i*4 + j].x = j;
 			groundUnit[i*4 + j].y = i;
 		}
 	}
 	counter = 12;
 	// and then we continue and add the grass pieces on every side.
-	for(i = -1; i < 5; i++)
-	{
-		for(j = -1; j < 4; j++)
-		{
+	for(i = -1; i < 5; i++) {
+		for(j = -1; j < 4; j++) {
 			if(i < 4 && i > -1 && j > -1 && j < 3) continue;
-			else
-			{
+			else {
 				groundUnit[counter].x = i;
 				groundUnit[counter].y = j;
 				counter++;

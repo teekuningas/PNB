@@ -36,21 +36,18 @@ int initGameScreen()
 	lastSwingMeterX = 0;
 
 	result = initLights();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init lights. Exiting.");
 	}
 
 	result = initImmutableWorld();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init immutable world.");
 		return -1;
 	}
 
 	result = initMutableWorld();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not init ball. Exiting.");
 		return -1;
 	}
@@ -62,30 +59,23 @@ void updateGameScreen()
 {
 	BallInfo* ballInfo = &(stateInfo.localGameInfo->ballInfo);
 	// if we just changed here, load basic settings.
-	if(stateInfo.changeScreen == 1)
-	{
+	if(stateInfo.changeScreen == 1) {
 		stateInfo.changeScreen = 0;
 		stateInfo.updated = 1;
 		loadGameScreenSettings();
 	}
 	// with home-key, one can return to main menu.
-	if(((stateInfo.keyStates)->released[0][KEY_HOME] || (stateInfo.keyStates)->released[1][KEY_HOME]))
-	{
-		if(stateInfo.localGameInfo->gAI.pause == 0)
-		{
+	if(((stateInfo.keyStates)->released[0][KEY_HOME] || (stateInfo.keyStates)->released[1][KEY_HOME])) {
+		if(stateInfo.localGameInfo->gAI.pause == 0) {
 			stateInfo.localGameInfo->gAI.pause = 1;
-		}
-		else if(stateInfo.localGameInfo->gAI.pause == 1)
-		{
+		} else if(stateInfo.localGameInfo->gAI.pause == 1) {
 			stateInfo.changeScreen = 1;
 			stateInfo.updated = 0;
 			stateInfo.screen = 0;
 		}
 	}
-	if(stateInfo.localGameInfo->gAI.pause == 1)
-	{
-		if(((stateInfo.keyStates)->released[0][KEY_2] || (stateInfo.keyStates)->released[1][KEY_2]))
-		{
+	if(stateInfo.localGameInfo->gAI.pause == 1) {
+		if(((stateInfo.keyStates)->released[0][KEY_2] || (stateInfo.keyStates)->released[1][KEY_2])) {
 			stateInfo.localGameInfo->gAI.pause = 0;
 		}
 	}
@@ -106,32 +96,27 @@ void updateGameScreen()
 
 	camLocation.x = 0.1f*camTargetLocation.x;
 	// if we are behind the homebase
-	if(stateInfo.localGameInfo->ballInfo.location.z > HOME_RADIUS)
-	{
+	if(stateInfo.localGameInfo->ballInfo.location.z > HOME_RADIUS) {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(camTargetLocation.x)/3;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 15.0f + (float)fabs(camTargetLocation.x)/2;
 	}
 	// if runner coming from third base
-	else if(stateInfo.localGameInfo->gAI.homeRunCameraFlag == 0 )
-	{
+	else if(stateInfo.localGameInfo->gAI.homeRunCameraFlag == 0 ) {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f;
 	}
 	// and the normal mode
-	else
-	{
+	else {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 8.0f;
 	}
 	// cant update this at the drawing-function as that doesnt happen synchroniusly.
 	// so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
 	// we hit the threshold.
-	if(gameInfoEventTimer != -1)
-	{
+	if(gameInfoEventTimer != -1) {
 		gameInfoEventTimer+=1;
 
-		if(gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD)
-		{
+		if(gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
 			gameInfoEventTimer = -1;
 		}
 	}
@@ -229,8 +214,7 @@ static void drawStatistics(double alpha)
 	// we draw the background for writing text. it will appear at the bottom of screen
 	// because of the camera settings.
 	drawFontBackground();
-	if(stateInfo.globalGameInfo->period < 4)
-	{
+	if(stateInfo.globalGameInfo->period < 4) {
 		switch(stateInfo.localGameInfo->gAI.outs) {
 		case 0:
 			break;
@@ -249,12 +233,9 @@ static void drawStatistics(double alpha)
 		}
 	}
 	// inning?
-	if(stateInfo.globalGameInfo->period < 4)
-	{
+	if(stateInfo.globalGameInfo->period < 4) {
 		str6[2] = (char)(((int)'0')+ stateInfo.globalGameInfo->inning/2 + 1);
-	}
-	else
-	{
+	} else {
 		str6[2] = (char)(((int)'0'));
 	}
 	printText(str6, 3, OTHER_STATS_X - 0.04f, STATISTICS_TEXT_HEIGHT, 2);
@@ -262,8 +243,7 @@ static void drawStatistics(double alpha)
 	// here for outs and runs we have to take care of that sometimes we will have more than 9 of them
 	if(stateInfo.localGameInfo->gAI.balls < 10)
 		str[2] = (char)(((int)'0')+stateInfo.localGameInfo->gAI.balls);
-	else
-	{
+	else {
 		str[2] = (char)(((int)'0')+(stateInfo.localGameInfo->gAI.balls%10));
 		str[1] = (char)(((int)'0')+(stateInfo.localGameInfo->gAI.balls/10));
 	}
@@ -274,96 +254,77 @@ static void drawStatistics(double alpha)
 
 	if(stateInfo.globalGameInfo->teams[0].runs < 10)
 		str3[2] = (char)(((int)'0')+stateInfo.globalGameInfo->teams[0].runs);
-	else
-	{
+	else {
 		str3[2] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[0].runs%10));
 		str3[1] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[0].runs/10));
 	}
 	if(stateInfo.globalGameInfo->teams[1].runs < 10)
 		str3[4] = (char)(((int)'0')+stateInfo.globalGameInfo->teams[1].runs);
-	else
-	{
+	else {
 		str3[4] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[1].runs%10));
 		str3[3] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[1].runs/10));
 	}
 	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
 	// so we have these events thats are triggered in other parts of code just by gameInfoEvent = i;
 	// we have a counter so that the info will disappear after some time.
-	if(stateInfo.localGameInfo->gAI.gameInfoEvent != 0)
-	{
+	if(stateInfo.localGameInfo->gAI.gameInfoEvent != 0) {
 		gameInfoEventTimer = 0;
 		gameInfoEvent = stateInfo.localGameInfo->gAI.gameInfoEvent;
 		stateInfo.localGameInfo->gAI.gameInfoEvent = 0;
 	}
-	if(gameInfoEventTimer != -1)
-	{
-		if(gameInfoEvent == 1)
-		{
+	if(gameInfoEventTimer != -1) {
+		if(gameInfoEvent == 1) {
 			printText("        OUT", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 2)
-		{
+		if(gameInfoEvent == 2) {
 			printText("     WOUNDED", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 3)
-		{
+		if(gameInfoEvent == 3) {
 			printText("        RUN", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 4)
-		{
+		if(gameInfoEvent == 4) {
 			printText("  OUT OF BOUNDS", 15, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 5)
-		{
+		if(gameInfoEvent == 5) {
 			printText("      STRIKE", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 6)
-		{
+		if(gameInfoEvent == 6) {
 			printText("        BALL", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 7)
-		{
+		if(gameInfoEvent == 7) {
 			printText("HALF-INNING ENDS", 16, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 8)
-		{
+		if(gameInfoEvent == 8) {
 			printText("    NEXT PAIR", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 9)
-		{
+		if(gameInfoEvent == 9) {
 			printText("     TWO RUNS", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
 	}
 	// when free walk decision and batter decision are both waiting at the same time, choose walk.
-	else if(stateInfo.localGameInfo->gAI.waitingForFreeWalkDecision == 1)
-	{
+	else if(stateInfo.localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
 		printText(" Take a walk", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 	}
 	// when waiting for batter decision we show "select" and players name and number
 	// so that the decision making is easier.
-	else
-	{
+	else {
 		char str[5] = "S P ";
 		int speed;
 		int power;
 		int index;
 		int shouldContinue = 1;
 		// index selection a bit different when homerunbatting contest.
-		if(stateInfo.globalGameInfo->period < 4)
-		{
+		if(stateInfo.globalGameInfo->period < 4) {
 			if(stateInfo.localGameInfo->pII.batterSelectionIndex == -1) shouldContinue = 0;
 			else index = stateInfo.localGameInfo->pII.batterSelectionIndex;
-		}
-		else
-		{
+		} else {
 			int battingTeamIndex = (stateInfo.globalGameInfo->
-				inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
+			                        inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
 			index = stateInfo.globalGameInfo->teams[battingTeamIndex].
-				batterRunnerIndices[0][stateInfo.localGameInfo->gAI.runnerBatterPairCounter];
+			        batterRunnerIndices[0][stateInfo.localGameInfo->gAI.runnerBatterPairCounter];
 			if(index == -1) shouldContinue = 0;
 		}
-		if(shouldContinue == 1)
-		{
+		if(shouldContinue == 1) {
 			speed = stateInfo.localGameInfo->playerInfo[index].bTPI.speed;
 			power = stateInfo.localGameInfo->playerInfo[index].bTPI.power;
 			str[1] = (char)(((int)'0')+(speed));
@@ -371,12 +332,9 @@ static void drawStatistics(double alpha)
 			printText(str, 5, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 			str4 = stateInfo.localGameInfo->playerInfo[index].bTPI.name;
 			printText(str4, strlen(str4), INFO_X + 0.14f, STATISTICS_TEXT_HEIGHT, 2);
-			if(stateInfo.localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo.globalGameInfo->period < 4)
-			{
+			if(stateInfo.localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo.globalGameInfo->period < 4) {
 				str5[0] = 'J';
-			}
-			else
-			{
+			} else {
 				str5[0] = (char)(((int)'0')+stateInfo.localGameInfo->playerInfo[index].bTPI.number);
 			}
 			printText(str5, 1, INFO_X + 0.11f, STATISTICS_TEXT_HEIGHT, 2);
@@ -422,55 +380,41 @@ static void drawStatistics(double alpha)
 
 
 	// and then draw little disks over basesTexture to indicate where baserunners are.
-	for(i = 0; i < BASE_COUNT; i++)
-	{
+	for(i = 0; i < BASE_COUNT; i++) {
 		int index = stateInfo.localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1)
-		{
+		if(index != -1) {
 			float left = BASES_X - 0.075f;
 			float interval = 0.15f/4;
 			float phase = 0.0f;
 			int base;
 			float distance;
 			// for batter we say at 0 until we have passed the homeline.
-			if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 0)
-			{
+			if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 0) {
 				if(stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
-					HOME_LINE_Z > 0)
-				{
+				        HOME_LINE_Z > 0) {
 					phase = 0.0f;
-				}
-				else
-				{
+				} else {
 					distance = stateInfo.fieldPositions->firstBaseRun.z - HOME_LINE_Z;
 					phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
-						HOME_LINE_Z) / distance;
+					         HOME_LINE_Z) / distance;
 				}
 				base = 0;
-			}
-			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 1)
-			{
+			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 1) {
 				distance = stateInfo.fieldPositions->secondBaseRun.x - stateInfo.fieldPositions->firstBaseRun.x;
 				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.x -
-					stateInfo.fieldPositions->firstBaseRun.x) / distance;
+				         stateInfo.fieldPositions->firstBaseRun.x) / distance;
 				base = 1;
-			}
-			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 2)
-			{
+			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 2) {
 				distance = stateInfo.fieldPositions->thirdBaseRun.x - stateInfo.fieldPositions->secondBaseRun.x;
 				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.x -
-					stateInfo.fieldPositions->secondBaseRun.x) / distance;
+				         stateInfo.fieldPositions->secondBaseRun.x) / distance;
 				base = 2;
-			}
-			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 3)
-			{
+			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 3) {
 				distance = HOME_LINE_Z - stateInfo.fieldPositions->thirdBaseRun.z;
 				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
-					stateInfo.fieldPositions->thirdBase.z) / distance;
+				         stateInfo.fieldPositions->thirdBase.z) / distance;
 				base = 3;
-			}
-			else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 4)
-			{
+			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 4) {
 				// and for player who arrives homebase we just set  the marker to be at the last position.
 				phase = 0.0f;
 				base = 4;
@@ -479,7 +423,7 @@ static void drawStatistics(double alpha)
 			glBindTexture(GL_TEXTURE_2D, basesMarkerTexture);
 			glPushMatrix();
 			glTranslatef(left + interval*base + phase*interval,
-				1.0f, STATISTICS_TEXT_HEIGHT);
+			             1.0f, STATISTICS_TEXT_HEIGHT);
 			glScalef(0.005f, 0.005f, 0.005f);
 			glCallList(planeDisplayList);
 			glPopMatrix();
@@ -550,15 +494,13 @@ int cleanGameScreen()
 	cleanMesh(planeMesh);
 
 	result = cleanImmutableWorld();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean immutable world properly.\n");
 		return -1;
 	}
 
 	result = cleanMutableWorld();
-	if(result != 0)
-	{
+	if(result != 0) {
 		printf("Could not clean mutable world properly.\n");
 		return -1;
 	}

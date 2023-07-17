@@ -21,8 +21,7 @@
 #define OBJ_ALLOCATE_FAILED       9/**< The function failed to allocate memory for all lists. This usually
 	* happens because either the system is out of memory (most likely) or there are too many allocations. */
 
-typedef struct _MeshObject
-{
+typedef struct _MeshObject {
 	unsigned int uFaceCount; /**< The number of faces this object has. */
 	int *uFaceList; /**< Pointer to face array. Format should be:
 							* \a position \a normal \a color \a texcoord

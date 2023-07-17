@@ -66,11 +66,11 @@ char* ownstrdup (const char *s);
  * @see #SimpleXmlParser
  */
 typedef void* (*SimpleXmlTagHandler) (
-	SimpleXmlParser parser,
-	SimpleXmlEvent event,
-	const char* szName,
-	const char* szAttribute,
-	const char* szValue
+    SimpleXmlParser parser,
+    SimpleXmlEvent event,
+    const char* szName,
+    const char* szAttribute,
+    const char* szValue
 );
 
 /**
@@ -90,7 +90,7 @@ typedef void* (*SimpleXmlTagHandler) (
  * the input data specified cannot be parsed.
  */
 extern SimpleXmlParser simpleXmlCreateParser (
-	const char *sData, long nDataSize
+    const char *sData, long nDataSize
 );
 
 /**
@@ -100,7 +100,7 @@ extern SimpleXmlParser simpleXmlCreateParser (
  * simpleXmlCreateParser).
  */
 extern void simpleXmlDestroyParser (
-	SimpleXmlParser parser
+    SimpleXmlParser parser
 );
 
 /**
@@ -115,7 +115,7 @@ extern void simpleXmlDestroyParser (
  * initialized successfully and parsing may be started using simpleXmlParse.
  */
 extern int simpleXmlInitializeParser (
-	SimpleXmlParser parser, const char *sData, long nDataSize
+    SimpleXmlParser parser, const char *sData, long nDataSize
 );
 
 /**

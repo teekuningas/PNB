@@ -157,8 +157,7 @@ static int leftScaleCount;
 static int rightScaleCount;
 static int playsFirst;
 
-typedef struct _TreeCoordinates
-{
+typedef struct _TreeCoordinates {
 	float x;
 	float y;
 } TreeCoordinates;
@@ -189,12 +188,11 @@ static int refreshLoadCups()
 	if (file == NULL) {
 		printf("I couldn't open saves.dat for reading.\n");
 		free(content);
-	return 1;
+		return 1;
 	}
 
 	// read file to char array
-	do
-	{
+	do {
 		i = fgetc(file);
 		*p = (char)i;
 		if(*p == '*') ok = 1;
@@ -205,12 +203,9 @@ static int refreshLoadCups()
 	/* close the file */
 	fclose(file);
 	// if we found correct type of end of file
-	if(ok == 1)
-	{
-		while(content[counter] != '*')
-		{
-			if(content[counter] == 'd')
-			{
+	if(ok == 1) {
+		while(content[counter] != '*') {
+			if(content[counter] == 'd') {
 				int i = content[counter + 2] - '0';
 				char index[3] = "00";
 				saveData[slot].inningCount = i;
@@ -221,12 +216,9 @@ static int refreshLoadCups()
 				saveData[slot].userTeamIndexInTree = atoi(index);
 				i = content[counter + 9] - '0';
 				saveData[slot].dayCount = i;
-			}
-			else if(content[counter] == 'i')
-			{
+			} else if(content[counter] == 'i') {
 				int i;
-				for(i = 0; i < SLOT_COUNT; i++)
-				{
+				for(i = 0; i < SLOT_COUNT; i++) {
 					char str[3] = "  ";
 					int index;
 					str[1] = content[counter + i*3 + 3];
@@ -234,28 +226,21 @@ static int refreshLoadCups()
 					index = atoi(str);
 					saveData[slot].cupTeamIndexTree[i] = index;
 				}
-			}
-			else if(content[counter] == 'w')
-			{
+			} else if(content[counter] == 'w') {
 				int i;
-				for(i = 0; i < SLOT_COUNT; i++)
-				{
+				for(i = 0; i < SLOT_COUNT; i++) {
 					int wins = content[counter + i*2 + 2] - '0';
 					saveData[slot].slotWins[i] = wins;
 				}
 				slot++;
-			}
-			else if(content[counter] == '^')
-			{
+			} else if(content[counter] == '^') {
 				saveData[slot].userTeamIndexInTree = -1;
 				slot++;
 			}
 
 			counter++;
 		}
-	}
-	else
-	{
+	} else {
 		free(content);
 		printf("Something wrong with the save file");
 		return 1;
@@ -263,24 +248,20 @@ static int refreshLoadCups()
 	free(content);
 
 	// go through the saveData-structure and figure out if its good.
-	for(i = 0; i < 5; i++)
-	{
-		if(saveData[i].userTeamIndexInTree != -1)
-		{
+	for(i = 0; i < 5; i++) {
+		if(saveData[i].userTeamIndexInTree != -1) {
 			if(saveData[i].dayCount < 0) valid = 0;
 			if(saveData[i].gameStructure != 0 && saveData[i].gameStructure != 1) valid = 0;
 			if(saveData[i].inningCount != 2 && saveData[i].inningCount != 4 && saveData[i].inningCount != 8) valid = 0;
 			if(saveData[i].winnerIndex >= TEAM_COUNT) valid = 0;
 			if(saveData[i].userTeamIndexInTree >= 14) valid = 0;
-			for(j = 0; j < SLOT_COUNT; j++)
-			{
+			for(j = 0; j < SLOT_COUNT; j++) {
 				if(saveData[i].slotWins[j] < 0 || saveData[i].slotWins[j] > 3) valid = 0;
 				if(saveData[i].cupTeamIndexTree[j] > TEAM_COUNT) valid = 0;
 			}
 		}
 	}
-	if(valid == 0)
-	{
+	if(valid == 0) {
 		printf("Something wrong with the save file.");
 		return 1;
 	}
@@ -304,74 +285,84 @@ static void saveCup(int slot)
 		return;
 	}
 	counter = 0;
-	for(i = 0; i < 5; i++)
-	{
+	for(i = 0; i < 5; i++) {
 		int j;
-		if(i != slot)
-		{
+		if(i != slot) {
 			saveDataPtr = &saveData[i];
-		}
-		else
-		{
+		} else {
 			saveDataPtr = &cupInfo;
 		}
-		if(saveDataPtr->userTeamIndexInTree != -1)
-		{
-			data[counter] = 'd'; counter++;
-			data[counter] = ' '; counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->inningCount)); counter++;
-			data[counter] = ' '; counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->gameStructure)); counter++;
-			data[counter] = ' '; counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)/10); counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)%10); counter++;
-			data[counter] = ' '; counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->dayCount)); counter++;
-			data[counter] = '\n'; counter++;
-			data[counter] = 'i'; counter++;
-			for(j = 0; j < SLOT_COUNT; j++)
-			{
+		if(saveDataPtr->userTeamIndexInTree != -1) {
+			data[counter] = 'd';
+			counter++;
+			data[counter] = ' ';
+			counter++;
+			data[counter] = (char)(((int)'0')+(saveDataPtr->inningCount));
+			counter++;
+			data[counter] = ' ';
+			counter++;
+			data[counter] = (char)(((int)'0')+(saveDataPtr->gameStructure));
+			counter++;
+			data[counter] = ' ';
+			counter++;
+			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)/10);
+			counter++;
+			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)%10);
+			counter++;
+			data[counter] = ' ';
+			counter++;
+			data[counter] = (char)(((int)'0')+(saveDataPtr->dayCount));
+			counter++;
+			data[counter] = '\n';
+			counter++;
+			data[counter] = 'i';
+			counter++;
+			for(j = 0; j < SLOT_COUNT; j++) {
 				int index = saveDataPtr->cupTeamIndexTree[j];
 				char first;
 				char second;
-				if(index < 0)
-				{
+				if(index < 0) {
 					first = '-';
 					second = (char)(((int)'0')+abs(index));
-				}
-				else
-				{
+				} else {
 					first = ' ';
 					second = (char)(((int)'0')+index);
 				}
-				data[counter] = ' '; counter++;
-				data[counter] = first; counter++;
-				data[counter] = second; counter++;
+				data[counter] = ' ';
+				counter++;
+				data[counter] = first;
+				counter++;
+				data[counter] = second;
+				counter++;
 			}
-			data[counter] = '\n'; counter++;
-			data[counter] = 'w'; counter++;
-			for(j = 0; j < SLOT_COUNT; j++)
-			{
+			data[counter] = '\n';
+			counter++;
+			data[counter] = 'w';
+			counter++;
+			for(j = 0; j < SLOT_COUNT; j++) {
 				int wins = saveDataPtr->slotWins[j];
-				data[counter] = ' '; counter++;
-				data[counter] = (char)(((int)'0')+wins); counter++;
+				data[counter] = ' ';
+				counter++;
+				data[counter] = (char)(((int)'0')+wins);
+				counter++;
 			}
-			data[counter] = '\n'; counter++;
-		}
-		else
-		{
-			data[counter] = '^'; counter++;
-			data[counter] = '\n'; counter++;
+			data[counter] = '\n';
+			counter++;
+		} else {
+			data[counter] = '^';
+			counter++;
+			data[counter] = '\n';
+			counter++;
 		}
 	}
-	data[counter] = '*'; counter++;
+	data[counter] = '*';
+	counter++;
 	data[counter] = '\0';
 	fputs(data, fp);
 	fclose(fp);
 	free(data);
 
-	if(refreshLoadCups() != 0)
-	{
+	if(refreshLoadCups() != 0) {
 		printf("Something wrong with the save file.");
 	}
 }
@@ -380,28 +371,20 @@ static void updateSchedule()
 {
 	int j;
 	int counter = 0;
-	for(j = 0; j < SLOT_COUNT/2; j++)
-	{
-		if(stateInfo.cupInfo->gameStructure == 0)
-		{
-			if(stateInfo.cupInfo->slotWins[j*2] < 3 && stateInfo.cupInfo->slotWins[j*2+1] < 3)
-			{
+	for(j = 0; j < SLOT_COUNT/2; j++) {
+		if(stateInfo.cupInfo->gameStructure == 0) {
+			if(stateInfo.cupInfo->slotWins[j*2] < 3 && stateInfo.cupInfo->slotWins[j*2+1] < 3) {
 				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 5) ||
-					(j == 6 && stateInfo.cupInfo->dayCount >= 10))
-				{
+				        (j == 6 && stateInfo.cupInfo->dayCount >= 10)) {
 					stateInfo.cupInfo->schedule[counter][0] = j*2;
 					stateInfo.cupInfo->schedule[counter][1] = j*2+1;
 					counter++;
 				}
 			}
-		}
-		else
-		{
-			if(stateInfo.cupInfo->slotWins[j*2] < 1 && stateInfo.cupInfo->slotWins[j*2+1] < 1)
-			{
+		} else {
+			if(stateInfo.cupInfo->slotWins[j*2] < 1 && stateInfo.cupInfo->slotWins[j*2+1] < 1) {
 				if(j < 4 || (j < 6 && stateInfo.cupInfo->dayCount >= 1) ||
-					(j == 6 && stateInfo.cupInfo->dayCount >= 2))
-				{
+				        (j == 6 && stateInfo.cupInfo->dayCount >= 2)) {
 					stateInfo.cupInfo->schedule[counter][0] = j*2;
 					stateInfo.cupInfo->schedule[counter][1] = j*2+1;
 					counter++;
@@ -409,8 +392,7 @@ static void updateSchedule()
 			}
 		}
 	}
-	for(j = counter; j < 4; j++)
-	{
+	for(j = counter; j < 4; j++) {
 		stateInfo.cupInfo->schedule[j][0] = -1;
 		stateInfo.cupInfo->schedule[j][1] = -1;
 	}
@@ -427,31 +409,21 @@ static void loadCup(int slot)
 	stateInfo.cupInfo->userTeamIndexInTree = saveData[slot].userTeamIndexInTree;
 	stateInfo.cupInfo->dayCount = saveData[slot].dayCount;
 
-	for(i = 0; i < SLOT_COUNT; i++)
-	{
+	for(i = 0; i < SLOT_COUNT; i++) {
 		stateInfo.cupInfo->cupTeamIndexTree[i] = saveData[slot].cupTeamIndexTree[i];
 		stateInfo.cupInfo->slotWins[i] = saveData[slot].slotWins[i];
 	}
 	stateInfo.cupInfo->winnerIndex = -1;
-	if(stateInfo.cupInfo->gameStructure == 1)
-	{
-		if(stateInfo.cupInfo->slotWins[12] == 1)
-		{
+	if(stateInfo.cupInfo->gameStructure == 1) {
+		if(stateInfo.cupInfo->slotWins[12] == 1) {
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[12];
-		}
-		else if(stateInfo.cupInfo->slotWins[13] == 1)
-		{
+		} else if(stateInfo.cupInfo->slotWins[13] == 1) {
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[13];
 		}
-	}
-	else if(stateInfo.cupInfo->gameStructure == 0)
-	{
-		if(stateInfo.cupInfo->slotWins[12] == 3)
-		{
+	} else if(stateInfo.cupInfo->gameStructure == 0) {
+		if(stateInfo.cupInfo->slotWins[12] == 3) {
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[12];
-		}
-		else if(stateInfo.cupInfo->slotWins[13] == 3)
-		{
+		} else if(stateInfo.cupInfo->slotWins[13] == 3) {
 			stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[13];
 		}
 	}
@@ -465,10 +437,8 @@ static void updateCupTreeAfterDay(int scheduleSlot, int winningSlot)
 	int i;
 	int counter = 0;
 	int done = 0;
-	while(done == 0 && counter < 4)
-	{
-		if(stateInfo.cupInfo->schedule[counter][0] != -1)
-		{
+	while(done == 0 && counter < 4) {
+		if(stateInfo.cupInfo->schedule[counter][0] != -1) {
 			int team1Index = stateInfo.cupInfo->cupTeamIndexTree[(stateInfo.cupInfo->schedule[counter][0])];
 			int team2Index = stateInfo.cupInfo->cupTeamIndexTree[(stateInfo.cupInfo->schedule[counter][1])];
 			int index = 8 + stateInfo.cupInfo->schedule[counter][0] / 2;
@@ -477,8 +447,7 @@ static void updateCupTreeAfterDay(int scheduleSlot, int winningSlot)
 			int random = rand()%100;
 			int difference;
 			int winningTeam;
-			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)
-			{
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				team1Points += stateInfo.teamData[team1Index].players[i].speed;
 				team1Points += stateInfo.teamData[team1Index].players[i].power;
 				team2Points += stateInfo.teamData[team2Index].players[i].speed;
@@ -486,64 +455,43 @@ static void updateCupTreeAfterDay(int scheduleSlot, int winningSlot)
 			}
 			difference = team2Points - team1Points;
 			// update schedule and cup tree
-			if(counter != scheduleSlot)
-			{
-				if(random + difference*3 >= 50)
-				{
+			if(counter != scheduleSlot) {
+				if(random + difference*3 >= 50) {
 					winningTeam = 1;
-				}
-				else
-				{
+				} else {
 					winningTeam = 0;
 				}
-			}
-			else
-			{
+			} else {
 				winningTeam = winningSlot;
 			}
 			stateInfo.cupInfo->slotWins[stateInfo.cupInfo->schedule[counter][winningTeam]] += 1;
-			if(stateInfo.cupInfo->gameStructure == 0)
-			{
-				if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->schedule[counter][winningTeam]] == 3)
-				{
-					if(index < 14)
-					{
+			if(stateInfo.cupInfo->gameStructure == 0) {
+				if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->schedule[counter][winningTeam]] == 3) {
+					if(index < 14) {
 						stateInfo.cupInfo->cupTeamIndexTree[index] =
-							stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
-						if(stateInfo.cupInfo->schedule[counter][winningTeam] == stateInfo.cupInfo->userTeamIndexInTree)
-						{
+						    stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
+						if(stateInfo.cupInfo->schedule[counter][winningTeam] == stateInfo.cupInfo->userTeamIndexInTree) {
 							stateInfo.cupInfo->userTeamIndexInTree = index;
 						}
-					}
-					else
-					{
+					} else {
 						stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
 					}
 				}
-			}
-			else
-			{
-				if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->schedule[counter][winningTeam]] == 1)
-				{
-					if(index < 14)
-					{
+			} else {
+				if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->schedule[counter][winningTeam]] == 1) {
+					if(index < 14) {
 						stateInfo.cupInfo->cupTeamIndexTree[index] =
-							stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
-						if(stateInfo.cupInfo->schedule[counter][winningTeam] == stateInfo.cupInfo->userTeamIndexInTree)
-						{
+						    stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
+						if(stateInfo.cupInfo->schedule[counter][winningTeam] == stateInfo.cupInfo->userTeamIndexInTree) {
 							stateInfo.cupInfo->userTeamIndexInTree = index;
 						}
-					}
-					else
-					{
+					} else {
 						stateInfo.cupInfo->winnerIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[counter][winningTeam]];
 					}
 				}
 			}
 			counter++;
-		}
-		else
-		{
+		} else {
 			done = 1;
 		}
 	}
