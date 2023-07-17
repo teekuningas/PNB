@@ -17,23 +17,6 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	char param[2]   = { 0,0 }; // Returned characters from a line
 	int  retval     = 0;       // Return value from ReadLine.
 	int bNoNormals = 0;   // TRUE if this object has no normals.
-	#if defined(__wii__)
-	u16 uFaceCount     = 0;
-	u16 uPositionCount = 0;
-	u16 uNormalCount   = 0;
-	u16 uTexCoordCount = 0;
-
-	u16 *uFaceList      = NULL;
-	f32 *fPositionIndex = NULL;
-	f32 *fNormalIndex   = NULL;
-	u8  *uColorIndex    = NULL;
-	f32 *fTexCoordIndex = NULL;
-
-	u16 vcnt  = 0; // Vertex count
-	u16 vncnt = 0; // Vertex normal count
-	u16 vtcnt = 0; // Tex coord count
-	u16 fcnt  = 0; // Face count
-	#else
 	unsigned int uFaceCount     = 0;
 	unsigned int uPositionCount = 0;
 	unsigned int uNormalCount   = 0;
@@ -49,13 +32,9 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	unsigned int vncnt = 0; // Vertex normal count
 	unsigned int vtcnt = 0; // Tex coord count
 	unsigned int fcnt  = 0; // Face count
-	#endif
 	FILE *objfile;
 
 	objfile = fopen(path, "rb");
-	#if defined(__wii__)
-	setvbuf (objfile, NULL, _IOFBF, 0);
-	#endif
 
 	if ( objfile == NULL ) // Exit if we can't open it.
 		return OBJ_FILE_OPEN_FAILED;
@@ -109,39 +88,6 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 		return OBJ_TOO_FEW_VERTICES;
 
 	// Now it's time to allocate the arrays.
-	#if defined(__wii__)
-	uFaceList      = malloc ( sizeof(u16) * 3 * 4 * uFaceCount );
-
-	fPositionIndex = memalign ( 32, ( sizeof(f32) * 3 ) * uPositionCount );
-
-	if ( uNormalCount == 0 ) {
-		// Objects without normals get default normal values.
-		bNoNormals = 1;
-		fNormalIndex = memalign ( 32, ( sizeof(f32) * 3 ) );
-		fNormalIndex[0] = 0.f;
-		fNormalIndex[1] = 0.f;
-		fNormalIndex[2] = 1.f;
-	} else
-		fNormalIndex = memalign ( 32, ( sizeof(f32) * 3 ) * uNormalCount );
-
-	uColorIndex    = memalign( 32, ( sizeof(u8) * 4 ) );
-	uColorIndex[0] = 255;
-	uColorIndex[1] = 255;
-	uColorIndex[2] = 255;
-	uColorIndex[3] = 255;
-	fTexCoordIndex = memalign ( 32, ( sizeof(f32) * 2 ) * uTexCoordCount );
-
-	if ( uFaceList     == NULL ||
-		fPositionIndex == NULL ||
-		fNormalIndex   == NULL ||
-		fTexCoordIndex == NULL ) {
-		free ( uFaceList );
-		free ( fPositionIndex );
-		free ( fNormalIndex );
-		free ( fTexCoordIndex );
-		return OBJ_ALLOCATE_FAILED;
-	}
-	#else
 	uFaceList = (int *)malloc ( ( sizeof(int) * 3 * 4 * uFaceCount ));
 
 	fPositionIndex = (float *)malloc ( ( sizeof(float) * 3 ) * uPositionCount );
@@ -173,7 +119,6 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 		free ( fTexCoordIndex );
 		return OBJ_ALLOCATE_FAILED;
 	}
-	#endif
 
 	// Rewind and find that object block again.
 	rewind(objfile);
@@ -224,21 +169,11 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 					break;
 				case 'f':
 					if ( bNoNormals ) {
-						#if defined(__wii__)
-						sscanf ( line, "f %hu//%hu %hu//%hu %hu//%hu",
-						&uFaceList[fcnt+0], &uFaceList[fcnt+3],
-						&uFaceList[fcnt+4], &uFaceList[fcnt+7],
-
-						&uFaceList[fcnt+8], &uFaceList[fcnt+11] );
-						#else
-
 						sscanf ( line, "f %d//%d %d//%d %d//%d",
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3],
 						&uFaceList[fcnt+4], &uFaceList[fcnt+7],
 
 						&uFaceList[fcnt+8], &uFaceList[fcnt+11] );
-						#endif
-
 						uFaceList[fcnt+1]  = 0; // Default normal and colors.
 						uFaceList[fcnt+2]  = 0;
 						uFaceList[fcnt+5]  = 0;
@@ -246,17 +181,10 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 						uFaceList[fcnt+9]  = 0;
 						uFaceList[fcnt+10] = 0;
 					} else {
-						#if defined(__wii__)
-						sscanf ( line, "f %hu/%hu/%hu %hu/%hu/%hu %hu/%hu/%hu",
-						&uFaceList[fcnt+0], &uFaceList[fcnt+3], &uFaceList[fcnt+1],
-						&uFaceList[fcnt+4], &uFaceList[fcnt+7], &uFaceList[fcnt+5],
-						&uFaceList[fcnt+8], &uFaceList[fcnt+11], &uFaceList[fcnt+9] );
-						#else
 						sscanf ( line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
 						&uFaceList[fcnt+0], &uFaceList[fcnt+3], &uFaceList[fcnt+1],
 						&uFaceList[fcnt+4], &uFaceList[fcnt+7], &uFaceList[fcnt+5],
 						&uFaceList[fcnt+8], &uFaceList[fcnt+11], &uFaceList[fcnt+9] );
-						#endif
 
 						uFaceList[fcnt+2]  = 0; // Default colors.
 						uFaceList[fcnt+6]  = 0;
@@ -290,11 +218,7 @@ int LoadObj (const char* path, const char *objectname, MeshObject *meshObj )
 	meshObj->uFaceList      = uFaceList;
 	meshObj->fPositionIndex = fPositionIndex;
 	meshObj->fNormalIndex   = fNormalIndex;
-	#if defined(__wii__)
-	meshObj->uColorIndex = uColorIndex;
-	#else
 	meshObj->fColorIndex    = fColorIndex;
-	#endif
 	meshObj->fTexCoordIndex = fTexCoordIndex;
 	meshObj->uTexCoordCount = uTexCoordCount;
 	meshObj->uPositionCount = uPositionCount;

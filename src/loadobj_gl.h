@@ -1,8 +1,6 @@
 #ifndef LOADOBJ_GL_H
 #define LOADOBJ_GL_H
 
-#if defined(__wii__)
-#else
 	//enum LoadObjRetVals {
 	#define OBJ_NO_ERROR              0 /**< No error occurred. The data pointers have been placed in the input
 		* structure. */
@@ -44,5 +42,4 @@
 
 	int LoadObj (const char* filename, const char *objectname, MeshObjectGL *meshObj ) ;
 
-#endif
 #endif /* LOADOBJ_GLH_ */

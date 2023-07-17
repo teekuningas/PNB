@@ -20,16 +20,11 @@ int main ( int argc, char *argv[] )
 	int done = 0;
 	int result;
 
-	#if defined(__wii__)
-	unsigned long long initTime = ticks_to_millisecs(gettime());
-	#endif
 	unsigned int currentTime = 0;
 	unsigned int newTime;
 	unsigned int frameTime;
     unsigned int accumulator = 0;
 	unsigned int updateInterval = UPDATE_INTERVAL;
-	#if defined(__wii__)
-	#else
 	if(argc >= 2)
 	{
 		fullscreen = 0;
@@ -38,26 +33,15 @@ int main ( int argc, char *argv[] )
 	{
 		fullscreen = 1;
 	}
-	#endif
 
 	printf("v. 1.0.1\n");
 
-	#if defined(__wii__)
-		result = initGX();
-		if(result != 0)
-		{
-			printf("Could not init GX. Exiting.");
-			return -1;
-		}
-
-	#else
 		result = initGL();
 		if(result != 0)
 		{
 			printf("Could not init GL. Exiting.");
 			return -1;
 		}
-	#endif
 
 	result = fillPlayerData(&(teamData[0]));
 	if(result != 0)
@@ -117,11 +101,7 @@ int main ( int argc, char *argv[] )
 	// to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
 	while(done == 0)
 	{
-		#if defined(__wii__)
-		newTime = (unsigned int)(ticks_to_millisecs(gettime()) - initTime);
-		#else
 		newTime = (unsigned int)(1000*glfwGetTime());
-		#endif
 		frameTime = newTime - currentTime;
 		currentTime = newTime;
 		accumulator += frameTime;
@@ -129,11 +109,7 @@ int main ( int argc, char *argv[] )
         while ( accumulator >= updateInterval )
         {
 			result = update();
-			#if defined(__wii__)
-			if (result != 0) done = 1;
-			#else
 			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;
-			#endif
             accumulator -= updateInterval;
         }
 
@@ -188,122 +164,11 @@ static void draw(double alpha)
 			drawMainMenu(alpha);
 			break;
 	}
-	#if defined(__wii__)
-	GX_DrawDone();
-	// flip framebuffer and get ready for the next one
-	fb ^= 1;
-	GX_CopyDisp(frameBuffer[fb],GX_TRUE);
-	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
-	VIDEO_Flush();
-	#else
 	glfwSwapBuffers();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	#endif
 }
 
-#if defined(__wii__)
-static int initGX()
-{
-	// initialization code for GX of libogc
-	f32 yscale;
-	u32 xfbHeight;
-
-	VIDEO_Init();
-	rmode = VIDEO_GetPreferredMode(NULL);
-
-	// allocate 2 framebuffers for double buffering
-	frameBuffer[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-	frameBuffer[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-	VIDEO_Configure(rmode);
-	VIDEO_SetNextFramebuffer(frameBuffer[fb]);
-	VIDEO_SetBlack(0);
-	VIDEO_Flush();
-
-	// setup the fifo and then init the flipper
-	void *gp_fifo = NULL;
-	gp_fifo = memalign(32,DEFAULT_FIFO_SIZE);
-	memset(gp_fifo,0,DEFAULT_FIFO_SIZE);
-	GX_Init(gp_fifo,DEFAULT_FIFO_SIZE);
-
-	// clears the bg to color and clears the z buffer
-	GXColor background = {0xa0, 0xff, 0xff, 0xff};
-	GX_SetCopyClear(background, 0x00ffffff);
-
-	// other gx setup
-	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
-	yscale = GX_GetYScaleFactor(rmode->efbHeight,rmode->xfbHeight);
-	xfbHeight = GX_SetDispCopyYScale(yscale);
-	GX_SetScissor(0,0,rmode->fbWidth,rmode->efbHeight);
-	GX_SetDispCopySrc(0,0,rmode->fbWidth,rmode->efbHeight);
-	GX_SetDispCopyDst(rmode->fbWidth,xfbHeight);
-	GX_SetCopyFilter(rmode->aa,rmode->sample_pattern,GX_TRUE,rmode->vfilter);
-	GX_SetFieldMode(rmode->field_rendering,((rmode->viHeight==2*rmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
-	GX_SetColorUpdate(GX_TRUE);
-
-	if (rmode->aa) {
-		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
-	}
-	else
-	{
-		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-	}
-
-	GX_CopyDisp(frameBuffer[fb],GX_TRUE);
-	GX_SetDispCopyGamma(GX_GM_1_0);
-
-	GX_SetNumChans(1);
-	GX_SetNumTexGens(1);
-	GX_SetNumTevStages(1);
-	// basic texture unit settings
-	GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-
-	guMtxIdentity(mt);
-	guMtxScaleApply(mt, mt, 1.0f, -1.0f, 1.0f);
-	GX_LoadTexMtxImm(mt, GX_TEXMTX0, GX_MTX2x4);
-	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0);
-
-	GX_SetCullMode(GX_CULL_FRONT);
-
-	// set the format for meshes
-	GX_ClearVtxDesc();
-
-	GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
-	GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
-	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-	GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
-
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-
-	GX_InvVtxCache();
-	GX_InvalidateTexAll();
-
-	guPerspective(perspective, 45, PERSPECTIVE_ASPECT_RATIO, 0.1F, 250.0F);
-	GX_LoadProjectionMtx(perspective, GX_PERSPECTIVE);
-
-	// init filesystem
-
-	if (!fatInitDefault())
-	{
-		printf("fatInitDefault failure: terminating\n");
-		return -1;
-	}
-
-	pdir=opendir("/");
-
-	if (!pdir)
-	{
-	    printf ("opendir() failure; terminating\n");
-		return -1;
-	}
-
-	return 0;
-}
-#else
 static int initGL()
 {
 	GLFWvidmode mode;
@@ -383,7 +248,6 @@ static int initGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	return 0;
 }
-#endif
 
 static int clean()
 {
@@ -419,10 +283,6 @@ static int clean()
 		printf("Could not clean sound completely\n");
 		return -1;
 	}
-	#if defined(__wii__)
-	closedir(pdir);
-	#else
 	glfwTerminate();
-	#endif
 	return 0;
 }

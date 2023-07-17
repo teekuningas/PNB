@@ -1,7 +1,3 @@
-
-#if defined(__wii__)
-#else
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -319,5 +315,3 @@ __inline int SeekToObject (char *objfile, const char *objectname )
 
 	return 0;
 }
-
-#endif

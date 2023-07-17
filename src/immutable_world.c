@@ -112,23 +112,11 @@ static void drawPlate()
 {
 	// models' width and length are 2, 2, so thats why we divide by 2.
 	// 0.5f is just so that it wouldnt be so high that shoes and ball will disappear in it.
-	#if defined(__wii__)
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, PLATE_WIDTH/2, 0.5f, PLATE_WIDTH/2);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	guMtxInverse(modelview,mvi);
-	guMtxTranspose(mvi,modelview);
-	GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-	GX_LoadTexObj(&plateTexture, GX_TEXMAP0);
-	GX_CallDispList(plateDisplayList, plateListSize);
-	#else
 	glBindTexture(GL_TEXTURE_2D, plateTexture);
 	glPushMatrix();
 	glScalef(PLATE_WIDTH/2, 0.5f, PLATE_WIDTH/2);
 	glCallList(plateDisplayList);
 	glPopMatrix();
-	#endif
 }
 
 // Draw fence and ground
@@ -139,26 +127,6 @@ static void drawFence()
 {
 	int i;
 	// BACK FENCE
-	#if defined(__wii__)
-	GX_LoadTexObj(&fenceTexture, GX_TEXMAP0);
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotXAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxTransApply(model, model, 0.0f, 1.0f, 0.0f);
-	guMtxScaleApply(model, model, FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f);
-
-	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
-	{
-		memcpy(fenceModel, model, sizeof (Mtx));
-		guMtxTransApply(fenceModel, fenceModel, FENCE_PIECE_WIDTH/2 + FIELD_LEFT + i*FENCE_PIECE_WIDTH, 0.0f, FIELD_BACK);
-		guMtxConcat(view,fenceModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-	}
-	#else
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
 	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
 	{
@@ -170,46 +138,7 @@ static void drawFence()
 		glCallList(planeDisplayList);
 		glPopMatrix();
 	}
-	#endif
 	// FRONT FENCE
-	#if defined(__wii__)
-	GX_LoadTexObj(&fenceTexture, GX_TEXMAP0);
-	// draw two times, first normally then rotated.
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotXAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxTransApply(model, model, 0.0f, 1.0f, 0.0f);
-	guMtxScaleApply(model, model, FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f);
-
-	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
-	{
-		memcpy(fenceModel, model, sizeof (Mtx));
-		guMtxTransApply(fenceModel, fenceModel, FENCE_PIECE_WIDTH/2 + FIELD_LEFT + i*FENCE_PIECE_WIDTH, 0.0f, FIELD_FRONT);
-		guMtxConcat(view,fenceModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-	}
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotXAxis, -90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxTransApply(model, model, 0.0f, 1.0f, 0.0f);
-	guMtxScaleApply(model, model, FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f);
-
-	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
-	{
-		memcpy(fenceModel, model, sizeof (Mtx));
-		guMtxTransApply(fenceModel, fenceModel, FENCE_PIECE_WIDTH/2 + FIELD_LEFT + i*FENCE_PIECE_WIDTH, 0.0f, FIELD_FRONT);
-		guMtxConcat(view,fenceModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-	}
-	#else
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
 	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++)
 	{
@@ -227,28 +156,7 @@ static void drawFence()
 		glCallList(planeDisplayList);
 		glPopMatrix();
 	}
-	#endif
 	// LEFT FENCE
-	#if defined(__wii__)
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotXAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxRotAxisDeg(rot, &rotYAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxTransApply(model, model, 0.0f, 1.0f, 0.0f);
-	guMtxScaleApply(model, model, 1.0f, FENCE_HEIGHT/2, FENCE_PIECE_WIDTH/2);
-	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH); i++)
-	{
-		memcpy(fenceModel, model, sizeof (Mtx));
-		guMtxTransApply(fenceModel, fenceModel, FIELD_LEFT,0.0f, FIELD_BACK + FENCE_PIECE_WIDTH/2 + i*FENCE_PIECE_WIDTH);
-		guMtxConcat(view,fenceModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-	}
-	#else
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
 	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH); i++)
 	{
@@ -261,28 +169,7 @@ static void drawFence()
 		glCallList(planeDisplayList);
 		glPopMatrix();
 	}
-	#endif
 	// RIGHT FENCE
-	#if defined(__wii__)
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotXAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxRotAxisDeg(rot, &rotYAxis, -90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxTransApply(model, model, 0.0f, 1.0f, 0.0f);
-	guMtxScaleApply(model, model, 1.0f, FENCE_HEIGHT/2, FENCE_PIECE_WIDTH/2);
-	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH); i++)
-	{
-		memcpy(fenceModel, model, sizeof (Mtx));
-		guMtxTransApply(fenceModel, fenceModel, FIELD_RIGHT, 0.0f, FIELD_BACK + FENCE_PIECE_WIDTH/2 + i*FENCE_PIECE_WIDTH);
-		guMtxConcat(view,fenceModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-	}
-	#else
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
 	for(i = 0; i < (int)(6*GROUND_LENGTH/FENCE_PIECE_WIDTH) ; i++)
 	{
@@ -295,43 +182,12 @@ static void drawFence()
 		glCallList(planeDisplayList);
 		glPopMatrix();
 	}
-	#endif
 }
 
 static void drawGround()
 {
 	int i;
 	// here we use groundUnit[12].texture for all grass ground pieces.
-	#if defined(__wii__)
-	// models' width and length is 2
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, GROUND_LENGTH/2, 1.0f, GROUND_WIDTH/2);
-	guMtxRotAxisDeg(rot, &rotYAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	// move to left side AND small fix to make pitch plate the origin.
-	guMtxTransApply(model, model, -GROUND_WIDTH + GROUND_OFFSET_X, 0.0f, GROUND_OFFSET_Z);
-
-	for(i = 0; i < GROUND_UNIT_COUNT; i++)
-	{
-		memcpy(groundModel, model, sizeof (Mtx));
-		guMtxTransApply(groundModel, groundModel,GROUND_WIDTH*groundUnit[i].y ,0.0f, -GROUND_LENGTH*groundUnit[i].x);
-		guMtxConcat(view,groundModel,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		guMtxInverse(modelview,mvi);
-		guMtxTranspose(mvi,modelview);
-		GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-		if(i < 12)
-		{
-			GX_LoadTexObj(&(groundUnit[i].texture), GX_TEXMAP0);
-		}
-		else
-		{
-			GX_LoadTexObj(&(groundUnit[12].texture), GX_TEXMAP0);
-		}
-		GX_CallDispList(planeDisplayList, planeListSize);
-
-	}
-	#else
 	for(i = 0; i < GROUND_UNIT_COUNT; i++)
 	{
 		if(i < 12)
@@ -350,48 +206,28 @@ static void drawGround()
 		glCallList(planeDisplayList);
 		glPopMatrix();
 	}
-	#endif
 }
 // cleaning is good for people.
 int cleanImmutableWorld()
 {
 	cleanMesh(planeMesh);
 	cleanMesh(plateMesh);
-	#if defined(__wii__)
-	free(planeDisplayList);
-	free(plateDisplayList);
-	#endif
 
 	return 0;
 }
 
 static int initFence()
 {
-	#if defined(__wii__)
-	TPL_OpenTPLFromMemory(&fenceTPL, (void *)fence_tpl, fence_tpl_size);
-	TPL_GetTexture(&fenceTPL, fence, &fenceTexture);
-	#else
 	if(tryLoadingTextureGL(&fenceTexture, "data/textures/fence.tga", "fence") != 0) return -1;
-	#endif
 
 	return 0;
 }
 
 static int initPlate()
 {
-	#if defined(__wii__)
-	TPL_OpenTPLFromMemory(&plateTPL, (void *)plate_tpl, plate_tpl_size);
-	TPL_GetTexture(&plateTPL, plate, &plateTexture);
-	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/plate.obj", "Cylinder",
-		plateMesh, &plateListSize, &plateDisplayList) != 0) return -1;
-	#else
-
 	if(tryLoadingTextureGL(&plateTexture, "data/textures/plate.tga", "plate") != 0) return -1;
 	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plate.obj", "Cylinder", plateMesh, &plateDisplayList) != 0) return -1;
-
-	#endif
 	return 0;
 }
 
@@ -423,50 +259,6 @@ static int initGround()
 		}
 	}
 	// then just load the textures.
-	#if defined(__wii__)
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa1_tpl, osa1_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart1, &groundUnit[0].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa2_tpl, osa2_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart2, &groundUnit[1].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa3_tpl, osa3_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart3, &groundUnit[2].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa4_tpl, osa4_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart4, &groundUnit[3].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa5_tpl, osa5_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart5, &groundUnit[4].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa6_tpl, osa6_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart6, &groundUnit[5].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa7_tpl, osa7_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart7, &groundUnit[6].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa8_tpl, osa8_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart8, &groundUnit[7].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa9_tpl, osa9_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart9, &groundUnit[8].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa10_tpl, osa10_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart10, &groundUnit[9].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa11_tpl, osa11_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart11, &groundUnit[10].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)osa12_tpl, osa12_tpl_size);
-	TPL_GetTexture(&groundTPL, groundPart12, &groundUnit[11].texture);
-
-	TPL_OpenTPLFromMemory(&groundTPL, (void *)grassTexture_tpl, grassTexture_tpl_size);
-	TPL_GetTexture(&groundTPL, grassTexture, &groundUnit[12].texture);
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/plane.obj", "Plane",
-		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
-	#else
 	if(tryLoadingTextureGL(&(groundUnit[0].texture), "data/textures/kentta/osa1.tga", "part1") != 0) return -1;
 	if(tryLoadingTextureGL(&(groundUnit[1].texture), "data/textures/kentta/osa2.tga", "part2") != 0) return -1;
 	if(tryLoadingTextureGL(&(groundUnit[2].texture), "data/textures/kentta/osa3.tga", "part3") != 0) return -1;
@@ -482,7 +274,5 @@ static int initGround()
 	if(tryLoadingTextureGL(&(groundUnit[12].texture), "data/textures/grassTexture.tga", "grassTexture") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
-
-	#endif
 	return 0;
 }

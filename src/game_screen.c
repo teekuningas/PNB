@@ -19,32 +19,6 @@ int initGameScreen()
 {
 	int result;
 
-	#if defined(__wii__)
-	TPL_OpenTPLFromMemory(&skyTPL, (void *)sky_tpl, sky_tpl_size);
-	TPL_GetTexture(&skyTPL, sky, &skyTexture);
-
-	TPL_OpenTPLFromMemory(&meterTPL, (void *)meter_tpl, meter_tpl_size);
-	TPL_GetTexture(&meterTPL, meter, &meterTexture);
-
-	TPL_OpenTPLFromMemory(&selectionBattingTPL, (void *)lineTexture_tpl, lineTexture_tpl_size);
-	TPL_GetTexture(&selectionBattingTPL, lineTexture, &selectionTextureBatting);
-
-	TPL_OpenTPLFromMemory(&selectionFieldingTPL, (void *)lineTexture2_tpl, lineTexture2_tpl_size);
-	TPL_GetTexture(&selectionFieldingTPL, lineTexture2, &selectionTextureFielding);
-
-	TPL_OpenTPLFromMemory(&basesTPL, (void *)bases_tpl, bases_tpl_size);
-	TPL_GetTexture(&basesTPL, bases, &basesTexture);
-
-	TPL_OpenTPLFromMemory(&basesMarkerTPL, (void *)basesMarker_tpl, basesMarker_tpl_size);
-	TPL_GetTexture(&basesMarkerTPL, basesMarker, &basesMarkerTexture);
-	skyMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/skybox.obj", "Cube",
-		skyMesh, &skyListSize, &skyDisplayList) != 0) return -1;
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
-		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
-
-	#else
 	if(tryLoadingTextureGL(&skyTexture, "data/textures/skybox.tga", "sky") != 0) return -1;
 	if(tryLoadingTextureGL(&meterTexture, "data/textures/meter.tga", "meter") != 0) return -1;
 	if(tryLoadingTextureGL(&selectionTextureBatting, "data/textures/selectionBall1.tga", "selection1") != 0) return -1;
@@ -55,7 +29,6 @@ int initGameScreen()
 	if(tryPreparingMeshGL("data/models/skybox.obj", "Cube", skyMesh, &skyDisplayList) != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
-	#endif
 
 	initCamSettings();
 
@@ -163,15 +136,6 @@ void updateGameScreen()
 		}
 	}
 
-	#if defined(__wii__)
-	// originally light will be set in the camera space, but we actually want it to be
-	// independent of camera's location and orientation so we multiply light's position with this
-	// view matrix to get it out there in the world.
-	memcpy(&light, &lightPos, sizeof (guVector));
-	guVecMultiply(view, &light, &light);
-	GX_InitLightPos (&lo, light.x, light.y, light.z);
-	GX_LoadLightObj (&lo, GX_LIGHT0);
-	#endif
 	// and here will a lot of logic code.
 	updateMutableWorld();
 
@@ -193,41 +157,25 @@ void drawGameScreen(double alpha)
 	// then we draw world
 	// and then we draw the statistics
 	// all of these have different camera settings and maybe lighting settings but they still use the perspective projection.
-	#if defined(__wii__)
-	guLookAt(view, &skyBoxCam, &up, &skyBoxLook);
-	#else
 	glLoadIdentity();
 	gluLookAt(skyBoxCam.x, skyBoxCam.y, skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, up.x, up.y, up.z);
-	#endif
 
 	drawSkyBox();
 
-	#if defined(__wii__)
-	guLookAt(view, &cam, &up, &look);
-	GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
-	GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-	#else
 	glLoadIdentity();
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-	#endif
 
 	drawImmutableWorld(alpha);
 	drawMutableWorld(alpha);
 
 	// statistics
-	#if defined(__wii__)
-	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-	GX_SetZMode(GX_DISABLE, GX_LEQUAL, GX_TRUE);
-	guLookAt(view, &statCam, &statUp, &statLook);
-	#else
 	glDisable(GL_LIGHTING);
 	glDisable(GL_DEPTH_TEST);
 	glLoadIdentity();
 	gluLookAt(statCam.x, statCam.y, statCam.z, statLook.x, statLook.y, statLook.z, statUp.x, statUp.y, statUp.z);
-	#endif
 
 	drawStatistics(alpha);
 }
@@ -237,21 +185,7 @@ void drawGameScreen(double alpha)
 static int initLights()
 {
 	// our lighting is a point light that is so far away that its practically a directional light.
-	#if defined(__wii__)
-	GX_SetChanAmbColor(GX_COLOR0A0, (GXColor) { 0x60, 0x60, 0x60, 0xFF} );
-
-	lightPos.x = LIGHT_SOURCE_POSITION_X;
-	lightPos.y = LIGHT_SOURCE_POSITION_Y;
-	lightPos.z = LIGHT_SOURCE_POSITION_Z;
-
-	GX_InitLightColor (&lo, (GXColor) { 255, 255, 255, 255 });
-	GX_InitLightSpot (&lo, 0.0, GX_SP_OFF);
-
-	GX_InitLightDistAttn (&lo, 3.0, 0.75, GX_DA_OFF);
-	GX_InitLightDir (&lo, 0.0, 0.0, 0.0);
-	GX_LoadLightObj (&lo, GX_LIGHT0);
-
-	#else
+	//
 	// some settings, quite random, but reasonable.
 	float globalAmb[] = {0.8f, 0.8f, 0.8f, 1.0f};
 	float diffuse[] = {1.0f,1.0f,1.0f,1.0f};
@@ -268,31 +202,17 @@ static int initLights()
 	lightPos[2] = LIGHT_SOURCE_POSITION_Z;
 	lightPos[3] = 1.0f;
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-	#endif
 
 	return 0;
 }
 
 static void drawSkyBox()
 {
-	#if defined(__wii__)
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(rot, &rotYAxis, 90.0f);
-	guMtxConcat(rot, model, model);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	guMtxInverse(modelview,mvi);
-	guMtxTranspose(mvi,modelview);
-	GX_LoadNrmMtxImm(modelview, GX_PNMTX0);
-	GX_LoadTexObj(&skyTexture, GX_TEXMAP0);
-	GX_CallDispList(skyDisplayList, skyListSize);
-	#else
 	glBindTexture(GL_TEXTURE_2D, skyTexture);
 	glPushMatrix();
 	glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 	glCallList(skyDisplayList);
 	glPopMatrix();
-	#endif
 }
 
 static void drawStatistics(double alpha)
@@ -466,41 +386,7 @@ static void drawStatistics(double alpha)
 
 	meterX = 0.16f*stateInfo.localGameInfo->pRAI.meterValue;
 	swingMeterX = 0.16f*stateInfo.localGameInfo->pRAI.swingMeterValue;
-	#if defined(__wii__)
 
-	GX_LoadTexObj(&basesTexture, GX_TEXMAP0);
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, 0.08f, 0.02f, 0.02f);
-	guMtxTransApply(model, model, BASES_X, 1.0f, STATISTICS_TEXT_HEIGHT);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	GX_CallDispList(planeDisplayList, planeListSize);
-
-	GX_LoadTexObj(&meterTexture, GX_TEXMAP0);
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, 0.08f, 0.02f, 0.02f);
-	guMtxTransApply(model, model, METER_X + 0.08f, 1.0f, STATISTICS_TEXT_HEIGHT);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	GX_CallDispList(planeDisplayList, planeListSize);
-
-	GX_LoadTexObj(&selectionTextureFielding, GX_TEXMAP0);
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, 0.002f, 0.01f, 0.02f);
-	guMtxTransApply(model, model, METER_X + (float)(alpha*meterX + (1-alpha)*lastMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	GX_CallDispList(planeDisplayList, planeListSize);
-
-	GX_LoadTexObj(&selectionTextureBatting, GX_TEXMAP0);
-	guMtxIdentity(model);
-	guMtxScaleApply(model, model, 0.002f, 0.01f, 0.02f);
-	guMtxTransApply(model, model, METER_X + (float)(alpha*swingMeterX + (1-alpha)*lastSwingMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	GX_CallDispList(planeDisplayList, planeListSize);
-
-	#else
 	//players in bases
 	glBindTexture(GL_TEXTURE_2D, basesTexture);
 	glPushMatrix();
@@ -530,7 +416,6 @@ static void drawStatistics(double alpha)
 	glScalef(0.002f, 0.01f, 0.02f);
 	glCallList(planeDisplayList);
 	glPopMatrix();
-	#endif
 
 	lastMeterX = meterX;
 	lastSwingMeterX = swingMeterX;
@@ -591,17 +476,6 @@ static void drawStatistics(double alpha)
 				base = 4;
 			}
 			// and then just draw.
-			#if defined(__wii__)
-			GX_LoadTexObj(&basesMarkerTexture, GX_TEXMAP0);
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, 0.005f, 0.005f, 0.005f);
-			guMtxTransApply(model, model, left + interval*base + phase*interval,
-				1.0f, STATISTICS_TEXT_HEIGHT);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
-
 			glBindTexture(GL_TEXTURE_2D, basesMarkerTexture);
 			glPushMatrix();
 			glTranslatef(left + interval*base + phase*interval,
@@ -609,17 +483,12 @@ static void drawStatistics(double alpha)
 			glScalef(0.005f, 0.005f, 0.005f);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 	}
 }
 
 static void loadGameScreenSettings()
 {
-	#if defined(__wii__)
-	GX_SetZMode(GX_DISABLE, GX_LEQUAL, GX_TRUE);
-	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-	#endif
 	gameInfoEventTimer = -1;
 	// initialize cam
 	initCamSettings();
@@ -662,15 +531,9 @@ static void initCamSettings()
 	// projection at the same time.
 
 	// to move statistics to safe zone of tv
-	#if defined(__wii__)
-	statCam.x = 0.0f;
-	statCam.y = 2.05f;
-	statCam.z = -1.76f;
-	#else
 	statCam.x = 0.0f;
 	statCam.y = 1.9f;
 	statCam.z = -1.69f;
-	#endif
 	statUp.x = 0.0f;
 	statUp.y = 0.0f;
 	statUp.z = -1.0f;
@@ -685,11 +548,6 @@ int cleanGameScreen()
 	int result;
 	cleanMesh(skyMesh);
 	cleanMesh(planeMesh);
-	#if defined(__wii__)
-	free(skyDisplayList);
-	free(planeDisplayList);
-	#endif
-
 
 	result = cleanImmutableWorld();
 	if(result != 0)

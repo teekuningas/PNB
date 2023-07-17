@@ -8,26 +8,9 @@
 #include <malloc.h>
 #include <math.h>
 
-#if defined(__wii__)
-
-// wii code
-#include <gccore.h>
-#include <ogc/lwp_watchdog.h>
-#include <wiiuse/wpad.h>
-#include <fat.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <asndlib.h>
-#include <mp3player.h>
-
-#define DEFAULT_FIFO_SIZE	(256*1024)
-
-#else
 // linux and windows code
 #include <GL/glew.h>
 #include <GL/glfw.h>
-
-#endif
 
 // global constants
 #define PI 3.141f

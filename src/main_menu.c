@@ -10,9 +10,7 @@
 	game divides into two sections, menus and the game. this is the main menu. only main.c is higher but lots of initialization code is still hidden to
 	main.c. here i utilize my font rendering a lot, i just render a background and text in it. the purpose of main menu is to let player determine
 	which teams are gonna play, who are controlling them and what are the batting orders etc. also cup mode is traversed through here.
-
 */
-
 
 int initMainMenu()
 {
@@ -30,46 +28,7 @@ int initMainMenu()
 	look.x = 0.0f;
 	look.y = 0.0f;
 	look.z = 0.0f;
-	#if defined(__wii__)
 
-	// we load textures and meshes
-	TPL_OpenTPLFromMemory(&arrowTPL, (void *)arrow_tpl, arrow_tpl_size);
-	TPL_GetTexture(&arrowTPL, arrow, &arrowTexture);
-	TPL_OpenTPLFromMemory(&batterTPL, (void *)batter_tpl, batter_tpl_size);
-	TPL_GetTexture(&batterTPL, batter, &batterTexture);
-	TPL_OpenTPLFromMemory(&catcherTPL, (void *)catcher_tpl, catcher_tpl_size);
-	TPL_GetTexture(&catcherTPL, catcher, &catcherTexture);
-	TPL_OpenTPLFromMemory(&team1TPL, (void *)team1_huttu_tpl, team1_huttu_tpl_size);
-	TPL_GetTexture(&team1TPL, team1_huttu, &team1Texture);
-	TPL_OpenTPLFromMemory(&team2TPL, (void *)team2_huttu_tpl, team2_huttu_tpl_size);
-	TPL_GetTexture(&team2TPL, team2_huttu, &team2Texture);
-	TPL_OpenTPLFromMemory(&team3TPL, (void *)team3_huttu_tpl, team3_huttu_tpl_size);
-	TPL_GetTexture(&team3TPL, team3_huttu, &team3Texture);
-	TPL_OpenTPLFromMemory(&team4TPL, (void *)team4_huttu_tpl, team4_huttu_tpl_size);
-	TPL_GetTexture(&team4TPL, team4_huttu, &team4Texture);
-	TPL_OpenTPLFromMemory(&team5TPL, (void *)team5_huttu_tpl, team5_huttu_tpl_size);
-	TPL_GetTexture(&team5TPL, team5_huttu, &team5Texture);
-	TPL_OpenTPLFromMemory(&team6TPL, (void *)team6_huttu_tpl, team6_huttu_tpl_size);
-	TPL_GetTexture(&team6TPL, team6_huttu, &team6Texture);
-	TPL_OpenTPLFromMemory(&team7TPL, (void *)team7_huttu_tpl, team7_huttu_tpl_size);
-	TPL_GetTexture(&team7TPL, team7_huttu, &team7Texture);
-	TPL_OpenTPLFromMemory(&team8TPL, (void *)team8_huttu_tpl, team8_huttu_tpl_size);
-	TPL_GetTexture(&team8TPL, team8_huttu, &team8Texture);
-	TPL_OpenTPLFromMemory(&slotTPL, (void *)slot_tpl, slot_tpl_size);
-	TPL_GetTexture(&slotTPL, slot_texture, &slotTexture);
-	TPL_OpenTPLFromMemory(&trophyTPL, (void *)menu_trophy_tpl, menu_trophy_tpl_size);
-	TPL_GetTexture(&trophyTPL, menu_trophy_texture, &trophyTexture);
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/Plane.obj", "Plane",
-		planeMesh, &planeListSize, &planeDisplayList) != 0) return -1;
-	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/hutunkeitto_bat.obj", "Sphere.001",
-		batMesh, &batListSize, &batDisplayList) != 0) return -1;
-	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGX("data/models/hutunkeitto_hand.obj", "Cube.001",
-		handMesh, &handListSize, &handDisplayList) != 0) return -1;
-
-	#else
 	if(tryLoadingTextureGL(&arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
 	if(tryLoadingTextureGL(&catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
 	if(tryLoadingTextureGL(&batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
@@ -89,7 +48,6 @@ int initMainMenu()
 	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
-	#endif
 
 	if(refreshLoadCups() != 0)
 	{
@@ -118,15 +76,11 @@ int initMainMenu()
 void drawLoadingScreen()
 {
 	loadMenuScreenSettings();
-	#if defined(__wii__)
-	#else
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
-	#endif
 	drawFontBackground();
 	drawLoadingTexts();
 }
-// if there is something that is not ugly anywhere here in these code files, this is not like that.
-// this is ugly. at least its divided in sections but its still ugly.
+
 void updateMainMenu()
 {
 	KeyStates* keyStates = stateInfo.keyStates;
@@ -1387,42 +1341,10 @@ void updateMainMenu()
 // then we call methods to handle text rendering.
 void drawMainMenu(double alpha)
 {
-	#if defined(__wii__)
-	#else
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
-	#endif
 	if(stage == 0)
 	{
 		drawFontBackground();
-		#if defined(__wii__)
-		//arrow
-		guMtxIdentity(model);
-		guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		if(pointer == 0) guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
-		else if(pointer == 1) guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
-		else if(pointer == 2) guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
-		else guMtxTransApply(model, model, FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		//catcher
-		guMtxIdentity(model);
-		guMtxScaleApply(model, model, FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-		guMtxTransApply(model, model, 0.7f, 1.0f, 0.0f);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		//batter
-		guMtxIdentity(model);
-		guMtxScaleApply(model, model, FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-		guMtxTransApply(model, model, -0.6f, 1.0f, 0.0f);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&batterTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		#else
 		// arrow
 		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
@@ -1447,118 +1369,58 @@ void drawMainMenu(double alpha)
 		glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		#endif
 		drawFront();
 	}
 	else if(stage == 1)
 	{
 		drawFontBackground();
 
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		#else
 		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
-		#endif
 		if(stage_1_state == 0 || stage_1_state == 1)
 		{
-			#if defined(__wii__)
-			guMtxTransApply(model, model, SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + pointer*SELECTION_ALT_OFFSET);
-			#else
 			glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
-			#endif
 		}
 		else if(stage_1_state == 2 || stage_1_state == 3)
 		{
-			#if defined(__wii__)
-			guMtxTransApply(model, model, SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
-			#else
 			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
-			#endif
 		}
 		else if(stage_1_state == 4)
 		{
-			#if defined(__wii__)
-			guMtxTransApply(model, model, SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
-			#else
 			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
-			#endif
 		}
-		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		#else
 		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		#endif
 		drawSelection();
 
 	}
 	else if((stage == 2 && team1_control != 2) || (stage == 3 && team2_control != 2))
 	{
 		drawFontBackground();
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		#else
 		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
-		#endif
 		if(pointer == 0)
 		{
-			#if defined(__wii__)
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-			#else
 			glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			#endif
 		}
 		else // -0.25f
 		{
-			#if defined(__wii__)
-			guMtxScaleApply(model, model, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-			guMtxTransApply(model, model, PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			#else
 			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-			#endif
 		}
-		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		#else
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		#endif
 
 		if(mark != 0)
 		{
-			#if defined(__wii__)
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-			guMtxTransApply(model, model, PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			// sticky
-			#endif
 		}
 		drawPlayerList();
 	}
@@ -1567,27 +1429,10 @@ void drawMainMenu(double alpha)
 		updatingCanStart = 1;
 		drawFontBackground();
 
-		#if defined(__wii__)
-		GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-
-		GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
-		#else
 		glEnable(GL_LIGHTING);
 		glEnable(GL_DEPTH_TEST);
 		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-		#endif
 		// bat
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		guMtxRotAxisRad(rot, &rotXAxis, -PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxScaleApply(model, model, 0.6f, 0.5f, 0.45f);
-		guMtxTransApply(model, model, batPosition, handsZ, batHeight);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
-		GX_CallDispList(batDisplayList, batListSize);
-		#else
 		glBindTexture(GL_TEXTURE_2D, team1Texture);
 		glPushMatrix();
 		glTranslatef(batPosition, handsZ, batHeight);
@@ -1595,30 +1440,7 @@ void drawMainMenu(double alpha)
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 		glCallList(batDisplayList);
 		glPopMatrix();
-		#endif
 		// right hand
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		guMtxRotAxisRad(rot, &rotXAxis, -PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxRotAxisRad(rot, &rotZAxis, -PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxTransApply(model, model, 0.0f, 0.0f, -0.35f);
-		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f*(1.0f+rightScaleCount*SCALE_FACTOR));
-		guMtxTransApply(model, model, rightHandPosition, handsZ, rightHandHeight);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		if(team2 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
-		else if(team2 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
-		else if(team2 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0);
-		else if(team2 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0);
-		else if(team2 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0);
-		else if(team2 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0);
-		else if(team2 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0);
-		else if(team2 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0);
-		GX_CallDispList(handDisplayList, handListSize);
-		#else
 		if(team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
 		else if(team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
 		else if(team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
@@ -1635,30 +1457,7 @@ void drawMainMenu(double alpha)
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 		glCallList(handDisplayList);
 		glPopMatrix();
-		#endif
 		// left hand
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		guMtxRotAxisRad(rot, &rotXAxis, -PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxRotAxisRad(rot, &rotZAxis, PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxTransApply(model, model, 0.0f, 0.0f, -0.35f);
-		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f*(1.0f+leftScaleCount*SCALE_FACTOR));
-		guMtxTransApply(model, model, leftHandPosition, handsZ, leftHandHeight);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		if(team1 == 0) GX_LoadTexObj(&team1Texture, GX_TEXMAP0);
-		else if(team1 == 1) GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
-		else if(team1 == 2) GX_LoadTexObj(&team3Texture, GX_TEXMAP0);
-		else if(team1 == 3) GX_LoadTexObj(&team4Texture, GX_TEXMAP0);
-		else if(team1 == 4) GX_LoadTexObj(&team5Texture, GX_TEXMAP0);
-		else if(team1 == 5) GX_LoadTexObj(&team6Texture, GX_TEXMAP0);
-		else if(team1 == 6) GX_LoadTexObj(&team7Texture, GX_TEXMAP0);
-		else if(team1 == 7) GX_LoadTexObj(&team8Texture, GX_TEXMAP0);
-		GX_CallDispList(handDisplayList, handListSize);
-		#else
 		if(team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
 		else if(team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
 		else if(team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
@@ -1675,21 +1474,7 @@ void drawMainMenu(double alpha)
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 		glCallList(handDisplayList);
 		glPopMatrix();
-		#endif
 		// referee hand
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		guMtxRotAxisRad(rot, &rotXAxis, -PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxRotAxisRad(rot, &rotZAxis, PI/2);
-		guMtxConcat(rot, model, model);
-		guMtxScaleApply(model, model, 0.5f, 0.5f, 0.5f);
-		guMtxTransApply(model, model, 0.0f, 1.0f, refereeHandHeight);
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		GX_LoadTexObj(&team2Texture, GX_TEXMAP0);
-		GX_CallDispList(handDisplayList, handListSize);
-		#else
 		glBindTexture(GL_TEXTURE_2D, team2Texture);
 		glPushMatrix();
 		glTranslatef(0.0f, 1.0f, refereeHandHeight);
@@ -1698,29 +1483,13 @@ void drawMainMenu(double alpha)
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 		glCallList(handDisplayList);
 		glPopMatrix();
-		#endif
 
-		#if defined(__wii__)
-		GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-		GX_SetZMode(GX_DISABLE, GX_LEQUAL, GX_TRUE);
-		#else
 		glDisable(GL_LIGHTING);
 		glDisable(GL_DEPTH_TEST);
-		#endif
+
 		if(stage_4_state == 6)
 		{
 			drawHutunkeitto();
-			#if defined(__wii__)
-			//arrow
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			if(pointer == 0) guMtxTransApply(model, model, HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			else guMtxTransApply(model, model, HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			// arrow
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
@@ -1729,7 +1498,6 @@ void drawMainMenu(double alpha)
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 	}
 	else if(stage == 5)
@@ -1741,43 +1509,21 @@ void drawMainMenu(double alpha)
 	{
 		int i, j;
 		drawFontBackground();
-		#if defined(__wii__)
-		guMtxIdentity(model);
-		#else
 		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
-		#endif
 		if(pointer == 0)
 		{
-			#if defined(__wii__)
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-			#else
 			glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			#endif
 		}
 		else
 		{
-			#if defined(__wii__)
-			guMtxScaleApply(model, model, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-			guMtxTransApply(model, model, PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			#else
 			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-			#endif
 		}
 
-		#if defined(__wii__)
-		guMtxConcat(view,model,modelview);
-		GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-		// and we render
-		GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-		GX_CallDispList(planeDisplayList, planeListSize);
-		#else
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		#endif
 
 		for(i = 0; i < 2; i++)
 		{
@@ -1803,33 +1549,6 @@ void drawMainMenu(double alpha)
 		drawFontBackground();
 		if(stage_8_state == 0)
 		{
-			#if defined(__wii__)
-			//arrow
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			if(pointer == 0) guMtxTransApply(model, model, FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
-			else if(pointer == 1) guMtxTransApply(model, model, FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			//catcher
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-			guMtxTransApply(model, model, 0.7f, 1.0f, 0.0f);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			GX_LoadTexObj(&catcherTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			//batter
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-			guMtxTransApply(model, model, -0.6f, 1.0f, 0.0f);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			GX_LoadTexObj(&batterTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			// arrow
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
@@ -1852,111 +1571,55 @@ void drawMainMenu(double alpha)
 			glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 		else if(stage_8_state == 1)
 		{
-			#if defined(__wii__)
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_ALT_OFFSET);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 		else if(stage_8_state == 2)
 		{
-			#if defined(__wii__)
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 		else if(stage_8_state == 3)
 		{
 			int i;
 			for(i = 0; i < SLOT_COUNT; i++)
 			{
-				#if defined(__wii__)
-				guMtxIdentity(model);
-				guMtxScaleApply(model, model, 0.2f, 0.15f, 0.10f);
-				guMtxTransApply(model, model, treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
-				guMtxConcat(view,model,modelview);
-				GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-				// and we render
-				GX_LoadTexObj(&slotTexture, GX_TEXMAP0);
-				GX_CallDispList(planeDisplayList, planeListSize);
-				#else
 				glBindTexture(GL_TEXTURE_2D, slotTexture);
 				glPushMatrix();
 				glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
 				glScalef(0.2f, 0.15f, 0.10f);
 				glCallList(planeDisplayList);
 				glPopMatrix();
-				#endif
 			}
 		}
 		else if(stage_8_state == 5 || stage_8_state == 6)
 		{
-			#if defined(__wii__)
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			guMtxTransApply(model, model, SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + pointer*SELECTION_CUP_MENU_OFFSET);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			// and we render
-			GX_LoadTexObj(&arrowTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
 			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*pointer);
 			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 		else if(stage_8_state == 7)
 		{
-			#if defined(__wii__)
-			guMtxIdentity(model);
-			guMtxScaleApply(model, model, 0.3f, 0.3f, 0.3f);
-			guMtxTransApply(model, model, 0.0f, 1.0f, -0.25f);
-			guMtxConcat(view,model,modelview);
-			GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-			// and we render
-			GX_LoadTexObj(&trophyTexture, GX_TEXMAP0);
-			GX_CallDispList(planeDisplayList, planeListSize);
-			#else
 			glBindTexture(GL_TEXTURE_2D, trophyTexture);
 			glPushMatrix();
 			glTranslatef(0.0f, 1.0f, -0.25f);
 			glScalef(0.3f, 0.3f, 0.3f);
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			#endif
 		}
 		drawCup();
 	}
@@ -2127,14 +1790,6 @@ static void drawHelp()
 {
 	if(stage_9_state == 0)
 	{
-		#if defined(__wii__)
-		printText("Controls", 8, HELP_LEFT, -0.45f, 4);
-		printText("Direction keys - Arrow keys", 27, HELP_LEFT, -0.2f, 2);
-		printText("Action key - 2", 14, HELP_LEFT, -0.15f, 2);
-		printText("Second action key - 1", 21, HELP_LEFT, -0.10f, 2);
-		printText("Left strafe - minus", 19, HELP_LEFT, -0.05f, 2);
-		printText("Right strafe - plus", 19, HELP_LEFT, 0.0f, 2);
-		#else
 		printText("Controls", 8, HELP_LEFT, -0.45f, 4);
 		printText("Pad 1", 5, HELP_LEFT, -0.3f, 3);
 		printText("Direction keys - Arrow keys", 27, HELP_LEFT, -0.2f, 2);
@@ -2148,7 +1803,6 @@ static void drawHelp()
 		printText("Second action key - Z", 21, HELP_LEFT, 0.3f, 2);
 		printText("Left strafe - Left ctrl", 23, HELP_LEFT, 0.35f, 2);
 		printText("Right strafe - Left alt", 23, HELP_LEFT, 0.4f, 2);
-		#endif
 	}
 	else if(stage_9_state == 1)
 	{
@@ -2409,30 +2063,13 @@ int cleanMainMenu()
 	cleanMesh(planeMesh);
 	cleanMesh(batMesh);
 	cleanMesh(handMesh);
-	#if defined(__wii__)
-	free(planeDisplayList);
-	free(batDisplayList);
-	free(handDisplayList);
-	#endif
 	return 0;
 }
 
 static void loadMenuScreenSettings()
 {
 	int i;
-	#if defined(__wii__)
-	GXColor background = {0x0, 0x0, 0x0, 0xff};
-	GX_SetCopyClear(background, 0x00ffffff);
-	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG, GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE);
-	guLookAt(view, &cam, &up, &look);
-
-	memcpy(&light, &lightPos, sizeof (guVector));
-	guVecMultiply(view, &light, &light);
-	GX_InitLightPos (&lo, light.x, light.y, light.z);
-	GX_LoadLightObj (&lo, GX_LIGHT0);
-	#else
 	glDisable(GL_LIGHTING);
-	#endif
 	if(menuInfo.state == 0)
 	{
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++)

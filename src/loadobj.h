@@ -1,16 +1,6 @@
 #ifndef LOADOBJ_H
 #define LOADOBJ_H
 
-#if defined(__wii__)
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
-#include <math.h>
-#include <gccore.h>
-#include <wiiuse/wpad.h>
-#endif
-
 #define OBJ_NO_ERROR              0 /**< No error occurred. The data pointers have been placed in the input
 	* structure. */
 #define OBJ_FILE_OPEN_FAILED      1 /**< The function failed to open the file for one reason or another.
@@ -33,21 +23,6 @@
 
 typedef struct _MeshObject
 {
-	#if defined(__wii__)
-	u16 uFaceCount; /**< The number of faces this object has. */
-	u16 *uFaceList; /**< Pointer to face array. Format should be:
-							* \a position \a normal \a color \a texcoord
-							* Each should be the array subscript to access each element. You need three of these for each three-sided face, etc. */
-	u16 uPositionCount;
-	u16 uNormalCount;
-	u16 uColorCount;
-	u16 uTexCoordCount;
-
-	f32 *fPositionIndex; /**< Pointer to the position data array. */
-	f32 *fNormalIndex; /**< Pointer to the normal data array. */
-	u8 *uColorIndex; /**< Pointer to the color data array. */
-	f32 *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */
-	#else
 	unsigned int uFaceCount; /**< The number of faces this object has. */
 	int *uFaceList; /**< Pointer to face array. Format should be:
 							* \a position \a normal \a color \a texcoord
@@ -61,7 +36,6 @@ typedef struct _MeshObject
 	float *fNormalIndex; /**< Pointer to the normal data array. */
 	float *fColorIndex; /**< Pointer to the color data array. */
 	float *fTexCoordIndex; /**< Pointer to the texture coordinate data array. */
-	#endif
 
 } MeshObject;
 

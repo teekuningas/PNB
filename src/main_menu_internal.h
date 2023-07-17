@@ -1,36 +1,6 @@
 #ifndef MAIN_MENU_INTERNAL_H
 #define MAIN_MENU_INTERNAL_H
 
-#if defined(__wii__)
-#include "arrow_tpl.h"
-#define arrow 0
-#include "catcher_tpl.h"
-#define catcher 0
-#include "batter_tpl.h"
-#define batter 0
-#include "team1_huttu_tpl.h"
-#define team1_huttu 0
-#include "team2_huttu_tpl.h"
-#define team2_huttu 0
-#include "team3_huttu_tpl.h"
-#define team3_huttu 0
-#include "team4_huttu_tpl.h"
-#define team4_huttu 0
-#include "team5_huttu_tpl.h"
-#define team5_huttu 0
-#include "team6_huttu_tpl.h"
-#define team6_huttu 0
-#include "team7_huttu_tpl.h"
-#define team7_huttu 0
-#include "team8_huttu_tpl.h"
-#define team8_huttu 0
-#include "slot_tpl.h"
-#define slot_texture 0
-#include "menu_trophy_tpl.h"
-#define menu_trophy_texture 0
-
-#endif
-
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
 #define LOADING_AUTHOR_HEIGHT 0.45f
@@ -97,72 +67,6 @@
 
 #define SLOT_COUNT 14
 
-#if defined(__wii__)
-
-extern Mtx view;
-static Mtx model, modelview, rot;
-
-extern guVector lightPos;
-extern guVector light;
-extern GXLightObj lo;
-
-static MeshObject* planeMesh;
-static void *planeDisplayList;
-static u32 planeListSize;
-
-static MeshObject* batMesh;
-static void *batDisplayList;
-static u32 batListSize;
-
-static MeshObject* handMesh;
-static void *handDisplayList;
-static u32 handListSize;
-
-static GXTexObj arrowTexture;
-static TPLFile arrowTPL;
-
-static GXTexObj catcherTexture;
-static TPLFile catcherTPL;
-
-static GXTexObj batterTexture;
-static TPLFile batterTPL;
-
-static GXTexObj team1Texture;
-static TPLFile team1TPL;
-
-static GXTexObj team2Texture;
-static TPLFile team2TPL;
-
-static GXTexObj team3Texture;
-static TPLFile team3TPL;
-
-static GXTexObj team4Texture;
-static TPLFile team4TPL;
-
-static GXTexObj team5Texture;
-static TPLFile team5TPL;
-
-static GXTexObj team6Texture;
-static TPLFile team6TPL;
-
-static GXTexObj team7Texture;
-static TPLFile team7TPL;
-
-static GXTexObj team8Texture;
-static TPLFile team8TPL;
-
-static GXTexObj slotTexture;
-static TPLFile slotTPL;
-
-static GXTexObj trophyTexture;
-static TPLFile trophyTPL;
-
-static guVector cam, look, up;
-
-static guVector rotXAxis = {1,0,0};
-static guVector rotZAxis = {0,0,1};
-#else
-
 static GLuint arrowTexture;
 static GLuint catcherTexture;
 static GLuint batterTexture;
@@ -188,7 +92,6 @@ static GLuint batDisplayList;
 
 static Vector3D cam, look, up;
 extern float lightPos[4];
-#endif
 
 static void loadMenuScreenSettings();
 static void drawFront();
@@ -208,7 +111,10 @@ static MenuInfo menuInfo;
 static CupInfo cupInfo;
 
 static int cupGame;
-static int stage; // 0 front, 1 team selection, 2 player order for team 1, 3 player order for team 2
+
+// 0 front, 1 team selection, 2 player order for team 1, 3 player order for team 2 etc.
+static int stage;
+
 static int pointer;
 static int rem;
 static int mark;
@@ -257,8 +163,6 @@ typedef struct _TreeCoordinates
 	float y;
 } TreeCoordinates;
 
-
-
 static TreeCoordinates treeCoordinates[SLOT_COUNT];
 static int teamSelection;
 
@@ -270,7 +174,7 @@ static CupInfo saveData[5];
 */
 static int refreshLoadCups()
 {
-    FILE *file;
+	FILE *file;
 	char *content = (char*)malloc(10000 * sizeof(char));
 	char *p = content;
 	int counter = 0;
@@ -280,14 +184,15 @@ static int refreshLoadCups()
 	int j;
 	int valid = 1;
 
-    /* open the file */
-    file = fopen("saves.dat", "r");
-    if (file == NULL) {
-        printf("I couldn't open saves.dat for reading.\n");
+	/* open the file */
+	file = fopen("saves.dat", "r");
+	if (file == NULL) {
+		printf("I couldn't open saves.dat for reading.\n");
 		free(content);
-        return 1;
-    }
-    // read file to char array
+	return 1;
+	}
+
+	// read file to char array
 	do
 	{
 		i = fgetc(file);
@@ -297,8 +202,8 @@ static int refreshLoadCups()
 	} while(i != EOF);
 	*p = '\0';
 
-    /* close the file */
-    fclose(file);
+	/* close the file */
+	fclose(file);
 	// if we found correct type of end of file
 	if(ok == 1)
 	{
