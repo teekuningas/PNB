@@ -386,7 +386,7 @@ static void drawStatistics(double alpha)
 			float left = BASES_X - 0.075f;
 			float interval = 0.15f/4;
 			float phase = 0.0f;
-			int base;
+			int base = 0;
 			float distance;
 			// for batter we say at 0 until we have passed the homeline.
 			if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 0) {
