@@ -19,6 +19,7 @@
               libGL
               libGLU
               gcc
+              astyle
             ];
         };
       }

@@ -32,3 +32,7 @@ clean:
 .PHONY: shell
 shell:
 	nix develop
+
+.PHONY: format
+format:
+	@for k in $(shell find src -name "*.c" -o -name "*.h"); do astyle --style=kr --indent=tab=4 $$k ; done
