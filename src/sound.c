@@ -39,8 +39,6 @@ int initSound()
 	repeat = 0;
 	hasPlayed = 0;
 
-	printf("Hurraa alustus lopussa!");
-
 	return 0;
 }
 void updateSound()
