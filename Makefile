@@ -1,7 +1,7 @@
 IDIR=./src
 CC=gcc
 CFLAGS=-I$(IDIR) -O2 -Wall
-LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm
+LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl
 ODIR=obj
 SRCDIR=./src
 

@@ -6,23 +6,22 @@
   };
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
+      let pkgs = nixpkgs.legacyPackages.${system};
       in {
         formatter = pkgs.nixfmt;
-        devShells.default = pkgs.mkShell {
-          buildInputs =
-            with pkgs; [
-              glfw2
-              glew
-              xorg.libX11
-              libGL
-              libGLU
-              gcc
-              astyle
-            ];
+        devShells.default = pkgs.mkShell rec {
+          buildInputs = with pkgs; [
+            glfw2
+            glew
+            xorg.libX11
+            libGL
+            libGLU
+            gcc
+            astyle
+            alsa-lib
+          ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
-      }
-    );
+      });
 }
 
