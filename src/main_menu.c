@@ -12,11 +12,11 @@
 	which teams are gonna play, who are controlling them and what are the batting orders etc. also cup mode is traversed through here.
 */
 
-int initMainMenu()
+int initMainMenu(StateInfo* stateInfo)
 {
-	stateInfo.menuInfo = &menuInfo;
-	stateInfo.cupInfo = &cupInfo;
-	stateInfo.saveData = saveData;
+	stateInfo->menuInfo = &menuInfo;
+	stateInfo->cupInfo = &cupInfo;
+	stateInfo->saveData = saveData;
 	menuInfo.state = 0;
 
 	cam.x = 0.0f;
@@ -82,25 +82,24 @@ int initMainMenu()
 	treeCoordinates[12].y = 0.0f;
 	treeCoordinates[13].x =  0.25f;
 	treeCoordinates[13].y = 0.0f;
-
 	return 0;
 }
 
-void drawLoadingScreen()
+void drawLoadingScreen(StateInfo* stateInfo)
 {
-	loadMenuScreenSettings();
+	loadMenuScreenSettings(stateInfo);
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	drawFontBackground();
-	drawLoadingTexts();
+	drawLoadingTexts(stateInfo);
 }
 
-void updateMainMenu()
+void updateMainMenu(StateInfo* stateInfo)
 {
-	KeyStates* keyStates = stateInfo.keyStates;
-	if(stateInfo.changeScreen == 1) {
-		stateInfo.changeScreen = 0;
-		stateInfo.updated = 1;
-		loadMenuScreenSettings();
+	KeyStates* keyStates = stateInfo->keyStates;
+	if(stateInfo->changeScreen == 1) {
+		stateInfo->changeScreen = 0;
+		stateInfo->updated = 1;
+		loadMenuScreenSettings(stateInfo);
 	}
 	// main main menu.
 	if(stage == 0) {
@@ -125,7 +124,7 @@ void updateMainMenu()
 				pointer = 0;
 			} else if(pointer == 2) {
 				stage = 9;
-			} else if(pointer == 3) stateInfo.screen = -1;
+			} else if(pointer == 3) stateInfo->screen = -1;
 		}
 
 	}
@@ -305,7 +304,7 @@ void updateMainMenu()
 				pointer = 0;
 				rem = 2;
 			} else if(menuInfo.state == 1) {
-				moveToGame();
+				moveToGame(stateInfo);
 			}
 		} else {
 			if(keyStates->released[team2_control][KEY_2]) {
@@ -321,7 +320,7 @@ void updateMainMenu()
 						pointer = 0;
 						rem = 2;
 					} else if(menuInfo.state == 1) {
-						moveToGame();
+						moveToGame(stateInfo);
 					}
 				} else {
 					if(mark == 0) {
@@ -463,7 +462,7 @@ void updateMainMenu()
 						playsFirst = 1;
 					}
 
-					moveToGame();
+					moveToGame(stateInfo);
 				}
 				if(keyStates->released[control][KEY_RIGHT]) {
 					pointer +=1;
@@ -477,7 +476,7 @@ void updateMainMenu()
 				// ai always selects to field first
 				if(turnCount%2 == 0) playsFirst = 1;
 				else playsFirst = 0;
-				moveToGame();
+				moveToGame(stateInfo);
 			}
 		}
 	}
@@ -497,7 +496,7 @@ void updateMainMenu()
 		// here we must update cup trees and schedules if cup mode
 		if(flag == 1) {
 			menuInfo.state = 0;
-			loadMenuScreenSettings();
+			loadMenuScreenSettings(stateInfo);
 
 			if(cupGame == 1) {
 				int i, j;
@@ -505,31 +504,31 @@ void updateMainMenu()
 				int playerWon = 0;
 				for(i = 0; i < 4; i++) {
 					for(j = 0; j < 2; j++) {
-						if(stateInfo.cupInfo->schedule[i][j] == stateInfo.cupInfo->userTeamIndexInTree) {
+						if(stateInfo->cupInfo->schedule[i][j] == stateInfo->cupInfo->userTeamIndexInTree) {
 							scheduleSlot = i;
-							if( j == stateInfo.globalGameInfo->winner) playerWon = 1;
+							if( j == stateInfo->globalGameInfo->winner) playerWon = 1;
 						}
 					}
 				}
 				// if player won, we can advance to congratulations-screen if it was final decisive match of the cup
 				if(playerWon == 1) {
 					int advance = 0;
-					if(stateInfo.cupInfo->gameStructure == 0) {
-						if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->userTeamIndexInTree] == 2) {
-							if(stateInfo.cupInfo->dayCount >= 11)
+					if(stateInfo->cupInfo->gameStructure == 0) {
+						if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->userTeamIndexInTree] == 2) {
+							if(stateInfo->cupInfo->dayCount >= 11)
 								advance = 1;
 
 						}
-					} else if(stateInfo.cupInfo->gameStructure == 1) {
-						if(stateInfo.cupInfo->slotWins[stateInfo.cupInfo->userTeamIndexInTree] == 0) {
-							if(stateInfo.cupInfo->dayCount >= 3)
+					} else if(stateInfo->cupInfo->gameStructure == 1) {
+						if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->userTeamIndexInTree] == 0) {
+							if(stateInfo->cupInfo->dayCount >= 3)
 								advance = 1;
 						}
 					}
 					if(advance == 1) stage_8_state = 7;
 				}
 				// update cup and schedule.
-				updateCupTreeAfterDay(scheduleSlot, stateInfo.globalGameInfo->winner);
+				updateCupTreeAfterDay(scheduleSlot, stateInfo->globalGameInfo->winner);
 				updateSchedule();
 			}
 		}
@@ -539,7 +538,7 @@ void updateMainMenu()
 		if(team1_control == 2) {
 			int i, j;
 			int counter = 0;
-			int team = stateInfo.globalGameInfo->teams[0].value - 1;
+			int team = stateInfo->globalGameInfo->teams[0].value - 1;
 			int currentIndex = 0;
 			for(i = 0; i < 2; i++) {
 				for(j = 0; j < choiceCount/2; j++) {
@@ -549,7 +548,7 @@ void updateMainMenu()
 			// first we select batters for ai. we select ones that have high power
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo.teamData[team].players[i].power;
+					int power = stateInfo->teamData[team].players[i].power;
 					if(currentIndex == choiceCount/2) break;
 					if(power == 5-counter) {
 						team_1_choices[0][currentIndex] = i;
@@ -565,7 +564,7 @@ void updateMainMenu()
 			// and from players that are left we select runners. we select ones that have high speed
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo.teamData[team].players[i].speed;
+					int speed = stateInfo->teamData[team].players[i].speed;
 					if(currentIndex == choiceCount/2) break;
 					if(speed == 5-counter) {
 						int indexValid = 1;
@@ -631,7 +630,7 @@ void updateMainMenu()
 		if(team2_control == 2) {
 			int i, j;
 			int counter = 0;
-			int team = stateInfo.globalGameInfo->teams[1].value - 1;
+			int team = stateInfo->globalGameInfo->teams[1].value - 1;
 			int currentIndex = 0;
 			for(i = 0; i < 2; i++) {
 				for(j = 0; j < choiceCount/2; j++) {
@@ -642,7 +641,7 @@ void updateMainMenu()
 
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo.teamData[team].players[i].power;
+					int power = stateInfo->teamData[team].players[i].power;
 					if(currentIndex == choiceCount/2) break;
 					if(power == 5-counter) {
 						team_2_choices[0][currentIndex] = i;
@@ -657,7 +656,7 @@ void updateMainMenu()
 			currentIndex = 0;
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo.teamData[team].players[i].speed;
+					int speed = stateInfo->teamData[team].players[i].speed;
 					if(currentIndex == choiceCount/2) break;
 					if(speed == 5-counter) {
 						int indexValid = 1;
@@ -675,7 +674,7 @@ void updateMainMenu()
 			}
 			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.");
 
-			moveToGame();
+			moveToGame(stateInfo);
 		} else {
 			if(keyStates->released[team2_control][KEY_1]) {
 				if(choiceCounter != 0) {
@@ -690,7 +689,7 @@ void updateMainMenu()
 			if(keyStates->released[team2_control][KEY_2]) {
 				if(pointer == 0) {
 					if(choiceCounter >= choiceCount) {
-						moveToGame();
+						moveToGame(stateInfo);
 					}
 				} else {
 					if(choiceCounter < choiceCount) {
@@ -862,20 +861,20 @@ void updateMainMenu()
 					// first lets find out if there is a game for human player.
 					for(i = 0; i < 4; i++) {
 						for(j = 0; j < 2; j++) {
-							if(stateInfo.cupInfo->schedule[i][j] == stateInfo.cupInfo->userTeamIndexInTree) {
+							if(stateInfo->cupInfo->schedule[i][j] == stateInfo->cupInfo->userTeamIndexInTree) {
 								if(j == 0) {
-									userTeamIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[i][0]];
-									opponentTeamIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[i][1]];
+									userTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][0]];
+									opponentTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][1]];
 									userPosition = 0;
 								} else {
-									userTeamIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[i][1]];
-									opponentTeamIndex = stateInfo.cupInfo->cupTeamIndexTree[stateInfo.cupInfo->schedule[i][0]];
+									userTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][1]];
+									opponentTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][0]];
 									userPosition = 1;
 								}
 							}
 						}
 					}
-					stateInfo.cupInfo->dayCount++;
+					stateInfo->cupInfo->dayCount++;
 					// if there is, we proceed to the match and let the match ending update cup trees and schedules.
 					if(userTeamIndex != -1) {
 						stage = 2;
@@ -892,7 +891,7 @@ void updateMainMenu()
 							team2_control = 0;
 							team1_control = 2;
 						}
-						inningsInPeriod = stateInfo.cupInfo->inningCount;
+						inningsInPeriod = stateInfo->cupInfo->inningCount;
 						cupGame = 1;
 					} else {
 						// otherwise we update them right away.
@@ -938,7 +937,7 @@ void updateMainMenu()
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				if(stateInfo.saveData[pointer].userTeamIndexInTree != -1) {
+				if(stateInfo->saveData[pointer].userTeamIndexInTree != -1) {
 					loadCup(pointer);
 					stage_8_state = 2;
 					pointer = 0;
@@ -1029,7 +1028,7 @@ void updateMainMenu()
 // here we draw everything.
 // directly we draw ugly stuff like images of players or hand or bat models etc.
 // then we call methods to handle text rendering.
-void drawMainMenu(double alpha)
+void drawMainMenu(StateInfo* stateInfo, double alpha)
 {
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	if(stage == 0) {
@@ -1058,7 +1057,7 @@ void drawMainMenu(double alpha)
 		glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		drawFront();
+		drawFront(stateInfo);
 	} else if(stage == 1) {
 		drawFontBackground();
 
@@ -1074,7 +1073,7 @@ void drawMainMenu(double alpha)
 		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 		glCallList(planeDisplayList);
 		glPopMatrix();
-		drawSelection();
+		drawSelection(stateInfo);
 
 	} else if((stage == 2 && team1_control != 2) || (stage == 3 && team2_control != 2)) {
 		drawFontBackground();
@@ -1098,7 +1097,7 @@ void drawMainMenu(double alpha)
 			glCallList(planeDisplayList);
 			glPopMatrix();
 		}
-		drawPlayerList();
+		drawPlayerList(stateInfo);
 	} else if(stage == 4) {
 		updatingCanStart = 1;
 		drawFontBackground();
@@ -1162,7 +1161,7 @@ void drawMainMenu(double alpha)
 		glDisable(GL_DEPTH_TEST);
 
 		if(stage_4_state == 6) {
-			drawHutunkeitto();
+			drawHutunkeitto(stateInfo);
 			// arrow
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
@@ -1174,7 +1173,7 @@ void drawMainMenu(double alpha)
 		}
 	} else if(stage == 5) {
 		drawFontBackground();
-		drawGameOverTexts();
+		drawGameOverTexts(stateInfo);
 	} else if((stage == 6 && team1_control != 2) || (stage == 7 && team2_control != 2)) {
 		int i, j;
 		drawFontBackground();
@@ -1205,7 +1204,7 @@ void drawMainMenu(double alpha)
 			}
 		}
 
-		drawPlayerList();
+		drawPlayerList(stateInfo);
 	} else if(stage == 8) {
 		drawFontBackground();
 		if(stage_8_state == 0) {
@@ -1270,22 +1269,22 @@ void drawMainMenu(double alpha)
 			glCallList(planeDisplayList);
 			glPopMatrix();
 		}
-		drawCup();
+		drawCup(stateInfo);
 	} else if(stage == 9) {
 		drawFontBackground();
-		drawHelp();
+		drawHelp(stateInfo);
 	}
 }
 // values here are mostly hard-coded, some of them have defines, some dont. do i care ;_;
 // most of the repeating stuff has some defines though.
-static void drawLoadingTexts()
+static void drawLoadingTexts(StateInfo* stateInfo)
 {
 	printText("Loading resources", 17, -0.21f, LOADING_MODELS_HEIGHT, 2);
 	printText("Your patience is appreciated", 28, -0.48f, LOADING_APPRECIATED_HEIGHT, 3);
 	printText("Erkka Heinila 2013", 18, -0.22f, LOADING_AUTHOR_HEIGHT, 2);
 }
 
-static void drawFront()
+static void drawFront(StateInfo* stateInfo)
 {
 	printText("P N B", 5, -0.23f, -0.4f, 8);
 	printText("Play", 4, -0.1f, PLAY_TEXT_HEIGHT, 3);
@@ -1294,14 +1293,14 @@ static void drawFront()
 	printText("Quit", 4, -0.1f, QUIT_TEXT_HEIGHT, 3);
 }
 
-static void drawHutunkeitto()
+static void drawHutunkeitto(StateInfo* stateInfo)
 {
 	printText("Who bats first", 14, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT - 0.1f, 3);
 	printText("Team 1", 6, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
 	printText("Team 2", 6, HUTUNKEITTO_TEAM_2_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
 }
 
-static void drawCup()
+static void drawCup(StateInfo* stateInfo)
 {
 	if(stage_8_state == 0) {
 		printText("P N B", 5, -0.23f, -0.4f, 8);
@@ -1312,7 +1311,7 @@ static void drawCup()
 			int i;
 			printText("Select team", 11, -0.35f, -0.4f, 5);
 			for(i = 0; i < TEAM_COUNT; i++) {
-				char* str = stateInfo.teamData[i].name;
+				char* str = stateInfo->teamData[i].name;
 				printText(str, strlen(str), SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 			}
 		} else if(stage_8_state_1_level == 1) {
@@ -1332,8 +1331,8 @@ static void drawCup()
 		printText("Cup tree", 8, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 2*SELECTION_CUP_MENU_OFFSET, 2);
 		printText("Save", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 3*SELECTION_CUP_MENU_OFFSET, 2);
 		printText("Quit", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 4*SELECTION_CUP_MENU_OFFSET, 2);
-		if(stateInfo.cupInfo->winnerIndex != -1) {
-			char* str = stateInfo.teamData[stateInfo.cupInfo->winnerIndex].name;
+		if(stateInfo->cupInfo->winnerIndex != -1) {
+			char* str = stateInfo->teamData[stateInfo->cupInfo->winnerIndex].name;
 			printText(str, strlen(str), -0.45f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
 			printText("has won the cup", 15, -0.45f + strlen(str)*0.04f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
 		}
@@ -1342,7 +1341,7 @@ static void drawCup()
 		for(i = 0; i < SLOT_COUNT; i++) {
 			int index = cupInfo.cupTeamIndexTree[i];
 			if(index != -1) {
-				char* str = stateInfo.teamData[index].name;
+				char* str = stateInfo->teamData[index].name;
 				char wins[2] = " ";
 				wins[0] = (char)(((int)'0')+cupInfo.slotWins[i]);
 				printText(str, strlen(str), treeCoordinates[i].x - 0.15f, treeCoordinates[i].y, 2);
@@ -1357,13 +1356,13 @@ static void drawCup()
 		for(i = 0; i < 4; i++) {
 			index1 = -1;
 			index2 = -1;
-			if(stateInfo.cupInfo->schedule[i][0] != -1)
-				index1 = cupInfo.cupTeamIndexTree[(stateInfo.cupInfo->schedule[i][0])];
-			if(stateInfo.cupInfo->schedule[i][1] != -1)
-				index2 = cupInfo.cupTeamIndexTree[(stateInfo.cupInfo->schedule[i][1])];
+			if(stateInfo->cupInfo->schedule[i][0] != -1)
+				index1 = cupInfo.cupTeamIndexTree[(stateInfo->cupInfo->schedule[i][0])];
+			if(stateInfo->cupInfo->schedule[i][1] != -1)
+				index2 = cupInfo.cupTeamIndexTree[(stateInfo->cupInfo->schedule[i][1])];
 			if(index1 != -1 && index2 != -1) {
-				char* str = stateInfo.teamData[index1].name;
-				char* str2 = stateInfo.teamData[index2].name;
+				char* str = stateInfo->teamData[index1].name;
+				char* str2 = stateInfo->teamData[index2].name;
 				printText(str, strlen(str), -0.4f, -0.15f + counter*0.1f, 2);
 				printText("-", 1, -0.02f, -0.15f + counter*0.1f, 2);
 				printText(str2, strlen(str2), 0.1f, -0.15f + counter*0.1f, 2);
@@ -1391,9 +1390,9 @@ static void drawCup()
 		for(i = 0; i < 5; i++) {
 			char* text;
 			char* empty = "Empty slot";
-			int index = stateInfo.saveData[i].userTeamIndexInTree;
+			int index = stateInfo->saveData[i].userTeamIndexInTree;
 			if(index != -1) {
-				text = stateInfo.teamData[stateInfo.saveData[i].cupTeamIndexTree[index]].name;
+				text = stateInfo->teamData[stateInfo->saveData[i].cupTeamIndexTree[index]].name;
 			} else {
 				text = empty;
 			}
@@ -1402,7 +1401,7 @@ static void drawCup()
 	}
 }
 
-static void drawHelp()
+static void drawHelp(StateInfo* stateInfo)
 {
 	if(stage_9_state == 0) {
 		printText("Controls", 8, HELP_LEFT, -0.45f, 4);
@@ -1514,7 +1513,7 @@ static void drawHelp()
 	}
 }
 
-static void drawSelection()
+static void drawSelection(StateInfo* stateInfo)
 {
 	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
 
@@ -1522,7 +1521,7 @@ static void drawSelection()
 		int i;
 		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
 		for(i = 0; i < TEAM_COUNT; i++) {
-			char* str = stateInfo.teamData[i].name;
+			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
 	} else if(stage_1_state == 1) {
@@ -1537,7 +1536,7 @@ static void drawSelection()
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
 		for(i = 0; i < TEAM_COUNT; i++) {
-			char* str = stateInfo.teamData[i].name;
+			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
 	} else if(stage_1_state == 3) {
@@ -1572,7 +1571,7 @@ static void calculateRuns(char* par1, char* par2, char* par3, char* par4, int ru
 	}
 }
 
-static void drawGameOverTexts()
+static void drawGameOverTexts(StateInfo* stateInfo)
 {
 	char str[21] = "Team x is victorious";
 	char str2[19] = "First period xx-xx";
@@ -1580,35 +1579,35 @@ static void drawGameOverTexts()
 	char str4[19] = "Super inning xx-xx";
 	char str5[22] = "Homerun contest xx-xx";
 	char str6[16] = "Congratulations";
-	int teamIndex = stateInfo.globalGameInfo->teams[stateInfo.globalGameInfo->winner].value;
-	char* str7 = stateInfo.teamData[teamIndex - 1].name;
+	int teamIndex = stateInfo->globalGameInfo->teams[stateInfo->globalGameInfo->winner].value;
+	char* str7 = stateInfo->teamData[teamIndex - 1].name;
 	float left = -0.30f - strlen(str7)/100.0f;
 	int runs1;
 	int runs2;
-	if(stateInfo.globalGameInfo->winner == 0) str[5] = '1';
+	if(stateInfo->globalGameInfo->winner == 0) str[5] = '1';
 	else str[5] = '2';
 	printText(str, 20, -0.33f, -0.3f, 3);
 	printText(str6, strlen(str6), left, -0.18f, 3);
 	printText(str7, strlen(str7), left + 0.58f, -0.18f, 3);
 	// here we actually calculate something. though its pretty simple.
-	runs1 = stateInfo.globalGameInfo->teams[0].period0Runs;
-	runs2 = stateInfo.globalGameInfo->teams[1].period0Runs;
+	runs1 = stateInfo->globalGameInfo->teams[0].period0Runs;
+	runs2 = stateInfo->globalGameInfo->teams[1].period0Runs;
 	calculateRuns(&str2[13], &str2[14], &str2[16], &str2[17], runs1, runs2);
 	printText(str2, 18, -0.22f, 0.0f, 2);
 
-	runs1 = stateInfo.globalGameInfo->teams[0].period1Runs;
-	runs2 = stateInfo.globalGameInfo->teams[1].period1Runs;
+	runs1 = stateInfo->globalGameInfo->teams[0].period1Runs;
+	runs2 = stateInfo->globalGameInfo->teams[1].period1Runs;
 	calculateRuns(&str3[14], &str3[15], &str3[17], &str3[18], runs1, runs2);
 	printText(str3, 19, -0.22f, 0.1f, 2);
-	if(stateInfo.globalGameInfo->period >= 2) {
-		runs1 = stateInfo.globalGameInfo->teams[0].period2Runs;
-		runs2 = stateInfo.globalGameInfo->teams[1].period2Runs;
+	if(stateInfo->globalGameInfo->period >= 2) {
+		runs1 = stateInfo->globalGameInfo->teams[0].period2Runs;
+		runs2 = stateInfo->globalGameInfo->teams[1].period2Runs;
 		calculateRuns(&str4[13], &str4[14], &str4[16], &str4[17], runs1, runs2);
 		printText(str4, 18, -0.22f, 0.2f, 2);
 	}
-	if(stateInfo.globalGameInfo->period >= 4) {
-		runs1 = stateInfo.globalGameInfo->teams[0].period3Runs;
-		runs2 = stateInfo.globalGameInfo->teams[1].period3Runs;
+	if(stateInfo->globalGameInfo->period >= 4) {
+		runs1 = stateInfo->globalGameInfo->teams[0].period3Runs;
+		runs2 = stateInfo->globalGameInfo->teams[1].period3Runs;
 		calculateRuns(&str5[16], &str5[17], &str5[19], &str5[20], runs1, runs2);
 		printText(str5, 21, -0.22f, 0.3f, 2);
 	}
@@ -1616,10 +1615,10 @@ static void drawGameOverTexts()
 
 
 
-static void drawPlayerList()
+static void drawPlayerList(StateInfo* stateInfo)
 {
 
-	TeamData* teamData = stateInfo.teamData;
+	TeamData* teamData = stateInfo->teamData;
 	int i;
 	int team = team1;
 	if(stage == 2 || stage == 6) team = team1;
@@ -1674,7 +1673,7 @@ static void drawPlayerList()
 
 }
 
-int cleanMainMenu()
+int cleanMainMenu(StateInfo* stateInfo)
 {
 	cleanMesh(planeMesh);
 	cleanMesh(batMesh);
@@ -1682,7 +1681,7 @@ int cleanMainMenu()
 	return 0;
 }
 
-static void loadMenuScreenSettings()
+static void loadMenuScreenSettings(StateInfo* stateInfo)
 {
 	int i;
 	glDisable(GL_LIGHTING);
@@ -1712,7 +1711,7 @@ static void loadMenuScreenSettings()
 			pointer = 0;
 			stage_8_state = 2;
 		}
-		initHutunkeitto();
+		initHutunkeitto(stateInfo);
 
 	}
 	// after first period
@@ -1736,7 +1735,7 @@ static void loadMenuScreenSettings()
 			team2_batting_order[i] = i;
 			batting_order[i] = i;
 		}
-		initHutunkeitto();
+		initHutunkeitto(stateInfo);
 	}
 	// after super period
 	else if(menuInfo.state == 3) {
@@ -1750,7 +1749,7 @@ static void loadMenuScreenSettings()
 				team_2_choices[i][j] = -1;
 			}
 		}
-		if(stateInfo.globalGameInfo->period == 4) {
+		if(stateInfo->globalGameInfo->period == 4) {
 			choiceCount = 10;
 		} else choiceCount = 6;
 
@@ -1761,11 +1760,11 @@ static void loadMenuScreenSettings()
 		stage = 5;
 	}
 	if(menuInfo.state != 4) {
-		stateInfo.playSoundEffect = SOUND_MENU;
+		stateInfo->playSoundEffect = SOUND_MENU;
 	}
 }
 // ugly, thank you.
-static void initHutunkeitto()
+static void initHutunkeitto(StateInfo* stateInfo)
 {
 	batTimer = 0;
 	batTimerLimit = 0;
@@ -1789,61 +1788,61 @@ static void initHutunkeitto()
 	playsFirst = 0;
 }
 // and we initialize the game.
-static void moveToGame()
+static void moveToGame(StateInfo* stateInfo)
 {
 
-	stateInfo.screen = 1;
-	stateInfo.changeScreen = 1;
-	stateInfo.updated = 0;
+	stateInfo->screen = 1;
+	stateInfo->changeScreen = 1;
+	stateInfo->updated = 0;
 	// when first starting the game, we se teams and inning and period settings.
-	if(stateInfo.menuInfo->state == 0) {
+	if(stateInfo->menuInfo->state == 0) {
 		int i;
-		stateInfo.globalGameInfo->inning = 0;
-		stateInfo.globalGameInfo->inningsInPeriod = inningsInPeriod;
-		stateInfo.globalGameInfo->period = 0;
-		stateInfo.globalGameInfo->winner = -1;
-		stateInfo.globalGameInfo->teams[0].value = team1 + 1;
-		stateInfo.globalGameInfo->teams[1].value = team2 + 1;
-		stateInfo.globalGameInfo->teams[0].control = team1_control;
-		stateInfo.globalGameInfo->teams[1].control = team2_control;
+		stateInfo->globalGameInfo->inning = 0;
+		stateInfo->globalGameInfo->inningsInPeriod = inningsInPeriod;
+		stateInfo->globalGameInfo->period = 0;
+		stateInfo->globalGameInfo->winner = -1;
+		stateInfo->globalGameInfo->teams[0].value = team1 + 1;
+		stateInfo->globalGameInfo->teams[1].value = team2 + 1;
+		stateInfo->globalGameInfo->teams[0].control = team1_control;
+		stateInfo->globalGameInfo->teams[1].control = team2_control;
 		for(i = 0; i < 2; i++) {
-			stateInfo.globalGameInfo->teams[i].runs = 0;
-			stateInfo.globalGameInfo->teams[i].period0Runs = 0;
-			stateInfo.globalGameInfo->teams[i].period1Runs = 0;
-			stateInfo.globalGameInfo->teams[i].period2Runs = 0;
-			stateInfo.globalGameInfo->teams[i].period3Runs = 0;
+			stateInfo->globalGameInfo->teams[i].runs = 0;
+			stateInfo->globalGameInfo->teams[i].period0Runs = 0;
+			stateInfo->globalGameInfo->teams[i].period1Runs = 0;
+			stateInfo->globalGameInfo->teams[i].period2Runs = 0;
+			stateInfo->globalGameInfo->teams[i].period3Runs = 0;
 
 		}
 	}
 	// in the beginning and after second period we have had hutunkeitto.
-	if(stateInfo.menuInfo->state == 0 || stateInfo.menuInfo->state == 2) {
-		stateInfo.globalGameInfo->playsFirst = playsFirst;
+	if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
+		stateInfo->globalGameInfo->playsFirst = playsFirst;
 	}
 	// after super period we have to do different kind of initialization.
-	if(stateInfo.menuInfo->state == 3) {
+	if(stateInfo->menuInfo->state == 3) {
 		int i, j;
 		for(i = 0; i < 2; i++) {
 			for(j = 0; j < choiceCount/2; j++) {
-				stateInfo.globalGameInfo->teams[0].batterRunnerIndices[i][j] = team_1_choices[i][j];
-				stateInfo.globalGameInfo->teams[1].batterRunnerIndices[i][j] = team_2_choices[i][j];
+				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = team_1_choices[i][j];
+				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = team_2_choices[i][j];
 			}
-			if(stateInfo.globalGameInfo->period > 4) {
+			if(stateInfo->globalGameInfo->period > 4) {
 				for(j = choiceCount/2; j < 5; j++) {
-					stateInfo.globalGameInfo->teams[0].batterRunnerIndices[i][j] = -1;
-					stateInfo.globalGameInfo->teams[1].batterRunnerIndices[i][j] = -1;
+					stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = -1;
+					stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = -1;
 				}
 			}
 		}
-		stateInfo.globalGameInfo->pairCount = choiceCount / 2;
-		stateInfo.localGameInfo->gAI.runnerBatterPairCounter = 0;
+		stateInfo->globalGameInfo->pairCount = choiceCount / 2;
+		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
 	} else {
 		// if homerun batting contest is not coming, we just set batterOrder settings normally.
-		stateInfo.globalGameInfo->teams[0].batterOrderIndex = 0;
-		stateInfo.globalGameInfo->teams[1].batterOrderIndex = 0;
-		memcpy(stateInfo.globalGameInfo->teams[0].batterOrder, team1_batting_order, sizeof(batting_order));
-		memcpy(stateInfo.globalGameInfo->teams[1].batterOrder, team2_batting_order, sizeof(batting_order));
+		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
+		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
+		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, team1_batting_order, sizeof(batting_order));
+		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, team2_batting_order, sizeof(batting_order));
 	}
 
-	stateInfo.menuInfo->state = 0;
+	stateInfo->menuInfo->state = 0;
 	loadMutableWorldSettings();
 }

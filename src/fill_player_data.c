@@ -12,7 +12,8 @@
 	whole purpose of this file is just to provide means to fill the data structure in one place and not mixed up in other code.
 */
 
-static TeamData* teamDataPtr;
+static TeamData teamDataPtr[TEAM_COUNT];
+
 static int teamCounter = 0;
 static int playerCounter = 0;
 
@@ -168,7 +169,7 @@ char* getReadFileDataErrorDescription (int nError)
 	return "unknown error";
 }
 
-int fillPlayerData(TeamData* teamData)
+int fillPlayerData(StateInfo* stateInfo)
 {
 	char* name = "teams.xml";
 	char* sData;
@@ -176,7 +177,6 @@ int fillPlayerData(TeamData* teamData)
 	int nResult;
 	int i, j;
 	int valid = 1;
-	teamDataPtr = teamData;
 	nResult= readFileData(name, &sData, &nDataLen);
 	if (nResult != 0) {
 		fprintf(stderr, "couldn't read %s (%s).\n", name,
@@ -189,8 +189,8 @@ int fillPlayerData(TeamData* teamData)
 	// check if contents are "valid"
 	for(i = 0; i < TEAM_COUNT; i++) {
 		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-			if(!(teamData[i].players[j].power >= 1 && teamData[i].players[j].power <= 5 &&
-			        teamData[i].players[j].speed >= 1 && teamData[i].players[j].speed <= 5)) {
+			if(!(teamDataPtr[i].players[j].power >= 1 && teamDataPtr[i].players[j].power <= 5 &&
+			        teamDataPtr[i].players[j].speed >= 1 && teamDataPtr[i].players[j].speed <= 5)) {
 				valid = 0;
 			}
 		}
@@ -200,19 +200,20 @@ int fillPlayerData(TeamData* teamData)
 		return -1;
 	}
 
+	stateInfo->teamData = teamDataPtr;
 	return 0;
 }
 
-int cleanPlayerData()
+int cleanPlayerData(StateInfo* stateInfo)
 {
 	int i, j;
 	// clean up
 	for(i = 0; i < TEAM_COUNT; i++) {
-		free(teamDataPtr[i].id);
-		free(teamDataPtr[i].name);
+		free(stateInfo->teamData[i].id);
+		free(stateInfo->teamData[i].name);
 		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-			free(teamDataPtr[i].players[j].id);
-			free(teamDataPtr[i].players[j].name);
+			free(stateInfo->teamData[i].players[j].id);
+			free(stateInfo->teamData[i].players[j].name);
 		}
 	}
 

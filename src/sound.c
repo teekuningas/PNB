@@ -1,8 +1,20 @@
+#define MA_IMPLEMENTATION
+
 #include "globals.h"
 #include "sound.h"
-#include "sound_internal.h"
+#include "miniaudio.h"
 
-int initSound()
+static int repeat;
+static int hasPlayed;
+static int working;
+
+static ma_sound swing;
+static ma_sound catchBall;
+static ma_sound menu;
+static ma_result result;
+static ma_engine engine;
+
+int initSound(StateInfo* stateInfo)
 {
 
 	result = ma_engine_init(NULL, &engine);
@@ -34,20 +46,20 @@ int initSound()
 		return -4;
 	}
 
-	stateInfo.playSoundEffect = 0;
+	stateInfo->playSoundEffect = 0;
 	working = 1;
 	repeat = 0;
 	hasPlayed = 0;
 
 	return 0;
 }
-void updateSound()
+void updateSound(StateInfo* stateInfo)
 {
-	if(stateInfo.playSoundEffect != 0)
+	if(stateInfo->playSoundEffect != 0)
 	{
 		if(working == 1)
 		{
-			switch(stateInfo.playSoundEffect)
+			switch(stateInfo->playSoundEffect)
 			{
 				case SOUND_MENU:
 
@@ -66,7 +78,7 @@ void updateSound()
 
 			}
 		}
-		stateInfo.playSoundEffect = 0;
+		stateInfo->playSoundEffect = 0;
 	}
 	else
 	{
@@ -90,7 +102,7 @@ void updateSound()
 
 }
 
-int cleanSound()
+int cleanSound(StateInfo* stateInfo)
 {
 	ma_engine_uninit(&engine);
 	return 0;

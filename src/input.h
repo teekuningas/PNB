@@ -1,7 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-int initInput();
-void updateInput();
+#include "globals.h"
+
+int initInput(StateInfo* stateInfo);
+void updateInput(StateInfo* stateInfo);
 
 #endif /* INPUT_H */

@@ -16,6 +16,7 @@
 #define PI 3.141f
 #define EPSILON 0.005f
 #define UPDATE_INTERVAL 20
+#define PERSPECTIVE_ASPECT_RATIO (16.0f/9.0f)
 
 // game states
 #define MAIN_MENU 0

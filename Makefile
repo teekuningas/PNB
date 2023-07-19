@@ -23,7 +23,7 @@ main: $(OBJ)
 
 .PHONY: run
 run:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main
+	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --windowed
 
 .PHONY: clean
 clean:

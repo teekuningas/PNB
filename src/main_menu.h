@@ -1,10 +1,12 @@
 #ifndef MAIN_MENU_H
 #define MAIN_MENU_H
 
-int initMainMenu();
-void updateMainMenu();
-void drawMainMenu(double alpha);
-int cleanMainMenu();
-void drawLoadingScreen();
+#include "globals.h"
+
+int initMainMenu(StateInfo* stateInfo);
+void updateMainMenu(StateInfo* stateInfo);
+void drawMainMenu(StateInfo* stateInfo, double alpha);
+int cleanMainMenu(StateInfo* stateInfo);
+void drawLoadingScreen(StateInfo* stateInfo);
 
 #endif /* MAIN_MENU_H */

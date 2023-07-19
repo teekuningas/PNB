@@ -6,18 +6,23 @@
 #include "fill_player_data.h"
 #include "main_menu.h"
 
-#include "main_internal.h"
+static int initGL(int fullscreen);
+static int clean(StateInfo* stateInfo);
+static void draw(StateInfo* stateInfo, double alpha);
+static int update(StateInfo* stateInfo);
 
+StateInfo stateInfo;
 
 /*
 	the core part of the code. initializes graphics and everything in our program and also includes our main loop that keeps the game in sync and
 	is the code that decides should we call menu's or game screen's functions.
 */
-
 int main ( int argc, char *argv[] )
 {
+
 	double alpha;
 	int done = 0;
+	int fullscreen = 1;
 	int result;
 
 	unsigned int currentTime = 0;
@@ -25,41 +30,43 @@ int main ( int argc, char *argv[] )
 	unsigned int frameTime;
 	unsigned int accumulator = 0;
 	unsigned int updateInterval = UPDATE_INTERVAL;
-	if(argc >= 2) {
-		fullscreen = 0;
-	} else {
-		fullscreen = 1;
+
+	// Initialize the random number generator
+	srand((unsigned int)time(NULL));
+
+	// Handle the commandline arguments
+	for(int i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "--windowed") == 0) {
+			fullscreen = 0;
+		}
 	}
 
-	printf("v. 1.0.1\n");
+	printf("v. 1.1.0.dev\n");
 
-	result = initGL();
+	result = initGL(fullscreen);
 	if(result != 0) {
 		printf("Could not init GL. Exiting.");
 		return -1;
 	}
 
-	result = fillPlayerData(&(teamData[0]));
+	result = fillPlayerData(&stateInfo);
 	if(result != 0) {
 		printf("Could not init team data. Exiting.");
 		return -1;
 	}
-	stateInfo.teamData = &(teamData[0]);
 
-	srand ( (unsigned int)time(NULL) );
-
-	result = initMainMenu();
+	result = initMainMenu(&stateInfo);
 	if(result != 0) {
 		printf("Could not init main menu. Exiting.");
 		return -1;
 	}
 
-	result = initInput();
+	result = initInput(&stateInfo);
 	if(result != 0) {
 		printf("Could not init input. Exiting.");
 		return -1;
 	}
-	result = initSound();
+	result = initSound(&stateInfo);
 	if(result != 0) {
 		printf("Could not init sound system. Exiting.");
 		return -1;
@@ -73,10 +80,10 @@ int main ( int argc, char *argv[] )
 	// draw loading screen before loading all the player meshes which will take time
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-	drawLoadingScreen();
-	draw(1.0);
-	drawLoadingScreen();
-	draw(1.0);
+	drawLoadingScreen(&stateInfo);
+	draw(&stateInfo, 1.0);
+	drawLoadingScreen(&stateInfo);
+	draw(&stateInfo, 1.0);
 
 	result = initGameScreen();
 	if(result != 0) {
@@ -96,7 +103,7 @@ int main ( int argc, char *argv[] )
 		accumulator += frameTime;
 		// update the scene every 20ms and if for some reason there is delay, keep updating until catched up
 		while ( accumulator >= updateInterval ) {
-			result = update();
+			result = update(&stateInfo);
 			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;
 			accumulator -= updateInterval;
 		}
@@ -107,13 +114,13 @@ int main ( int argc, char *argv[] )
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
 		// so we will draw it to the middle.
 		if(stateInfo.updated == 1) {
-			draw(alpha);
+			draw(&stateInfo, alpha);
 		}
 
 
 	}
 	// and we will clean up when everything ends
-	result = clean();
+	result = clean(&stateInfo);
 	if(result != 0) {
 		printf("Cleaning up unsuccessful. Exiting anyway.");
 		return -1;
@@ -122,16 +129,16 @@ int main ( int argc, char *argv[] )
 
 }
 
-static int update()
+static int update(StateInfo* stateInfo)
 {
-	updateInput();
-	updateSound();
-	switch(stateInfo.screen) {
+	updateInput(stateInfo);
+	updateSound(stateInfo);
+	switch(stateInfo->screen) {
 	case GAME_SCREEN:
 		updateGameScreen();
 		break;
 	case MAIN_MENU:
-		updateMainMenu();
+		updateMainMenu(stateInfo);
 		break;
 	default:
 		return 1;
@@ -140,14 +147,14 @@ static int update()
 }
 
 
-static void draw(double alpha)
+static void draw(StateInfo* stateInfo, double alpha)
 {
-	switch(stateInfo.screen) {
+	switch(stateInfo->screen) {
 	case GAME_SCREEN:
 		drawGameScreen(alpha);
 		break;
 	case MAIN_MENU:
-		drawMainMenu(alpha);
+		drawMainMenu(stateInfo, alpha);
 		break;
 	}
 	glfwSwapBuffers();
@@ -155,7 +162,7 @@ static void draw(double alpha)
 	glLoadIdentity();
 }
 
-static int initGL()
+static int initGL(int fullscreen)
 {
 	GLFWvidmode mode;
 	int width;
@@ -204,7 +211,7 @@ static int initGL()
 
 	glfwSwapInterval(0);
 	// and then initialize openGL settings. nothing really weird here.
-	glEnable( GL_TEXTURE_2D );
+	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClearDepth(1.0f);
@@ -229,35 +236,36 @@ static int initGL()
 	return 0;
 }
 
-static int clean()
+static int clean(StateInfo* stateInfo)
 {
 	int result;
-	result = cleanPlayerData();
+	int retvalue = 0;
+	result = cleanPlayerData(stateInfo);
 	if(result != 0) {
 		printf("Could not clean player data completely\n");
-		return -1;
+		retvalue = -1;
 	}
 	result = cleanGameScreen();
 	if(result != 0) {
 		printf("Could not clean game screen completely\n");
-		return -1;
+		retvalue = -1;
 	}
 
-	result = cleanMainMenu();
+	result = cleanMainMenu(stateInfo);
 	if(result != 0) {
 		printf("Could not clean main menu completely\n");
-		return -1;
+		retvalue = -1;
 	}
 	result = cleanFont();
 	if(result != 0) {
 		printf("Could not clean font completely\n");
-		return -1;
+		retvalue = -1;
 	}
-	result = cleanSound();
+	result = cleanSound(stateInfo);
 	if(result != 0) {
 		printf("Could not clean sound completely\n");
-		return -1;
+		retvalue = -1;
 	}
 	glfwTerminate();
-	return 0;
+	return retvalue;
 }

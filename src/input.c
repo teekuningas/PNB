@@ -1,14 +1,17 @@
 #include "globals.h"
 #include "input.h"
-#include "input_internal.h"
+
 /*
 	all of the platform specific input code is to be inserted here. we save states to a structure and read it from other places when needed.
 */
 
-int initInput()
+static KeyStates keyStates;
+static int buttonsJustReleased[3][KEY_COUNT];
+
+int initInput(StateInfo* stateInfo)
 {
 	int i, j;
-	stateInfo.keyStates = &keyStates;
+	stateInfo->keyStates = &keyStates;
 	for(j = 0; j < 3; j++) {
 		for(i = 0; i < KEY_COUNT; i++) {
 			keyStates.released[j][i] = 0;
@@ -60,7 +63,7 @@ static __inline void checkKeyImitations()
 {
 	int i;
 	for(i = 0; i < KEY_COUNT; i++) {
-		if(stateInfo.keyStates->imitateKeyPress[i] == 1) {
+		if(keyStates.imitateKeyPress[i] == 1) {
 			keyStates.down[2][i] = 1;
 		} else {
 			if(keyStates.down[2][i] == 1) {
@@ -75,7 +78,7 @@ static __inline void checkKeyImitations()
 	}
 }
 
-void updateInput()
+void updateInput(StateInfo* stateInfo)
 {
 	// here we just check them all and name the keys to associate with keycodes used in keyStates.
 	keyCheckS(GLFW_KEY_RCTRL, KEY_PLUS, 0);
