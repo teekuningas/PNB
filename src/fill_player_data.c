@@ -1,221 +1,143 @@
+#include <mxml.h>
+
 #include "globals.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-
-#include "simplexml.h"
 #include "fill_player_data.h"
 
-/*
-	whole purpose of this file is just to provide means to fill the data structure in one place and not mixed up in other code.
-*/
+static int freeTeam(TeamData* teamData);
+static int readTeamsFromFile(StateInfo* stateInfo, const char* filename);
+static int mxmlCountNodes(mxml_node_t *tree, const char *elementName);
 
-static TeamData teamDataPtr[TEAM_COUNT];
-
-static int teamCounter = 0;
-static int playerCounter = 0;
-
-void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
-               const char* szName, const char* szAttribute, const char* szValue);
-void parse (char* sData, long nDataLen);
-
-void trim (const char* szInput, char* szOutput);
-char* getReadFileDataErrorDescription (int nError);
-int readFileData (char* sFileName, char** sData, long *pnDataLen);
-
-void* handler (SimpleXmlParser parser, SimpleXmlEvent event,
-               const char* szName, const char* szAttribute, const char* szValue)
+int fillPlayerData(StateInfo *stateInfo, const char* filename)
 {
-
-	char szHandlerName[32], szHandlerAttribute[32], szHandlerValue[32];
-	if (szName != NULL) {
-		trim(szName, szHandlerName);
-	}
-
-	if (szAttribute != NULL) {
-		trim(szAttribute, szHandlerAttribute);
-	}
-
-	if (szValue != NULL) {
-		trim(szValue, szHandlerValue);
-	}
-
-	if (event == ADD_ATTRIBUTE) {
-		if(szHandlerValue[0] == 't') {
-			teamDataPtr[teamCounter].id = ownstrdup(szHandlerValue);
-			teamCounter++;
-			playerCounter = 0;
-		} else if(szHandlerValue[0] == 'p') {
-			teamDataPtr[teamCounter-1].players[playerCounter].id = ownstrdup(szHandlerValue);
-			playerCounter++;
-		}
-
-	} else if (event == ADD_CONTENT) {
-
-		if(strcmp(szHandlerName, "player") == 0) {
-
-		} else if(strcmp(szHandlerName, "players") == 0 || strcmp(szHandlerName, "teams") == 0
-		          || strcmp(szHandlerName, "team") == 0) {
-		} else {
-
-			if(strcmp(szHandlerName, "name") == 0) {
-				teamDataPtr[teamCounter-1].players[playerCounter-1].name = ownstrdup(szHandlerValue);
-			} else if(strcmp(szHandlerName, "team_name") == 0) {
-
-				teamDataPtr[teamCounter-1].name = ownstrdup(szHandlerValue);
-			} else if(strcmp(szHandlerName, "speed") == 0) {
-				int i = atoi (szHandlerValue);
-				teamDataPtr[teamCounter-1].players[playerCounter-1].speed = i;
-			} else if(strcmp(szHandlerName, "power") == 0) {
-				int i = atoi (szHandlerValue);
-				teamDataPtr[teamCounter-1].players[playerCounter-1].power = i;
-			}
-		}
-
-	}
-
-	return handler;
+	stateInfo->numTeams = 0;
+	stateInfo->teamData = NULL;
+	return readTeamsFromFile(stateInfo, filename);
 }
 
-void parse (char* sData, long nDataLen)
+int cleanPlayerData(StateInfo *stateInfo)
 {
-	SimpleXmlParser parser= simpleXmlCreateParser(sData, nDataLen);
-	if (parser == NULL) {
-		fprintf(stderr, "couldn't create parser");
-		return;
+	for (int i = 0; i < stateInfo->numTeams; i++) {
+		freeTeam(&(stateInfo->teamData[i]));
 	}
-
-	if (simpleXmlParse(parser, handler) != 0) {
-		fprintf(stderr, "parse error on line %li:\n%s\n",
-		        simpleXmlGetLineNumber(parser), simpleXmlGetErrorDescription(parser));
-	}
-
-}
-
-void trim (const char* szInput, char* szOutput)
-{
-	int i= 0;
-	while (szInput[i] != 0 && i < 32) {
-		if (szInput[i] < ' ') {
-			szOutput[i]= ' ';
-		} else {
-			szOutput[i]= szInput[i];
-		}
-		i++;
-	}
-	if (i < 32) {
-		szOutput[i]= '\0';
-	} else {
-		szOutput[28]= '.';
-		szOutput[29]= '.';
-		szOutput[30]= '.';
-		szOutput[31]= '\0';
-	}
-}
-
-
-#define READ_FILE_NO_ERROR 0
-#define READ_FILE_STAT_ERROR 1
-#define READ_FILE_OPEN_ERROR 2
-#define READ_FILE_OUT_OF_MEMORY 3
-#define READ_FILE_READ_ERROR 4
-
-int readFileData (char* sFileName, char** psData, long *pnDataLen)
-{
-	struct stat fstat;
-	*psData= NULL;
-	*pnDataLen= 0;
-	if (stat(sFileName, &fstat) == -1) {
-		return READ_FILE_STAT_ERROR;
-	} else {
-		FILE *file= fopen(sFileName, "rb");
-		if (file == NULL) {
-			return READ_FILE_OPEN_ERROR;
-		} else {
-			*psData= (char*)malloc(fstat.st_size);
-			if (*psData == NULL) {
-				return READ_FILE_OUT_OF_MEMORY;
-			} else {
-				size_t len= fread(*psData, 1, fstat.st_size, file);
-				fclose(file);
-				if (len != fstat.st_size) {
-					free(*psData);
-					*psData= NULL;
-					return READ_FILE_READ_ERROR;
-				}
-				*pnDataLen= len;
-				return READ_FILE_NO_ERROR;
-			}
-		}
-	}
-}
-
-char* getReadFileDataErrorDescription (int nError)
-{
-	switch (nError) {
-	case READ_FILE_NO_ERROR:
-		return "no error";
-	case READ_FILE_STAT_ERROR:
-		return "no such file";
-	case READ_FILE_OPEN_ERROR:
-		return "couldn't open file";
-	case READ_FILE_OUT_OF_MEMORY:
-		return "out of memory";
-	case READ_FILE_READ_ERROR:
-		return "couldn't read file";
-	}
-	return "unknown error";
-}
-
-int fillPlayerData(StateInfo* stateInfo)
-{
-	char* name = "teams.xml";
-	char* sData;
-	long nDataLen;
-	int nResult;
-	int i, j;
-	int valid = 1;
-	nResult= readFileData(name, &sData, &nDataLen);
-	if (nResult != 0) {
-		fprintf(stderr, "couldn't read %s (%s).\n", name,
-		        getReadFileDataErrorDescription(nResult));
-		return -1;
-	}
-	parse(sData, nDataLen);
-	free(sData);
-
-	// check if contents are "valid"
-	for(i = 0; i < TEAM_COUNT; i++) {
-		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-			if(!(teamDataPtr[i].players[j].power >= 1 && teamDataPtr[i].players[j].power <= 5 &&
-			        teamDataPtr[i].players[j].speed >= 1 && teamDataPtr[i].players[j].speed <= 5)) {
-				valid = 0;
-			}
-		}
-	}
-	if(valid == 0) {
-		printf("Invalid player data\n");
-		return -1;
-	}
-
-	stateInfo->teamData = teamDataPtr;
+	free(stateInfo->teamData);
 	return 0;
 }
 
-int cleanPlayerData(StateInfo* stateInfo)
+static int freeTeam(TeamData* teamData)
 {
-	int i, j;
-	// clean up
-	for(i = 0; i < TEAM_COUNT; i++) {
-		free(stateInfo->teamData[i].id);
-		free(stateInfo->teamData[i].name);
-		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-			free(stateInfo->teamData[i].players[j].id);
-			free(stateInfo->teamData[i].players[j].name);
-		}
+	for (int i = 0; i < teamData->numPlayers; i++) {
+		free(teamData->players[i].id);
+		free(teamData->players[i].name);
+	}
+	free(teamData->players);
+	free(teamData->id);
+	free(teamData->name);
+	return 0;
+}
+
+static int readTeamsFromFile(StateInfo *stateInfo, const char* filename)
+{
+	FILE* file = fopen(filename, "r");
+	if (file == NULL) {
+		printf("Failed to open file: %s\n", filename);
+		return -1;
 	}
 
+	mxml_node_t *tree = mxmlLoadFile(NULL, file, MXML_OPAQUE_CALLBACK);
+	fclose(file);
+	if (tree == NULL) {
+		printf("Failed to parse XML file: %s\n", filename);
+		return -1;
+	}
+
+	mxml_node_t *root = mxmlFindElement(tree, tree, "teams", NULL, NULL, MXML_DESCEND);
+	if (root == NULL) {
+		printf("No 'teams' element found in XML file: %s\n", filename);
+		mxmlDelete(tree);
+		return -1;
+	}
+
+	// Count number of teams and allocate memory for teamData array
+	stateInfo->numTeams = mxmlCountNodes(root, "team");
+	stateInfo->teamData = calloc(stateInfo->numTeams, sizeof(TeamData));
+	if (stateInfo->teamData == NULL) {
+		printf("Failed to allocate memory for teams\n");
+		mxmlDelete(tree);
+		return -1;
+	}
+
+	// Populate teamData array
+	int teamIndex = 0;
+	mxml_node_t *teamNode = mxmlFindElement(root, root, "team", NULL, NULL, MXML_DESCEND_FIRST);
+	while (teamNode != NULL) {
+
+		// Get team id and name, and allocate memory for them
+		const char* teamId = mxmlElementGetAttr(teamNode, "id");
+		mxml_node_t *teamNameNode = mxmlFindElement(teamNode, tree, "team_name", NULL, NULL, MXML_DESCEND);
+		if (teamId == NULL || teamNameNode == NULL) {
+			printf("Failed to read team id or name\n");
+			mxmlDelete(tree);
+			return -1;
+		}
+		stateInfo->teamData[teamIndex].id = strdup(teamId);
+		stateInfo->teamData[teamIndex].name = strdup(mxmlGetOpaque(teamNameNode));
+
+		// Read players and fill the players array in the same way...
+		mxml_node_t *playersNode = mxmlFindElement(teamNode, tree, "players", NULL, NULL, MXML_DESCEND);
+		if (playersNode == NULL) {
+			printf("No 'players' element found in team: %s\n", stateInfo->teamData[teamIndex].id);
+			mxmlDelete(tree);
+			return -1;
+		}
+
+		// Count number of players and allocate memory for players array
+		stateInfo->teamData[teamIndex].numPlayers = mxmlCountNodes(playersNode, "player");
+		stateInfo->teamData[teamIndex].players = calloc(stateInfo->teamData[teamIndex].numPlayers, sizeof(PlayerData));
+		if (stateInfo->teamData[teamIndex].players == NULL) {
+			printf("Failed to allocate memory for players in team: %s\n", stateInfo->teamData[teamIndex].id);
+			mxmlDelete(tree);
+			return -1;
+		}
+
+		// Populate players array
+		int playerIndex = 0;
+		mxml_node_t *playerNode = mxmlFindElement(playersNode, playersNode, "player", NULL, NULL, MXML_DESCEND_FIRST);
+		while(playerNode != NULL) {
+			// Get player id, name, speed, and power, and allocate memory for id and name
+			const char* playerId = mxmlElementGetAttr(playerNode, "id");
+			mxml_node_t *playerNameNode = mxmlFindElement(playerNode, tree, "name", NULL, NULL, MXML_DESCEND);
+			mxml_node_t *playerSpeedNode = mxmlFindElement(playerNode, tree, "speed", NULL, NULL, MXML_DESCEND);
+			mxml_node_t *playerPowerNode = mxmlFindElement(playerNode, tree, "power", NULL, NULL, MXML_DESCEND);
+			if (playerId == NULL || playerNameNode == NULL || playerSpeedNode == NULL || playerPowerNode == NULL) {
+				printf("Failed to read player data\n");
+				mxmlDelete(tree);
+				return -1;
+			}
+			stateInfo->teamData[teamIndex].players[playerIndex].id = strdup(playerId);
+			stateInfo->teamData[teamIndex].players[playerIndex].name = strdup(mxmlGetOpaque(playerNameNode));
+			stateInfo->teamData[teamIndex].players[playerIndex].speed = atoi(mxmlGetOpaque(playerSpeedNode));
+			stateInfo->teamData[teamIndex].players[playerIndex].power = atoi(mxmlGetOpaque(playerPowerNode));
+			playerNode = mxmlFindElement(playerNode, playersNode, "player", NULL, NULL, MXML_NO_DESCEND);
+			playerIndex++;
+		}
+
+		teamNode = mxmlFindElement(teamNode, tree, "team", NULL, NULL, MXML_NO_DESCEND);
+		teamIndex++;
+	}
+
+	mxmlDelete(tree);
+
 	return 0;
+}
+
+
+static int mxmlCountNodes(mxml_node_t *tree, const char *elementName)
+{
+	int count = 0;
+	for (mxml_node_t *node = mxmlFindElement(tree, tree, elementName, NULL, NULL, MXML_DESCEND);
+		node != NULL;
+		node = mxmlFindElement(node, tree, elementName, NULL, NULL, MXML_DESCEND)) {
+		count++;
+	}
+	return count;
 }

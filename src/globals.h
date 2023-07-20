@@ -66,7 +66,6 @@
 // counts
 #define JOKER_COUNT 3
 #define PLAYERS_IN_TEAM 9
-#define TEAM_COUNT 8
 #define RANKED_FIELDERS_COUNT 5
 #define CHANGE_PLAYER_COUNT 3
 #define BASE_COUNT 4
@@ -143,18 +142,20 @@ typedef struct _BallInfo {
 	int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
 	int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
 } BallInfo;
-// struct to keep player data ( read from a file? )
+// struct to keep player data
 typedef struct _PlayerData {
 	char* id;
 	char* name;
-	int speed; // 0 to 9?
-	int power; // 0 to 9?
+	int speed;
+	int power;
 } PlayerData;
+
 // struct keeps information about teams
 typedef struct _TeamData {
 	char* id;
 	char* name;
-	PlayerData players[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int numPlayers;
+	PlayerData* players;
 } TeamData;
 /*
 Action flags. used in action_invocation.c and action_implementation.c.
@@ -409,7 +410,7 @@ typedef struct _StateInfo {
 	int screen;
 	int changeScreen;
 	int updated;
-
+	int numTeams;
 	int playSoundEffect;
 	// addresses to important information structures
 	MenuInfo *menuInfo;

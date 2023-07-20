@@ -55,48 +55,40 @@ int initSound(StateInfo* stateInfo)
 }
 void updateSound(StateInfo* stateInfo)
 {
-	if(stateInfo->playSoundEffect != 0)
-	{
-		if(working == 1)
-		{
-			switch(stateInfo->playSoundEffect)
-			{
-				case SOUND_MENU:
+	if(stateInfo->playSoundEffect != 0) {
+		if(working == 1) {
+			switch(stateInfo->playSoundEffect) {
+			case SOUND_MENU:
 
-					result = ma_sound_start(&menu);
-					hasPlayed = 0;
-					repeat = 1;
-					break;
-				case SOUND_SWING:
-					result = ma_sound_start(&swing);
-					repeat = 0;
-					break;
-				case SOUND_CATCH:
-					result = ma_sound_start(&catchBall);
-					repeat = 0;
-					break;
+				result = ma_sound_start(&menu);
+				hasPlayed = 0;
+				repeat = 1;
+				break;
+			case SOUND_SWING:
+				result = ma_sound_start(&swing);
+				repeat = 0;
+				break;
+			case SOUND_CATCH:
+				result = ma_sound_start(&catchBall);
+				repeat = 0;
+				break;
 
 			}
 		}
 		stateInfo->playSoundEffect = 0;
-	}
-	else
-	{
-		if(working == 1)
-		{
-			if(repeat == 1)
-			{
+	} else {
+		if(working == 1) {
+			if(repeat == 1) {
 				int playing;
 				playing = ma_sound_is_playing(&menu);
 				if(playing != 0) hasPlayed = 1;
-				if(playing == 0 && hasPlayed == 1)
-				{
+				if(playing == 0 && hasPlayed == 1) {
 					result = ma_sound_start(&menu);
 					hasPlayed = 0;
 				}
 			}
 		}
-		
+
 	}
 
 

@@ -1,6 +1,8 @@
 #ifndef COMMON_LOGIC_H
 #define COMMON_LOGIC_H
 
+extern StateInfo stateInfo;
+
 // just common functions used in multiple .c
 
 // here some vector math helper functions used everywhere

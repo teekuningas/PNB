@@ -62,8 +62,8 @@
 				<name>Arkkula</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>			
-		</players>				
+			</player>
+		</players>
 	</team>
 	<team id="t2">
 		<team_name>Huti</team_name>
@@ -72,63 +72,63 @@
 				<name>Koivukoski</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p202">
 				<name>Papatti</name>
 				<speed>5</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p203">
 				<name>Kukkola</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p204">
 				<name>Rantajarvi</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p205">
 				<name>Koivisto</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p206">
 				<name>Hautamaa</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p207">
 				<name>Leevila</name>
 				<speed>5</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p208">
 				<name>Isolato</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p209">
 				<name>Viljonpaa</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p210">
 				<name>Kukkula</name>
 				<speed>4</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p211">
 				<name>Puuskonen</name>
 				<speed>5</speed>
 				<power>1</power>
-			</player>	
+			</player>
 			<player id="p212">
 				<name>Jaatelo</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>				
-		</players>				
+			</player>
+		</players>
 	</team>	
 	<team id="t3">
 		<team_name>Hymy</team_name>
@@ -137,63 +137,63 @@
 				<name>Teuvokainen</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p302">
 				<name>Lahdenvirta</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p303">
 				<name>Hartiakas</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p304">
 				<name>Sohonen</name>
 				<speed>4</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p305">
 				<name>Porhonen</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p306">
 				<name>Horhonen</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p307">
 				<name>Sorhonen</name>
 				<speed>3</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p308">
 				<name>Komurainen</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p309">
 				<name>Kettu</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p310">
 				<name>Puinen</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p311">
 				<name>Norkonen</name>
 				<speed>3</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p312">
 				<name>Teraksinen</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>				
-		</players>	
+			</player>
+		</players>
 	</team>
 	<team id="t4">
 		<team_name>Jypi</team_name>
@@ -202,63 +202,63 @@
 				<name>Alatalo</name>
 				<speed>5</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p402">
 				<name>Sarvinen</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p403">
 				<name>Vesinen</name>
 				<speed>3</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p404">
 				<name>Jokimies</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p405">
 				<name>Torikokous</name>
 				<speed>1</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p406">
 				<name>Tullila</name>
 				<speed>3</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p407">
 				<name>Naatala</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p408">
 				<name>Koivukas</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p409">
 				<name>Eestilainen</name>
 				<speed>1</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p410">
 				<name>Einonen</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p411">
 				<name>Ilvespoukama</name>
 				<speed>5</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p412">
 				<name>Lassinlahti</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>				
-		</players>	
+			</player>
+		</players>
 	</team>	
 	<team id="t5">
 		<team_name>Murheilijat</team_name>
@@ -267,64 +267,64 @@
 				<name>Marjanen</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p502">
 				<name>Vuohisaari</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p503">
 				<name>Kotkala</name>
 				<speed>3</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p504">
 				<name>Kytola</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p505">
 				<name>Vainio</name>
 				<speed>3</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p506">
 				<name>Harjala</name>
 				<speed>4</speed>
 				<power>1</power>
-			</player>	
+			</player>
 			<player id="p507">
 				<name>Myllyjarvi</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p508">
 				<name>Vauhkola</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p509">
 				<name>Hirvenystava</name>
 				<speed>3</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p510">
 				<name>Laaksonvirta</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p511">
 				<name>Leppa-aho</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p512">
 				<name>Puhtis</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>				
-		</players>	
-	</team>		
+			</player>
+        </players>
+	</team>
 	<team id="t6">
 		<team_name>Kallo</team_name>
 		<players>
@@ -332,64 +332,64 @@
 				<name>Meili</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p602">
 				<name>Ravinen</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p603">
 				<name>Turska</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p604">
 				<name>Haaksi</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p605">
 				<name>Juurela</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p606">
 				<name>Lajunen</name>
 				<speed>4</speed>
 				<power>1</power>
-			</player>	
+			</player>
 			<player id="p607">
 				<name>Murska</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p608">
 				<name>Parrakas</name>
 				<speed>3</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p609">
 				<name>Matinkangas</name>
 				<speed>1</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p610">
 				<name>Hamara</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p611">
 				<name>Ihonen</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p612">
 				<name>Myyra</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>				
-		</players>	
-	</team>		
+			</player>
+		</players>
+	</team>
 	<team id="t7">
 		<team_name>Sarma</team_name>
 		<players>
@@ -397,64 +397,64 @@
 				<name>Kaarlepoika</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p702">
 				<name>Pienimaa</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p703">
 				<name>Tokkonen</name>
 				<speed>5</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p704">
 				<name>Rantatonttu</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p705">
 				<name>Nurkkala</name>
 				<speed>3</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p706">
 				<name>Intonen</name>
 				<speed>4</speed>
 				<power>1</power>
-			</player>	
+			</player>
 			<player id="p707">
 				<name>Kosonen</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p708">
 				<name>Rantala</name>
 				<speed>3</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p709">
 				<name>Ollinen</name>
 				<speed>2</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p710">
 				<name>Tikkanen</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p711">
 				<name>Karju</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p712">
 				<name>Vuoritaivas</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>				
-		</players>	
-	</team>		
+			</player>
+		</players>
+	</team>
 	<team id="t8">
 		<team_name>Hippo</team_name>
 		<players>
@@ -462,62 +462,62 @@
 				<name>Tyrsky</name>
 				<speed>4</speed>
 				<power>1</power>
-			</player>	
+			</player>
 			<player id="p802">
 				<name>Hirvenpaa</name>
 				<speed>4</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p803">
 				<name>Korjuu</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p804">
 				<name>Velho</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p805">
 				<name>Sarvela</name>
 				<speed>1</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p806">
 				<name>Sieninen</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p807">
 				<name>Sauhukainen</name>
 				<speed>3</speed>
 				<power>3</power>
-			</player>	
+			</player>
 			<player id="p808">
 				<name>Janis</name>
 				<speed>4</speed>
 				<power>4</power>
-			</player>	
+			</player>
 			<player id="p809">
 				<name>Arkussa</name>
 				<speed>2</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p810">
 				<name>Ylihalko</name>
 				<speed>1</speed>
 				<power>5</power>
-			</player>	
+			</player>
 			<player id="p811">
 				<name>Veisunen</name>
 				<speed>4</speed>
 				<power>2</power>
-			</player>	
+			</player>
 			<player id="p812">
 				<name>Happo</name>
 				<speed>5</speed>
 				<power>2</power>
-			</player>				
-		</players>	
-	</team>			
+			</player>
+		</players>
+	</team>
 </teams>

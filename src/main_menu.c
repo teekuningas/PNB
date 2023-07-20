@@ -49,7 +49,7 @@ int initMainMenu(StateInfo* stateInfo)
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
 
-	if(refreshLoadCups() != 0) {
+	if(refreshLoadCups(stateInfo) != 0) {
 		printf("Something wrong with the save file.");
 		return 1;
 	}
@@ -115,7 +115,7 @@ void updateMainMenu(StateInfo* stateInfo)
 		if(keyStates->released[0][KEY_2]) {
 			if(pointer == 0) {
 				stage = 1;
-				rem = TEAM_COUNT;
+				rem = stateInfo->numTeams;
 				pointer = DEFAULT_TEAM_1;
 			} else if(pointer == 1) {
 				stage = 8;
@@ -155,14 +155,14 @@ void updateMainMenu(StateInfo* stateInfo)
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 0;
 				pointer = 0;
-				rem = TEAM_COUNT;
+				rem = stateInfo->numTeams;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
 				stage_1_state = 2;
 				team1_control = pointer;
 				pointer = DEFAULT_TEAM_2;
-				rem = TEAM_COUNT;
+				rem = stateInfo->numTeams;
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				pointer +=1;
@@ -202,7 +202,7 @@ void updateMainMenu(StateInfo* stateInfo)
 		} else if(stage_1_state == 3) {
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 2;
-				rem = TEAM_COUNT;
+				rem = stateInfo->numTeams;
 				pointer = 0;
 
 			}
@@ -528,8 +528,8 @@ void updateMainMenu(StateInfo* stateInfo)
 					if(advance == 1) stage_8_state = 7;
 				}
 				// update cup and schedule.
-				updateCupTreeAfterDay(scheduleSlot, stateInfo->globalGameInfo->winner);
-				updateSchedule();
+				updateCupTreeAfterDay(stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
+				updateSchedule(stateInfo);
 			}
 		}
 	}
@@ -734,7 +734,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				if(pointer == 0) {
 					stage_8_state = 1;
 					stage_8_state_1_level = 0;
-					rem = TEAM_COUNT;
+					rem = stateInfo->numTeams;
 					pointer = 0;
 				} else if(pointer == 1) {
 					stage_8_state = 5;
@@ -785,7 +785,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				}
 				if(keyStates->released[0][KEY_1]) {
 					pointer = 0;
-					rem = TEAM_COUNT;
+					rem = stateInfo->numTeams;
 					stage_8_state_1_level = 0;
 				}
 			} else if(stage_8_state_1_level == 2) {
@@ -895,8 +895,8 @@ void updateMainMenu(StateInfo* stateInfo)
 						cupGame = 1;
 					} else {
 						// otherwise we update them right away.
-						updateCupTreeAfterDay(-1, 0);
-						updateSchedule();
+						updateCupTreeAfterDay(stateInfo, -1, 0);
+						updateSchedule(stateInfo);
 					}
 				} else if(pointer == 1) {
 					stage_8_state = 4;
@@ -938,7 +938,7 @@ void updateMainMenu(StateInfo* stateInfo)
 			}
 			if(keyStates->released[0][KEY_2]) {
 				if(stateInfo->saveData[pointer].userTeamIndexInTree != -1) {
-					loadCup(pointer);
+					loadCup(stateInfo, pointer);
 					stage_8_state = 2;
 					pointer = 0;
 					rem = 5;
@@ -961,7 +961,7 @@ void updateMainMenu(StateInfo* stateInfo)
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				saveCup(pointer);
+				saveCup(stateInfo, pointer);
 			}
 		} else if(stage_8_state == 4) {
 			if(keyStates->released[0][KEY_2]) {
@@ -1310,7 +1310,7 @@ static void drawCup(StateInfo* stateInfo)
 		if(stage_8_state_1_level == 0) {
 			int i;
 			printText("Select team", 11, -0.35f, -0.4f, 5);
-			for(i = 0; i < TEAM_COUNT; i++) {
+			for(i = 0; i < stateInfo->numTeams; i++) {
 				char* str = stateInfo->teamData[i].name;
 				printText(str, strlen(str), SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 			}
@@ -1520,7 +1520,7 @@ static void drawSelection(StateInfo* stateInfo)
 	if(stage_1_state == 0) {
 		int i;
 		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < TEAM_COUNT; i++) {
+		for(i = 0; i < stateInfo->numTeams; i++) {
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
@@ -1535,7 +1535,7 @@ static void drawSelection(StateInfo* stateInfo)
 		int i;
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < TEAM_COUNT; i++) {
+		for(i = 0; i < stateInfo->numTeams; i++) {
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}

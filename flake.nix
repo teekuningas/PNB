@@ -16,6 +16,7 @@
             xorg.libX11
             libGL
             libGLU
+            minixml
             gcc
             astyle
             alsa-lib
