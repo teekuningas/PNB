@@ -4,8 +4,6 @@
 #define FONT_SCALE 0.01f
 #define FONT_OFFSET_SCALE 0.012f
 
-extern StateInfo stateInfo;
-
 static void printCharacter(char character);
 
 static GLuint fontTexture;
