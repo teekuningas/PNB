@@ -1,10 +1,33 @@
-#include "globals.h"
+/*
+ * this module tries to tackle rule-related things.
+ */
 
+#include "globals.h"
 #include "game_analysis.h"
-#include "game_analysis_internal.h"
 #include "common_logic.h"
 
-// this module tries to tackle rule-related things.
+#define BASE_RADIUS 2.0f
+#define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
+#define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
+
+extern StateInfo stateInfo;
+
+static int woundingCatchCounter;
+static int outOfBoundsCounter;
+static int endOfInningCounter;
+static int nextPairCounter;
+static int foulPlayEventFlag;
+static int homeRunCameraCounter;
+
+static void checkForOuts();
+static void checkIfNextBatterDecision();
+static void strikesAndBalls();
+static void checkIfEndOfInning();
+static void woundingCatchEffects();
+static void foulPlay();
+static void checkForRuns();
+static void checkIfNextPair();
+
 
 void initGameAnalysis()
 {
@@ -47,7 +70,7 @@ void gameAnalysis()
 
 }
 
-static __inline void checkForOuts()
+static void checkForOuts()
 {
 	// for the check of end of inning we set this to 0 on every update and if ball happens to be on home base then we put it to 1.
 	stateInfo.localGameInfo->gAI.ballHome = 0;
@@ -162,7 +185,7 @@ static __inline void checkForOuts()
 
 }
 
-static __inline void checkIfNextBatterDecision()
+static void checkIfNextBatterDecision()
 {
 	// so this function's idea is to make progress in selecting a new batter if old one's gone.
 	// so this will be called only once when possible.
@@ -207,7 +230,7 @@ static __inline void checkIfNextBatterDecision()
 }
 // so here we are just updating strikes and balls related stuff. batter cant have more than 3 strikes, so something must be
 // done to that, and if pitcher pitches balls, that isnt allowed without some compensation either.
-static __inline void strikesAndBalls()
+static void strikesAndBalls()
 {
 	// so if there are three strikes
 	if(stateInfo.localGameInfo->gAI.strikes == 3) {
@@ -256,7 +279,7 @@ static __inline void strikesAndBalls()
 // difficulty here is that we dont want it to wound player if the ball is dropped to ground by catching player
 // after a short time from catching moment.
 // so we have to use a counter to wait until this short time has gone and then we'll declare it as a real wound.
-static __inline void woundingCatchEffects()
+static void woundingCatchEffects()
 {
 	// so we check the flag, if its true and then set counter to zero to start counting and
 	// also set hitsGroundToUnWound to 0 so that we can see if that changes in this short time period.
@@ -341,7 +364,7 @@ static __inline void woundingCatchEffects()
 }
 // so in case of foul play, we will stop the game
 // return players to their original bases and start again with the screen of pitcher getting ball.
-static __inline void foulPlay()
+static void foulPlay()
 {
 	// so if outOfBounds == 1 which has been checked and set when ball lands in game_manipulation
 	if(stateInfo.localGameInfo->gAI.outOfBounds == 1) {
@@ -474,7 +497,7 @@ static __inline void foulPlay()
 }
 // runs are checked in a delayed way. We wait that ball lands by being catched or by hitting the ground before
 // we decide if player has made a run by arriving homebase or arriving third base.
-static __inline void checkForRuns()
+static void checkForRuns()
 {
 	if(stateInfo.localGameInfo->gAI.checkForRun == 1) {
 		// check runs only after we know if the runner could have been wounded.
@@ -570,7 +593,7 @@ static __inline void checkForRuns()
 }
 
 
-static __inline void checkIfEndOfInning()
+static void checkIfEndOfInning()
 {
 	// if three outs or
 	// no more players to bat. set flag on the player selection to indicate that no more players left.
@@ -710,7 +733,7 @@ static __inline void checkIfEndOfInning()
 	}
 }
 
-static __inline void checkIfNextPair()
+static void checkIfNextPair()
 {
 	if(stateInfo.globalGameInfo->period >= 4) {
 

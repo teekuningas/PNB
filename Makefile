@@ -6,7 +6,7 @@ ODIR=obj
 SRCDIR=./src
 
 _OBJ = main.o action_implementation.o action_invocations.o
-_OBJ += ai_logic.o ball.o fill_player_data.o font.o
+_OBJ += ball.o fill_player_data.o font.o
 _OBJ += game_analysis.o game_manipulation.o game_screen.o
 _OBJ += immutable_world.o input.o common_logic.o
 _OBJ += loadobj.o main_menu.o mutable_world.o

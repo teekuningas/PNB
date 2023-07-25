@@ -1,15 +1,172 @@
-#include "globals.h"
-
-#include "action_implementation.h"
-#include "action_implementation_internal.h"
-#include "common_logic.h"
-
 /*
 	So this file specifically handles user-initiated events. This works in conjuction
 	with action_invocations.c where all the input reading is done. This has also some
 	dirty floating point code, but it should be closely related to something that happens
 	after user presses some keys. Like batting or throwing or running.
 */
+
+#include "globals.h"
+#include "action_implementation.h"
+#include "common_logic.h"
+
+extern StateInfo stateInfo;
+
+// here some constants used in the code
+#define PITCH_BASE_SPEED 0.065f
+#define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
+#define PITCH_POWER_CONSTANT 0.12f
+#define PITCH_ANGLE_CONSTANT 0.15f
+#define THROW_TO_BASE_DISTANCE 1.0f
+#define THROW_POWER_CONSTANT 0.65f
+#define THROW_DISTANCE_CONSTANT 0.0012f
+#define THROW_MAX 50
+#define BATTER_ANGLE_SPEED_CONSTANT 0.02f
+#define BATTER_ANGLE_LIMIT PI/7
+#define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f
+
+#define PITCH_FRAME_TIME_TWEAK 3
+#define DROP_BALL_CONSTANT 0.02f
+#define PITCH_DOWN_MAX 9
+#define PITCH_UP_MAX 13
+#define ANIMATION_FREQUENCY 3
+#define BAT_LOAD_MAX (4*9)
+#define BAT_SWING_MAX (4*13)
+#define BAT_ANIMATION_FRAME_HIT_COUNT (20*ANIMATION_FREQUENCY)
+#define BAT_ANIMATION_FRAME_TOTAL_COUNT (34*ANIMATION_FREQUENCY)
+#define BALL_MAX_OFFSET 1.0f
+#define BUNT_THRESHOLD 20
+#define VERTICAL_ANGLE_LIMIT 5
+
+#define BUNT_ADVANCE 1.0f
+#define SWING_ADVANCE 0.5f
+#define SPREAD_ADVANCE 0.3f
+
+#define BATTER_ANGLE_FIX (2*PI / 4)
+
+// ai action flags
+#define AI_NO_LOCK -1
+#define AI_PITCH_LOCK 0
+#define AI_THROW_LOCK 1
+#define AI_DROP_LOCK 2
+
+#define AI_WAITING_BATTER_LOCK 3
+#define AI_WAITING_WALK_LOCK 4
+#define AI_BATTING_LOCK 5
+#define AI_CHANGE_LOCK 6
+
+#define AI_CLICK_LOCK 7
+#define AI_DOUBLE_CLICK_LOCK 8
+#define AI_COME_BACK_LOCK 9
+#define AI_COME_BACK_WRONG_PITCH_LOCK 10
+
+#define TIMEOUT_CONSTANT 200
+
+#define CLICK_BREAK_CONSTANT 3
+
+// some static variables that are used only in action_implementation.c
+// how they work is explained where they are needed, so if interested should check
+// the code.
+static float throwDistance;
+static Vector3D throwDirection;
+
+static unsigned int meterCounter;
+static unsigned int meterCounterMax;
+
+static int doubleClickCounter[BASE_COUNT];
+static int pitchFrameTime;
+static float pitchPower;
+static int batterSelect;
+static int battingFrameCount;
+static int increaseBattingFrameCount;
+static int selectedBattingPowerCount;
+static int selectedBattingAngleCount;
+static float batterAngle;
+static int batterAngleSpeed;
+static float batterAdvanceSpeed;
+static float batterAdvance;
+static int battingMode;
+static float batterAdvanceLimit;
+static int battingStopped;
+static int batterMoving;
+static int updateBatterLocationAndOrientation;
+
+// to ensure that no throws going different directions at the same time and that throwing player's orientation changes correctly
+static int throwGoingOn;
+static int runBatFlag;
+
+// ai
+static int aiPitchStage;
+static int aiDropStage;
+static unsigned int aiPitchFirstLimit;
+static unsigned int aiPitchSecondLimit;
+static int aiThrowStage;
+static int aiActionEventLock;
+static int aiLockUpdate;
+static int aiMoveCounter;
+
+// we need timeouts as sometimes ai tries to do somthing too quickly before the other
+// action implementation machinery is ready for it
+static int aiLockTimeoutCounter;
+static int aiPitchTime;
+static int aiPitchPreviousTime;
+static int aiBatterReadyTimer;
+
+// batting team ai
+static int aiBattingKeyDown;
+static int aiActionKeyLock;
+
+static int aiChangingKeyDown;
+
+static int aiIncreaseKeyDown;
+static int aiDecreaseKeyDown;
+static int aiAngleDecided;
+static float aiDecidedAngle;
+
+static int aiWrongPitch;
+
+static int aiBaseRunnerKeyDown[BASE_COUNT];
+static int aiBaseRunnerDecisionMade[BASE_COUNT];
+static int aiLastSafeOnBaseIndex[BASE_COUNT];
+static int aiBaseRunnerLock[BASE_COUNT];
+static int aiAmountOfClicks[BASE_COUNT];
+static int aiClickBreak[BASE_COUNT];
+
+static int aiBattingStyle;
+static int aiRunningBatter;
+static int aiRunningBaseRunners;
+
+static int aiPlanCalculated;
+static int aiFirstIndex;
+static int aiFirstIndexSelected;
+static int aiChange;
+static int aiChangeHasHappened;
+
+static void genericThrowRelease();
+static void genericThrowLoad(int base);
+static void genericMove(int direction);
+static void genericStopMove(int direction);
+static void genericSlingBall(float x, float y, float z);
+static void dropBall();
+static void updateControlledPlayerSpeed();
+static void startPitch();
+static void continuePitch();
+static void releasePitch();
+static void changeBatter();
+static void selectBatter();
+static void takeFreeWalkDecision();
+static void updateBatting();
+static void startIncreaseBatterAngle();
+static void stopIncreaseBatterAngle();
+static void startDecreaseBatterAngle();
+static void stopDecreaseBatterAngle();
+static void selectPower();
+static void selectAngle();
+static void baseRun(int base);
+static void updateMeters();
+static void aiLogic();
+static void moveControlledPlayerToLocation(Vector3D* target);
+static void flushKeys();
+static void throwBallToBase(int base);
 
 void initActionImplementation()
 {
@@ -272,14 +429,14 @@ void actionImplementation()
 	updateMeters();
 	aiLogic();
 }
-static __inline void startIncreaseBatterAngle()
+static void startIncreaseBatterAngle()
 {
 	stateInfo.localGameInfo->aF.bTAF.increaseBatterAngle = 2;
 	// set batterAngleSpeed to 1 to indicate that the direction of the movement is cw
 	batterAngleSpeed = 1;
 
 }
-static __inline void stopIncreaseBatterAngle()
+static void stopIncreaseBatterAngle()
 {
 	stateInfo.localGameInfo->aF.bTAF.increaseBatterAngle = 0;
 	// when stopping the increasing of the angle, we want not to interrupt an ongoing decreasing of the angle
@@ -289,14 +446,14 @@ static __inline void stopIncreaseBatterAngle()
 	stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.lastLastLocationUpdate = 1;
 }
 
-static __inline void startDecreaseBatterAngle()
+static void startDecreaseBatterAngle()
 {
 	stateInfo.localGameInfo->aF.bTAF.decreaseBatterAngle = 2;
 	// set batterAngleSpeed to 1 to indicate that the direction of the movement is ccw
 	batterAngleSpeed = -1;
 
 }
-static __inline void stopDecreaseBatterAngle()
+static void stopDecreaseBatterAngle()
 {
 	stateInfo.localGameInfo->aF.bTAF.decreaseBatterAngle = 0;
 	// when stopping the decreasing of the angle, we want not to interrupt an ongoing increasing of the angle
@@ -306,7 +463,7 @@ static __inline void stopDecreaseBatterAngle()
 	stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.batterIndex].cPI.lastLastLocationUpdate = 1;
 }
 
-static __inline void takeFreeWalkDecision()
+static void takeFreeWalkDecision()
 {
 	// so if user selected to take a free walk, this will happen. otherwise we just set freewalk-actionflag
 	// to 0 and dont have any further actions
@@ -411,7 +568,7 @@ static __inline void takeFreeWalkDecision()
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
-static __inline void changeBatter()
+static void changeBatter()
 {
 	int done = 0;
 	int counter = 0;
@@ -460,7 +617,7 @@ static __inline void changeBatter()
 	stateInfo.localGameInfo->pII.batterSelectionIndex = index;
 }
 // here is where the accepting selected player happens.
-static __inline void selectBatter()
+static void selectBatter()
 {
 	int i = 0;
 	int battingTeamIndex = (stateInfo.globalGameInfo->
@@ -530,7 +687,7 @@ static __inline void selectBatter()
 	}
 }
 
-static __inline void genericThrowRelease()
+static void genericThrowRelease()
 {
 	if(stateInfo.localGameInfo->pII.hasBallIndex != -1) {
 		float power;
@@ -571,7 +728,7 @@ static __inline void genericThrowRelease()
 }
 // so this function is called when player is preparing to throw.
 // throw cannot be undone after this
-static __inline void genericThrowLoad(int base)
+static void genericThrowLoad(int base)
 {
 	if(stateInfo.localGameInfo->pII.hasBallIndex != -1) {
 		// throw distance is the euclidean distance from the base to player throwing.
@@ -610,7 +767,7 @@ static __inline void genericThrowLoad(int base)
 	}
 }
 
-static __inline void genericMove(int direction)
+static void genericMove(int direction)
 {
 	// we can move if there is no throw going on and no pitch going on
 	// .. and we have same player controlled
@@ -629,7 +786,7 @@ static __inline void genericMove(int direction)
 	}
 
 }
-static __inline void genericStopMove(int direction)
+static void genericStopMove(int direction)
 {
 	// stopping cant be done either when pitching or throwing as updateControlledPlayerSpeed can
 	// have effects on player's model
@@ -644,7 +801,7 @@ static __inline void genericStopMove(int direction)
 }
 
 
-static __inline void dropBall()
+static void dropBall()
 {
 	// there is a possibility to drop ball if to the ground if you want. it could be convenient when
 	// you want a baserunner to be able to get safe from a base for some strategical reason.
@@ -679,7 +836,7 @@ static __inline void dropBall()
 	stateInfo.localGameInfo->aF.cTAF.actionKeyLock = 0;
 }
 
-static __inline void updateControlledPlayerSpeed()
+static void updateControlledPlayerSpeed()
 {
 	if(stateInfo.localGameInfo->pII.controlIndex != -1) {
 		// cant move when throw recoil going on.
@@ -735,7 +892,7 @@ static __inline void updateControlledPlayerSpeed()
 	}
 }
 
-static __inline void genericSlingBall(float x, float y, float z)
+static void genericSlingBall(float x, float y, float z)
 {
 	// this is called for example when throwing and batting
 	// in these cases we want the change player arrays to update and to have new selected player from
@@ -751,7 +908,7 @@ static __inline void genericSlingBall(float x, float y, float z)
 
 }
 
-static __inline void startPitch()
+static void startPitch()
 {
 	/*
 		To start a pitch few things must hold:
@@ -809,7 +966,7 @@ static __inline void startPitch()
 		stateInfo.localGameInfo->aF.cTAF.actionKeyLock = 0;
 	}
 }
-static __inline void continuePitch()
+static void continuePitch()
 {
 	if(stateInfo.localGameInfo->pII.hasBallIndex != -1) {
 		// as power is selected now, we move to the next phase of meter going down, animation
@@ -846,7 +1003,7 @@ static __inline void continuePitch()
 		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
 	}
 }
-static __inline void releasePitch()
+static void releasePitch()
 {
 	// so here we have now selected the angle also and ball is ready to see the world.
 	Vector3D target;
@@ -940,7 +1097,7 @@ static __inline void releasePitch()
 
 }
 // so this function is called when we decide the power
-static __inline void selectPower()
+static void selectPower()
 {
 	// swing is set to 3 so that the meter indicator on the screen can start decreasing etc.
 	stateInfo.localGameInfo->aF.bTAF.swing = 3;
@@ -967,7 +1124,7 @@ static __inline void selectPower()
 	// if power is great enough to give us good swing we'll go with it but thats the default so no need to do anything here.
 
 }
-static __inline void selectAngle()
+static void selectAngle()
 {
 	// simple enough, enter the state of waiting for animation to end
 	stateInfo.localGameInfo->aF.bTAF.swing = 5;
@@ -975,7 +1132,7 @@ static __inline void selectAngle()
 	selectedBattingAngleCount = meterCounter;
 }
 
-static __inline void baseRun(int base)
+static void baseRun(int base)
 {
 	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
@@ -1019,7 +1176,7 @@ static __inline void baseRun(int base)
 	stateInfo.localGameInfo->aF.bTAF.baseRun[base] = 0;
 }
 
-static __inline void updateBatting()
+static void updateBatting()
 {
 	if(stateInfo.localGameInfo->pRAI.batterReady == 1 && stateInfo.localGameInfo->pRAI.pitchInAir == 0 && stateInfo.localGameInfo->pRAI.battingGoingOn == 0) {
 		stateInfo.localGameInfo->pRAI.battingGoingOn = 1;
@@ -1317,7 +1474,7 @@ static __inline void updateBatting()
 	}
 }
 
-static __inline void updateMeters()
+static void updateMeters()
 {
 	// when pitch has been started but power not yet selected,
 	// we increase meterCounter until its in its maximum
@@ -1391,7 +1548,7 @@ static __inline void updateMeters()
 	}
 }
 
-static __inline void aiLogic()
+static void aiLogic()
 {
 	int battingTeamIndex = (stateInfo.globalGameInfo->
 	                        inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
@@ -2101,7 +2258,7 @@ static __inline void aiLogic()
 
 }
 // we move towards the target position by simulating key presses.
-static __inline void moveControlledPlayerToLocation(Vector3D* target)
+static void moveControlledPlayerToLocation(Vector3D* target)
 {
 	float px = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.location.x;
 	float pz = stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.controlIndex].tPI.location.z;
@@ -2141,7 +2298,7 @@ static __inline void moveControlledPlayerToLocation(Vector3D* target)
 	aiMoveCounter++;
 }
 
-static __inline void flushKeys()
+static void flushKeys()
 {
 	int i;
 	for(i = 0; i < KEY_COUNT; i++) {
@@ -2149,7 +2306,7 @@ static __inline void flushKeys()
 	}
 }
 
-static __inline void throwBallToBase(int base)
+static void throwBallToBase(int base)
 {
 	if(aiThrowStage == 0) {
 		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {

@@ -1,3 +1,8 @@
+/*
+	this section is going to be the core part of non-platfrom specific code and going to handle
+	things happening behind of what is seen on the screen.
+*/
+
 #include "globals.h"
 #include "ball.h"
 #include "player.h"
@@ -7,13 +12,12 @@
 #include "game_manipulation.h"
 
 #include "mutable_world.h"
-#include "mutable_world_internal.h"
 #include "common_logic.h"
 
-/*
-	this section is going to be the core part of non-platfrom specific code and going to handle
-	things happening behind of what is seen on the screen.
-*/
+extern StateInfo stateInfo;
+
+static LocalGameInfo localGameInfo;
+static GlobalGameInfo globalGameInfo;
 
 int initMutableWorld()
 {

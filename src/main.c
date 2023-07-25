@@ -1,3 +1,8 @@
+/*
+	the core part of the code. initializes graphics and everything in our program and also includes our main loop that keeps the game in sync and
+	is the code that decides should we call menu's or game screen's functions.
+*/
+
 #include "globals.h"
 #include "game_screen.h"
 #include "input.h"
@@ -13,10 +18,6 @@ static int update(StateInfo* stateInfo);
 
 StateInfo stateInfo;
 
-/*
-	the core part of the code. initializes graphics and everything in our program and also includes our main loop that keeps the game in sync and
-	is the code that decides should we call menu's or game screen's functions.
-*/
 int main ( int argc, char *argv[] )
 {
 

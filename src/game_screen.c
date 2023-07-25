@@ -1,18 +1,65 @@
+/*
+	game divides into two sections, menus and the game. this is the game screen. only main.c is higher but lots of initialization code is still hidden to
+	main.c. almost all visible 3d stuff is delegated to mutable_world and immutable_world, but here we draw the
+	skybox and some status information for user.
+*/
+
 #include "globals.h"
 #include "immutable_world.h"
 #include "mutable_world.h"
 #include "render.h"
 #include "font.h"
-
 #include "game_screen.h"
-#include "game_screen_internal.h"
 #include "common_logic.h"
-/*
-	game divides into two sections, menus and the game. this is the game screen. only main.c is higher but lots of initialization code is still hidden to
-	main.c. almost all visible 3d stuff is delegated to mutable_world and immutable_world, but here we draw the
-	skybox and some status information for user.
 
-*/
+#define LIGHT_SOURCE_POSITION_X 30.0f
+#define LIGHT_SOURCE_POSITION_Y 50.0f
+#define LIGHT_SOURCE_POSITION_Z -50.0f
+#define STATISTICS_TEXT_HEIGHT -1.34f
+#define OTHER_STATS_X -0.03f
+#define METER_X 0.31f
+#define OUTS_X -0.63f
+#define INFO_X -0.53f
+#define BASES_X 0.57f
+#define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
+
+extern StateInfo stateInfo;
+
+static int gameInfoEventTimer;
+static int gameInfoEvent;
+
+static void drawSkyBox();
+static void drawStatistics(double alpha);
+
+static int initLights();
+static void initCamSettings();
+static void loadGameScreenSettings();
+
+static Vector3D cam, look, up;
+static Vector3D statCam, statLook, statUp;
+static Vector3D skyBoxCam, skyBoxLook;
+float lightPos[4];
+
+static Vector3D lastCamTargetLocation;
+static Vector3D lastCamLocation;
+static Vector3D camLocation;
+static Vector3D camTargetLocation;
+
+float lastMeterX;
+float lastSwingMeterX;
+
+static GLuint skyTexture;
+static GLuint meterTexture;
+static GLuint selectionTextureBatting;
+static GLuint selectionTextureFielding;
+static GLuint basesTexture;
+static GLuint basesMarkerTexture;
+
+static MeshObject* planeMesh;
+static GLuint planeDisplayList;
+
+static MeshObject* skyMesh;
+static GLuint skyDisplayList;
 
 
 int initGameScreen()

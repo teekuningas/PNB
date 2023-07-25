@@ -1,8 +1,19 @@
 #include "globals.h"
 #include "render.h"
-
 #include "ball.h"
-#include "ball_internal.h"
+
+#define BALL_SCALE BALL_SIZE
+#define SHADOW_CONSTANT 0.2f
+
+extern StateInfo stateInfo;
+
+static GLuint ballTexture;
+
+static MeshObject* ballMesh;
+static GLuint ballDisplayList;
+
+static MeshObject* shadowMesh;
+static GLuint shadowDisplayList;
 
 
 // initializes ball as an entity in the empty space. ball has to be located to the field in a different place

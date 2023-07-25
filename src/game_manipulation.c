@@ -1,11 +1,42 @@
+/*
+ * this module tries to do a lot of dirty work of analyzing spatial data and moving things and then
+ * also setting flags for more sophisticated modules.
+ */
+
 #include "globals.h"
 
 #include "game_manipulation.h"
-#include "game_manipulation_internal.h"
 #include "common_logic.h"
 
-// this module tries to do a lot of dirty work of analyzing spatial data and moving things and then
-// also setting flags for more sophisticated modules.
+#define EVALUATION_CONSTANT_IN_AIR 200.0f
+#define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
+#define CATCH_DISTANCE 2.6f
+
+#define BALL_FINAL_POINT_APPROXIMATION_CONSTANT 45.0f
+#define BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT 20.0f
+#define BALL_DROP_TARGET_CONSTANT 8.0f
+#define BALL_DROP_EVAL_CONSTANT 40.0f
+#define BALL_ON_GROUND_SLOW_FACTOR 0.98f
+#define BALL_SLOW_FACTOR_X 0.8f
+#define BALL_SLOW_FACTOR_Z 0.8f
+#define BALL_SLOW_FACTOR_Y 0.55f
+#define BALL_BOUNCE_THRESHOLD 0.02f
+#define PLAYER_TOO_CLOSE_TO_CATCH_LIMIT 15.0f
+
+extern StateInfo stateInfo;
+static int closeToGround;
+
+static void updateBallToPlayer();
+static void updateBallStatus();
+static void checkIfBallCanBeCatched();
+static void playerLocationOrientationAndTargets();
+static void basemenReplacements();
+static void checkIfNearHomeLocation();
+static void baseRunnerMovementsOnBaseArrivals();
+static void moveIdlingPlayersToHomeLocation();
+static void rankPlayersAndMoveThem();
+static void updateModels();
+
 
 void gameManipulation()
 {
@@ -36,7 +67,7 @@ void initGameManipulation()
 }
 
 
-static __inline void updateBallStatus()
+static void updateBallStatus()
 {
 	if(stateInfo.localGameInfo->ballInfo.lastLastLocationUpdate == 1) {
 		setVectorV(&(stateInfo.localGameInfo->ballInfo.lastLocation), &(stateInfo.localGameInfo->ballInfo.location));
@@ -150,7 +181,7 @@ static __inline void updateBallStatus()
 	}
 }
 
-static __inline void updateBallToPlayer()
+static void updateBallToPlayer()
 {
 	if(stateInfo.localGameInfo->pII.hasBallIndex != -1) {
 		// if someone has ball and that someone is moving and ball movement needs updating, give it same v as the player has
@@ -176,7 +207,7 @@ static __inline void updateBallToPlayer()
 
 // so the goal is check if ball is close enough to any of the players and if so, do all the work needed
 // to move game to post-catch state.
-static __inline void checkIfBallCanBeCatched()
+static void checkIfBallCanBeCatched()
 {
 	int i;
 	// so to go to do checking we should first confirm that it even is possible by checking that no one has ball
@@ -283,7 +314,7 @@ static __inline void checkIfBallCanBeCatched()
 }
 // when moving fielders automatically, we often use the knowledge of whether we are near home location or not
 // so here we check if we thats the case
-static __inline void checkIfNearHomeLocation()
+static void checkIfNearHomeLocation()
 {
 	int i;
 	for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
@@ -311,7 +342,7 @@ static __inline void checkIfNearHomeLocation()
 }
 // so here we are going to handle situations when baserunners arrive bases and we must handle those players' flags
 // and players who were there already must have their status updated also etc
-static __inline void baseRunnerMovementsOnBaseArrivals()
+static void baseRunnerMovementsOnBaseArrivals()
 {
 	// so everything starts with some player arriving base, this flag is set on target checking function.
 	if(stateInfo.localGameInfo->gAI.playerArrivedToBase == 1) {
@@ -428,7 +459,7 @@ static __inline void baseRunnerMovementsOnBaseArrivals()
 	}
 }
 
-static __inline void basemenReplacements()
+static void basemenReplacements()
 {
 	int i;
 	for(i = 0; i < BASE_COUNT; i++) {
@@ -465,7 +496,7 @@ static __inline void basemenReplacements()
 	}
 }
 
-static __inline void moveIdlingPlayersToHomeLocation()
+static void moveIdlingPlayersToHomeLocation()
 {
 	int i;
 	// if not catching ball or replacing or in home location, move to home location.
@@ -484,7 +515,7 @@ static __inline void moveIdlingPlayersToHomeLocation()
 	}
 }
 
-static __inline void rankPlayersAndMoveThem()
+static void rankPlayersAndMoveThem()
 {
 	// calculating these things only makes sense when no one has ball. even though these usually should be mutually exclusive
 	// theres a small change that refreshCatchAndchange == 1 and ball has been caught.
@@ -627,7 +658,7 @@ static __inline void rankPlayersAndMoveThem()
 
 }
 
-static __inline void playerLocationOrientationAndTargets()
+static void playerLocationOrientationAndTargets()
 {
 	int i;
 
@@ -801,7 +832,7 @@ static __inline void playerLocationOrientationAndTargets()
 	}
 }
 // so for animations we need to change mesh after certain intervals.
-static __inline void updateModels()
+static void updateModels()
 {
 	int i;
 	// every player has some animations.

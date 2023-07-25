@@ -1,16 +1,27 @@
-#include "globals.h"
-
-#include "action_invocations.h"
-#include "action_invocations_internal.h"
-
 /*
 	the main purpose of this code is to set flags for action_implementation when key combinations trigger some events.
 	everything here is pretty straightforward.
 */
 
+#include "globals.h"
+#include "action_invocations.h"
+
+extern StateInfo stateInfo;
+
+static void checkThrow(int key, int actionKey, int control, int base);
+static void checkDrop(int key, int control);
+static void checkMove(int key, int control, int direction);
+static void checkChangePlayer(int key, int control);
+static void checkPitch(int key, int control);
+static void checkBatterSelection(int change, int select, int control);
+static void checkFreeWalkDecision(int accept, int reject, int control);
+static void checkBatterAngle(int increase, int decrease, int control);
+static void checkSwing(int key, int control);
+static void checkBattingTeamRun(int key, int control, int base);
+
 void initActionInvocations()
 {
-
+  // Placeholder for... future?
 }
 
 void actionInvocations()
@@ -64,7 +75,7 @@ void actionInvocations()
 
 }
 
-static __inline void checkThrow(int key, int actionKey, int control, int base)
+static void checkThrow(int key, int actionKey, int control, int base)
 {
 	if(stateInfo.keyStates->down[control][key] == 1 && stateInfo.keyStates->down[control][actionKey] == 1) {
 		if(stateInfo.localGameInfo->aF.cTAF.throwToBase[base] == 0) {
@@ -78,7 +89,7 @@ static __inline void checkThrow(int key, int actionKey, int control, int base)
 	}
 }
 
-static __inline void checkMove(int key, int control, int direction)
+static void checkMove(int key, int control, int direction)
 {
 	if(stateInfo.keyStates->down[control][key] == 1) {
 		if(stateInfo.localGameInfo->aF.cTAF.move[direction] == 0) {
@@ -92,7 +103,7 @@ static __inline void checkMove(int key, int control, int direction)
 	}
 }
 
-static __inline void checkChangePlayer(int key, int control)
+static void checkChangePlayer(int key, int control)
 {
 	if(stateInfo.localGameInfo->aF.cTAF.actionKeyLock == 0) {
 		if(stateInfo.keyStates->released[control][key] == 1) {
@@ -104,7 +115,7 @@ static __inline void checkChangePlayer(int key, int control)
 	}
 }
 
-static __inline void checkDrop(int key, int control)
+static void checkDrop(int key, int control)
 {
 	if(stateInfo.localGameInfo->aF.cTAF.actionKeyLock == 0) {
 		if(stateInfo.keyStates->released[control][key] == 1) {
@@ -116,7 +127,7 @@ static __inline void checkDrop(int key, int control)
 	}
 }
 
-static __inline void checkPitch(int key, int control)
+static void checkPitch(int key, int control)
 {
 	if(stateInfo.keyStates->down[control][key] == 1) {
 		if(stateInfo.localGameInfo->aF.cTAF.pitch == 0) {
@@ -134,7 +145,7 @@ static __inline void checkPitch(int key, int control)
 	}
 }
 
-static __inline void checkBatterSelection(int change, int select, int control)
+static void checkBatterSelection(int change, int select, int control)
 {
 	if(stateInfo.keyStates->released[control][change] == 1) {
 
@@ -148,7 +159,7 @@ static __inline void checkBatterSelection(int change, int select, int control)
 	}
 }
 
-static __inline void checkFreeWalkDecision(int accept, int reject, int control)
+static void checkFreeWalkDecision(int accept, int reject, int control)
 {
 	if(stateInfo.keyStates->released[control][accept] == 1) {
 
@@ -162,7 +173,7 @@ static __inline void checkFreeWalkDecision(int accept, int reject, int control)
 	}
 }
 
-static __inline void checkBatterAngle(int increase, int decrease, int control)
+static void checkBatterAngle(int increase, int decrease, int control)
 {
 	if(stateInfo.keyStates->down[control][increase] == 1) {
 		if(stateInfo.localGameInfo->pRAI.battingGoingOn == 1) {
@@ -192,7 +203,7 @@ static __inline void checkBatterAngle(int increase, int decrease, int control)
 	}
 }
 
-static __inline void checkSwing(int key, int control)
+static void checkSwing(int key, int control)
 {
 	if(stateInfo.keyStates->down[control][key] == 1) {
 		if(stateInfo.localGameInfo->aF.bTAF.swing == 1) {
@@ -205,7 +216,7 @@ static __inline void checkSwing(int key, int control)
 	}
 }
 
-static __inline void checkBattingTeamRun(int key, int control, int base)
+static void checkBattingTeamRun(int key, int control, int base)
 {
 	if(stateInfo.keyStates->released[control][key] == 1) {
 		if(stateInfo.localGameInfo->aF.bTAF.baseRun[base] == 0) {

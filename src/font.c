@@ -1,18 +1,27 @@
+/*
+	provides means to write on the screen and also provides the background that main menu uses and statistics in game screen use. had to put them in
+	same place because you cannot load same texture in multiple places.
+	the basic idea is just that we render planes one at a time for each character that have texture of a font image, and texture coordinates are the things
+	that change. lights and z buffer should be off and we should be drawing last. also here i use this in perspective camera mode so we have to
+	have specific kind of camera matrix.
+*/
+
 #include "globals.h"
 #include "render.h"
 
 #include "font.h"
-#include "font_internal.h"
 
-/*
-	provides means to write on the screen and also provides the background that main menu uses and statistics in game screen use. had to put them in
-	same place because you cannot load same texture in multiple places.
+#define FONT_SCALE 0.01f
+#define FONT_OFFSET_SCALE 0.012f
 
-	the basic idea is just that we render planes one at a time for each character that have texture of a font image, and texture coordinates are the things
-	that change. lights and z buffer should be off and we should be drawing last. also here i use this in perspective camera mode so we have to
-	have specific kind of camera matrix.
+static void printCharacter(char character);
 
-*/
+static GLuint fontTexture;
+static GLuint emptyTexture;
+
+static MeshObject* planeMesh;
+static GLuint planeDisplayList;
+
 
 int initFont()
 {

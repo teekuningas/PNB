@@ -1,12 +1,16 @@
-#include "globals.h"
-#include "input.h"
-
 /*
 	all of the platform specific input code is to be inserted here. we save states to a structure and read it from other places when needed.
 */
 
+#include "globals.h"
+#include "input.h"
+
 static KeyStates keyStates;
 static int buttonsJustReleased[3][KEY_COUNT];
+
+static void keyCheckL(const char letter, int keyCode, int index);
+static void keyCheckS(int special, int keyCode, int index);
+static void checkKeyImitations();
 
 int initInput(StateInfo* stateInfo)
 {
@@ -27,7 +31,7 @@ int initInput(StateInfo* stateInfo)
 // if button is not held down but it was held down in last frame, we set released to 1 and down to 0.
 // after this in the next frame we will se released to 0 too. so down is 1 for all the time key is pressed
 // and released is 1 only for one frame just after the key was released.
-static __inline void keyCheckL(const char letter, int keyCode, int index)
+static void keyCheckL(const char letter, int keyCode, int index)
 {
 	if(glfwGetKey(letter) == GLFW_PRESS) {
 		keyStates.down[index][keyCode] = 1;
@@ -43,7 +47,7 @@ static __inline void keyCheckL(const char letter, int keyCode, int index)
 	}
 }
 
-static __inline void keyCheckS(int special, int keyCode, int index)
+static void keyCheckS(int special, int keyCode, int index)
 {
 	if(glfwGetKey(special) == GLFW_PRESS) {
 		keyStates.down[index][keyCode] = 1;
@@ -59,7 +63,7 @@ static __inline void keyCheckS(int special, int keyCode, int index)
 	}
 }
 
-static __inline void checkKeyImitations()
+static void checkKeyImitations()
 {
 	int i;
 	for(i = 0; i < KEY_COUNT; i++) {

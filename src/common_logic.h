@@ -1,7 +1,7 @@
 #ifndef COMMON_LOGIC_H
 #define COMMON_LOGIC_H
 
-extern StateInfo stateInfo;
+#include "globals.h"
 
 int isVectorSmallEnoughSphere(Vector3D *vector, float limit);
 int isVectorSmallEnoughCircleXZV(Vector3D *vector, float limit);
