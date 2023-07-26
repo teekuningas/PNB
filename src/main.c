@@ -86,7 +86,7 @@ int main ( int argc, char *argv[] )
 	drawLoadingScreen(&stateInfo);
 	draw(&stateInfo, 1.0);
 
-	result = initGameScreen();
+	result = initGameScreen(&stateInfo);
 	if(result != 0) {
 		printf("Could not init game screen. Exiting.");
 		return -1;
@@ -136,7 +136,7 @@ static int update(StateInfo* stateInfo)
 	updateSound(stateInfo);
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
-		updateGameScreen();
+		updateGameScreen(stateInfo);
 		break;
 	case MAIN_MENU:
 		updateMainMenu(stateInfo);
@@ -152,7 +152,7 @@ static void draw(StateInfo* stateInfo, double alpha)
 {
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
-		drawGameScreen(alpha);
+		drawGameScreen(stateInfo, alpha);
 		break;
 	case MAIN_MENU:
 		drawMainMenu(stateInfo, alpha);
@@ -246,7 +246,7 @@ static int clean(StateInfo* stateInfo)
 		printf("Could not clean player data completely\n");
 		retvalue = -1;
 	}
-	result = cleanGameScreen();
+	result = cleanGameScreen(stateInfo);
 	if(result != 0) {
 		printf("Could not clean game screen completely\n");
 		retvalue = -1;

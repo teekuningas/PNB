@@ -3,9 +3,9 @@
 
 #include "globals.h"
 
-int initGameScreen();
-void updateGameScreen();
-void drawGameScreen(double alpha);
-int cleanGameScreen();
+int initGameScreen(StateInfo* stateInfo);
+void updateGameScreen(StateInfo* stateInfo);
+void drawGameScreen(StateInfo* stateInfo, double alpha);
+int cleanGameScreen(StateInfo* stateInfo);
 
 #endif /* GAME_SCREEN_H */

@@ -3,8 +3,8 @@
 
 #include "globals.h"
 
-int initImmutableWorld();
-void drawImmutableWorld(double alpha);
-int cleanImmutableWorld();
+int initImmutableWorld(StateInfo* stateInfo);
+void drawImmutableWorld(StateInfo* stateInfo, double alpha);
+int cleanImmutableWorld(StateInfo* stateInfo);
 
 #endif /* IMMUTABLE_WORLD_H */

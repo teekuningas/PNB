@@ -135,8 +135,8 @@ static int mxmlCountNodes(mxml_node_t *tree, const char *elementName)
 {
 	int count = 0;
 	for (mxml_node_t *node = mxmlFindElement(tree, tree, elementName, NULL, NULL, MXML_DESCEND);
-		node != NULL;
-		node = mxmlFindElement(node, tree, elementName, NULL, NULL, MXML_DESCEND)) {
+	        node != NULL;
+	        node = mxmlFindElement(node, tree, elementName, NULL, NULL, MXML_DESCEND)) {
 		count++;
 	}
 	return count;

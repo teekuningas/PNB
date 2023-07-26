@@ -12,8 +12,6 @@
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
 
-extern StateInfo stateInfo;
-
 typedef struct _GroundUnit {
 	GLuint texture;
 	int x;
@@ -47,10 +45,10 @@ static GroundUnit groundUnit[GROUND_UNIT_COUNT];
 static FieldPositions fieldPositions;
 
 
-int initImmutableWorld()
+int initImmutableWorld(StateInfo* stateInfo)
 {
 	int result;
-	stateInfo.fieldPositions = &fieldPositions;
+	stateInfo->fieldPositions = &fieldPositions;
 
 	result = initGround();
 	if(result != 0) {
@@ -135,7 +133,7 @@ void initFieldPositions()
 	fieldPositions.homeRunPoint.z = HOME_LINE_Z;
 }
 
-void drawImmutableWorld(double alpha)
+void drawImmutableWorld(StateInfo* stateInfo, double alpha)
 {
 	drawGround();
 	drawFence();
@@ -233,7 +231,7 @@ static void drawGround()
 	}
 }
 // cleaning is good for people.
-int cleanImmutableWorld()
+int cleanImmutableWorld(StateInfo* stateInfo)
 {
 	cleanMesh(planeMesh);
 	cleanMesh(plateMesh);

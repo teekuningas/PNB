@@ -23,17 +23,14 @@
 #define BASES_X 0.57f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
-extern StateInfo stateInfo;
-
 static int gameInfoEventTimer;
 static int gameInfoEvent;
 
-static void drawSkyBox();
-static void drawStatistics(double alpha);
-
-static int initLights();
-static void initCamSettings();
-static void loadGameScreenSettings();
+static void drawSkyBox(StateInfo* stateInfo);
+static void drawStatistics(StateInfo* stateInfo, double alpha);
+static int initLights(StateInfo* stateInfo);
+static void initCamSettings(StateInfo* stateInfo);
+static void loadGameScreenSettings(StateInfo* stateInfo);
 
 static Vector3D cam, look, up;
 static Vector3D statCam, statLook, statUp;
@@ -62,7 +59,7 @@ static MeshObject* skyMesh;
 static GLuint skyDisplayList;
 
 
-int initGameScreen()
+int initGameScreen(StateInfo* stateInfo)
 {
 	int result;
 
@@ -77,23 +74,23 @@ int initGameScreen()
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 
-	initCamSettings();
+	initCamSettings(stateInfo);
 
 	lastMeterX = 0;
 	lastSwingMeterX = 0;
 
-	result = initLights();
+	result = initLights(stateInfo);
 	if(result != 0) {
 		printf("Could not init lights. Exiting.");
 	}
 
-	result = initImmutableWorld();
+	result = initImmutableWorld(stateInfo);
 	if(result != 0) {
 		printf("Could not init immutable world.");
 		return -1;
 	}
 
-	result = initMutableWorld();
+	result = initMutableWorld(stateInfo);
 	if(result != 0) {
 		printf("Could not init ball. Exiting.");
 		return -1;
@@ -102,28 +99,28 @@ int initGameScreen()
 	return 0;
 }
 
-void updateGameScreen()
+void updateGameScreen(StateInfo* stateInfo)
 {
-	BallInfo* ballInfo = &(stateInfo.localGameInfo->ballInfo);
+	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
 	// if we just changed here, load basic settings.
-	if(stateInfo.changeScreen == 1) {
-		stateInfo.changeScreen = 0;
-		stateInfo.updated = 1;
-		loadGameScreenSettings();
+	if(stateInfo->changeScreen == 1) {
+		stateInfo->changeScreen = 0;
+		stateInfo->updated = 1;
+		loadGameScreenSettings(stateInfo);
 	}
 	// with home-key, one can return to main menu.
-	if(((stateInfo.keyStates)->released[0][KEY_HOME] || (stateInfo.keyStates)->released[1][KEY_HOME])) {
-		if(stateInfo.localGameInfo->gAI.pause == 0) {
-			stateInfo.localGameInfo->gAI.pause = 1;
-		} else if(stateInfo.localGameInfo->gAI.pause == 1) {
-			stateInfo.changeScreen = 1;
-			stateInfo.updated = 0;
-			stateInfo.screen = 0;
+	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
+		if(stateInfo->localGameInfo->gAI.pause == 0) {
+			stateInfo->localGameInfo->gAI.pause = 1;
+		} else if(stateInfo->localGameInfo->gAI.pause == 1) {
+			stateInfo->changeScreen = 1;
+			stateInfo->updated = 0;
+			stateInfo->screen = 0;
 		}
 	}
-	if(stateInfo.localGameInfo->gAI.pause == 1) {
-		if(((stateInfo.keyStates)->released[0][KEY_2] || (stateInfo.keyStates)->released[1][KEY_2])) {
-			stateInfo.localGameInfo->gAI.pause = 0;
+	if(stateInfo->localGameInfo->gAI.pause == 1) {
+		if(((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
+			stateInfo->localGameInfo->gAI.pause = 0;
 		}
 	}
 	// update camera
@@ -143,12 +140,12 @@ void updateGameScreen()
 
 	camLocation.x = 0.1f*camTargetLocation.x;
 	// if we are behind the homebase
-	if(stateInfo.localGameInfo->ballInfo.location.z > HOME_RADIUS) {
+	if(stateInfo->localGameInfo->ballInfo.location.z > HOME_RADIUS) {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(camTargetLocation.x)/3;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 15.0f + (float)fabs(camTargetLocation.x)/2;
 	}
 	// if runner coming from third base
-	else if(stateInfo.localGameInfo->gAI.homeRunCameraFlag == 0 ) {
+	else if(stateInfo->localGameInfo->gAI.homeRunCameraFlag == 0 ) {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f;
 	}
@@ -169,11 +166,11 @@ void updateGameScreen()
 	}
 
 	// and here will a lot of logic code.
-	updateMutableWorld();
+	updateMutableWorld(stateInfo);
 
 }
 
-void drawGameScreen(double alpha)
+void drawGameScreen(StateInfo* stateInfo, double alpha)
 {
 	look.x = (float)(alpha*camTargetLocation.x + (1-alpha)*lastCamTargetLocation.x);
 	look.y = (float)(alpha*camTargetLocation.y + (1-alpha)*lastCamTargetLocation.y);
@@ -192,7 +189,7 @@ void drawGameScreen(double alpha)
 	glLoadIdentity();
 	gluLookAt(skyBoxCam.x, skyBoxCam.y, skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, up.x, up.y, up.z);
 
-	drawSkyBox();
+	drawSkyBox(stateInfo);
 
 	glLoadIdentity();
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
@@ -200,8 +197,8 @@ void drawGameScreen(double alpha)
 	glEnable(GL_LIGHTING);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
-	drawImmutableWorld(alpha);
-	drawMutableWorld(alpha);
+	drawImmutableWorld(stateInfo, alpha);
+	drawMutableWorld(stateInfo, alpha);
 
 	// statistics
 	glDisable(GL_LIGHTING);
@@ -209,12 +206,12 @@ void drawGameScreen(double alpha)
 	glLoadIdentity();
 	gluLookAt(statCam.x, statCam.y, statCam.z, statLook.x, statLook.y, statLook.z, statUp.x, statUp.y, statUp.z);
 
-	drawStatistics(alpha);
+	drawStatistics(stateInfo, alpha);
 }
 
 
 // lights
-static int initLights()
+static int initLights(StateInfo* stateInfo)
 {
 	// our lighting is a point light that is so far away that its practically a directional light.
 	//
@@ -238,7 +235,7 @@ static int initLights()
 	return 0;
 }
 
-static void drawSkyBox()
+static void drawSkyBox(StateInfo* stateInfo)
 {
 	glBindTexture(GL_TEXTURE_2D, skyTexture);
 	glPushMatrix();
@@ -247,7 +244,7 @@ static void drawSkyBox()
 	glPopMatrix();
 }
 
-static void drawStatistics(double alpha)
+static void drawStatistics(StateInfo* stateInfo, double alpha)
 {
 	int i;
 	char str[4] = "B  ";
@@ -261,8 +258,8 @@ static void drawStatistics(double alpha)
 	// we draw the background for writing text. it will appear at the bottom of screen
 	// because of the camera settings.
 	drawFontBackground();
-	if(stateInfo.globalGameInfo->period < 4) {
-		switch(stateInfo.localGameInfo->gAI.outs) {
+	if(stateInfo->globalGameInfo->period < 4) {
+		switch(stateInfo->localGameInfo->gAI.outs) {
 		case 0:
 			break;
 		case 3:
@@ -280,44 +277,44 @@ static void drawStatistics(double alpha)
 		}
 	}
 	// inning?
-	if(stateInfo.globalGameInfo->period < 4) {
-		str6[2] = (char)(((int)'0')+ stateInfo.globalGameInfo->inning/2 + 1);
+	if(stateInfo->globalGameInfo->period < 4) {
+		str6[2] = (char)(((int)'0')+ stateInfo->globalGameInfo->inning/2 + 1);
 	} else {
 		str6[2] = (char)(((int)'0'));
 	}
 	printText(str6, 3, OTHER_STATS_X - 0.04f, STATISTICS_TEXT_HEIGHT, 2);
 
 	// here for outs and runs we have to take care of that sometimes we will have more than 9 of them
-	if(stateInfo.localGameInfo->gAI.balls < 10)
-		str[2] = (char)(((int)'0')+stateInfo.localGameInfo->gAI.balls);
+	if(stateInfo->localGameInfo->gAI.balls < 10)
+		str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.balls);
 	else {
-		str[2] = (char)(((int)'0')+(stateInfo.localGameInfo->gAI.balls%10));
-		str[1] = (char)(((int)'0')+(stateInfo.localGameInfo->gAI.balls/10));
+		str[2] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls%10));
+		str[1] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls/10));
 	}
 	printText(str, 3, OTHER_STATS_X + 0.04f, STATISTICS_TEXT_HEIGHT, 2);
 
-	str2[2] = (char)(((int)'0')+stateInfo.localGameInfo->gAI.strikes);
+	str2[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.strikes);
 	printText(str2, 3, OTHER_STATS_X + 0.12f, STATISTICS_TEXT_HEIGHT, 2);
 
-	if(stateInfo.globalGameInfo->teams[0].runs < 10)
-		str3[2] = (char)(((int)'0')+stateInfo.globalGameInfo->teams[0].runs);
+	if(stateInfo->globalGameInfo->teams[0].runs < 10)
+		str3[2] = (char)(((int)'0')+stateInfo->globalGameInfo->teams[0].runs);
 	else {
-		str3[2] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[0].runs%10));
-		str3[1] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[0].runs/10));
+		str3[2] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[0].runs%10));
+		str3[1] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[0].runs/10));
 	}
-	if(stateInfo.globalGameInfo->teams[1].runs < 10)
-		str3[4] = (char)(((int)'0')+stateInfo.globalGameInfo->teams[1].runs);
+	if(stateInfo->globalGameInfo->teams[1].runs < 10)
+		str3[4] = (char)(((int)'0')+stateInfo->globalGameInfo->teams[1].runs);
 	else {
-		str3[4] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[1].runs%10));
-		str3[3] = (char)(((int)'0')+(stateInfo.globalGameInfo->teams[1].runs/10));
+		str3[4] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[1].runs%10));
+		str3[3] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[1].runs/10));
 	}
 	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
 	// so we have these events thats are triggered in other parts of code just by gameInfoEvent = i;
 	// we have a counter so that the info will disappear after some time.
-	if(stateInfo.localGameInfo->gAI.gameInfoEvent != 0) {
+	if(stateInfo->localGameInfo->gAI.gameInfoEvent != 0) {
 		gameInfoEventTimer = 0;
-		gameInfoEvent = stateInfo.localGameInfo->gAI.gameInfoEvent;
-		stateInfo.localGameInfo->gAI.gameInfoEvent = 0;
+		gameInfoEvent = stateInfo->localGameInfo->gAI.gameInfoEvent;
+		stateInfo->localGameInfo->gAI.gameInfoEvent = 0;
 	}
 	if(gameInfoEventTimer != -1) {
 		if(gameInfoEvent == 1) {
@@ -349,7 +346,7 @@ static void drawStatistics(double alpha)
 		}
 	}
 	// when free walk decision and batter decision are both waiting at the same time, choose walk.
-	else if(stateInfo.localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
+	else if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
 		printText(" Take a walk", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 	}
 	// when waiting for batter decision we show "select" and players name and number
@@ -361,36 +358,36 @@ static void drawStatistics(double alpha)
 		int index;
 		int shouldContinue = 1;
 		// index selection a bit different when homerunbatting contest.
-		if(stateInfo.globalGameInfo->period < 4) {
-			if(stateInfo.localGameInfo->pII.batterSelectionIndex == -1) shouldContinue = 0;
-			else index = stateInfo.localGameInfo->pII.batterSelectionIndex;
+		if(stateInfo->globalGameInfo->period < 4) {
+			if(stateInfo->localGameInfo->pII.batterSelectionIndex == -1) shouldContinue = 0;
+			else index = stateInfo->localGameInfo->pII.batterSelectionIndex;
 		} else {
-			int battingTeamIndex = (stateInfo.globalGameInfo->
-			                        inning+stateInfo.globalGameInfo->playsFirst+stateInfo.globalGameInfo->period)%2;
-			index = stateInfo.globalGameInfo->teams[battingTeamIndex].
-			        batterRunnerIndices[0][stateInfo.localGameInfo->gAI.runnerBatterPairCounter];
+			int battingTeamIndex = (stateInfo->globalGameInfo->
+			                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
+			index = stateInfo->globalGameInfo->teams[battingTeamIndex].
+			        batterRunnerIndices[0][stateInfo->localGameInfo->gAI.runnerBatterPairCounter];
 			if(index == -1) shouldContinue = 0;
 		}
 		if(shouldContinue == 1) {
-			speed = stateInfo.localGameInfo->playerInfo[index].bTPI.speed;
-			power = stateInfo.localGameInfo->playerInfo[index].bTPI.power;
+			speed = stateInfo->localGameInfo->playerInfo[index].bTPI.speed;
+			power = stateInfo->localGameInfo->playerInfo[index].bTPI.power;
 			str[1] = (char)(((int)'0')+(speed));
 			str[3] = (char)(((int)'0')+(power));
 			printText(str, 5, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-			str4 = stateInfo.localGameInfo->playerInfo[index].bTPI.name;
+			str4 = stateInfo->localGameInfo->playerInfo[index].bTPI.name;
 			printText(str4, strlen(str4), INFO_X + 0.14f, STATISTICS_TEXT_HEIGHT, 2);
-			if(stateInfo.localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo.globalGameInfo->period < 4) {
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo->globalGameInfo->period < 4) {
 				str5[0] = 'J';
 			} else {
-				str5[0] = (char)(((int)'0')+stateInfo.localGameInfo->playerInfo[index].bTPI.number);
+				str5[0] = (char)(((int)'0')+stateInfo->localGameInfo->playerInfo[index].bTPI.number);
 			}
 			printText(str5, 1, INFO_X + 0.11f, STATISTICS_TEXT_HEIGHT, 2);
 		}
 	}
 	// then draw, bases- and meterTexture. and selections for meter. meterValues has been set in action_implementation.
 
-	meterX = 0.16f*stateInfo.localGameInfo->pRAI.meterValue;
-	swingMeterX = 0.16f*stateInfo.localGameInfo->pRAI.swingMeterValue;
+	meterX = 0.16f*stateInfo->localGameInfo->pRAI.meterValue;
+	swingMeterX = 0.16f*stateInfo->localGameInfo->pRAI.swingMeterValue;
 
 	//players in bases
 	glBindTexture(GL_TEXTURE_2D, basesTexture);
@@ -428,7 +425,7 @@ static void drawStatistics(double alpha)
 
 	// and then draw little disks over basesTexture to indicate where baserunners are.
 	for(i = 0; i < BASE_COUNT; i++) {
-		int index = stateInfo.localGameInfo->pII.battingTeamOnFieldIndices[i];
+		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 		if(index != -1) {
 			float left = BASES_X - 0.075f;
 			float interval = 0.15f/4;
@@ -436,32 +433,32 @@ static void drawStatistics(double alpha)
 			int base = 0;
 			float distance;
 			// for batter we say at 0 until we have passed the homeline.
-			if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 0) {
-				if(stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 0) {
+				if(stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
 				        HOME_LINE_Z > 0) {
 					phase = 0.0f;
 				} else {
-					distance = stateInfo.fieldPositions->firstBaseRun.z - HOME_LINE_Z;
-					phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
+					distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
+					phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
 					         HOME_LINE_Z) / distance;
 				}
 				base = 0;
-			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 1) {
-				distance = stateInfo.fieldPositions->secondBaseRun.x - stateInfo.fieldPositions->firstBaseRun.x;
-				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.x -
-				         stateInfo.fieldPositions->firstBaseRun.x) / distance;
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 1) {
+				distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
+				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
+				         stateInfo->fieldPositions->firstBaseRun.x) / distance;
 				base = 1;
-			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 2) {
-				distance = stateInfo.fieldPositions->thirdBaseRun.x - stateInfo.fieldPositions->secondBaseRun.x;
-				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.x -
-				         stateInfo.fieldPositions->secondBaseRun.x) / distance;
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 2) {
+				distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
+				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
+				         stateInfo->fieldPositions->secondBaseRun.x) / distance;
 				base = 2;
-			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 3) {
-				distance = HOME_LINE_Z - stateInfo.fieldPositions->thirdBaseRun.z;
-				phase = (stateInfo.localGameInfo->playerInfo[index].tPI.location.z -
-				         stateInfo.fieldPositions->thirdBase.z) / distance;
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
+				distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
+				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
+				         stateInfo->fieldPositions->thirdBase.z) / distance;
 				base = 3;
-			} else if(stateInfo.localGameInfo->playerInfo[index].bTPI.base == 4) {
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
 				// and for player who arrives homebase we just set  the marker to be at the last position.
 				phase = 0.0f;
 				base = 4;
@@ -478,16 +475,16 @@ static void drawStatistics(double alpha)
 	}
 }
 
-static void loadGameScreenSettings()
+static void loadGameScreenSettings(StateInfo* stateInfo)
 {
 	gameInfoEventTimer = -1;
 	// initialize cam
-	initCamSettings();
+	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
 	loadMutableWorldSettings();
 }
 
-static void initCamSettings()
+static void initCamSettings(StateInfo* stateInfo)
 {
 	lastCamTargetLocation.x = 0.0f;
 	lastCamTargetLocation.y = 0.0f;
@@ -534,19 +531,19 @@ static void initCamSettings()
 
 }
 
-int cleanGameScreen()
+int cleanGameScreen(StateInfo* stateInfo)
 {
 	int result;
 	cleanMesh(skyMesh);
 	cleanMesh(planeMesh);
 
-	result = cleanImmutableWorld();
+	result = cleanImmutableWorld(stateInfo);
 	if(result != 0) {
 		printf("Could not clean immutable world properly.\n");
 		return -1;
 	}
 
-	result = cleanMutableWorld();
+	result = cleanMutableWorld(stateInfo);
 	if(result != 0) {
 		printf("Could not clean mutable world properly.\n");
 		return -1;
