@@ -24,7 +24,7 @@ int initMutableWorld(StateInfo* stateInfo)
 	stateInfo->localGameInfo = &localGameInfo;
 	stateInfo->globalGameInfo = &globalGameInfo;
 
-	result = initPlayer();
+	result = initPlayer(stateInfo);
 	if(result != 0) {
 		printf("Could not init player. Exiting.");
 		return -1;
@@ -57,8 +57,8 @@ void drawMutableWorld(StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
-		drawPlayer(alpha, localGameInfo.playerInfo);
-		drawBall(alpha, &(localGameInfo.ballInfo));
+		drawPlayer(stateInfo, localGameInfo.playerInfo, alpha);
+		drawBall(&(localGameInfo.ballInfo), alpha);
 	}
 }
 int cleanMutableWorld(StateInfo* stateInfo)
@@ -69,7 +69,7 @@ int cleanMutableWorld(StateInfo* stateInfo)
 		printf("Could not clean ball properly.\n");
 		return -1;
 	}
-	result = cleanPlayer();
+	result = cleanPlayer(stateInfo);
 	if(result != 0) {
 		printf("Could not clean player properly.\n");
 		return -1;

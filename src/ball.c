@@ -5,8 +5,6 @@
 #define BALL_SCALE BALL_SIZE
 #define SHADOW_CONSTANT 0.2f
 
-extern StateInfo stateInfo;
-
 static GLuint ballTexture;
 
 static MeshObject* ballMesh;

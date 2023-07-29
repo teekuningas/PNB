@@ -84,13 +84,11 @@ static GLuint battingStopDisplayList[34];
 static MeshObject* shadowMesh;
 static GLuint shadowDisplayList;
 
-extern StateInfo stateInfo;
-
-static void textureSelection(int team, int joker, int type);
-static void modelSelection(int index);
+static void textureSelection(StateInfo* stateInfo, int team, int joker, int type);
+static void modelSelection(StateInfo* stateInfo, int index);
 
 
-int initPlayer()
+int initPlayer(StateInfo* stateInfo)
 {
 	int i;
 
@@ -232,7 +230,7 @@ int initPlayer()
 	return 0;
 }
 
-void drawPlayer(double alpha, PlayerInfo *playerInfo)
+void drawPlayer(StateInfo* stateInfo, PlayerInfo *playerInfo, double alpha)
 {
 	int i;
 	int j = 0;
@@ -251,8 +249,8 @@ void drawPlayer(double alpha, PlayerInfo *playerInfo)
 
 		// and we render. first texture is selected, as there are different teams and within teams there are jokers
 		// and nonjokers. and then the model is selected and it also calls the display list.
-		textureSelection(playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0);
-		modelSelection(i);
+		textureSelection(stateInfo, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0);
+		modelSelection(stateInfo, i);
 		// and then there is the shadow.
 		// we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same height.
 		glPopMatrix();
@@ -268,8 +266,8 @@ void drawPlayer(double alpha, PlayerInfo *playerInfo)
 		glDisable(GL_BLEND);
 		glEnable(GL_LIGHTING);
 		// and then there is the marker at the top of player who is controlled
-		if(i == stateInfo.localGameInfo->pII.controlIndex) {
-			textureSelection(playerInfo[i].cPI.team, 0, 1);
+		if(i == stateInfo->localGameInfo->pII.controlIndex) {
+			textureSelection(stateInfo, playerInfo[i].cPI.team, 0, 1);
 			glPushMatrix();
 			glTranslatef((float)(alpha*playerInfo[i].tPI.location.x + (1-alpha)*playerInfo[i].tPI.lastLocation.x),
 			             (float)playerInfo[i].tPI.location.y + 2.0f, (float)(alpha*playerInfo[i].tPI.location.z + (1-alpha)*playerInfo[i].tPI.lastLocation.z));
@@ -280,54 +278,54 @@ void drawPlayer(double alpha, PlayerInfo *playerInfo)
 	}
 }
 
-static void textureSelection(int team, int joker, int type)
+static void textureSelection(StateInfo* stateInfo, int team, int joker, int type)
 {
 	// theres two types of texture selections, texture selection for player and texture selection for marker.
 	if(type == 0) {
 		// here value means which team, like ankkurit or lippo
-		if((stateInfo.globalGameInfo)->teams[team].value == 1) {
+		if((stateInfo->globalGameInfo)->teams[team].value == 1) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team1Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team1JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 2) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 2) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team2Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team2JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 3) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 3) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team3Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team3JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 4) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 4) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team4Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team4JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 5) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 5) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team5Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team5JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 6) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 6) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team6Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team6JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 7) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 7) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team7Texture);
 			} else {
 				glBindTexture(GL_TEXTURE_2D, team7JokerTexture);
 			}
-		} else if((stateInfo.globalGameInfo)->teams[team].value == 8) {
+		} else if((stateInfo->globalGameInfo)->teams[team].value == 8) {
 			if(joker == 0) {
 				glBindTexture(GL_TEXTURE_2D, team8Texture);
 			} else {
@@ -338,23 +336,23 @@ static void textureSelection(int team, int joker, int type)
 	// and here, should we use green, blue or red ball on top of a player.
 	// depends on who controls.
 	else if(type == 1) {
-		if((stateInfo.globalGameInfo)->teams[team].control == 0) {
+		if((stateInfo->globalGameInfo)->teams[team].control == 0) {
 			glBindTexture(GL_TEXTURE_2D, selection1Texture);
-		} else if((stateInfo.globalGameInfo)->teams[team].control == 1) {
+		} else if((stateInfo->globalGameInfo)->teams[team].control == 1) {
 			glBindTexture(GL_TEXTURE_2D, selection2Texture);
-		} else if((stateInfo.globalGameInfo)->teams[team].control == 2) {
+		} else if((stateInfo->globalGameInfo)->teams[team].control == 2) {
 			glBindTexture(GL_TEXTURE_2D, selection3Texture);
 		}
 	}
 }
 
-static void modelSelection(int index)
+static void modelSelection(StateInfo* stateInfo, int index)
 {
 	// and then we must select which mesh we use and call the corresponding display list.
 	// for animations we just use the animationStage, that is being updated in game_manipulation, as index
 	// in mesh arrays.
-	int animIndex = stateInfo.localGameInfo->playerInfo[index].cPI.animationStage / stateInfo.localGameInfo->playerInfo[index].cPI.animationFrequency;
-	switch(stateInfo.localGameInfo->playerInfo[index].cPI.model) {
+	int animIndex = stateInfo->localGameInfo->playerInfo[index].cPI.animationStage / stateInfo->localGameInfo->playerInfo[index].cPI.animationFrequency;
+	switch(stateInfo->localGameInfo->playerInfo[index].cPI.model) {
 	case 0:
 		glCallList(playerGloveWithoutBallStandingDisplayList);
 		break;
@@ -413,7 +411,7 @@ static void modelSelection(int index)
 	}
 }
 // cleaning keeps the house tidy
-int cleanPlayer()
+int cleanPlayer(StateInfo* stateInfo)
 {
 	int i;
 	cleanMesh(playerBareHandsStandingMesh);
