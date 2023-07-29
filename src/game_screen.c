@@ -481,7 +481,7 @@ static void loadGameScreenSettings(StateInfo* stateInfo)
 	// initialize cam
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
-	loadMutableWorldSettings();
+	loadMutableWorldSettings(stateInfo);
 }
 
 static void initCamSettings(StateInfo* stateInfo)

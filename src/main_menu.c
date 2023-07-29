@@ -2343,5 +2343,5 @@ static void moveToGame(StateInfo* stateInfo)
 	}
 
 	stateInfo->menuInfo->state = 0;
-	loadMutableWorldSettings();
+	loadMutableWorldSettings(stateInfo);
 }

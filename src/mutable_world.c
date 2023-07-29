@@ -37,7 +37,7 @@ int initMutableWorld(StateInfo* stateInfo)
 		return -1;
 	}
 
-	initActionImplementation();
+	initActionImplementation(stateInfo);
 	initActionInvocations(stateInfo);
 	initGameAnalysis();
 
@@ -49,7 +49,7 @@ void updateMutableWorld(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
 		gameAnalysis();
 		actionInvocations(stateInfo);
-		actionImplementation();
+		actionImplementation(stateInfo);
 		gameManipulation();
 	}
 }
