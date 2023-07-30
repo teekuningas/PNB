@@ -208,7 +208,7 @@ void movePlayerOut(StateInfo* stateInfo, int index)
 	// path point not passed yet.
 	stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint = 0;
 	// and move to target takes care of the rest.
-	moveToTarget(index, &target);
+	moveToTarget(stateInfo, index, &target);
 }
 // so we have the ranked fielders-array and those are players who are somewhat important in relation
 // to ball's current location and velocity. so its natural that we have those players moving to catch
@@ -239,7 +239,7 @@ void moveRankedToCatch(StateInfo* stateInfo)
 					// set busycatching flag, and move player towards the target point
 					// that has been specified beforehand.
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
-					moveToTarget(index, &stateInfo->localGameInfo->gAI.targetPoint);
+					moveToTarget(stateInfo, index, &stateInfo->localGameInfo->gAI.targetPoint);
 				}
 			}
 		}
@@ -430,7 +430,7 @@ void changePlayer(StateInfo* stateInfo)
 		// initiated movement cant stop without user explicitly stopping it and we dont want
 		// that the player will start randomly floating after control changes to next player.
 		if(stateInfo->localGameInfo->pII.controlIndex != -1) {
-			stopMovement(stateInfo->localGameInfo->pII.controlIndex);
+			stopMovement(stateInfo, stateInfo->localGameInfo->pII.controlIndex);
 		}
 
 		if(stateInfo->localGameInfo->pII.fielderRankedIndices[stateInfo->localGameInfo->pII.changePlayerArrayIndex] != -1) {
@@ -450,7 +450,7 @@ void changePlayer(StateInfo* stateInfo)
 			// move others to catch( so that the previous one for example doesnt just stop if its near the ball )
 			moveRankedToCatch(stateInfo);
 			// stop player who has the selection now
-			stopMovement(stateInfo->localGameInfo->pII.controlIndex);
+			stopMovement(stateInfo, stateInfo->localGameInfo->pII.controlIndex);
 			// but start moving again if movement key being held at the same time. for smooth movement.
 			smoothOutMovement(stateInfo);
 		}
@@ -900,7 +900,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 			// move player to default batter ready position
 			target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-			moveToTarget(batterIndex, &target);
+			moveToTarget(stateInfo, batterIndex, &target);
 		}
 		// runner
 		if(runnerIndex != -1) {

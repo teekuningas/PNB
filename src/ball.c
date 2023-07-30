@@ -29,7 +29,7 @@ int initBall()
 	return 0;
 }
 
-void drawBall(double alpha, BallInfo* ballInfo)
+void drawBall(BallInfo* ballInfo, double alpha)
 {
 	if(ballInfo->visible == 1) {
 		// we draw ball and its shadow. shadow's x offset is just proportional to ball's height.

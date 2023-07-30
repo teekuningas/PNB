@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-void gameAnalysis();
-void initGameAnalysis();
+void gameAnalysis(StateInfo* stateInfo);
+void initGameAnalysis(StateInfo* stateInfo);
 
 #endif /* GAME_ANALYSIS_H */

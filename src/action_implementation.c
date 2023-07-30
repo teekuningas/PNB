@@ -309,12 +309,12 @@ void actionImplementation(StateInfo* stateInfo)
 					throwDirection.z = stateInfo->fieldPositions->firstBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 					break;
 				case 2:
-					stateInfo.localGameInfo->pRAI.throwGoingToBase = 2;
+					stateInfo->localGameInfo->pRAI.throwGoingToBase = 2;
 					throwDirection.x = stateInfo->fieldPositions->secondBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 					throwDirection.z = stateInfo->fieldPositions->secondBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 					break;
 				case 3:
-					stateInfo.localGameInfo->pRAI.throwGoingToBase = 3;
+					stateInfo->localGameInfo->pRAI.throwGoingToBase = 3;
 					throwDirection.x = stateInfo->fieldPositions->thirdBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 					throwDirection.z = stateInfo->fieldPositions->thirdBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 					break;
@@ -685,7 +685,7 @@ static void selectBatter(StateInfo* stateInfo)
 	}
 }
 
-static void genericThrowRelease()
+static void genericThrowRelease(StateInfo* stateInfo)
 {
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		float power;
@@ -922,7 +922,7 @@ static void startPitch(StateInfo* stateInfo)
 	        stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
 		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-			stopMovement(stateInfo->localGameInfo->pII.hasBallIndex);
+			stopMovement(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 		}
 		// we choose animation of pitcher crouching.
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 6;
@@ -974,7 +974,7 @@ static void continuePitch(StateInfo* stateInfo)
 		pitchPower = 1.0f*meterCounter / meterCounterMax;
 		// we select the animation
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 7;
-		stateInfo.localGameInfo->playerInfo[stateInfo.localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
+		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
 
 		// current stage depends on the stage of the last animation. if user quickly selects
 		// the power, the previous animation might have no time to finish, so if that happens
@@ -2264,7 +2264,7 @@ static void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* targe
 	if(!isVectorSmallEnoughCircleXZ((px-tx), (pz-tz), 1.0f)) {
 		if(aiMoveCounter >= 10) {
 			float angle = (float)atan2(-(tz-pz), (tx-px));
-			flushKeys();
+			flushKeys(stateInfo);
 			if(angle > 7*PI/8 || angle <= -7*PI/8) {
 				stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
 			} else if(angle <= 7*PI/8 && angle > 5*PI/8) {
