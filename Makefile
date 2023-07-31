@@ -10,7 +10,7 @@ _OBJ += ball.o fill_player_data.o font.o
 _OBJ += game_analysis.o game_manipulation.o game_screen.o
 _OBJ += immutable_world.o input.o common_logic.o
 _OBJ += loadobj.o main_menu.o mutable_world.o
-_OBJ += player.o render.o sound.o
+_OBJ += player.o render.o sound.o save.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 obj/%.o: $(SRCDIR)/%.c

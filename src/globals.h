@@ -74,6 +74,9 @@
 #define BASE_COUNT 4
 #define DIRECTION_COUNT 4
 
+// Menu slots
+#define SLOT_COUNT 14
+
 // keycodes
 
 #define KEY_COUNT 11

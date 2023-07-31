@@ -10,6 +10,7 @@
 
 #include "main_menu.h"
 #include "common_logic.h"
+#include "save.h"
 
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
@@ -74,8 +75,6 @@
 #define HUTUNKEITTO_TEAM_TEXT_HEIGHT 0.45f
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
-
-#define SLOT_COUNT 14
 
 static GLuint arrowTexture;
 static GLuint catcherTexture;
@@ -185,80 +184,10 @@ static void updateCupTreeAfterDay(StateInfo* stateInfo, int scheduleSlot, int wi
 */
 static int refreshLoadCups(StateInfo* stateInfo)
 {
-	FILE *file;
-	char *content = (char*)malloc(10000 * sizeof(char));
-	char *p = content;
-	int counter = 0;
-	int ok = 0;
-	int slot = 0;
-	int i = 0;
-	int j;
+	readSaveData(saveData, 5);
+
+	int i, j;
 	int valid = 1;
-
-	/* open the file */
-	file = fopen("saves.dat", "r");
-	if (file == NULL) {
-		printf("I couldn't open saves.dat for reading.\n");
-		free(content);
-		return 1;
-	}
-
-	// read file to char array
-	do {
-		i = fgetc(file);
-		*p = (char)i;
-		if(*p == '*') ok = 1;
-		p++;
-	} while(i != EOF);
-	*p = '\0';
-
-	/* close the file */
-	fclose(file);
-	// if we found correct type of end of file
-	if(ok == 1) {
-		while(content[counter] != '*') {
-			if(content[counter] == 'd') {
-				int i = content[counter + 2] - '0';
-				char index[3] = "00";
-				saveData[slot].inningCount = i;
-				i = content[counter + 4] - '0';
-				saveData[slot].gameStructure = i;
-				index[0] = content[counter + 6];
-				index[1] = content[counter + 7];
-				saveData[slot].userTeamIndexInTree = atoi(index);
-				i = content[counter + 9] - '0';
-				saveData[slot].dayCount = i;
-			} else if(content[counter] == 'i') {
-				int i;
-				for(i = 0; i < SLOT_COUNT; i++) {
-					char str[3] = "  ";
-					int index;
-					str[1] = content[counter + i*3 + 3];
-					str[0] = content[counter + i*3 + 3 - 1];
-					index = atoi(str);
-					saveData[slot].cupTeamIndexTree[i] = index;
-				}
-			} else if(content[counter] == 'w') {
-				int i;
-				for(i = 0; i < SLOT_COUNT; i++) {
-					int wins = content[counter + i*2 + 2] - '0';
-					saveData[slot].slotWins[i] = wins;
-				}
-				slot++;
-			} else if(content[counter] == '^') {
-				saveData[slot].userTeamIndexInTree = -1;
-				slot++;
-			}
-
-			counter++;
-		}
-	} else {
-		free(content);
-		printf("Something wrong with the save file");
-		return 1;
-	}
-	free(content);
-
 	// go through the saveData-structure and figure out if its good.
 	for(i = 0; i < 5; i++) {
 		if(saveData[i].userTeamIndexInTree != -1) {
@@ -274,7 +203,7 @@ static int refreshLoadCups(StateInfo* stateInfo)
 		}
 	}
 	if(valid == 0) {
-		printf("Something wrong with the save file.");
+		printf("Something wrong with the save file.\n");
 		return 1;
 	}
 	return 0;
@@ -285,97 +214,12 @@ static int refreshLoadCups(StateInfo* stateInfo)
 */
 static void saveCup(StateInfo* stateInfo, int slot)
 {
-	FILE *fp;
-	char* data = (char*)malloc(10000 * sizeof(char));
-	int i;
-	int counter;
-	CupInfo* saveDataPtr;
+	writeSaveData(saveData, &cupInfo, slot, 5);
 
-	fp = fopen("saves.dat", "w");
-	if (fp == NULL) {
-		printf("I couldn't open saves.dat for writing.\n");
-		return;
-	}
-	counter = 0;
-	for(i = 0; i < 5; i++) {
-		int j;
-		if(i != slot) {
-			saveDataPtr = &saveData[i];
-		} else {
-			saveDataPtr = &cupInfo;
-		}
-		if(saveDataPtr->userTeamIndexInTree != -1) {
-			data[counter] = 'd';
-			counter++;
-			data[counter] = ' ';
-			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->inningCount));
-			counter++;
-			data[counter] = ' ';
-			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->gameStructure));
-			counter++;
-			data[counter] = ' ';
-			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)/10);
-			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->userTeamIndexInTree)%10);
-			counter++;
-			data[counter] = ' ';
-			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->dayCount));
-			counter++;
-			data[counter] = '\n';
-			counter++;
-			data[counter] = 'i';
-			counter++;
-			for(j = 0; j < SLOT_COUNT; j++) {
-				int index = saveDataPtr->cupTeamIndexTree[j];
-				char first;
-				char second;
-				if(index < 0) {
-					first = '-';
-					second = (char)(((int)'0')+abs(index));
-				} else {
-					first = ' ';
-					second = (char)(((int)'0')+index);
-				}
-				data[counter] = ' ';
-				counter++;
-				data[counter] = first;
-				counter++;
-				data[counter] = second;
-				counter++;
-			}
-			data[counter] = '\n';
-			counter++;
-			data[counter] = 'w';
-			counter++;
-			for(j = 0; j < SLOT_COUNT; j++) {
-				int wins = saveDataPtr->slotWins[j];
-				data[counter] = ' ';
-				counter++;
-				data[counter] = (char)(((int)'0')+wins);
-				counter++;
-			}
-			data[counter] = '\n';
-			counter++;
-		} else {
-			data[counter] = '^';
-			counter++;
-			data[counter] = '\n';
-			counter++;
-		}
-	}
-	data[counter] = '*';
-	counter++;
-	data[counter] = '\0';
-	fputs(data, fp);
-	fclose(fp);
-	free(data);
-
-	if(refreshLoadCups(stateInfo) != 0) {
-		printf("Something wrong with the save file.");
+	// Refresh
+	int result = refreshLoadCups(stateInfo);
+	if (result != 0) {
+		printf("Something wrong with the save file.\n");
 	}
 }
 
@@ -544,7 +388,7 @@ int initMainMenu(StateInfo* stateInfo)
 	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
 
 	if(refreshLoadCups(stateInfo) != 0) {
-		printf("Something wrong with the save file.");
+		printf("Something wrong with the save file.\n");
 		return 1;
 	}
 	// set locations for cup tree view.
@@ -1052,7 +896,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				if(currentIndex == choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.");
+			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
 			counter = 0;
 			currentIndex = 0;
 			// and from players that are left we select runners. we select ones that have high speed
@@ -1074,7 +918,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				if(currentIndex == choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.");
+			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
 
 			stage = 7;
 		} else {
@@ -1145,7 +989,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				if(currentIndex == choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.");
+			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.\n");
 			counter = 0;
 			currentIndex = 0;
 			while(counter < 5) {
@@ -1166,7 +1010,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				if(currentIndex == choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.");
+			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.\n");
 
 			moveToGame(stateInfo);
 		} else {
