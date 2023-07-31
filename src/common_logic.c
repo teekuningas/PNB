@@ -642,14 +642,14 @@ void initializeInningPermanentPlayerInformation(StateInfo* stateInfo)
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		if(i < PLAYERS_IN_TEAM) {
 			stateInfo->localGameInfo->playerInfo[stateInfo->globalGameInfo->teams[battingTeamIndex].
-			                                    batterOrder[i]].bTPI.number = i + 1;
+			                                     batterOrder[i]].bTPI.number = i + 1;
 			stateInfo->localGameInfo->playerInfo[stateInfo->globalGameInfo->teams[battingTeamIndex].
-			                                    batterOrder[i]].bTPI.joker = 0;
+			                                     batterOrder[i]].bTPI.joker = 0;
 		} else {
 			stateInfo->localGameInfo->playerInfo[stateInfo->globalGameInfo->teams[battingTeamIndex].
-			                                    batterOrder[i]].bTPI.number = 0;
+			                                     batterOrder[i]].bTPI.number = 0;
 			stateInfo->localGameInfo->playerInfo[stateInfo->globalGameInfo->teams[battingTeamIndex].
-			                                    batterOrder[i]].bTPI.joker = 1;
+			                                     batterOrder[i]].bTPI.joker = 1;
 		}
 	}
 	// initialize batting team

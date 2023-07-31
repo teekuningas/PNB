@@ -101,7 +101,7 @@ static MeshObject* batMesh;
 static GLuint batDisplayList;
 
 static Vector3D cam, look, up;
-extern float lightPos[4];
+static float lightPos[4];
 
 static void loadMenuScreenSettings();
 static void drawFront();
@@ -115,8 +115,8 @@ static void moveToGame();
 static void drawLoadingTexts();
 static void initHutunkeitto();
 
-static MenuInfo menuInfo;
 static CupInfo cupInfo;
+static CupInfo saveData[5];
 
 static int cupGame;
 
@@ -172,8 +172,6 @@ typedef struct _TreeCoordinates {
 
 static TreeCoordinates treeCoordinates[SLOT_COUNT];
 static int teamSelection;
-
-static CupInfo saveData[5];
 
 static int refreshLoadCups(StateInfo* stateInfo);
 static void saveCup(StateInfo* stateInfo, int slot);
@@ -386,29 +384,29 @@ static void updateSchedule(StateInfo* stateInfo)
 	int j;
 	int counter = 0;
 	for(j = 0; j < SLOT_COUNT/2; j++) {
-		if(stateInfo->cupInfo->gameStructure == 0) {
-			if(stateInfo->cupInfo->slotWins[j*2] < 3 && stateInfo->cupInfo->slotWins[j*2+1] < 3) {
-				if(j < 4 || (j < 6 && stateInfo->cupInfo->dayCount >= 5) ||
-				        (j == 6 && stateInfo->cupInfo->dayCount >= 10)) {
-					stateInfo->cupInfo->schedule[counter][0] = j*2;
-					stateInfo->cupInfo->schedule[counter][1] = j*2+1;
+		if(cupInfo.gameStructure == 0) {
+			if(cupInfo.slotWins[j*2] < 3 && cupInfo.slotWins[j*2+1] < 3) {
+				if(j < 4 || (j < 6 && cupInfo.dayCount >= 5) ||
+				        (j == 6 && cupInfo.dayCount >= 10)) {
+					cupInfo.schedule[counter][0] = j*2;
+					cupInfo.schedule[counter][1] = j*2+1;
 					counter++;
 				}
 			}
 		} else {
-			if(stateInfo->cupInfo->slotWins[j*2] < 1 && stateInfo->cupInfo->slotWins[j*2+1] < 1) {
-				if(j < 4 || (j < 6 && stateInfo->cupInfo->dayCount >= 1) ||
-				        (j == 6 && stateInfo->cupInfo->dayCount >= 2)) {
-					stateInfo->cupInfo->schedule[counter][0] = j*2;
-					stateInfo->cupInfo->schedule[counter][1] = j*2+1;
+			if(cupInfo.slotWins[j*2] < 1 && cupInfo.slotWins[j*2+1] < 1) {
+				if(j < 4 || (j < 6 && cupInfo.dayCount >= 1) ||
+				        (j == 6 && cupInfo.dayCount >= 2)) {
+					cupInfo.schedule[counter][0] = j*2;
+					cupInfo.schedule[counter][1] = j*2+1;
 					counter++;
 				}
 			}
 		}
 	}
 	for(j = counter; j < 4; j++) {
-		stateInfo->cupInfo->schedule[j][0] = -1;
-		stateInfo->cupInfo->schedule[j][1] = -1;
+		cupInfo.schedule[j][0] = -1;
+		cupInfo.schedule[j][1] = -1;
 	}
 }
 
@@ -418,27 +416,27 @@ static void updateSchedule(StateInfo* stateInfo)
 static void loadCup(StateInfo* stateInfo, int slot)
 {
 	int i;
-	stateInfo->cupInfo->inningCount = saveData[slot].inningCount;
-	stateInfo->cupInfo->gameStructure = saveData[slot].gameStructure;
-	stateInfo->cupInfo->userTeamIndexInTree = saveData[slot].userTeamIndexInTree;
-	stateInfo->cupInfo->dayCount = saveData[slot].dayCount;
+	cupInfo.inningCount = saveData[slot].inningCount;
+	cupInfo.gameStructure = saveData[slot].gameStructure;
+	cupInfo.userTeamIndexInTree = saveData[slot].userTeamIndexInTree;
+	cupInfo.dayCount = saveData[slot].dayCount;
 
 	for(i = 0; i < SLOT_COUNT; i++) {
-		stateInfo->cupInfo->cupTeamIndexTree[i] = saveData[slot].cupTeamIndexTree[i];
-		stateInfo->cupInfo->slotWins[i] = saveData[slot].slotWins[i];
+		cupInfo.cupTeamIndexTree[i] = saveData[slot].cupTeamIndexTree[i];
+		cupInfo.slotWins[i] = saveData[slot].slotWins[i];
 	}
-	stateInfo->cupInfo->winnerIndex = -1;
-	if(stateInfo->cupInfo->gameStructure == 1) {
-		if(stateInfo->cupInfo->slotWins[12] == 1) {
-			stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[12];
-		} else if(stateInfo->cupInfo->slotWins[13] == 1) {
-			stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[13];
+	cupInfo.winnerIndex = -1;
+	if(cupInfo.gameStructure == 1) {
+		if(cupInfo.slotWins[12] == 1) {
+			cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[12];
+		} else if(cupInfo.slotWins[13] == 1) {
+			cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[13];
 		}
-	} else if(stateInfo->cupInfo->gameStructure == 0) {
-		if(stateInfo->cupInfo->slotWins[12] == 3) {
-			stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[12];
-		} else if(stateInfo->cupInfo->slotWins[13] == 3) {
-			stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[13];
+	} else if(cupInfo.gameStructure == 0) {
+		if(cupInfo.slotWins[12] == 3) {
+			cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[12];
+		} else if(cupInfo.slotWins[13] == 3) {
+			cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[13];
 		}
 	}
 
@@ -452,10 +450,10 @@ static void updateCupTreeAfterDay(StateInfo* stateInfo, int scheduleSlot, int wi
 	int counter = 0;
 	int done = 0;
 	while(done == 0 && counter < 4) {
-		if(stateInfo->cupInfo->schedule[counter][0] != -1) {
-			int team1Index = stateInfo->cupInfo->cupTeamIndexTree[(stateInfo->cupInfo->schedule[counter][0])];
-			int team2Index = stateInfo->cupInfo->cupTeamIndexTree[(stateInfo->cupInfo->schedule[counter][1])];
-			int index = 8 + stateInfo->cupInfo->schedule[counter][0] / 2;
+		if(cupInfo.schedule[counter][0] != -1) {
+			int team1Index = cupInfo.cupTeamIndexTree[(cupInfo.schedule[counter][0])];
+			int team2Index = cupInfo.cupTeamIndexTree[(cupInfo.schedule[counter][1])];
+			int index = 8 + cupInfo.schedule[counter][0] / 2;
 			int team1Points = 0;
 			int team2Points = 0;
 			int random = rand()%100;
@@ -478,29 +476,29 @@ static void updateCupTreeAfterDay(StateInfo* stateInfo, int scheduleSlot, int wi
 			} else {
 				winningTeam = winningSlot;
 			}
-			stateInfo->cupInfo->slotWins[stateInfo->cupInfo->schedule[counter][winningTeam]] += 1;
-			if(stateInfo->cupInfo->gameStructure == 0) {
-				if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->schedule[counter][winningTeam]] == 3) {
+			cupInfo.slotWins[cupInfo.schedule[counter][winningTeam]] += 1;
+			if(cupInfo.gameStructure == 0) {
+				if(cupInfo.slotWins[cupInfo.schedule[counter][winningTeam]] == 3) {
 					if(index < 14) {
-						stateInfo->cupInfo->cupTeamIndexTree[index] =
-						    stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[counter][winningTeam]];
-						if(stateInfo->cupInfo->schedule[counter][winningTeam] == stateInfo->cupInfo->userTeamIndexInTree) {
-							stateInfo->cupInfo->userTeamIndexInTree = index;
+						cupInfo.cupTeamIndexTree[index] =
+						    cupInfo.cupTeamIndexTree[cupInfo.schedule[counter][winningTeam]];
+						if(cupInfo.schedule[counter][winningTeam] == cupInfo.userTeamIndexInTree) {
+							cupInfo.userTeamIndexInTree = index;
 						}
 					} else {
-						stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[counter][winningTeam]];
+						cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[counter][winningTeam]];
 					}
 				}
 			} else {
-				if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->schedule[counter][winningTeam]] == 1) {
+				if(cupInfo.slotWins[cupInfo.schedule[counter][winningTeam]] == 1) {
 					if(index < 14) {
-						stateInfo->cupInfo->cupTeamIndexTree[index] =
-						    stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[counter][winningTeam]];
-						if(stateInfo->cupInfo->schedule[counter][winningTeam] == stateInfo->cupInfo->userTeamIndexInTree) {
-							stateInfo->cupInfo->userTeamIndexInTree = index;
+						cupInfo.cupTeamIndexTree[index] =
+						    cupInfo.cupTeamIndexTree[cupInfo.schedule[counter][winningTeam]];
+						if(cupInfo.schedule[counter][winningTeam] == cupInfo.userTeamIndexInTree) {
+							cupInfo.userTeamIndexInTree = index;
 						}
 					} else {
-						stateInfo->cupInfo->winnerIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[counter][winningTeam]];
+						cupInfo.winnerIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[counter][winningTeam]];
 					}
 				}
 			}
@@ -513,10 +511,7 @@ static void updateCupTreeAfterDay(StateInfo* stateInfo, int scheduleSlot, int wi
 
 int initMainMenu(StateInfo* stateInfo)
 {
-	stateInfo->menuInfo = &menuInfo;
-	stateInfo->cupInfo = &cupInfo;
-	stateInfo->saveData = saveData;
-	menuInfo.state = 0;
+	stateInfo->menuInfo->state = 0;
 
 	cam.x = 0.0f;
 	cam.y = CAM_HEIGHT;
@@ -798,11 +793,11 @@ void updateMainMenu(StateInfo* stateInfo)
 	else if(stage == 3) {
 		if(team2_control == 2) {
 			// usually we go to hutunkeitto, but not if its the break between periods.
-			if(menuInfo.state == 0 || menuInfo.state == 2) {
+			if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
 				stage = 4;
 				pointer = 0;
 				rem = 2;
-			} else if(menuInfo.state == 1) {
+			} else if(stateInfo->menuInfo->state == 1) {
 				moveToGame(stateInfo);
 			}
 		} else {
@@ -814,11 +809,11 @@ void updateMainMenu(StateInfo* stateInfo)
 						team2_batting_order[i] = batting_order[i];
 						batting_order[i] = i;
 					}
-					if(menuInfo.state == 0 || menuInfo.state == 2) {
+					if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
 						stage = 4;
 						pointer = 0;
 						rem = 2;
-					} else if(menuInfo.state == 1) {
+					} else if(stateInfo->menuInfo->state == 1) {
 						moveToGame(stateInfo);
 					}
 				} else {
@@ -994,7 +989,7 @@ void updateMainMenu(StateInfo* stateInfo)
 		}
 		// here we must update cup trees and schedules if cup mode
 		if(flag == 1) {
-			menuInfo.state = 0;
+			stateInfo->menuInfo->state = 0;
 			loadMenuScreenSettings(stateInfo);
 
 			if(cupGame == 1) {
@@ -1003,7 +998,7 @@ void updateMainMenu(StateInfo* stateInfo)
 				int playerWon = 0;
 				for(i = 0; i < 4; i++) {
 					for(j = 0; j < 2; j++) {
-						if(stateInfo->cupInfo->schedule[i][j] == stateInfo->cupInfo->userTeamIndexInTree) {
+						if(cupInfo.schedule[i][j] == cupInfo.userTeamIndexInTree) {
 							scheduleSlot = i;
 							if( j == stateInfo->globalGameInfo->winner) playerWon = 1;
 						}
@@ -1012,15 +1007,15 @@ void updateMainMenu(StateInfo* stateInfo)
 				// if player won, we can advance to congratulations-screen if it was final decisive match of the cup
 				if(playerWon == 1) {
 					int advance = 0;
-					if(stateInfo->cupInfo->gameStructure == 0) {
-						if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->userTeamIndexInTree] == 2) {
-							if(stateInfo->cupInfo->dayCount >= 11)
+					if(cupInfo.gameStructure == 0) {
+						if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 2) {
+							if(cupInfo.dayCount >= 11)
 								advance = 1;
 
 						}
-					} else if(stateInfo->cupInfo->gameStructure == 1) {
-						if(stateInfo->cupInfo->slotWins[stateInfo->cupInfo->userTeamIndexInTree] == 0) {
-							if(stateInfo->cupInfo->dayCount >= 3)
+					} else if(cupInfo.gameStructure == 1) {
+						if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 0) {
+							if(cupInfo.dayCount >= 3)
 								advance = 1;
 						}
 					}
@@ -1360,20 +1355,20 @@ void updateMainMenu(StateInfo* stateInfo)
 					// first lets find out if there is a game for human player.
 					for(i = 0; i < 4; i++) {
 						for(j = 0; j < 2; j++) {
-							if(stateInfo->cupInfo->schedule[i][j] == stateInfo->cupInfo->userTeamIndexInTree) {
+							if(cupInfo.schedule[i][j] == cupInfo.userTeamIndexInTree) {
 								if(j == 0) {
-									userTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][0]];
-									opponentTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][1]];
+									userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
+									opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
 									userPosition = 0;
 								} else {
-									userTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][1]];
-									opponentTeamIndex = stateInfo->cupInfo->cupTeamIndexTree[stateInfo->cupInfo->schedule[i][0]];
+									userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
+									opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
 									userPosition = 1;
 								}
 							}
 						}
 					}
-					stateInfo->cupInfo->dayCount++;
+					cupInfo.dayCount++;
 					// if there is, we proceed to the match and let the match ending update cup trees and schedules.
 					if(userTeamIndex != -1) {
 						stage = 2;
@@ -1390,7 +1385,7 @@ void updateMainMenu(StateInfo* stateInfo)
 							team2_control = 0;
 							team1_control = 2;
 						}
-						inningsInPeriod = stateInfo->cupInfo->inningCount;
+						inningsInPeriod = cupInfo.inningCount;
 						cupGame = 1;
 					} else {
 						// otherwise we update them right away.
@@ -1436,7 +1431,7 @@ void updateMainMenu(StateInfo* stateInfo)
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				if(stateInfo->saveData[pointer].userTeamIndexInTree != -1) {
+				if(saveData[pointer].userTeamIndexInTree != -1) {
 					loadCup(stateInfo, pointer);
 					stage_8_state = 2;
 					pointer = 0;
@@ -1603,6 +1598,10 @@ void drawMainMenu(StateInfo* stateInfo, double alpha)
 
 		glEnable(GL_LIGHTING);
 		glEnable(GL_DEPTH_TEST);
+		lightPos[0] = LIGHT_SOURCE_POSITION_X;
+		lightPos[1] = LIGHT_SOURCE_POSITION_Y;
+		lightPos[2] = LIGHT_SOURCE_POSITION_Z;
+		lightPos[3] = 1.0f;
 		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 		// bat
 		glBindTexture(GL_TEXTURE_2D, team1Texture);
@@ -1830,8 +1829,8 @@ static void drawCup(StateInfo* stateInfo)
 		printText("Cup tree", 8, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 2*SELECTION_CUP_MENU_OFFSET, 2);
 		printText("Save", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 3*SELECTION_CUP_MENU_OFFSET, 2);
 		printText("Quit", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 4*SELECTION_CUP_MENU_OFFSET, 2);
-		if(stateInfo->cupInfo->winnerIndex != -1) {
-			char* str = stateInfo->teamData[stateInfo->cupInfo->winnerIndex].name;
+		if(cupInfo.winnerIndex != -1) {
+			char* str = stateInfo->teamData[cupInfo.winnerIndex].name;
 			printText(str, strlen(str), -0.45f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
 			printText("has won the cup", 15, -0.45f + strlen(str)*0.04f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
 		}
@@ -1855,10 +1854,10 @@ static void drawCup(StateInfo* stateInfo)
 		for(i = 0; i < 4; i++) {
 			index1 = -1;
 			index2 = -1;
-			if(stateInfo->cupInfo->schedule[i][0] != -1)
-				index1 = cupInfo.cupTeamIndexTree[(stateInfo->cupInfo->schedule[i][0])];
-			if(stateInfo->cupInfo->schedule[i][1] != -1)
-				index2 = cupInfo.cupTeamIndexTree[(stateInfo->cupInfo->schedule[i][1])];
+			if(cupInfo.schedule[i][0] != -1)
+				index1 = cupInfo.cupTeamIndexTree[(cupInfo.schedule[i][0])];
+			if(cupInfo.schedule[i][1] != -1)
+				index2 = cupInfo.cupTeamIndexTree[(cupInfo.schedule[i][1])];
 			if(index1 != -1 && index2 != -1) {
 				char* str = stateInfo->teamData[index1].name;
 				char* str2 = stateInfo->teamData[index2].name;
@@ -1889,9 +1888,9 @@ static void drawCup(StateInfo* stateInfo)
 		for(i = 0; i < 5; i++) {
 			char* text;
 			char* empty = "Empty slot";
-			int index = stateInfo->saveData[i].userTeamIndexInTree;
+			int index = saveData[i].userTeamIndexInTree;
 			if(index != -1) {
-				text = stateInfo->teamData[stateInfo->saveData[i].cupTeamIndexTree[index]].name;
+				text = stateInfo->teamData[saveData[i].cupTeamIndexTree[index]].name;
 			} else {
 				text = empty;
 			}
@@ -2184,7 +2183,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 {
 	int i;
 	glDisable(GL_LIGHTING);
-	if(menuInfo.state == 0) {
+	if(stateInfo->menuInfo->state == 0) {
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			team1_batting_order[i] = i;
 			team2_batting_order[i] = i;
@@ -2214,7 +2213,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 
 	}
 	// after first period
-	else if(menuInfo.state == 1) {
+	else if(stateInfo->menuInfo->state == 1) {
 		stage = 2;
 		pointer = 0;
 		rem = 13;
@@ -2225,7 +2224,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		}
 	}
 	// after second period
-	else if(menuInfo.state == 2) {
+	else if(stateInfo->menuInfo->state == 2) {
 		stage = 2;
 		pointer = 0;
 		rem = 13;
@@ -2237,7 +2236,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		initHutunkeitto(stateInfo);
 	}
 	// after super period
-	else if(menuInfo.state == 3) {
+	else if(stateInfo->menuInfo->state == 3) {
 		int i, j;
 		stage = 6;
 		pointer = 1;
@@ -2255,10 +2254,10 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		choiceCounter = 0;
 	}
 	// game over state
-	else if(menuInfo.state == 4) {
+	else if(stateInfo->menuInfo->state == 4) {
 		stage = 5;
 	}
-	if(menuInfo.state != 4) {
+	if(stateInfo->menuInfo->state != 4) {
 		stateInfo->playSoundEffect = SOUND_MENU;
 	}
 }

@@ -16,7 +16,12 @@ static int clean(StateInfo* stateInfo);
 static void draw(StateInfo* stateInfo, double alpha);
 static int update(StateInfo* stateInfo);
 
-StateInfo stateInfo;
+static StateInfo stateInfo;
+static LocalGameInfo localGameInfo;
+static GlobalGameInfo globalGameInfo;
+static MenuInfo menuInfo;
+static KeyStates keyStates;
+static FieldPositions fieldPositions;
 
 int main ( int argc, char *argv[] )
 {
@@ -43,6 +48,14 @@ int main ( int argc, char *argv[] )
 	}
 
 	printf("v. 1.1.0.dev\n");
+
+	// Initialize stateInfo structure
+	stateInfo.localGameInfo = &localGameInfo;
+	stateInfo.globalGameInfo = &globalGameInfo;
+	stateInfo.keyStates = &keyStates;
+	stateInfo.menuInfo = &menuInfo;
+	stateInfo.fieldPositions = &fieldPositions;
+	stateInfo.teamData = NULL;
 
 	result = initGL(fullscreen);
 	if(result != 0) {

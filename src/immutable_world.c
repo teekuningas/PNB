@@ -28,7 +28,7 @@ static void drawFence();
 static int initPlate();
 static void drawPlate();
 
-static void initFieldPositions();
+static void initFieldPositions(StateInfo* stateInfo);
 
 static GLuint plateTexture;
 static GLuint fenceTexture;
@@ -41,14 +41,9 @@ static GLuint planeDisplayList;
 
 static GroundUnit groundUnit[GROUND_UNIT_COUNT];
 
-// we'll get the field positions for players etc relative to our real rendered field
-static FieldPositions fieldPositions;
-
-
 int initImmutableWorld(StateInfo* stateInfo)
 {
 	int result;
-	stateInfo->fieldPositions = &fieldPositions;
 
 	result = initGround();
 	if(result != 0) {
@@ -65,72 +60,72 @@ int initImmutableWorld(StateInfo* stateInfo)
 		printf("Initialization of plate failed.");
 		return result;
 	}
-	initFieldPositions();
+	initFieldPositions(stateInfo);
 
 	return 0;
 }
 
-void initFieldPositions()
+void initFieldPositions(StateInfo* stateInfo)
 {
 	// y-coordinate here is adjusted to be height of a ball when player has it, just because thats basically only way it is used.
 	// some of the values are hard coded, which is fine. cannot expect to calculate all players' positions relative to something.
-	fieldPositions.pitchPlate.x = 0.0f;
-	fieldPositions.pitchPlate.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.pitchPlate.z = 0.0f;
-	fieldPositions.pitcher.x = 1.5f;
-	fieldPositions.pitcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.pitcher.z = 0.0f;
-	fieldPositions.firstBaseRun.x = -20.0f;
-	fieldPositions.firstBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.firstBaseRun.z = -23.5f;
-	fieldPositions.firstBase.x = fieldPositions.firstBaseRun.x;
-	fieldPositions.firstBase.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.firstBase.z = fieldPositions.firstBaseRun.z + 0.5f;
-	fieldPositions.secondBaseRun.x = +30.0f;
-	fieldPositions.secondBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.secondBaseRun.z = -43.8f;
-	fieldPositions.secondBase.x = fieldPositions.secondBaseRun.x;
-	fieldPositions.secondBase.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.secondBase.z = fieldPositions.secondBaseRun.z + 1.0f;
-	fieldPositions.thirdBaseRun.x = -30.0f;
-	fieldPositions.thirdBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.thirdBaseRun.z = -43.8f;
-	fieldPositions.thirdBase.x = fieldPositions.thirdBaseRun.x;
-	fieldPositions.thirdBase.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.thirdBase.z = fieldPositions.thirdBaseRun.z + 1.0f;
-	fieldPositions.leftPoint.x = -31.2f;
-	fieldPositions.leftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.leftPoint.z = -33.0f;
-	fieldPositions.runLeftPoint.x = fieldPositions.leftPoint.x;
-	fieldPositions.runLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.runLeftPoint.z = -25.0f;
-	fieldPositions.backLeftPoint.x = fieldPositions.leftPoint.x;
-	fieldPositions.backLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.backLeftPoint.z = -83.8f;
-	fieldPositions.rightPoint.x = 31.5f;
-	fieldPositions.rightPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.rightPoint.z = -32.0f;
-	fieldPositions.backRightPoint.x = fieldPositions.rightPoint.x;
-	fieldPositions.backRightPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.backRightPoint.z = fieldPositions.backLeftPoint.z;
-	fieldPositions.bottomRightCatcher.x = fieldPositions.secondBase.x - 21.0f;
-	fieldPositions.bottomRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.bottomRightCatcher.z = fieldPositions.secondBase.z + 22.0f;
-	fieldPositions.middleLeftCatcher.x = fieldPositions.thirdBase.x + 18.0f;
-	fieldPositions.middleLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.middleLeftCatcher.z = fieldPositions.thirdBase.z + 6.0f;
-	fieldPositions.middleRightCatcher.x = -fieldPositions.middleLeftCatcher.x - 9.0f;
-	fieldPositions.middleRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.middleRightCatcher.z = fieldPositions.secondBase.z - 6.0f;
-	fieldPositions.backLeftCatcher.x = fieldPositions.backLeftPoint.x + 20.0f;
-	fieldPositions.backLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.backLeftCatcher.z = fieldPositions.backLeftPoint.z + 10.0f;
-	fieldPositions.backRightCatcher.x = -fieldPositions.backLeftCatcher.x;
-	fieldPositions.backRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.backRightCatcher.z = fieldPositions.backLeftCatcher.z;
-	fieldPositions.homeRunPoint.x = fieldPositions.pitchPlate.x - HOME_RADIUS;
-	fieldPositions.homeRunPoint.y = BALL_HEIGHT_WITH_PLAYER;
-	fieldPositions.homeRunPoint.z = HOME_LINE_Z;
+	stateInfo->fieldPositions->pitchPlate.x = 0.0f;
+	stateInfo->fieldPositions->pitchPlate.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->pitchPlate.z = 0.0f;
+	stateInfo->fieldPositions->pitcher.x = 1.5f;
+	stateInfo->fieldPositions->pitcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->pitcher.z = 0.0f;
+	stateInfo->fieldPositions->firstBaseRun.x = -20.0f;
+	stateInfo->fieldPositions->firstBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->firstBaseRun.z = -23.5f;
+	stateInfo->fieldPositions->firstBase.x = stateInfo->fieldPositions->firstBaseRun.x;
+	stateInfo->fieldPositions->firstBase.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->firstBase.z = stateInfo->fieldPositions->firstBaseRun.z + 0.5f;
+	stateInfo->fieldPositions->secondBaseRun.x = +30.0f;
+	stateInfo->fieldPositions->secondBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->secondBaseRun.z = -43.8f;
+	stateInfo->fieldPositions->secondBase.x = stateInfo->fieldPositions->secondBaseRun.x;
+	stateInfo->fieldPositions->secondBase.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->secondBase.z = stateInfo->fieldPositions->secondBaseRun.z + 1.0f;
+	stateInfo->fieldPositions->thirdBaseRun.x = -30.0f;
+	stateInfo->fieldPositions->thirdBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->thirdBaseRun.z = -43.8f;
+	stateInfo->fieldPositions->thirdBase.x = stateInfo->fieldPositions->thirdBaseRun.x;
+	stateInfo->fieldPositions->thirdBase.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->thirdBase.z = stateInfo->fieldPositions->thirdBaseRun.z + 1.0f;
+	stateInfo->fieldPositions->leftPoint.x = -31.2f;
+	stateInfo->fieldPositions->leftPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->leftPoint.z = -33.0f;
+	stateInfo->fieldPositions->runLeftPoint.x = stateInfo->fieldPositions->leftPoint.x;
+	stateInfo->fieldPositions->runLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->runLeftPoint.z = -25.0f;
+	stateInfo->fieldPositions->backLeftPoint.x = stateInfo->fieldPositions->leftPoint.x;
+	stateInfo->fieldPositions->backLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->backLeftPoint.z = -83.8f;
+	stateInfo->fieldPositions->rightPoint.x = 31.5f;
+	stateInfo->fieldPositions->rightPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->rightPoint.z = -32.0f;
+	stateInfo->fieldPositions->backRightPoint.x = stateInfo->fieldPositions->rightPoint.x;
+	stateInfo->fieldPositions->backRightPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->backRightPoint.z = stateInfo->fieldPositions->backLeftPoint.z;
+	stateInfo->fieldPositions->bottomRightCatcher.x = stateInfo->fieldPositions->secondBase.x - 21.0f;
+	stateInfo->fieldPositions->bottomRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->bottomRightCatcher.z = stateInfo->fieldPositions->secondBase.z + 22.0f;
+	stateInfo->fieldPositions->middleLeftCatcher.x = stateInfo->fieldPositions->thirdBase.x + 18.0f;
+	stateInfo->fieldPositions->middleLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->middleLeftCatcher.z = stateInfo->fieldPositions->thirdBase.z + 6.0f;
+	stateInfo->fieldPositions->middleRightCatcher.x = -stateInfo->fieldPositions->middleLeftCatcher.x - 9.0f;
+	stateInfo->fieldPositions->middleRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->middleRightCatcher.z = stateInfo->fieldPositions->secondBase.z - 6.0f;
+	stateInfo->fieldPositions->backLeftCatcher.x = stateInfo->fieldPositions->backLeftPoint.x + 20.0f;
+	stateInfo->fieldPositions->backLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->backLeftCatcher.z = stateInfo->fieldPositions->backLeftPoint.z + 10.0f;
+	stateInfo->fieldPositions->backRightCatcher.x = -stateInfo->fieldPositions->backLeftCatcher.x;
+	stateInfo->fieldPositions->backRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->backRightCatcher.z = stateInfo->fieldPositions->backLeftCatcher.z;
+	stateInfo->fieldPositions->homeRunPoint.x = stateInfo->fieldPositions->pitchPlate.x - HOME_RADIUS;
+	stateInfo->fieldPositions->homeRunPoint.y = BALL_HEIGHT_WITH_PLAYER;
+	stateInfo->fieldPositions->homeRunPoint.z = HOME_LINE_Z;
 }
 
 void drawImmutableWorld(StateInfo* stateInfo, double alpha)

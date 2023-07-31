@@ -12,9 +12,6 @@
 #include "game_screen.h"
 #include "common_logic.h"
 
-#define LIGHT_SOURCE_POSITION_X 30.0f
-#define LIGHT_SOURCE_POSITION_Y 50.0f
-#define LIGHT_SOURCE_POSITION_Z -50.0f
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.03f
 #define METER_X 0.31f
@@ -35,15 +32,15 @@ static void loadGameScreenSettings(StateInfo* stateInfo);
 static Vector3D cam, look, up;
 static Vector3D statCam, statLook, statUp;
 static Vector3D skyBoxCam, skyBoxLook;
-float lightPos[4];
+static float lightPos[4];
 
 static Vector3D lastCamTargetLocation;
 static Vector3D lastCamLocation;
 static Vector3D camLocation;
 static Vector3D camTargetLocation;
 
-float lastMeterX;
-float lastSwingMeterX;
+static float lastMeterX;
+static float lastSwingMeterX;
 
 static GLuint skyTexture;
 static GLuint meterTexture;

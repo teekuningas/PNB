@@ -23,6 +23,9 @@
 #define GAME_SCREEN 1
 
 // a lot of constants
+#define LIGHT_SOURCE_POSITION_X 30.0f
+#define LIGHT_SOURCE_POSITION_Y 50.0f
+#define LIGHT_SOURCE_POSITION_Z -50.0f
 
 #define PLATE_WIDTH 1.5f
 #define GRAVITY 0.003f
@@ -416,8 +419,6 @@ typedef struct _StateInfo {
 	MenuInfo *menuInfo;
 	KeyStates *keyStates;
 	TeamData *teamData;
-	CupInfo *cupInfo;
-	CupInfo *saveData;
 	FieldPositions *fieldPositions;
 	LocalGameInfo* localGameInfo;
 	GlobalGameInfo* globalGameInfo;

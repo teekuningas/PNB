@@ -1208,7 +1208,7 @@ static void updateBatting(StateInfo* stateInfo)
 			// update location and orientation once here
 			updateBatterLocationAndOrientation = 1;
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->
-			                                    pII.batterIndex].cPI.lastLastLocationUpdate = 1;
+			                                     pII.batterIndex].cPI.lastLastLocationUpdate = 1;
 			// init done, so no need to do that anymore.
 			stateInfo->localGameInfo->pRAI.initBatter = 0;
 		}

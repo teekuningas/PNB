@@ -14,15 +14,9 @@
 #include "mutable_world.h"
 #include "common_logic.h"
 
-static LocalGameInfo localGameInfo;
-static GlobalGameInfo globalGameInfo;
-
 int initMutableWorld(StateInfo* stateInfo)
 {
 	int result;
-
-	stateInfo->localGameInfo = &localGameInfo;
-	stateInfo->globalGameInfo = &globalGameInfo;
 
 	result = initPlayer(stateInfo);
 	if(result != 0) {
@@ -57,8 +51,8 @@ void drawMutableWorld(StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
-		drawPlayer(stateInfo, localGameInfo.playerInfo, alpha);
-		drawBall(&(localGameInfo.ballInfo), alpha);
+		drawPlayer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha);
+		drawBall(&(stateInfo->localGameInfo->ballInfo), alpha);
 	}
 }
 int cleanMutableWorld(StateInfo* stateInfo)
