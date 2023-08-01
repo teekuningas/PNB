@@ -63,7 +63,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	result = fillPlayerData(&stateInfo, "teams.xml");
+	result = fillPlayerData(&stateInfo, "data/teams.xml");
 	if(result != 0) {
 		printf("Could not init team data. Exiting.");
 		return -1;
