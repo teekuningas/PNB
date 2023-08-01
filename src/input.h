@@ -4,6 +4,6 @@
 #include "globals.h"
 
 int initInput(StateInfo* stateInfo);
-void updateInput(StateInfo* stateInfo);
+void updateInput(StateInfo* stateInfo, GLFWwindow* window);
 
 #endif /* INPUT_H */

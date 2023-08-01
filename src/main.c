@@ -11,10 +11,10 @@
 #include "fill_player_data.h"
 #include "main_menu.h"
 
-static int initGL(int fullscreen);
+static int initGL(GLFWwindow** window, int fullscreen);
 static int clean(StateInfo* stateInfo);
-static void draw(StateInfo* stateInfo, double alpha);
-static int update(StateInfo* stateInfo);
+static void draw(StateInfo* stateInfo, GLFWwindow* window, double alpha);
+static int update(StateInfo* stateInfo, GLFWwindow* window);
 
 static StateInfo stateInfo;
 static LocalGameInfo localGameInfo;
@@ -57,7 +57,8 @@ int main ( int argc, char *argv[] )
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
 
-	result = initGL(fullscreen);
+	GLFWwindow* window = NULL;
+	result = initGL(&window, fullscreen);
 	if(result != 0) {
 		printf("Could not init GL. Exiting.");
 		return -1;
@@ -95,9 +96,7 @@ int main ( int argc, char *argv[] )
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
 	drawLoadingScreen(&stateInfo);
-	draw(&stateInfo, 1.0);
-	drawLoadingScreen(&stateInfo);
-	draw(&stateInfo, 1.0);
+	draw(&stateInfo, window, 1.0);
 
 	result = initGameScreen(&stateInfo);
 	if(result != 0) {
@@ -117,8 +116,10 @@ int main ( int argc, char *argv[] )
 		accumulator += frameTime;
 		// update the scene every 20ms and if for some reason there is delay, keep updating until catched up
 		while ( accumulator >= updateInterval ) {
-			result = update(&stateInfo);
-			if (result != 0 || !glfwGetWindowParam( GLFW_OPENED )) done = 1;
+			result = update(&stateInfo, window);
+			if (result != 0 || glfwWindowShouldClose(window)) {
+				done = 1;
+			}
 			accumulator -= updateInterval;
 		}
 
@@ -128,10 +129,10 @@ int main ( int argc, char *argv[] )
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
 		// so we will draw it to the middle.
 		if(stateInfo.updated == 1) {
-			draw(&stateInfo, alpha);
+			draw(&stateInfo, window, alpha);
 		}
 
-
+		glfwPollEvents();
 	}
 	// and we will clean up when everything ends
 	result = clean(&stateInfo);
@@ -139,13 +140,14 @@ int main ( int argc, char *argv[] )
 		printf("Cleaning up unsuccessful. Exiting anyway.");
 		return -1;
 	}
+
 	return 0;
 
 }
 
-static int update(StateInfo* stateInfo)
+static int update(StateInfo* stateInfo, GLFWwindow* window)
 {
-	updateInput(stateInfo);
+	updateInput(stateInfo, window);
 	updateSound(stateInfo);
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
@@ -161,7 +163,7 @@ static int update(StateInfo* stateInfo)
 }
 
 
-static void draw(StateInfo* stateInfo, double alpha)
+static void draw(StateInfo* stateInfo, GLFWwindow* window, double alpha)
 {
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
@@ -171,50 +173,52 @@ static void draw(StateInfo* stateInfo, double alpha)
 		drawMainMenu(stateInfo, alpha);
 		break;
 	}
-	glfwSwapBuffers();
+
+	glfwSwapBuffers(window);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 }
 
-static int initGL(int fullscreen)
+static int initGL(GLFWwindow** window, int fullscreen)
 {
-	GLFWvidmode mode;
+	const GLFWvidmode* mode;
+	GLFWmonitor* monitor;
 	int width;
 	int height;
-	// First we'll just initialize GLFW so that we get a nice window.
+
+	// Initialize glfw
 	if( !glfwInit() ) {
 		fprintf( stderr, "Failed to initialize GLFW\n" );
-		printf("init");
 		return -1;
 	}
-	glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4);
-	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
-	// Open a window and create its OpenGL context
+
+	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+	monitor = glfwGetPrimaryMonitor();
+
+	mode = glfwGetVideoMode(monitor);
+	width = (int)(mode->width * (3.0/4));
+	height = (int)(mode->height * (3.0/4));
+
 	if(fullscreen == 0) {
-		glfwGetDesktopMode(&mode);
-		width = (int)(mode.Width * (3.0/4));
-		height = (int)(mode.Height * (3.0/4));
-		if( !glfwOpenWindow( 0, 0, 0,0,0,0, 32,0, GLFW_WINDOW ) ) {
-			fprintf( stderr, "Failed to open GLFW window\n" );
-			printf("window");
+		*window = glfwCreateWindow(width, height, "PNB", NULL, NULL);
+		if(!window) {
+			fprintf(stderr, "Failed to open GLFW window\n");
 			glfwTerminate();
 			return -1;
 		}
-		glfwSetWindowTitle( "PNB" );
-		glfwSetWindowSize(width, height);
-		glfwSetWindowPos( (mode.Width - width) / 2, 0);
-
 	} else {
-		glfwGetDesktopMode(&mode);
-		width = mode.Width;
-		height = mode.Height;
-		if( !glfwOpenWindow( width, height, 0,0,0,0, 32,0, GLFW_FULLSCREEN ) ) {
-			fprintf( stderr, "Failed to open GLFW window\n" );
-			printf("window");
+		*window = glfwCreateWindow(width, height, "PNB", monitor, NULL);
+		if(!window) {
+			fprintf(stderr, "Failed to open GLFW window\n");
 			glfwTerminate();
 			return -1;
 		}
 	}
+
+	glfwMakeContextCurrent(*window);
 
 	// Initialize GLEW
 	if (glewInit() != GLEW_OK) {
@@ -224,6 +228,7 @@ static int initGL(int fullscreen)
 	}
 
 	glfwSwapInterval(0);
+
 	// and then initialize openGL settings. nothing really weird here.
 	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);

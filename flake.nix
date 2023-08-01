@@ -11,7 +11,7 @@
         formatter = pkgs.nixfmt;
         devShells.default = pkgs.mkShell rec {
           buildInputs = with pkgs; [
-            glfw2
+            glfw3
             glew
             xorg.libX11
             libGL

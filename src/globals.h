@@ -10,7 +10,7 @@
 
 // linux and windows code
 #include <GL/glew.h>
-#include <GL/glfw.h>
+#include <GLFW/glfw3.h>
 
 // global constants
 #define PI 3.141f
