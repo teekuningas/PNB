@@ -203,6 +203,9 @@ static int initGL(GLFWwindow** window, int fullscreen)
 	height = (int)(mode->height * (3.0/4));
 
 	if(fullscreen == 0) {
+		width = (int)(mode->width * (3.0/4));
+		height = (int)(mode->height * (3.0/4));
+
 		*window = glfwCreateWindow(width, height, "PNB", NULL, NULL);
 		if(!window) {
 			fprintf(stderr, "Failed to open GLFW window\n");
@@ -210,6 +213,9 @@ static int initGL(GLFWwindow** window, int fullscreen)
 			return -1;
 		}
 	} else {
+		width = (int)(mode->width);
+		height = (int)(mode->height);
+
 		*window = glfwCreateWindow(width, height, "PNB", monitor, NULL);
 		if(!window) {
 			fprintf(stderr, "Failed to open GLFW window\n");
