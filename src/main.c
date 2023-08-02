@@ -47,7 +47,7 @@ int main ( int argc, char *argv[] )
 		}
 	}
 
-	printf("v. 1.1.0.dev\n");
+	printf("v. 1.1.0\n");
 
 	// Initialize stateInfo structure
 	stateInfo.localGameInfo = &localGameInfo;
@@ -197,10 +197,7 @@ static int initGL(GLFWwindow** window, int fullscreen)
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	monitor = glfwGetPrimaryMonitor();
-
 	mode = glfwGetVideoMode(monitor);
-	width = (int)(mode->width * (3.0/4));
-	height = (int)(mode->height * (3.0/4));
 
 	if(fullscreen == 0) {
 		width = (int)(mode->width * (3.0/4));

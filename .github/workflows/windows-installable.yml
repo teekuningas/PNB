@@ -39,6 +39,7 @@ jobs:
           cp -r ./data PNB/
           cp /mingw64/bin/glfw3.dll PNB/
           cp /mingw64/bin/glew32.dll PNB/
+          cp /mingw64/bin/libwinpthread-1.dll PNB/
           zip -r PNB-${GITHUB_REF##*/}.zip PNB
 
       - name: Set variables
