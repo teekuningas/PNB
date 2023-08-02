@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - '*'
-    branches:
-      - test-window-builds
-
 
 jobs:
   build-windows-installable:
