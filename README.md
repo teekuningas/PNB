@@ -1,10 +1,13 @@
 PNB
 ===
 
-Finnish pesäpallo from 2013
+# Finnish pesäpallo from 2013
 
-Install and run using nix
----------------
+## Installation
+
+Download and extract the zip file from the Releases.  
+
+## Install, develop and run using nix on linux
 
 ```
 $ make shell  
