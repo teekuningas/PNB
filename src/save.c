@@ -5,9 +5,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define PATH_MAX MAX_PATH
+#define PATH_MAX_LENGTH MAX_PATH
 #define SEPARATOR "\\"
 #else
+#define PATH_MAX_LENGTH PATH_MAX
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,7 +24,7 @@ int readSaveData(CupInfo* saveData, int numSlots)
 {
 
 	FILE *file;
-	char savePath[PATH_MAX];
+	char savePath[PATH_MAX_LENGTH];
 	getSavePath(savePath);
 
 	int counter = 0;
@@ -109,7 +110,7 @@ int writeSaveData(CupInfo* saveData, CupInfo* cupInfo, int currentSlot, int numS
 
 	FILE *fp;
 
-	char savePath[PATH_MAX];
+	char savePath[PATH_MAX_LENGTH];
 	getSavePath(savePath);
 
 	char* data = (char*)malloc(10000 * sizeof(char));
@@ -216,9 +217,9 @@ static void initializeWithoutFile(CupInfo* saveData, int numSlots)
 static int getSavePath(char* result)
 {
 	char* homedir;
-	char dirPath[PATH_MAX];
+	char dirPath[PATH_MAX_LENGTH];
 	// Add enough extra to contain saves.dat and separators and suppress warnings.
-	char filePath[PATH_MAX + 20];
+	char filePath[PATH_MAX_LENGTH + 20];
 
 #ifdef _WIN32
 	homedir = getenv("USERPROFILE");
@@ -226,17 +227,17 @@ static int getSavePath(char* result)
 	if (!CreateDirectory(dirPath, NULL)) {
 		DWORD err = GetLastError();
 		if (err != ERROR_ALREADY_EXISTS) {
-			fprintf(stderr, "Failed to create directory: %u\n", err);
+			fprintf(stderr, "Failed to create directory: %lu\n", err);
 			return 1;
 		}
 	}
 	snprintf(filePath, sizeof(filePath), "%s%ssaves.dat", dirPath, SEPARATOR);
 #else
 	homedir = getenv("HOME");
-	snprintf(dirPath, PATH_MAX, "%s%s.pnb", homedir, SEPARATOR);
+	snprintf(dirPath, sizeof(dirPath), "%s%s.pnb", homedir, SEPARATOR);
 	if (mkdir(dirPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
 		if (errno != EEXIST) {
-			perror("Failed to create directory");
+			fprintf(stderr, "Failed to create directory: %u\n", errno);
 			return 1;
 		}
 	}

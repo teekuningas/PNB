@@ -1,0 +1,73 @@
+name: Build and Package for Windows
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - test-window-builds
+
+
+jobs:
+  build-windows-installable:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-mxml
+
+      - name: Build project
+        run: |
+          echo 'Running in MSYS2!'
+          mingw32-make -f Makefile.release.win
+
+      - name: Install zip
+        run: |
+          pacman -Sy --noconfirm zip
+
+      - name: Package all necessary files
+        run: |
+          mkdir PNB
+          cp ./PNB.exe PNB/
+          cp -r ./data PNB/
+          cp /mingw64/bin/glfw3.dll PNB/
+          cp /mingw64/bin/glew32.dll PNB/
+          zip -r PNB-${GITHUB_REF##*/}.zip PNB
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.REF_NAME }}
+          release_name: Release ${{ env.REF_NAME }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./PNB-${{ env.REF_NAME }}.zip
+          asset_name: PNB-${{ env.REF_NAME }}.zip
+          asset_content_type: application/zip
+
