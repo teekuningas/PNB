@@ -1,7 +1,5 @@
-PNB
+PNB - Not Baseball Since 2013
 ===
-
-# Finnish pesäpallo from 2013
 
 ## Installation
 
