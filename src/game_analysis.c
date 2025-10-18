@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "game_analysis.h"
 #include "common_logic.h"
+#include "menu_types.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -633,7 +634,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->inningsInPeriod - 1) {
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
 			}
-			menuInfo->state = 1;
+			menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
 			stateInfo->screen = 0;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
@@ -653,15 +654,15 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			// is the game over already?
 			if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 			        (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if( team0period0runs<=team1period0runs && team0period1runs<=team1period1runs &&
 			           (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				stateInfo->globalGameInfo->period = 2;
-				menuInfo->state = 2;
+				menuInfo->mode = MENU_ENTRY_SUPER_INNING;
 			}
 			if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->inningsInPeriod*2 - 1) {
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
@@ -679,16 +680,16 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 1;
 			}
 			// if not, we move to homerun-batting contest
 			else {
 				stateInfo->globalGameInfo->period = 4;
-				menuInfo->state = 3;
+				menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
 			}
 
 			for(i = 0; i < 2; i++) {
@@ -705,17 +706,17 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
-				menuInfo->state = 4;
+				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				// +=2 because we want to use 4, 6, 8... for homerun batting contest periods
 				// as we dont want to mess the team ordering when
 				// calculating those battingTeamIndices.
 				stateInfo->globalGameInfo->period+=2;
-				menuInfo->state = 3;
+				menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
 			}
 
 			for(i = 0; i < 2; i++) {
