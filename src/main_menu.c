@@ -353,9 +353,9 @@ static void updateCupTreeAfterDay(StateInfo* stateInfo, int scheduleSlot, int wi
 	}
 }
 
-int initMainMenu(StateInfo* stateInfo)
+int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
-	stateInfo->menuInfo->state = 0;
+	menuInfo->state = 0;
 
 	cam.x = 0.0f;
 	cam.y = CAM_HEIGHT;
@@ -423,21 +423,21 @@ int initMainMenu(StateInfo* stateInfo)
 	return 0;
 }
 
-void drawLoadingScreen(StateInfo* stateInfo)
+void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
-	loadMenuScreenSettings(stateInfo);
+	loadMenuScreenSettings(stateInfo, menuInfo);
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	drawFontBackground();
 	drawLoadingTexts(stateInfo);
 }
 
-void updateMainMenu(StateInfo* stateInfo)
+void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
+
 {
-	KeyStates* keyStates = stateInfo->keyStates;
 	if(stateInfo->changeScreen == 1) {
 		stateInfo->changeScreen = 0;
 		stateInfo->updated = 1;
-		loadMenuScreenSettings(stateInfo);
+		loadMenuScreenSettings(stateInfo, menuInfo);
 	}
 	// main main menu.
 	if(stage == 0) {
@@ -636,13 +636,12 @@ void updateMainMenu(StateInfo* stateInfo)
 	// batting order for team 2
 	else if(stage == 3) {
 		if(team2_control == 2) {
-			// usually we go to hutunkeitto, but not if its the break between periods.
-			if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
+			if(menuInfo->state == 0 || menuInfo->state == 2) {
 				stage = 4;
 				pointer = 0;
 				rem = 2;
-			} else if(stateInfo->menuInfo->state == 1) {
-				moveToGame(stateInfo);
+			} else if(menuInfo->state == 1) {
+				moveToGame(stateInfo, globalGameInfo, menuInfo);
 			}
 		} else {
 			if(keyStates->released[team2_control][KEY_2]) {
@@ -653,12 +652,12 @@ void updateMainMenu(StateInfo* stateInfo)
 						team2_batting_order[i] = batting_order[i];
 						batting_order[i] = i;
 					}
-					if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
+					if(menuInfo->state == 0 || menuInfo->state == 2) {
 						stage = 4;
 						pointer = 0;
 						rem = 2;
-					} else if(stateInfo->menuInfo->state == 1) {
-						moveToGame(stateInfo);
+					} else if(menuInfo->state == 1) {
+						moveToGame(stateInfo, globalGameInfo, menuInfo);
 					}
 				} else {
 					if(mark == 0) {
@@ -833,8 +832,8 @@ void updateMainMenu(StateInfo* stateInfo)
 		}
 		// here we must update cup trees and schedules if cup mode
 		if(flag == 1) {
-			stateInfo->menuInfo->state = 0;
-			loadMenuScreenSettings(stateInfo);
+			menuInfo->state = 0;
+			loadMenuScreenSettings(stateInfo, menuInfo);
 
 			if(cupGame == 1) {
 				int i, j;
@@ -1366,7 +1365,7 @@ void updateMainMenu(StateInfo* stateInfo)
 // here we draw everything.
 // directly we draw ugly stuff like images of players or hand or bat models etc.
 // then we call methods to handle text rendering.
-void drawMainMenu(StateInfo* stateInfo, double alpha)
+void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 {
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
 	if(stage == 0) {
@@ -2023,11 +2022,11 @@ int cleanMainMenu(StateInfo* stateInfo)
 	return 0;
 }
 
-static void loadMenuScreenSettings(StateInfo* stateInfo)
+static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	int i;
 	glDisable(GL_LIGHTING);
-	if(stateInfo->menuInfo->state == 0) {
+	if(menuInfo->state == 0) {
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			team1_batting_order[i] = i;
 			team2_batting_order[i] = i;
@@ -2057,7 +2056,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 
 	}
 	// after first period
-	else if(stateInfo->menuInfo->state == 1) {
+	else if(menuInfo->state == 1) {
 		stage = 2;
 		pointer = 0;
 		rem = 13;
@@ -2068,7 +2067,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		}
 	}
 	// after second period
-	else if(stateInfo->menuInfo->state == 2) {
+	else if(menuInfo->state == 2) {
 		stage = 2;
 		pointer = 0;
 		rem = 13;
@@ -2080,7 +2079,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		initHutunkeitto(stateInfo);
 	}
 	// after super period
-	else if(stateInfo->menuInfo->state == 3) {
+	else if(menuInfo->state == 3) {
 		int i, j;
 		stage = 6;
 		pointer = 1;
@@ -2098,10 +2097,10 @@ static void loadMenuScreenSettings(StateInfo* stateInfo)
 		choiceCounter = 0;
 	}
 	// game over state
-	else if(stateInfo->menuInfo->state == 4) {
+	else if(menuInfo->state == 4) {
 		stage = 5;
 	}
-	if(stateInfo->menuInfo->state != 4) {
+	if(menuInfo->state != 4) {
 		stateInfo->playSoundEffect = SOUND_MENU;
 	}
 }
@@ -2130,19 +2129,20 @@ static void initHutunkeitto(StateInfo* stateInfo)
 	playsFirst = 0;
 }
 // and we initialize the game.
-static void moveToGame(StateInfo* stateInfo)
+static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, MenuInfo* menuInfo)
 {
 
 	stateInfo->screen = 1;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 	// when first starting the game, we se teams and inning and period settings.
-	if(stateInfo->menuInfo->state == 0) {
+	if(menuInfo->state == 0) {
 		int i;
 		stateInfo->globalGameInfo->inning = 0;
 		stateInfo->globalGameInfo->inningsInPeriod = inningsInPeriod;
 		stateInfo->globalGameInfo->period = 0;
 		stateInfo->globalGameInfo->winner = -1;
+		stateInfo->globalGameInfo->playsFirst = playsFirst;
 		stateInfo->globalGameInfo->teams[0].value = team1 + 1;
 		stateInfo->globalGameInfo->teams[1].value = team2 + 1;
 		stateInfo->globalGameInfo->teams[0].control = team1_control;
@@ -2153,15 +2153,14 @@ static void moveToGame(StateInfo* stateInfo)
 			stateInfo->globalGameInfo->teams[i].period1Runs = 0;
 			stateInfo->globalGameInfo->teams[i].period2Runs = 0;
 			stateInfo->globalGameInfo->teams[i].period3Runs = 0;
-
 		}
 	}
 	// in the beginning and after second period we have had hutunkeitto.
-	if(stateInfo->menuInfo->state == 0 || stateInfo->menuInfo->state == 2) {
+	if(menuInfo->state == 0 || menuInfo->state == 2) {
 		stateInfo->globalGameInfo->playsFirst = playsFirst;
 	}
 	// after super period we have to do different kind of initialization.
-	if(stateInfo->menuInfo->state == 3) {
+	if(menuInfo->state == 3) {
 		int i, j;
 		for(i = 0; i < 2; i++) {
 			for(j = 0; j < choiceCount/2; j++) {
@@ -2185,6 +2184,6 @@ static void moveToGame(StateInfo* stateInfo)
 		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, team2_batting_order, sizeof(batting_order));
 	}
 
-	stateInfo->menuInfo->state = 0;
+	menuInfo->state = 0;
 	loadMutableWorldSettings(stateInfo);
 }

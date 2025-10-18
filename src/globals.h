@@ -395,9 +395,7 @@ typedef struct _LocalGameInfo {
 
 } LocalGameInfo;
 
-typedef struct _MenuInfo {
-	int state; // 0 normal menu, 1 hutunkeitto, 2 batting order screen between periods
-} MenuInfo;
+
 
 
 typedef struct _CupInfo {
@@ -419,7 +417,6 @@ typedef struct _StateInfo {
 	int numTeams;
 	int playSoundEffect;
 	// addresses to important information structures
-	MenuInfo *menuInfo;
 	KeyStates *keyStates;
 	TeamData *teamData;
 	FieldPositions *fieldPositions;

@@ -20,7 +20,7 @@ static int homeRunCameraCounter;
 static void checkForOuts(StateInfo* stateInfo);
 static void checkIfNextBatterDecision(StateInfo* stateInfo);
 static void strikesAndBalls(StateInfo* stateInfo);
-static void checkIfEndOfInning(StateInfo* stateInfo);
+static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo);
 static void woundingCatchEffects(StateInfo* stateInfo);
 static void foulPlay(StateInfo* stateInfo);
 static void checkForRuns(StateInfo* stateInfo);
@@ -38,7 +38,7 @@ void initGameAnalysis(StateInfo* stateInfo)
 	homeRunCameraCounter = -1;
 }
 
-void gameAnalysis(StateInfo* stateInfo)
+void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
 		initGameAnalysis(stateInfo);
@@ -63,7 +63,7 @@ void gameAnalysis(StateInfo* stateInfo)
 	woundingCatchEffects(stateInfo);
 	foulPlay(stateInfo);
 	checkForRuns(stateInfo);
-	checkIfEndOfInning(stateInfo);
+	checkIfEndOfInning(stateInfo, menuInfo);
 	checkIfNextPair(stateInfo);
 
 }
@@ -591,7 +591,7 @@ static void checkForRuns(StateInfo* stateInfo)
 }
 
 
-static void checkIfEndOfInning(StateInfo* stateInfo)
+static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	// if three outs or
 	// no more players to bat. set flag on the player selection to indicate that no more players left.
@@ -633,7 +633,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo)
 			if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->inningsInPeriod - 1) {
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
 			}
-			stateInfo->menuInfo->state = 1;
+			menuInfo->state = 1;
 			stateInfo->screen = 0;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
@@ -653,15 +653,15 @@ static void checkIfEndOfInning(StateInfo* stateInfo)
 			// is the game over already?
 			if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 			        (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if( team0period0runs<=team1period0runs && team0period1runs<=team1period1runs &&
 			           (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				stateInfo->globalGameInfo->period = 2;
-				stateInfo->menuInfo->state = 2;
+				menuInfo->state = 2;
 			}
 			if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->inningsInPeriod*2 - 1) {
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
@@ -679,16 +679,16 @@ static void checkIfEndOfInning(StateInfo* stateInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 1;
 			}
 			// if not, we move to homerun-batting contest
 			else {
 				stateInfo->globalGameInfo->period = 4;
-				stateInfo->menuInfo->state = 3;
+				menuInfo->state = 3;
 			}
 
 			for(i = 0; i < 2; i++) {
@@ -705,17 +705,17 @@ static void checkIfEndOfInning(StateInfo* stateInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
-				stateInfo->menuInfo->state = 4;
+				menuInfo->state = 4;
 				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				// +=2 because we want to use 4, 6, 8... for homerun batting contest periods
 				// as we dont want to mess the team ordering when
 				// calculating those battingTeamIndices.
 				stateInfo->globalGameInfo->period+=2;
-				stateInfo->menuInfo->state = 3;
+				menuInfo->state = 3;
 			}
 
 			for(i = 0; i < 2; i++) {

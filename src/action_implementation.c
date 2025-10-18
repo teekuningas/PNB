@@ -1541,7 +1541,7 @@ static void updateMeters(StateInfo* stateInfo)
 		lowerLimit = 0.0f;
 		// then we just map the meterCounter value's range to upperLimit-lowerLimit and inverse it
 		stateInfo->localGameInfo->pRAI.swingMeterValue = upperLimit - (1.0f*meterCounter / meterCounterMax) *
-		        (upperLimit - lowerLimit);
+		    (upperLimit - lowerLimit);
 	}
 }
 

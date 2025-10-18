@@ -845,7 +845,7 @@ static void updateModels(StateInfo* stateInfo)
 			// reason this seemingly complicated way of doing this is just to provide possibility to have animations
 			// with same meshcounts to have animations of different speeds.
 			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
-			        (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
+			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
 		case 6:
 		case 7:
@@ -868,7 +868,7 @@ static void updateModels(StateInfo* stateInfo)
 		case 12:
 			// running and walking animations for batting team
 			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
-			        (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
+			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
 		case 14:
 		case 15:

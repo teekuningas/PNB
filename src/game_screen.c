@@ -96,7 +96,7 @@ int initGameScreen(StateInfo* stateInfo)
 	return 0;
 }
 
-void updateGameScreen(StateInfo* stateInfo)
+void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
 	// if we just changed here, load basic settings.
@@ -163,7 +163,7 @@ void updateGameScreen(StateInfo* stateInfo)
 	}
 
 	// and here will a lot of logic code.
-	updateMutableWorld(stateInfo);
+	updateMutableWorld(stateInfo, menuInfo);
 
 }
 
