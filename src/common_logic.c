@@ -550,10 +550,10 @@ void initializeSpatialPlayerInformation(StateInfo* stateInfo)
 		stateInfo->localGameInfo->playerInfo[i].cPI.model = 10;
 
 		stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x = (float)(stateInfo->fieldPositions->pitchPlate.x +
-		        (HOME_RADIUS) * radiusFix * cos(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
+		    (HOME_RADIUS) * radiusFix * cos(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
 		stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.y = BALL_HEIGHT_WITH_PLAYER;
 		stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z = (float)(stateInfo->fieldPositions->pitchPlate.z +
-		        (HOME_RADIUS) * radiusFix * sin(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
+		    (HOME_RADIUS) * radiusFix * sin(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
 		stateInfo->localGameInfo->playerInfo[i].tPI.location.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 		stateInfo->localGameInfo->playerInfo[i].tPI.location.y = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.y;
 		stateInfo->localGameInfo->playerInfo[i].tPI.location.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
@@ -661,11 +661,11 @@ void initializeInningPermanentPlayerInformation(StateInfo* stateInfo)
 			jokerCounter++;
 		}
 		stateInfo->localGameInfo->playerInfo[i].bTPI.name = stateInfo->teamData[(stateInfo->globalGameInfo->teams[battingTeamIndex]
-		        .value - 1)].players[i].name;
+		    .value - 1)].players[i].name;
 		stateInfo->localGameInfo->playerInfo[i].bTPI.power = stateInfo->teamData[(stateInfo->globalGameInfo->teams[battingTeamIndex]
-		        .value - 1)].players[i].power;
+		    .value - 1)].players[i].power;
 		stateInfo->localGameInfo->playerInfo[i].bTPI.speed = stateInfo->teamData[(stateInfo->globalGameInfo->teams[battingTeamIndex]
-		        .value - 1)].players[i].speed;
+		    .value - 1)].players[i].speed;
 
 
 	}
@@ -932,7 +932,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 			int index = stateInfo->globalGameInfo->teams[battingTeamIndex].batterRunnerIndices[1][i];
 			if(index != -1) {
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.x = stateInfo->fieldPositions->thirdBaseRun.x -
-				        2.0f - (i-(stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1))*1.5f;
+				    2.0f - (i-(stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1))*1.5f;
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.y =
 				    stateInfo->fieldPositions->thirdBaseRun.y;
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.z =

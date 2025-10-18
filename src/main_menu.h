@@ -2,11 +2,12 @@
 #define MAIN_MENU_H
 
 #include "globals.h"
+#include "menu_types.h"
 
-int initMainMenu(StateInfo* stateInfo);
-void updateMainMenu(StateInfo* stateInfo);
-void drawMainMenu(StateInfo* stateInfo, double alpha);
+int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo);
+void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
+void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 int cleanMainMenu(StateInfo* stateInfo);
-void drawLoadingScreen(StateInfo* stateInfo);
+void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo);
 
 #endif /* MAIN_MENU_H */

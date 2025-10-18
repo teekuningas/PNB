@@ -38,10 +38,10 @@ int initMutableWorld(StateInfo* stateInfo)
 	return 0;
 }
 
-void updateMutableWorld(StateInfo* stateInfo)
+void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
-		gameAnalysis(stateInfo);
+		gameAnalysis(stateInfo, menuInfo);
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo);
 		gameManipulation(stateInfo);

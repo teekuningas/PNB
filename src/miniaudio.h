@@ -35532,8 +35532,7 @@ static ma_result ma_context_init__coreaudio(ma_context* pContext, const ma_conte
 
 		MA_ASSERT(pAudioSession != NULL);
 
-		if (pConfig->coreaudio.sessionCategory == ma_ios_session_category_default)
-		{
+		if (pConfig->coreaudio.sessionCategory == ma_ios_session_category_default) {
 			/*
 			I'm going to use trial and error to determine our default session category. First we'll try PlayAndRecord. If that fails
 			we'll try Playback and if that fails we'll try record. If all of these fail we'll just not set the category.
@@ -61120,17 +61119,17 @@ typedef enum {
 	ma_dr_wav_metadata_type_list_info_album             = 1 << 16,
 	ma_dr_wav_metadata_type_list_info_tracknumber       = 1 << 17,
 	ma_dr_wav_metadata_type_list_all_info_strings       = ma_dr_wav_metadata_type_list_info_software
-	        | ma_dr_wav_metadata_type_list_info_copyright
-	        | ma_dr_wav_metadata_type_list_info_title
-	        | ma_dr_wav_metadata_type_list_info_artist
-	        | ma_dr_wav_metadata_type_list_info_comment
-	        | ma_dr_wav_metadata_type_list_info_date
-	        | ma_dr_wav_metadata_type_list_info_genre
-	        | ma_dr_wav_metadata_type_list_info_album
-	        | ma_dr_wav_metadata_type_list_info_tracknumber,
+	    | ma_dr_wav_metadata_type_list_info_copyright
+	    | ma_dr_wav_metadata_type_list_info_title
+	    | ma_dr_wav_metadata_type_list_info_artist
+	    | ma_dr_wav_metadata_type_list_info_comment
+	    | ma_dr_wav_metadata_type_list_info_date
+	    | ma_dr_wav_metadata_type_list_info_genre
+	    | ma_dr_wav_metadata_type_list_info_album
+	    | ma_dr_wav_metadata_type_list_info_tracknumber,
 	ma_dr_wav_metadata_type_list_all_adtl               = ma_dr_wav_metadata_type_list_label
-	        | ma_dr_wav_metadata_type_list_note
-	        | ma_dr_wav_metadata_type_list_labelled_cue_region,
+	    | ma_dr_wav_metadata_type_list_note
+	    | ma_dr_wav_metadata_type_list_labelled_cue_region,
 	ma_dr_wav_metadata_type_all                         = -2,
 	ma_dr_wav_metadata_type_all_including_unknown       = -1
 } ma_dr_wav_metadata_type;
@@ -80855,8 +80854,8 @@ MA_PRIVATE ma_uint64 ma_dr_wav_read_pcm_frames_s16__ima(ma_dr_wav* pWav, ma_uint
 	ma_uint32 iChannel;
 	static ma_int32 indexTable[16] = {
 		-1, -1, -1, -1, 2, 4, 6, 8,
-		    -1, -1, -1, -1, 2, 4, 6, 8
-	    };
+		-1, -1, -1, -1, 2, 4, 6, 8
+	};
 	static ma_int32 stepTable[89] = {
 		7,     8,     9,     10,    11,    12,    13,    14,    16,    17,
 		19,    21,    23,    25,    28,    31,    34,    37,    41,    45,
@@ -91647,21 +91646,21 @@ static void ma_dr_mp3d_synth(float *xl, ma_dr_mp3d_sample_t *dstl, int nch, floa
 	ma_dr_mp3d_sample_t *dstr = dstl + (nch - 1);
 	static const float g_win[] = {
 		-1,26,-31,208,218,401,-519,2063,2000,4788,-5517,7134,5959,35640,-39336,74992,
-		    -1,24,-35,202,222,347,-581,2080,1952,4425,-5879,7640,5288,33791,-41176,74856,
-		    -1,21,-38,196,225,294,-645,2087,1893,4063,-6237,8092,4561,31947,-43006,74630,
-		    -1,19,-41,190,227,244,-711,2085,1822,3705,-6589,8492,3776,30112,-44821,74313,
-		    -1,17,-45,183,228,197,-779,2075,1739,3351,-6935,8840,2935,28289,-46617,73908,
-		    -1,16,-49,176,228,153,-848,2057,1644,3004,-7271,9139,2037,26482,-48390,73415,
-		    -2,14,-53,169,227,111,-919,2032,1535,2663,-7597,9389,1082,24694,-50137,72835,
-		    -2,13,-58,161,224,72,-991,2001,1414,2330,-7910,9592,70,22929,-51853,72169,
-		    -2,11,-63,154,221,36,-1064,1962,1280,2006,-8209,9750,-998,21189,-53534,71420,
-		    -2,10,-68,147,215,2,-1137,1919,1131,1692,-8491,9863,-2122,19478,-55178,70590,
-		    -3,9,-73,139,208,-29,-1210,1870,970,1388,-8755,9935,-3300,17799,-56778,69679,
-		    -3,8,-79,132,200,-57,-1283,1817,794,1095,-8998,9966,-4533,16155,-58333,68692,
-		    -4,7,-85,125,189,-83,-1356,1759,605,814,-9219,9959,-5818,14548,-59838,67629,
-		    -4,7,-91,117,177,-106,-1428,1698,402,545,-9416,9916,-7154,12980,-61289,66494,
-		    -5,6,-97,111,163,-127,-1498,1634,185,288,-9585,9838,-8540,11455,-62684,65290
-	    };
+		-1,24,-35,202,222,347,-581,2080,1952,4425,-5879,7640,5288,33791,-41176,74856,
+		-1,21,-38,196,225,294,-645,2087,1893,4063,-6237,8092,4561,31947,-43006,74630,
+		-1,19,-41,190,227,244,-711,2085,1822,3705,-6589,8492,3776,30112,-44821,74313,
+		-1,17,-45,183,228,197,-779,2075,1739,3351,-6935,8840,2935,28289,-46617,73908,
+		-1,16,-49,176,228,153,-848,2057,1644,3004,-7271,9139,2037,26482,-48390,73415,
+		-2,14,-53,169,227,111,-919,2032,1535,2663,-7597,9389,1082,24694,-50137,72835,
+		-2,13,-58,161,224,72,-991,2001,1414,2330,-7910,9592,70,22929,-51853,72169,
+		-2,11,-63,154,221,36,-1064,1962,1280,2006,-8209,9750,-998,21189,-53534,71420,
+		-2,10,-68,147,215,2,-1137,1919,1131,1692,-8491,9863,-2122,19478,-55178,70590,
+		-3,9,-73,139,208,-29,-1210,1870,970,1388,-8755,9935,-3300,17799,-56778,69679,
+		-3,8,-79,132,200,-57,-1283,1817,794,1095,-8998,9966,-4533,16155,-58333,68692,
+		-4,7,-85,125,189,-83,-1356,1759,605,814,-9219,9959,-5818,14548,-59838,67629,
+		-4,7,-91,117,177,-106,-1428,1698,402,545,-9416,9916,-7154,12980,-61289,66494,
+		-5,6,-97,111,163,-127,-1498,1634,185,288,-9585,9838,-8540,11455,-62684,65290
+	};
 	float *zlin = lins + 15*64;
 	const float *w = g_win;
 	zlin[4*15]     = xl[18*16];

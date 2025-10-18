@@ -10,6 +10,7 @@
 #include "font.h"
 #include "fill_player_data.h"
 #include "main_menu.h"
+#include "menu_types.h"
 
 static int initGL(GLFWwindow** window, int fullscreen);
 static int clean(StateInfo* stateInfo);
@@ -53,7 +54,6 @@ int main ( int argc, char *argv[] )
 	stateInfo.localGameInfo = &localGameInfo;
 	stateInfo.globalGameInfo = &globalGameInfo;
 	stateInfo.keyStates = &keyStates;
-	stateInfo.menuInfo = &menuInfo;
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
 
@@ -70,7 +70,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	result = initMainMenu(&stateInfo);
+	result = initMainMenu(&stateInfo, &menuInfo);
 	if(result != 0) {
 		printf("Could not init main menu. Exiting.");
 		return -1;
@@ -95,7 +95,7 @@ int main ( int argc, char *argv[] )
 	// draw loading screen before loading all the player meshes which will take time
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-	drawLoadingScreen(&stateInfo);
+	drawLoadingScreen(&stateInfo, &menuInfo);
 	draw(&stateInfo, window, 1.0);
 
 	result = initGameScreen(&stateInfo);
@@ -151,10 +151,10 @@ static int update(StateInfo* stateInfo, GLFWwindow* window)
 	updateSound(stateInfo);
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
-		updateGameScreen(stateInfo);
+		updateGameScreen(stateInfo, &menuInfo);
 		break;
 	case MAIN_MENU:
-		updateMainMenu(stateInfo);
+		updateMainMenu(stateInfo, &menuInfo, &keyStates, &globalGameInfo);
 		break;
 	default:
 		return 1;
@@ -170,7 +170,7 @@ static void draw(StateInfo* stateInfo, GLFWwindow* window, double alpha)
 		drawGameScreen(stateInfo, alpha);
 		break;
 	case MAIN_MENU:
-		drawMainMenu(stateInfo, alpha);
+		drawMainMenu(stateInfo, &menuInfo, alpha);
 		break;
 	}
 
