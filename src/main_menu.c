@@ -32,6 +32,13 @@ typedef struct {
 	int team1_control;
 	int team2_control;
 	int inningsInPeriod;
+	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team_1_choices[2][5];
+	int team_2_choices[2][5];
+	int choiceCounter;
+	int choiceCount;
 } MenuData;
 
 static MenuData menuData;
@@ -161,14 +168,14 @@ static int cupGame;
 // static int team1_control; /* MOVED TO MenuData */
 // static int team2_control; /* MOVED TO MenuData */
 // static int inningsInPeriod; /* MOVED TO MenuData */
-static int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-static int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-static int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+// static int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
+// static int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
+// static int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
 
-static int team_1_choices[2][5];
-static int team_2_choices[2][5];
-static int choiceCounter;
-static int choiceCount;
+// static int team_1_choices[2][5]; /* MOVED TO MenuData */
+// static int team_2_choices[2][5]; /* MOVED TO MenuData */
+// static int choiceCounter; /* MOVED TO MenuData */
+// static int choiceCount; /* MOVED TO MenuData */
 
 static int leftReady;
 static int rightReady;
@@ -631,16 +638,16 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					menuData.rem = 13;
 					menuData.mark = 0;
 					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-						team1_batting_order[i] = batting_order[i];
-						batting_order[i] = i;
+						menuData.team1_batting_order[i] = menuData.batting_order[i];
+						menuData.batting_order[i] = i;
 					}
 				} else {
 					if(menuData.mark == 0) {
 						menuData.mark = menuData.pointer;
 					} else {
-						int temp = batting_order[menuData.pointer-1];
-						batting_order[menuData.pointer-1] = batting_order[menuData.mark-1];
-						batting_order[menuData.mark-1] = temp;
+						int temp = menuData.batting_order[menuData.pointer-1];
+						menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
+						menuData.batting_order[menuData.mark-1] = temp;
 						menuData.mark = 0;
 					}
 				}
@@ -671,8 +678,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					int i;
 					menuData.rem = 2;
 					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-						team2_batting_order[i] = batting_order[i];
-						batting_order[i] = i;
+						menuData.team2_batting_order[i] = menuData.batting_order[i];
+						menuData.batting_order[i] = i;
 					}
 					if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
 						menuData.stage = 4;
@@ -685,9 +692,9 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					if(menuData.mark == 0) {
 						menuData.mark = menuData.pointer;
 					} else {
-						int temp = batting_order[menuData.pointer-1];
-						batting_order[menuData.pointer-1] = batting_order[menuData.mark-1];
-						batting_order[menuData.mark-1] = temp;
+						int temp = menuData.batting_order[menuData.pointer-1];
+						menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
+						menuData.batting_order[menuData.mark-1] = temp;
 						menuData.mark = 0;
 					}
 				}
@@ -900,76 +907,76 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			int team = stateInfo->globalGameInfo->teams[0].value - 1;
 			int currentIndex = 0;
 			for(i = 0; i < 2; i++) {
-				for(j = 0; j < choiceCount/2; j++) {
-					team_1_choices[i][j] = -1;
+				for(j = 0; j < menuData.choiceCount/2; j++) {
+					menuData.team_1_choices[i][j] = -1;
 				}
 			}
 			// first we select batters for ai. we select ones that have high power
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == choiceCount/2) break;
+					if(currentIndex == menuData.choiceCount/2) break;
 					if(power == 5-counter) {
-						team_1_choices[0][currentIndex] = i;
+						menuData.team_1_choices[0][currentIndex] = i;
 						currentIndex++;
 					}
 				}
-				if(currentIndex == choiceCount/2) break;
+				if(currentIndex == menuData.choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
+			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
 			counter = 0;
 			currentIndex = 0;
 			// and from players that are left we select runners. we select ones that have high speed
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == choiceCount/2) break;
+					if(currentIndex == menuData.choiceCount/2) break;
 					if(speed == 5-counter) {
 						int indexValid = 1;
-						for(j = 0; j < choiceCount/2; j++) {
-							if(team_1_choices[0][j] == i) indexValid = 0;
+						for(j = 0; j < menuData.choiceCount/2; j++) {
+							if(menuData.team_1_choices[0][j] == i) indexValid = 0;
 						}
 						if(indexValid == 1) {
-							team_1_choices[1][currentIndex] = i;
+							menuData.team_1_choices[1][currentIndex] = i;
 							currentIndex++;
 						}
 					}
 				}
-				if(currentIndex == choiceCount/2) break;
+				if(currentIndex == menuData.choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
+			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
 
 			menuData.stage = 7;
 		} else {
 			if(keyStates->released[menuData.team1_control][KEY_1]) {
-				if(choiceCounter != 0) {
-					team_1_choices[(choiceCounter-1)/(choiceCount/2)][(choiceCounter-1)%(choiceCount/2)] = -1;
-					choiceCounter--;
+				if(menuData.choiceCounter != 0) {
+					menuData.team_1_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
+					menuData.choiceCounter--;
 				}
 			}
 			if(keyStates->released[menuData.team1_control][KEY_2]) {
 				if(menuData.pointer == 0) {
-					if(choiceCounter >= choiceCount) {
+					if(menuData.choiceCounter >= menuData.choiceCount) {
 						menuData.stage = 7;
 						menuData.pointer = 1;
-						choiceCounter = 0;
+						menuData.choiceCounter = 0;
 					}
 				} else {
-					if(choiceCounter < choiceCount) {
+					if(menuData.choiceCounter < menuData.choiceCount) {
 						int valid = 1;
 						int i, j;
 						for(i = 0; i < 2; i++) {
-							for(j = 0; j < choiceCount/2; j++) {
-								if(menuData.pointer == team_1_choices[i][j] + 1) {
+							for(j = 0; j < menuData.choiceCount/2; j++) {
+								if(menuData.pointer == menuData.team_1_choices[i][j] + 1) {
 									valid = 0;
 								}
 							}
 						}
 						if(valid == 1) {
-							team_1_choices[choiceCounter/(choiceCount/2)][choiceCounter%(choiceCount/2)] = menuData.pointer - 1;
-							choiceCounter++;
+							menuData.team_1_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
+							menuData.choiceCounter++;
 						}
 					}
 				}
@@ -992,8 +999,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			int team = stateInfo->globalGameInfo->teams[1].value - 1;
 			int currentIndex = 0;
 			for(i = 0; i < 2; i++) {
-				for(j = 0; j < choiceCount/2; j++) {
-					team_2_choices[i][j] = -1;
+				for(j = 0; j < menuData.choiceCount/2; j++) {
+					menuData.team_2_choices[i][j] = -1;
 				}
 			}
 
@@ -1001,69 +1008,69 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == choiceCount/2) break;
+					if(currentIndex == menuData.choiceCount/2) break;
 					if(power == 5-counter) {
-						team_2_choices[0][currentIndex] = i;
+						menuData.team_2_choices[0][currentIndex] = i;
 						currentIndex++;
 					}
 				}
-				if(currentIndex == choiceCount/2) break;
+				if(currentIndex == menuData.choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.\n");
+			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
 			counter = 0;
 			currentIndex = 0;
 			while(counter < 5) {
 				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == choiceCount/2) break;
+					if(currentIndex == menuData.choiceCount/2) break;
 					if(speed == 5-counter) {
 						int indexValid = 1;
-						for(j = 0; j < choiceCount/2; j++) {
-							if(team_2_choices[0][j] == i) indexValid = 0;
+						for(j = 0; j < menuData.choiceCount/2; j++) {
+							if(menuData.team_2_choices[0][j] == i) indexValid = 0;
 						}
 						if(indexValid == 1) {
-							team_2_choices[1][currentIndex] = i;
+							menuData.team_2_choices[1][currentIndex] = i;
 							currentIndex++;
 						}
 					}
 				}
-				if(currentIndex == choiceCount/2) break;
+				if(currentIndex == menuData.choiceCount/2) break;
 				counter++;
 			}
-			if(currentIndex != choiceCount/2) printf("weird stats for players. should exit or pray.\n");
+			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
 
 			moveToGame(stateInfo);
 		} else {
 			if(keyStates->released[menuData.team2_control][KEY_1]) {
-				if(choiceCounter != 0) {
-					team_2_choices[(choiceCounter-1)/(choiceCount/2)][(choiceCounter-1)%(choiceCount/2)] = -1;
-					choiceCounter--;
+				if(menuData.choiceCounter != 0) {
+					menuData.team_2_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
+					menuData.choiceCounter--;
 				} else {
-					choiceCounter = choiceCount;
+					menuData.choiceCounter = menuData.choiceCount;
 					menuData.stage = 6;
 					menuData.pointer = 0;
 				}
 			}
 			if(keyStates->released[menuData.team2_control][KEY_2]) {
 				if(menuData.pointer == 0) {
-					if(choiceCounter >= choiceCount) {
+					if(menuData.choiceCounter >= menuData.choiceCount) {
 						moveToGame(stateInfo);
 					}
 				} else {
-					if(choiceCounter < choiceCount) {
+					if(menuData.choiceCounter < menuData.choiceCount) {
 						int valid = 1;
 						int i, j;
 						for(i = 0; i < 2; i++) {
-							for(j = 0; j < choiceCount/2; j++) {
-								if(menuData.pointer == team_2_choices[i][j] + 1) {
+							for(j = 0; j < menuData.choiceCount/2; j++) {
+								if(menuData.pointer == menuData.team_2_choices[i][j] + 1) {
 									valid = 0;
 								}
 							}
 						}
 						if(valid == 1) {
-							team_2_choices[choiceCounter/(choiceCount/2)][choiceCounter%(choiceCount/2)] = menuData.pointer - 1;
-							choiceCounter++;
+							menuData.team_2_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
+							menuData.choiceCounter++;
 						}
 					}
 				}
@@ -1557,8 +1564,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 			for(j = 0; j < 5; j++) {
 				char str[2];
 				int choice;
-				if(menuData.stage == 6) choice = team_1_choices[i][j];
-				else choice = team_2_choices[i][j];
+				if(menuData.stage == 6) choice = menuData.team_1_choices[i][j];
+				else choice = menuData.team_2_choices[i][j];
 				str[0] = (char)(((int)'0')+j+1);
 				if(choice != -1) {
 					printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
@@ -2009,7 +2016,7 @@ static void drawPlayerList(StateInfo* stateInfo)
 			} else {
 				str[0] = 'J';
 			}
-			index = batting_order[i];
+			index = menuData.batting_order[i];
 		} else {
 			if(i < PLAYERS_IN_TEAM) {
 				str[0] = (char)(((int)'0')+i+1);
@@ -2050,9 +2057,9 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 	glDisable(GL_LIGHTING);
 	if(menuInfo->mode == MENU_ENTRY_NORMAL) {
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			team1_batting_order[i] = i;
-			team2_batting_order[i] = i;
-			batting_order[i] = i;
+			menuData.team1_batting_order[i] = i;
+			menuData.team2_batting_order[i] = i;
+			menuData.batting_order[i] = i;
 		}
 		menuData.mark = 0;
 		menuData.stage_1_state = 0;
@@ -2083,9 +2090,9 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		menuData.pointer = 0;
 		menuData.rem = 13;
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			team1_batting_order[i] = i;
-			team2_batting_order[i] = i;
-			batting_order[i] = i;
+			menuData.team1_batting_order[i] = i;
+			menuData.team2_batting_order[i] = i;
+			menuData.batting_order[i] = i;
 		}
 	}
 	// after second period
@@ -2094,9 +2101,9 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		menuData.pointer = 0;
 		menuData.rem = 13;
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			team1_batting_order[i] = i;
-			team2_batting_order[i] = i;
-			batting_order[i] = i;
+			menuData.team1_batting_order[i] = i;
+			menuData.team2_batting_order[i] = i;
+			menuData.batting_order[i] = i;
 		}
 		initHutunkeitto(stateInfo);
 	}
@@ -2108,15 +2115,15 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		menuData.rem = 13;
 		for(i = 0; i < 2; i++) {
 			for(j = 0; j < 5; j++) {
-				team_1_choices[i][j] = -1;
-				team_2_choices[i][j] = -1;
+				menuData.team_1_choices[i][j] = -1;
+				menuData.team_2_choices[i][j] = -1;
 			}
 		}
 		if(stateInfo->globalGameInfo->period == 4) {
-			choiceCount = 10;
-		} else choiceCount = 6;
+			menuData.choiceCount = 10;
+		} else menuData.choiceCount = 6;
 
-		choiceCounter = 0;
+		menuData.choiceCounter = 0;
 	}
 	// game over state
 	else if(menuInfo->mode == MENU_ENTRY_GAME_OVER) {
@@ -2185,25 +2192,25 @@ static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, Men
 	if(menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
 		int i, j;
 		for(i = 0; i < 2; i++) {
-			for(j = 0; j < choiceCount/2; j++) {
-				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = team_1_choices[i][j];
-				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = team_2_choices[i][j];
+			for(j = 0; j < menuData.choiceCount/2; j++) {
+				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData.team_1_choices[i][j];
+				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData.team_2_choices[i][j];
 			}
 			if(stateInfo->globalGameInfo->period > 4) {
-				for(j = choiceCount/2; j < 5; j++) {
+				for(j = menuData.choiceCount/2; j < 5; j++) {
 					stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = -1;
 					stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = -1;
 				}
 			}
 		}
-		stateInfo->globalGameInfo->pairCount = choiceCount / 2;
+		stateInfo->globalGameInfo->pairCount = menuData.choiceCount / 2;
 		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
 	} else {
 		// if homerun batting contest is not coming, we just set batterOrder settings normally.
 		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
 		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
-		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, team1_batting_order, sizeof(batting_order));
-		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, team2_batting_order, sizeof(batting_order));
+		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, menuData.team1_batting_order, sizeof(menuData.batting_order));
+		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, menuData.team2_batting_order, sizeof(menuData.batting_order));
 	}
 
 	menuInfo->mode = MENU_ENTRY_NORMAL;
