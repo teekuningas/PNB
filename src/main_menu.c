@@ -17,6 +17,7 @@ typedef struct {
 	int stage;
 	int pointer;
 	int rem;
+	int mark;
 } MenuData;
 
 static MenuData menuData;
@@ -131,7 +132,7 @@ static int cupGame;
 // static int stage; /* MOVED TO MenuData */
 // static int pointer; /* MOVED TO MenuData */
 // static int rem; /* MOVED TO MenuData */
-static int mark;
+// static int mark; /* MOVED TO MenuData */
 static int stage_1_state;
 static int stage_4_state;
 static int stage_8_state;
@@ -614,19 +615,19 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					int i;
 					menuData.stage = 3;
 					menuData.rem = 13;
-					mark = 0;
+					menuData.mark = 0;
 					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 						team1_batting_order[i] = batting_order[i];
 						batting_order[i] = i;
 					}
 				} else {
-					if(mark == 0) {
-						mark = menuData.pointer;
+					if(menuData.mark == 0) {
+						menuData.mark = menuData.pointer;
 					} else {
 						int temp = batting_order[menuData.pointer-1];
-						batting_order[menuData.pointer-1] = batting_order[mark-1];
-						batting_order[mark-1] = temp;
-						mark = 0;
+						batting_order[menuData.pointer-1] = batting_order[menuData.mark-1];
+						batting_order[menuData.mark-1] = temp;
+						menuData.mark = 0;
 					}
 				}
 			}
@@ -667,13 +668,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 						moveToGame(stateInfo, globalGameInfo, menuInfo);
 					}
 				} else {
-					if(mark == 0) {
-						mark = menuData.pointer;
+					if(menuData.mark == 0) {
+						menuData.mark = menuData.pointer;
 					} else {
 						int temp = batting_order[menuData.pointer-1];
-						batting_order[menuData.pointer-1] = batting_order[mark-1];
-						batting_order[mark-1] = temp;
-						mark = 0;
+						batting_order[menuData.pointer-1] = batting_order[menuData.mark-1];
+						batting_order[menuData.mark-1] = temp;
+						menuData.mark = 0;
 					}
 				}
 			}
@@ -1433,10 +1434,10 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		glCallList(planeDisplayList);
 		glPopMatrix();
 
-		if(mark != 0) {
+		if(menuData.mark != 0) {
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
-			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
+			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
 			glCallList(planeDisplayList);
 			glPopMatrix();
@@ -2039,7 +2040,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 			team2_batting_order[i] = i;
 			batting_order[i] = i;
 		}
-		mark = 0;
+		menuData.mark = 0;
 		stage_1_state = 0;
 		inningsInPeriod = 0;
 		stage_9_state = 0;
