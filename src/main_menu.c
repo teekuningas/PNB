@@ -16,6 +16,7 @@
 typedef struct {
 	int stage;
 	int pointer;
+	int rem;
 } MenuData;
 
 static MenuData menuData;
@@ -128,8 +129,8 @@ static CupInfo saveData[5];
 static int cupGame;
 
 // static int stage; /* MOVED TO MenuData */
-// static int menuData.pointer; /* MOVED TO MenuData */
-static int rem;
+// static int pointer; /* MOVED TO MenuData */
+// static int rem; /* MOVED TO MenuData */
 static int mark;
 static int stage_1_state;
 static int stage_4_state;
@@ -450,21 +451,21 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 
 		if(keyStates->released[0][KEY_DOWN]) {
 			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+rem)%rem;
+			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 		}
 		if(keyStates->released[0][KEY_UP]) {
 			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+rem)%rem;
+			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 		}
 		if(keyStates->released[0][KEY_2]) {
 			if(menuData.pointer == 0) {
 				menuData.stage = 1;
-				rem = stateInfo->numTeams;
+				menuData.rem = stateInfo->numTeams;
 				menuData.pointer = DEFAULT_TEAM_1;
 			} else if(menuData.pointer == 1) {
 				menuData.stage = 8;
 				stage_8_state = 0;
-				rem = 2;
+				menuData.rem = 2;
 				menuData.pointer = 0;
 			} else if(menuData.pointer == 2) {
 				menuData.stage = 9;
@@ -477,7 +478,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		if(stage_1_state == 0) {
 			if(keyStates->released[0][KEY_1]) {
 				menuData.stage = 0;
-				rem = 4;
+				menuData.rem = 4;
 				menuData.pointer = 0;
 
 			}
@@ -485,68 +486,68 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				stage_1_state = 1;
 				team1 = menuData.pointer;
 				menuData.pointer = DEFAULT_CONTROLLED_1;
-				rem = 3;
+				menuData.rem = 3;
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		} else if(stage_1_state == 1) {
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 0;
 				menuData.pointer = 0;
-				rem = stateInfo->numTeams;
+				menuData.rem = stateInfo->numTeams;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
 				stage_1_state = 2;
 				team1_control = menuData.pointer;
 				menuData.pointer = DEFAULT_TEAM_2;
-				rem = stateInfo->numTeams;
+				menuData.rem = stateInfo->numTeams;
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 
 		} else if(stage_1_state == 2) {
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 1;
-				rem = 3;
+				menuData.rem = 3;
 				menuData.pointer = 0;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
 				stage_1_state = 3;
 				team2 = menuData.pointer;
-				rem = 3;
+				menuData.rem = 3;
 				menuData.pointer = DEFAULT_CONTROLLED_2;
 				if(menuData.pointer == team1_control) {
 					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 
 		} else if(stage_1_state == 3) {
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 2;
-				rem = stateInfo->numTeams;
+				menuData.rem = stateInfo->numTeams;
 				menuData.pointer = 0;
 
 			}
@@ -554,33 +555,33 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				stage_1_state = 4;
 				team2_control = menuData.pointer;
 				menuData.pointer = 1;
-				rem = 3;
+				menuData.rem = 3;
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				if(menuData.pointer == team1_control) {
 					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				if(menuData.pointer == team1_control) {
 					menuData.pointer--;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			}
 
 		} else if(stage_1_state == 4) {
 			if(keyStates->released[0][KEY_1]) {
 				stage_1_state = 3;
-				rem = 3;
+				menuData.rem = 3;
 				menuData.pointer = 0;
 				if(menuData.pointer == team1_control) {
 					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			}
 			if(keyStates->released[0][KEY_2]) {
@@ -591,15 +592,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				else if(menuData.pointer == 2) inningsInPeriod = 8;
 
 				menuData.pointer = 0;
-				rem = 13;
+				menuData.rem = 13;
 			}
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		}
 	}
@@ -612,7 +613,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				if(menuData.pointer == 0) {
 					int i;
 					menuData.stage = 3;
-					rem = 13;
+					menuData.rem = 13;
 					mark = 0;
 					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 						team1_batting_order[i] = batting_order[i];
@@ -631,11 +632,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			}
 			if(keyStates->released[team1_control][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[team1_control][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		}
 	}
@@ -645,7 +646,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
 				menuData.stage = 4;
 				menuData.pointer = 0;
-				rem = 2;
+				menuData.rem = 2;
 			} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
 				moveToGame(stateInfo, globalGameInfo, menuInfo);
 			}
@@ -653,7 +654,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			if(keyStates->released[team2_control][KEY_2]) {
 				if(menuData.pointer == 0) {
 					int i;
-					rem = 2;
+					menuData.rem = 2;
 					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 						team2_batting_order[i] = batting_order[i];
 						batting_order[i] = i;
@@ -661,7 +662,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
 						menuData.stage = 4;
 						menuData.pointer = 0;
-						rem = 2;
+						menuData.rem = 2;
 					} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
 						moveToGame(stateInfo, globalGameInfo, menuInfo);
 					}
@@ -678,11 +679,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			}
 			if(keyStates->released[team2_control][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[team2_control][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		}
 	}
@@ -809,11 +810,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				}
 				if(keyStates->released[control][KEY_RIGHT]) {
 					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[control][KEY_LEFT]) {
 					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			} else {
 				// ai always selects to field first
@@ -960,11 +961,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			}
 			if(keyStates->released[team1_control][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[team1_control][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		}
 	}
@@ -1054,11 +1055,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			}
 			if(keyStates->released[team2_control][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[team2_control][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 		}
 	}
@@ -1067,78 +1068,78 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		if(stage_8_state == 0) {
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_2]) {
 				if(menuData.pointer == 0) {
 					stage_8_state = 1;
 					stage_8_state_1_level = 0;
-					rem = stateInfo->numTeams;
+					menuData.rem = stateInfo->numTeams;
 					menuData.pointer = 0;
 				} else if(menuData.pointer == 1) {
 					stage_8_state = 5;
-					rem = 5;
+					menuData.rem = 5;
 					menuData.pointer = 0;
 				}
 			}
 			if(keyStates->released[0][KEY_1]) {
 				menuData.stage = 0;
 				menuData.pointer = 1;
-				rem = 4;
+				menuData.rem = 4;
 			}
 		} else if(stage_8_state == 1) {
 			if(stage_8_state_1_level == 0) {
 				if(keyStates->released[0][KEY_DOWN]) {
 					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_UP]) {
 					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_2]) {
 					stage_8_state_1_level = 1;
 					teamSelection = menuData.pointer;
 					menuData.pointer = 0;
-					rem = 2;
+					menuData.rem = 2;
 				}
 				if(keyStates->released[0][KEY_1]) {
 					menuData.pointer = 0;
-					rem = 2;
+					menuData.rem = 2;
 					stage_8_state = 0;
 				}
 			} else if(stage_8_state_1_level == 1) {
 				if(keyStates->released[0][KEY_DOWN]) {
 					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_UP]) {
 					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_2]) {
 					cupInfo.gameStructure = menuData.pointer;
 					stage_8_state_1_level = 2;
 					menuData.pointer = 0;
-					rem = 3;
+					menuData.rem = 3;
 				}
 				if(keyStates->released[0][KEY_1]) {
 					menuData.pointer = 0;
-					rem = stateInfo->numTeams;
+					menuData.rem = stateInfo->numTeams;
 					stage_8_state_1_level = 0;
 				}
 			} else if(stage_8_state_1_level == 2) {
 				if(keyStates->released[0][KEY_DOWN]) {
 					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_UP]) {
 					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+rem)%rem;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 				if(keyStates->released[0][KEY_2]) {
 					int i;
@@ -1176,23 +1177,23 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 
 					stage_8_state = 2;
 					menuData.pointer = 0;
-					rem = 5;
+					menuData.rem = 5;
 
 				}
 				if(keyStates->released[0][KEY_1]) {
 					menuData.pointer = 0;
-					rem = 2;
+					menuData.rem = 2;
 					stage_8_state_1_level = 1;
 				}
 			}
 		} else if(stage_8_state == 2) {
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_2]) {
 				if(menuData.pointer == 0) {
@@ -1222,7 +1223,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					if(userTeamIndex != -1) {
 						menuData.stage = 2;
 						menuData.pointer = 0;
-						rem = 13;
+						menuData.rem = 13;
 						if(userPosition == 0) {
 							team1 = userTeamIndex;
 							team2 = opponentTeamIndex;
@@ -1248,11 +1249,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				} else if(menuData.pointer == 3) {
 					stage_8_state = 6;
 					menuData.pointer = 0;
-					rem = 5;
+					menuData.rem = 5;
 				} else if(menuData.pointer == 4) {
 					menuData.stage = 0;
 					menuData.pointer = 0;
-					rem = 4;
+					menuData.rem = 4;
 				}
 
 			}
@@ -1267,16 +1268,16 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			// load
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_1]) {
 				stage_8_state = 0;
 				menuData.pointer = 1;
-				rem = 2;
+				menuData.rem = 2;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
@@ -1284,23 +1285,23 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					loadCup(stateInfo, menuData.pointer);
 					stage_8_state = 2;
 					menuData.pointer = 0;
-					rem = 5;
+					menuData.rem = 5;
 				}
 			}
 		} else if(stage_8_state == 6) {
 			// save
 			if(keyStates->released[0][KEY_DOWN]) {
 				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_UP]) {
 				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+rem)%rem;
+				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 			if(keyStates->released[0][KEY_1]) {
 				stage_8_state = 2;
 				menuData.pointer = 2;
-				rem = 5;
+				menuData.rem = 5;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
@@ -2048,13 +2049,13 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		team2_control = 0;
 		// after cupGame when initializing menu we go to cup menu, otherwise to main menu.
 		if(cupGame != 1) {
-			rem = 4;
+			menuData.rem = 4;
 			menuData.pointer = 0;
 			menuData.stage = 0;
 			stage_8_state = 0;
 		} else {
 			menuData.stage = 8;
-			rem = 5;
+			menuData.rem = 5;
 			menuData.pointer = 0;
 			stage_8_state = 2;
 		}
@@ -2065,7 +2066,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 	else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
 		menuData.stage = 2;
 		menuData.pointer = 0;
-		rem = 13;
+		menuData.rem = 13;
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			team1_batting_order[i] = i;
 			team2_batting_order[i] = i;
@@ -2076,7 +2077,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 	else if(menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
 		menuData.stage = 2;
 		menuData.pointer = 0;
-		rem = 13;
+		menuData.rem = 13;
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			team1_batting_order[i] = i;
 			team2_batting_order[i] = i;
@@ -2089,7 +2090,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		int i, j;
 		menuData.stage = 6;
 		menuData.pointer = 1;
-		rem = 13;
+		menuData.rem = 13;
 		for(i = 0; i < 2; i++) {
 			for(j = 0; j < 5; j++) {
 				team_1_choices[i][j] = -1;
