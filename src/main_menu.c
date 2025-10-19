@@ -18,6 +18,8 @@ typedef struct {
 	int pointer;
 	int rem;
 	int mark;
+	int stage_1_state;
+	int stage_4_state;
 } MenuData;
 
 static MenuData menuData;
@@ -133,8 +135,8 @@ static int cupGame;
 // static int pointer; /* MOVED TO MenuData */
 // static int rem; /* MOVED TO MenuData */
 // static int mark; /* MOVED TO MenuData */
-static int stage_1_state;
-static int stage_4_state;
+// static int stage_1_state; /* MOVED TO MenuData */
+// static int stage_4_state; /* MOVED TO MenuData */
 static int stage_8_state;
 static int stage_9_state;
 static int stage_8_state_1_level;
@@ -476,7 +478,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	}
 	// play mode, team and control selections
 	else if(menuData.stage == 1) {
-		if(stage_1_state == 0) {
+		if(menuData.stage_1_state == 0) {
 			if(keyStates->released[0][KEY_1]) {
 				menuData.stage = 0;
 				menuData.rem = 4;
@@ -484,7 +486,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				stage_1_state = 1;
+				menuData.stage_1_state = 1;
 				team1 = menuData.pointer;
 				menuData.pointer = DEFAULT_CONTROLLED_1;
 				menuData.rem = 3;
@@ -497,15 +499,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuData.pointer -=1;
 				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
-		} else if(stage_1_state == 1) {
+		} else if(menuData.stage_1_state == 1) {
 			if(keyStates->released[0][KEY_1]) {
-				stage_1_state = 0;
+				menuData.stage_1_state = 0;
 				menuData.pointer = 0;
 				menuData.rem = stateInfo->numTeams;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				stage_1_state = 2;
+				menuData.stage_1_state = 2;
 				team1_control = menuData.pointer;
 				menuData.pointer = DEFAULT_TEAM_2;
 				menuData.rem = stateInfo->numTeams;
@@ -519,15 +521,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 
-		} else if(stage_1_state == 2) {
+		} else if(menuData.stage_1_state == 2) {
 			if(keyStates->released[0][KEY_1]) {
-				stage_1_state = 1;
+				menuData.stage_1_state = 1;
 				menuData.rem = 3;
 				menuData.pointer = 0;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				stage_1_state = 3;
+				menuData.stage_1_state = 3;
 				team2 = menuData.pointer;
 				menuData.rem = 3;
 				menuData.pointer = DEFAULT_CONTROLLED_2;
@@ -545,15 +547,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 			}
 
-		} else if(stage_1_state == 3) {
+		} else if(menuData.stage_1_state == 3) {
 			if(keyStates->released[0][KEY_1]) {
-				stage_1_state = 2;
+				menuData.stage_1_state = 2;
 				menuData.rem = stateInfo->numTeams;
 				menuData.pointer = 0;
 
 			}
 			if(keyStates->released[0][KEY_2]) {
-				stage_1_state = 4;
+				menuData.stage_1_state = 4;
 				team2_control = menuData.pointer;
 				menuData.pointer = 1;
 				menuData.rem = 3;
@@ -575,9 +577,9 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				}
 			}
 
-		} else if(stage_1_state == 4) {
+		} else if(menuData.stage_1_state == 4) {
 			if(keyStates->released[0][KEY_1]) {
-				stage_1_state = 3;
+				menuData.stage_1_state = 3;
 				menuData.rem = 3;
 				menuData.pointer = 0;
 				if(menuData.pointer == team1_control) {
@@ -691,26 +693,26 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	// hutunkeitto
 	else if(menuData.stage == 4) {
 		// update timers
-		if(stage_4_state == 0 && updatingCanStart == 1) {
+		if(menuData.stage_4_state == 0 && updatingCanStart == 1) {
 			batTimerLimit = 30 + rand()%15;
 			batTimer = 0;
-			stage_4_state = 1;
-		} else if(stage_4_state == 1) {
+			menuData.stage_4_state = 1;
+		} else if(menuData.stage_4_state == 1) {
 			batTimer+=1;
 			batHeight = BAT_DEFAULT_HEIGHT + batTimer*BAT_DROP_MOVING_SPEED;
 			if(batTimer > batTimerLimit) {
-				stage_4_state = 2;
+				menuData.stage_4_state = 2;
 				batTimerCount = batTimer;
 				batTimer = 0;
 			}
-		} else if(stage_4_state == 2) {
+		} else if(menuData.stage_4_state == 2) {
 			rightHandPosition = 0.0f;
 			rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
 			leftHandPosition = 0.0f;
 			leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
-			stage_4_state = 3;
+			menuData.stage_4_state = 3;
 
-		} else if(stage_4_state == 3) {
+		} else if(menuData.stage_4_state == 3) {
 			if(team1_control != 2) {
 				if(keyStates->down[team1_control][KEY_UP]) {
 					if(leftScaleCount < SCALE_LIMIT) {
@@ -746,16 +748,16 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				rightReady = 1;
 			}
 			if(leftReady == 1 && rightReady == 1) {
-				stage_4_state = 4;
+				menuData.stage_4_state = 4;
 			}
-		} else if(stage_4_state == 4) {
+		} else if(menuData.stage_4_state == 4) {
 			float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*rightScaleCount)) / 2;// sum of boths heights divided by two
 			batTimer += 1;
 			batHeight = BAT_DEFAULT_HEIGHT + batTimerCount*BAT_DROP_MOVING_SPEED + batTimer*BAT_MOVING_SPEED;
 			if(turnCount%2 == 0) {
 				if(rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
 					if(batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-						stage_4_state = 5;
+						menuData.stage_4_state = 5;
 						batTimer = 0;
 					} else {
 						turnCount += 1;
@@ -768,7 +770,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			} else if(turnCount%2 == 1) {
 				if(leftHandHeight < tempLeftHeight - turnHeight) {
 					if(batHeight - BAT_HEIGHT_CONSTANT > tempLeftHeight - turnHeight) {
-						stage_4_state = 5;
+						menuData.stage_4_state = 5;
 						batTimer = 0;
 					} else {
 						turnCount += 1;
@@ -778,11 +780,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					rightHandHeight += BAT_MOVING_SPEED;
 				}
 			}
-		} else if(stage_4_state == 5) {
+		} else if(menuData.stage_4_state == 5) {
 			if(batTimer < 50) {
 				batTimer += 1;
 			} else {
-				stage_4_state = 6;
+				menuData.stage_4_state = 6;
 			}
 			if(turnCount%2 == 0) {
 				batPosition = -batTimer*MOVING_AWAY_SPEED;
@@ -794,7 +796,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			handsZ = 1.0f - batTimer*MOVING_AWAY_SPEED/2;
 		}
 		// finally all that messy stuff is over and we just decide the winner
-		else if(stage_4_state == 6) {
+		else if(menuData.stage_4_state == 6) {
 			int control;
 			if(turnCount%2 == 0) {
 				control = team1_control;
@@ -1408,11 +1410,11 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 
 		glBindTexture(GL_TEXTURE_2D, arrowTexture);
 		glPushMatrix();
-		if(stage_1_state == 0 || stage_1_state == 1) {
+		if(menuData.stage_1_state == 0 || menuData.stage_1_state == 1) {
 			glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-		} else if(stage_1_state == 2 || stage_1_state == 3) {
+		} else if(menuData.stage_1_state == 2 || menuData.stage_1_state == 3) {
 			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-		} else if(stage_1_state == 4) {
+		} else if(menuData.stage_1_state == 4) {
 			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
 		}
 		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
@@ -1509,7 +1511,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		glDisable(GL_LIGHTING);
 		glDisable(GL_DEPTH_TEST);
 
-		if(stage_4_state == 6) {
+		if(menuData.stage_4_state == 6) {
 			drawHutunkeitto(stateInfo);
 			// arrow
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
@@ -1866,21 +1868,21 @@ static void drawSelection(StateInfo* stateInfo)
 {
 	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
 
-	if(stage_1_state == 0) {
+	if(menuData.stage_1_state == 0) {
 		int i;
 		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
 		for(i = 0; i < stateInfo->numTeams; i++) {
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
-	} else if(stage_1_state == 1) {
+	} else if(menuData.stage_1_state == 1) {
 		printText("Controlled by", 13, -0.5f, SELECTION_TEAM_TEXT_HEIGHT, 3);
 		printText("Pad 1", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT, 2);
 		printText("Pad 2", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
 	}
 
-	else if(stage_1_state == 2) {
+	else if(menuData.stage_1_state == 2) {
 		int i;
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
@@ -1888,13 +1890,13 @@ static void drawSelection(StateInfo* stateInfo)
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
-	} else if(stage_1_state == 3) {
+	} else if(menuData.stage_1_state == 3) {
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Controlled by", 13, -0.05f, SELECTION_TEAM_TEXT_HEIGHT, 3);
 		printText("Pad 1", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT, 2);
 		printText("Pad 2", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	} else if(stage_1_state == 4) {
+	} else if(menuData.stage_1_state == 4) {
 		printText("select number of innings", 24, -0.45f, -0.25f, 3);
 		printText("1", 1, -0.05f, SELECTION_ALT_1_HEIGHT, 3);
 		printText("2", 1, -0.05f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 3);
@@ -2041,7 +2043,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 			batting_order[i] = i;
 		}
 		menuData.mark = 0;
-		stage_1_state = 0;
+		menuData.stage_1_state = 0;
 		inningsInPeriod = 0;
 		stage_9_state = 0;
 		team1 = 0;
@@ -2118,7 +2120,7 @@ static void initHutunkeitto(StateInfo* stateInfo)
 	batTimer = 0;
 	batTimerLimit = 0;
 	batTimerCount = 0;
-	stage_4_state = 0;
+	menuData.stage_4_state = 0;
 	updatingCanStart = 0;
 	batHeight = BAT_DEFAULT_HEIGHT;
 	batPosition = 0.0f;
