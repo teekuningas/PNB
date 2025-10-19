@@ -12,71 +12,7 @@
 #include "common_logic.h"
 #include "save.h"
 #include "menu_types.h"
-
-typedef enum {
-	MENU_STAGE_FRONT,
-	MENU_STAGE_TEAM_SELECTION,
-	MENU_STAGE_BATTING_ORDER_1,
-	MENU_STAGE_BATTING_ORDER_2,
-	MENU_STAGE_HUTUNKEITTO,
-	MENU_STAGE_GAME_OVER,
-	MENU_STAGE_HOMERUN_CONTEST_1,
-	MENU_STAGE_HOMERUN_CONTEST_2,
-	MENU_STAGE_CUP,
-	MENU_STAGE_HELP
-} MenuStage;
-
-typedef enum {
-	TEAM_SELECTION_STAGE_TEAM_1,
-	TEAM_SELECTION_STAGE_CONTROL_1,
-	TEAM_SELECTION_STAGE_TEAM_2,
-	TEAM_SELECTION_STAGE_CONTROL_2,
-	TEAM_SELECTION_STAGE_INNINGS
-} TeamSelectionStage;
-
-typedef struct {
-	MenuStage stage;
-	int pointer;
-	int rem;
-	int mark;
-	TeamSelectionStage stage_1_state;
-	int stage_4_state;
-	int stage_8_state;
-	int stage_9_state;
-	int stage_8_state_1_level;
-	int batTimer;
-	int batTimerLimit;
-	int batTimerCount;
-	int updatingCanStart;
-	int team1;
-	int team2;
-	int team1_control;
-	int team2_control;
-	int inningsInPeriod;
-	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team_1_choices[2][5];
-	int team_2_choices[2][5];
-	int choiceCounter;
-	int choiceCount;
-	int leftReady;
-	int rightReady;
-	int turnCount;
-	float batHeight;
-	float batPosition;
-	float leftHandHeight;
-	float leftHandPosition;
-	float rightHandHeight;
-	float rightHandPosition;
-	float tempLeftHeight;
-	float handsZ;
-	float refereeHandHeight;
-	int leftScaleCount;
-	int rightScaleCount;
-	int playsFirst;
-	int teamSelection;
-} MenuData;
+#include "team_selection_menu.h"
 
 static MenuData menuData;
 
@@ -88,8 +24,6 @@ static MenuData menuData;
 #define ARROW_SMALLER_SCALE 0.03f
 #define FIGURE_SCALE 0.4f
 #define FRONT_ARROW_POS 0.15f
-#define SELECTION_ARROW_LEFT -0.05f
-#define SELECTION_ARROW_RIGHT 0.4f
 #define PLAYER_LIST_ARROW_CONTINUE_POS 0.35f
 #define PLAYER_LIST_ARROW_POS 0.42f
 
@@ -107,11 +41,6 @@ static MenuData menuData;
 #define SELECTION_CUP_ARROW_LEFT 0.2f
 #define SELECTION_CUP_MENU_OFFSET 0.1f
 
-#define SELECTION_TEXT_LEFT -0.35f
-#define SELECTION_TEXT_RIGHT 0.1f
-#define SELECTION_ALT_1_HEIGHT -0.1f
-#define SELECTION_ALT_OFFSET 0.06f
-#define SELECTION_TEAM_TEXT_HEIGHT -0.2f
 #define PLAYER_LIST_TEAM_TEXT_HEIGHT -0.4f
 #define PLAYER_LIST_TEAM_TEXT_POS -0.1f
 #define PLAYER_LIST_INFO_HEIGHT -0.3f
@@ -123,10 +52,8 @@ static MenuData menuData;
 #define PLAYER_LIST_NUMBER_OFFSET 0.1f
 #define PLAYER_LIST_CONTINUE_HEIGHT 0.45f
 
-#define DEFAULT_CONTROLLED_1 0
-#define DEFAULT_CONTROLLED_2 2
 #define DEFAULT_TEAM_1 0
-#define DEFAULT_TEAM_2 1
+#define SELECTION_ALT_OFFSET 0.06f
 
 #define BAT_DEFAULT_HEIGHT -1.0f
 #define LEFT_HAND_DEFAULT_HEIGHT 0.1f
@@ -144,7 +71,6 @@ static MenuData menuData;
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
 
-static GLuint arrowTexture;
 static GLuint catcherTexture;
 static GLuint batterTexture;
 static GLuint slotTexture;
@@ -159,7 +85,6 @@ static GLuint team7Texture;
 static GLuint team8Texture;
 
 static MeshObject* planeMesh;
-static GLuint planeDisplayList;
 
 static MeshObject* handMesh;
 static GLuint handDisplayList;
@@ -172,7 +97,6 @@ static float lightPos[4];
 
 static void loadMenuScreenSettings();
 static void drawFront();
-static void drawSelection();
 static void drawGameOverTexts();
 static void drawPlayerList();
 static void drawHutunkeitto();
@@ -183,58 +107,11 @@ static void drawLoadingTexts();
 static void initHutunkeitto();
 static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
 static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
-static void updateTeamSelectionMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
-static void drawTeamSelectionMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 
 static CupInfo cupInfo;
 static CupInfo saveData[5];
 
 static int cupGame;
-
-// static int stage; /* MOVED TO MenuData */
-// static int pointer; /* MOVED TO MenuData */
-// static int rem; /* MOVED TO MenuData */
-// static int mark; /* MOVED TO MenuData */
-// static int stage_1_state; /* MOVED TO MenuData */
-// static int stage_4_state; /* MOVED TO MenuData */
-// static int stage_8_state; /* MOVED TO MenuData */
-// static int stage_9_state; /* MOVED TO MenuData */
-// static int stage_8_state_1_level; /* MOVED TO MenuData */
-// static int batTimer; /* MOVED TO MenuData */
-// static int batTimerLimit; /* MOVED TO MenuData */
-// static int batTimerCount; /* MOVED TO MenuData */
-// static int updatingCanStart; /* MOVED TO MenuData */
-// static int team1; /* MOVED TO MenuData */
-// static int team2; /* MOVED TO MenuData */
-// static int team1_control; /* MOVED TO MenuData */
-// static int team2_control; /* MOVED TO MenuData */
-// static int inningsInPeriod; /* MOVED TO MenuData */
-// static int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
-// static int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
-// static int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT]; /* MOVED TO MenuData */
-
-// static int team_1_choices[2][5]; /* MOVED TO MenuData */
-// static int team_2_choices[2][5]; /* MOVED TO MenuData */
-// static int choiceCounter; /* MOVED TO MenuData */
-// static int choiceCount; /* MOVED TO MenuData */
-
-// static int leftReady; /* MOVED TO MenuData */
-// static int rightReady; /* MOVED TO MenuData */
-// static int turnCount; /* MOVED TO MenuData */
-// static float batHeight; /* MOVED TO MenuData */
-// static float batPosition; /* MOVED TO MenuData */
-// static float leftHandHeight; /* MOVED TO MenuData */
-// static float leftHandPosition; /* MOVED TO MenuData */
-// static float rightHandHeight; /* MOVED TO MenuData */
-// static float rightHandPosition; /* MOVED TO MenuData */
-// static float tempLeftHeight; /* MOVED TO MenuData */
-// static float handsZ; /* MOVED TO MenuData */
-// static float refereeHandHeight; /* MOVED TO MenuData */
-// static int leftScaleCount; /* MOVED TO MenuData */
-// static int rightScaleCount; /* MOVED TO MenuData */
-// static int playsFirst; /* MOVED TO MenuData */
-
-
 
 typedef struct _TreeCoordinates {
 	float x;
@@ -438,7 +315,7 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 	look.y = 0.0f;
 	look.z = 0.0f;
 
-	if(tryLoadingTextureGL(&arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
 	if(tryLoadingTextureGL(&catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
 	if(tryLoadingTextureGL(&batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
 	if(tryLoadingTextureGL(&slotTexture, "data/textures/cup_tree_slot.tga", "slot") != 0) return -1;
@@ -452,7 +329,7 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 	if(tryLoadingTextureGL(&team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
 	if(tryLoadingTextureGL(&team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &menuData.planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
@@ -532,167 +409,34 @@ static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha
 {
 	drawFontBackground();
 	// arrow
-	glBindTexture(GL_TEXTURE_2D, arrowTexture);
+	glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 	glPushMatrix();
 	if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
 	else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
 	else if(menuData.pointer == 2) glTranslatef(FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
 	else glTranslatef(FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
 	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-	glCallList(planeDisplayList);
+	glCallList(menuData.planeDisplayList);
 	glPopMatrix();
 	// catcher
 	glBindTexture(GL_TEXTURE_2D, catcherTexture);
 	glPushMatrix();
 	glTranslatef(0.7f, 1.0f, 0.0f);
 	glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-	glCallList(planeDisplayList);
+	glCallList(menuData.planeDisplayList);
 	glPopMatrix();
 	// batter
 	glBindTexture(GL_TEXTURE_2D, batterTexture);
 	glPushMatrix();
 	glTranslatef(-0.6f, 1.0f, 0.0f);
 	glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-	glCallList(planeDisplayList);
+	glCallList(menuData.planeDisplayList);
 	glPopMatrix();
 	drawFront(stateInfo);
 }
 
 
-static void updateTeamSelectionMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
-{
-	switch(menuData.stage_1_state) {
-	case TEAM_SELECTION_STAGE_TEAM_1:
-		if(keyStates->released[0][KEY_1]) {
-			menuData.stage = MENU_STAGE_FRONT;
-			menuData.rem = 4;
-			menuData.pointer = 0;
 
-		}
-		if(keyStates->released[0][KEY_2]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_CONTROL_1;
-			menuData.team1 = menuData.pointer;
-			menuData.pointer = DEFAULT_CONTROLLED_1;
-			menuData.rem = 3;
-		}
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		break;
-	case TEAM_SELECTION_STAGE_CONTROL_1:
-		if(keyStates->released[0][KEY_1]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_TEAM_1;
-			menuData.pointer = 0;
-			menuData.rem = stateInfo->numTeams;
-
-		}
-		if(keyStates->released[0][KEY_2]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_TEAM_2;
-			menuData.team1_control = menuData.pointer;
-			menuData.pointer = DEFAULT_TEAM_2;
-			menuData.rem = stateInfo->numTeams;
-		}
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		break;
-	case TEAM_SELECTION_STAGE_TEAM_2:
-		if(keyStates->released[0][KEY_1]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_CONTROL_1;
-			menuData.rem = 3;
-			menuData.pointer = 0;
-
-		}
-		if(keyStates->released[0][KEY_2]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_CONTROL_2;
-			menuData.team2 = menuData.pointer;
-			menuData.rem = 3;
-			menuData.pointer = DEFAULT_CONTROLLED_2;
-			if(menuData.pointer == menuData.team1_control) {
-				menuData.pointer++;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		break;
-	case TEAM_SELECTION_STAGE_CONTROL_2:
-		if(keyStates->released[0][KEY_1]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_TEAM_2;
-			menuData.rem = stateInfo->numTeams;
-			menuData.pointer = 0;
-
-		}
-		if(keyStates->released[0][KEY_2]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_INNINGS;
-			menuData.team2_control = menuData.pointer;
-			menuData.pointer = 1;
-			menuData.rem = 3;
-		}
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			if(menuData.pointer == menuData.team1_control) {
-				menuData.pointer++;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			if(menuData.pointer == menuData.team1_control) {
-				menuData.pointer--;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-		break;
-	case TEAM_SELECTION_STAGE_INNINGS:
-		if(keyStates->released[0][KEY_1]) {
-			menuData.stage_1_state = TEAM_SELECTION_STAGE_CONTROL_2;
-			menuData.rem = 3;
-			menuData.pointer = 0;
-			if(menuData.pointer == menuData.team1_control) {
-				menuData.pointer++;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-		if(keyStates->released[0][KEY_2]) {
-			menuData.stage = MENU_STAGE_BATTING_ORDER_1;
-			cupGame = 0;
-			if(menuData.pointer == 0) menuData.inningsInPeriod = 2;
-			else if(menuData.pointer == 1) menuData.inningsInPeriod = 4;
-			else if(menuData.pointer == 2) menuData.inningsInPeriod = 8;
-
-			menuData.pointer = 0;
-			menuData.rem = 13;
-		}
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		break;
-	}
-}
 
 void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
 
@@ -708,7 +452,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		updateFrontMenu(stateInfo, menuInfo, keyStates, globalGameInfo);
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
-		updateTeamSelectionMenu(stateInfo, menuInfo, keyStates, globalGameInfo);
+		updateTeamSelectionMenu(&menuData, stateInfo, menuInfo, keyStates, globalGameInfo);
 		break;
 	default:
 		// batting order for team 1
@@ -1479,24 +1223,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	}
 }
 
-static void drawTeamSelectionMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
-{
-	drawFontBackground();
 
-	glBindTexture(GL_TEXTURE_2D, arrowTexture);
-	glPushMatrix();
-	if(menuData.stage_1_state == TEAM_SELECTION_STAGE_TEAM_1 || menuData.stage_1_state == TEAM_SELECTION_STAGE_CONTROL_1) {
-		glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-	} else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_TEAM_2 || menuData.stage_1_state == TEAM_SELECTION_STAGE_CONTROL_2) {
-		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-	} else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_INNINGS) {
-		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-	}
-	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-	glCallList(planeDisplayList);
-	glPopMatrix();
-	drawSelection(stateInfo);
-}
 
 // here we draw everything.
 // directly we draw ugly stuff like images of players or hand or bat models etc.
@@ -1509,12 +1236,12 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		drawFrontMenu(stateInfo, menuInfo, alpha);
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
-		drawTeamSelectionMenu(stateInfo, menuInfo, alpha);
+		drawTeamSelectionMenu(&menuData, stateInfo, menuInfo, alpha);
 		break;
 	default:
 		if((menuData.stage == MENU_STAGE_BATTING_ORDER_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_BATTING_ORDER_2 && menuData.team2_control != 2)) {
 			drawFontBackground();
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);
+			glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 			glPushMatrix();
 			if(menuData.pointer == 0) {
 				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
@@ -1523,15 +1250,15 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
 			}
-			glCallList(planeDisplayList);
+			glCallList(menuData.planeDisplayList);
 			glPopMatrix();
 
 			if(menuData.mark != 0) {
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
 				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			}
 			drawPlayerList(stateInfo);
@@ -1604,12 +1331,12 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 			if(menuData.stage_4_state == 6) {
 				drawHutunkeitto(stateInfo);
 				// arrow
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				if(menuData.pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
 				else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
 				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			}
 		} else if(menuData.stage == MENU_STAGE_GAME_OVER) {
@@ -1618,7 +1345,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		} else if((menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_HOMERUN_CONTEST_2 && menuData.team2_control != 2)) {
 			int i, j;
 			drawFontBackground();
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);
+			glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 			glPushMatrix();
 			if(menuData.pointer == 0) {
 				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
@@ -1628,7 +1355,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
 			}
 
-			glCallList(planeDisplayList);
+			glCallList(menuData.planeDisplayList);
 			glPopMatrix();
 
 			for(i = 0; i < 2; i++) {
@@ -1650,40 +1377,40 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 			drawFontBackground();
 			if(menuData.stage_8_state == 0) {
 				// arrow
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
 				else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
 				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 				// catcher
 				glBindTexture(GL_TEXTURE_2D, catcherTexture);
 				glPushMatrix();
 				glTranslatef(0.7f, 1.0f, 0.0f);
 				glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 				// batter
 				glBindTexture(GL_TEXTURE_2D, batterTexture);
 				glPushMatrix();
 				glTranslatef(-0.6f, 1.0f, 0.0f);
 				glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			} else if(menuData.stage_8_state == 1) {
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
 				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			} else if(menuData.stage_8_state == 2) {
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
 				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			} else if(menuData.stage_8_state == 3) {
 				int i;
@@ -1692,22 +1419,22 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 					glPushMatrix();
 					glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
 					glScalef(0.2f, 0.15f, 0.10f);
-					glCallList(planeDisplayList);
+					glCallList(menuData.planeDisplayList);
 					glPopMatrix();
 				}
 			} else if(menuData.stage_8_state == 5 || menuData.stage_8_state == 6) {
-				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
 				glPushMatrix();
 				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
 				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			} else if(menuData.stage_8_state == 7) {
 				glBindTexture(GL_TEXTURE_2D, trophyTexture);
 				glPushMatrix();
 				glTranslatef(0.0f, 1.0f, -0.25f);
 				glScalef(0.3f, 0.3f, 0.3f);
-				glCallList(planeDisplayList);
+				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			}
 			drawCup(stateInfo);
@@ -1956,45 +1683,7 @@ static void drawHelp(StateInfo* stateInfo)
 	}
 }
 
-static void drawSelection(StateInfo* stateInfo)
-{
-	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
 
-	if(menuData.stage_1_state == TEAM_SELECTION_STAGE_TEAM_1) {
-		int i;
-		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < stateInfo->numTeams; i++) {
-			char* str = stateInfo->teamData[i].name;
-			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
-		}
-	} else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_CONTROL_1) {
-		printText("Controlled by", 13, -0.5f, SELECTION_TEAM_TEXT_HEIGHT, 3);
-		printText("Pad 1", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT, 2);
-		printText("Pad 2", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
-		printText("AI", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	}
-
-	else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_TEAM_2) {
-		int i;
-		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
-		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < stateInfo->numTeams; i++) {
-			char* str = stateInfo->teamData[i].name;
-			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
-		}
-	} else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_CONTROL_2) {
-		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
-		printText("Controlled by", 13, -0.05f, SELECTION_TEAM_TEXT_HEIGHT, 3);
-		printText("Pad 1", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT, 2);
-		printText("Pad 2", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
-		printText("AI", 2, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	} else if(menuData.stage_1_state == TEAM_SELECTION_STAGE_INNINGS) {
-		printText("select number of innings", 24, -0.45f, -0.25f, 3);
-		printText("1", 1, -0.05f, SELECTION_ALT_1_HEIGHT, 3);
-		printText("2", 1, -0.05f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 3);
-		printText("4", 1, -0.05f, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 3);
-	}
-}
 
 static void calculateRuns(char* par1, char* par2, char* par3, char* par4, int runs1, int runs2)
 {

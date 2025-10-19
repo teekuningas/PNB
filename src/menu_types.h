@@ -1,6 +1,8 @@
 #ifndef MENU_TYPES_H
 #define MENU_TYPES_H
 
+#include "globals.h" // For PLAYERS_IN_TEAM, JOKER_COUNT, etc.
+
 // Describes the reason the menu is being entered, usually from the game screen.
 // This determines the menu's starting screen.
 typedef enum {
@@ -14,5 +16,72 @@ typedef enum {
 typedef struct _MenuInfo {
 	MenuMode mode;
 } MenuInfo;
+
+typedef enum {
+	MENU_STAGE_FRONT,
+	MENU_STAGE_TEAM_SELECTION,
+	MENU_STAGE_BATTING_ORDER_1,
+	MENU_STAGE_BATTING_ORDER_2,
+	MENU_STAGE_HUTUNKEITTO,
+	MENU_STAGE_GAME_OVER,
+	MENU_STAGE_HOMERUN_CONTEST_1,
+	MENU_STAGE_HOMERUN_CONTEST_2,
+	MENU_STAGE_CUP,
+	MENU_STAGE_HELP
+} MenuStage;
+
+typedef enum {
+	TEAM_SELECTION_STAGE_TEAM_1,
+	TEAM_SELECTION_STAGE_CONTROL_1,
+	TEAM_SELECTION_STAGE_TEAM_2,
+	TEAM_SELECTION_STAGE_CONTROL_2,
+	TEAM_SELECTION_STAGE_INNINGS
+} TeamSelectionStage;
+
+typedef struct MenuData {
+	MenuStage stage;
+	int pointer;
+	int rem;
+	int mark;
+	TeamSelectionStage stage_1_state;
+	int stage_4_state;
+	int stage_8_state;
+	int stage_9_state;
+	int stage_8_state_1_level;
+	int batTimer;
+	int batTimerLimit;
+	int batTimerCount;
+	int updatingCanStart;
+	int team1;
+	int team2;
+	int team1_control;
+	int team2_control;
+	int inningsInPeriod;
+	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team_1_choices[2][5];
+	int team_2_choices[2][5];
+	int choiceCounter;
+	int choiceCount;
+	int leftReady;
+	int rightReady;
+	int turnCount;
+	float batHeight;
+	float batPosition;
+	float leftHandHeight;
+	float leftHandPosition;
+	float rightHandHeight;
+	float rightHandPosition;
+	float tempLeftHeight;
+	float handsZ;
+	float refereeHandHeight;
+	int leftScaleCount;
+	int rightScaleCount;
+	int playsFirst;
+	int teamSelection;
+	GLuint arrowTexture;
+	GLuint planeDisplayList;
+} MenuData;
 
 #endif /* MENU_TYPES_H */
