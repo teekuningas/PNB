@@ -172,6 +172,8 @@ static void drawHelp();
 static void moveToGame();
 static void drawLoadingTexts();
 static void initHutunkeitto();
+static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
+static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 
 static CupInfo cupInfo;
 static CupInfo saveData[5];
@@ -490,6 +492,62 @@ void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 	drawLoadingTexts(stateInfo);
 }
 
+static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
+{
+	if(keyStates->released[0][KEY_DOWN]) {
+		menuData.pointer +=1;
+		menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+	}
+	if(keyStates->released[0][KEY_UP]) {
+		menuData.pointer -=1;
+		menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+	}
+	if(keyStates->released[0][KEY_2]) {
+		if(menuData.pointer == 0) {
+			menuData.stage = MENU_STAGE_TEAM_SELECTION;
+			menuData.rem = stateInfo->numTeams;
+			menuData.pointer = DEFAULT_TEAM_1;
+		} else if(menuData.pointer == 1) {
+			menuData.stage = MENU_STAGE_CUP;
+			menuData.stage_8_state = 0;
+			menuData.rem = 2;
+			menuData.pointer = 0;
+		} else if(menuData.pointer == 2) {
+			menuData.stage = MENU_STAGE_HELP;
+		} else if(menuData.pointer == 3) stateInfo->screen = -1;
+	}
+}
+
+static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
+{
+	drawFontBackground();
+	// arrow
+	glBindTexture(GL_TEXTURE_2D, arrowTexture);
+	glPushMatrix();
+	if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
+	else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
+	else if(menuData.pointer == 2) glTranslatef(FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
+	else glTranslatef(FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
+	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+	glCallList(planeDisplayList);
+	glPopMatrix();
+	// catcher
+	glBindTexture(GL_TEXTURE_2D, catcherTexture);
+	glPushMatrix();
+	glTranslatef(0.7f, 1.0f, 0.0f);
+	glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
+	glCallList(planeDisplayList);
+	glPopMatrix();
+	// batter
+	glBindTexture(GL_TEXTURE_2D, batterTexture);
+	glPushMatrix();
+	glTranslatef(-0.6f, 1.0f, 0.0f);
+	glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
+	glCallList(planeDisplayList);
+	glPopMatrix();
+	drawFront(stateInfo);
+}
+
 void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
 
 {
@@ -499,692 +557,25 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		loadMenuScreenSettings(stateInfo, menuInfo);
 	}
 	// main main menu.
-	if(menuData.stage == MENU_STAGE_FRONT) {
-
-		if(keyStates->released[0][KEY_DOWN]) {
-			menuData.pointer +=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_UP]) {
-			menuData.pointer -=1;
-			menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-		}
-		if(keyStates->released[0][KEY_2]) {
-			if(menuData.pointer == 0) {
-				menuData.stage = MENU_STAGE_TEAM_SELECTION;
-				menuData.rem = stateInfo->numTeams;
-				menuData.pointer = DEFAULT_TEAM_1;
-			} else if(menuData.pointer == 1) {
-				menuData.stage = MENU_STAGE_CUP;
-				menuData.stage_8_state = 0;
-				menuData.rem = 2;
-				menuData.pointer = 0;
-			} else if(menuData.pointer == 2) {
-				menuData.stage = MENU_STAGE_HELP;
-			} else if(menuData.pointer == 3) stateInfo->screen = -1;
-		}
-
-	}
-	// play mode, team and control selections
-	else if(menuData.stage == MENU_STAGE_TEAM_SELECTION) {
-		if(menuData.stage_1_state == 0) {
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage = MENU_STAGE_FRONT;
-				menuData.rem = 4;
-				menuData.pointer = 0;
-
-			}
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_1_state = 1;
-				menuData.team1 = menuData.pointer;
-				menuData.pointer = DEFAULT_CONTROLLED_1;
-				menuData.rem = 3;
-			}
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		} else if(menuData.stage_1_state == 1) {
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_1_state = 0;
-				menuData.pointer = 0;
-				menuData.rem = stateInfo->numTeams;
-
-			}
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_1_state = 2;
-				menuData.team1_control = menuData.pointer;
-				menuData.pointer = DEFAULT_TEAM_2;
-				menuData.rem = stateInfo->numTeams;
-			}
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-
-		} else if(menuData.stage_1_state == 2) {
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_1_state = 1;
-				menuData.rem = 3;
-				menuData.pointer = 0;
-
-			}
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_1_state = 3;
-				menuData.team2 = menuData.pointer;
-				menuData.rem = 3;
-				menuData.pointer = DEFAULT_CONTROLLED_2;
-				if(menuData.pointer == menuData.team1_control) {
-					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			}
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-
-		} else if(menuData.stage_1_state == 3) {
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_1_state = 2;
-				menuData.rem = stateInfo->numTeams;
-				menuData.pointer = 0;
-
-			}
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_1_state = 4;
-				menuData.team2_control = menuData.pointer;
-				menuData.pointer = 1;
-				menuData.rem = 3;
-			}
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				if(menuData.pointer == menuData.team1_control) {
-					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				if(menuData.pointer == menuData.team1_control) {
-					menuData.pointer--;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			}
-
-		} else if(menuData.stage_1_state == 4) {
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_1_state = 3;
-				menuData.rem = 3;
-				menuData.pointer = 0;
-				if(menuData.pointer == menuData.team1_control) {
-					menuData.pointer++;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			}
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage = MENU_STAGE_BATTING_ORDER_1;
-				cupGame = 0;
-				if(menuData.pointer == 0) menuData.inningsInPeriod = 2;
-				else if(menuData.pointer == 1) menuData.inningsInPeriod = 4;
-				else if(menuData.pointer == 2) menuData.inningsInPeriod = 8;
-
-				menuData.pointer = 0;
-				menuData.rem = 13;
-			}
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-	}
-	// batting order for team 1
-	else if(menuData.stage == MENU_STAGE_BATTING_ORDER_1) {
-		if(menuData.team1_control == 2) {
-			menuData.stage = MENU_STAGE_BATTING_ORDER_2;
-		} else {
-			if(keyStates->released[menuData.team1_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					int i;
-					menuData.stage = MENU_STAGE_BATTING_ORDER_2;
-					menuData.rem = 13;
-					menuData.mark = 0;
-					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-						menuData.team1_batting_order[i] = menuData.batting_order[i];
-						menuData.batting_order[i] = i;
-					}
-				} else {
-					if(menuData.mark == 0) {
-						menuData.mark = menuData.pointer;
-					} else {
-						int temp = menuData.batting_order[menuData.pointer-1];
-						menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
-						menuData.batting_order[menuData.mark-1] = temp;
-						menuData.mark = 0;
-					}
-				}
-			}
-			if(keyStates->released[menuData.team1_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team1_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-	}
-	// batting order for team 2
-	else if(menuData.stage == MENU_STAGE_BATTING_ORDER_2) {
-		if(menuData.team2_control == 2) {
-			if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-				menuData.stage = MENU_STAGE_HUTUNKEITTO;
-				menuData.pointer = 0;
-				menuData.rem = 2;
-			} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
-				moveToGame(stateInfo, globalGameInfo, menuInfo);
-			}
-		} else {
-			if(keyStates->released[menuData.team2_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					int i;
-					menuData.rem = 2;
-					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-						menuData.team2_batting_order[i] = menuData.batting_order[i];
-						menuData.batting_order[i] = i;
-					}
-					if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-						menuData.stage = MENU_STAGE_HUTUNKEITTO;
-						menuData.pointer = 0;
-						menuData.rem = 2;
-					} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
-						moveToGame(stateInfo, globalGameInfo, menuInfo);
-					}
-				} else {
-					if(menuData.mark == 0) {
-						menuData.mark = menuData.pointer;
-					} else {
-						int temp = menuData.batting_order[menuData.pointer-1];
-						menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
-						menuData.batting_order[menuData.mark-1] = temp;
-						menuData.mark = 0;
-					}
-				}
-			}
-			if(keyStates->released[menuData.team2_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team2_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-	}
-	// hutunkeitto
-	else if(menuData.stage == MENU_STAGE_HUTUNKEITTO) {
-		// update timers
-		if(menuData.stage_4_state == 0 && menuData.updatingCanStart == 1) {
-			menuData.batTimerLimit = 30 + rand()%15;
-			menuData.batTimer = 0;
-			menuData.stage_4_state = 1;
-		} else if(menuData.stage_4_state == 1) {
-			menuData.batTimer+=1;
-			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimer*BAT_DROP_MOVING_SPEED;
-			if(menuData.batTimer > menuData.batTimerLimit) {
-				menuData.stage_4_state = 2;
-				menuData.batTimerCount = menuData.batTimer;
-				menuData.batTimer = 0;
-			}
-		} else if(menuData.stage_4_state == 2) {
-			menuData.rightHandPosition = 0.0f;
-			menuData.rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
-			menuData.leftHandPosition = 0.0f;
-			menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
-			menuData.stage_4_state = 3;
-
-		} else if(menuData.stage_4_state == 3) {
-			if(menuData.team1_control != 2) {
-				if(keyStates->down[menuData.team1_control][KEY_UP]) {
-					if(menuData.leftScaleCount < SCALE_LIMIT) {
-						menuData.leftScaleCount += 1;
-					}
-				} else if(keyStates->down[menuData.team1_control][KEY_DOWN]) {
-					if(menuData.leftScaleCount > -SCALE_LIMIT) {
-						menuData.leftScaleCount -= 1;
-					}
-				}
-				if(keyStates->released[menuData.team1_control][KEY_2]) {
-					menuData.leftReady = 1;
-				}
-			} else {
-				menuData.leftReady = 1;
-			}
-			if(menuData.team2_control != 2) {
-				if(keyStates->down[menuData.team2_control][KEY_UP]) {
-					if(menuData.rightScaleCount < SCALE_LIMIT) {
-						menuData.rightScaleCount += 1;
-						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
-					}
-				} else if(keyStates->down[menuData.team2_control][KEY_DOWN]) {
-					if(menuData.rightScaleCount > -SCALE_LIMIT) {
-						menuData.rightScaleCount -= 1;
-						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
-					}
-				}
-				if(keyStates->released[menuData.team2_control][KEY_2]) {
-					menuData.rightReady = 1;
-				}
-			} else {
-				menuData.rightReady = 1;
-			}
-			if(menuData.leftReady == 1 && menuData.rightReady == 1) {
-				menuData.stage_4_state = 4;
-			}
-		} else if(menuData.stage_4_state == 4) {
-			float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.rightScaleCount)) / 2;// sum of boths heights divided by two
-			menuData.batTimer += 1;
-			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimerCount*BAT_DROP_MOVING_SPEED + menuData.batTimer*BAT_MOVING_SPEED;
-			if(menuData.turnCount%2 == 0) {
-				if(menuData.rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-						menuData.stage_4_state = 5;
-						menuData.batTimer = 0;
-					} else {
-						menuData.turnCount += 1;
-						menuData.tempLeftHeight = menuData.leftHandHeight;
-					}
-				} else {
-					menuData.leftHandHeight += BAT_MOVING_SPEED;
-					menuData.rightHandHeight -= BAT_MOVING_SPEED;
-				}
-			} else if(menuData.turnCount%2 == 1) {
-				if(menuData.leftHandHeight < menuData.tempLeftHeight - turnHeight) {
-					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > menuData.tempLeftHeight - turnHeight) {
-						menuData.stage_4_state = 5;
-						menuData.batTimer = 0;
-					} else {
-						menuData.turnCount += 1;
-					}
-				} else {
-					menuData.leftHandHeight -= BAT_MOVING_SPEED;
-					menuData.rightHandHeight += BAT_MOVING_SPEED;
-				}
-			}
-		} else if(menuData.stage_4_state == 5) {
-			if(menuData.batTimer < 50) {
-				menuData.batTimer += 1;
-			} else {
-				menuData.stage_4_state = 6;
-			}
-			if(menuData.turnCount%2 == 0) {
-				menuData.batPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-				menuData.leftHandPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-			} else if(menuData.turnCount%2 == 1) {
-				menuData.batPosition = menuData.batTimer*MOVING_AWAY_SPEED;
-				menuData.rightHandPosition = menuData.batTimer*MOVING_AWAY_SPEED;
-			}
-			menuData.handsZ = 1.0f - menuData.batTimer*MOVING_AWAY_SPEED/2;
-		}
-		// finally all that messy stuff is over and we just decide the winner
-		else if(menuData.stage_4_state == 6) {
-			int control;
-			if(menuData.turnCount%2 == 0) {
-				control = menuData.team1_control;
-			} else control = menuData.team2_control;
-			if(control != 2) {
-				if(keyStates->released[control][KEY_2]) {
-					if(menuData.pointer == 0) {
-						menuData.playsFirst = 0;
-					} else {
-						menuData.playsFirst = 1;
-					}
-
-					moveToGame(stateInfo);
-				}
-				if(keyStates->released[control][KEY_RIGHT]) {
-					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-				if(keyStates->released[control][KEY_LEFT]) {
-					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			} else {
-				// ai always selects to field first
-				if(menuData.turnCount%2 == 0) menuData.playsFirst = 1;
-				else menuData.playsFirst = 0;
-				moveToGame(stateInfo);
-			}
-		}
-	}
-	// ending of match
-	else if(menuData.stage == MENU_STAGE_GAME_OVER) {
-		int flag = 0;
-		if(menuData.team1_control != 2) {
-			if(keyStates->released[menuData.team1_control][KEY_2]) {
-				flag = 1;
-			}
-		}
-		if(menuData.team2_control != 2) {
-			if(keyStates->released[menuData.team2_control][KEY_2]) {
-				flag = 1;
-			}
-		}
-		// here we must update cup trees and schedules if cup mode
-		if(flag == 1) {
-			menuInfo->mode = MENU_ENTRY_NORMAL;
-			loadMenuScreenSettings(stateInfo, menuInfo);
-
-			if(cupGame == 1) {
-				int i, j;
-				int scheduleSlot = -1;
-				int playerWon = 0;
-				for(i = 0; i < 4; i++) {
-					for(j = 0; j < 2; j++) {
-						if(cupInfo.schedule[i][j] == cupInfo.userTeamIndexInTree) {
-							scheduleSlot = i;
-							if( j == stateInfo->globalGameInfo->winner) playerWon = 1;
-						}
-					}
-				}
-				// if player won, we can advance to congratulations-screen if it was final decisive match of the cup
-				if(playerWon == 1) {
-					int advance = 0;
-					if(cupInfo.gameStructure == 0) {
-						if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 2) {
-							if(cupInfo.dayCount >= 11)
-								advance = 1;
-
-						}
-					} else if(cupInfo.gameStructure == 1) {
-						if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 0) {
-							if(cupInfo.dayCount >= 3)
-								advance = 1;
-						}
-					}
-					if(advance == 1) menuData.stage_8_state = 7;
-				}
-				// update cup and schedule.
-				updateCupTreeAfterDay(stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
-				updateSchedule(stateInfo);
-			}
-		}
-	}
-	// this stage is for homerun batting contest, team 1
-	else if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) {
-		if(menuData.team1_control == 2) {
-			int i, j;
-			int counter = 0;
-			int team = stateInfo->globalGameInfo->teams[0].value - 1;
-			int currentIndex = 0;
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < menuData.choiceCount/2; j++) {
-					menuData.team_1_choices[i][j] = -1;
-				}
-			}
-			// first we select batters for ai. we select ones that have high power
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(power == 5-counter) {
-						menuData.team_1_choices[0][currentIndex] = i;
-						currentIndex++;
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
-			counter = 0;
-			currentIndex = 0;
-			// and from players that are left we select runners. we select ones that have high speed
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(speed == 5-counter) {
-						int indexValid = 1;
-						for(j = 0; j < menuData.choiceCount/2; j++) {
-							if(menuData.team_1_choices[0][j] == i) indexValid = 0;
-						}
-						if(indexValid == 1) {
-							menuData.team_1_choices[1][currentIndex] = i;
-							currentIndex++;
-						}
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
-
-			menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
-		} else {
-			if(keyStates->released[menuData.team1_control][KEY_1]) {
-				if(menuData.choiceCounter != 0) {
-					menuData.team_1_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
-					menuData.choiceCounter--;
-				}
-			}
-			if(keyStates->released[menuData.team1_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					if(menuData.choiceCounter >= menuData.choiceCount) {
-						menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
-						menuData.pointer = 1;
-						menuData.choiceCounter = 0;
-					}
-				} else {
-					if(menuData.choiceCounter < menuData.choiceCount) {
-						int valid = 1;
-						int i, j;
-						for(i = 0; i < 2; i++) {
-							for(j = 0; j < menuData.choiceCount/2; j++) {
-								if(menuData.pointer == menuData.team_1_choices[i][j] + 1) {
-									valid = 0;
-								}
-							}
-						}
-						if(valid == 1) {
-							menuData.team_1_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
-							menuData.choiceCounter++;
-						}
-					}
-				}
-			}
-			if(keyStates->released[menuData.team1_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team1_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-	}
-	// works similarly as 6, just for other team. for sure there would have been a way to fuse these. didnt do it hah.
-	else if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_2) {
-		if(menuData.team2_control == 2) {
-			int i, j;
-			int counter = 0;
-			int team = stateInfo->globalGameInfo->teams[1].value - 1;
-			int currentIndex = 0;
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < menuData.choiceCount/2; j++) {
-					menuData.team_2_choices[i][j] = -1;
-				}
-			}
-
-
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(power == 5-counter) {
-						menuData.team_2_choices[0][currentIndex] = i;
-						currentIndex++;
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
-			counter = 0;
-			currentIndex = 0;
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(speed == 5-counter) {
-						int indexValid = 1;
-						for(j = 0; j < menuData.choiceCount/2; j++) {
-							if(menuData.team_2_choices[0][j] == i) indexValid = 0;
-						}
-						if(indexValid == 1) {
-							menuData.team_2_choices[1][currentIndex] = i;
-							currentIndex++;
-						}
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
-
-			moveToGame(stateInfo);
-		} else {
-			if(keyStates->released[menuData.team2_control][KEY_1]) {
-				if(menuData.choiceCounter != 0) {
-					menuData.team_2_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
-					menuData.choiceCounter--;
-				} else {
-					menuData.choiceCounter = menuData.choiceCount;
-					menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
-					menuData.pointer = 0;
-				}
-			}
-			if(keyStates->released[menuData.team2_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					if(menuData.choiceCounter >= menuData.choiceCount) {
-						moveToGame(stateInfo);
-					}
-				} else {
-					if(menuData.choiceCounter < menuData.choiceCount) {
-						int valid = 1;
-						int i, j;
-						for(i = 0; i < 2; i++) {
-							for(j = 0; j < menuData.choiceCount/2; j++) {
-								if(menuData.pointer == menuData.team_2_choices[i][j] + 1) {
-									valid = 0;
-								}
-							}
-						}
-						if(valid == 1) {
-							menuData.team_2_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
-							menuData.choiceCounter++;
-						}
-					}
-				}
-			}
-			if(keyStates->released[menuData.team2_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team2_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-		}
-	}
-	// cup mode
-	else if(menuData.stage == MENU_STAGE_CUP) {
-		if(menuData.stage_8_state == 0) {
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_2]) {
-				if(menuData.pointer == 0) {
-					menuData.stage_8_state = 1;
-					menuData.stage_8_state_1_level = 0;
-					menuData.rem = stateInfo->numTeams;
-					menuData.pointer = 0;
-				} else if(menuData.pointer == 1) {
-					menuData.stage_8_state = 5;
-					menuData.rem = 5;
-					menuData.pointer = 0;
-				}
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage = MENU_STAGE_FRONT;
-				menuData.pointer = 1;
-				menuData.rem = 4;
-			}
-		} else if(menuData.stage_8_state == 1) {
-			if(menuData.stage_8_state_1_level == 0) {
-				if(keyStates->released[0][KEY_DOWN]) {
-					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-				if(keyStates->released[0][KEY_UP]) {
-					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-				if(keyStates->released[0][KEY_2]) {
-					menuData.stage_8_state_1_level = 1;
-					teamSelection = menuData.pointer;
-					menuData.pointer = 0;
-					menuData.rem = 2;
-				}
+	switch(menuData.stage) {
+	case MENU_STAGE_FRONT:
+		updateFrontMenu(stateInfo, menuInfo, keyStates, globalGameInfo);
+		break;
+	default:
+		if(menuData.stage == MENU_STAGE_TEAM_SELECTION) {
+			if(menuData.stage_1_state == 0) {
 				if(keyStates->released[0][KEY_1]) {
+					menuData.stage = MENU_STAGE_FRONT;
+					menuData.rem = 4;
 					menuData.pointer = 0;
-					menuData.rem = 2;
-					menuData.stage_8_state = 0;
-				}
-			} else if(menuData.stage_8_state_1_level == 1) {
-				if(keyStates->released[0][KEY_DOWN]) {
-					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-				if(keyStates->released[0][KEY_UP]) {
-					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+
 				}
 				if(keyStates->released[0][KEY_2]) {
-					cupInfo.gameStructure = menuData.pointer;
-					menuData.stage_8_state_1_level = 2;
-					menuData.pointer = 0;
+					menuData.stage_1_state = 1;
+					menuData.team1 = menuData.pointer;
+					menuData.pointer = DEFAULT_CONTROLLED_1;
 					menuData.rem = 3;
 				}
-				if(keyStates->released[0][KEY_1]) {
-					menuData.pointer = 0;
-					menuData.rem = stateInfo->numTeams;
-					menuData.stage_8_state_1_level = 0;
-				}
-			} else if(menuData.stage_8_state_1_level == 2) {
 				if(keyStates->released[0][KEY_DOWN]) {
 					menuData.pointer +=1;
 					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
@@ -1193,232 +584,879 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					menuData.pointer -=1;
 					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
+			} else if(menuData.stage_1_state == 1) {
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_1_state = 0;
+					menuData.pointer = 0;
+					menuData.rem = stateInfo->numTeams;
+
+				}
 				if(keyStates->released[0][KEY_2]) {
-					int i;
+					menuData.stage_1_state = 2;
+					menuData.team1_control = menuData.pointer;
+					menuData.pointer = DEFAULT_TEAM_2;
+					menuData.rem = stateInfo->numTeams;
+				}
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
 
-					// fill the cupInfo-structure
+			} else if(menuData.stage_1_state == 2) {
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_1_state = 1;
+					menuData.rem = 3;
+					menuData.pointer = 0;
 
-					if(menuData.pointer == 0) cupInfo.inningCount = 2;
-					else if(menuData.pointer == 1) cupInfo.inningCount = 4;
-					else if(menuData.pointer == 2) cupInfo.inningCount = 8;
-
-					cupInfo.userTeamIndexInTree = 0;
-					cupInfo.winnerIndex = -1;
-					cupInfo.dayCount = 0;
-					for(i = 0; i < SLOT_COUNT; i++) {
-						cupInfo.cupTeamIndexTree[i] = -1;
+				}
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_1_state = 3;
+					menuData.team2 = menuData.pointer;
+					menuData.rem = 3;
+					menuData.pointer = DEFAULT_CONTROLLED_2;
+					if(menuData.pointer == menuData.team1_control) {
+						menuData.pointer++;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 					}
-					i = 0;
-					while(i < 8) {
-						int random = rand()%8;
-						if(cupInfo.cupTeamIndexTree[random] == -1) {
-							cupInfo.cupTeamIndexTree[random] = i;
-							if(i == teamSelection) {
-								cupInfo.userTeamIndexInTree = random;
-							}
-							i++;
+				}
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+
+			} else if(menuData.stage_1_state == 3) {
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_1_state = 2;
+					menuData.rem = stateInfo->numTeams;
+					menuData.pointer = 0;
+
+				}
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_1_state = 4;
+					menuData.team2_control = menuData.pointer;
+					menuData.pointer = 1;
+					menuData.rem = 3;
+				}
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					if(menuData.pointer == menuData.team1_control) {
+						menuData.pointer++;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					if(menuData.pointer == menuData.team1_control) {
+						menuData.pointer--;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+				}
+
+			} else if(menuData.stage_1_state == 4) {
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_1_state = 3;
+					menuData.rem = 3;
+					menuData.pointer = 0;
+					if(menuData.pointer == menuData.team1_control) {
+						menuData.pointer++;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+				}
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage = MENU_STAGE_BATTING_ORDER_1;
+					cupGame = 0;
+					if(menuData.pointer == 0) menuData.inningsInPeriod = 2;
+					else if(menuData.pointer == 1) menuData.inningsInPeriod = 4;
+					else if(menuData.pointer == 2) menuData.inningsInPeriod = 8;
+
+					menuData.pointer = 0;
+					menuData.rem = 13;
+				}
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+			}
+		}
+		// batting order for team 1
+		else if(menuData.stage == MENU_STAGE_BATTING_ORDER_1) {
+			if(menuData.team1_control == 2) {
+				menuData.stage = MENU_STAGE_BATTING_ORDER_2;
+			} else {
+				if(keyStates->released[menuData.team1_control][KEY_2]) {
+					if(menuData.pointer == 0) {
+						int i;
+						menuData.stage = MENU_STAGE_BATTING_ORDER_2;
+						menuData.rem = 13;
+						menuData.mark = 0;
+						for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+							menuData.team1_batting_order[i] = menuData.batting_order[i];
+							menuData.batting_order[i] = i;
+						}
+					} else {
+						if(menuData.mark == 0) {
+							menuData.mark = menuData.pointer;
+						} else {
+							int temp = menuData.batting_order[menuData.pointer-1];
+							menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
+							menuData.batting_order[menuData.mark-1] = temp;
+							menuData.mark = 0;
 						}
 					}
-					for(i = 0; i < SLOT_COUNT; i++) {
-						cupInfo.slotWins[i] = 0;
-					}
-					for(i = 0; i < 4; i++) {
-						cupInfo.schedule[i][0] = i*2;
-						cupInfo.schedule[i][1] = i*2+1;
-					}
-
-					menuData.stage_8_state = 2;
-					menuData.pointer = 0;
-					menuData.rem = 5;
-
 				}
-				if(keyStates->released[0][KEY_1]) {
+				if(keyStates->released[menuData.team1_control][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[menuData.team1_control][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+			}
+		}
+		// batting order for team 2
+		else if(menuData.stage == MENU_STAGE_BATTING_ORDER_2) {
+			if(menuData.team2_control == 2) {
+				if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+					menuData.stage = MENU_STAGE_HUTUNKEITTO;
 					menuData.pointer = 0;
 					menuData.rem = 2;
-					menuData.stage_8_state_1_level = 1;
+				} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
+					moveToGame(stateInfo, globalGameInfo, menuInfo);
+				}
+			} else {
+				if(keyStates->released[menuData.team2_control][KEY_2]) {
+					if(menuData.pointer == 0) {
+						int i;
+						menuData.rem = 2;
+						for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+							menuData.team2_batting_order[i] = menuData.batting_order[i];
+							menuData.batting_order[i] = i;
+						}
+						if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+							menuData.stage = MENU_STAGE_HUTUNKEITTO;
+							menuData.pointer = 0;
+							menuData.rem = 2;
+						} else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
+							moveToGame(stateInfo, globalGameInfo, menuInfo);
+						}
+					} else {
+						if(menuData.mark == 0) {
+							menuData.mark = menuData.pointer;
+						} else {
+							int temp = menuData.batting_order[menuData.pointer-1];
+							menuData.batting_order[menuData.pointer-1] = menuData.batting_order[menuData.mark-1];
+							menuData.batting_order[menuData.mark-1] = temp;
+							menuData.mark = 0;
+						}
+					}
+				}
+				if(keyStates->released[menuData.team2_control][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[menuData.team2_control][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
 				}
 			}
-		} else if(menuData.stage_8_state == 2) {
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+		}
+		// hutunkeitto
+		else if(menuData.stage == MENU_STAGE_HUTUNKEITTO) {
+			// update timers
+			if(menuData.stage_4_state == 0 && menuData.updatingCanStart == 1) {
+				menuData.batTimerLimit = 30 + rand()%15;
+				menuData.batTimer = 0;
+				menuData.stage_4_state = 1;
+			} else if(menuData.stage_4_state == 1) {
+				menuData.batTimer+=1;
+				menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimer*BAT_DROP_MOVING_SPEED;
+				if(menuData.batTimer > menuData.batTimerLimit) {
+					menuData.stage_4_state = 2;
+					menuData.batTimerCount = menuData.batTimer;
+					menuData.batTimer = 0;
+				}
+			} else if(menuData.stage_4_state == 2) {
+				menuData.rightHandPosition = 0.0f;
+				menuData.rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
+				menuData.leftHandPosition = 0.0f;
+				menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
+				menuData.stage_4_state = 3;
+
+			} else if(menuData.stage_4_state == 3) {
+				if(menuData.team1_control != 2) {
+					if(keyStates->down[menuData.team1_control][KEY_UP]) {
+						if(menuData.leftScaleCount < SCALE_LIMIT) {
+							menuData.leftScaleCount += 1;
+						}
+					} else if(keyStates->down[menuData.team1_control][KEY_DOWN]) {
+						if(menuData.leftScaleCount > -SCALE_LIMIT) {
+							menuData.leftScaleCount -= 1;
+						}
+					}
+					if(keyStates->released[menuData.team1_control][KEY_2]) {
+						menuData.leftReady = 1;
+					}
+				} else {
+					menuData.leftReady = 1;
+				}
+				if(menuData.team2_control != 2) {
+					if(keyStates->down[menuData.team2_control][KEY_UP]) {
+						if(menuData.rightScaleCount < SCALE_LIMIT) {
+							menuData.rightScaleCount += 1;
+							menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
+						}
+					} else if(keyStates->down[menuData.team2_control][KEY_DOWN]) {
+						if(menuData.rightScaleCount > -SCALE_LIMIT) {
+							menuData.rightScaleCount -= 1;
+							menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
+						}
+					}
+					if(keyStates->released[menuData.team2_control][KEY_2]) {
+						menuData.rightReady = 1;
+					}
+				} else {
+					menuData.rightReady = 1;
+				}
+				if(menuData.leftReady == 1 && menuData.rightReady == 1) {
+					menuData.stage_4_state = 4;
+				}
+			} else if(menuData.stage_4_state == 4) {
+				float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.rightScaleCount)) / 2;// sum of boths heights divided by two
+				menuData.batTimer += 1;
+				menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimerCount*BAT_DROP_MOVING_SPEED + menuData.batTimer*BAT_MOVING_SPEED;
+				if(menuData.turnCount%2 == 0) {
+					if(menuData.rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
+						if(menuData.batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
+							menuData.stage_4_state = 5;
+							menuData.batTimer = 0;
+						} else {
+							menuData.turnCount += 1;
+							menuData.tempLeftHeight = menuData.leftHandHeight;
+						}
+					} else {
+						menuData.leftHandHeight += BAT_MOVING_SPEED;
+						menuData.rightHandHeight -= BAT_MOVING_SPEED;
+					}
+				} else if(menuData.turnCount%2 == 1) {
+					if(menuData.leftHandHeight < menuData.tempLeftHeight - turnHeight) {
+						if(menuData.batHeight - BAT_HEIGHT_CONSTANT > menuData.tempLeftHeight - turnHeight) {
+							menuData.stage_4_state = 5;
+							menuData.batTimer = 0;
+						} else {
+							menuData.turnCount += 1;
+						}
+					} else {
+						menuData.leftHandHeight -= BAT_MOVING_SPEED;
+						menuData.rightHandHeight += BAT_MOVING_SPEED;
+					}
+				}
+			} else if(menuData.stage_4_state == 5) {
+				if(menuData.batTimer < 50) {
+					menuData.batTimer += 1;
+				} else {
+					menuData.stage_4_state = 6;
+				}
+				if(menuData.turnCount%2 == 0) {
+					menuData.batPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
+					menuData.leftHandPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
+				} else if(menuData.turnCount%2 == 1) {
+					menuData.batPosition = menuData.batTimer*MOVING_AWAY_SPEED;
+					menuData.rightHandPosition = menuData.batTimer*MOVING_AWAY_SPEED;
+				}
+				menuData.handsZ = 1.0f - menuData.batTimer*MOVING_AWAY_SPEED/2;
 			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+			// finally all that messy stuff is over and we just decide the winner
+			else if(menuData.stage_4_state == 6) {
+				int control;
+				if(menuData.turnCount%2 == 0) {
+					control = menuData.team1_control;
+				} else control = menuData.team2_control;
+				if(control != 2) {
+					if(keyStates->released[control][KEY_2]) {
+						if(menuData.pointer == 0) {
+							menuData.playsFirst = 0;
+						} else {
+							menuData.playsFirst = 1;
+						}
+
+						moveToGame(stateInfo);
+					}
+					if(keyStates->released[control][KEY_RIGHT]) {
+						menuData.pointer +=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[control][KEY_LEFT]) {
+						menuData.pointer -=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+				} else {
+					// ai always selects to field first
+					if(menuData.turnCount%2 == 0) menuData.playsFirst = 1;
+					else menuData.playsFirst = 0;
+					moveToGame(stateInfo);
+				}
 			}
-			if(keyStates->released[0][KEY_2]) {
-				if(menuData.pointer == 0) {
-					int userTeamIndex = -1;
-					int userPosition = 0;
-					int opponentTeamIndex = -1;
+		}
+		// ending of match
+		else if(menuData.stage == MENU_STAGE_GAME_OVER) {
+			int flag = 0;
+			if(menuData.team1_control != 2) {
+				if(keyStates->released[menuData.team1_control][KEY_2]) {
+					flag = 1;
+				}
+			}
+			if(menuData.team2_control != 2) {
+				if(keyStates->released[menuData.team2_control][KEY_2]) {
+					flag = 1;
+				}
+			}
+			// here we must update cup trees and schedules if cup mode
+			if(flag == 1) {
+				menuInfo->mode = MENU_ENTRY_NORMAL;
+				loadMenuScreenSettings(stateInfo, menuInfo);
+
+				if(cupGame == 1) {
 					int i, j;
-					// so here we start the game of the human player.
-					// first lets find out if there is a game for human player.
+					int scheduleSlot = -1;
+					int playerWon = 0;
 					for(i = 0; i < 4; i++) {
 						for(j = 0; j < 2; j++) {
 							if(cupInfo.schedule[i][j] == cupInfo.userTeamIndexInTree) {
-								if(j == 0) {
-									userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
-									opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
-									userPosition = 0;
-								} else {
-									userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
-									opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
-									userPosition = 1;
-								}
+								scheduleSlot = i;
+								if( j == stateInfo->globalGameInfo->winner) playerWon = 1;
 							}
 						}
 					}
-					cupInfo.dayCount++;
-					// if there is, we proceed to the match and let the match ending update cup trees and schedules.
-					if(userTeamIndex != -1) {
-						menuData.stage = MENU_STAGE_BATTING_ORDER_1;
-						menuData.pointer = 0;
-						menuData.rem = 13;
-						if(userPosition == 0) {
-							menuData.team1 = userTeamIndex;
-							menuData.team2 = opponentTeamIndex;
-							menuData.team1_control = 0;
-							menuData.team2_control = 2;
-						} else {
-							menuData.team2 = userTeamIndex;
-							menuData.team1 = opponentTeamIndex;
-							menuData.team2_control = 0;
-							menuData.team1_control = 2;
+					// if player won, we can advance to congratulations-screen if it was final decisive match of the cup
+					if(playerWon == 1) {
+						int advance = 0;
+						if(cupInfo.gameStructure == 0) {
+							if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 2) {
+								if(cupInfo.dayCount >= 11)
+									advance = 1;
+
+							}
+						} else if(cupInfo.gameStructure == 1) {
+							if(cupInfo.slotWins[cupInfo.userTeamIndexInTree] == 0) {
+								if(cupInfo.dayCount >= 3)
+									advance = 1;
+							}
 						}
-						menuData.inningsInPeriod = cupInfo.inningCount;
-						cupGame = 1;
-					} else {
-						// otherwise we update them right away.
-						updateCupTreeAfterDay(stateInfo, -1, 0);
-						updateSchedule(stateInfo);
+						if(advance == 1) menuData.stage_8_state = 7;
 					}
-				} else if(menuData.pointer == 1) {
-					menuData.stage_8_state = 4;
-				} else if(menuData.pointer == 2) {
-					menuData.stage_8_state = 3;
-				} else if(menuData.pointer == 3) {
-					menuData.stage_8_state = 6;
-					menuData.pointer = 0;
-					menuData.rem = 5;
-				} else if(menuData.pointer == 4) {
+					// update cup and schedule.
+					updateCupTreeAfterDay(stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
+					updateSchedule(stateInfo);
+				}
+			}
+		}
+		// this stage is for homerun batting contest, team 1
+		else if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) {
+			if(menuData.team1_control == 2) {
+				int i, j;
+				int counter = 0;
+				int team = stateInfo->globalGameInfo->teams[0].value - 1;
+				int currentIndex = 0;
+				for(i = 0; i < 2; i++) {
+					for(j = 0; j < menuData.choiceCount/2; j++) {
+						menuData.team_1_choices[i][j] = -1;
+					}
+				}
+				// first we select batters for ai. we select ones that have high power
+				while(counter < 5) {
+					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+						int power = stateInfo->teamData[team].players[i].power;
+						if(currentIndex == menuData.choiceCount/2) break;
+						if(power == 5-counter) {
+							menuData.team_1_choices[0][currentIndex] = i;
+							currentIndex++;
+						}
+					}
+					if(currentIndex == menuData.choiceCount/2) break;
+					counter++;
+				}
+				if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
+				counter = 0;
+				currentIndex = 0;
+				// and from players that are left we select runners. we select ones that have high speed
+				while(counter < 5) {
+					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+						int speed = stateInfo->teamData[team].players[i].speed;
+						if(currentIndex == menuData.choiceCount/2) break;
+						if(speed == 5-counter) {
+							int indexValid = 1;
+							for(j = 0; j < menuData.choiceCount/2; j++) {
+								if(menuData.team_1_choices[0][j] == i) indexValid = 0;
+							}
+							if(indexValid == 1) {
+								menuData.team_1_choices[1][currentIndex] = i;
+								currentIndex++;
+							}
+						}
+					}
+					if(currentIndex == menuData.choiceCount/2) break;
+					counter++;
+				}
+				if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
+
+				menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
+			} else {
+				if(keyStates->released[menuData.team1_control][KEY_1]) {
+					if(menuData.choiceCounter != 0) {
+						menuData.team_1_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
+						menuData.choiceCounter--;
+					}
+				}
+				if(keyStates->released[menuData.team1_control][KEY_2]) {
+					if(menuData.pointer == 0) {
+						if(menuData.choiceCounter >= menuData.choiceCount) {
+							menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
+							menuData.pointer = 1;
+							menuData.choiceCounter = 0;
+						}
+					} else {
+						if(menuData.choiceCounter < menuData.choiceCount) {
+							int valid = 1;
+							int i, j;
+							for(i = 0; i < 2; i++) {
+								for(j = 0; j < menuData.choiceCount/2; j++) {
+									if(menuData.pointer == menuData.team_1_choices[i][j] + 1) {
+										valid = 0;
+									}
+								}
+							}
+							if(valid == 1) {
+								menuData.team_1_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
+								menuData.choiceCounter++;
+							}
+						}
+					}
+				}
+				if(keyStates->released[menuData.team1_control][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[menuData.team1_control][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+			}
+		}
+		// works similarly as 6, just for other team. for sure there would have been a way to fuse these. didnt do it hah.
+		else if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_2) {
+			if(menuData.team2_control == 2) {
+				int i, j;
+				int counter = 0;
+				int team = stateInfo->globalGameInfo->teams[1].value - 1;
+				int currentIndex = 0;
+				for(i = 0; i < 2; i++) {
+					for(j = 0; j < menuData.choiceCount/2; j++) {
+						menuData.team_2_choices[i][j] = -1;
+					}
+				}
+
+
+				while(counter < 5) {
+					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+						int power = stateInfo->teamData[team].players[i].power;
+						if(currentIndex == menuData.choiceCount/2) break;
+						if(power == 5-counter) {
+							menuData.team_2_choices[0][currentIndex] = i;
+							currentIndex++;
+						}
+					}
+					if(currentIndex == menuData.choiceCount/2) break;
+					counter++;
+				}
+				if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
+				counter = 0;
+				currentIndex = 0;
+				while(counter < 5) {
+					for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+						int speed = stateInfo->teamData[team].players[i].speed;
+						if(currentIndex == menuData.choiceCount/2) break;
+						if(speed == 5-counter) {
+							int indexValid = 1;
+							for(j = 0; j < menuData.choiceCount/2; j++) {
+								if(menuData.team_2_choices[0][j] == i) indexValid = 0;
+							}
+							if(indexValid == 1) {
+								menuData.team_2_choices[1][currentIndex] = i;
+								currentIndex++;
+							}
+						}
+					}
+					if(currentIndex == menuData.choiceCount/2) break;
+					counter++;
+				}
+				if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
+
+				moveToGame(stateInfo);
+			} else {
+				if(keyStates->released[menuData.team2_control][KEY_1]) {
+					if(menuData.choiceCounter != 0) {
+						menuData.team_2_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
+						menuData.choiceCounter--;
+					} else {
+						menuData.choiceCounter = menuData.choiceCount;
+						menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
+						menuData.pointer = 0;
+					}
+				}
+				if(keyStates->released[menuData.team2_control][KEY_2]) {
+					if(menuData.pointer == 0) {
+						if(menuData.choiceCounter >= menuData.choiceCount) {
+							moveToGame(stateInfo);
+						}
+					} else {
+						if(menuData.choiceCounter < menuData.choiceCount) {
+							int valid = 1;
+							int i, j;
+							for(i = 0; i < 2; i++) {
+								for(j = 0; j < menuData.choiceCount/2; j++) {
+									if(menuData.pointer == menuData.team_2_choices[i][j] + 1) {
+										valid = 0;
+									}
+								}
+							}
+							if(valid == 1) {
+								menuData.team_2_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
+								menuData.choiceCounter++;
+							}
+						}
+					}
+				}
+				if(keyStates->released[menuData.team2_control][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[menuData.team2_control][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+			}
+		}
+		// cup mode
+		else if(menuData.stage == MENU_STAGE_CUP) {
+			if(menuData.stage_8_state == 0) {
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_2]) {
+					if(menuData.pointer == 0) {
+						menuData.stage_8_state = 1;
+						menuData.stage_8_state_1_level = 0;
+						menuData.rem = stateInfo->numTeams;
+						menuData.pointer = 0;
+					} else if(menuData.pointer == 1) {
+						menuData.stage_8_state = 5;
+						menuData.rem = 5;
+						menuData.pointer = 0;
+					}
+				}
+				if(keyStates->released[0][KEY_1]) {
 					menuData.stage = MENU_STAGE_FRONT;
-					menuData.pointer = 0;
+					menuData.pointer = 1;
 					menuData.rem = 4;
 				}
+			} else if(menuData.stage_8_state == 1) {
+				if(menuData.stage_8_state_1_level == 0) {
+					if(keyStates->released[0][KEY_DOWN]) {
+						menuData.pointer +=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_UP]) {
+						menuData.pointer -=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_2]) {
+						menuData.stage_8_state_1_level = 1;
+						teamSelection = menuData.pointer;
+						menuData.pointer = 0;
+						menuData.rem = 2;
+					}
+					if(keyStates->released[0][KEY_1]) {
+						menuData.pointer = 0;
+						menuData.rem = 2;
+						menuData.stage_8_state = 0;
+					}
+				} else if(menuData.stage_8_state_1_level == 1) {
+					if(keyStates->released[0][KEY_DOWN]) {
+						menuData.pointer +=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_UP]) {
+						menuData.pointer -=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_2]) {
+						cupInfo.gameStructure = menuData.pointer;
+						menuData.stage_8_state_1_level = 2;
+						menuData.pointer = 0;
+						menuData.rem = 3;
+					}
+					if(keyStates->released[0][KEY_1]) {
+						menuData.pointer = 0;
+						menuData.rem = stateInfo->numTeams;
+						menuData.stage_8_state_1_level = 0;
+					}
+				} else if(menuData.stage_8_state_1_level == 2) {
+					if(keyStates->released[0][KEY_DOWN]) {
+						menuData.pointer +=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_UP]) {
+						menuData.pointer -=1;
+						menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+					}
+					if(keyStates->released[0][KEY_2]) {
+						int i;
 
-			}
-		} else if(menuData.stage_8_state == 3) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_8_state = 2;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_8_state = 2;
-			}
-		} else if(menuData.stage_8_state == 5) {
-			// load
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_8_state = 0;
-				menuData.pointer = 1;
-				menuData.rem = 2;
+						// fill the cupInfo-structure
 
-			}
-			if(keyStates->released[0][KEY_2]) {
-				if(saveData[menuData.pointer].userTeamIndexInTree != -1) {
-					loadCup(stateInfo, menuData.pointer);
+						if(menuData.pointer == 0) cupInfo.inningCount = 2;
+						else if(menuData.pointer == 1) cupInfo.inningCount = 4;
+						else if(menuData.pointer == 2) cupInfo.inningCount = 8;
+
+						cupInfo.userTeamIndexInTree = 0;
+						cupInfo.winnerIndex = -1;
+						cupInfo.dayCount = 0;
+						for(i = 0; i < SLOT_COUNT; i++) {
+							cupInfo.cupTeamIndexTree[i] = -1;
+						}
+						i = 0;
+						while(i < 8) {
+							int random = rand()%8;
+							if(cupInfo.cupTeamIndexTree[random] == -1) {
+								cupInfo.cupTeamIndexTree[random] = i;
+								if(i == teamSelection) {
+									cupInfo.userTeamIndexInTree = random;
+								}
+								i++;
+							}
+						}
+						for(i = 0; i < SLOT_COUNT; i++) {
+							cupInfo.slotWins[i] = 0;
+						}
+						for(i = 0; i < 4; i++) {
+							cupInfo.schedule[i][0] = i*2;
+							cupInfo.schedule[i][1] = i*2+1;
+						}
+
+						menuData.stage_8_state = 2;
+						menuData.pointer = 0;
+						menuData.rem = 5;
+
+					}
+					if(keyStates->released[0][KEY_1]) {
+						menuData.pointer = 0;
+						menuData.rem = 2;
+						menuData.stage_8_state_1_level = 1;
+					}
+				}
+			} else if(menuData.stage_8_state == 2) {
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_2]) {
+					if(menuData.pointer == 0) {
+						int userTeamIndex = -1;
+						int userPosition = 0;
+						int opponentTeamIndex = -1;
+						int i, j;
+						// so here we start the game of the human player.
+						// first lets find out if there is a game for human player.
+						for(i = 0; i < 4; i++) {
+							for(j = 0; j < 2; j++) {
+								if(cupInfo.schedule[i][j] == cupInfo.userTeamIndexInTree) {
+									if(j == 0) {
+										userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
+										opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
+										userPosition = 0;
+									} else {
+										userTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][1]];
+										opponentTeamIndex = cupInfo.cupTeamIndexTree[cupInfo.schedule[i][0]];
+										userPosition = 1;
+									}
+								}
+							}
+						}
+						cupInfo.dayCount++;
+						// if there is, we proceed to the match and let the match ending update cup trees and schedules.
+						if(userTeamIndex != -1) {
+							menuData.stage = MENU_STAGE_BATTING_ORDER_1;
+							menuData.pointer = 0;
+							menuData.rem = 13;
+							if(userPosition == 0) {
+								menuData.team1 = userTeamIndex;
+								menuData.team2 = opponentTeamIndex;
+								menuData.team1_control = 0;
+								menuData.team2_control = 2;
+							} else {
+								menuData.team2 = userTeamIndex;
+								menuData.team1 = opponentTeamIndex;
+								menuData.team2_control = 0;
+								menuData.team1_control = 2;
+							}
+							menuData.inningsInPeriod = cupInfo.inningCount;
+							cupGame = 1;
+						} else {
+							// otherwise we update them right away.
+							updateCupTreeAfterDay(stateInfo, -1, 0);
+							updateSchedule(stateInfo);
+						}
+					} else if(menuData.pointer == 1) {
+						menuData.stage_8_state = 4;
+					} else if(menuData.pointer == 2) {
+						menuData.stage_8_state = 3;
+					} else if(menuData.pointer == 3) {
+						menuData.stage_8_state = 6;
+						menuData.pointer = 0;
+						menuData.rem = 5;
+					} else if(menuData.pointer == 4) {
+						menuData.stage = MENU_STAGE_FRONT;
+						menuData.pointer = 0;
+						menuData.rem = 4;
+					}
+
+				}
+			} else if(menuData.stage_8_state == 3) {
+				if(keyStates->released[0][KEY_2]) {
 					menuData.stage_8_state = 2;
-					menuData.pointer = 0;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_8_state = 2;
+				}
+			} else if(menuData.stage_8_state == 5) {
+				// load
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_8_state = 0;
+					menuData.pointer = 1;
+					menuData.rem = 2;
+
+				}
+				if(keyStates->released[0][KEY_2]) {
+					if(saveData[menuData.pointer].userTeamIndexInTree != -1) {
+						loadCup(stateInfo, menuData.pointer);
+						menuData.stage_8_state = 2;
+						menuData.pointer = 0;
+						menuData.rem = 5;
+					}
+				}
+			} else if(menuData.stage_8_state == 6) {
+				// save
+				if(keyStates->released[0][KEY_DOWN]) {
+					menuData.pointer +=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_UP]) {
+					menuData.pointer -=1;
+					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_8_state = 2;
+					menuData.pointer = 2;
 					menuData.rem = 5;
+
+				}
+				if(keyStates->released[0][KEY_2]) {
+					saveCup(stateInfo, menuData.pointer);
+				}
+			} else if(menuData.stage_8_state == 4) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_8_state = 2;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_8_state = 2;
+				}
+			} else if(menuData.stage_8_state == 7) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_8_state = 2;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_8_state = 2;
 				}
 			}
-		} else if(menuData.stage_8_state == 6) {
-			// save
-			if(keyStates->released[0][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_8_state = 2;
-				menuData.pointer = 2;
-				menuData.rem = 5;
-
-			}
-			if(keyStates->released[0][KEY_2]) {
-				saveCup(stateInfo, menuData.pointer);
-			}
-		} else if(menuData.stage_8_state == 4) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_8_state = 2;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_8_state = 2;
-			}
-		} else if(menuData.stage_8_state == 7) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_8_state = 2;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_8_state = 2;
+		}
+		// help
+		else if(menuData.stage == MENU_STAGE_HELP) {
+			if(menuData.stage_9_state == 0) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_9_state = 1;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
+			} else if(menuData.stage_9_state == 1) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_9_state = 2;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
+			} else if(menuData.stage_9_state == 2) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_9_state = 3;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
+			} else if(menuData.stage_9_state == 3) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_9_state = 4;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
+			} else if(menuData.stage_9_state == 4) {
+				if(keyStates->released[0][KEY_2]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
+				if(keyStates->released[0][KEY_1]) {
+					menuData.stage_9_state = 0;
+					menuData.stage = MENU_STAGE_FRONT;
+				}
 			}
 		}
-	}
-	// help
-	else if(menuData.stage == MENU_STAGE_HELP) {
-		if(menuData.stage_9_state == 0) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_9_state = 1;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-		} else if(menuData.stage_9_state == 1) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_9_state = 2;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-		} else if(menuData.stage_9_state == 2) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_9_state = 3;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-		} else if(menuData.stage_9_state == 3) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_9_state = 4;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-		} else if(menuData.stage_9_state == 4) {
-			if(keyStates->released[0][KEY_2]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-			if(keyStates->released[0][KEY_1]) {
-				menuData.stage_9_state = 0;
-				menuData.stage = MENU_STAGE_FRONT;
-			}
-		}
+		break;
 	}
 }
 // here we draw everything.
@@ -1427,252 +1465,232 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 {
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
-	if(menuData.stage == MENU_STAGE_FRONT) {
-		drawFontBackground();
-		// arrow
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);
-		glPushMatrix();
-		if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
-		else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
-		else if(menuData.pointer == 2) glTranslatef(FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
-		else glTranslatef(FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
-		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		glCallList(planeDisplayList);
-		glPopMatrix();
-		// catcher
-		glBindTexture(GL_TEXTURE_2D, catcherTexture);
-		glPushMatrix();
-		glTranslatef(0.7f, 1.0f, 0.0f);
-		glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-		glCallList(planeDisplayList);
-		glPopMatrix();
-		// batter
-		glBindTexture(GL_TEXTURE_2D, batterTexture);
-		glPushMatrix();
-		glTranslatef(-0.6f, 1.0f, 0.0f);
-		glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-		glCallList(planeDisplayList);
-		glPopMatrix();
-		drawFront(stateInfo);
-	} else if(menuData.stage == MENU_STAGE_TEAM_SELECTION) {
-		drawFontBackground();
+	switch(menuData.stage) {
+	case MENU_STAGE_FRONT:
+		drawFrontMenu(stateInfo, menuInfo, alpha);
+		break;
+	default:
+		if(menuData.stage == MENU_STAGE_TEAM_SELECTION) {
+			drawFontBackground();
 
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);
-		glPushMatrix();
-		if(menuData.stage_1_state == 0 || menuData.stage_1_state == 1) {
-			glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-		} else if(menuData.stage_1_state == 2 || menuData.stage_1_state == 3) {
-			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-		} else if(menuData.stage_1_state == 4) {
-			glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-		}
-		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		glCallList(planeDisplayList);
-		glPopMatrix();
-		drawSelection(stateInfo);
-
-	} else if((menuData.stage == MENU_STAGE_BATTING_ORDER_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_BATTING_ORDER_2 && menuData.team2_control != 2)) {
-		drawFontBackground();
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);
-		glPushMatrix();
-		if(menuData.pointer == 0) {
-			glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		} else {
-			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-		}
-		glCallList(planeDisplayList);
-		glPopMatrix();
-
-		if(menuData.mark != 0) {
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
-			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		}
-		drawPlayerList(stateInfo);
-	} else if(menuData.stage == MENU_STAGE_HUTUNKEITTO) {
-		menuData.updatingCanStart = 1;
-		drawFontBackground();
-
-		glEnable(GL_LIGHTING);
-		glEnable(GL_DEPTH_TEST);
-		lightPos[0] = LIGHT_SOURCE_POSITION_X;
-		lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-		lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-		lightPos[3] = 1.0f;
-		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-		// bat
-		glBindTexture(GL_TEXTURE_2D, team1Texture);
-		glPushMatrix();
-		glTranslatef(menuData.batPosition, menuData.handsZ, menuData.batHeight);
-		glScalef(0.6f, 0.5f, 0.45f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(batDisplayList);
-		glPopMatrix();
-		// right hand
-		if(menuData.team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
-		else if(menuData.team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
-		else if(menuData.team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
-		else if(menuData.team2 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
-		else if(menuData.team2 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
-		else if(menuData.team2 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
-		else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
-		else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
-		glPushMatrix();
-		glTranslatef(menuData.rightHandPosition, menuData.handsZ, menuData.rightHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.rightScaleCount*SCALE_FACTOR));
-		glTranslatef(0.0f, 0.0f, -0.35f);
-		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList);
-		glPopMatrix();
-		// left hand
-		if(menuData.team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
-		else if(menuData.team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
-		else if(menuData.team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
-		else if(menuData.team1 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
-		else if(menuData.team1 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
-		else if(menuData.team1 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
-		else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
-		else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
-		glPushMatrix();
-		glTranslatef(menuData.leftHandPosition, menuData.handsZ, menuData.leftHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.leftScaleCount*SCALE_FACTOR));
-		glTranslatef(0.0f, 0.0f, -0.35f);
-		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList);
-		glPopMatrix();
-		// referee hand
-		glBindTexture(GL_TEXTURE_2D, team2Texture);
-		glPushMatrix();
-		glTranslatef(0.0f, 1.0f, menuData.refereeHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f);
-		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(handDisplayList);
-		glPopMatrix();
-
-		glDisable(GL_LIGHTING);
-		glDisable(GL_DEPTH_TEST);
-
-		if(menuData.stage_4_state == 6) {
-			drawHutunkeitto(stateInfo);
-			// arrow
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);
-			glPushMatrix();
-			if(menuData.pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		}
-	} else if(menuData.stage == MENU_STAGE_GAME_OVER) {
-		drawFontBackground();
-		drawGameOverTexts(stateInfo);
-	} else if((menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_HOMERUN_CONTEST_2 && menuData.team2_control != 2)) {
-		int i, j;
-		drawFontBackground();
-		glBindTexture(GL_TEXTURE_2D, arrowTexture);
-		glPushMatrix();
-		if(menuData.pointer == 0) {
-			glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		} else {
-			glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-			glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-		}
-
-		glCallList(planeDisplayList);
-		glPopMatrix();
-
-		for(i = 0; i < 2; i++) {
-			for(j = 0; j < 5; j++) {
-				char str[2];
-				int choice;
-				if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) choice = menuData.team_1_choices[i][j];
-				else choice = menuData.team_2_choices[i][j];
-				str[0] = (char)(((int)'0')+j+1);
-				if(choice != -1) {
-					printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
-					          (choice+1)*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET, 2);
-				}
+			if(menuData.stage_1_state == 0 || menuData.stage_1_state == 1) {
+				glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
+			} else if(menuData.stage_1_state == 2 || menuData.stage_1_state == 3) {
+				glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
+			} else if(menuData.stage_1_state == 4) {
+				glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
 			}
-		}
+			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+			glCallList(planeDisplayList);
+			glPopMatrix();
+			drawSelection(stateInfo);
 
-		drawPlayerList(stateInfo);
-	} else if(menuData.stage == MENU_STAGE_CUP) {
-		drawFontBackground();
-		if(menuData.stage_8_state == 0) {
-			// arrow
+		} else if((menuData.stage == MENU_STAGE_BATTING_ORDER_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_BATTING_ORDER_2 && menuData.team2_control != 2)) {
+			drawFontBackground();
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
-			if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
-			else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+			if(menuData.pointer == 0) {
+				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+			} else {
+				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
+				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
+			}
 			glCallList(planeDisplayList);
 			glPopMatrix();
-			// catcher
-			glBindTexture(GL_TEXTURE_2D, catcherTexture);
-			glPushMatrix();
-			glTranslatef(0.7f, 1.0f, 0.0f);
-			glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-			// batter
-			glBindTexture(GL_TEXTURE_2D, batterTexture);
-			glPushMatrix();
-			glTranslatef(-0.6f, 1.0f, 0.0f);
-			glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		} else if(menuData.stage_8_state == 1) {
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);
-			glPushMatrix();
-			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		} else if(menuData.stage_8_state == 2) {
-			glBindTexture(GL_TEXTURE_2D, arrowTexture);
-			glPushMatrix();
-			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		} else if(menuData.stage_8_state == 3) {
-			int i;
-			for(i = 0; i < SLOT_COUNT; i++) {
-				glBindTexture(GL_TEXTURE_2D, slotTexture);
+
+			if(menuData.mark != 0) {
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
 				glPushMatrix();
-				glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
-				glScalef(0.2f, 0.15f, 0.10f);
+				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
+				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
 				glCallList(planeDisplayList);
 				glPopMatrix();
 			}
-		} else if(menuData.stage_8_state == 5 || menuData.stage_8_state == 6) {
+			drawPlayerList(stateInfo);
+		} else if(menuData.stage == MENU_STAGE_HUTUNKEITTO) {
+			menuData.updatingCanStart = 1;
+			drawFontBackground();
+
+			glEnable(GL_LIGHTING);
+			glEnable(GL_DEPTH_TEST);
+			lightPos[0] = LIGHT_SOURCE_POSITION_X;
+			lightPos[1] = LIGHT_SOURCE_POSITION_Y;
+			lightPos[2] = LIGHT_SOURCE_POSITION_Z;
+			lightPos[3] = 1.0f;
+			glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+			// bat
+			glBindTexture(GL_TEXTURE_2D, team1Texture);
+			glPushMatrix();
+			glTranslatef(menuData.batPosition, menuData.handsZ, menuData.batHeight);
+			glScalef(0.6f, 0.5f, 0.45f);
+			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+			glCallList(batDisplayList);
+			glPopMatrix();
+			// right hand
+			if(menuData.team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
+			else if(menuData.team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
+			else if(menuData.team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
+			else if(menuData.team2 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
+			else if(menuData.team2 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
+			else if(menuData.team2 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
+			else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
+			else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
+			glPushMatrix();
+			glTranslatef(menuData.rightHandPosition, menuData.handsZ, menuData.rightHandHeight);
+			glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.rightScaleCount*SCALE_FACTOR));
+			glTranslatef(0.0f, 0.0f, -0.35f);
+			glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
+			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+			glCallList(handDisplayList);
+			glPopMatrix();
+			// left hand
+			if(menuData.team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
+			else if(menuData.team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
+			else if(menuData.team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
+			else if(menuData.team1 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
+			else if(menuData.team1 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
+			else if(menuData.team1 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
+			else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
+			else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
+			glPushMatrix();
+			glTranslatef(menuData.leftHandPosition, menuData.handsZ, menuData.leftHandHeight);
+			glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.leftScaleCount*SCALE_FACTOR));
+			glTranslatef(0.0f, 0.0f, -0.35f);
+			glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+			glCallList(handDisplayList);
+			glPopMatrix();
+			// referee hand
+			glBindTexture(GL_TEXTURE_2D, team2Texture);
+			glPushMatrix();
+			glTranslatef(0.0f, 1.0f, menuData.refereeHandHeight);
+			glScalef(0.5f, 0.5f, 0.5f);
+			glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+			glCallList(handDisplayList);
+			glPopMatrix();
+
+			glDisable(GL_LIGHTING);
+			glDisable(GL_DEPTH_TEST);
+
+			if(menuData.stage_4_state == 6) {
+				drawHutunkeitto(stateInfo);
+				// arrow
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glPushMatrix();
+				if(menuData.pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
+				else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			}
+		} else if(menuData.stage == MENU_STAGE_GAME_OVER) {
+			drawFontBackground();
+			drawGameOverTexts(stateInfo);
+		} else if((menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_HOMERUN_CONTEST_2 && menuData.team2_control != 2)) {
+			int i, j;
+			drawFontBackground();
 			glBindTexture(GL_TEXTURE_2D, arrowTexture);
 			glPushMatrix();
-			glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+			if(menuData.pointer == 0) {
+				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+			} else {
+				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
+				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
+			}
+
 			glCallList(planeDisplayList);
 			glPopMatrix();
-		} else if(menuData.stage_8_state == 7) {
-			glBindTexture(GL_TEXTURE_2D, trophyTexture);
-			glPushMatrix();
-			glTranslatef(0.0f, 1.0f, -0.25f);
-			glScalef(0.3f, 0.3f, 0.3f);
-			glCallList(planeDisplayList);
-			glPopMatrix();
+
+			for(i = 0; i < 2; i++) {
+				for(j = 0; j < 5; j++) {
+					char str[2];
+					int choice;
+					if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) choice = menuData.team_1_choices[i][j];
+					else choice = menuData.team_2_choices[i][j];
+					str[0] = (char)(((int)'0')+j+1);
+					if(choice != -1) {
+						printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
+						          (choice+1)*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET, 2);
+					}
+				}
+			}
+
+			drawPlayerList(stateInfo);
+		} else if(menuData.stage == MENU_STAGE_CUP) {
+			drawFontBackground();
+			if(menuData.stage_8_state == 0) {
+				// arrow
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glPushMatrix();
+				if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, NEW_CUP_TEXT_HEIGHT);
+				else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS + 0.05f, 1.0f, LOAD_CUP_TEXT_HEIGHT);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+				// catcher
+				glBindTexture(GL_TEXTURE_2D, catcherTexture);
+				glPushMatrix();
+				glTranslatef(0.7f, 1.0f, 0.0f);
+				glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+				// batter
+				glBindTexture(GL_TEXTURE_2D, batterTexture);
+				glPushMatrix();
+				glTranslatef(-0.6f, 1.0f, 0.0f);
+				glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			} else if(menuData.stage_8_state == 1) {
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glPushMatrix();
+				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*menuData.pointer);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			} else if(menuData.stage_8_state == 2) {
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glPushMatrix();
+				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			} else if(menuData.stage_8_state == 3) {
+				int i;
+				for(i = 0; i < SLOT_COUNT; i++) {
+					glBindTexture(GL_TEXTURE_2D, slotTexture);
+					glPushMatrix();
+					glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
+					glScalef(0.2f, 0.15f, 0.10f);
+					glCallList(planeDisplayList);
+					glPopMatrix();
+				}
+			} else if(menuData.stage_8_state == 5 || menuData.stage_8_state == 6) {
+				glBindTexture(GL_TEXTURE_2D, arrowTexture);
+				glPushMatrix();
+				glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*menuData.pointer);
+				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			} else if(menuData.stage_8_state == 7) {
+				glBindTexture(GL_TEXTURE_2D, trophyTexture);
+				glPushMatrix();
+				glTranslatef(0.0f, 1.0f, -0.25f);
+				glScalef(0.3f, 0.3f, 0.3f);
+				glCallList(planeDisplayList);
+				glPopMatrix();
+			}
+			drawCup(stateInfo);
+		} else if(menuData.stage == MENU_STAGE_HELP) {
+			drawFontBackground();
+			drawHelp(stateInfo);
 		}
-		drawCup(stateInfo);
-	} else if(menuData.stage == MENU_STAGE_HELP) {
-		drawFontBackground();
-		drawHelp(stateInfo);
+		break;
 	}
 }
 // values here are mostly hard-coded, some of them have defines, some dont. do i care ;_;
