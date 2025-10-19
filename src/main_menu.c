@@ -39,6 +39,21 @@ typedef struct {
 	int team_2_choices[2][5];
 	int choiceCounter;
 	int choiceCount;
+	int leftReady;
+	int rightReady;
+	int turnCount;
+	float batHeight;
+	float batPosition;
+	float leftHandHeight;
+	float leftHandPosition;
+	float rightHandHeight;
+	float rightHandPosition;
+	float tempLeftHeight;
+	float handsZ;
+	float refereeHandHeight;
+	int leftScaleCount;
+	int rightScaleCount;
+	int playsFirst;
 } MenuData;
 
 static MenuData menuData;
@@ -177,21 +192,23 @@ static int cupGame;
 // static int choiceCounter; /* MOVED TO MenuData */
 // static int choiceCount; /* MOVED TO MenuData */
 
-static int leftReady;
-static int rightReady;
-static int turnCount;
-static float batHeight;
-static float batPosition;
-static float leftHandHeight;
-static float leftHandPosition;
-static float rightHandHeight;
-static float rightHandPosition;
-static float tempLeftHeight;
-static float handsZ;
-static float refereeHandHeight;
-static int leftScaleCount;
-static int rightScaleCount;
-static int playsFirst;
+// static int leftReady; /* MOVED TO MenuData */
+// static int rightReady; /* MOVED TO MenuData */
+// static int turnCount; /* MOVED TO MenuData */
+// static float batHeight; /* MOVED TO MenuData */
+// static float batPosition; /* MOVED TO MenuData */
+// static float leftHandHeight; /* MOVED TO MenuData */
+// static float leftHandPosition; /* MOVED TO MenuData */
+// static float rightHandHeight; /* MOVED TO MenuData */
+// static float rightHandPosition; /* MOVED TO MenuData */
+// static float tempLeftHeight; /* MOVED TO MenuData */
+// static float handsZ; /* MOVED TO MenuData */
+// static float refereeHandHeight; /* MOVED TO MenuData */
+// static int leftScaleCount; /* MOVED TO MenuData */
+// static int rightScaleCount; /* MOVED TO MenuData */
+// static int playsFirst; /* MOVED TO MenuData */
+
+
 
 typedef struct _TreeCoordinates {
 	float x;
@@ -718,85 +735,85 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			menuData.stage_4_state = 1;
 		} else if(menuData.stage_4_state == 1) {
 			menuData.batTimer+=1;
-			batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimer*BAT_DROP_MOVING_SPEED;
+			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimer*BAT_DROP_MOVING_SPEED;
 			if(menuData.batTimer > menuData.batTimerLimit) {
 				menuData.stage_4_state = 2;
 				menuData.batTimerCount = menuData.batTimer;
 				menuData.batTimer = 0;
 			}
 		} else if(menuData.stage_4_state == 2) {
-			rightHandPosition = 0.0f;
-			rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
-			leftHandPosition = 0.0f;
-			leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
+			menuData.rightHandPosition = 0.0f;
+			menuData.rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
+			menuData.leftHandPosition = 0.0f;
+			menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
 			menuData.stage_4_state = 3;
 
 		} else if(menuData.stage_4_state == 3) {
 			if(menuData.team1_control != 2) {
 				if(keyStates->down[menuData.team1_control][KEY_UP]) {
-					if(leftScaleCount < SCALE_LIMIT) {
-						leftScaleCount += 1;
+					if(menuData.leftScaleCount < SCALE_LIMIT) {
+						menuData.leftScaleCount += 1;
 					}
 				} else if(keyStates->down[menuData.team1_control][KEY_DOWN]) {
-					if(leftScaleCount > -SCALE_LIMIT) {
-						leftScaleCount -= 1;
+					if(menuData.leftScaleCount > -SCALE_LIMIT) {
+						menuData.leftScaleCount -= 1;
 					}
 				}
 				if(keyStates->released[menuData.team1_control][KEY_2]) {
-					leftReady = 1;
+					menuData.leftReady = 1;
 				}
 			} else {
-				leftReady = 1;
+				menuData.leftReady = 1;
 			}
 			if(menuData.team2_control != 2) {
 				if(keyStates->down[menuData.team2_control][KEY_UP]) {
-					if(rightScaleCount < SCALE_LIMIT) {
-						rightScaleCount += 1;
-						leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - rightScaleCount*POSITION_SCALE_ADDITION;
+					if(menuData.rightScaleCount < SCALE_LIMIT) {
+						menuData.rightScaleCount += 1;
+						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
 					}
 				} else if(keyStates->down[menuData.team2_control][KEY_DOWN]) {
-					if(rightScaleCount > -SCALE_LIMIT) {
-						rightScaleCount -= 1;
-						leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - rightScaleCount*POSITION_SCALE_ADDITION;
+					if(menuData.rightScaleCount > -SCALE_LIMIT) {
+						menuData.rightScaleCount -= 1;
+						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
 					}
 				}
 				if(keyStates->released[menuData.team2_control][KEY_2]) {
-					rightReady = 1;
+					menuData.rightReady = 1;
 				}
 			} else {
-				rightReady = 1;
+				menuData.rightReady = 1;
 			}
-			if(leftReady == 1 && rightReady == 1) {
+			if(menuData.leftReady == 1 && menuData.rightReady == 1) {
 				menuData.stage_4_state = 4;
 			}
 		} else if(menuData.stage_4_state == 4) {
-			float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*rightScaleCount)) / 2;// sum of boths heights divided by two
+			float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.rightScaleCount)) / 2;// sum of boths heights divided by two
 			menuData.batTimer += 1;
-			batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimerCount*BAT_DROP_MOVING_SPEED + menuData.batTimer*BAT_MOVING_SPEED;
-			if(turnCount%2 == 0) {
-				if(rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-					if(batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
+			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimerCount*BAT_DROP_MOVING_SPEED + menuData.batTimer*BAT_MOVING_SPEED;
+			if(menuData.turnCount%2 == 0) {
+				if(menuData.rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
+					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
 						menuData.stage_4_state = 5;
 						menuData.batTimer = 0;
 					} else {
-						turnCount += 1;
-						tempLeftHeight = leftHandHeight;
+						menuData.turnCount += 1;
+						menuData.tempLeftHeight = menuData.leftHandHeight;
 					}
 				} else {
-					leftHandHeight += BAT_MOVING_SPEED;
-					rightHandHeight -= BAT_MOVING_SPEED;
+					menuData.leftHandHeight += BAT_MOVING_SPEED;
+					menuData.rightHandHeight -= BAT_MOVING_SPEED;
 				}
-			} else if(turnCount%2 == 1) {
-				if(leftHandHeight < tempLeftHeight - turnHeight) {
-					if(batHeight - BAT_HEIGHT_CONSTANT > tempLeftHeight - turnHeight) {
+			} else if(menuData.turnCount%2 == 1) {
+				if(menuData.leftHandHeight < menuData.tempLeftHeight - turnHeight) {
+					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > menuData.tempLeftHeight - turnHeight) {
 						menuData.stage_4_state = 5;
 						menuData.batTimer = 0;
 					} else {
-						turnCount += 1;
+						menuData.turnCount += 1;
 					}
 				} else {
-					leftHandHeight -= BAT_MOVING_SPEED;
-					rightHandHeight += BAT_MOVING_SPEED;
+					menuData.leftHandHeight -= BAT_MOVING_SPEED;
+					menuData.rightHandHeight += BAT_MOVING_SPEED;
 				}
 			}
 		} else if(menuData.stage_4_state == 5) {
@@ -805,27 +822,27 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			} else {
 				menuData.stage_4_state = 6;
 			}
-			if(turnCount%2 == 0) {
-				batPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-				leftHandPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-			} else if(turnCount%2 == 1) {
-				batPosition = menuData.batTimer*MOVING_AWAY_SPEED;
-				rightHandPosition = menuData.batTimer*MOVING_AWAY_SPEED;
+			if(menuData.turnCount%2 == 0) {
+				menuData.batPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
+				menuData.leftHandPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
+			} else if(menuData.turnCount%2 == 1) {
+				menuData.batPosition = menuData.batTimer*MOVING_AWAY_SPEED;
+				menuData.rightHandPosition = menuData.batTimer*MOVING_AWAY_SPEED;
 			}
-			handsZ = 1.0f - menuData.batTimer*MOVING_AWAY_SPEED/2;
+			menuData.handsZ = 1.0f - menuData.batTimer*MOVING_AWAY_SPEED/2;
 		}
 		// finally all that messy stuff is over and we just decide the winner
 		else if(menuData.stage_4_state == 6) {
 			int control;
-			if(turnCount%2 == 0) {
+			if(menuData.turnCount%2 == 0) {
 				control = menuData.team1_control;
 			} else control = menuData.team2_control;
 			if(control != 2) {
 				if(keyStates->released[control][KEY_2]) {
 					if(menuData.pointer == 0) {
-						playsFirst = 0;
+						menuData.playsFirst = 0;
 					} else {
-						playsFirst = 1;
+						menuData.playsFirst = 1;
 					}
 
 					moveToGame(stateInfo);
@@ -840,8 +857,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				}
 			} else {
 				// ai always selects to field first
-				if(turnCount%2 == 0) playsFirst = 1;
-				else playsFirst = 0;
+				if(menuData.turnCount%2 == 0) menuData.playsFirst = 1;
+				else menuData.playsFirst = 0;
 				moveToGame(stateInfo);
 			}
 		}
@@ -1478,7 +1495,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		// bat
 		glBindTexture(GL_TEXTURE_2D, team1Texture);
 		glPushMatrix();
-		glTranslatef(batPosition, handsZ, batHeight);
+		glTranslatef(menuData.batPosition, menuData.handsZ, menuData.batHeight);
 		glScalef(0.6f, 0.5f, 0.45f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 		glCallList(batDisplayList);
@@ -1493,8 +1510,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
 		else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
 		glPushMatrix();
-		glTranslatef(rightHandPosition, handsZ, rightHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+rightScaleCount*SCALE_FACTOR));
+		glTranslatef(menuData.rightHandPosition, menuData.handsZ, menuData.rightHandHeight);
+		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.rightScaleCount*SCALE_FACTOR));
 		glTranslatef(0.0f, 0.0f, -0.35f);
 		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
@@ -1510,8 +1527,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
 		else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
 		glPushMatrix();
-		glTranslatef(leftHandPosition, handsZ, leftHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+leftScaleCount*SCALE_FACTOR));
+		glTranslatef(menuData.leftHandPosition, menuData.handsZ, menuData.leftHandHeight);
+		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.leftScaleCount*SCALE_FACTOR));
 		glTranslatef(0.0f, 0.0f, -0.35f);
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
@@ -1520,7 +1537,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		// referee hand
 		glBindTexture(GL_TEXTURE_2D, team2Texture);
 		glPushMatrix();
-		glTranslatef(0.0f, 1.0f, refereeHandHeight);
+		glTranslatef(0.0f, 1.0f, menuData.refereeHandHeight);
 		glScalef(0.5f, 0.5f, 0.5f);
 		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
@@ -2141,21 +2158,21 @@ static void initHutunkeitto(StateInfo* stateInfo)
 	menuData.batTimerCount = 0;
 	menuData.stage_4_state = 0;
 	menuData.updatingCanStart = 0;
-	batHeight = BAT_DEFAULT_HEIGHT;
-	batPosition = 0.0f;
-	leftReady = 0;
-	rightReady = 0;
-	turnCount = 0;
-	handsZ = 1.0f;
-	leftHandHeight = 0.15f;
-	leftHandPosition = -0.075f;
-	rightHandHeight = 0.25f;
-	rightHandPosition = 0.075f;
-	refereeHandHeight = 0.15f;
-	tempLeftHeight = 0.0f;
-	leftScaleCount = 0;
-	rightScaleCount = 0;
-	playsFirst = 0;
+	menuData.batHeight = BAT_DEFAULT_HEIGHT;
+	menuData.batPosition = 0.0f;
+	menuData.leftReady = 0;
+	menuData.rightReady = 0;
+	menuData.turnCount = 0;
+	menuData.handsZ = 1.0f;
+	menuData.leftHandHeight = 0.15f;
+	menuData.leftHandPosition = -0.075f;
+	menuData.rightHandHeight = 0.25f;
+	menuData.rightHandPosition = 0.075f;
+	menuData.refereeHandHeight = 0.15f;
+	menuData.tempLeftHeight = 0.0f;
+	menuData.leftScaleCount = 0;
+	menuData.rightScaleCount = 0;
+	menuData.playsFirst = 0;
 }
 // and we initialize the game.
 static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, MenuInfo* menuInfo)
@@ -2171,7 +2188,7 @@ static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, Men
 		stateInfo->globalGameInfo->inningsInPeriod = menuData.inningsInPeriod;
 		stateInfo->globalGameInfo->period = 0;
 		stateInfo->globalGameInfo->winner = -1;
-		stateInfo->globalGameInfo->playsFirst = playsFirst;
+		stateInfo->globalGameInfo->playsFirst = menuData.playsFirst;
 		stateInfo->globalGameInfo->teams[0].value = menuData.team1 + 1;
 		stateInfo->globalGameInfo->teams[1].value = menuData.team2 + 1;
 		stateInfo->globalGameInfo->teams[0].control = menuData.team1_control;
@@ -2186,7 +2203,7 @@ static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, Men
 	}
 	// in the beginning and after second period we have had hutunkeitto.
 	if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-		stateInfo->globalGameInfo->playsFirst = playsFirst;
+		stateInfo->globalGameInfo->playsFirst = menuData.playsFirst;
 	}
 	// after super period we have to do different kind of initialization.
 	if(menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
