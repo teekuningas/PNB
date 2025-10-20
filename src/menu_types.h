@@ -40,10 +40,10 @@ typedef enum {
 
 typedef struct MenuData {
 	MenuStage stage;
+	TeamSelectionStage stage_1_state;
 	int pointer;
 	int rem;
 	int mark;
-	TeamSelectionStage stage_1_state;
 	int stage_4_state;
 	int stage_8_state;
 	int stage_9_state;
@@ -67,6 +67,7 @@ typedef struct MenuData {
 	int leftReady;
 	int rightReady;
 	int turnCount;
+	int cupGame;
 	float batHeight;
 	float batPosition;
 	float leftHandHeight;
@@ -81,7 +82,22 @@ typedef struct MenuData {
 	int playsFirst;
 	int teamSelection;
 	GLuint arrowTexture;
+	GLuint catcherTexture;
+	GLuint batterTexture;
+	GLuint slotTexture;
+	GLuint trophyTexture;
+	GLuint team1Texture;
+	GLuint team2Texture;
+	GLuint team3Texture;
+	GLuint team4Texture;
+	GLuint team5Texture;
+	GLuint team6Texture;
+	GLuint team7Texture;
+	GLuint team8Texture;
 	GLuint planeDisplayList;
+	GLuint handDisplayList;
+	GLuint batDisplayList;
+	Vector3D cam, look, up;
 } MenuData;
 
 #endif /* MENU_TYPES_H */
