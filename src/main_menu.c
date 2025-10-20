@@ -1,9 +1,3 @@
-/*
-	game divides into two sections, menus and the game. this is the main menu. only main.c is higher but lots of initialization code is still hidden to
-	main.c. here i utilize my font rendering a lot, i just render a background and text in it. the purpose of main menu is to let player determine
-	which teams are gonna play, who are controlling them and what are the batting orders etc. also cup mode is traversed through here.
-*/
-
 #include "globals.h"
 #include "render.h"
 #include "font.h"
@@ -13,8 +7,6 @@
 #include "save.h"
 #include "menu_types.h"
 #include "team_selection_menu.h"
-
-static MenuData menuData;
 
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
@@ -71,28 +63,12 @@ static MenuData menuData;
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
 
-static GLuint catcherTexture;
-static GLuint batterTexture;
-static GLuint slotTexture;
-static GLuint trophyTexture;
-static GLuint team1Texture;
-static GLuint team2Texture;
-static GLuint team3Texture;
-static GLuint team4Texture;
-static GLuint team5Texture;
-static GLuint team6Texture;
-static GLuint team7Texture;
-static GLuint team8Texture;
+static MenuData menuData;
 
 static MeshObject* planeMesh;
-
 static MeshObject* handMesh;
-static GLuint handDisplayList;
-
 static MeshObject* batMesh;
-static GLuint batDisplayList;
 
-static Vector3D cam, look, up;
 static float lightPos[4];
 
 static void loadMenuScreenSettings();
@@ -110,8 +86,6 @@ static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha
 
 static CupInfo cupInfo;
 static CupInfo saveData[5];
-
-static int cupGame;
 
 typedef struct _TreeCoordinates {
 	float x;
@@ -305,35 +279,35 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	menuInfo->mode = MENU_ENTRY_NORMAL;
 
-	cam.x = 0.0f;
-	cam.y = CAM_HEIGHT;
-	cam.z = 0.0f;
-	up.x = 0.0f;
-	up.y = 0.0f;
-	up.z = -1.0f;
-	look.x = 0.0f;
-	look.y = 0.0f;
-	look.z = 0.0f;
+	menuData.cam.x = 0.0f;
+	menuData.cam.y = CAM_HEIGHT;
+	menuData.cam.z = 0.0f;
+	menuData.up.x = 0.0f;
+	menuData.up.y = 0.0f;
+	menuData.up.z = -1.0f;
+	menuData.look.x = 0.0f;
+	menuData.look.y = 0.0f;
+	menuData.look.z = 0.0f;
 
 	if(tryLoadingTextureGL(&menuData.arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
-	if(tryLoadingTextureGL(&catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
-	if(tryLoadingTextureGL(&batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
-	if(tryLoadingTextureGL(&slotTexture, "data/textures/cup_tree_slot.tga", "slot") != 0) return -1;
-	if(tryLoadingTextureGL(&trophyTexture, "data/textures/menu_trophy.tga", "trophy") != 0) return -1;
-	if(tryLoadingTextureGL(&team1Texture, "data/textures/team1.tga", "team1") != 0) return -1;
-	if(tryLoadingTextureGL(&team2Texture, "data/textures/team2.tga", "team2") != 0) return -1;
-	if(tryLoadingTextureGL(&team3Texture, "data/textures/team3.tga", "team3") != 0) return -1;
-	if(tryLoadingTextureGL(&team4Texture, "data/textures/team4.tga", "team4") != 0) return -1;
-	if(tryLoadingTextureGL(&team5Texture, "data/textures/team5.tga", "team5") != 0) return -1;
-	if(tryLoadingTextureGL(&team6Texture, "data/textures/team6.tga", "team6") != 0) return -1;
-	if(tryLoadingTextureGL(&team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
-	if(tryLoadingTextureGL(&team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.slotTexture, "data/textures/cup_tree_slot.tga", "slot") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.trophyTexture, "data/textures/menu_trophy.tga", "trophy") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team1Texture, "data/textures/team1.tga", "team1") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team2Texture, "data/textures/team2.tga", "team2") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team3Texture, "data/textures/team3.tga", "team3") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team4Texture, "data/textures/team4.tga", "team4") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team5Texture, "data/textures/team5.tga", "team5") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team6Texture, "data/textures/team6.tga", "team6") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
+	if(tryLoadingTextureGL(&menuData.team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &menuData.planeDisplayList) != 0) return -1;
 	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &batDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &menuData.batDisplayList) != 0) return -1;
 	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &handDisplayList) != 0) return -1;
+	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &menuData.handDisplayList) != 0) return -1;
 
 	if(refreshLoadCups(stateInfo) != 0) {
 		printf("Something wrong with the save file.\n");
@@ -374,7 +348,7 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
 	loadMenuScreenSettings(stateInfo, menuInfo);
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
+	gluLookAt(menuData.cam.x, menuData.cam.y, menuData.cam.z, menuData.look.x, menuData.look.y, menuData.look.z, menuData.up.x, menuData.up.y, menuData.up.z);
 	drawFontBackground();
 	drawLoadingTexts(stateInfo);
 }
@@ -419,14 +393,14 @@ static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha
 	glCallList(menuData.planeDisplayList);
 	glPopMatrix();
 	// catcher
-	glBindTexture(GL_TEXTURE_2D, catcherTexture);
+	glBindTexture(GL_TEXTURE_2D, menuData.catcherTexture);
 	glPushMatrix();
 	glTranslatef(0.7f, 1.0f, 0.0f);
 	glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
 	glCallList(menuData.planeDisplayList);
 	glPopMatrix();
 	// batter
-	glBindTexture(GL_TEXTURE_2D, batterTexture);
+	glBindTexture(GL_TEXTURE_2D, menuData.batterTexture);
 	glPushMatrix();
 	glTranslatef(-0.6f, 1.0f, 0.0f);
 	glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
@@ -693,7 +667,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuInfo->mode = MENU_ENTRY_NORMAL;
 				loadMenuScreenSettings(stateInfo, menuInfo);
 
-				if(cupGame == 1) {
+				if(menuData.cupGame == 1) {
 					int i, j;
 					int scheduleSlot = -1;
 					int playerWon = 0;
@@ -1087,7 +1061,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 								menuData.team1_control = 2;
 							}
 							menuData.inningsInPeriod = cupInfo.inningCount;
-							cupGame = 1;
+							menuData.cupGame = 1;
 						} else {
 							// otherwise we update them right away.
 							updateCupTreeAfterDay(stateInfo, -1, 0);
@@ -1230,7 +1204,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 // then we call methods to handle text rendering.
 void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 {
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
+	gluLookAt(menuData.cam.x, menuData.cam.y, menuData.cam.z, menuData.look.x, menuData.look.y, menuData.look.z, menuData.up.x, menuData.up.y, menuData.up.z);
 	switch(menuData.stage) {
 	case MENU_STAGE_FRONT:
 		drawFrontMenu(stateInfo, menuInfo, alpha);
@@ -1274,55 +1248,55 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 			lightPos[3] = 1.0f;
 			glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 			// bat
-			glBindTexture(GL_TEXTURE_2D, team1Texture);
+			glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
 			glPushMatrix();
 			glTranslatef(menuData.batPosition, menuData.handsZ, menuData.batHeight);
 			glScalef(0.6f, 0.5f, 0.45f);
 			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-			glCallList(batDisplayList);
+			glCallList(menuData.batDisplayList);
 			glPopMatrix();
 			// right hand
-			if(menuData.team2 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
-			else if(menuData.team2 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
-			else if(menuData.team2 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
-			else if(menuData.team2 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
-			else if(menuData.team2 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
-			else if(menuData.team2 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
-			else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
-			else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
+			if(menuData.team2 == 0) glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
+			else if(menuData.team2 == 1) glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
+			else if(menuData.team2 == 2) glBindTexture(GL_TEXTURE_2D, menuData.team3Texture);
+			else if(menuData.team2 == 3) glBindTexture(GL_TEXTURE_2D, menuData.team4Texture);
+			else if(menuData.team2 == 4) glBindTexture(GL_TEXTURE_2D, menuData.team5Texture);
+			else if(menuData.team2 == 5) glBindTexture(GL_TEXTURE_2D, menuData.team6Texture);
+			else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, menuData.team7Texture);
+			else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, menuData.team8Texture);
 			glPushMatrix();
 			glTranslatef(menuData.rightHandPosition, menuData.handsZ, menuData.rightHandHeight);
 			glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.rightScaleCount*SCALE_FACTOR));
 			glTranslatef(0.0f, 0.0f, -0.35f);
 			glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
 			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-			glCallList(handDisplayList);
+			glCallList(menuData.handDisplayList);
 			glPopMatrix();
 			// left hand
-			if(menuData.team1 == 0) glBindTexture(GL_TEXTURE_2D, team1Texture);
-			else if(menuData.team1 == 1) glBindTexture(GL_TEXTURE_2D, team2Texture);
-			else if(menuData.team1 == 2) glBindTexture(GL_TEXTURE_2D, team3Texture);
-			else if(menuData.team1 == 3) glBindTexture(GL_TEXTURE_2D, team4Texture);
-			else if(menuData.team1 == 4) glBindTexture(GL_TEXTURE_2D, team5Texture);
-			else if(menuData.team1 == 5) glBindTexture(GL_TEXTURE_2D, team6Texture);
-			else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, team7Texture);
-			else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, team8Texture);
+			if(menuData.team1 == 0) glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
+			else if(menuData.team1 == 1) glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
+			else if(menuData.team1 == 2) glBindTexture(GL_TEXTURE_2D, menuData.team3Texture);
+			else if(menuData.team1 == 3) glBindTexture(GL_TEXTURE_2D, menuData.team4Texture);
+			else if(menuData.team1 == 4) glBindTexture(GL_TEXTURE_2D, menuData.team5Texture);
+			else if(menuData.team1 == 5) glBindTexture(GL_TEXTURE_2D, menuData.team6Texture);
+			else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, menuData.team7Texture);
+			else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, menuData.team8Texture);
 			glPushMatrix();
 			glTranslatef(menuData.leftHandPosition, menuData.handsZ, menuData.leftHandHeight);
 			glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.leftScaleCount*SCALE_FACTOR));
 			glTranslatef(0.0f, 0.0f, -0.35f);
 			glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-			glCallList(handDisplayList);
+			glCallList(menuData.handDisplayList);
 			glPopMatrix();
 			// referee hand
-			glBindTexture(GL_TEXTURE_2D, team2Texture);
+			glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
 			glPushMatrix();
 			glTranslatef(0.0f, 1.0f, menuData.refereeHandHeight);
 			glScalef(0.5f, 0.5f, 0.5f);
 			glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 			glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-			glCallList(handDisplayList);
+			glCallList(menuData.handDisplayList);
 			glPopMatrix();
 
 			glDisable(GL_LIGHTING);
@@ -1385,14 +1359,14 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 				// catcher
-				glBindTexture(GL_TEXTURE_2D, catcherTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.catcherTexture);
 				glPushMatrix();
 				glTranslatef(0.7f, 1.0f, 0.0f);
 				glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
 				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 				// batter
-				glBindTexture(GL_TEXTURE_2D, batterTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.batterTexture);
 				glPushMatrix();
 				glTranslatef(-0.6f, 1.0f, 0.0f);
 				glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
@@ -1415,7 +1389,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 			} else if(menuData.stage_8_state == 3) {
 				int i;
 				for(i = 0; i < SLOT_COUNT; i++) {
-					glBindTexture(GL_TEXTURE_2D, slotTexture);
+					glBindTexture(GL_TEXTURE_2D, menuData.slotTexture);
 					glPushMatrix();
 					glTranslatef(treeCoordinates[i].x, 1.0f, treeCoordinates[i].y);
 					glScalef(0.2f, 0.15f, 0.10f);
@@ -1430,7 +1404,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 				glCallList(menuData.planeDisplayList);
 				glPopMatrix();
 			} else if(menuData.stage_8_state == 7) {
-				glBindTexture(GL_TEXTURE_2D, trophyTexture);
+				glBindTexture(GL_TEXTURE_2D, menuData.trophyTexture);
 				glPushMatrix();
 				glTranslatef(0.0f, 1.0f, -0.25f);
 				glScalef(0.3f, 0.3f, 0.3f);
@@ -1832,7 +1806,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		menuData.team1_control = 0;
 		menuData.team2_control = 0;
 		// after cupGame when initializing menu we go to cup menu, otherwise to main menu.
-		if(cupGame != 1) {
+		if(menuData.cupGame != 1) {
 			menuData.rem = 4;
 			menuData.pointer = 0;
 			menuData.stage = MENU_STAGE_FRONT;
