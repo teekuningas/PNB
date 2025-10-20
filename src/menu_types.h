@@ -38,9 +38,21 @@ typedef enum {
 	TEAM_SELECTION_STAGE_INNINGS
 } TeamSelectionStage;
 
+// State specific to the team selection screen
+typedef struct {
+	TeamSelectionStage stage_1_state;
+	int pointer;
+	int team1;
+	int team2;
+	int team1_controller;
+	int team2_controller;
+	int innings;
+	int rem;
+	int cupGame;
+} TeamSelectionState;
 typedef struct MenuData {
 	MenuStage stage;
-	TeamSelectionStage stage_1_state;
+	TeamSelectionState team_selection;
 	int pointer;
 	int rem;
 	int mark;
