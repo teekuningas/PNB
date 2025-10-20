@@ -365,9 +365,9 @@ static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates*
 	}
 	if(keyStates->released[0][KEY_2]) {
 		if(menuData.pointer == 0) {
+			initTeamSelectionState(&menuData.team_selection);
+			menuData.team_selection.rem = stateInfo->numTeams;
 			menuData.stage = MENU_STAGE_TEAM_SELECTION;
-			menuData.rem = stateInfo->numTeams;
-			menuData.pointer = DEFAULT_TEAM_1;
 		} else if(menuData.pointer == 1) {
 			menuData.stage = MENU_STAGE_CUP;
 			menuData.stage_8_state = 0;
@@ -425,9 +425,29 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	case MENU_STAGE_FRONT:
 		updateFrontMenu(stateInfo, menuInfo, keyStates, globalGameInfo);
 		break;
-	case MENU_STAGE_TEAM_SELECTION:
-		updateTeamSelectionMenu(&menuData, stateInfo, menuInfo, keyStates, globalGameInfo);
+	case MENU_STAGE_TEAM_SELECTION: {
+		MenuStage nextStage = updateTeamSelectionMenu(&menuData.team_selection, stateInfo, keyStates);
+		if (nextStage != MENU_STAGE_TEAM_SELECTION) {
+			// Explicitly copy the necessary data back to the main state object
+			// when the team selection process is finished.
+			menuData.team1 = menuData.team_selection.team1;
+			menuData.team2 = menuData.team_selection.team2;
+			menuData.team1_control = menuData.team_selection.team1_controller;
+			menuData.team2_control = menuData.team_selection.team2_controller;
+			menuData.inningsInPeriod = menuData.team_selection.innings;
+			menuData.cupGame = menuData.team_selection.cupGame;
+			// Also, reset the UI state (pointer and rem) for the next menu stage.
+			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
+				menuData.pointer = 0;
+				menuData.rem = 13; // 12 players + "Continue"
+			} else if (nextStage == MENU_STAGE_FRONT) {
+				menuData.pointer = 0; // Point to "Play"
+				menuData.rem = 4;     // "Play", "Cup", "Help", "Quit"
+			}
+			menuData.stage = nextStage;
+		}
 		break;
+	}
 	default:
 		// batting order for team 1
 		if(menuData.stage == MENU_STAGE_BATTING_ORDER_1) {
@@ -1210,7 +1230,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		drawFrontMenu(stateInfo, menuInfo, alpha);
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
-		drawTeamSelectionMenu(&menuData, stateInfo, menuInfo, alpha);
+		drawTeamSelectionMenu(&menuData.team_selection, stateInfo, &menuData);
 		break;
 	default:
 		if((menuData.stage == MENU_STAGE_BATTING_ORDER_1 && menuData.team1_control != 2) || (menuData.stage == MENU_STAGE_BATTING_ORDER_2 && menuData.team2_control != 2)) {
@@ -1798,7 +1818,6 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 			menuData.batting_order[i] = i;
 		}
 		menuData.mark = 0;
-		menuData.stage_1_state = 0;
 		menuData.inningsInPeriod = 0;
 		menuData.stage_9_state = 0;
 		menuData.team1 = 0;
