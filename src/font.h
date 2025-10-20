@@ -4,7 +4,7 @@
 #include "globals.h"
 
 int initFont();
-void printText(char* str, unsigned int len, float x, float y, float size);
+void printText(const char* str, unsigned int len, float x, float y, float size);
 void drawFontBackground();
 int cleanFont();
 
