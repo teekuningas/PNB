@@ -28,7 +28,8 @@ typedef enum {
 	MENU_STAGE_HOMERUN_CONTEST_1,
 	MENU_STAGE_HOMERUN_CONTEST_2,
 	MENU_STAGE_CUP,
-	MENU_STAGE_HELP
+	MENU_STAGE_HELP,
+	MENU_STAGE_GO_TO_GAME
 } MenuStage;
 
 typedef enum {
@@ -38,6 +39,16 @@ typedef enum {
 	TEAM_SELECTION_STAGE_CONTROL_2,
 	TEAM_SELECTION_STAGE_INNINGS
 } TeamSelectionStage;
+
+// State for batting order screen
+typedef struct {
+	int pointer;
+	int rem;
+	int mark;
+	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team_index;
+	int player_control;
+} BattingOrderState;
 
 // State specific to the team selection screen
 typedef struct {
@@ -55,9 +66,9 @@ typedef struct {
 typedef struct MenuData {
 	MenuStage stage;
 	TeamSelectionState team_selection;
+	BattingOrderState batting_order;
 	int pointer;
 	int rem;
-	int mark;
 	int stage_4_state;
 	int stage_8_state;
 	int stage_9_state;
@@ -73,7 +84,6 @@ typedef struct MenuData {
 	int inningsInPeriod;
 	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
 	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
 	int team_1_choices[2][5];
 	int team_2_choices[2][5];
 	int choiceCounter;

@@ -40,7 +40,7 @@ void drawFontBackground()
 	glCallList(planeDisplayList);
 	glPopMatrix();
 }
-void printText(char* str, unsigned int len, float x, float y, float size)
+void printText(const char* str, unsigned int len, float x, float y, float size)
 {
 	int i;
 	glBindTexture(GL_TEXTURE_2D, fontTexture);

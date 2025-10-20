@@ -9,7 +9,7 @@ _OBJ = main.o action_implementation.o action_invocations.o
 _OBJ += ball.o fill_player_data.o font.o
 _OBJ += game_analysis.o game_manipulation.o game_screen.o
 _OBJ += immutable_world.o input.o common_logic.o
-_OBJ += loadobj.o main_menu.o mutable_world.o team_selection_menu.o
+_OBJ += loadobj.o main_menu.o mutable_world.o team_selection_menu.o batting_order_menu.o
 _OBJ += player.o render.o sound.o save.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
