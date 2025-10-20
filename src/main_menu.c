@@ -65,12 +65,6 @@
 
 static MenuData menuData;
 
-static MeshObject* planeMesh;
-static MeshObject* handMesh;
-static MeshObject* batMesh;
-
-static float lightPos[4];
-
 static void loadMenuScreenSettings();
 static void drawFront();
 static void drawGameOverTexts();
@@ -302,12 +296,12 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 	if(tryLoadingTextureGL(&menuData.team6Texture, "data/textures/team6.tga", "team6") != 0) return -1;
 	if(tryLoadingTextureGL(&menuData.team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
 	if(tryLoadingTextureGL(&menuData.team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &menuData.planeDisplayList) != 0) return -1;
-	batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", batMesh, &menuData.batDisplayList) != 0) return -1;
-	handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", handMesh, &menuData.handDisplayList) != 0) return -1;
+	menuData.planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
+	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", menuData.planeMesh, &menuData.planeDisplayList) != 0) return -1;
+	menuData.batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
+	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", menuData.batMesh, &menuData.batDisplayList) != 0) return -1;
+	menuData.handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
+	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", menuData.handMesh, &menuData.handDisplayList) != 0) return -1;
 
 	if(refreshLoadCups(stateInfo) != 0) {
 		printf("Something wrong with the save file.\n");
@@ -1262,11 +1256,11 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 
 			glEnable(GL_LIGHTING);
 			glEnable(GL_DEPTH_TEST);
-			lightPos[0] = LIGHT_SOURCE_POSITION_X;
-			lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-			lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-			lightPos[3] = 1.0f;
-			glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+			menuData.lightPos[0] = LIGHT_SOURCE_POSITION_X;
+			menuData.lightPos[1] = LIGHT_SOURCE_POSITION_Y;
+			menuData.lightPos[2] = LIGHT_SOURCE_POSITION_Z;
+			menuData.lightPos[3] = 1.0f;
+			glLightfv(GL_LIGHT0, GL_POSITION, menuData.lightPos);
 			// bat
 			glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
 			glPushMatrix();
@@ -1801,9 +1795,9 @@ static void drawPlayerList(StateInfo* stateInfo)
 
 int cleanMainMenu(StateInfo* stateInfo)
 {
-	cleanMesh(planeMesh);
-	cleanMesh(batMesh);
-	cleanMesh(handMesh);
+	cleanMesh(menuData.planeMesh);
+	cleanMesh(menuData.handMesh);
+	cleanMesh(menuData.batMesh);
 	return 0;
 }
 

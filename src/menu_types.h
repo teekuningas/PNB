@@ -1,7 +1,8 @@
 #ifndef MENU_TYPES_H
 #define MENU_TYPES_H
 
-#include "globals.h" // For PLAYERS_IN_TEAM, JOKER_COUNT, etc.
+#include "globals.h"
+#include "render.h"
 
 // Describes the reason the menu is being entered, usually from the game screen.
 // This determines the menu's starting screen.
@@ -50,6 +51,7 @@ typedef struct {
 	int rem;
 	int cupGame;
 } TeamSelectionState;
+
 typedef struct MenuData {
 	MenuStage stage;
 	TeamSelectionState team_selection;
@@ -110,6 +112,10 @@ typedef struct MenuData {
 	GLuint handDisplayList;
 	GLuint batDisplayList;
 	Vector3D cam, look, up;
+	float lightPos[4];
+	MeshObject* planeMesh;
+	MeshObject* handMesh;
+	MeshObject* batMesh;
 } MenuData;
 
 #endif /* MENU_TYPES_H */
