@@ -3,6 +3,7 @@
 #include "font.h"
 #include "main_menu.h"
 #include "globals.h"
+#include "menu_types.h"
 
 #define BAT_DEFAULT_HEIGHT -1.0f
 #define LEFT_HAND_DEFAULT_HEIGHT 0.1f
@@ -18,7 +19,6 @@
 #define HUTUNKEITTO_TEAM_TEXT_HEIGHT 0.45f
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
-#define ARROW_SCALE 0.05f
 
 static void drawHutunkeittoTexts(const HutunkeittoState *state)
 {

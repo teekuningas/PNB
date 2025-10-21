@@ -4,6 +4,25 @@
 #include "globals.h"
 #include "render.h"
 
+#define ARROW_SCALE 0.05f
+#define ARROW_SMALLER_SCALE 0.03f
+
+#define PLAYER_LIST_ARROW_CONTINUE_POS 0.35f
+#define PLAYER_LIST_ARROW_POS 0.42f
+#define PLAYER_LIST_TEAM_TEXT_HEIGHT -0.4f
+#define PLAYER_LIST_TEAM_TEXT_POS -0.1f
+#define PLAYER_LIST_INFO_HEIGHT -0.3f
+#define PLAYER_LIST_INFO_OFFSET 0.22f
+#define PLAYER_LIST_INFO_NAME_OFFSET 0.1f
+#define PLAYER_LIST_INFO_FIRST -0.4f
+#define PLAYER_LIST_FIRST_PLAYER_HEIGHT -0.2f
+#define PLAYER_LIST_PLAYER_OFFSET 0.05f
+#define PLAYER_LIST_NUMBER_OFFSET 0.1f
+#define PLAYER_LIST_CONTINUE_HEIGHT 0.45f
+
+#define DEFAULT_TEAM_1 0
+#define DEFAULT_TEAM_2 1
+
 // Describes the reason the menu is being entered, usually from the game screen.
 // This determines the menu's starting screen.
 typedef enum {
