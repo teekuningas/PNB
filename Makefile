@@ -1,20 +1,16 @@
-IDIR=./src
+IDIR = -I./src/core -I./src/game -I./src/include -I./src/menu
 CC=gcc
-CFLAGS=-I$(IDIR) -O2 -Wall
+CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
 ODIR=obj
-SRCDIR=./src
 
-_OBJ = main.o action_implementation.o action_invocations.o
-_OBJ += ball.o fill_player_data.o font.o
-_OBJ += game_analysis.o game_manipulation.o game_screen.o
-_OBJ += immutable_world.o input.o common_logic.o
-_OBJ += loadobj.o main_menu.o mutable_world.o team_selection_menu.o batting_order_menu.o hutunkeitto_menu.o
-_OBJ += player.o render.o sound.o save.o
+_OBJ = core/main.o core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/save.o core/sound.o
+_OBJ += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o
+_OBJ += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-obj/%.o: $(SRCDIR)/%.c
-	mkdir -p obj
+obj/%.o: src/%.c
+	mkdir -p $(@D)
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
 main: $(OBJ)
@@ -26,7 +22,8 @@ run:
 
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~ 
+	rm -rf $(ODIR)
+	rm -f *~ core
 
 .PHONY: shell
 shell:
