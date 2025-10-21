@@ -2,8 +2,8 @@
 #include "render.h"
 #include "font.h"
 #include "main_menu.h"
+#include "menu_types.h"
 
-#define ARROW_SCALE 0.05f
 #define SELECTION_ARROW_LEFT -0.05f
 #define SELECTION_ARROW_RIGHT 0.4f
 
@@ -15,8 +15,6 @@
 
 #define DEFAULT_CONTROLLED_1 0
 #define DEFAULT_CONTROLLED_2 2
-#define DEFAULT_TEAM_1 0
-#define DEFAULT_TEAM_2 1
 
 void initTeamSelectionState(TeamSelectionState *state)
 {
