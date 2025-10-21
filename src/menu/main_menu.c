@@ -9,6 +9,7 @@
 #include "team_selection_menu.h"
 #include "batting_order_menu.h"
 #include "hutunkeitto_menu.h"
+#include "front_menu.h"
 
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
@@ -20,11 +21,6 @@
 #define FRONT_ARROW_POS 0.15f
 #define PLAYER_LIST_ARROW_CONTINUE_POS 0.35f
 #define PLAYER_LIST_ARROW_POS 0.42f
-
-#define PLAY_TEXT_HEIGHT -0.1f
-#define CUP_TEXT_HEIGHT 0.0f
-#define HELP_TEXT_HEIGHT 0.1f
-#define QUIT_TEXT_HEIGHT 0.2f
 
 #define HELP_LEFT -0.75f
 
@@ -68,15 +64,12 @@
 static MenuData menuData;
 
 static void loadMenuScreenSettings();
-static void drawFront();
 static void drawGameOverTexts();
 
 static void drawCup();
 static void drawHelp();
 static void moveToGame();
 static void drawLoadingTexts();
-static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
-static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 
 static CupInfo cupInfo;
 static CupInfo saveData[5];
@@ -347,65 +340,6 @@ void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 	drawLoadingTexts(stateInfo);
 }
 
-static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
-{
-	if(keyStates->released[0][KEY_DOWN]) {
-		menuData.pointer +=1;
-		menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-	}
-	if(keyStates->released[0][KEY_UP]) {
-		menuData.pointer -=1;
-		menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-	}
-	if(keyStates->released[0][KEY_2]) {
-		if(menuData.pointer == 0) {
-			initTeamSelectionState(&menuData.team_selection);
-			menuData.team_selection.rem = stateInfo->numTeams;
-			menuData.stage = MENU_STAGE_TEAM_SELECTION;
-		} else if(menuData.pointer == 1) {
-			menuData.stage = MENU_STAGE_CUP;
-			menuData.stage_8_state = 0;
-			menuData.rem = 2;
-			menuData.pointer = 0;
-		} else if(menuData.pointer == 2) {
-			menuData.stage = MENU_STAGE_HELP;
-		} else if(menuData.pointer == 3) stateInfo->screen = -1;
-	}
-}
-
-static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
-{
-	drawFontBackground();
-	// arrow
-	glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
-	glPushMatrix();
-	if(menuData.pointer == 0) glTranslatef(FRONT_ARROW_POS, 1.0f, PLAY_TEXT_HEIGHT);
-	else if(menuData.pointer == 1) glTranslatef(FRONT_ARROW_POS, 1.0f, CUP_TEXT_HEIGHT);
-	else if(menuData.pointer == 2) glTranslatef(FRONT_ARROW_POS, 1.0f, HELP_TEXT_HEIGHT);
-	else glTranslatef(FRONT_ARROW_POS, 1.0f, QUIT_TEXT_HEIGHT);
-	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-	glCallList(menuData.planeDisplayList);
-	glPopMatrix();
-	// catcher
-	glBindTexture(GL_TEXTURE_2D, menuData.catcherTexture);
-	glPushMatrix();
-	glTranslatef(0.7f, 1.0f, 0.0f);
-	glScalef(FIGURE_SCALE, FIGURE_SCALE, FIGURE_SCALE);
-	glCallList(menuData.planeDisplayList);
-	glPopMatrix();
-	// batter
-	glBindTexture(GL_TEXTURE_2D, menuData.batterTexture);
-	glPushMatrix();
-	glTranslatef(-0.6f, 1.0f, 0.0f);
-	glScalef(FIGURE_SCALE/2, FIGURE_SCALE, FIGURE_SCALE);
-	glCallList(menuData.planeDisplayList);
-	glPopMatrix();
-	drawFront(stateInfo);
-}
-
-
-
-
 void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo)
 {
 	MenuStage nextStage;
@@ -417,7 +351,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	// main main menu.
 	switch(menuData.stage) {
 	case MENU_STAGE_FRONT:
-		updateFrontMenu(stateInfo, menuInfo, keyStates, globalGameInfo);
+		nextStage = updateFrontMenu(&menuData.front_menu, &menuData.team_selection, keyStates, stateInfo);
+		if (nextStage == MENU_STAGE_CUP) {
+			menuData.stage_8_state = 0;
+			menuData.rem = 2;
+			menuData.pointer = 0;
+		}
+		menuData.stage = nextStage;
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
 		nextStage = updateTeamSelectionMenu(&menuData.team_selection, stateInfo, keyStates);
@@ -434,8 +374,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 				initBattingOrderState(&menuData.batting_order, menuData.team1, menuData.team1_control);
 			} else if (nextStage == MENU_STAGE_FRONT) {
-				menuData.pointer = 0; // Point to "Play"
-				menuData.rem = 4;     // "Play", "Cup", "Help", "Quit"
+				initFrontMenuState(&menuData.front_menu);
 			}
 			menuData.stage = nextStage;
 		}
@@ -733,8 +672,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			}
 			if(keyStates->released[0][KEY_1]) {
 				menuData.stage = MENU_STAGE_FRONT;
-				menuData.pointer = 1;
-				menuData.rem = 4;
+				initFrontMenuState(&menuData.front_menu);
+				menuData.front_menu.pointer = 1;
 			}
 		} else if(menuData.stage_8_state == 1) {
 			if(menuData.stage_8_state_1_level == 0) {
@@ -892,8 +831,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 					menuData.rem = 5;
 				} else if(menuData.pointer == 4) {
 					menuData.stage = MENU_STAGE_FRONT;
-					menuData.pointer = 0;
-					menuData.rem = 4;
+					initFrontMenuState(&menuData.front_menu);
 				}
 			}
 		} else if(menuData.stage_8_state == 3) {
@@ -1017,7 +955,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 	gluLookAt(menuData.cam.x, menuData.cam.y, menuData.cam.z, menuData.look.x, menuData.look.y, menuData.look.z, menuData.up.x, menuData.up.y, menuData.up.z);
 	switch(menuData.stage) {
 	case MENU_STAGE_FRONT:
-		drawFrontMenu(stateInfo, menuInfo, alpha);
+		drawFrontMenu(&menuData.front_menu, &menuData);
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
 		drawTeamSelectionMenu(&menuData.team_selection, stateInfo, &menuData);
@@ -1179,15 +1117,6 @@ static void drawLoadingTexts(StateInfo* stateInfo)
 	printText("Loading resources", 17, -0.21f, LOADING_MODELS_HEIGHT, 2);
 	printText("Your patience is appreciated", 28, -0.48f, LOADING_APPRECIATED_HEIGHT, 3);
 	printText("Erkka Heinila 2013", 18, -0.22f, LOADING_AUTHOR_HEIGHT, 2);
-}
-
-static void drawFront(StateInfo* stateInfo)
-{
-	printText("P N B", 5, -0.23f, -0.4f, 8);
-	printText("Play", 4, -0.1f, PLAY_TEXT_HEIGHT, 3);
-	printText("Cup", 3, -0.085f, CUP_TEXT_HEIGHT, 3);
-	printText("Help", 4, -0.1f, HELP_TEXT_HEIGHT, 3);
-	printText("Quit", 4, -0.1f, QUIT_TEXT_HEIGHT, 3);
 }
 
 static void drawCup(StateInfo* stateInfo)
@@ -1493,8 +1422,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 		menuData.team2_control = 0;
 		// after cupGame when initializing menu we go to cup menu, otherwise to main menu.
 		if(menuData.cupGame != 1) {
-			menuData.rem = 4;
-			menuData.pointer = 0;
+			initFrontMenuState(&menuData.front_menu);
 			menuData.stage = MENU_STAGE_FRONT;
 			menuData.stage_8_state = 0;
 		} else {

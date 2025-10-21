@@ -20,7 +20,7 @@
 
 void initTeamSelectionState(TeamSelectionState *state)
 {
-	state->stage_1_state = TEAM_SELECTION_STAGE_TEAM_1;
+	state->state = TEAM_SELECTION_STAGE_TEAM_1;
 	state->pointer = DEFAULT_TEAM_1;
 	state->team1 = DEFAULT_TEAM_1;
 	state->team2 = DEFAULT_TEAM_2;
@@ -34,21 +34,21 @@ static void drawSelection(const TeamSelectionState* state, const StateInfo* stat
 {
 	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
 
-	if(state->stage_1_state == TEAM_SELECTION_STAGE_TEAM_1) {
+	if(state->state == TEAM_SELECTION_STAGE_TEAM_1) {
 		int i;
 		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
 		for(i = 0; i < stateInfo->numTeams; i++) {
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
-	} else if(state->stage_1_state == TEAM_SELECTION_STAGE_CONTROL_1) {
+	} else if(state->state == TEAM_SELECTION_STAGE_CONTROL_1) {
 		printText("Controlled by", 13, -0.5f, SELECTION_TEAM_TEXT_HEIGHT, 3);
 		printText("Pad 1", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT, 2);
 		printText("Pad 2", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
 	}
 
-	else if(state->stage_1_state == TEAM_SELECTION_STAGE_TEAM_2) {
+	else if(state->state == TEAM_SELECTION_STAGE_TEAM_2) {
 		int i;
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
@@ -56,13 +56,13 @@ static void drawSelection(const TeamSelectionState* state, const StateInfo* stat
 			char* str = stateInfo->teamData[i].name;
 			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
 		}
-	} else if(state->stage_1_state == TEAM_SELECTION_STAGE_CONTROL_2) {
+	} else if(state->state == TEAM_SELECTION_STAGE_CONTROL_2) {
 		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
 		printText("Controlled by", 13, -0.05f, SELECTION_TEAM_TEXT_HEIGHT, 3);
 		printText("Pad 1", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT, 2);
 		printText("Pad 2", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
 		printText("AI", 2, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	} else if(state->stage_1_state == TEAM_SELECTION_STAGE_INNINGS) {
+	} else if(state->state == TEAM_SELECTION_STAGE_INNINGS) {
 		printText("select number of innings", 24, -0.45f, -0.25f, 3);
 		printText("1", 1, -0.05f, SELECTION_ALT_1_HEIGHT, 3);
 		printText("2", 1, -0.05f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 3);
@@ -73,13 +73,13 @@ static void drawSelection(const TeamSelectionState* state, const StateInfo* stat
 
 MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *stateInfo, const KeyStates *keyStates)
 {
-	switch(state->stage_1_state) {
+	switch(state->state) {
 	case TEAM_SELECTION_STAGE_TEAM_1:
 		if(keyStates->released[0][KEY_1]) {
 			return MENU_STAGE_FRONT;
 		}
 		if(keyStates->released[0][KEY_2]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_CONTROL_1;
+			state->state = TEAM_SELECTION_STAGE_CONTROL_1;
 			state->team1 = state->pointer;
 			state->pointer = DEFAULT_CONTROLLED_1;
 			state->rem = 3;
@@ -95,13 +95,13 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *st
 		break;
 	case TEAM_SELECTION_STAGE_CONTROL_1:
 		if(keyStates->released[0][KEY_1]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_TEAM_1;
+			state->state = TEAM_SELECTION_STAGE_TEAM_1;
 			state->pointer = state->team1;
 			state->rem = stateInfo->numTeams;
 
 		}
 		if(keyStates->released[0][KEY_2]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_TEAM_2;
+			state->state = TEAM_SELECTION_STAGE_TEAM_2;
 			state->team1_controller = state->pointer;
 			state->pointer = DEFAULT_TEAM_2;
 			state->rem = stateInfo->numTeams;
@@ -117,13 +117,13 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *st
 		break;
 	case TEAM_SELECTION_STAGE_TEAM_2:
 		if(keyStates->released[0][KEY_1]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_CONTROL_1;
+			state->state = TEAM_SELECTION_STAGE_CONTROL_1;
 			state->rem = 3;
 			state->pointer = state->team1_controller;
 
 		}
 		if(keyStates->released[0][KEY_2]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_CONTROL_2;
+			state->state = TEAM_SELECTION_STAGE_CONTROL_2;
 			state->team2 = state->pointer;
 			state->rem = 3;
 			state->pointer = DEFAULT_CONTROLLED_2;
@@ -143,13 +143,13 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *st
 		break;
 	case TEAM_SELECTION_STAGE_CONTROL_2:
 		if(keyStates->released[0][KEY_1]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_TEAM_2;
+			state->state = TEAM_SELECTION_STAGE_TEAM_2;
 			state->rem = stateInfo->numTeams;
 			state->pointer = state->team2;
 
 		}
 		if(keyStates->released[0][KEY_2]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_INNINGS;
+			state->state = TEAM_SELECTION_STAGE_INNINGS;
 			state->team2_controller = state->pointer;
 			state->pointer = 1;
 			state->rem = 3;
@@ -173,7 +173,7 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *st
 		break;
 	case TEAM_SELECTION_STAGE_INNINGS:
 		if(keyStates->released[0][KEY_1]) {
-			state->stage_1_state = TEAM_SELECTION_STAGE_CONTROL_2;
+			state->state = TEAM_SELECTION_STAGE_CONTROL_2;
 			state->rem = 3;
 			state->pointer = state->team2_controller;
 			if(state->pointer == state->team1_controller) {
@@ -207,11 +207,11 @@ void drawTeamSelectionMenu(const TeamSelectionState *state, const StateInfo *sta
 
 	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
 	glPushMatrix();
-	if(state->stage_1_state == TEAM_SELECTION_STAGE_TEAM_1 || state->stage_1_state == TEAM_SELECTION_STAGE_CONTROL_1) {
+	if(state->state == TEAM_SELECTION_STAGE_TEAM_1 || state->state == TEAM_SELECTION_STAGE_CONTROL_1) {
 		glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
-	} else if(state->stage_1_state == TEAM_SELECTION_STAGE_TEAM_2 || state->stage_1_state == TEAM_SELECTION_STAGE_CONTROL_2) {
+	} else if(state->state == TEAM_SELECTION_STAGE_TEAM_2 || state->state == TEAM_SELECTION_STAGE_CONTROL_2) {
 		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
-	} else if(state->stage_1_state == TEAM_SELECTION_STAGE_INNINGS) {
+	} else if(state->state == TEAM_SELECTION_STAGE_INNINGS) {
 		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
 	}
 	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);

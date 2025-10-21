@@ -52,7 +52,7 @@ typedef struct {
 
 // State specific to the team selection screen
 typedef struct {
-	TeamSelectionStage stage_1_state;
+	TeamSelectionStage state;
 	int pointer;
 	int team1;
 	int team2;
@@ -89,8 +89,15 @@ typedef struct {
 	int rem;
 } HutunkeittoState;
 
+// State for the main menu screen
+typedef struct {
+	int pointer;
+	int rem;
+} FrontMenuState;
+
 typedef struct MenuData {
 	MenuStage stage;
+	FrontMenuState front_menu;
 	TeamSelectionState team_selection;
 	BattingOrderState batting_order;
 	HutunkeittoState hutunkeitto;
