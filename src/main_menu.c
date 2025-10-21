@@ -8,6 +8,7 @@
 #include "menu_types.h"
 #include "team_selection_menu.h"
 #include "batting_order_menu.h"
+#include "hutunkeitto_menu.h"
 
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
@@ -70,12 +71,10 @@ static void loadMenuScreenSettings();
 static void drawFront();
 static void drawGameOverTexts();
 
-static void drawHutunkeitto();
 static void drawCup();
 static void drawHelp();
 static void moveToGame();
 static void drawLoadingTexts();
-static void initHutunkeitto();
 static void updateFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
 static void drawFrontMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 
@@ -468,138 +467,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		}
 		break;
 	case MENU_STAGE_HUTUNKEITTO:
-		if(menuData.stage_4_state == 0 && menuData.updatingCanStart == 1) {
-			menuData.batTimerLimit = 30 + rand()%15;
-			menuData.batTimer = 0;
-			menuData.stage_4_state = 1;
-		} else if(menuData.stage_4_state == 1) {
-			menuData.batTimer+=1;
-			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimer*BAT_DROP_MOVING_SPEED;
-			if(menuData.batTimer > menuData.batTimerLimit) {
-				menuData.stage_4_state = 2;
-				menuData.batTimerCount = menuData.batTimer;
-				menuData.batTimer = 0;
+		nextStage = updateHutunkeittoMenu(&menuData.hutunkeitto, keyStates, menuData.team1_control, menuData.team2_control);
+		if (nextStage != menuData.stage) {
+			menuData.playsFirst = menuData.hutunkeitto.playsFirst;
+			if (nextStage == MENU_STAGE_GO_TO_GAME) {
+				moveToGame(stateInfo, globalGameInfo, menuInfo);
 			}
-		} else if(menuData.stage_4_state == 2) {
-			menuData.rightHandPosition = 0.0f;
-			menuData.rightHandHeight = RIGHT_HAND_DEFAULT_HEIGHT;
-			menuData.leftHandPosition = 0.0f;
-			menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT;
-			menuData.stage_4_state = 3;
-
-		} else if(menuData.stage_4_state == 3) {
-			if(menuData.team1_control != 2) {
-				if(keyStates->down[menuData.team1_control][KEY_UP]) {
-					if(menuData.leftScaleCount < SCALE_LIMIT) {
-						menuData.leftScaleCount += 1;
-					}
-				} else if(keyStates->down[menuData.team1_control][KEY_DOWN]) {
-					if(menuData.leftScaleCount > -SCALE_LIMIT) {
-						menuData.leftScaleCount -= 1;
-					}
-				}
-				if(keyStates->released[menuData.team1_control][KEY_2]) {
-					menuData.leftReady = 1;
-				}
-			} else {
-				menuData.leftReady = 1;
-			}
-			if(menuData.team2_control != 2) {
-				if(keyStates->down[menuData.team2_control][KEY_UP]) {
-					if(menuData.rightScaleCount < SCALE_LIMIT) {
-						menuData.rightScaleCount += 1;
-						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
-					}
-				} else if(keyStates->down[menuData.team2_control][KEY_DOWN]) {
-					if(menuData.rightScaleCount > -SCALE_LIMIT) {
-						menuData.rightScaleCount -= 1;
-						menuData.leftHandHeight = LEFT_HAND_DEFAULT_HEIGHT - menuData.rightScaleCount*POSITION_SCALE_ADDITION;
-					}
-				}
-				if(keyStates->released[menuData.team2_control][KEY_2]) {
-					menuData.rightReady = 1;
-				}
-			} else {
-				menuData.rightReady = 1;
-			}
-			if(menuData.leftReady == 1 && menuData.rightReady == 1) {
-				menuData.stage_4_state = 4;
-			}
-		} else if(menuData.stage_4_state == 4) {
-			float turnHeight = (HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.leftScaleCount) +HAND_WIDTH*(1.0f+SCALE_FACTOR*menuData.rightScaleCount)) / 2;// sum of boths heights divided by two
-			menuData.batTimer += 1;
-			menuData.batHeight = BAT_DEFAULT_HEIGHT + menuData.batTimerCount*BAT_DROP_MOVING_SPEED + menuData.batTimer*BAT_MOVING_SPEED;
-			if(menuData.turnCount%2 == 0) {
-				if(menuData.rightHandHeight < RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > RIGHT_HAND_DEFAULT_HEIGHT - turnHeight) {
-						menuData.stage_4_state = 5;
-						menuData.batTimer = 0;
-					} else {
-						menuData.turnCount += 1;
-						menuData.tempLeftHeight = menuData.leftHandHeight;
-					}
-				} else {
-					menuData.leftHandHeight += BAT_MOVING_SPEED;
-					menuData.rightHandHeight -= BAT_MOVING_SPEED;
-				}
-			} else if(menuData.turnCount%2 == 1) {
-				if(menuData.leftHandHeight < menuData.tempLeftHeight - turnHeight) {
-					if(menuData.batHeight - BAT_HEIGHT_CONSTANT > menuData.tempLeftHeight - turnHeight) {
-						menuData.stage_4_state = 5;
-						menuData.batTimer = 0;
-					} else {
-						menuData.turnCount += 1;
-					}
-				} else {
-					menuData.leftHandHeight -= BAT_MOVING_SPEED;
-					menuData.rightHandHeight += BAT_MOVING_SPEED;
-				}
-			}
-		} else if(menuData.stage_4_state == 5) {
-			if(menuData.batTimer < 50) {
-				menuData.batTimer += 1;
-			} else {
-				menuData.stage_4_state = 6;
-			}
-			if(menuData.turnCount%2 == 0) {
-				menuData.batPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-				menuData.leftHandPosition = -menuData.batTimer*MOVING_AWAY_SPEED;
-			} else if(menuData.turnCount%2 == 1) {
-				menuData.batPosition = menuData.batTimer*MOVING_AWAY_SPEED;
-				menuData.rightHandPosition = menuData.batTimer*MOVING_AWAY_SPEED;
-			}
-			menuData.handsZ = 1.0f - menuData.batTimer*MOVING_AWAY_SPEED/2;
-		}
-		// finally all that messy stuff is over and we just decide the winner
-		else if(menuData.stage_4_state == 6) {
-			int control;
-			if(menuData.turnCount%2 == 0) {
-				control = menuData.team1_control;
-			} else control = menuData.team2_control;
-			if(control != 2) {
-				if(keyStates->released[control][KEY_2]) {
-					if(menuData.pointer == 0) {
-						menuData.playsFirst = 0;
-					} else {
-						menuData.playsFirst = 1;
-					}
-
-					moveToGame(stateInfo);
-				}
-				if(keyStates->released[control][KEY_RIGHT]) {
-					menuData.pointer +=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-				if(keyStates->released[control][KEY_LEFT]) {
-					menuData.pointer -=1;
-					menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-				}
-			} else {
-				// ai always selects to field first
-				if(menuData.turnCount%2 == 0) menuData.playsFirst = 1;
-				else menuData.playsFirst = 0;
-				moveToGame(stateInfo);
-			}
+			menuData.stage = nextStage;
 		}
 		break;
 	case MENU_STAGE_GAME_OVER:
@@ -1153,81 +1027,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		drawBattingOrderMenu(&menuData.batting_order, stateInfo, &menuData);
 		break;
 	case MENU_STAGE_HUTUNKEITTO:
-		menuData.updatingCanStart = 1;
-		drawFontBackground();
-		glEnable(GL_LIGHTING);
-		glEnable(GL_DEPTH_TEST);
-		menuData.lightPos[0] = LIGHT_SOURCE_POSITION_X;
-		menuData.lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-		menuData.lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-		menuData.lightPos[3] = 1.0f;
-		glLightfv(GL_LIGHT0, GL_POSITION, menuData.lightPos);
-		// bat
-		glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
-		glPushMatrix();
-		glTranslatef(menuData.batPosition, menuData.handsZ, menuData.batHeight);
-		glScalef(0.6f, 0.5f, 0.45f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(menuData.batDisplayList);
-		glPopMatrix();
-		// right hand
-		if(menuData.team2 == 0) glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
-		else if(menuData.team2 == 1) glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
-		else if(menuData.team2 == 2) glBindTexture(GL_TEXTURE_2D, menuData.team3Texture);
-		else if(menuData.team2 == 3) glBindTexture(GL_TEXTURE_2D, menuData.team4Texture);
-		else if(menuData.team2 == 4) glBindTexture(GL_TEXTURE_2D, menuData.team5Texture);
-		else if(menuData.team2 == 5) glBindTexture(GL_TEXTURE_2D, menuData.team6Texture);
-		else if(menuData.team2 == 6) glBindTexture(GL_TEXTURE_2D, menuData.team7Texture);
-		else if(menuData.team2 == 7) glBindTexture(GL_TEXTURE_2D, menuData.team8Texture);
-		glPushMatrix();
-		glTranslatef(menuData.rightHandPosition, menuData.handsZ, menuData.rightHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.rightScaleCount*SCALE_FACTOR));
-		glTranslatef(0.0f, 0.0f, -0.35f);
-		glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(menuData.handDisplayList);
-		glPopMatrix();
-		// left hand
-		if(menuData.team1 == 0) glBindTexture(GL_TEXTURE_2D, menuData.team1Texture);
-		else if(menuData.team1 == 1) glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
-		else if(menuData.team1 == 2) glBindTexture(GL_TEXTURE_2D, menuData.team3Texture);
-		else if(menuData.team1 == 3) glBindTexture(GL_TEXTURE_2D, menuData.team4Texture);
-		else if(menuData.team1 == 4) glBindTexture(GL_TEXTURE_2D, menuData.team5Texture);
-		else if(menuData.team1 == 5) glBindTexture(GL_TEXTURE_2D, menuData.team6Texture);
-		else if(menuData.team1 == 6) glBindTexture(GL_TEXTURE_2D, menuData.team7Texture);
-		else if(menuData.team1 == 7) glBindTexture(GL_TEXTURE_2D, menuData.team8Texture);
-		glPushMatrix();
-		glTranslatef(menuData.leftHandPosition, menuData.handsZ, menuData.leftHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f*(1.0f+menuData.leftScaleCount*SCALE_FACTOR));
-		glTranslatef(0.0f, 0.0f, -0.35f);
-		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(menuData.handDisplayList);
-		glPopMatrix();
-		// referee hand
-		glBindTexture(GL_TEXTURE_2D, menuData.team2Texture);
-		glPushMatrix();
-		glTranslatef(0.0f, 1.0f, menuData.refereeHandHeight);
-		glScalef(0.5f, 0.5f, 0.5f);
-		glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-		glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(menuData.handDisplayList);
-		glPopMatrix();
-
-		glDisable(GL_LIGHTING);
-		glDisable(GL_DEPTH_TEST);
-
-		if(menuData.stage_4_state == 6) {
-			drawHutunkeitto(stateInfo);
-			// arrow
-			glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
-			glPushMatrix();
-			if(menuData.pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-			glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			glCallList(menuData.planeDisplayList);
-			glPopMatrix();
-		}
+		menuData.hutunkeitto.updatingCanStart = 1;
+		drawHutunkeittoMenu(&menuData.hutunkeitto, &menuData);
 		break;
 	case MENU_STAGE_GAME_OVER:
 		drawFontBackground();
@@ -1387,13 +1188,6 @@ static void drawFront(StateInfo* stateInfo)
 	printText("Cup", 3, -0.085f, CUP_TEXT_HEIGHT, 3);
 	printText("Help", 4, -0.1f, HELP_TEXT_HEIGHT, 3);
 	printText("Quit", 4, -0.1f, QUIT_TEXT_HEIGHT, 3);
-}
-
-static void drawHutunkeitto(StateInfo* stateInfo)
-{
-	printText("Who bats first", 14, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT - 0.1f, 3);
-	printText("Team 1", 6, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
-	printText("Team 2", 6, HUTUNKEITTO_TEAM_2_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
 }
 
 static void drawCup(StateInfo* stateInfo)
@@ -1709,7 +1503,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 			menuData.pointer = 0;
 			menuData.stage_8_state = 2;
 		}
-		initHutunkeitto(stateInfo);
+		initHutunkeittoState(&menuData.hutunkeitto);
 
 	}
 	// after first period
@@ -1729,7 +1523,7 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 			menuData.team1_batting_order[i] = i;
 			menuData.team2_batting_order[i] = i;
 		}
-		initHutunkeitto(stateInfo);
+		initHutunkeittoState(&menuData.hutunkeitto);
 	}
 	// after super period
 	else if(menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
@@ -1756,30 +1550,6 @@ static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
 	if(menuInfo->mode != MENU_ENTRY_GAME_OVER) {
 		stateInfo->playSoundEffect = SOUND_MENU;
 	}
-}
-// ugly, thank you.
-static void initHutunkeitto(StateInfo* stateInfo)
-{
-	menuData.batTimer = 0;
-	menuData.batTimerLimit = 0;
-	menuData.batTimerCount = 0;
-	menuData.stage_4_state = 0;
-	menuData.updatingCanStart = 0;
-	menuData.batHeight = BAT_DEFAULT_HEIGHT;
-	menuData.batPosition = 0.0f;
-	menuData.leftReady = 0;
-	menuData.rightReady = 0;
-	menuData.turnCount = 0;
-	menuData.handsZ = 1.0f;
-	menuData.leftHandHeight = 0.15f;
-	menuData.leftHandPosition = -0.075f;
-	menuData.rightHandHeight = 0.25f;
-	menuData.rightHandPosition = 0.075f;
-	menuData.refereeHandHeight = 0.15f;
-	menuData.tempLeftHeight = 0.0f;
-	menuData.leftScaleCount = 0;
-	menuData.rightScaleCount = 0;
-	menuData.playsFirst = 0;
 }
 // and we initialize the game.
 static void moveToGame(StateInfo* stateInfo, GlobalGameInfo* globalGameInfo, MenuInfo* menuInfo)
