@@ -63,35 +63,16 @@ typedef struct {
 	int cupGame;
 } TeamSelectionState;
 
-typedef struct MenuData {
-	MenuStage stage;
-	TeamSelectionState team_selection;
-	BattingOrderState batting_order;
-	int pointer;
-	int rem;
-	int stage_4_state;
-	int stage_8_state;
-	int stage_9_state;
-	int stage_8_state_1_level;
+// State for hutunkeitto screen
+typedef struct {
+	int state;
 	int batTimer;
 	int batTimerLimit;
 	int batTimerCount;
 	int updatingCanStart;
-	int team1;
-	int team2;
-	int team1_control;
-	int team2_control;
-	int inningsInPeriod;
-	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team_1_choices[2][5];
-	int team_2_choices[2][5];
-	int choiceCounter;
-	int choiceCount;
 	int leftReady;
 	int rightReady;
 	int turnCount;
-	int cupGame;
 	float batHeight;
 	float batPosition;
 	float leftHandHeight;
@@ -104,6 +85,33 @@ typedef struct MenuData {
 	int leftScaleCount;
 	int rightScaleCount;
 	int playsFirst;
+	int pointer;
+	int rem;
+} HutunkeittoState;
+
+typedef struct MenuData {
+	MenuStage stage;
+	TeamSelectionState team_selection;
+	BattingOrderState batting_order;
+	HutunkeittoState hutunkeitto;
+	int pointer;
+	int rem;
+	int stage_8_state;
+	int stage_9_state;
+	int stage_8_state_1_level;
+	int team1;
+	int team2;
+	int team1_control;
+	int team2_control;
+	int inningsInPeriod;
+	int playsFirst;
+	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team_1_choices[2][5];
+	int team_2_choices[2][5];
+	int choiceCounter;
+	int choiceCount;
+	int cupGame;
 	int teamSelection;
 	GLuint arrowTexture;
 	GLuint catcherTexture;
