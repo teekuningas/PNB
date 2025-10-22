@@ -36,6 +36,7 @@ MenuStage updateFrontMenu(FrontMenuState *state, TeamSelectionState *teamSelecti
 		if(state->pointer == 0) {
 			initTeamSelectionState(teamSelectionState);
 			teamSelectionState->rem = stateInfo->numTeams;
+			teamSelectionState->pointer = DEFAULT_TEAM_1;
 			return MENU_STAGE_TEAM_SELECTION;
 		} else if(state->pointer == 1) {
 			return MENU_STAGE_CUP;

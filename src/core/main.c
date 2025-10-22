@@ -154,7 +154,7 @@ static int update(StateInfo* stateInfo, GLFWwindow* window)
 		updateGameScreen(stateInfo, &menuInfo);
 		break;
 	case MAIN_MENU:
-		updateMainMenu(stateInfo, &menuInfo, &keyStates, &globalGameInfo);
+		updateMainMenu(stateInfo, &menuInfo, &keyStates);
 		break;
 	default:
 		return 1;
