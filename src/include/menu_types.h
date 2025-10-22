@@ -88,7 +88,6 @@ typedef struct {
 	int batTimer;
 	int batTimerLimit;
 	int batTimerCount;
-	int updatingCanStart;
 	int leftReady;
 	int rightReady;
 	int turnCount;

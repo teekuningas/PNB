@@ -259,7 +259,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuData.team1_batting_order[i] = i;
 				menuData.team2_batting_order[i] = i;
 			}
-			initHutunkeittoState(&menuData.hutunkeitto);
 			break;
 		case MENU_ENTRY_HOMERUN_CONTEST:
 			menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
@@ -287,11 +286,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 	// main main menu.
 	switch(menuData.stage) {
 	case MENU_STAGE_FRONT:
-		nextStage = updateFrontMenu(&menuData.front_menu, &menuData.team_selection, keyStates, stateInfo);
+		nextStage = updateFrontMenu(&menuData.front_menu, keyStates, stateInfo);
 		if (nextStage == MENU_STAGE_CUP) {
 			menuData.stage_8_state = 0;
 			menuData.rem = 2;
 			menuData.pointer = 0;
+		} else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
+			initTeamSelectionState(&menuData.team_selection);
+			menuData.team_selection.rem = stateInfo->numTeams;
+			menuData.team_selection.pointer = DEFAULT_TEAM_1;
 		}
 		menuData.stage = nextStage;
 		break;
@@ -322,6 +325,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 			if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
 				initBattingOrderState(&menuData.batting_order, menuData.team2, menuData.team2_control);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
+				initHutunkeittoState(&menuData.hutunkeitto);
 				menuData.pointer = 0;
 				menuData.rem = 2;
 			}
@@ -333,6 +337,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		if (nextStage != menuData.stage) {
 			memcpy(menuData.team2_batting_order, menuData.batting_order.batting_order, sizeof(menuData.batting_order.batting_order));
 			if (nextStage == MENU_STAGE_HUTUNKEITTO) {
+				initHutunkeittoState(&menuData.hutunkeitto);
 				menuData.pointer = 0;
 				menuData.rem = 2;
 			} else if (nextStage == MENU_STAGE_GO_TO_GAME) {
@@ -853,7 +858,6 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		drawBattingOrderMenu(&menuData.batting_order, stateInfo, &menuData);
 		break;
 	case MENU_STAGE_HUTUNKEITTO:
-		menuData.hutunkeitto.updatingCanStart = 1;
 		drawHutunkeittoMenu(&menuData.hutunkeitto, &menuData);
 		break;
 	case MENU_STAGE_GAME_OVER:

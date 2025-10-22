@@ -1,7 +1,6 @@
 #ifndef MENU_HELPERS_H
 #define MENU_HELPERS_H
 
-#include "globals.h"
 #include "menu_types.h"
 
 void updateSchedule(MenuData* menuData, StateInfo* stateInfo);
