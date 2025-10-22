@@ -3,9 +3,6 @@
 
 #include "menu_types.h"
 
-// Forward-declare MenuData to avoid circular include with main_menu.h
-struct MenuData;
-
 // Function to initialize or reset the state to its default values
 void initBattingOrderState(BattingOrderState *state, int team_index, int player_control);
 

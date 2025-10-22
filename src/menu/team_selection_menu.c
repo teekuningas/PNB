@@ -1,7 +1,6 @@
 #include "team_selection_menu.h"
 #include "render.h"
 #include "font.h"
-#include "main_menu.h"
 #include "menu_types.h"
 
 #define SELECTION_ARROW_LEFT -0.05f

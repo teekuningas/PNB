@@ -1,7 +1,6 @@
 #include "front_menu.h"
 #include "render.h"
 #include "font.h"
-#include "main_menu.h"
 #include "globals.h"
 #include "team_selection_menu.h"
 
