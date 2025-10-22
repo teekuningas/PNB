@@ -9,6 +9,7 @@
 #include "team_selection_menu.h"
 #include "batting_order_menu.h"
 #include "hutunkeitto_menu.h"
+#include "homerun_contest_menu.h"
 #include "front_menu.h"
 #include "game_over_menu.h"
 #include "menu_helpers.h"
@@ -260,21 +261,22 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 				menuData.team2_batting_order[i] = i;
 			}
 			break;
-		case MENU_ENTRY_HOMERUN_CONTEST:
+		case MENU_ENTRY_HOMERUN_CONTEST: {
+			// initialize both teams' home-run contest states
+			int totalPicks = (stateInfo->globalGameInfo->period == 4) ? 10 : 6;
+			int team1Index = stateInfo->globalGameInfo->teams[0].value - 1;
+			int team2Index = stateInfo->globalGameInfo->teams[1].value - 1;
+			initHomerunContestState(&menuData.homerun1,
+			                        team1Index,
+			                        menuData.team1_control,
+			                        totalPicks);
+			initHomerunContestState(&menuData.homerun2,
+			                        team2Index,
+			                        menuData.team2_control,
+			                        totalPicks);
 			menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
-			menuData.pointer = 1;
-			menuData.rem = 13;
-			for(i = 0; i < 2; i++) {
-				for(int j = 0; j < 5; j++) {
-					menuData.team_1_choices[i][j] = -1;
-					menuData.team_2_choices[i][j] = -1;
-				}
-			}
-			if(stateInfo->globalGameInfo->period == 4) {
-				menuData.choiceCount = 10;
-			} else menuData.choiceCount = 6;
-			menuData.choiceCounter = 0;
-			break;
+		}
+		break;
 		case MENU_ENTRY_GAME_OVER:
 			menuData.stage = MENU_STAGE_GAME_OVER;
 			break;
@@ -361,186 +363,33 @@ void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStat
 		nextStage = updateGameOverMenu(&menuData, stateInfo, keyStates, menuInfo);
 		menuData.stage = nextStage;
 		break;
-	case MENU_STAGE_HOMERUN_CONTEST_1:
-		if(menuData.team1_control == 2) {
-			int i, j;
-			int counter = 0;
-			int team = stateInfo->globalGameInfo->teams[0].value - 1;
-			int currentIndex = 0;
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < menuData.choiceCount/2; j++) {
-					menuData.team_1_choices[i][j] = -1;
-				}
-			}
-			// first we select batters for ai. we select ones that have high power
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(power == 5-counter) {
-						menuData.team_1_choices[0][currentIndex] = i;
-						currentIndex++;
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
-			counter = 0;
-			currentIndex = 0;
-			// and from players that are left we select runners. we select ones that have high speed
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(speed == 5-counter) {
-						int indexValid = 1;
-						for(j = 0; j < menuData.choiceCount/2; j++) {
-							if(menuData.team_1_choices[0][j] == i) indexValid = 0;
-						}
-						if(indexValid == 1) {
-							menuData.team_1_choices[1][currentIndex] = i;
-							currentIndex++;
-						}
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit but we pray.\n");
-			menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
-		} else {
-			if(keyStates->released[menuData.team1_control][KEY_1]) {
-				if(menuData.choiceCounter != 0) {
-					menuData.team_1_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
-					menuData.choiceCounter--;
-				}
-			}
-			if(keyStates->released[menuData.team1_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					if(menuData.choiceCounter >= menuData.choiceCount) {
-						menuData.stage = MENU_STAGE_HOMERUN_CONTEST_2;
-						menuData.pointer = 1;
-						menuData.choiceCounter = 0;
-					}
-				} else {
-					if(menuData.choiceCounter < menuData.choiceCount) {
-						int valid = 1;
-						int i, j;
-						for(i = 0; i < 2; i++) {
-							for(j = 0; j < menuData.choiceCount/2; j++) {
-								if(menuData.pointer == menuData.team_1_choices[i][j] + 1) {
-									valid = 0;
-								}
-							}
-						}
-						if(valid == 1) {
-							menuData.team_1_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
-							menuData.choiceCounter++;
-						}
-					}
-				}
-			}
-			if(keyStates->released[menuData.team1_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team1_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
+	case MENU_STAGE_HOMERUN_CONTEST_1: {
+		// delegate to home-run contest logic for team 1
+		MenuStage nextStage = updateHomerunContestMenu(
+		                          &menuData.homerun1,
+		                          keyStates,
+		                          stateInfo,
+		                          MENU_STAGE_HOMERUN_CONTEST_1);
+		if (nextStage != menuData.stage) {
+			menuData.stage = nextStage;
 		}
-		break;
-	case MENU_STAGE_HOMERUN_CONTEST_2:
-		if(menuData.team2_control == 2) {
-			int i, j;
-			int counter = 0;
-			int team = stateInfo->globalGameInfo->teams[1].value - 1;
-			int currentIndex = 0;
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < menuData.choiceCount/2; j++) {
-					menuData.team_2_choices[i][j] = -1;
-				}
+	}
+	break;
+	case MENU_STAGE_HOMERUN_CONTEST_2: {
+		// delegate to home-run contest logic for team 2
+		MenuStage nextStage = updateHomerunContestMenu(
+		                          &menuData.homerun2,
+		                          keyStates,
+		                          stateInfo,
+		                          MENU_STAGE_HOMERUN_CONTEST_2);
+		if (nextStage != menuData.stage) {
+			if (nextStage == MENU_STAGE_GO_TO_GAME) {
+				moveToGame(stateInfo, menuInfo);
 			}
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int power = stateInfo->teamData[team].players[i].power;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(power == 5-counter) {
-						menuData.team_2_choices[0][currentIndex] = i;
-						currentIndex++;
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
-			counter = 0;
-			currentIndex = 0;
-			while(counter < 5) {
-				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-					int speed = stateInfo->teamData[team].players[i].speed;
-					if(currentIndex == menuData.choiceCount/2) break;
-					if(speed == 5-counter) {
-						int indexValid = 1;
-						for(j = 0; j < menuData.choiceCount/2; j++) {
-							if(menuData.team_2_choices[0][j] == i) indexValid = 0;
-						}
-						if(indexValid == 1) {
-							menuData.team_2_choices[1][currentIndex] = i;
-							currentIndex++;
-						}
-					}
-				}
-				if(currentIndex == menuData.choiceCount/2) break;
-				counter++;
-			}
-			if(currentIndex != menuData.choiceCount/2) printf("weird stats for players. should exit or pray.\n");
-			moveToGame(stateInfo, menuInfo);
-		} else {
-			if(keyStates->released[menuData.team2_control][KEY_1]) {
-				if(menuData.choiceCounter != 0) {
-					menuData.team_2_choices[(menuData.choiceCounter-1)/(menuData.choiceCount/2)][(menuData.choiceCounter-1)%(menuData.choiceCount/2)] = -1;
-					menuData.choiceCounter--;
-				} else {
-					menuData.choiceCounter = menuData.choiceCount;
-					menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
-					menuData.pointer = 0;
-				}
-			}
-			if(keyStates->released[menuData.team2_control][KEY_2]) {
-				if(menuData.pointer == 0) {
-					if(menuData.choiceCounter >= menuData.choiceCount) {
-						moveToGame(stateInfo, menuInfo);
-					}
-				} else {
-					if(menuData.choiceCounter < menuData.choiceCount) {
-						int valid = 1;
-						int i, j;
-						for(i = 0; i < 2; i++) {
-							for(j = 0; j < menuData.choiceCount/2; j++) {
-								if(menuData.pointer == menuData.team_2_choices[i][j] + 1) {
-									valid = 0;
-								}
-							}
-						}
-						if(valid == 1) {
-							menuData.team_2_choices[menuData.choiceCounter/(menuData.choiceCount/2)][menuData.choiceCounter%(menuData.choiceCount/2)] = menuData.pointer - 1;
-							menuData.choiceCounter++;
-						}
-					}
-				}
-			}
-			if(keyStates->released[menuData.team2_control][KEY_DOWN]) {
-				menuData.pointer +=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
-			if(keyStates->released[menuData.team2_control][KEY_UP]) {
-				menuData.pointer -=1;
-				menuData.pointer = (menuData.pointer+menuData.rem)%menuData.rem;
-			}
+			menuData.stage = nextStage;
 		}
-		break;
+	}
+	break;
 	case MENU_STAGE_CUP:
 		if(menuData.stage_8_state == 0) {
 			if(keyStates->released[0][KEY_DOWN]) {
@@ -864,68 +713,10 @@ void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha)
 		drawGameOverMenu(stateInfo);
 		break;
 	case MENU_STAGE_HOMERUN_CONTEST_1:
-		if (menuData.team1_control != 2) {
-			int i, j;
-			drawFontBackground();
-			glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
-			glPushMatrix();
-			if(menuData.pointer == 0) {
-				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			} else {
-				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-			}
-
-			glCallList(menuData.planeDisplayList);
-			glPopMatrix();
-
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < 5; j++) {
-					char str[2];
-					int choice;
-					if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) choice = menuData.team_1_choices[i][j];
-					else choice = menuData.team_2_choices[i][j];
-					str[0] = (char)(((int)'0')+j+1);
-					if(choice != -1) {
-						printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
-						          (choice+1)*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET, 2);
-					}
-				}
-			}
-		}
+		drawHomerunContestMenu(&menuData.homerun1, stateInfo, &menuData);
 		break;
 	case MENU_STAGE_HOMERUN_CONTEST_2:
-		if(menuData.team2_control != 2) {
-			int i, j;
-			drawFontBackground();
-			glBindTexture(GL_TEXTURE_2D, menuData.arrowTexture);
-			glPushMatrix();
-			if(menuData.pointer == 0) {
-				glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-				glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-			} else {
-				glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + menuData.pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-				glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-			}
-
-			glCallList(menuData.planeDisplayList);
-			glPopMatrix();
-
-			for(i = 0; i < 2; i++) {
-				for(j = 0; j < 5; j++) {
-					char str[2];
-					int choice;
-					if(menuData.stage == MENU_STAGE_HOMERUN_CONTEST_1) choice = menuData.team_1_choices[i][j];
-					else choice = menuData.team_2_choices[i][j];
-					str[0] = (char)(((int)'0')+j+1);
-					if(choice != -1) {
-						printText(str, 1, 0.45f + i*0.05f, PLAYER_LIST_FIRST_PLAYER_HEIGHT +
-						          (choice+1)*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET, 2);
-					}
-				}
-			}
-		}
+		drawHomerunContestMenu(&menuData.homerun2, stateInfo, &menuData);
 		break;
 	case MENU_STAGE_CUP:
 		drawFontBackground();
@@ -1264,21 +1055,24 @@ static void moveToGame(StateInfo* stateInfo, MenuInfo* menuInfo)
 		stateInfo->globalGameInfo->playsFirst = menuData.playsFirst;
 	}
 	// after super period we have to do different kind of initialization.
-	if(menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
-		int i, j;
-		for(i = 0; i < 2; i++) {
-			for(j = 0; j < menuData.choiceCount/2; j++) {
-				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData.team_1_choices[i][j];
-				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData.team_2_choices[i][j];
+	if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
+		// transfer home-run contest choices into game state
+		int half = menuData.homerun1.choiceCount / 2;
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < half; j++) {
+				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j]
+				    = menuData.homerun1.choices[i][j];
+				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j]
+				    = menuData.homerun2.choices[i][j];
 			}
-			if(stateInfo->globalGameInfo->period > 4) {
-				for(j = menuData.choiceCount/2; j < 5; j++) {
+			if (stateInfo->globalGameInfo->period > 4) {
+				for (int j = half; j < MAX_HOMERUN_PAIRS; j++) {
 					stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = -1;
 					stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = -1;
 				}
 			}
 		}
-		stateInfo->globalGameInfo->pairCount = menuData.choiceCount / 2;
+		stateInfo->globalGameInfo->pairCount = half;
 		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
 	} else {
 		// if homerun batting contest is not coming, we just set batterOrder settings normally.

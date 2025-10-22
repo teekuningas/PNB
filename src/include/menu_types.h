@@ -116,6 +116,19 @@ typedef struct {
 typedef struct {
 	int placeholder;
 } GameOverState;
+// Maximum number of batters or runners per team in home-run contest
+#define MAX_HOMERUN_PAIRS 5
+
+// State for the home-run contest stages (one per team)
+typedef struct {
+	int team_index;        // index into StateInfo.teamData
+	int player_control;    // 0=Pad1,1=Pad2,2=AI
+	int pointer;           // current menu cursor (0=Continue, 1+ = player slots)
+	int rem;               // total cursor positions = players+1
+	int choiceCount;       // total picks per team (batters+runners)
+	int choiceCounter;     // how many picks made so far
+	int choices[2][MAX_HOMERUN_PAIRS]; // [0]=batters, [1]=runners
+} HomerunContestState;
 
 typedef struct MenuData {
 	MenuStage stage;
@@ -137,10 +150,9 @@ typedef struct MenuData {
 	int playsFirst;
 	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
 	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team_1_choices[2][5];
-	int team_2_choices[2][5];
-	int choiceCounter;
-	int choiceCount;
+	// home-run contest state for each team
+	HomerunContestState homerun1;
+	HomerunContestState homerun2;
 	int cupGame;
 	// Cup state for tournament mode
 	CupInfo cupInfo;
