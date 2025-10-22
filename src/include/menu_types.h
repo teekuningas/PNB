@@ -112,10 +112,17 @@ typedef struct {
 	int pointer;
 	int rem;
 } FrontMenuState;
+
 // State for the game-over screen (no internal fields required yet)
 typedef struct {
 	int placeholder;
 } GameOverState;
+
+// State for the help screen
+typedef struct {
+	int page;
+} HelpMenuState;
+
 // Maximum number of batters or runners per team in home-run contest
 #define MAX_HOMERUN_PAIRS 5
 
@@ -137,10 +144,10 @@ typedef struct MenuData {
 	BattingOrderState batting_order;
 	HutunkeittoState hutunkeitto;
 	GameOverState game_over;  // state for GAME_OVER stage
+	HelpMenuState help_menu;
 	int pointer;
 	int rem;
 	int stage_8_state;
-	int stage_9_state;
 	int stage_8_state_1_level;
 	int team1;
 	int team2;

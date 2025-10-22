@@ -10,7 +10,6 @@ void resetMenuForNewGame(MenuData* menuData)
 		menuData->team2_batting_order[i] = i;
 	}
 	menuData->inningsInPeriod = 0;
-	menuData->stage_9_state = 0;
 	menuData->team1 = 0;
 	menuData->team2 = 0;
 	menuData->team1_control = 0;
