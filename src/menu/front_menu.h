@@ -7,7 +7,7 @@
 void initFrontMenuState(FrontMenuState *state);
 
 // Update function now takes the specific state it needs and returns the next stage
-MenuStage updateFrontMenu(FrontMenuState *state, TeamSelectionState *teamSelectionState, KeyStates *keyStates, StateInfo* stateInfo);
+MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo* stateInfo);
 
 // Draw function also takes the specific state, plus rendering data from MenuData
 void drawFrontMenu(const FrontMenuState *state, const struct MenuData *menuData);

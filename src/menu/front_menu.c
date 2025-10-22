@@ -2,7 +2,7 @@
 #include "render.h"
 #include "font.h"
 #include "globals.h"
-#include "team_selection_menu.h"
+#include "menu_types.h"
 
 #define ARROW_SCALE 0.05f
 #define FIGURE_SCALE 0.4f
@@ -21,7 +21,7 @@ void initFrontMenuState(FrontMenuState *state)
 	state->rem = 4;
 }
 
-MenuStage updateFrontMenu(FrontMenuState *state, TeamSelectionState *teamSelectionState, KeyStates *keyStates, StateInfo* stateInfo)
+MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo* stateInfo)
 {
 	if(keyStates->released[0][KEY_DOWN]) {
 		state->pointer +=1;
@@ -33,9 +33,6 @@ MenuStage updateFrontMenu(FrontMenuState *state, TeamSelectionState *teamSelecti
 	}
 	if(keyStates->released[0][KEY_2]) {
 		if(state->pointer == 0) {
-			initTeamSelectionState(teamSelectionState);
-			teamSelectionState->rem = stateInfo->numTeams;
-			teamSelectionState->pointer = DEFAULT_TEAM_1;
 			return MENU_STAGE_TEAM_SELECTION;
 		} else if(state->pointer == 1) {
 			return MENU_STAGE_CUP;

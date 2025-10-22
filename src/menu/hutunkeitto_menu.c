@@ -32,7 +32,6 @@ void initHutunkeittoState(HutunkeittoState *state)
 	state->batTimerLimit = 0;
 	state->batTimerCount = 0;
 	state->state = 0;
-	state->updatingCanStart = 0;
 	state->batHeight = BAT_DEFAULT_HEIGHT;
 	state->batPosition = 0.0f;
 	state->leftReady = 0;
@@ -54,7 +53,7 @@ void initHutunkeittoState(HutunkeittoState *state)
 
 MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control)
 {
-	if(state->state == 0 && state->updatingCanStart == 1) {
+	if(state->state == 0) {
 		state->batTimerLimit = 30 + rand()%15;
 		state->batTimer = 0;
 		state->state = 1;

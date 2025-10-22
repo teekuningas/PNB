@@ -1,6 +1,5 @@
 #include "menu_helpers.h"
 #include "front_menu.h"
-#include "hutunkeitto_menu.h"
 
 void resetMenuForNewGame(MenuData* menuData)
 {
@@ -27,7 +26,6 @@ void resetMenuForNewGame(MenuData* menuData)
 		menuData->pointer = 0;
 		menuData->stage_8_state = 2;
 	}
-	initHutunkeittoState(&menuData->hutunkeitto);
 }
 
 void updateSchedule(MenuData* menuData, StateInfo* stateInfo)

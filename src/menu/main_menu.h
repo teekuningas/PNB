@@ -3,7 +3,6 @@
 
 #include "globals.h"
 #include "menu_types.h"
-#include "team_selection_menu.h"
 
 int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo);
 void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates);
