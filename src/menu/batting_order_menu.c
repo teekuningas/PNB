@@ -1,7 +1,6 @@
 #include "batting_order_menu.h"
 #include "render.h"
 #include "font.h"
-#include "main_menu.h"
 #include "globals.h"
 #include "menu_types.h"
 

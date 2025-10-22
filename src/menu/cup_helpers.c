@@ -1,9 +1,5 @@
 #include "cup_helpers.h"
 
-// NOTE: This file contains functions that were originally in main_menu.c
-// They were moved here to break a circular dependency where all menu sub-modules
-// included main_menu.h. These helpers are related to the cup/tournament mode.
-
 void updateSchedule(MenuData* md, StateInfo* stateInfo)
 {
 	int j;
