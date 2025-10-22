@@ -11,6 +11,7 @@
 #include "hutunkeitto_menu.h"
 #include "front_menu.h"
 #include "game_over_menu.h"
+#include "menu_helpers.h"
 
 #define LOADING_MODELS_HEIGHT -0.15f
 #define LOADING_APPRECIATED_HEIGHT 0.0f
@@ -48,7 +49,6 @@
 
 static MenuData menuData;
 
-static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo);
 static void drawCup();
 static void drawHelp();
 static void moveToGame();
@@ -111,8 +111,6 @@ static void saveCup(StateInfo* stateInfo, int slot)
 		printf("Something wrong with the save file.\n");
 	}
 }
-
-#include "cup_helpers.h"
 
 /*
 	loads data from saveData-structure to menuData.cupInfo-structure
@@ -226,9 +224,8 @@ int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo)
 
 
 void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
-
 {
-	loadMenuScreenSettings(stateInfo, menuInfo);
+	resetMenuForNewGame(&menuData);
 	gluLookAt(menuData.cam.x, menuData.cam.y, menuData.cam.z, menuData.look.x, menuData.look.y, menuData.look.z, menuData.up.x, menuData.up.y, menuData.up.z);
 	drawFontBackground();
 	drawLoadingTexts(stateInfo);
@@ -237,13 +234,55 @@ void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 
 
 void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates)
-
 {
 	MenuStage nextStage;
 	if(stateInfo->changeScreen == 1) {
 		stateInfo->changeScreen = 0;
 		stateInfo->updated = 1;
-		loadMenuScreenSettings(stateInfo, menuInfo);
+		int i;
+		switch (menuInfo->mode) {
+		case MENU_ENTRY_NORMAL:
+			resetMenuForNewGame(&menuData);
+			break;
+		case MENU_ENTRY_INTER_PERIOD:
+			initBattingOrderState(&menuData.batting_order, menuData.team1, menuData.team1_control);
+			menuData.stage = MENU_STAGE_BATTING_ORDER_1;
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				menuData.team1_batting_order[i] = i;
+				menuData.team2_batting_order[i] = i;
+			}
+			break;
+		case MENU_ENTRY_SUPER_INNING:
+			initBattingOrderState(&menuData.batting_order, menuData.team1, menuData.team1_control);
+			menuData.stage = MENU_STAGE_BATTING_ORDER_1;
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				menuData.team1_batting_order[i] = i;
+				menuData.team2_batting_order[i] = i;
+			}
+			initHutunkeittoState(&menuData.hutunkeitto);
+			break;
+		case MENU_ENTRY_HOMERUN_CONTEST:
+			menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
+			menuData.pointer = 1;
+			menuData.rem = 13;
+			for(i = 0; i < 2; i++) {
+				for(int j = 0; j < 5; j++) {
+					menuData.team_1_choices[i][j] = -1;
+					menuData.team_2_choices[i][j] = -1;
+				}
+			}
+			if(stateInfo->globalGameInfo->period == 4) {
+				menuData.choiceCount = 10;
+			} else menuData.choiceCount = 6;
+			menuData.choiceCounter = 0;
+			break;
+		case MENU_ENTRY_GAME_OVER:
+			menuData.stage = MENU_STAGE_GAME_OVER;
+			break;
+		}
+		if(menuInfo->mode != MENU_ENTRY_GAME_OVER) {
+			stateInfo->playSoundEffect = SOUND_MENU;
+		}
 	}
 	// main main menu.
 	switch(menuData.stage) {
@@ -1188,84 +1227,11 @@ int cleanMainMenu(StateInfo* stateInfo)
 	return 0;
 }
 
-static void loadMenuScreenSettings(StateInfo* stateInfo, MenuInfo* menuInfo)
-{
-	int i;
-	glDisable(GL_LIGHTING);
-	if(menuInfo->mode == MENU_ENTRY_NORMAL) {
-		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			menuData.team1_batting_order[i] = i;
-			menuData.team2_batting_order[i] = i;
-		}
-		menuData.inningsInPeriod = 0;
-		menuData.stage_9_state = 0;
-		menuData.team1 = 0;
-		menuData.team2 = 0;
-		menuData.team1_control = 0;
-		menuData.team2_control = 0;
-		// after cupGame when initializing menu we go to cup menu, otherwise to main menu.
-		if(menuData.cupGame != 1) {
-			initFrontMenuState(&menuData.front_menu);
-			menuData.stage = MENU_STAGE_FRONT;
-			menuData.stage_8_state = 0;
-		} else {
-			menuData.stage = MENU_STAGE_CUP;
-			menuData.rem = 5;
-			menuData.pointer = 0;
-			menuData.stage_8_state = 2;
-		}
-		initHutunkeittoState(&menuData.hutunkeitto);
 
-	}
-	// after first period
-	else if(menuInfo->mode == MENU_ENTRY_INTER_PERIOD) {
-		initBattingOrderState(&menuData.batting_order, menuData.team1, menuData.team1_control);
-		menuData.stage = MENU_STAGE_BATTING_ORDER_1;
-		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			menuData.team1_batting_order[i] = i;
-			menuData.team2_batting_order[i] = i;
-		}
-	}
-	// after second period
-	else if(menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-		initBattingOrderState(&menuData.batting_order, menuData.team1, menuData.team1_control);
-		menuData.stage = MENU_STAGE_BATTING_ORDER_1;
-		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			menuData.team1_batting_order[i] = i;
-			menuData.team2_batting_order[i] = i;
-		}
-		initHutunkeittoState(&menuData.hutunkeitto);
-	}
-	// after super period
-	else if(menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
-		int i, j;
-		menuData.stage = MENU_STAGE_HOMERUN_CONTEST_1;
-		menuData.pointer = 1;
-		menuData.rem = 13;
-		for(i = 0; i < 2; i++) {
-			for(j = 0; j < 5; j++) {
-				menuData.team_1_choices[i][j] = -1;
-				menuData.team_2_choices[i][j] = -1;
-			}
-		}
-		if(stateInfo->globalGameInfo->period == 4) {
-			menuData.choiceCount = 10;
-		} else menuData.choiceCount = 6;
-
-		menuData.choiceCounter = 0;
-	}
-	// game over state
-	else if(menuInfo->mode == MENU_ENTRY_GAME_OVER) {
-		menuData.stage = MENU_STAGE_GAME_OVER;
-	}
-	if(menuInfo->mode != MENU_ENTRY_GAME_OVER) {
-		stateInfo->playSoundEffect = SOUND_MENU;
-	}
-}
 // and we initialize the game.
 static void moveToGame(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
-
+	stateInfo->playSoundEffect = 0;
 	stateInfo->screen = 1;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;

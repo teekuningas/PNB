@@ -6,9 +6,7 @@
 #include "game_over_menu.h"
 #include "render.h"
 #include "font.h"
-#include "cup_helpers.h"
-#include "front_menu.h"
-#include "hutunkeitto_menu.h"
+#include "menu_helpers.h"
 
 // Helper to split runs into two characters each
 static void calculateRuns(char *p1, char *p2, char *p3, char *p4, int runs1, int runs2)
@@ -30,7 +28,6 @@ static void calculateRuns(char *p1, char *p2, char *p3, char *p4, int runs1, int
 }
 
 void drawGameOverMenu(StateInfo* stateInfo)
-
 {
 	drawFontBackground();
 	char str[21] = "Team x is victorious";
@@ -49,7 +46,6 @@ void drawGameOverMenu(StateInfo* stateInfo)
 	printText(str, 20, -0.33f, -0.3f, 3);
 	printText(str6, strlen(str6), left, -0.18f, 3);
 	printText(str7, strlen(str7), left + 0.58f, -0.18f, 3);
-	// here we actually calculate something. though its pretty simple.
 	runs1 = stateInfo->globalGameInfo->teams[0].period0Runs;
 	runs2 = stateInfo->globalGameInfo->teams[1].period0Runs;
 	calculateRuns(&str2[13], &str2[14], &str2[16], &str2[17], runs1, runs2);
@@ -82,34 +78,8 @@ MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyS
 		if (keyStates->released[md->team2_control][KEY_2]) flag = 1;
 	}
 	if (flag == 1) {
-		// This logic is inlined from the original loadMenuScreenSettings function
-		// to break the circular dependency on main_menu.h
-		int i;
-		glDisable(GL_LIGHTING);
-		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			md->team1_batting_order[i] = i;
-			md->team2_batting_order[i] = i;
-		}
-		md->inningsInPeriod = 0;
-		md->stage_9_state = 0;
-		md->team1 = 0;
-		md->team2 = 0;
-		md->team1_control = 0;
-		md->team2_control = 0;
-
-		if (md->cupGame != 1) {
-			initFrontMenuState(&md->front_menu);
-			md->stage = MENU_STAGE_FRONT;
-			md->stage_8_state = 0;
-		} else {
-			md->stage = MENU_STAGE_CUP;
-			md->rem = 5;
-			md->pointer = 0;
-			md->stage_8_state = 2;
-		}
-		initHutunkeittoState(&md->hutunkeitto);
+		resetMenuForNewGame(md);
 		stateInfo->playSoundEffect = SOUND_MENU;
-		// End of inlined logic
 
 		if (md->cupGame == 1) {
 			int i, j;
