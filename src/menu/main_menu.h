@@ -6,7 +6,7 @@
 #include "team_selection_menu.h"
 
 int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo);
-void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates, GlobalGameInfo* globalGameInfo);
+void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates);
 void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
 int cleanMainMenu(StateInfo* stateInfo);
 void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo);

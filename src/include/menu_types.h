@@ -113,6 +113,10 @@ typedef struct {
 	int pointer;
 	int rem;
 } FrontMenuState;
+// State for the game-over screen (no internal fields required yet)
+typedef struct {
+	int placeholder;
+} GameOverState;
 
 typedef struct MenuData {
 	MenuStage stage;
@@ -120,6 +124,7 @@ typedef struct MenuData {
 	TeamSelectionState team_selection;
 	BattingOrderState batting_order;
 	HutunkeittoState hutunkeitto;
+	GameOverState game_over;  // state for GAME_OVER stage
 	int pointer;
 	int rem;
 	int stage_8_state;
@@ -138,6 +143,10 @@ typedef struct MenuData {
 	int choiceCounter;
 	int choiceCount;
 	int cupGame;
+	// Cup state for tournament mode
+	CupInfo cupInfo;
+	// Save slots for CupInfo state
+	CupInfo saveData[5];
 	int teamSelection;
 	GLuint arrowTexture;
 	GLuint catcherTexture;
