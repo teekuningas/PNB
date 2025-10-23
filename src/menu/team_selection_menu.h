@@ -7,7 +7,7 @@
 void initTeamSelectionState(TeamSelectionState *state);
 
 // Update function now takes the specific state it needs and returns the next stage
-MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *stateInfo, const KeyStates *keyStates);
+MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInfo, const KeyStates *keyStates);
 
 // Draw function also takes the specific state, plus rendering data from MenuData
 void drawTeamSelectionMenu(const TeamSelectionState *state, const StateInfo *stateInfo, const struct MenuData *menuData);

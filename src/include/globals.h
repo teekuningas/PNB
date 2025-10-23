@@ -382,6 +382,7 @@ typedef struct _GlobalGameInfo {
 	int pairCount;
 	int playsFirst;
 	int winner;
+	int isCupGame;
 } GlobalGameInfo;
 
 typedef struct _LocalGameInfo {
@@ -409,6 +410,11 @@ typedef struct _CupInfo {
 	int winnerIndex;
 } CupInfo;
 
+typedef struct _TournamentState {
+	CupInfo cupInfo;
+	CupInfo saveData[5];
+} TournamentState;
+
 typedef struct _StateInfo {
 	// Main menu or game screen active
 	int screen;
@@ -423,6 +429,7 @@ typedef struct _StateInfo {
 	FieldPositions *fieldPositions;
 	LocalGameInfo* localGameInfo;
 	GlobalGameInfo* globalGameInfo;
+	TournamentState* tournamentState;
 } StateInfo;
 
 #endif /* GLOBALS_H */

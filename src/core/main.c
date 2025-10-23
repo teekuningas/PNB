@@ -23,6 +23,7 @@ static MenuData menuData;
 static StateInfo stateInfo;
 static LocalGameInfo localGameInfo;
 static GlobalGameInfo globalGameInfo;
+static TournamentState tournamentState;
 static MenuInfo menuInfo;
 static KeyStates keyStates;
 static FieldPositions fieldPositions;
@@ -56,6 +57,7 @@ int main ( int argc, char *argv[] )
 	// Initialize stateInfo structure
 	stateInfo.localGameInfo = &localGameInfo;
 	stateInfo.globalGameInfo = &globalGameInfo;
+	stateInfo.tournamentState = &tournamentState;
 	stateInfo.keyStates = &keyStates;
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;

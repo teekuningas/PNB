@@ -22,7 +22,7 @@ static void drawLoadingTexts()
 void drawLoadingScreen(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
 {
 	// Reset shared menu state as in original startup
-	resetMenuForNewGame(menuData);
+	resetMenuForNewGame(menuData, stateInfo);
 	// Set up camera identical to main menu
 	gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z,
 	          menuData->look.x, menuData->look.y, menuData->look.z,

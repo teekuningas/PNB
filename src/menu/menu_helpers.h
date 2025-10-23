@@ -3,8 +3,8 @@
 
 #include "menu_types.h"
 
-void updateSchedule(MenuData* menuData, StateInfo* stateInfo);
-void updateCupTreeAfterDay(MenuData* menuData, StateInfo* stateInfo, int scheduleSlot, int winningSlot);
-void resetMenuForNewGame(MenuData* menuData);
+void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo);
+void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot);
+void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo);
 
 #endif /* MENU_HELPERS_H */
