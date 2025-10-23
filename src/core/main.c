@@ -59,6 +59,7 @@ int main ( int argc, char *argv[] )
 	stateInfo.keyStates = &keyStates;
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
+	stateInfo.stopSoundEffect = 0;
 
 	GLFWwindow* window = NULL;
 	result = initGL(&window, fullscreen);

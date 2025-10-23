@@ -837,7 +837,7 @@ int cleanMainMenu(MenuData* menuData)
 // and we initialize the game.
 static void moveToGame(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
 {
-	stateInfo->playSoundEffect = 0;
+	stateInfo->stopSoundEffect = SOUND_MENU;
 	stateInfo->screen = 1;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
