@@ -4,10 +4,12 @@
 #include "globals.h"
 #include "menu_types.h"
 
-int initMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo);
-void updateMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, KeyStates* keyStates);
-void drawMainMenu(StateInfo* stateInfo, MenuInfo* menuInfo, double alpha);
-int cleanMainMenu(StateInfo* stateInfo);
-void drawLoadingScreen(StateInfo* stateInfo, MenuInfo* menuInfo);
+// Initialize menuData and prepare menu
+int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
+// Update and draw take explicit MenuData pointer for state
+// Update and draw now explicitly take MenuData pointer
+void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates);
+void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha);
+int cleanMainMenu(MenuData* menuData);
 
 #endif /* MAIN_MENU_H */

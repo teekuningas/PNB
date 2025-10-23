@@ -10,13 +10,16 @@
 #include "font.h"
 #include "fill_player_data.h"
 #include "main_menu.h"
+#include "loading_screen_menu.h"
 #include "menu_types.h"
 
 static int initGL(GLFWwindow** window, int fullscreen);
-static int clean(StateInfo* stateInfo);
-static void draw(StateInfo* stateInfo, GLFWwindow* window, double alpha);
-static int update(StateInfo* stateInfo, GLFWwindow* window);
+static int clean(StateInfo* stateInfo, MenuData* menuData);
+static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha);
+static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window);
 
+// Shared menu data defined here instead of inside main_menu.c
+static MenuData menuData;
 static StateInfo stateInfo;
 static LocalGameInfo localGameInfo;
 static GlobalGameInfo globalGameInfo;
@@ -70,7 +73,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	result = initMainMenu(&stateInfo, &menuInfo);
+	result = initMainMenu(&stateInfo, &menuData, &menuInfo);
 	if(result != 0) {
 		printf("Could not init main menu. Exiting.");
 		return -1;
@@ -95,8 +98,8 @@ int main ( int argc, char *argv[] )
 	// draw loading screen before loading all the player meshes which will take time
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-	drawLoadingScreen(&stateInfo, &menuInfo);
-	draw(&stateInfo, window, 1.0);
+	drawLoadingScreen(&stateInfo, &menuData, &menuInfo);
+	draw(&stateInfo, &menuData, window, 1.0);
 
 	result = initGameScreen(&stateInfo);
 	if(result != 0) {
@@ -116,7 +119,7 @@ int main ( int argc, char *argv[] )
 		accumulator += frameTime;
 		// update the scene every 20ms and if for some reason there is delay, keep updating until catched up
 		while ( accumulator >= updateInterval ) {
-			result = update(&stateInfo, window);
+			result = update(&stateInfo, &menuData, window);
 			if (result != 0 || glfwWindowShouldClose(window)) {
 				done = 1;
 			}
@@ -129,13 +132,13 @@ int main ( int argc, char *argv[] )
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
 		// so we will draw it to the middle.
 		if(stateInfo.updated == 1) {
-			draw(&stateInfo, window, alpha);
+			draw(&stateInfo, &menuData, window, alpha);
 		}
 
 		glfwPollEvents();
 	}
 	// and we will clean up when everything ends
-	result = clean(&stateInfo);
+	result = clean(&stateInfo, &menuData);
 	if(result != 0) {
 		printf("Cleaning up unsuccessful. Exiting anyway.");
 		return -1;
@@ -145,7 +148,7 @@ int main ( int argc, char *argv[] )
 
 }
 
-static int update(StateInfo* stateInfo, GLFWwindow* window)
+static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window)
 {
 	updateInput(stateInfo, window);
 	updateSound(stateInfo);
@@ -154,7 +157,7 @@ static int update(StateInfo* stateInfo, GLFWwindow* window)
 		updateGameScreen(stateInfo, &menuInfo);
 		break;
 	case MAIN_MENU:
-		updateMainMenu(stateInfo, &menuInfo, &keyStates);
+		updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates);
 		break;
 	default:
 		return 1;
@@ -163,14 +166,14 @@ static int update(StateInfo* stateInfo, GLFWwindow* window)
 }
 
 
-static void draw(StateInfo* stateInfo, GLFWwindow* window, double alpha)
+static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha)
 {
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
 		drawGameScreen(stateInfo, alpha);
 		break;
 	case MAIN_MENU:
-		drawMainMenu(stateInfo, &menuInfo, alpha);
+		drawMainMenu(stateInfo, menuData, &menuInfo, alpha);
 		break;
 	}
 
@@ -258,7 +261,7 @@ static int initGL(GLFWwindow** window, int fullscreen)
 	return 0;
 }
 
-static int clean(StateInfo* stateInfo)
+static int clean(StateInfo* stateInfo, MenuData* menuData)
 {
 	int result;
 	int retvalue = 0;
@@ -273,7 +276,7 @@ static int clean(StateInfo* stateInfo)
 		retvalue = -1;
 	}
 
-	result = cleanMainMenu(stateInfo);
+	result = cleanMainMenu(menuData);
 	if(result != 0) {
 		printf("Could not clean main menu completely\n");
 		retvalue = -1;
