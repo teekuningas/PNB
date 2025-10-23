@@ -78,16 +78,16 @@ MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyS
 		if (keyStates->released[md->team2_control][KEY_2]) flag = 1;
 	}
 	if (flag == 1) {
-		resetMenuForNewGame(md);
+		resetMenuForNewGame(md, stateInfo);
 		stateInfo->playSoundEffect = SOUND_MENU;
 
-		if (md->cupGame == 1) {
+		if (stateInfo->globalGameInfo->isCupGame == 1) {
 			int i, j;
 			int scheduleSlot = -1;
 			int playerWon = 0;
 			for (i = 0; i < 4; i++) {
 				for (j = 0; j < 2; j++) {
-					if (md->cupInfo.schedule[i][j] == md->cupInfo.userTeamIndexInTree) {
+					if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->tournamentState->cupInfo.userTeamIndexInTree) {
 						scheduleSlot = i;
 						if (j == stateInfo->globalGameInfo->winner) playerWon = 1;
 					}
@@ -95,19 +95,19 @@ MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyS
 			}
 			if (playerWon == 1) {
 				int advance = 0;
-				if (md->cupInfo.gameStructure == 0) {
-					if (md->cupInfo.slotWins[md->cupInfo.userTeamIndexInTree] == 2) {
-						if (md->cupInfo.dayCount >= 11) advance = 1;
+				if (stateInfo->tournamentState->cupInfo.gameStructure == 0) {
+					if (stateInfo->tournamentState->cupInfo.slotWins[stateInfo->tournamentState->cupInfo.userTeamIndexInTree] == 2) {
+						if (stateInfo->tournamentState->cupInfo.dayCount >= 11) advance = 1;
 					}
 				} else {
-					if (md->cupInfo.slotWins[md->cupInfo.userTeamIndexInTree] == 0) {
-						if (md->cupInfo.dayCount >= 3) advance = 1;
+					if (stateInfo->tournamentState->cupInfo.slotWins[stateInfo->tournamentState->cupInfo.userTeamIndexInTree] == 0) {
+						if (stateInfo->tournamentState->cupInfo.dayCount >= 3) advance = 1;
 					}
 				}
 				if (advance == 1) md->stage_8_state = 7;
 			}
-			updateCupTreeAfterDay(md, stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
-			updateSchedule(md, stateInfo);
+			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
+			updateSchedule(stateInfo->tournamentState, stateInfo);
 		}
 	}
 	return md->stage;

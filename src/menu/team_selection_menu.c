@@ -25,7 +25,6 @@ void initTeamSelectionState(TeamSelectionState *state)
 	state->team2_controller = DEFAULT_CONTROLLED_2;
 	state->innings = 2; // Default innings
 	state->rem = 0; // Will be set properly when initialized
-	state->cupGame = 0; // A standard game is never a cup game.
 }
 static void drawSelection(const TeamSelectionState* state, const StateInfo* stateInfo)
 {
@@ -68,7 +67,7 @@ static void drawSelection(const TeamSelectionState* state, const StateInfo* stat
 }
 
 
-MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const StateInfo *stateInfo, const KeyStates *keyStates)
+MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInfo, const KeyStates *keyStates)
 {
 	switch(state->state) {
 	case TEAM_SELECTION_STAGE_TEAM_1:

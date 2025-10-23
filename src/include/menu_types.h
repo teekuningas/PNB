@@ -79,7 +79,6 @@ typedef struct {
 	int team2_controller;
 	int innings;
 	int rem;
-	int cupGame;
 } TeamSelectionState;
 
 // State for hutunkeitto screen
@@ -160,11 +159,6 @@ typedef struct MenuData {
 	// home-run contest state for each team
 	HomerunContestState homerun1;
 	HomerunContestState homerun2;
-	int cupGame;
-	// Cup state for tournament mode
-	CupInfo cupInfo;
-	// Save slots for CupInfo state
-	CupInfo saveData[5];
 	int teamSelection;
 	GLuint arrowTexture;
 	GLuint catcherTexture;
