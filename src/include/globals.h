@@ -416,6 +416,7 @@ typedef struct _StateInfo {
 	int updated;
 	int numTeams;
 	int playSoundEffect;
+	int stopSoundEffect;
 	// addresses to important information structures
 	KeyStates *keyStates;
 	TeamData *teamData;

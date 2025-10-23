@@ -4,8 +4,6 @@
 #include "sound.h"
 #include "miniaudio.h"
 
-static int repeat;
-static int hasPlayed;
 static int working;
 
 static ma_sound swing;
@@ -46,10 +44,10 @@ int initSound(StateInfo* stateInfo)
 		return -4;
 	}
 
+	ma_sound_set_looping(&menu, MA_TRUE);
+
 	stateInfo->playSoundEffect = 0;
 	working = 1;
-	repeat = 0;
-	hasPlayed = 0;
 
 	return 0;
 }
@@ -59,39 +57,30 @@ void updateSound(StateInfo* stateInfo)
 		if(working == 1) {
 			switch(stateInfo->playSoundEffect) {
 			case SOUND_MENU:
-
+				ma_sound_seek_to_pcm_frame(&menu, 0);
 				result = ma_sound_start(&menu);
-				hasPlayed = 0;
-				repeat = 1;
 				break;
 			case SOUND_SWING:
 				result = ma_sound_start(&swing);
-				repeat = 0;
 				break;
 			case SOUND_CATCH:
 				result = ma_sound_start(&catchBall);
-				repeat = 0;
 				break;
-
 			}
 		}
 		stateInfo->playSoundEffect = 0;
-	} else {
-		if(working == 1) {
-			if(repeat == 1) {
-				int playing;
-				playing = ma_sound_is_playing(&menu);
-				if(playing != 0) hasPlayed = 1;
-				if(playing == 0 && hasPlayed == 1) {
-					result = ma_sound_start(&menu);
-					hasPlayed = 0;
-				}
-			}
-		}
-
 	}
 
-
+	if (stateInfo->stopSoundEffect != 0) {
+		if (working == 1) {
+			switch (stateInfo->stopSoundEffect) {
+			case SOUND_MENU:
+				ma_sound_stop(&menu);
+				break;
+			}
+		}
+		stateInfo->stopSoundEffect = 0;
+	}
 }
 
 int cleanSound(StateInfo* stateInfo)
