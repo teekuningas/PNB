@@ -18,12 +18,11 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 	if (stateInfo->globalGameInfo->isCupGame != 1) {
 		initFrontMenuState(&menuData->front_menu);
 		menuData->stage = MENU_STAGE_FRONT;
-		menuData->stage_8_state = 0;
 	} else {
 		menuData->stage = MENU_STAGE_CUP;
-		menuData->rem = 5;
-		menuData->pointer = 0;
-		menuData->stage_8_state = 2;
+		menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
+		menuData->cup_menu.pointer = 0;
+		menuData->cup_menu.rem = 5;
 	}
 }
 
@@ -120,5 +119,17 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 		} else {
 			done = 1;
 		}
+	}
+}
+
+void initBattingOrderState(BattingOrderState *state, int team_index, int player_control)
+{
+	state->pointer = 0;
+	state->rem = 13; // 12 players + "Continue"
+	state->mark = 0;
+	state->team_index = team_index;
+	state->player_control = player_control;
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		state->batting_order[i] = i;
 	}
 }

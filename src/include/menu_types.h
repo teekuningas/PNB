@@ -136,6 +136,37 @@ typedef struct {
 	int choices[2][MAX_HOMERUN_PAIRS]; // [0]=batters, [1]=runners
 } HomerunContestState;
 
+typedef enum {
+	CUP_MENU_SCREEN_INITIAL,
+	CUP_MENU_SCREEN_ONGOING,
+	CUP_MENU_SCREEN_NEW_CUP,
+	CUP_MENU_SCREEN_LOAD_CUP,
+	CUP_MENU_SCREEN_VIEW_SCHEDULE,
+	CUP_MENU_SCREEN_VIEW_TREE,
+	CUP_MENU_SCREEN_SAVE_CUP,
+	CUP_MENU_SCREEN_END_CREDITS
+} CupMenuScreen;
+
+typedef enum {
+	NEW_CUP_STAGE_TEAM_SELECTION,
+	NEW_CUP_STAGE_WINS_TO_ADVANCE,
+	NEW_CUP_STAGE_INNINGS
+} NewCupStage;
+
+typedef struct {
+	float x;
+	float y;
+} TreeCoordinates;
+
+typedef struct {
+	CupMenuScreen screen;
+	int pointer;
+	int rem;
+	NewCupStage new_cup_stage;
+	int team_selection;
+	TreeCoordinates treeCoordinates[SLOT_COUNT];
+} CupMenuState;
+
 typedef struct MenuData {
 	MenuStage stage;
 	FrontMenuState front_menu;
@@ -144,10 +175,9 @@ typedef struct MenuData {
 	HutunkeittoState hutunkeitto;
 	GameOverState game_over;  // state for GAME_OVER stage
 	HelpMenuState help_menu;
+	CupMenuState cup_menu;
 	int pointer;
 	int rem;
-	int stage_8_state;
-	int stage_8_state_1_level;
 	int team1;
 	int team2;
 	int team1_control;
@@ -159,7 +189,6 @@ typedef struct MenuData {
 	// home-run contest state for each team
 	HomerunContestState homerun1;
 	HomerunContestState homerun2;
-	int teamSelection;
 	GLuint arrowTexture;
 	GLuint catcherTexture;
 	GLuint batterTexture;
