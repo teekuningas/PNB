@@ -48,7 +48,9 @@ typedef enum {
 	MENU_STAGE_HOMERUN_CONTEST_2,
 	MENU_STAGE_CUP,
 	MENU_STAGE_HELP,
-	MENU_STAGE_GO_TO_GAME
+	MENU_STAGE_GO_TO_GAME,
+	// Special stage for quitting the application
+	MENU_STAGE_QUIT
 } MenuStage;
 
 typedef enum {

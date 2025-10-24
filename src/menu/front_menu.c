@@ -31,14 +31,16 @@ MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo
 		state->pointer -=1;
 		state->pointer = (state->pointer+state->rem)%state->rem;
 	}
-	if(keyStates->released[0][KEY_2]) {
-		if(state->pointer == 0) {
+	if (keyStates->released[0][KEY_2]) {
+		if (state->pointer == 0) {
 			return MENU_STAGE_TEAM_SELECTION;
-		} else if(state->pointer == 1) {
+		} else if (state->pointer == 1) {
 			return MENU_STAGE_CUP;
-		} else if(state->pointer == 2) {
+		} else if (state->pointer == 2) {
 			return MENU_STAGE_HELP;
-		} else if(state->pointer == 3) stateInfo->screen = -1;
+		} else if (state->pointer == 3) {
+			return MENU_STAGE_QUIT;
+		}
 	}
 	return MENU_STAGE_FRONT;
 }
