@@ -124,9 +124,6 @@ typedef struct {
 	int page;
 } HelpMenuState;
 
-// Maximum number of batters or runners per team in home-run contest
-#define MAX_HOMERUN_PAIRS 5
-
 // State for the home-run contest stages (one per team)
 typedef struct {
 	int team_index;        // index into StateInfo.teamData

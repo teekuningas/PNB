@@ -73,6 +73,7 @@
 #define CHANGE_PLAYER_COUNT 3
 #define BASE_COUNT 4
 #define DIRECTION_COUNT 4
+#define MAX_HOMERUN_PAIRS 5
 
 // Menu slots
 #define SLOT_COUNT 14
