@@ -4,7 +4,8 @@
 #include "globals.h"
 #include "menu_types.h"
 
-static void drawPlayerListForBattingOrder(const BattingOrderState *state, const StateInfo *stateInfo)
+static void drawPlayerListForBattingOrder(const BattingOrderState *state, const StateInfo *stateInfo,
+        MenuStage currentStage)
 {
 	const TeamData* teamData = stateInfo->teamData;
 	int i;
@@ -16,9 +17,11 @@ static void drawPlayerListForBattingOrder(const BattingOrderState *state, const 
 
 	printText("change batting order", 20, -0.35f, -0.5f, 3);
 
-	// This is a bit of a hack, we should probably pass the team number in.
-	if(team == 0) printText("team 1", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
-	else printText("team 2", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
+	// Label by batting-order screen rather than team index
+	if (currentStage == MENU_STAGE_BATTING_ORDER_1)
+		printText("team 1", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
+	else
+		printText("team 2", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
 
 	printText("continue", 8, -0.05f, PLAYER_LIST_CONTINUE_HEIGHT, 3);
 
@@ -48,18 +51,6 @@ static void drawPlayerListForBattingOrder(const BattingOrderState *state, const 
 		str[0] = (char)(((int)'0')+teamData[team].players[index].power);
 		printText(str, 1, PLAYER_LIST_INFO_FIRST + 2*PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET,
 		          PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-	}
-}
-
-void initBattingOrderState(BattingOrderState *state, int team_index, int player_control)
-{
-	state->pointer = 0;
-	state->rem = 13; // 12 players + "Continue"
-	state->mark = 0;
-	state->team_index = team_index;
-	state->player_control = player_control;
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		state->batting_order[i] = i;
 	}
 }
 
@@ -137,5 +128,5 @@ void drawBattingOrderMenu(const BattingOrderState *state, const StateInfo *state
 		glCallList(menuData->planeDisplayList);
 		glPopMatrix();
 	}
-	drawPlayerListForBattingOrder(state, stateInfo);
+	drawPlayerListForBattingOrder(state, stateInfo, menuData->stage);
 }

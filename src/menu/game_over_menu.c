@@ -104,7 +104,7 @@ MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyS
 						if (stateInfo->tournamentState->cupInfo.dayCount >= 3) advance = 1;
 					}
 				}
-				if (advance == 1) md->stage_8_state = 7;
+				if (advance == 1) md->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 			}
 			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
 			updateSchedule(stateInfo->tournamentState, stateInfo);
