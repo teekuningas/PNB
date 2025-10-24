@@ -16,7 +16,6 @@
 #include "menu_helpers.h"
 #include "loading_screen_menu.h"
 #include "cup_menu.h"
-// main_menu now operates on explicit MenuData* passed in via update/draw
 
 #define FIGURE_SCALE 0.4f
 #define FRONT_ARROW_POS 0.15f
@@ -24,12 +23,8 @@
 
 static void moveToGame(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
 
-
-
 int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
-
 {
-
 	menuInfo->mode = MENU_ENTRY_NORMAL;
 	menuData->cam.x = 0.0f;
 	menuData->cam.y = CAM_HEIGHT;
@@ -115,8 +110,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		}
 	}
 	// main main menu.
-	switch(menuData->stage) {
-	case MENU_STAGE_FRONT:
+	switch (menuData->stage) {
+	case MENU_STAGE_FRONT: {
 		nextStage = updateFrontMenu(&menuData->front_menu, keyStates, stateInfo);
 		if (nextStage == MENU_STAGE_CUP) {
 			initCupMenu(&menuData->cup_menu, stateInfo);
@@ -127,109 +122,130 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			menuData->team_selection.pointer = DEFAULT_TEAM_1;
 		} else if (nextStage == MENU_STAGE_HELP) {
 			initHelpMenu(&menuData->help_menu);
+		} else if (nextStage == MENU_STAGE_QUIT) {
+			stateInfo->screen = -1;
 		}
 		menuData->stage = nextStage;
 		break;
-	case MENU_STAGE_TEAM_SELECTION:
+	}
+	case MENU_STAGE_TEAM_SELECTION: {
 		nextStage = updateTeamSelectionMenu(&menuData->team_selection, stateInfo, keyStates);
-		if (nextStage != MENU_STAGE_TEAM_SELECTION) {
-			// Explicitly copy the necessary data back to the main state object
-			// when the team selection process is finished.
+		if (nextStage != menuData->stage) {
+			// Copy chosen teams back to main state
 			menuData->team1 = menuData->team_selection.team1;
 			menuData->team2 = menuData->team_selection.team2;
 			menuData->team1_control = menuData->team_selection.team1_controller;
 			menuData->team2_control = menuData->team_selection.team2_controller;
 			menuData->inningsInPeriod = menuData->team_selection.innings;
-			// Also, reset the UI state (pointer and rem) for the next menu stage.
+			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
 			} else if (nextStage == MENU_STAGE_FRONT) {
 				initFrontMenuState(&menuData->front_menu);
 			}
-			menuData->stage = nextStage;
 		}
+		menuData->stage = nextStage;
 		break;
-	case MENU_STAGE_BATTING_ORDER_1:
+	}
+	case MENU_STAGE_BATTING_ORDER_1: {
 		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode);
 		if (nextStage != menuData->stage) {
-			memcpy(menuData->team1_batting_order, menuData->batting_order.batting_order, sizeof(menuData->batting_order.batting_order));
+			// Save team1's batting order
+			memcpy(menuData->team1_batting_order, menuData->batting_order.batting_order,
+			       sizeof(menuData->batting_order.batting_order));
 			if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
+				// Setup for team2 ordering
 				initBattingOrderState(&menuData->batting_order, menuData->team2, menuData->team2_control);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 				menuData->pointer = 0;
 				menuData->rem = 2;
 			}
-			menuData->stage = nextStage;
 		}
+		menuData->stage = nextStage;
 		break;
-	case MENU_STAGE_BATTING_ORDER_2:
+	}
+	case MENU_STAGE_BATTING_ORDER_2: {
 		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode);
 		if (nextStage != menuData->stage) {
-			memcpy(menuData->team2_batting_order, menuData->batting_order.batting_order, sizeof(menuData->batting_order.batting_order));
+			// Save team2's batting order
+			memcpy(menuData->team2_batting_order, menuData->batting_order.batting_order,
+			       sizeof(menuData->batting_order.batting_order));
 			if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 				menuData->pointer = 0;
 				menuData->rem = 2;
-			} else if (nextStage == MENU_STAGE_GO_TO_GAME) {
+			}
+			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				moveToGame(stateInfo, menuData, menuInfo);
 			}
-			menuData->stage = nextStage;
 		}
+		menuData->stage = nextStage;
 		break;
-	case MENU_STAGE_HUTUNKEITTO:
-		nextStage = updateHutunkeittoMenu(&menuData->hutunkeitto, keyStates, menuData->team1_control, menuData->team2_control);
+	}
+	case MENU_STAGE_HUTUNKEITTO: {
+		nextStage = updateHutunkeittoMenu(&menuData->hutunkeitto, keyStates,
+		                                  menuData->team1_control, menuData->team2_control);
 		if (nextStage != menuData->stage) {
+			// Record who bats first
 			menuData->playsFirst = menuData->hutunkeitto.playsFirst;
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				moveToGame(stateInfo, menuData, menuInfo);
 			}
-			menuData->stage = nextStage;
 		}
+		menuData->stage = nextStage;
 		break;
-	case MENU_STAGE_GAME_OVER:
+	}
+	case MENU_STAGE_GAME_OVER: {
 		// Delegate Game-Over logic
 		nextStage = updateGameOverMenu(menuData, stateInfo, keyStates, menuInfo);
 		menuData->stage = nextStage;
 		break;
+	}
 	case MENU_STAGE_HOMERUN_CONTEST_1: {
-		// delegate to home-run contest logic for team 1
-		MenuStage nextStage = updateHomerunContestMenu(
-		                          &menuData->homerun1,
-		                          keyStates,
-		                          stateInfo,
-		                          MENU_STAGE_HOMERUN_CONTEST_1);
+		// Delegate to home-run contest logic for team 1
+		nextStage = updateHomerunContestMenu(&menuData->homerun1,
+		                                     keyStates,
+		                                     stateInfo,
+		                                     MENU_STAGE_HOMERUN_CONTEST_1);
 		if (nextStage != menuData->stage) {
 			menuData->stage = nextStage;
 		}
+		break;
 	}
-	break;
 	case MENU_STAGE_HOMERUN_CONTEST_2: {
-		// delegate to home-run contest logic for team 2
-		MenuStage nextStage = updateHomerunContestMenu(
-		                          &menuData->homerun2,
-		                          keyStates,
-		                          stateInfo,
-		                          MENU_STAGE_HOMERUN_CONTEST_2);
+		// Delegate to home-run contest logic for team 2
+		nextStage = updateHomerunContestMenu(&menuData->homerun2,
+		                                     keyStates,
+		                                     stateInfo,
+		                                     MENU_STAGE_HOMERUN_CONTEST_2);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				moveToGame(stateInfo, menuData, menuInfo);
 			}
 			menuData->stage = nextStage;
 		}
-	}
-	break;
-	case MENU_STAGE_CUP:
-		menuData->stage = updateCupMenu(&menuData->cup_menu, stateInfo, menuData, keyStates);
 		break;
-	case MENU_STAGE_HELP:
+	}
+	case MENU_STAGE_CUP: {
+		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, menuData, keyStates);
+		menuData->stage = nextStage;
+		break;
+	}
+	case MENU_STAGE_HELP: {
 		nextStage = updateHelpMenu(&menuData->help_menu, keyStates);
-		if (nextStage != MENU_STAGE_HELP) {
-			initFrontMenuState(&menuData->front_menu);
+		if (nextStage != menuData->stage) {
+			if (nextStage == MENU_STAGE_FRONT) {
+				initFrontMenuState(&menuData->front_menu);
+			}
 		}
 		menuData->stage = nextStage;
 		break;
+	}
 	case MENU_STAGE_GO_TO_GAME:
+		break;
+	case MENU_STAGE_QUIT:
+		// Quit handled in FRONT case, no update here
 		break;
 	}
 }
@@ -270,6 +286,9 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawHelpMenu(&menuData->help_menu);
 		break;
 	case MENU_STAGE_GO_TO_GAME:
+		break;
+	case MENU_STAGE_QUIT:
+		// Nothing to draw when quitting
 		break;
 	}
 }
