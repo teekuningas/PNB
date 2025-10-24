@@ -1,0 +1,32 @@
+#ifndef GAME_SETUP_H
+#define GAME_SETUP_H
+
+#include "globals.h"
+
+// Enum to represent the game mode, decoupling game logic from menu specifics.
+typedef enum {
+	GAME_MODE_NORMAL,
+	GAME_MODE_SUPER_INNING,
+	GAME_MODE_HOMERUN_CONTEST
+} GameMode;
+
+// This struct holds all the parameters needed to initialize a game.
+// It is populated from the menu and used to set up the game state.
+
+typedef struct GameSetup {
+	GameMode gameMode;
+	int team1;
+	int team2;
+	int team1_control;
+	int team2_control;
+	int inningsInPeriod;
+	int playsFirst;
+	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int homerun_choices1[2][MAX_HOMERUN_PAIRS];
+	int homerun_choices2[2][MAX_HOMERUN_PAIRS];
+	int homerun_choice_count;
+} GameSetup;
+
+#endif /* GAME_SETUP_H */
+

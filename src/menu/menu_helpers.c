@@ -1,6 +1,54 @@
 #include "menu_helpers.h"
 #include "front_menu.h"
 
+void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInfo)
+{
+	// Set game mode based on menu entry mode
+	switch (menuInfo->mode) {
+	case MENU_ENTRY_NORMAL:
+		gameSetup->gameMode = GAME_MODE_NORMAL;
+		break;
+	case MENU_ENTRY_SUPER_INNING:
+		gameSetup->gameMode = GAME_MODE_SUPER_INNING;
+		break;
+	case MENU_ENTRY_HOMERUN_CONTEST:
+		gameSetup->gameMode = GAME_MODE_HOMERUN_CONTEST;
+		break;
+	default:
+		// Default to normal, though this shouldn't be reached in normal flow
+		gameSetup->gameMode = GAME_MODE_NORMAL;
+		break;
+	}
+
+	gameSetup->team1 = menuData->team1;
+	gameSetup->team2 = menuData->team2;
+	gameSetup->team1_control = menuData->team1_control;
+	gameSetup->team2_control = menuData->team2_control;
+	gameSetup->inningsInPeriod = menuData->inningsInPeriod;
+
+	// Logic for playsFirst is now here
+	if (menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+		gameSetup->playsFirst = menuData->playsFirst;
+	} else {
+		// Default or for other modes if needed
+		gameSetup->playsFirst = 0;
+	}
+
+	memcpy(gameSetup->team1_batting_order, menuData->team1_batting_order, sizeof(menuData->team1_batting_order));
+	memcpy(gameSetup->team2_batting_order, menuData->team2_batting_order, sizeof(menuData->team2_batting_order));
+
+	if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
+		gameSetup->homerun_choice_count = menuData->homerun1.choiceCount / 2;
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < gameSetup->homerun_choice_count; j++) {
+				gameSetup->homerun_choices1[i][j] = menuData->homerun1.choices[i][j];
+				gameSetup->homerun_choices2[i][j] = menuData->homerun2.choices[i][j];
+			}
+		}
+	} else {
+		gameSetup->homerun_choice_count = 0;
+	}
+}
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 {
 	int i;

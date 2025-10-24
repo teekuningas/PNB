@@ -21,7 +21,7 @@
 #define FRONT_ARROW_POS 0.15f
 #define CAM_HEIGHT 2.3f
 
-static void moveToGame(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
+
 
 int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
 {
@@ -177,7 +177,10 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				menuData->rem = 2;
 			}
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				moveToGame(stateInfo, menuData, menuInfo);
+				GameSetup gameSetup;
+				createGameSetup(&gameSetup, menuData, menuInfo);
+				initializeGameFromMenu(stateInfo, &gameSetup);
+				menuInfo->mode = MENU_ENTRY_NORMAL;
 			}
 		}
 		menuData->stage = nextStage;
@@ -190,7 +193,10 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			// Record who bats first
 			menuData->playsFirst = menuData->hutunkeitto.playsFirst;
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				moveToGame(stateInfo, menuData, menuInfo);
+				GameSetup gameSetup;
+				createGameSetup(&gameSetup, menuData, menuInfo);
+				initializeGameFromMenu(stateInfo, &gameSetup);
+				menuInfo->mode = MENU_ENTRY_NORMAL;
 			}
 		}
 		menuData->stage = nextStage;
@@ -221,7 +227,10 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		                                     MENU_STAGE_HOMERUN_CONTEST_2);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				moveToGame(stateInfo, menuData, menuInfo);
+				GameSetup gameSetup;
+				createGameSetup(&gameSetup, menuData, menuInfo);
+				initializeGameFromMenu(stateInfo, &gameSetup);
+				menuInfo->mode = MENU_ENTRY_NORMAL;
 			}
 			menuData->stage = nextStage;
 		}
@@ -304,65 +313,3 @@ int cleanMainMenu(MenuData* menuData)
 }
 
 
-// and we initialize the game.
-static void moveToGame(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
-{
-	stateInfo->stopSoundEffect = SOUND_MENU;
-	stateInfo->screen = 1;
-	stateInfo->changeScreen = 1;
-	stateInfo->updated = 0;
-	// when first starting the game, we se teams and inning and period settings.
-	if(menuInfo->mode == MENU_ENTRY_NORMAL) {
-		int i;
-		stateInfo->globalGameInfo->inning = 0;
-		stateInfo->globalGameInfo->inningsInPeriod = menuData->inningsInPeriod;
-		stateInfo->globalGameInfo->period = 0;
-		stateInfo->globalGameInfo->winner = -1;
-		stateInfo->globalGameInfo->playsFirst = menuData->playsFirst;
-		stateInfo->globalGameInfo->teams[0].value = menuData->team1 + 1;
-		stateInfo->globalGameInfo->teams[1].value = menuData->team2 + 1;
-		stateInfo->globalGameInfo->teams[0].control = menuData->team1_control;
-		stateInfo->globalGameInfo->teams[1].control = menuData->team2_control;
-		for(i = 0; i < 2; i++) {
-			stateInfo->globalGameInfo->teams[i].runs = 0;
-			stateInfo->globalGameInfo->teams[i].period0Runs = 0;
-			stateInfo->globalGameInfo->teams[i].period1Runs = 0;
-			stateInfo->globalGameInfo->teams[i].period2Runs = 0;
-			stateInfo->globalGameInfo->teams[i].period3Runs = 0;
-		}
-	}
-	// in the beginning and after second period we have had hutunkeitto.
-	if(menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-		stateInfo->globalGameInfo->playsFirst = menuData->playsFirst;
-	}
-	// after super period we have to do different kind of initialization.
-	if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
-		// transfer home-run contest choices into game state
-		int half = menuData->homerun1.choiceCount / 2;
-		for (int i = 0; i < 2; i++) {
-			for (int j = 0; j < half; j++) {
-				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j]
-				    = menuData->homerun1.choices[i][j];
-				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j]
-				    = menuData->homerun2.choices[i][j];
-			}
-			if (stateInfo->globalGameInfo->period > 4) {
-				for (int j = half; j < MAX_HOMERUN_PAIRS; j++) {
-					stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = -1;
-					stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = -1;
-				}
-			}
-		}
-		stateInfo->globalGameInfo->pairCount = half;
-		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
-	} else {
-		// if homerun batting contest is not coming, we just set batterOrder settings normally.
-		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
-		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
-		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, menuData->team1_batting_order, sizeof(menuData->team1_batting_order));
-		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, menuData->team2_batting_order, sizeof(menuData->team2_batting_order));
-	}
-
-	menuInfo->mode = MENU_ENTRY_NORMAL;
-	loadMutableWorldSettings(stateInfo);
-}
