@@ -23,7 +23,7 @@
 
 
 
-int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
+int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
 {
 	menuInfo->mode = MENU_ENTRY_NORMAL;
 	menuData->cam.x = 0.0f;
@@ -35,25 +35,30 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
 	menuData->look.x = 0.0f;
 	menuData->look.y = 0.0f;
 	menuData->look.z = 0.0f;
-	if(tryLoadingTextureGL(&menuData->arrowTexture, "data/textures/arrow.tga", "arrow") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->catcherTexture, "data/textures/catcher.tga", "catcher") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->batterTexture, "data/textures/batter.tga", "batter") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->slotTexture, "data/textures/cup_tree_slot.tga", "slot") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->trophyTexture, "data/textures/menu_trophy.tga", "trophy") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team1Texture, "data/textures/team1.tga", "team1") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team2Texture, "data/textures/team2.tga", "team2") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team3Texture, "data/textures/team3.tga", "team3") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team4Texture, "data/textures/team4.tga", "team4") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team5Texture, "data/textures/team5.tga", "team5") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team6Texture, "data/textures/team6.tga", "team6") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team7Texture, "data/textures/team7.tga", "team7") != 0) return -1;
-	if(tryLoadingTextureGL(&menuData->team8Texture, "data/textures/team8.tga", "team8") != 0) return -1;
-	menuData->planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", menuData->planeMesh, &menuData->planeDisplayList) != 0) return -1;
-	menuData->batMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_bat.obj", "Sphere.001", menuData->batMesh, &menuData->batDisplayList) != 0) return -1;
-	menuData->handMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/hutunkeitto_hand.obj", "Cube.001", menuData->handMesh, &menuData->handDisplayList) != 0) return -1;
+
+	// TODO: Draw loading screen here
+
+	resource_manager_load_all_menu_assets(rm);
+
+	// Populate MenuData for legacy code
+	menuData->arrowTexture = resource_manager_get_texture(rm, "data/textures/arrow.tga");
+	// Load background for new front menu
+	menuData->catcherTexture = resource_manager_get_texture(rm, "data/textures/catcher.tga");
+	menuData->batterTexture = resource_manager_get_texture(rm, "data/textures/batter.tga");
+	menuData->slotTexture = resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga");
+	menuData->trophyTexture = resource_manager_get_texture(rm, "data/textures/menu_trophy.tga");
+	menuData->team1Texture = resource_manager_get_texture(rm, "data/textures/team1.tga");
+	menuData->team2Texture = resource_manager_get_texture(rm, "data/textures/team2.tga");
+	menuData->team3Texture = resource_manager_get_texture(rm, "data/textures/team3.tga");
+	menuData->team4Texture = resource_manager_get_texture(rm, "data/textures/team4.tga");
+	menuData->team5Texture = resource_manager_get_texture(rm, "data/textures/team5.tga");
+	menuData->team6Texture = resource_manager_get_texture(rm, "data/textures/team6.tga");
+	menuData->team7Texture = resource_manager_get_texture(rm, "data/textures/team7.tga");
+	menuData->team8Texture = resource_manager_get_texture(rm, "data/textures/team8.tga");
+
+	menuData->planeDisplayList = resource_manager_get_model(rm, "data/models/plane.obj");
+	menuData->batDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_bat.obj");
+	menuData->handDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_hand.obj");
 
 	return 0;
 }
@@ -262,43 +267,51 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 // here we draw everything.
 // directly we draw ugly stuff like images of players or hand or bat models etc.
 // then we call methods to handle text rendering.
-void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha)
+void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
 {
-	gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
-	switch(menuData->stage) {
-	case MENU_STAGE_FRONT:
-		drawFrontMenu(&menuData->front_menu, menuData);
-		break;
-	case MENU_STAGE_TEAM_SELECTION:
-		drawTeamSelectionMenu(&menuData->team_selection, stateInfo, menuData);
-		break;
-	case MENU_STAGE_BATTING_ORDER_1:
-	case MENU_STAGE_BATTING_ORDER_2:
-		drawBattingOrderMenu(&menuData->batting_order, stateInfo, menuData);
-		break;
-	case MENU_STAGE_HUTUNKEITTO:
-		drawHutunkeittoMenu(&menuData->hutunkeitto, menuData);
-		break;
-	case MENU_STAGE_GAME_OVER:
-		drawGameOverMenu(stateInfo);
-		break;
-	case MENU_STAGE_HOMERUN_CONTEST_1:
-		drawHomerunContestMenu(&menuData->homerun1, stateInfo, menuData);
-		break;
-	case MENU_STAGE_HOMERUN_CONTEST_2:
-		drawHomerunContestMenu(&menuData->homerun2, stateInfo, menuData);
-		break;
-	case MENU_STAGE_CUP:
-		drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
-		break;
-	case MENU_STAGE_HELP:
-		drawHelpMenu(&menuData->help_menu);
-		break;
-	case MENU_STAGE_GO_TO_GAME:
-		break;
-	case MENU_STAGE_QUIT:
-		// Nothing to draw when quitting
-		break;
+	if (menuData->stage == MENU_STAGE_FRONT) {
+		// New orthographic-only rendering for front menu
+		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
+	} else {
+		// Legacy rendering path for all other menus (disable lighting)
+		begin_3d_render(rs);
+		glDisable(GL_LIGHTING);
+		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+		switch(menuData->stage) {
+		case MENU_STAGE_TEAM_SELECTION:
+			drawTeamSelectionMenu(&menuData->team_selection, stateInfo, menuData);
+			break;
+		case MENU_STAGE_BATTING_ORDER_1:
+		case MENU_STAGE_BATTING_ORDER_2:
+			drawBattingOrderMenu(&menuData->batting_order, stateInfo, menuData);
+			break;
+		case MENU_STAGE_HUTUNKEITTO:
+			drawHutunkeittoMenu(&menuData->hutunkeitto, menuData);
+			break;
+		case MENU_STAGE_GAME_OVER:
+			drawGameOverMenu(stateInfo);
+			break;
+		case MENU_STAGE_HOMERUN_CONTEST_1:
+			drawHomerunContestMenu(&menuData->homerun1, stateInfo, menuData);
+			break;
+		case MENU_STAGE_HOMERUN_CONTEST_2:
+			drawHomerunContestMenu(&menuData->homerun2, stateInfo, menuData);
+			break;
+		case MENU_STAGE_CUP:
+			drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
+			break;
+		case MENU_STAGE_HELP:
+			drawHelpMenu(&menuData->help_menu);
+			break;
+		case MENU_STAGE_GO_TO_GAME:
+			break;
+		case MENU_STAGE_QUIT:
+			// Nothing to draw when quitting
+			break;
+		default:
+			// Should not happen, but good to have a default
+			break;
+		}
 	}
 }
 // values here are mostly hard-coded, some of them have defines, some dont. do i care ;_;
@@ -306,10 +319,6 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 
 int cleanMainMenu(MenuData* menuData)
 {
-	cleanMesh(menuData->planeMesh);
-	cleanMesh(menuData->handMesh);
-	cleanMesh(menuData->batMesh);
+	// All resources are now cleaned up by the resource manager.
 	return 0;
 }
-
-
