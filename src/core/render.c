@@ -85,6 +85,7 @@ void begin_3d_render(const RenderState* rs)
 	glLoadIdentity();
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
 }
 
 void begin_2d_render(const RenderState* rs)
@@ -96,4 +97,5 @@ void begin_2d_render(const RenderState* rs)
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
 }

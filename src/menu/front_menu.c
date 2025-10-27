@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "menu_types.h"
 #include "resource_manager.h"
+#include "menu_helpers.h"
 
 // --- UI layout constants (now in 2D screen space) ---
 #define FONT_SIZE_LARGE 120
@@ -48,30 +49,9 @@ MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo
 // New orthographic-only front menu rendering
 void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm, const struct MenuData *menuData)
 {
-	// Setup orthographic 2D projection
+	// Setup orthographic 2D projection and draw shared menu background
 	begin_2d_render(rs);
-	// Disable depth and lighting for 2D rendering
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glEnable(GL_TEXTURE_2D);
-
-	// 1. Draw full-screen background quad
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/empty_background.tga"));
-	glBegin(GL_QUADS);
-	// All quads are defined Clockwise (TL, BL, BR, TR) to be compatible with the global GL_CULL_FACE setting
-	// TL
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(0.0f, 0.0f);
-	// BL
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(0.0f, rs->window_height);
-	// BR
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(rs->window_width, rs->window_height);
-	// TR
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(rs->window_width, 0.0f);
-	glEnd();
+	drawMenuLayout2D(rm, rs);
 
 	// 2. Draw Batter and Catcher
 	// Re-calculate size and position to better match the original perspective layout
@@ -144,6 +124,7 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 
 	// 4. Draw Text
 	drawFrontTexts(rs);
+
 }
 
 

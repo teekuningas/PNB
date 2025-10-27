@@ -6,7 +6,7 @@
 
 int initGameScreen(StateInfo* stateInfo);
 void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo);
-void drawGameScreen(StateInfo* stateInfo, double alpha);
+void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs);
 int cleanGameScreen(StateInfo* stateInfo);
 
 #endif /* GAME_SCREEN_H */

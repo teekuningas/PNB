@@ -36,9 +36,7 @@ int initFont()
 
 void drawFontBackground()
 {
-	// Draw background quad without lighting or depth test
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
+	// Background quad is drawn under current 2D pipeline state
 	glBindTexture(GL_TEXTURE_2D, emptyTexture);
 	glPushMatrix();
 	glScalef(2.0f, 1.0f, 1.0f); // scale plane for background
