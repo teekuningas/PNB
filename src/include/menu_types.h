@@ -189,6 +189,7 @@ typedef struct MenuData {
 	HomerunContestState homerun1;
 	HomerunContestState homerun2;
 	GLuint arrowTexture;
+	// Background texture for the new front menu (orthographic)
 	GLuint catcherTexture;
 	GLuint batterTexture;
 	GLuint slotTexture;

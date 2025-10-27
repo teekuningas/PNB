@@ -2,14 +2,13 @@
 #define FRONT_MENU_H
 
 #include "menu_types.h"
+#include "resource_manager.h"
+#include "render.h"
 
-// Function to initialize or reset the state to its default values
 void initFrontMenuState(FrontMenuState *state);
-
-// Update function now takes the specific state it needs and returns the next stage
 MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo* stateInfo);
 
-// Draw function also takes the specific state, plus rendering data from MenuData
-void drawFrontMenu(const FrontMenuState *state, const struct MenuData *menuData);
+// New orthographic-only front menu rendering (background, figures, arrow, text)
+void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm, const struct MenuData *menuData);
 
-#endif // FRONT_MENU_H
+#endif /* FRONT_MENU_H */

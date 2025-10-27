@@ -3,7 +3,6 @@
 #include "globals.h"
 #include "render.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 void drawMesh(MeshObject* mesh)
@@ -75,4 +74,26 @@ int tryPreparingMeshGL(char* filename, char* objectname, MeshObject* mesh, GLuin
 
 	prepareMesh(mesh, displayList);
 	return 0;
+}
+
+void begin_3d_render(const RenderState* rs)
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(45.0f, PERSPECTIVE_ASPECT_RATIO, 0.1f, 250.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+}
+
+void begin_2d_render(const RenderState* rs)
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, rs->window_width, rs->window_height, 0, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
 }

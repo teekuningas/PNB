@@ -12,10 +12,11 @@
 #include "main_menu.h"
 #include "loading_screen_menu.h"
 #include "menu_types.h"
+#include "resource_manager.h"
 
-static int initGL(GLFWwindow** window, int fullscreen);
-static int clean(StateInfo* stateInfo, MenuData* menuData);
-static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha);
+static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
+static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
+static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window);
 
 // Shared menu data defined here instead of inside main_menu.c
@@ -27,6 +28,8 @@ static TournamentState tournamentState;
 static MenuInfo menuInfo;
 static KeyStates keyStates;
 static FieldPositions fieldPositions;
+static RenderState renderState;
+static ResourceManager* resourceManager;
 
 int main ( int argc, char *argv[] )
 {
@@ -63,8 +66,14 @@ int main ( int argc, char *argv[] )
 	stateInfo.teamData = NULL;
 	stateInfo.stopSoundEffect = 0;
 
+	resourceManager = resource_manager_init();
+	if (resourceManager == NULL) {
+		printf("Could not init resource manager. Exiting.");
+		return -1;
+	}
+
 	GLFWwindow* window = NULL;
-	result = initGL(&window, fullscreen);
+	result = initGL(&window, fullscreen, &renderState);
 	if(result != 0) {
 		printf("Could not init GL. Exiting.");
 		return -1;
@@ -76,7 +85,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	result = initMainMenu(&stateInfo, &menuData, &menuInfo);
+	result = initMainMenu(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
 	if(result != 0) {
 		printf("Could not init main menu. Exiting.");
 		return -1;
@@ -102,7 +111,7 @@ int main ( int argc, char *argv[] )
 	stateInfo.screen = -1;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
 	drawLoadingScreen(&stateInfo, &menuData, &menuInfo);
-	draw(&stateInfo, &menuData, window, 1.0);
+	draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
 	result = initGameScreen(&stateInfo);
 	if(result != 0) {
@@ -135,13 +144,13 @@ int main ( int argc, char *argv[] )
 		// isn't what it was on laste update call nor it is what it will be in the next call to update.
 		// so we will draw it to the middle.
 		if(stateInfo.updated == 1) {
-			draw(&stateInfo, &menuData, window, alpha);
+			draw(&stateInfo, &menuData, window, alpha, resourceManager, &renderState);
 		}
 
 		glfwPollEvents();
 	}
 	// and we will clean up when everything ends
-	result = clean(&stateInfo, &menuData);
+	result = clean(&stateInfo, &menuData, resourceManager);
 	if(result != 0) {
 		printf("Cleaning up unsuccessful. Exiting anyway.");
 		return -1;
@@ -169,24 +178,24 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window)
 }
 
 
-static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha)
+static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs)
+
+
 {
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
 		drawGameScreen(stateInfo, alpha);
 		break;
 	case MAIN_MENU:
-		drawMainMenu(stateInfo, menuData, &menuInfo, alpha);
+		drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
 		break;
 	}
-
 	glfwSwapBuffers(window);
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 }
 
-static int initGL(GLFWwindow** window, int fullscreen)
+static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState)
 {
 	const GLFWvidmode* mode;
 	GLFWmonitor* monitor;
@@ -227,6 +236,9 @@ static int initGL(GLFWwindow** window, int fullscreen)
 		}
 	}
 
+	renderState->window_width = width;
+	renderState->window_height = height;
+
 	glfwMakeContextCurrent(*window);
 
 	// Initialize GLEW
@@ -264,7 +276,7 @@ static int initGL(GLFWwindow** window, int fullscreen)
 	return 0;
 }
 
-static int clean(StateInfo* stateInfo, MenuData* menuData)
+static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
 {
 	int result;
 	int retvalue = 0;
@@ -294,6 +306,7 @@ static int clean(StateInfo* stateInfo, MenuData* menuData)
 		printf("Could not clean sound completely\n");
 		retvalue = -1;
 	}
+	resource_manager_shutdown(rm);
 	glfwTerminate();
 	return retvalue;
 }
