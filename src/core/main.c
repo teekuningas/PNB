@@ -11,6 +11,7 @@
 #include "fill_player_data.h"
 #include "main_menu.h"
 #include "loading_screen_menu.h"
+#include "menu_helpers.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 
@@ -109,8 +110,10 @@ int main ( int argc, char *argv[] )
 
 	// draw loading screen before loading all the player meshes which will take time
 	stateInfo.screen = -1;
+	// reset menu state before showing loading screen
+	resetMenuForNewGame(&menuData, &stateInfo);
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-	drawLoadingScreen(&stateInfo, &menuData, &menuInfo);
+	drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
 	draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
 	result = initGameScreen(&stateInfo);
@@ -184,7 +187,8 @@ static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, d
 {
 	switch(stateInfo->screen) {
 	case GAME_SCREEN:
-		drawGameScreen(stateInfo, alpha);
+		// Everything within drawGameScreen is currently drawn in 3d context
+		drawGameScreen(stateInfo, alpha, rs);
 		break;
 	case MAIN_MENU:
 		drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);

@@ -36,8 +36,6 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, R
 	menuData->look.y = 0.0f;
 	menuData->look.z = 0.0f;
 
-	// TODO: Draw loading screen here
-
 	resource_manager_load_all_menu_assets(rm);
 
 	// Populate MenuData for legacy code
@@ -273,10 +271,11 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		// New orthographic-only rendering for front menu
 		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
 	} else {
-		// Legacy rendering path for all other menus (disable lighting)
+		// Legacy rendering path for all other menus
 		begin_3d_render(rs);
 		glDisable(GL_LIGHTING);
 		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+
 		switch(menuData->stage) {
 		case MENU_STAGE_TEAM_SELECTION:
 			drawTeamSelectionMenu(&menuData->team_selection, stateInfo, menuData);
@@ -312,6 +311,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 			// Should not happen, but good to have a default
 			break;
 		}
+
 	}
 }
 // values here are mostly hard-coded, some of them have defines, some dont. do i care ;_;

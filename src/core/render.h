@@ -21,4 +21,5 @@ void begin_3d_render(const RenderState* rs);
 // Sets up the 2D orthographic projection.
 void begin_2d_render(const RenderState* rs);
 
+
 #endif /* RENDER_H */

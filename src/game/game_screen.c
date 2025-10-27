@@ -167,8 +167,12 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 
 }
 
-void drawGameScreen(StateInfo* stateInfo, double alpha)
+void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs)
 {
+	// Set up the 3D rendering environment states manually.
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
+
 	look.x = (float)(alpha*camTargetLocation.x + (1-alpha)*lastCamTargetLocation.x);
 	look.y = (float)(alpha*camTargetLocation.y + (1-alpha)*lastCamTargetLocation.y);
 	look.z = (float)(alpha*camTargetLocation.z + (1-alpha)*lastCamTargetLocation.z);
@@ -179,18 +183,19 @@ void drawGameScreen(StateInfo* stateInfo, double alpha)
 	skyBoxLook.x = look.x - cam.x;
 	skyBoxLook.y = look.y - cam.y;
 	skyBoxLook.z = look.z - cam.z;
-	// first we draw the skybox.
-	// then we draw world
-	// and then we draw the statistics
-	// all of these have different camera settings and maybe lighting settings but they still use the perspective projection.
+	// first we draw the skybox. It should not be lit or write to the depth buffer.
+	glDisable(GL_LIGHTING);
+	glDepthMask(GL_FALSE);
 	glLoadIdentity();
 	gluLookAt(skyBoxCam.x, skyBoxCam.y, skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, up.x, up.y, up.z);
 
 	drawSkyBox(stateInfo);
 
+	// Re-enable depth writes for the rest of the scene.
+	glDepthMask(GL_TRUE);
+
 	glLoadIdentity();
 	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
-	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 

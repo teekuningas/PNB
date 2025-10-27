@@ -1,5 +1,30 @@
 #include "menu_helpers.h"
+#include "resource_manager.h"
+#include "render.h"
 #include "front_menu.h"
+
+// Draws a full-screen 2D background quad for menus
+// Uses the "empty_background" texture from ResourceManager
+void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs)
+{
+	// Bind the shared empty background texture
+	GLuint tex = resource_manager_get_texture(rm, "data/textures/empty_background.tga");
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glBegin(GL_QUADS);
+	// TL
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(0.0f, 0.0f);
+	// BL
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(0.0f, rs->window_height);
+	// BR
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(rs->window_width, rs->window_height);
+	// TR
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(rs->window_width, 0.0f);
+	glEnd();
+}
 
 void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInfo)
 {
@@ -52,7 +77,6 @@ void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInf
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 {
 	int i;
-	glDisable(GL_LIGHTING);
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		menuData->team1_batting_order[i] = i;
 		menuData->team2_batting_order[i] = i;
