@@ -431,3 +431,10 @@ static void printCharacter2D(char character)
 		break;
 	}
 }
+
+float getTextWidth2D(const char* str, unsigned int len, float size)
+{
+	// Corresponds to the logic in printText2D
+	float char_spacing_pixels = size * 0.7f;
+	return len * char_spacing_pixels;
+}
