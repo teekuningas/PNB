@@ -223,15 +223,17 @@ static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState)
 			return -1;
 		}
 	} else {
+		glfwWindowHint(GLFW_DECORATED, GL_FALSE);
 		width = (int)(mode->width);
 		height = (int)(mode->height);
 
-		*window = glfwCreateWindow(width, height, "PNB", monitor, NULL);
-		if(!window) {
+		*window = glfwCreateWindow(width, height, "PNB", NULL, NULL);
+		if(!*window) {
 			fprintf(stderr, "Failed to open GLFW window\n");
 			glfwTerminate();
 			return -1;
 		}
+		glfwSetWindowMonitor(*window, monitor, 0, 0, width, height, mode->refreshRate);
 	}
 
 	renderState->window_width = width;
