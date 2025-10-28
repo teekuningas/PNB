@@ -17,11 +17,7 @@
 #include "loading_screen_menu.h"
 #include "cup_menu.h"
 
-#define FIGURE_SCALE 0.4f
-#define FRONT_ARROW_POS 0.15f
 #define CAM_HEIGHT 2.3f
-
-
 
 int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
 {
@@ -40,7 +36,6 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, R
 
 	// Populate MenuData for legacy code
 	menuData->arrowTexture = resource_manager_get_texture(rm, "data/textures/arrow.tga");
-	// Load background for new front menu
 	menuData->catcherTexture = resource_manager_get_texture(rm, "data/textures/catcher.tga");
 	menuData->batterTexture = resource_manager_get_texture(rm, "data/textures/batter.tga");
 	menuData->slotTexture = resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga");
@@ -53,7 +48,6 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, R
 	menuData->team6Texture = resource_manager_get_texture(rm, "data/textures/team6.tga");
 	menuData->team7Texture = resource_manager_get_texture(rm, "data/textures/team7.tga");
 	menuData->team8Texture = resource_manager_get_texture(rm, "data/textures/team8.tga");
-
 	menuData->planeDisplayList = resource_manager_get_model(rm, "data/models/plane.obj");
 	menuData->batDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_bat.obj");
 	menuData->handDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_hand.obj");
@@ -126,7 +120,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		} else if (nextStage == MENU_STAGE_HELP) {
 			initHelpMenu(&menuData->help_menu);
 		} else if (nextStage == MENU_STAGE_QUIT) {
-			stateInfo->screen = -1;
+			stateInfo->screen = LOADING_SCREEN;
 		}
 		menuData->stage = nextStage;
 		break;
@@ -263,8 +257,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 }
 
 // here we draw everything.
-// directly we draw ugly stuff like images of players or hand or bat models etc.
-// then we call methods to handle text rendering.
 void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
 {
 	if (menuData->stage == MENU_STAGE_FRONT) {
@@ -314,8 +306,6 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 
 	}
 }
-// values here are mostly hard-coded, some of them have defines, some dont. do i care ;_;
-// most of the repeating stuff has some defines though.
 
 int cleanMainMenu(MenuData* menuData)
 {

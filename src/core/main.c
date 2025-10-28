@@ -1,8 +1,3 @@
-/*
-	the core part of the code. initializes graphics and everything in our program and also includes our main loop that keeps the game in sync and
-	is the code that decides should we call menu's or game screen's functions.
-*/
-
 #include "globals.h"
 #include "game_screen.h"
 #include "input.h"
@@ -20,7 +15,6 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
 static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window);
 
-// Shared menu data defined here instead of inside main_menu.c
 static MenuData menuData;
 static StateInfo stateInfo;
 static LocalGameInfo localGameInfo;
@@ -56,7 +50,7 @@ int main ( int argc, char *argv[] )
 		}
 	}
 
-	printf("v. 1.1.0\n");
+	printf("v. 1.5 beta\n");
 
 	// Initialize stateInfo structure
 	stateInfo.localGameInfo = &localGameInfo;
@@ -109,9 +103,7 @@ int main ( int argc, char *argv[] )
 	}
 
 	// draw loading screen before loading all the player meshes which will take time
-	stateInfo.screen = -1;
-	// reset menu state before showing loading screen
-	resetMenuForNewGame(&menuData, &stateInfo);
+	stateInfo.screen = LOADING_SCREEN;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
 	drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
 	draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
@@ -122,7 +114,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	stateInfo.screen = 0;
+	stateInfo.screen = MAIN_MENU;
 	stateInfo.changeScreen = 1;
 	stateInfo.updated = 0;
 
@@ -192,6 +184,8 @@ static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, d
 		break;
 	case MAIN_MENU:
 		drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
+		break;
+	case LOADING_SCREEN:
 		break;
 	}
 	glfwSwapBuffers(window);

@@ -19,8 +19,11 @@
 #define PERSPECTIVE_ASPECT_RATIO (16.0f/9.0f)
 
 // game states
-#define MAIN_MENU 0
-#define GAME_SCREEN 1
+typedef enum {
+	LOADING_SCREEN = -1,
+	MAIN_MENU = 0,
+	GAME_SCREEN = 1
+} ScreenState;
 
 // a lot of constants
 #define LIGHT_SOURCE_POSITION_X 30.0f
@@ -418,7 +421,7 @@ typedef struct _TournamentState {
 
 typedef struct _StateInfo {
 	// Main menu or game screen active
-	int screen;
+	ScreenState screen;
 	int changeScreen;
 	int updated;
 	int numTeams;
