@@ -1,6 +1,7 @@
 #include "menu_helpers.h"
 #include "resource_manager.h"
 #include "render.h"
+#include "font.h"
 #include "front_menu.h"
 
 // Draws a full-screen 2D background quad for menus
@@ -203,5 +204,85 @@ void initBattingOrderState(BattingOrderState *state, int team_index, int player_
 	state->player_control = player_control;
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		state->batting_order[i] = i;
+	}
+}
+
+void draw_text_2d(const char* text, float x, float y, float size, TextAlign align, const RenderState* rs)
+{
+	if (!text) return;
+
+	float final_x = x;
+	unsigned int len = strlen(text);
+
+	if (align == TEXT_ALIGN_CENTER) {
+		float text_width = getTextWidth2D(text, len, size);
+		final_x = x - (text_width / 2.0f);
+	}
+
+	printText2D(text, len, final_x, y, size);
+}
+
+void draw_text_block_2d(const char* text, float x, float y, float width, float size, float lineSpacing, const RenderState* rs)
+{
+	if (!text) return;
+
+	const char* start = text;
+	const char* end = text + strlen(text);
+	float current_y = y;
+
+	while (start < end) {
+		const char* line_end = start;
+		const char* last_space = NULL;
+
+		// Find the longest possible line that fits within the width
+		while (line_end < end) {
+			const char* next_space = strchr(line_end + 1, ' ');
+			const char* word_end = next_space ? next_space : end;
+
+			int line_len = (word_end - start);
+			if (getTextWidth2D(start, line_len, size) > width) {
+				break; // Word doesn't fit, break the line here
+			}
+
+			last_space = line_end;
+			line_end = word_end;
+
+			if (!next_space) {
+				break; // Reached end of string
+			}
+		}
+
+		// If we couldn't fit even a single word, we must break it
+		if (line_end == start) {
+			// Find the exact character that overflows
+			int char_count = 0;
+			while (start + char_count < end) {
+				if (getTextWidth2D(start, char_count + 1, size) > width) {
+					break;
+				}
+				char_count++;
+			}
+			line_end = start + char_count;
+		} else if (last_space && line_end < end) {
+			// Prefer to break at the last space to keep words whole
+			line_end = last_space;
+		}
+
+
+		// Draw the line
+		int line_len = line_end - start;
+		char line_buffer[line_len + 1];
+		memcpy(line_buffer, start, line_len);
+		line_buffer[line_len] = '\0';
+
+		printText2D(line_buffer, line_len, x, current_y, size);
+
+		// Move to the next line
+		current_y += lineSpacing;
+		start = line_end;
+		// Skip leading space on the next line
+		if (*start == ' ') {
+			start++;
+		}
 	}
 }

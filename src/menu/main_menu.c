@@ -262,6 +262,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 	if (menuData->stage == MENU_STAGE_FRONT) {
 		// New orthographic-only rendering for front menu
 		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
+	} else if (menuData->stage == MENU_STAGE_HELP) {
+		drawHelpMenu(&menuData->help_menu, rs, rm);
 	} else {
 		// Legacy rendering path for all other menus
 		begin_3d_render(rs);
@@ -290,9 +292,6 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 			break;
 		case MENU_STAGE_CUP:
 			drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
-			break;
-		case MENU_STAGE_HELP:
-			drawHelpMenu(&menuData->help_menu);
 			break;
 		case MENU_STAGE_GO_TO_GAME:
 			break;
