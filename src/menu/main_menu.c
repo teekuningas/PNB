@@ -114,9 +114,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			initCupMenu(&menuData->cup_menu, stateInfo);
 		} else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
 			stateInfo->globalGameInfo->isCupGame = 0;
-			initTeamSelectionState(&menuData->team_selection);
-			menuData->team_selection.rem = stateInfo->numTeams;
-			menuData->team_selection.pointer = DEFAULT_TEAM_1;
+			initTeamSelectionState(&menuData->team_selection, stateInfo->numTeams);
 		} else if (nextStage == MENU_STAGE_HELP) {
 			initHelpMenu(&menuData->help_menu);
 		} else if (nextStage == MENU_STAGE_QUIT) {
@@ -126,14 +124,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_TEAM_SELECTION: {
-		nextStage = updateTeamSelectionMenu(&menuData->team_selection, stateInfo, keyStates);
+		TeamSelectionMenuOutput team_selection_output;
+		nextStage = updateTeamSelectionMenu(&menuData->team_selection, keyStates, &team_selection_output);
 		if (nextStage != menuData->stage) {
 			// Copy chosen teams back to main state
-			menuData->team1 = menuData->team_selection.team1;
-			menuData->team2 = menuData->team_selection.team2;
-			menuData->team1_control = menuData->team_selection.team1_controller;
-			menuData->team2_control = menuData->team_selection.team2_controller;
-			menuData->inningsInPeriod = menuData->team_selection.innings;
+			menuData->team1 = team_selection_output.team1;
+			menuData->team2 = team_selection_output.team2;
+			menuData->team1_control = team_selection_output.team1_controller;
+			menuData->team2_control = team_selection_output.team2_controller;
+			menuData->inningsInPeriod = team_selection_output.innings;
 			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
@@ -264,6 +263,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
 	} else if (menuData->stage == MENU_STAGE_HELP) {
 		drawHelpMenu(&menuData->help_menu, rs, rm);
+	} else if (menuData->stage == MENU_STAGE_TEAM_SELECTION) {
+		drawTeamSelectionMenu(&menuData->team_selection, stateInfo->teamData, rs, rm);
 	} else {
 		// Legacy rendering path for all other menus
 		begin_3d_render(rs);
@@ -271,9 +272,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
 
 		switch(menuData->stage) {
-		case MENU_STAGE_TEAM_SELECTION:
-			drawTeamSelectionMenu(&menuData->team_selection, stateInfo, menuData);
-			break;
+
 		case MENU_STAGE_BATTING_ORDER_1:
 		case MENU_STAGE_BATTING_ORDER_2:
 			drawBattingOrderMenu(&menuData->batting_order, stateInfo, menuData);
