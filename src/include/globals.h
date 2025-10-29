@@ -17,6 +17,8 @@
 #define EPSILON 0.005f
 #define UPDATE_INTERVAL 20
 #define PERSPECTIVE_ASPECT_RATIO (16.0f/9.0f)
+#define VIRTUAL_WIDTH 1920
+#define VIRTUAL_HEIGHT 1080
 
 // game states
 typedef enum {

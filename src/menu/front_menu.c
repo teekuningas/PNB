@@ -39,9 +39,9 @@ MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo
 void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm, const struct MenuData *menuData)
 {
 	// --- Layout Constants ---
-	const float title_y = rs->window_height * 0.1f;
-	const float menu_start_y = rs->window_height * 0.4f;
-	const float menu_spacing = rs->window_height * 0.1f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float menu_start_y = VIRTUAL_HEIGHT * 0.4f;
+	const float menu_spacing = VIRTUAL_HEIGHT * 0.1f;
 	const float title_fontsize = 120.0f;
 	const float menu_fontsize = 60.0f;
 
@@ -51,12 +51,12 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 
 	// 2. Draw Batter and Catcher
 	// Re-calculate size and position to better match the original perspective layout
-	float imgHeight = rs->window_height * 0.8f;
-	float yPos = rs->window_height - imgHeight - (rs->window_height * 0.10f); // 10% from bottom
+	float imgHeight = VIRTUAL_HEIGHT * 0.8f;
+	float yPos = VIRTUAL_HEIGHT - imgHeight - (VIRTUAL_HEIGHT * 0.10f); // 10% from bottom
 
 	// Batter on left
 	float batterImgWidth = imgHeight * 0.5f;
-	float batterX = rs->window_width * 0.1f;
+	float batterX = VIRTUAL_WIDTH * 0.1f;
 	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/batter.tga"));
 	glBegin(GL_QUADS);
 	// TL
@@ -75,7 +75,7 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 
 	// Catcher on right
 	float catcherImgWidth = imgHeight * 0.8f;
-	float catcherX = rs->window_width * 1.05f - catcherImgWidth;
+	float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
 	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/catcher.tga"));
 	glBegin(GL_QUADS);
 	// TL
@@ -93,7 +93,7 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 	glEnd();
 
 	// 3. Draw Text and Arrow
-	const float center_x = rs->window_width / 2.0f;
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 	draw_text_2d("Play", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	draw_text_2d("Cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
