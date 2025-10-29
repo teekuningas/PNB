@@ -81,9 +81,11 @@ typedef struct {
 	int team2_controller;
 	int innings;
 	int rem;
+	int numTeams;
 } TeamSelectionState;
 
 // State for hutunkeitto screen
+
 typedef struct {
 	int state;
 	int batTimer;

@@ -2,20 +2,12 @@
 #include "render.h"
 #include "font.h"
 #include "menu_types.h"
-
-#define SELECTION_ARROW_LEFT -0.05f
-#define SELECTION_ARROW_RIGHT 0.4f
-
-#define SELECTION_TEXT_LEFT -0.35f
-#define SELECTION_TEXT_RIGHT 0.1f
-#define SELECTION_ALT_1_HEIGHT -0.1f
-#define SELECTION_ALT_OFFSET 0.06f
-#define SELECTION_TEAM_TEXT_HEIGHT -0.2f
+#include "menu_helpers.h"
 
 #define DEFAULT_CONTROLLED_1 0
 #define DEFAULT_CONTROLLED_2 2
 
-void initTeamSelectionState(TeamSelectionState *state)
+void initTeamSelectionState(TeamSelectionState *state, int numTeams)
 {
 	state->state = TEAM_SELECTION_STAGE_TEAM_1;
 	state->pointer = DEFAULT_TEAM_1;
@@ -24,50 +16,11 @@ void initTeamSelectionState(TeamSelectionState *state)
 	state->team1_controller = DEFAULT_CONTROLLED_1;
 	state->team2_controller = DEFAULT_CONTROLLED_2;
 	state->innings = 2; // Default innings
-	state->rem = 0; // Will be set properly when initialized
-}
-static void drawSelection(const TeamSelectionState* state, const StateInfo* stateInfo)
-{
-	printText("Game setup", 10, SELECTION_TEXT_LEFT + 0.1f, -0.4f, 5);
-
-	if(state->state == TEAM_SELECTION_STAGE_TEAM_1) {
-		int i;
-		printText("Team 1", 6, SELECTION_TEXT_LEFT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < stateInfo->numTeams; i++) {
-			char* str = stateInfo->teamData[i].name;
-			printText(str, strlen(str), SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
-		}
-	} else if(state->state == TEAM_SELECTION_STAGE_CONTROL_1) {
-		printText("Controlled by", 13, -0.5f, SELECTION_TEAM_TEXT_HEIGHT, 3);
-		printText("Pad 1", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT, 2);
-		printText("Pad 2", 5, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
-		printText("AI", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	}
-
-	else if(state->state == TEAM_SELECTION_STAGE_TEAM_2) {
-		int i;
-		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
-		printText("Team 2", 6, SELECTION_TEXT_RIGHT, SELECTION_TEAM_TEXT_HEIGHT, 4);
-		for(i = 0; i < stateInfo->numTeams; i++) {
-			char* str = stateInfo->teamData[i].name;
-			printText(str, strlen(str), SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
-		}
-	} else if(state->state == TEAM_SELECTION_STAGE_CONTROL_2) {
-		printText("OK", 2, SELECTION_TEXT_LEFT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 4);
-		printText("Controlled by", 13, -0.05f, SELECTION_TEAM_TEXT_HEIGHT, 3);
-		printText("Pad 1", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT, 2);
-		printText("Pad 2", 5, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
-		printText("AI", 2, SELECTION_TEXT_RIGHT, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
-	} else if(state->state == TEAM_SELECTION_STAGE_INNINGS) {
-		printText("select number of innings", 24, -0.45f, -0.25f, 3);
-		printText("1", 1, -0.05f, SELECTION_ALT_1_HEIGHT, 3);
-		printText("2", 1, -0.05f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 3);
-		printText("4", 1, -0.05f, SELECTION_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 3);
-	}
+	state->rem = numTeams;
+	state->numTeams = numTeams;
 }
 
-
-MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInfo, const KeyStates *keyStates)
+MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const KeyStates *keyStates, TeamSelectionMenuOutput *output)
 {
 	switch(state->state) {
 	case TEAM_SELECTION_STAGE_TEAM_1:
@@ -93,14 +46,14 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInf
 		if(keyStates->released[0][KEY_1]) {
 			state->state = TEAM_SELECTION_STAGE_TEAM_1;
 			state->pointer = state->team1;
-			state->rem = stateInfo->numTeams;
+			state->rem = state->numTeams;
 
 		}
 		if(keyStates->released[0][KEY_2]) {
 			state->state = TEAM_SELECTION_STAGE_TEAM_2;
 			state->team1_controller = state->pointer;
 			state->pointer = DEFAULT_TEAM_2;
-			state->rem = stateInfo->numTeams;
+			state->rem = state->numTeams;
 		}
 		if(keyStates->released[0][KEY_DOWN]) {
 			state->pointer +=1;
@@ -140,7 +93,7 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInf
 	case TEAM_SELECTION_STAGE_CONTROL_2:
 		if(keyStates->released[0][KEY_1]) {
 			state->state = TEAM_SELECTION_STAGE_TEAM_2;
-			state->rem = stateInfo->numTeams;
+			state->rem = state->numTeams;
 			state->pointer = state->team2;
 
 		}
@@ -182,6 +135,12 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInf
 			else if(state->pointer == 1) state->innings = 4;
 			else if(state->pointer == 2) state->innings = 8;
 
+			output->team1 = state->team1;
+			output->team2 = state->team2;
+			output->team1_controller = state->team1_controller;
+			output->team2_controller = state->team2_controller;
+			output->innings = state->innings;
+
 			return MENU_STAGE_BATTING_ORDER_1;
 		}
 		if(keyStates->released[0][KEY_DOWN]) {
@@ -197,21 +156,101 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, StateInfo *stateInf
 	return MENU_STAGE_TEAM_SELECTION; // Stay in this stage by default
 }
 
-void drawTeamSelectionMenu(const TeamSelectionState *state, const StateInfo *stateInfo, const struct MenuData *menuData)
+void drawTeamSelectionMenu(const TeamSelectionState *state, const TeamData* teamData, const RenderState* rs, ResourceManager* rm)
 {
-	drawFontBackground();
+	begin_2d_render(rs);
+	drawMenuLayout2D(rm, rs);
 
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	if(state->state == TEAM_SELECTION_STAGE_TEAM_1 || state->state == TEAM_SELECTION_STAGE_CONTROL_1) {
-		glTranslatef(SELECTION_ARROW_LEFT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
-	} else if(state->state == TEAM_SELECTION_STAGE_TEAM_2 || state->state == TEAM_SELECTION_STAGE_CONTROL_2) {
-		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
-	} else if(state->state == TEAM_SELECTION_STAGE_INNINGS) {
-		glTranslatef(SELECTION_ARROW_RIGHT, 1.0f, SELECTION_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*state->pointer);
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float team_name_y = VIRTUAL_HEIGHT * 0.25f;
+	const float options_start_y = VIRTUAL_HEIGHT * 0.35f;
+	const float option_spacing = VIRTUAL_HEIGHT * 0.07f;
+	const float arrow_size = VIRTUAL_HEIGHT * 0.06f;
+
+	const float column_1_x = VIRTUAL_WIDTH * 0.35f;
+	const float column_2_x = VIRTUAL_WIDTH * 0.65f;
+
+	const float title_size = VIRTUAL_HEIGHT * 0.08f;
+	const float subtitle_size = VIRTUAL_HEIGHT * 0.06f;
+	const float text_size = VIRTUAL_HEIGHT * 0.045f;
+
+	// --- Title ---
+	draw_text_2d("Game Setup", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
+
+	// --- Team 1 Column ---
+	if (state->state >= TEAM_SELECTION_STAGE_TEAM_1 && state->state < TEAM_SELECTION_STAGE_CONTROL_1) {
+		draw_text_2d("Team 1", column_1_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+		for (int i = 0; i < state->numTeams; i++) {
+			const char* team_name = teamData[i].name;
+			draw_text_2d(team_name, column_1_x, options_start_y + i * option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+		}
 	}
-	glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
-	drawSelection(state, stateInfo);
+
+	// --- Team 1 Controller Column ---
+	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_1 && state->state < TEAM_SELECTION_STAGE_TEAM_2) {
+		draw_text_2d("Controlled by", column_1_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Pad 1", column_1_x, options_start_y, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Pad 2", column_1_x, options_start_y + option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("AI", column_1_x, options_start_y + 2 * option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+	}
+
+	// --- Team 2 Column ---
+	if (state->state >= TEAM_SELECTION_STAGE_TEAM_2 && state->state < TEAM_SELECTION_STAGE_CONTROL_2) {
+		draw_text_2d("Team 2", column_2_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+		for (int i = 0; i < state->numTeams; i++) {
+			const char* team_name = teamData[i].name;
+			draw_text_2d(team_name, column_2_x, options_start_y + i * option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+		}
+	}
+
+	// --- Team 2 Controller Column ---
+	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_2 && state->state < TEAM_SELECTION_STAGE_INNINGS) {
+		draw_text_2d("Controlled by", column_2_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Pad 1", column_2_x, options_start_y, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Pad 2", column_2_x, options_start_y + option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("AI", column_2_x, options_start_y + 2 * option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+	}
+
+	// --- Innings Column ---
+	if (state->state == TEAM_SELECTION_STAGE_INNINGS) {
+		draw_text_2d("Innings", center_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("1", center_x, options_start_y, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("2", center_x, options_start_y + option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("4", center_x, options_start_y + 2 * option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
+	}
+
+
+	// --- Arrow ---
+	float arrow_x = 0;
+	float arrow_y = options_start_y + state->pointer * option_spacing;
+
+	switch(state->state) {
+	case TEAM_SELECTION_STAGE_TEAM_1:
+	case TEAM_SELECTION_STAGE_CONTROL_1:
+		arrow_x = column_1_x + (VIRTUAL_WIDTH * 0.1f);
+		break;
+	case TEAM_SELECTION_STAGE_TEAM_2:
+	case TEAM_SELECTION_STAGE_CONTROL_2:
+		arrow_x = column_2_x + (VIRTUAL_WIDTH * 0.1f);
+		break;
+	case TEAM_SELECTION_STAGE_INNINGS:
+		arrow_x = center_x + (VIRTUAL_WIDTH * 0.1f);
+		break;
+	}
+
+	if (arrow_x > 0) {
+		glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1);
+		glVertex2f(arrow_x, arrow_y);
+		glTexCoord2f(0, 0);
+		glVertex2f(arrow_x, arrow_y + arrow_size);
+		glTexCoord2f(1, 0);
+		glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+		glTexCoord2f(1, 1);
+		glVertex2f(arrow_x + arrow_size, arrow_y);
+		glEnd();
+	}
 }

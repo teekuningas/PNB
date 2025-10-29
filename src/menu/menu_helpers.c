@@ -17,13 +17,13 @@ void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs)
 	glVertex2f(0.0f, 0.0f);
 	// BL
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(0.0f, rs->window_height);
+	glVertex2f(0.0f, VIRTUAL_HEIGHT);
 	// BR
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(rs->window_width, rs->window_height);
+	glVertex2f(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 	// TR
 	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(rs->window_width, 0.0f);
+	glVertex2f(VIRTUAL_WIDTH, 0.0f);
 	glEnd();
 }
 
