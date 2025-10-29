@@ -33,9 +33,9 @@ void drawHelpMenu(HelpMenuState *state, const RenderState* rs, ResourceManager* 
 	drawMenuLayout2D(rm, rs);
 
 	// --- Layout Constants ---
-	const float left_margin = rs->window_width * 0.08f;
-	const float block_width = rs->window_width * 0.84f;
-	const float top_margin = rs->window_height * 0.1f;
+	const float left_margin = VIRTUAL_WIDTH * 0.08f;
+	const float block_width = VIRTUAL_WIDTH * 0.84f;
+	const float top_margin = VIRTUAL_HEIGHT * 0.1f;
 	const float title_size = 48.0f;
 	const float subtitle_size = 36.0f;
 	const float text_size = 28.0f;

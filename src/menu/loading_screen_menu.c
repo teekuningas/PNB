@@ -16,9 +16,9 @@ void drawLoadingScreen(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuI
 	// Draw shared menu background
 	drawMenuLayout2D(rm, rs);
 
-	const float center_x = rs->window_width * 0.5f;
+	const float center_x = VIRTUAL_WIDTH * 0.5f;
 
-	draw_text_2d("Loading resources", center_x, rs->window_height * 0.4f, 52.0f, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Your patience is appreciated", center_x, rs->window_height * 0.55f, 40.0f, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Erkka Heinila 2013", center_x, rs->window_height * 0.7f, 28.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Loading resources", center_x, VIRTUAL_HEIGHT * 0.4f, 52.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Your patience is appreciated", center_x, VIRTUAL_HEIGHT * 0.55f, 40.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Erkka Heinila 2013", center_x, VIRTUAL_HEIGHT * 0.7f, 28.0f, TEXT_ALIGN_CENTER, rs);
 }
