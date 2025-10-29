@@ -6,16 +6,6 @@
 #include "resource_manager.h"
 #include "menu_helpers.h"
 
-// --- UI layout constants (now in 2D screen space) ---
-#define FONT_SIZE_LARGE 120
-#define FONT_SIZE_MEDIUM 60
-
-#define TITLE_Y 100
-#define MENU_START_Y 300
-#define MENU_SPACING 100
-
-static void drawFrontTexts(const RenderState* rs);
-
 void initFrontMenuState(FrontMenuState *state)
 {
 	state->pointer = 0;
@@ -45,10 +35,16 @@ MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo
 	}
 	return MENU_STAGE_FRONT;
 }
-
 // New orthographic-only front menu rendering
 void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm, const struct MenuData *menuData)
 {
+	// --- Layout Constants ---
+	const float title_y = rs->window_height * 0.1f;
+	const float menu_start_y = rs->window_height * 0.4f;
+	const float menu_spacing = rs->window_height * 0.1f;
+	const float title_fontsize = 120.0f;
+	const float menu_fontsize = 60.0f;
+
 	// Setup orthographic 2D projection and draw shared menu background
 	begin_2d_render(rs);
 	drawMenuLayout2D(rm, rs);
@@ -96,13 +92,18 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 	glVertex2f(catcherX + catcherImgWidth, yPos);
 	glEnd();
 
-	// 3. Draw Arrow
-	float center_x = rs->window_width / 2.0f;
-	// Move arrow to the right of the text
-	float arrow_x = center_x + 120;
-	float arrow_y = MENU_START_Y + (state->pointer * MENU_SPACING);
-	// Make arrow larger
+	// 3. Draw Text and Arrow
+	const float center_x = rs->window_width / 2.0f;
+	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Play", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Help", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Quit", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+
+	// Draw Arrow
 	float arrow_size = 80.0f;
+	float arrow_x = center_x + 120.0f;
+	float arrow_y = menu_start_y + (state->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
 
 	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
 	glBegin(GL_QUADS);
@@ -121,20 +122,4 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 	glTexCoord2f(1, 1);
 	glVertex2f(arrow_x + arrow_size, arrow_y);
 	glEnd();
-
-	// 4. Draw Text
-	drawFrontTexts(rs);
-
-}
-
-
-static void drawFrontTexts(const RenderState* rs)
-{
-	float center_x = rs->window_width / 2.0f;
-	// Adjust X offset based on new larger font size
-	printText2D("P N B", 5, center_x - 200, TITLE_Y, FONT_SIZE_LARGE);
-	printText2D("Play", 4, center_x - 80, MENU_START_Y, FONT_SIZE_MEDIUM);
-	printText2D("Cup", 3, center_x - 60, MENU_START_Y + MENU_SPACING, FONT_SIZE_MEDIUM);
-	printText2D("Help", 4, center_x - 80, MENU_START_Y + 2 * MENU_SPACING, FONT_SIZE_MEDIUM);
-	printText2D("Quit", 4, center_x - 80, MENU_START_Y + 3 * MENU_SPACING, FONT_SIZE_MEDIUM);
 }
