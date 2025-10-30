@@ -61,6 +61,12 @@ typedef enum {
 	TEAM_SELECTION_STAGE_INNINGS
 } TeamSelectionStage;
 
+typedef struct {
+	char name[32];
+	int speed;
+	int power;
+} BattingOrderPlayer;
+
 // State for batting order screen
 typedef struct {
 	int pointer;
@@ -69,6 +75,7 @@ typedef struct {
 	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
 	int team_index;
 	int player_control;
+	BattingOrderPlayer players[PLAYERS_IN_TEAM + JOKER_COUNT];
 } BattingOrderState;
 
 // State specific to the team selection screen

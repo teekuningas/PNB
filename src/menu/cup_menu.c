@@ -207,7 +207,7 @@ MenuStage updateCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, struct
 					}
 					menuData->inningsInPeriod = stateInfo->tournamentState->cupInfo.inningCount;
 					stateInfo->globalGameInfo->isCupGame = 1;
-					initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
+					initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
 					return MENU_STAGE_BATTING_ORDER_1;
 				} else {
 					// otherwise we update them right away.

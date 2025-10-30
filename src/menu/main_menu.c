@@ -67,7 +67,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			resetMenuForNewGame(menuData, stateInfo);
 			break;
 		case MENU_ENTRY_INTER_PERIOD:
-			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
+			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
 			menuData->stage = MENU_STAGE_BATTING_ORDER_1;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				menuData->team1_batting_order[i] = i;
@@ -75,7 +75,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			}
 			break;
 		case MENU_ENTRY_SUPER_INNING:
-			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
+			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
 			menuData->stage = MENU_STAGE_BATTING_ORDER_1;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				menuData->team1_batting_order[i] = i;
@@ -135,7 +135,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			menuData->inningsInPeriod = team_selection_output.innings;
 			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
-				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control);
+				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_FRONT) {
 				initFrontMenuState(&menuData->front_menu);
 			}
@@ -144,14 +144,15 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_BATTING_ORDER_1: {
-		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode);
+		BattingOrderMenuOutput output;
+		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &output);
 		if (nextStage != menuData->stage) {
 			// Save team1's batting order
-			memcpy(menuData->team1_batting_order, menuData->batting_order.batting_order,
-			       sizeof(menuData->batting_order.batting_order));
+			memcpy(menuData->team1_batting_order, output.batting_order,
+			       sizeof(output.batting_order));
 			if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
 				// Setup for team2 ordering
-				initBattingOrderState(&menuData->batting_order, menuData->team2, menuData->team2_control);
+				initBattingOrderState(&menuData->batting_order, menuData->team2, menuData->team2_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 				menuData->pointer = 0;
@@ -162,11 +163,12 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_BATTING_ORDER_2: {
-		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode);
+		BattingOrderMenuOutput output;
+		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &output);
 		if (nextStage != menuData->stage) {
 			// Save team2's batting order
-			memcpy(menuData->team2_batting_order, menuData->batting_order.batting_order,
-			       sizeof(menuData->batting_order.batting_order));
+			memcpy(menuData->team2_batting_order, output.batting_order,
+			       sizeof(output.batting_order));
 			if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 				menuData->pointer = 0;
@@ -263,6 +265,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
 	} else if (menuData->stage == MENU_STAGE_HELP) {
 		drawHelpMenu(&menuData->help_menu, rs, rm);
+	} else if (menuData->stage == MENU_STAGE_BATTING_ORDER_1 || menuData->stage == MENU_STAGE_BATTING_ORDER_2) {
+		drawBattingOrderMenu(&menuData->batting_order, menuData->stage, rs, rm);
 	} else if (menuData->stage == MENU_STAGE_TEAM_SELECTION) {
 		drawTeamSelectionMenu(&menuData->team_selection, stateInfo->teamData, rs, rm);
 	} else {
@@ -273,10 +277,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 
 		switch(menuData->stage) {
 
-		case MENU_STAGE_BATTING_ORDER_1:
-		case MENU_STAGE_BATTING_ORDER_2:
-			drawBattingOrderMenu(&menuData->batting_order, stateInfo, menuData);
-			break;
+
 		case MENU_STAGE_HUTUNKEITTO:
 			drawHutunkeittoMenu(&menuData->hutunkeitto, menuData);
 			break;
