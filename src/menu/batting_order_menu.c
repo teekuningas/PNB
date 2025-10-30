@@ -3,60 +3,14 @@
 #include "font.h"
 #include "globals.h"
 #include "menu_types.h"
+#include "menu_helpers.h"
 
-static void drawPlayerListForBattingOrder(const BattingOrderState *state, const StateInfo *stateInfo,
-        MenuStage currentStage)
-{
-	const TeamData* teamData = stateInfo->teamData;
-	int i;
-	int team = state->team_index;
 
-	printText("name", 4, PLAYER_LIST_INFO_FIRST, PLAYER_LIST_INFO_HEIGHT, 2);
-	printText("speed", 5, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_NAME_OFFSET + PLAYER_LIST_INFO_OFFSET, PLAYER_LIST_INFO_HEIGHT, 2);
-	printText("power", 5, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_NAME_OFFSET + 2*PLAYER_LIST_INFO_OFFSET, PLAYER_LIST_INFO_HEIGHT, 2);
 
-	printText("change batting order", 20, -0.35f, -0.5f, 3);
-
-	// Label by batting-order screen rather than team index
-	if (currentStage == MENU_STAGE_BATTING_ORDER_1)
-		printText("team 1", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
-	else
-		printText("team 2", 6, PLAYER_LIST_TEAM_TEXT_POS, PLAYER_LIST_TEAM_TEXT_HEIGHT, 2);
-
-	printText("continue", 8, -0.05f, PLAYER_LIST_CONTINUE_HEIGHT, 3);
-
-	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		char str[2];
-		const char* str2;
-		int index;
-
-		if(i < PLAYERS_IN_TEAM) {
-			str[0] = (char)(((int)'0')+i+1);
-		} else {
-			str[0] = 'J';
-		}
-		index = state->batting_order[i];
-
-		printText(str, 1, PLAYER_LIST_INFO_FIRST - PLAYER_LIST_NUMBER_OFFSET,
-		          PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-
-		str2  = teamData[team].players[index].name;
-		printText(str2, strlen(str2), PLAYER_LIST_INFO_FIRST,
-		          PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-
-		str[0] = (char)(((int)'0')+teamData[team].players[index].speed);
-		printText(str, 1, PLAYER_LIST_INFO_FIRST + PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET,
-		          PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-
-		str[0] = (char)(((int)'0')+teamData[team].players[index].power);
-		printText(str, 1, PLAYER_LIST_INFO_FIRST + 2*PLAYER_LIST_INFO_OFFSET + PLAYER_LIST_INFO_NAME_OFFSET,
-		          PLAYER_LIST_FIRST_PLAYER_HEIGHT + i*PLAYER_LIST_PLAYER_OFFSET, 2);
-	}
-}
-
-MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyStates, MenuStage currentStage, MenuMode menuMode)
+MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyStates, MenuStage currentStage, MenuMode menuMode, BattingOrderMenuOutput *output)
 {
 	if (state->player_control == 2) { // AI control
+		memcpy(output->batting_order, state->batting_order, sizeof(state->batting_order));
 		if (currentStage == MENU_STAGE_BATTING_ORDER_1) {
 			return MENU_STAGE_BATTING_ORDER_2;
 		} else { // Batting order 2
@@ -70,6 +24,7 @@ MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyS
 
 	if (keyStates->released[state->player_control][KEY_2]) {
 		if (state->pointer == 0) { // "Continue"
+			memcpy(output->batting_order, state->batting_order, sizeof(state->batting_order));
 			if (currentStage == MENU_STAGE_BATTING_ORDER_1) {
 				return MENU_STAGE_BATTING_ORDER_2;
 			} else { // Batting order 2
@@ -101,32 +56,100 @@ MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyS
 	return currentStage; // Stay in the current stage by default
 }
 
-void drawBattingOrderMenu(const BattingOrderState *state, const StateInfo *stateInfo, const struct MenuData *menuData)
+void drawBattingOrderMenu(const BattingOrderState *state, MenuStage currentStage, const RenderState* rs, ResourceManager* rm)
+
 {
 	if (state->player_control == 2) { // AI, so nothing is drawn
 		return;
 	}
 
-	drawFontBackground();
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	if(state->pointer == 0) {
-		glTranslatef(PLAYER_LIST_ARROW_CONTINUE_POS, 1.0f, PLAYER_LIST_CONTINUE_HEIGHT);
-		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-	} else {
-		glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + state->pointer*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-		glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE,ARROW_SMALLER_SCALE);
-	}
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
+	begin_2d_render(rs);
+	drawMenuLayout2D(rm, rs);
 
-	if(state->mark != 0) {
-		glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-		glPushMatrix();
-		glTranslatef(PLAYER_LIST_ARROW_POS, 1.0f, PLAYER_LIST_FIRST_PLAYER_HEIGHT + state->mark*PLAYER_LIST_PLAYER_OFFSET - PLAYER_LIST_PLAYER_OFFSET);
-		glScalef(ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE, ARROW_SMALLER_SCALE);
-		glCallList(menuData->planeDisplayList);
-		glPopMatrix();
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.05f;
+	const float subtitle_y = VIRTUAL_HEIGHT * 0.15f;
+	const float headers_y = VIRTUAL_HEIGHT * 0.25f;
+	const float list_start_y = VIRTUAL_HEIGHT * 0.3f;
+	const float option_spacing = VIRTUAL_HEIGHT * 0.045f;
+	const float continue_y = VIRTUAL_HEIGHT * 0.9f;
+	const float title_size = VIRTUAL_HEIGHT * 0.07f;
+	const float subtitle_size = VIRTUAL_HEIGHT * 0.05f;
+	const float text_size = VIRTUAL_HEIGHT * 0.035f;
+	const float arrow_size = VIRTUAL_HEIGHT * 0.06f;
+	const float col_number_x = VIRTUAL_WIDTH * 0.25f;
+	const float col_name_x = VIRTUAL_WIDTH * 0.35f;
+	const float col_speed_x = VIRTUAL_WIDTH * 0.65f;
+	const float col_power_x = VIRTUAL_WIDTH * 0.75f;
+
+	// --- Title and Subtitle ---
+	draw_text_2d("Change Batting Order", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
+	if (currentStage == MENU_STAGE_BATTING_ORDER_1) {
+		draw_text_2d("Team 1", center_x, subtitle_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+	} else {
+		draw_text_2d("Team 2", center_x, subtitle_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 	}
-	drawPlayerListForBattingOrder(state, stateInfo, menuData->stage);
+
+	// --- Column Headers ---
+	draw_text_2d("Name", col_name_x, headers_y, text_size, TEXT_ALIGN_LEFT, rs);
+	draw_text_2d("Speed", col_speed_x, headers_y, text_size, TEXT_ALIGN_LEFT, rs);
+	draw_text_2d("Power", col_power_x, headers_y, text_size, TEXT_ALIGN_LEFT, rs);
+
+	// --- Player List ---
+	for(int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		char num_str[4];
+		if(i < PLAYERS_IN_TEAM) {
+			sprintf(num_str, "%d", i + 1);
+		} else {
+			sprintf(num_str, "J");
+		}
+		int player_index = state->batting_order[i];
+		draw_text_2d(num_str, col_number_x, list_start_y + i * option_spacing, text_size, TEXT_ALIGN_LEFT, rs);
+		draw_text_2d(state->players[player_index].name, col_name_x, list_start_y + i * option_spacing, text_size, TEXT_ALIGN_LEFT, rs);
+		char stat_str[2];
+		sprintf(stat_str, "%d", state->players[player_index].speed);
+		draw_text_2d(stat_str, col_speed_x, list_start_y + i * option_spacing, text_size, TEXT_ALIGN_LEFT, rs);
+		sprintf(stat_str, "%d", state->players[player_index].power);
+		draw_text_2d(stat_str, col_power_x, list_start_y + i * option_spacing, text_size, TEXT_ALIGN_LEFT, rs);
+	}
+
+	// --- Continue Option ---
+	draw_text_2d("Continue", center_x, continue_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
+
+	// --- Arrow ---
+	float arrow_y;
+	float current_arrow_x;
+	if (state->pointer == 0) { // Pointing at "Continue"
+		arrow_y = continue_y - (arrow_size - subtitle_size) / 2.0f;
+		current_arrow_x = center_x + (VIRTUAL_WIDTH * 0.1f);
+	} else { // Pointing at a player
+		arrow_y = list_start_y + (state->pointer - 1) * option_spacing - (arrow_size - text_size) / 2.0f;
+		current_arrow_x = col_power_x + (VIRTUAL_WIDTH * 0.03f);
+	}
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(current_arrow_x, arrow_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(current_arrow_x, arrow_y + arrow_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(current_arrow_x + arrow_size, arrow_y + arrow_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(current_arrow_x + arrow_size, arrow_y);
+	glEnd();
+	// --- Marked Player Arrow ---
+	if (state->mark != 0) {
+		float marked_arrow_y = list_start_y + (state->mark - 1) * option_spacing - (arrow_size - text_size) / 2.0f;
+		float marked_arrow_x = col_power_x + (VIRTUAL_WIDTH * 0.03f);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1);
+		glVertex2f(marked_arrow_x, marked_arrow_y);
+		glTexCoord2f(0, 0);
+		glVertex2f(marked_arrow_x, marked_arrow_y + arrow_size);
+		glTexCoord2f(1, 0);
+		glVertex2f(marked_arrow_x + arrow_size, marked_arrow_y + arrow_size);
+		glTexCoord2f(1, 1);
+		glVertex2f(marked_arrow_x + arrow_size, marked_arrow_y);
+		glEnd();
+	}
 }

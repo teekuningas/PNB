@@ -10,7 +10,7 @@ void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInf
 void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo);
 void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot);
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo);
-void initBattingOrderState(BattingOrderState *state, int team_index, int player_control);
+void initBattingOrderState(BattingOrderState *state, int team_index, int player_control, const StateInfo *stateInfo);
 // Draws a full-screen 2D background quad for menus
 // Uses the "empty_background" texture from ResourceManager
 void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs);
