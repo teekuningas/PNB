@@ -966,7 +966,6 @@ void initializeGameFromMenu(StateInfo* stateInfo, GameSetup* gameSetup)
 		stateInfo->globalGameInfo->inning = 0;
 		stateInfo->globalGameInfo->inningsInPeriod = gameSetup->inningsInPeriod;
 		stateInfo->globalGameInfo->period = 0;
-		stateInfo->globalGameInfo->winner = -1;
 		stateInfo->globalGameInfo->playsFirst = gameSetup->playsFirst;
 		stateInfo->globalGameInfo->teams[0].value = gameSetup->team1 + 1;
 		stateInfo->globalGameInfo->teams[1].value = gameSetup->team2 + 1;

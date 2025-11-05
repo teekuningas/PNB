@@ -4,111 +4,63 @@
  * Draws the Game-Over menu screen texts.
  */
 #include "game_over_menu.h"
-#include "render.h"
 #include "font.h"
 #include "menu_helpers.h"
+#include "globals.h"
 
-// Helper to split runs into two characters each
-static void calculateRuns(char *p1, char *p2, char *p3, char *p4, int runs1, int runs2)
+void initGameOverMenu(void)
 {
-	if (runs1 >= 10) {
-		*p1 = (char)('0' + runs1 / 10);
-		*p2 = (char)('0' + runs1 % 10);
-	} else {
-		*p1 = ' ';
-		*p2 = (char)('0' + runs1);
-	}
-	if (runs2 >= 10) {
-		*p3 = (char)('0' + runs2 / 10);
-		*p4 = (char)('0' + runs2 % 10);
-	} else {
-		*p3 = ' ';
-		*p4 = (char)('0' + runs2);
-	}
+	// This menu is stateless, so nothing to do here
 }
 
-void drawGameOverMenu(StateInfo* stateInfo)
-{
-	drawFontBackground();
-	char str[21] = "Team x is victorious";
-	char str2[19] = "First period xx-xx";
-	char str3[20] = "Second period xx-xx";
-	char str4[19] = "Super inning xx-xx";
-	char str5[22] = "Homerun contest xx-xx";
-	char str6[16] = "Congratulations";
-	int teamIndex = stateInfo->globalGameInfo->teams[stateInfo->globalGameInfo->winner].value;
-	char* str7 = stateInfo->teamData[teamIndex - 1].name;
-	float left = -0.30f - strlen(str7)/100.0f;
-	int runs1;
-	int runs2;
-	if(stateInfo->globalGameInfo->winner == 0) str[5] = '1';
-	else str[5] = '2';
-	printText(str, 20, -0.33f, -0.3f, 3);
-	printText(str6, strlen(str6), left, -0.18f, 3);
-	printText(str7, strlen(str7), left + 0.58f, -0.18f, 3);
-	runs1 = stateInfo->globalGameInfo->teams[0].period0Runs;
-	runs2 = stateInfo->globalGameInfo->teams[1].period0Runs;
-	calculateRuns(&str2[13], &str2[14], &str2[16], &str2[17], runs1, runs2);
-	printText(str2, 18, -0.22f, 0.0f, 2);
-	runs1 = stateInfo->globalGameInfo->teams[0].period1Runs;
-	runs2 = stateInfo->globalGameInfo->teams[1].period1Runs;
-	calculateRuns(&str3[14], &str3[15], &str3[17], &str3[18], runs1, runs2);
-	printText(str3, 19, -0.22f, 0.1f, 2);
-	if(stateInfo->globalGameInfo->period >= 2) {
-		runs1 = stateInfo->globalGameInfo->teams[0].period2Runs;
-		runs2 = stateInfo->globalGameInfo->teams[1].period2Runs;
-		calculateRuns(&str4[13], &str4[14], &str4[16], &str4[17], runs1, runs2);
-		printText(str4, 18, -0.22f, 0.2f, 2);
-	}
-	if(stateInfo->globalGameInfo->period >= 4) {
-		runs1 = stateInfo->globalGameInfo->teams[0].period3Runs;
-		runs2 = stateInfo->globalGameInfo->teams[1].period3Runs;
-		calculateRuns(&str5[16], &str5[17], &str5[19], &str5[20], runs1, runs2);
-		printText(str5, 21, -0.22f, 0.3f, 2);
-	}
-}
-
-MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyStates, MenuInfo* menuInfo)
+MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates, int team1_control, int team2_control)
 {
 	int flag = 0;
-	if (md->team1_control != 2) {
-		if (keyStates->released[md->team1_control][KEY_2]) flag = 1;
+	if (team1_control != 2) {
+		if (keyStates->released[team1_control][KEY_2]) flag = 1;
 	}
-	if (md->team2_control != 2) {
-		if (keyStates->released[md->team2_control][KEY_2]) flag = 1;
+	if (team2_control != 2) {
+		if (keyStates->released[team2_control][KEY_2]) flag = 1;
 	}
-	if (flag == 1) {
-		resetMenuForNewGame(md, stateInfo);
-		stateInfo->playSoundEffect = SOUND_MENU;
 
-		if (stateInfo->globalGameInfo->isCupGame == 1) {
-			int i, j;
-			int scheduleSlot = -1;
-			int playerWon = 0;
-			for (i = 0; i < 4; i++) {
-				for (j = 0; j < 2; j++) {
-					if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->tournamentState->cupInfo.userTeamIndexInTree) {
-						scheduleSlot = i;
-						if (j == stateInfo->globalGameInfo->winner) playerWon = 1;
-					}
-				}
-			}
-			if (playerWon == 1) {
-				int advance = 0;
-				if (stateInfo->tournamentState->cupInfo.gameStructure == 0) {
-					if (stateInfo->tournamentState->cupInfo.slotWins[stateInfo->tournamentState->cupInfo.userTeamIndexInTree] == 2) {
-						if (stateInfo->tournamentState->cupInfo.dayCount >= 11) advance = 1;
-					}
-				} else {
-					if (stateInfo->tournamentState->cupInfo.slotWins[stateInfo->tournamentState->cupInfo.userTeamIndexInTree] == 0) {
-						if (stateInfo->tournamentState->cupInfo.dayCount >= 3) advance = 1;
-					}
-				}
-				if (advance == 1) md->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
-			}
-			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->globalGameInfo->winner);
-			updateSchedule(stateInfo->tournamentState, stateInfo);
+	if (flag == 1) {
+		if (conclusion->isCupGame) {
+			return MENU_STAGE_CUP;
 		}
+		return MENU_STAGE_FRONT;
 	}
-	return md->stage;
+
+	return MENU_STAGE_GAME_OVER;
+}
+
+void drawGameOverMenu(const GameConclusion* conclusion, const TeamData* teamData, RenderState* rs, ResourceManager* rm)
+{
+	begin_2d_render(rs);
+	drawMenuLayout2D(rm, rs);
+
+	char buffer[128];
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+
+	sprintf(buffer, "Team %d is victorious", conclusion->winner + 1);
+	draw_text_2d(buffer, center_x, 150, 60.0f, TEXT_ALIGN_CENTER, rs);
+
+	const char* winner_name = teamData[conclusion->winner].name;
+	sprintf(buffer, "Congratulations %s!", winner_name);
+	draw_text_2d(buffer, center_x, 220, 50.0f, TEXT_ALIGN_CENTER, rs);
+
+	sprintf(buffer, "First period: %d - %d", conclusion->period0Runs[0], conclusion->period0Runs[1]);
+	draw_text_2d(buffer, center_x, 350, 40.0f, TEXT_ALIGN_CENTER, rs);
+
+	sprintf(buffer, "Second period: %d - %d", conclusion->period1Runs[0], conclusion->period1Runs[1]);
+	draw_text_2d(buffer, center_x, 400, 40.0f, TEXT_ALIGN_CENTER, rs);
+
+	if (conclusion->period2Runs[0] > 0 || conclusion->period2Runs[1] > 0) {
+		sprintf(buffer, "Super inning: %d - %d", conclusion->period2Runs[0], conclusion->period2Runs[1]);
+		draw_text_2d(buffer, center_x, 450, 40.0f, TEXT_ALIGN_CENTER, rs);
+	}
+
+	if (conclusion->period3Runs[0] > 0 || conclusion->period3Runs[1] > 0) {
+		sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3Runs[0], conclusion->period3Runs[1]);
+		draw_text_2d(buffer, center_x, 500, 40.0f, TEXT_ALIGN_CENTER, rs);
+	}
 }

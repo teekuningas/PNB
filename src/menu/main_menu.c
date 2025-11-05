@@ -102,6 +102,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			menuData->stage = MENU_STAGE_GAME_OVER;
 			break;
 		}
+		// No sound on game over screen, it's played on exit
 		if(menuInfo->mode != MENU_ENTRY_GAME_OVER) {
 			stateInfo->playSoundEffect = SOUND_MENU;
 		}
@@ -198,8 +199,41 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_GAME_OVER: {
-		// Delegate Game-Over logic
-		nextStage = updateGameOverMenu(menuData, stateInfo, keyStates, menuInfo);
+		nextStage = updateGameOverMenu(stateInfo->gameConclusion, keyStates, menuData->team1_control, menuData->team2_control);
+		if (nextStage != menuData->stage) {
+			stateInfo->playSoundEffect = SOUND_MENU;
+			if (nextStage == MENU_STAGE_CUP) {
+				int i, j;
+				int scheduleSlot = -1;
+				int playerWon = 0;
+				for (i = 0; i < 4; i++) {
+					for (j = 0; j < 2; j++) {
+						if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->gameConclusion->userTeamIndexInTree) {
+							scheduleSlot = i;
+							if (j == stateInfo->gameConclusion->winner) playerWon = 1;
+						}
+					}
+				}
+				if (playerWon == 1) {
+					int advance = 0;
+					if (stateInfo->gameConclusion->gameStructure == 0) {
+						if (stateInfo->gameConclusion->slotWins[stateInfo->gameConclusion->userTeamIndexInTree] == 2) {
+							if (stateInfo->gameConclusion->dayCount >= 11) advance = 1;
+						}
+					} else {
+						if (stateInfo->gameConclusion->slotWins[stateInfo->gameConclusion->userTeamIndexInTree] == 0) {
+							if (stateInfo->gameConclusion->dayCount >= 3) advance = 1;
+						}
+					}
+					if (advance == 1) menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
+				}
+				updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->gameConclusion->winner);
+				updateSchedule(stateInfo->tournamentState, stateInfo);
+				initCupMenu(&menuData->cup_menu, stateInfo);
+			} else {
+				resetMenuForNewGame(menuData, stateInfo);
+			}
+		}
 		menuData->stage = nextStage;
 		break;
 	}
@@ -275,12 +309,8 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
 		break;
 
-	// Legacy 3D Menus
 	case MENU_STAGE_GAME_OVER:
-		begin_3d_render(rs);
-		glDisable(GL_LIGHTING);
-		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
-		drawGameOverMenu(stateInfo);
+		drawGameOverMenu(stateInfo->gameConclusion, stateInfo->teamData, rs, rm);
 		break;
 	case MENU_STAGE_HOMERUN_CONTEST_1:
 		begin_3d_render(rs);

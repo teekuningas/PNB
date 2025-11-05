@@ -387,7 +387,6 @@ typedef struct _GlobalGameInfo {
 	int period;
 	int pairCount;
 	int playsFirst;
-	int winner;
 	int isCupGame;
 } GlobalGameInfo;
 
@@ -421,6 +420,20 @@ typedef struct _TournamentState {
 	CupInfo saveData[5];
 } TournamentState;
 
+typedef struct _GameConclusion {
+	int winner;
+	int period0Runs[2];
+	int period1Runs[2];
+	int period2Runs[2];
+	int period3Runs[2];
+	int isCupGame;
+	// Data needed for cup logic
+	int userTeamIndexInTree;
+	int gameStructure;
+	int dayCount;
+	int slotWins[SLOT_COUNT];
+} GameConclusion;
+
 typedef struct _StateInfo {
 	// Main menu or game screen active
 	ScreenState screen;
@@ -436,6 +449,7 @@ typedef struct _StateInfo {
 	LocalGameInfo* localGameInfo;
 	GlobalGameInfo* globalGameInfo;
 	TournamentState* tournamentState;
+	GameConclusion* gameConclusion;
 } StateInfo;
 
 #endif /* GLOBALS_H */

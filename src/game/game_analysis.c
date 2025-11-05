@@ -27,6 +27,28 @@ static void foulPlay(StateInfo* stateInfo);
 static void checkForRuns(StateInfo* stateInfo);
 static void checkIfNextPair(StateInfo* stateInfo);
 
+static void populateGameConclusion(StateInfo* stateInfo, int winner)
+{
+	stateInfo->gameConclusion->winner = winner;
+	stateInfo->gameConclusion->isCupGame = stateInfo->globalGameInfo->isCupGame;
+	stateInfo->gameConclusion->period0Runs[0] = stateInfo->globalGameInfo->teams[0].period0Runs;
+	stateInfo->gameConclusion->period0Runs[1] = stateInfo->globalGameInfo->teams[1].period0Runs;
+	stateInfo->gameConclusion->period1Runs[0] = stateInfo->globalGameInfo->teams[0].period1Runs;
+	stateInfo->gameConclusion->period1Runs[1] = stateInfo->globalGameInfo->teams[1].period1Runs;
+	stateInfo->gameConclusion->period2Runs[0] = stateInfo->globalGameInfo->teams[0].period2Runs;
+	stateInfo->gameConclusion->period2Runs[1] = stateInfo->globalGameInfo->teams[1].period2Runs;
+	stateInfo->gameConclusion->period3Runs[0] = stateInfo->globalGameInfo->teams[0].period3Runs;
+	stateInfo->gameConclusion->period3Runs[1] = stateInfo->globalGameInfo->teams[1].period3Runs;
+
+	if (stateInfo->globalGameInfo->isCupGame) {
+		stateInfo->gameConclusion->userTeamIndexInTree = stateInfo->tournamentState->cupInfo.userTeamIndexInTree;
+		stateInfo->gameConclusion->gameStructure = stateInfo->tournamentState->cupInfo.gameStructure;
+		stateInfo->gameConclusion->dayCount = stateInfo->tournamentState->cupInfo.dayCount;
+		for (int i = 0; i < SLOT_COUNT; i++) {
+			stateInfo->gameConclusion->slotWins[i] = stateInfo->tournamentState->cupInfo.slotWins[i];
+		}
+	}
+}
 
 void initGameAnalysis(StateInfo* stateInfo)
 {
@@ -654,12 +676,14 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			// is the game over already?
 			if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 			        (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
+				int winner = 0;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 0;
 			} else if( team0period0runs<=team1period0runs && team0period1runs<=team1period1runs &&
 			           (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
+				int winner = 1;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				stateInfo->globalGameInfo->period = 2;
 				menuInfo->mode = MENU_ENTRY_SUPER_INNING;
@@ -680,11 +704,13 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
+				int winner = 0;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
+				int winner = 1;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 1;
 			}
 			// if not, we move to homerun-batting contest
 			else {
@@ -706,11 +732,13 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			int i;
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
+				int winner = 0;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 0;
 			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
+				int winner = 1;
+				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-				stateInfo->globalGameInfo->winner = 1;
 			} else {
 				// +=2 because we want to use 4, 6, 8... for homerun batting contest periods
 				// as we dont want to mess the team ordering when

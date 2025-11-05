@@ -6,11 +6,15 @@
 #ifndef GAME_OVER_MENU_H
 #define GAME_OVER_MENU_H
 
+#include "globals.h"
+#include "render.h"
+#include "resource_manager.h"
 #include "menu_types.h"
 
-// Draw function for the Game-Over stage
-// 'state' is currently unused but kept for symmetry
-void drawGameOverMenu(StateInfo* stateInfo);
-MenuStage updateGameOverMenu(MenuData* md, StateInfo* stateInfo, KeyStates* keyStates, MenuInfo* menuInfo);
+// Updates the game over menu.
+MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates, int team1_control, int team2_control);
+
+// Draws the game over menu.
+void drawGameOverMenu(const GameConclusion* conclusion, const TeamData* teamData, RenderState* rs, ResourceManager* rm);
 
 #endif // GAME_OVER_MENU_H
