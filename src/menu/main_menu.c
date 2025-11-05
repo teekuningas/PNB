@@ -257,48 +257,54 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 // here we draw everything.
 void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
 {
-	if (menuData->stage == MENU_STAGE_FRONT) {
-		// New orthographic-only rendering for front menu
+	switch(menuData->stage) {
+	case MENU_STAGE_FRONT:
 		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
-	} else if (menuData->stage == MENU_STAGE_HELP) {
+		break;
+	case MENU_STAGE_HELP:
 		drawHelpMenu(&menuData->help_menu, rs, rm);
-	} else if (menuData->stage == MENU_STAGE_BATTING_ORDER_1 || menuData->stage == MENU_STAGE_BATTING_ORDER_2) {
+		break;
+	case MENU_STAGE_BATTING_ORDER_1:
+	case MENU_STAGE_BATTING_ORDER_2:
 		drawBattingOrderMenu(&menuData->batting_order, menuData->stage, rs, rm);
-	} else if (menuData->stage == MENU_STAGE_TEAM_SELECTION) {
+		break;
+	case MENU_STAGE_TEAM_SELECTION:
 		drawTeamSelectionMenu(&menuData->team_selection, stateInfo->teamData, rs, rm);
-	} else {
-		// Legacy rendering path for all other menus
+		break;
+	case MENU_STAGE_HUTUNKEITTO:
+		drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
+		break;
+
+	// Legacy 3D Menus
+	case MENU_STAGE_GAME_OVER:
 		begin_3d_render(rs);
 		glDisable(GL_LIGHTING);
 		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+		drawGameOverMenu(stateInfo);
+		break;
+	case MENU_STAGE_HOMERUN_CONTEST_1:
+		begin_3d_render(rs);
+		glDisable(GL_LIGHTING);
+		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+		drawHomerunContestMenu(&menuData->homerun1, stateInfo, menuData);
+		break;
+	case MENU_STAGE_HOMERUN_CONTEST_2:
+		begin_3d_render(rs);
+		glDisable(GL_LIGHTING);
+		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+		drawHomerunContestMenu(&menuData->homerun2, stateInfo, menuData);
+		break;
+	case MENU_STAGE_CUP:
+		begin_3d_render(rs);
+		glDisable(GL_LIGHTING);
+		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
+		drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
+		break;
 
-		switch(menuData->stage) {
-
-
-		case MENU_STAGE_HUTUNKEITTO:
-			drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
-			break;
-		case MENU_STAGE_GAME_OVER:
-			drawGameOverMenu(stateInfo);
-			break;
-		case MENU_STAGE_HOMERUN_CONTEST_1:
-			drawHomerunContestMenu(&menuData->homerun1, stateInfo, menuData);
-			break;
-		case MENU_STAGE_HOMERUN_CONTEST_2:
-			drawHomerunContestMenu(&menuData->homerun2, stateInfo, menuData);
-			break;
-		case MENU_STAGE_CUP:
-			drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
-			break;
-		case MENU_STAGE_GO_TO_GAME:
-			break;
-		case MENU_STAGE_QUIT:
-			// Nothing to draw when quitting
-			break;
-		default:
-			// Should not happen, but good to have a default
-			break;
-		}
+	case MENU_STAGE_GO_TO_GAME:
+	case MENU_STAGE_QUIT:
+		// Nothing to draw
+		break;
 
 	}
 }
