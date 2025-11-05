@@ -123,11 +123,6 @@ typedef struct {
 	int rem;
 } FrontMenuState;
 
-// State for the game-over screen (no internal fields required yet)
-typedef struct {
-	int placeholder;
-} GameOverState;
-
 // State for the help screen
 typedef struct {
 	int page;
@@ -181,7 +176,6 @@ typedef struct MenuData {
 	TeamSelectionState team_selection;
 	BattingOrderState batting_order;
 	HutunkeittoState hutunkeitto;
-	GameOverState game_over;  // state for GAME_OVER stage
 	HelpMenuState help_menu;
 	CupMenuState cup_menu;
 	int pointer;
