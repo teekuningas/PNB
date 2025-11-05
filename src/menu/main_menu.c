@@ -155,8 +155,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				initBattingOrderState(&menuData->batting_order, menuData->team2, menuData->team2_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
-				menuData->pointer = 0;
-				menuData->rem = 2;
 			}
 		}
 		menuData->stage = nextStage;
@@ -171,8 +169,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			       sizeof(output.batting_order));
 			if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
-				menuData->pointer = 0;
-				menuData->rem = 2;
 			}
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				GameSetup gameSetup;
@@ -185,11 +181,12 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_HUTUNKEITTO: {
+		HutunkeittoMenuOutput hutunkeitto_output;
 		nextStage = updateHutunkeittoMenu(&menuData->hutunkeitto, keyStates,
-		                                  menuData->team1_control, menuData->team2_control);
+		                                  menuData->team1_control, menuData->team2_control, &hutunkeitto_output);
 		if (nextStage != menuData->stage) {
 			// Record who bats first
-			menuData->playsFirst = menuData->hutunkeitto.playsFirst;
+			menuData->playsFirst = hutunkeitto_output.playsFirst;
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				GameSetup gameSetup;
 				createGameSetup(&gameSetup, menuData, menuInfo);
@@ -279,7 +276,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 
 
 		case MENU_STAGE_HUTUNKEITTO:
-			drawHutunkeittoMenu(&menuData->hutunkeitto, menuData);
+			drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
 			break;
 		case MENU_STAGE_GAME_OVER:
 			drawGameOverMenu(stateInfo);

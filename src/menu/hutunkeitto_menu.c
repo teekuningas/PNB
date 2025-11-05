@@ -3,6 +3,7 @@
 #include "font.h"
 #include "globals.h"
 #include "menu_types.h"
+#include "menu_helpers.h"
 
 #define BAT_DEFAULT_HEIGHT -1.0f
 #define LEFT_HAND_DEFAULT_HEIGHT 0.1f
@@ -18,13 +19,6 @@
 #define HUTUNKEITTO_TEAM_TEXT_HEIGHT 0.45f
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
-
-static void drawHutunkeittoTexts(const HutunkeittoState *state)
-{
-	printText("Who bats first", 14, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT - 0.1f, 3);
-	printText("Team 1", 6, HUTUNKEITTO_TEAM_1_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
-	printText("Team 2", 6, HUTUNKEITTO_TEAM_2_TEXT_POSITION, HUTUNKEITTO_TEAM_TEXT_HEIGHT, 3);
-}
 
 void initHutunkeittoState(HutunkeittoState *state)
 {
@@ -51,7 +45,7 @@ void initHutunkeittoState(HutunkeittoState *state)
 	state->rem = 2;
 }
 
-MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control)
+MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control, HutunkeittoMenuOutput *output)
 {
 	if(state->state == 0) {
 		state->batTimerLimit = 30 + rand()%15;
@@ -168,6 +162,7 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 				} else {
 					state->playsFirst = 1;
 				}
+				output->playsFirst = state->playsFirst;
 				return MENU_STAGE_GO_TO_GAME;
 			}
 			if(keyStates->released[control][KEY_RIGHT]) {
@@ -182,87 +177,106 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 			// ai always selects to field first
 			if(state->turnCount%2 == 0) state->playsFirst = 1;
 			else state->playsFirst = 0;
+			output->playsFirst = state->playsFirst;
 			return MENU_STAGE_GO_TO_GAME;
 		}
 	}
 	return MENU_STAGE_HUTUNKEITTO;
 }
 
-void drawHutunkeittoMenu(const HutunkeittoState *state, const struct MenuData *menuData)
+void drawHutunkeittoMenu(const HutunkeittoState *state, const RenderState* rs, ResourceManager* rm, int team1_idx, int team2_idx)
 {
-	drawFontBackground();
-	glEnable(GL_LIGHTING);
-	glEnable(GL_DEPTH_TEST);
-	float lightPos[4];
-	lightPos[0] = LIGHT_SOURCE_POSITION_X;
-	lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-	lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-	lightPos[3] = 1.0f;
+	// --- 2D Background ---
+	begin_2d_render(rs);
+	drawMenuLayout2D(rm, rs);
+
+	// --- 3D Drawing ---
+	glClear(GL_DEPTH_BUFFER_BIT); // Clear depth buffer to draw 3D models on top of the 2D background
+	begin_3d_render(rs);
+	gluLookAt(0.0f, 2.3f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+
+	float lightPos[4] = {LIGHT_SOURCE_POSITION_X, LIGHT_SOURCE_POSITION_Y, LIGHT_SOURCE_POSITION_Z, 1.0f};
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+
+	GLuint bat_model = resource_manager_get_model(rm, "data/models/hutunkeitto_bat.obj");
+	GLuint hand_model = resource_manager_get_model(rm, "data/models/hutunkeitto_hand.obj");
+
+	char team1_texture_path[64];
+	sprintf(team1_texture_path, "data/textures/team%d.tga", team1_idx + 1);
+	char team2_texture_path[64];
+	sprintf(team2_texture_path, "data/textures/team%d.tga", team2_idx + 1);
+
 	// bat
-	glBindTexture(GL_TEXTURE_2D, menuData->team1Texture);
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, team1_texture_path));
 	glPushMatrix();
 	glTranslatef(state->batPosition, state->handsZ, state->batHeight);
 	glScalef(0.6f, 0.5f, 0.45f);
 	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-	glCallList(menuData->batDisplayList);
+	glCallList(bat_model);
 	glPopMatrix();
-	// right hand
-	if(menuData->team2 == 0) glBindTexture(GL_TEXTURE_2D, menuData->team1Texture);
-	else if(menuData->team2 == 1) glBindTexture(GL_TEXTURE_2D, menuData->team2Texture);
-	else if(menuData->team2 == 2) glBindTexture(GL_TEXTURE_2D, menuData->team3Texture);
-	else if(menuData->team2 == 3) glBindTexture(GL_TEXTURE_2D, menuData->team4Texture);
-	else if(menuData->team2 == 4) glBindTexture(GL_TEXTURE_2D, menuData->team5Texture);
-	else if(menuData->team2 == 5) glBindTexture(GL_TEXTURE_2D, menuData->team6Texture);
-	else if(menuData->team2 == 6) glBindTexture(GL_TEXTURE_2D, menuData->team7Texture);
-	else if(menuData->team2 == 7) glBindTexture(GL_TEXTURE_2D, menuData->team8Texture);
+
+	// right hand (team 2)
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, team2_texture_path));
 	glPushMatrix();
 	glTranslatef(state->rightHandPosition, state->handsZ, state->rightHandHeight);
 	glScalef(0.5f, 0.5f, 0.5f*(1.0f+state->rightScaleCount*SCALE_FACTOR));
 	glTranslatef(0.0f, 0.0f, -0.35f);
 	glRotatef(-90.0f, 0.0f, 0.0f, 1.0f);
 	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-	glCallList(menuData->handDisplayList);
+	glCallList(hand_model);
 	glPopMatrix();
-	// left hand
-	if(menuData->team1 == 0) glBindTexture(GL_TEXTURE_2D, menuData->team1Texture);
-	else if(menuData->team1 == 1) glBindTexture(GL_TEXTURE_2D, menuData->team2Texture);
-	else if(menuData->team1 == 2) glBindTexture(GL_TEXTURE_2D, menuData->team3Texture);
-	else if(menuData->team1 == 3) glBindTexture(GL_TEXTURE_2D, menuData->team4Texture);
-	else if(menuData->team1 == 4) glBindTexture(GL_TEXTURE_2D, menuData->team5Texture);
-	else if(menuData->team1 == 5) glBindTexture(GL_TEXTURE_2D, menuData->team6Texture);
-	else if(menuData->team1 == 6) glBindTexture(GL_TEXTURE_2D, menuData->team7Texture);
-	else if(menuData->team1 == 7) glBindTexture(GL_TEXTURE_2D, menuData->team8Texture);
+
+	// left hand (team 1)
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, team1_texture_path));
 	glPushMatrix();
 	glTranslatef(state->leftHandPosition, state->handsZ, state->leftHandHeight);
 	glScalef(0.5f, 0.5f, 0.5f*(1.0f+state->leftScaleCount*SCALE_FACTOR));
 	glTranslatef(0.0f, 0.0f, -0.35f);
 	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-	glCallList(menuData->handDisplayList);
+	glCallList(hand_model);
 	glPopMatrix();
+
 	// referee hand
-	glBindTexture(GL_TEXTURE_2D, menuData->team2Texture);
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/team2.tga")); // Referee has a default texture
 	glPushMatrix();
 	glTranslatef(0.0f, 1.0f, state->refereeHandHeight);
 	glScalef(0.5f, 0.5f, 0.5f);
 	glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
 	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-	glCallList(menuData->handDisplayList);
+	glCallList(hand_model);
 	glPopMatrix();
 
-	glDisable(GL_LIGHTING);
-	glDisable(GL_DEPTH_TEST);
+	// --- 2D UI ---
+	begin_2d_render(rs);
 
 	if(state->state == 6) {
-		drawHutunkeittoTexts(state);
+		const float center_x = VIRTUAL_WIDTH / 2.0f;
+		const float title_y = VIRTUAL_HEIGHT * 0.2f;
+		const float team_y = VIRTUAL_HEIGHT * 0.3f;
+		const float team1_x = VIRTUAL_WIDTH * 0.25f;
+		const float team2_x = VIRTUAL_WIDTH * 0.75f;
+		const float title_size = 48.0f;
+		const float team_size = 36.0f;
+		const float arrow_size = 60.0f;
+
+		draw_text_2d("Who bats first?", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Team 1", team1_x, team_y, team_size, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Team 2", team2_x, team_y, team_size, TEXT_ALIGN_CENTER, rs);
+
 		// arrow
-		glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-		glPushMatrix();
-		if(state->pointer == 0) glTranslatef(HUTUNKEITTO_TEAM_1_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-		else glTranslatef(HUTUNKEITTO_TEAM_2_TEXT_POSITION + 0.25f, 1.0f, HUTUNKEITTO_TEAM_TEXT_HEIGHT);
-		glScalef(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
-		glCallList(menuData->planeDisplayList);
-		glPopMatrix();
+		float arrow_x = (state->pointer == 0) ? team1_x + 100.0f : team2_x + 100.0f;
+		float arrow_y = team_y - (arrow_size - team_size) / 2.0f;
+		glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1);
+		glVertex2f(arrow_x, arrow_y);
+		glTexCoord2f(0, 0);
+		glVertex2f(arrow_x, arrow_y + arrow_size);
+		glTexCoord2f(1, 0);
+		glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+		glTexCoord2f(1, 1);
+		glVertex2f(arrow_x + arrow_size, arrow_y);
+		glEnd();
 	}
 }

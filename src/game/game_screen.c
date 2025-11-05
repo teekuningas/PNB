@@ -169,9 +169,8 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 
 void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs)
 {
-	// Set up the 3D rendering environment states manually.
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
+	// Ensure the 3D rendering state is correctly set up before drawing the game screen.
+	begin_3d_render(rs);
 
 	look.x = (float)(alpha*camTargetLocation.x + (1-alpha)*lastCamTargetLocation.x);
 	look.y = (float)(alpha*camTargetLocation.y + (1-alpha)*lastCamTargetLocation.y);
