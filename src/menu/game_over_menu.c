@@ -46,21 +46,21 @@ void drawGameOverMenu(const GameConclusion* conclusion, const TeamData* teamData
 
 	const char* winner_name = teamData[conclusion->winner].name;
 	sprintf(buffer, "Congratulations %s!", winner_name);
-	draw_text_2d(buffer, center_x, 220, 50.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d(buffer, center_x, 250, 50.0f, TEXT_ALIGN_CENTER, rs);
 
 	sprintf(buffer, "First period: %d - %d", conclusion->period0Runs[0], conclusion->period0Runs[1]);
-	draw_text_2d(buffer, center_x, 350, 40.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d(buffer, center_x, 380, 40.0f, TEXT_ALIGN_CENTER, rs);
 
 	sprintf(buffer, "Second period: %d - %d", conclusion->period1Runs[0], conclusion->period1Runs[1]);
-	draw_text_2d(buffer, center_x, 400, 40.0f, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d(buffer, center_x, 430, 40.0f, TEXT_ALIGN_CENTER, rs);
 
 	if (conclusion->period2Runs[0] > 0 || conclusion->period2Runs[1] > 0) {
 		sprintf(buffer, "Super inning: %d - %d", conclusion->period2Runs[0], conclusion->period2Runs[1]);
-		draw_text_2d(buffer, center_x, 450, 40.0f, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d(buffer, center_x, 480, 40.0f, TEXT_ALIGN_CENTER, rs);
 	}
 
 	if (conclusion->period3Runs[0] > 0 || conclusion->period3Runs[1] > 0) {
 		sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3Runs[0], conclusion->period3Runs[1]);
-		draw_text_2d(buffer, center_x, 500, 40.0f, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d(buffer, center_x, 530, 40.0f, TEXT_ALIGN_CENTER, rs);
 	}
 }

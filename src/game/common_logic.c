@@ -1045,3 +1045,12 @@ void loadMutableWorldSettings(StateInfo* stateInfo)
 		setRunnerAndBatter(stateInfo);
 	}
 }
+
+void returnToGame(StateInfo* stateInfo)
+{
+	stateInfo->stopSoundEffect = SOUND_MENU;
+	stateInfo->screen = GAME_SCREEN;
+	stateInfo->changeScreen = 1;
+	stateInfo->updated = 0;
+	loadMutableWorldSettings(stateInfo);
+}

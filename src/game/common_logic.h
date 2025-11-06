@@ -40,4 +40,6 @@ void initializeIndexInformation(StateInfo* stateInfo);
 void initializePRAIInformation(StateInfo* stateInfo);
 void setRunnerAndBatter(StateInfo* stateInfo);
 void loadMutableWorldSettings(StateInfo* stateInfo);
+void returnToGame(StateInfo* stateInfo);
+
 #endif /* COMMON_LOGIC_H */

@@ -172,10 +172,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				initHutunkeittoState(&menuData->hutunkeitto);
 			}
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				GameSetup gameSetup;
-				createGameSetup(&gameSetup, menuData, menuInfo);
-				initializeGameFromMenu(stateInfo, &gameSetup);
-				menuInfo->mode = MENU_ENTRY_NORMAL;
+				if (menuInfo->mode == MENU_ENTRY_INTER_PERIOD || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+					returnToGame(stateInfo);
+				} else {
+					GameSetup gameSetup;
+					createGameSetup(&gameSetup, menuData, menuInfo);
+					initializeGameFromMenu(stateInfo, &gameSetup);
+				}
 			}
 		}
 		menuData->stage = nextStage;
@@ -256,10 +259,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		                                     MENU_STAGE_HOMERUN_CONTEST_2);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				GameSetup gameSetup;
-				createGameSetup(&gameSetup, menuData, menuInfo);
-				initializeGameFromMenu(stateInfo, &gameSetup);
-				menuInfo->mode = MENU_ENTRY_NORMAL;
+				if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
+					returnToGame(stateInfo);
+				} else {
+					GameSetup gameSetup;
+					createGameSetup(&gameSetup, menuData, menuInfo);
+					initializeGameFromMenu(stateInfo, &gameSetup);
+				}
 			}
 			menuData->stage = nextStage;
 		}
