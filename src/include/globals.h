@@ -382,7 +382,7 @@ typedef struct _PlayerRelatedActionInfo {
 
 typedef struct _GlobalGameInfo {
 	TeamInfo teams[2];
-	int inningsInPeriod;
+	int halfInningsInPeriod;
 	int inning;
 	int period;
 	int pairCount;

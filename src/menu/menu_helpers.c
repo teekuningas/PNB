@@ -50,7 +50,7 @@ void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInf
 	gameSetup->team2 = menuData->team2;
 	gameSetup->team1_control = menuData->team1_control;
 	gameSetup->team2_control = menuData->team2_control;
-	gameSetup->inningsInPeriod = menuData->inningsInPeriod;
+	gameSetup->halfInningsInPeriod = menuData->halfInningsInPeriod;
 
 	// Logic for playsFirst is now here
 	if (menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
@@ -82,7 +82,7 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 		menuData->team1_batting_order[i] = i;
 		menuData->team2_batting_order[i] = i;
 	}
-	menuData->inningsInPeriod = 0;
+	menuData->halfInningsInPeriod = 0;
 	menuData->team1 = 0;
 	menuData->team2 = 0;
 	menuData->team1_control = 0;

@@ -54,11 +54,14 @@ void drawGameOverMenu(const GameConclusion* conclusion, const TeamData* teamData
 	sprintf(buffer, "Second period: %d - %d", conclusion->period1Runs[0], conclusion->period1Runs[1]);
 	draw_text_2d(buffer, center_x, 430, 40.0f, TEXT_ALIGN_CENTER, rs);
 
-	if (conclusion->period2Runs[0] > 0 || conclusion->period2Runs[1] > 0) {
+	// Super inning: show if anyone scored OR if homerun was played (implies super-inning happened)
+	if (conclusion->period2Runs[0] > 0 || conclusion->period2Runs[1] > 0 ||
+	        conclusion->period3Runs[0] > 0 || conclusion->period3Runs[1] > 0) {
 		sprintf(buffer, "Super inning: %d - %d", conclusion->period2Runs[0], conclusion->period2Runs[1]);
 		draw_text_2d(buffer, center_x, 480, 40.0f, TEXT_ALIGN_CENTER, rs);
 	}
 
+	// Homerun contest: show if anyone scored
 	if (conclusion->period3Runs[0] > 0 || conclusion->period3Runs[1] > 0) {
 		sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3Runs[0], conclusion->period3Runs[1]);
 		draw_text_2d(buffer, center_x, 530, 40.0f, TEXT_ALIGN_CENTER, rs);

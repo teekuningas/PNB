@@ -205,7 +205,7 @@ MenuStage updateCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, struct
 						menuData->team2_control = 0;
 						menuData->team1_control = 2;
 					}
-					menuData->inningsInPeriod = stateInfo->tournamentState->cupInfo.inningCount;
+					menuData->halfInningsInPeriod = stateInfo->tournamentState->cupInfo.inningCount;
 					stateInfo->globalGameInfo->isCupGame = 1;
 					initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
 					return MENU_STAGE_BATTING_ORDER_1;

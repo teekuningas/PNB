@@ -133,7 +133,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			menuData->team2 = team_selection_output.team2;
 			menuData->team1_control = team_selection_output.team1_controller;
 			menuData->team2_control = team_selection_output.team2_controller;
-			menuData->inningsInPeriod = team_selection_output.innings;
+			menuData->halfInningsInPeriod = team_selection_output.innings;
 			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
@@ -260,6 +260,17 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
+					// Update batter/runner selections from menu
+					int half = menuData->homerun1.choiceCount / 2;
+					for (int i = 0; i < 2; i++) {
+						for (int j = 0; j < half; j++) {
+							stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData->homerun1.choices[i][j];
+							stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData->homerun2.choices[i][j];
+						}
+					}
+					stateInfo->globalGameInfo->pairCount = half;
+					stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+
 					returnToGame(stateInfo);
 				} else {
 					GameSetup gameSetup;
