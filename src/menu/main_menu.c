@@ -241,42 +241,41 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_HOMERUN_CONTEST_1: {
-		// Delegate to home-run contest logic for team 1
+		HomerunContestMenuOutput output;
 		nextStage = updateHomerunContestMenu(&menuData->homerun1,
 		                                     keyStates,
-		                                     stateInfo,
-		                                     MENU_STAGE_HOMERUN_CONTEST_1);
+		                                     menuData->stage,
+		                                     &output,
+		                                     (const TeamData*)stateInfo->teamData);
 		if (nextStage != menuData->stage) {
+			memcpy(menuData->homerun_choices1, output.choices, sizeof(output.choices));
 			menuData->stage = nextStage;
 		}
 		break;
 	}
 	case MENU_STAGE_HOMERUN_CONTEST_2: {
-		// Delegate to home-run contest logic for team 2
+		HomerunContestMenuOutput output;
 		nextStage = updateHomerunContestMenu(&menuData->homerun2,
 		                                     keyStates,
-		                                     stateInfo,
-		                                     MENU_STAGE_HOMERUN_CONTEST_2);
+		                                     menuData->stage,
+		                                     &output,
+		                                     (const TeamData*)stateInfo->teamData);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
-					// Update batter/runner selections from menu
-					int half = menuData->homerun1.choiceCount / 2;
-					for (int i = 0; i < 2; i++) {
-						for (int j = 0; j < half; j++) {
-							stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData->homerun1.choices[i][j];
-							stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData->homerun2.choices[i][j];
-						}
-					}
-					stateInfo->globalGameInfo->pairCount = half;
-					stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+				memcpy(menuData->homerun_choices2, output.choices, sizeof(output.choices));
 
-					returnToGame(stateInfo);
-				} else {
-					GameSetup gameSetup;
-					createGameSetup(&gameSetup, menuData, menuInfo);
-					initializeGameFromMenu(stateInfo, &gameSetup);
+				// Update batter/runner selections from menu
+				int pairCount = menuData->homerun1.choiceCount / 2;
+				for (int i = 0; i < 2; i++) {
+					for (int j = 0; j < pairCount; j++) {
+						stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData->homerun_choices1[i][j];
+						stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData->homerun_choices2[i][j];
+					}
 				}
+				stateInfo->globalGameInfo->pairCount = pairCount;
+				stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+
+				returnToGame(stateInfo);
 			}
 			menuData->stage = nextStage;
 		}
@@ -320,26 +319,20 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawBattingOrderMenu(&menuData->batting_order, menuData->stage, rs, rm);
 		break;
 	case MENU_STAGE_TEAM_SELECTION:
-		drawTeamSelectionMenu(&menuData->team_selection, stateInfo->teamData, rs, rm);
+		drawTeamSelectionMenu(&menuData->team_selection, (const TeamData*)stateInfo->teamData, rs, rm);
 		break;
 	case MENU_STAGE_HUTUNKEITTO:
 		drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
 		break;
 
 	case MENU_STAGE_GAME_OVER:
-		drawGameOverMenu(stateInfo->gameConclusion, stateInfo->teamData, rs, rm);
+		drawGameOverMenu(stateInfo->gameConclusion, (const TeamData*)stateInfo->teamData, rs, rm);
 		break;
 	case MENU_STAGE_HOMERUN_CONTEST_1:
-		begin_3d_render(rs);
-		glDisable(GL_LIGHTING);
-		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
-		drawHomerunContestMenu(&menuData->homerun1, stateInfo, menuData);
+		drawHomerunContestMenu(&menuData->homerun1, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData);
 		break;
 	case MENU_STAGE_HOMERUN_CONTEST_2:
-		begin_3d_render(rs);
-		glDisable(GL_LIGHTING);
-		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
-		drawHomerunContestMenu(&menuData->homerun2, stateInfo, menuData);
+		drawHomerunContestMenu(&menuData->homerun2, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData);
 		break;
 	case MENU_STAGE_CUP:
 		begin_3d_render(rs);

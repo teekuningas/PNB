@@ -188,6 +188,8 @@ typedef struct MenuData {
 	int playsFirst;
 	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
 	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int homerun_choices1[2][MAX_HOMERUN_PAIRS];
+	int homerun_choices2[2][MAX_HOMERUN_PAIRS];
 	// home-run contest state for each team
 	HomerunContestState homerun1;
 	HomerunContestState homerun2;
