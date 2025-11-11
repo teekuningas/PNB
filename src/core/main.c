@@ -9,11 +9,14 @@
 #include "menu_helpers.h"
 #include "menu_types.h"
 #include "resource_manager.h"
+#include "fixtures.h"
+#include "common_logic.h"
 
 static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
 static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
 static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window);
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
 
 static MenuData menuData;
 static StateInfo stateInfo;
@@ -44,7 +47,10 @@ int main ( int argc, char *argv[] )
 	// Initialize the random number generator
 	srand((unsigned int)time(NULL));
 
-	// Handle the commandline arguments
+	// Parse command-line arguments
+	FixtureRequest fixtureRequest;
+	fixture_parse_args(argc, argv, &fixtureRequest);
+
 	for(int i = 1; i < argc; i++) {
 		if(strcmp(argv[i], "--windowed") == 0) {
 			fullscreen = 0;
@@ -119,6 +125,11 @@ int main ( int argc, char *argv[] )
 	stateInfo.screen = MAIN_MENU;
 	stateInfo.changeScreen = 1;
 	stateInfo.updated = 0;
+
+	// Apply fixture if requested (for visual testing)
+	if (fixtureRequest.enabled) {
+		applyFixture(&fixtureRequest, &stateInfo, &menuData, &menuInfo);
+	}
 
 	// to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
 	while(done == 0) {
@@ -311,4 +322,88 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
 	resource_manager_shutdown(rm);
 	glfwTerminate();
 	return retvalue;
+}
+
+// Apply a fixture for visual testing
+// This sets up a game at a specific period/state for rapid testing
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
+{
+	printf("Applying fixture: %s\n", request->name);
+	GameSetup gameSetup;
+
+	if (strcmp(request->name, "super-inning") == 0) {
+		// Create super inning game setup
+		fixture_create_super_inning(&gameSetup,
+		                            request->team1,
+		                            request->team2,
+		                            request->team1_control,
+		                            request->team2_control);
+		initializeGameFromMenu(stateInfo, &gameSetup);
+
+		// Set period state (super inning = period 2)
+		stateInfo->globalGameInfo->isCupGame = 0;
+		stateInfo->globalGameInfo->period = 2;
+		// Inning counter: period 2 starts after period 0 and 1 complete
+		// Each period uses halfInningsInPeriod half-innings
+		// So period 2 starts at: 2 * halfInningsInPeriod
+		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2;
+
+		// Set prior period scores (for realistic display in game over screen)
+		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[0].runs = 0;
+		stateInfo->globalGameInfo->teams[1].runs = 0;
+
+		// Set menuData for potential menu transitions
+		menuData->team1 = request->team1;
+		menuData->team2 = request->team2;
+		menuData->team1_control = request->team1_control;
+		menuData->team2_control = request->team2_control;
+	} else if (strcmp(request->name, "homerun-contest") == 0) {
+		// Create homerun contest game setup
+		fixture_create_homerun_contest(&gameSetup,
+		                               request->team1,
+		                               request->team2,
+		                               request->team1_control,
+		                               request->team2_control);
+		initializeGameFromMenu(stateInfo, &gameSetup);
+
+		// Set period state (homerun = period 4)
+		stateInfo->globalGameInfo->isCupGame = 0;
+		stateInfo->globalGameInfo->period = 4;
+		// Inning counter: when super-inning ends, inning is at halfInningsInPeriod*2 + 2
+		// For 8 half-innings: inning = 10 (even)
+		// This makes team 0 bat first: (10 + 0 + 4) % 2 = 0
+		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2 + 2;
+
+		// Set prior period scores (for realistic display in game over screen)
+		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period3Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period3Runs = 0;
+		stateInfo->globalGameInfo->teams[0].runs = 0;
+		stateInfo->globalGameInfo->teams[1].runs = 0;
+
+		// Set menuData for potential menu transitions
+		menuData->team1 = request->team1;
+		menuData->team2 = request->team2;
+		menuData->team1_control = request->team1_control;
+		menuData->team2_control = request->team2_control;
+	} else {
+		printf("Unknown fixture: %s\n", request->name);
+		printf("Available fixtures: super-inning, homerun-contest\n");
+		exit(-1);
+	}
+
+	// Jump directly to game screen
+	stateInfo->screen = GAME_SCREEN;
+	stateInfo->changeScreen = 1;
 }

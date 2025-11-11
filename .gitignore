@@ -1,3 +1,4 @@
 obj/
 main
+test_runner
 *.orig

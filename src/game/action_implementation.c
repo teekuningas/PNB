@@ -542,13 +542,13 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					// set info to screen
 					stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
 
-					if((stateInfo->globalGameInfo->inning + 1)%stateInfo->globalGameInfo->inningsInPeriod == 0 ||
-					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->inningsInPeriod*2 + 2) {
+					if((stateInfo->globalGameInfo->inning + 1)%stateInfo->globalGameInfo->halfInningsInPeriod == 0 ||
+					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 + 2) {
 						if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
 							stateInfo->localGameInfo->gAI.endPeriod = 1;
 						}
-						if(stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->inningsInPeriod*2 &&
+						if(stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 &&
 						        stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs >
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].period0Runs &&
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs ==

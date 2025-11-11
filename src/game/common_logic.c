@@ -962,15 +962,17 @@ void initializeGameFromMenu(StateInfo* stateInfo, GameSetup* gameSetup)
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 
+	// Set teams and controls for all game modes
+	stateInfo->globalGameInfo->teams[0].value = gameSetup->team1 + 1;
+	stateInfo->globalGameInfo->teams[1].value = gameSetup->team2 + 1;
+	stateInfo->globalGameInfo->teams[0].control = gameSetup->team1_control;
+	stateInfo->globalGameInfo->teams[1].control = gameSetup->team2_control;
+	stateInfo->globalGameInfo->halfInningsInPeriod = gameSetup->halfInningsInPeriod;
+
 	if (gameSetup->gameMode == GAME_MODE_NORMAL) {
 		stateInfo->globalGameInfo->inning = 0;
-		stateInfo->globalGameInfo->inningsInPeriod = gameSetup->inningsInPeriod;
 		stateInfo->globalGameInfo->period = 0;
 		stateInfo->globalGameInfo->playsFirst = gameSetup->playsFirst;
-		stateInfo->globalGameInfo->teams[0].value = gameSetup->team1 + 1;
-		stateInfo->globalGameInfo->teams[1].value = gameSetup->team2 + 1;
-		stateInfo->globalGameInfo->teams[0].control = gameSetup->team1_control;
-		stateInfo->globalGameInfo->teams[1].control = gameSetup->team2_control;
 		for (int i = 0; i < 2; i++) {
 			stateInfo->globalGameInfo->teams[i].runs = 0;
 			stateInfo->globalGameInfo->teams[i].period0Runs = 0;
