@@ -206,6 +206,14 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		if (nextStage != menuData->stage) {
 			stateInfo->playSoundEffect = SOUND_MENU;
 			if (nextStage == MENU_STAGE_CUP) {
+				// Enrich the thin gameConclusion with tournament metadata before processing
+				stateInfo->gameConclusion->userTeamIndexInTree = stateInfo->tournamentState->cupInfo.userTeamIndexInTree;
+				stateInfo->gameConclusion->gameStructure = stateInfo->tournamentState->cupInfo.gameStructure;
+				stateInfo->gameConclusion->dayCount = stateInfo->tournamentState->cupInfo.dayCount;
+				for (int i = 0; i < SLOT_COUNT; i++) {
+					stateInfo->gameConclusion->slotWins[i] = stateInfo->tournamentState->cupInfo.slotWins[i];
+				}
+
 				int i, j;
 				int scheduleSlot = -1;
 				int playerWon = 0;
