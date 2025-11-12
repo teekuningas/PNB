@@ -282,7 +282,18 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_CUP: {
-		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, menuData, keyStates);
+		CupMenuOutput cup_output;
+		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, keyStates, &cup_output);
+		if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
+			// A game is starting, transfer data from cup output to menuData
+			menuData->team1 = cup_output.team1;
+			menuData->team2 = cup_output.team2;
+			menuData->team1_control = cup_output.team1_control;
+			menuData->team2_control = cup_output.team2_control;
+			menuData->halfInningsInPeriod = cup_output.innings;
+			stateInfo->globalGameInfo->isCupGame = 1;
+			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+		}
 		menuData->stage = nextStage;
 		break;
 	}
