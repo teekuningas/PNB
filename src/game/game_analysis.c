@@ -39,15 +39,6 @@ static void populateGameConclusion(StateInfo* stateInfo, int winner)
 	stateInfo->gameConclusion->period2Runs[1] = stateInfo->globalGameInfo->teams[1].period2Runs;
 	stateInfo->gameConclusion->period3Runs[0] = stateInfo->globalGameInfo->teams[0].period3Runs;
 	stateInfo->gameConclusion->period3Runs[1] = stateInfo->globalGameInfo->teams[1].period3Runs;
-
-	if (stateInfo->globalGameInfo->isCupGame) {
-		stateInfo->gameConclusion->userTeamIndexInTree = stateInfo->tournamentState->cupInfo.userTeamIndexInTree;
-		stateInfo->gameConclusion->gameStructure = stateInfo->tournamentState->cupInfo.gameStructure;
-		stateInfo->gameConclusion->dayCount = stateInfo->tournamentState->cupInfo.dayCount;
-		for (int i = 0; i < SLOT_COUNT; i++) {
-			stateInfo->gameConclusion->slotWins[i] = stateInfo->tournamentState->cupInfo.slotWins[i];
-		}
-	}
 }
 
 void initGameAnalysis(StateInfo* stateInfo)
