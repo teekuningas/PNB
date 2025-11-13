@@ -660,10 +660,14 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 		                  stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs && stateInfo->globalGameInfo->teams[catchingTeamIndex].runs ==
 		                  stateInfo->globalGameInfo->teams[battingTeamIndex].runs )))) {
 			int i;
+			for(i = 0; i < 2; i++) {
+				stateInfo->globalGameInfo->teams[i].period1Runs = stateInfo->globalGameInfo->teams[i].runs;
+			}
+
 			int team0period0runs = stateInfo->globalGameInfo->teams[0].period0Runs;
-			int team0period1runs = stateInfo->globalGameInfo->teams[0].runs;
+			int team0period1runs = stateInfo->globalGameInfo->teams[0].period1Runs;
 			int team1period0runs = stateInfo->globalGameInfo->teams[1].period0Runs;
-			int team1period1runs = stateInfo->globalGameInfo->teams[1].runs;
+			int team1period1runs = stateInfo->globalGameInfo->teams[1].period1Runs;
 			// is the game over already?
 			if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 			        (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
@@ -683,7 +687,6 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
 			}
 			for(i = 0; i < 2; i++) {
-				stateInfo->globalGameInfo->teams[i].period1Runs = stateInfo->globalGameInfo->teams[i].runs;
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
 			stateInfo->screen = MAIN_MENU;
@@ -693,6 +696,9 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 		// if super inning ending
 		else if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->halfInningsInPeriod*2 + 2) {
 			int i;
+			for(i = 0; i < 2; i++) {
+				stateInfo->globalGameInfo->teams[i].period2Runs = stateInfo->globalGameInfo->teams[i].runs;
+			}
 			// is the game over already?
 			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
 				int winner = 0;
@@ -710,7 +716,6 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			}
 
 			for(i = 0; i < 2; i++) {
-				stateInfo->globalGameInfo->teams[i].period2Runs = stateInfo->globalGameInfo->teams[i].runs;
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
 
@@ -721,12 +726,15 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 		// is homerun-batting contest moving to next stage or ending
 		else if(stateInfo->globalGameInfo->period >= 4 && (stateInfo->globalGameInfo->inning)%2 == 0) {
 			int i;
+			for(i = 0; i < 2; i++) {
+				stateInfo->globalGameInfo->teams[i].period3Runs += stateInfo->globalGameInfo->teams[i].runs;
+			}
 			// is the game over already?
-			if(stateInfo->globalGameInfo->teams[0].runs > stateInfo->globalGameInfo->teams[1].runs) {
+			if(stateInfo->globalGameInfo->teams[0].period3Runs > stateInfo->globalGameInfo->teams[1].period3Runs) {
 				int winner = 0;
 				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-			} else if(stateInfo->globalGameInfo->teams[0].runs < stateInfo->globalGameInfo->teams[1].runs) {
+			} else if(stateInfo->globalGameInfo->teams[0].period3Runs < stateInfo->globalGameInfo->teams[1].period3Runs) {
 				int winner = 1;
 				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
@@ -739,7 +747,6 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			}
 
 			for(i = 0; i < 2; i++) {
-				stateInfo->globalGameInfo->teams[i].period3Runs += stateInfo->globalGameInfo->teams[i].runs;
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
 

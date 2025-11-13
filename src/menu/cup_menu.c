@@ -5,11 +5,6 @@
 #include "save.h"
 #include <string.h>
 
-#define SELECTION_CUP_ALT_1_HEIGHT -0.15f
-#define SELECTION_CUP_LEFT -0.3f
-#define SELECTION_CUP_ARROW_LEFT 0.2f
-#define SELECTION_CUP_MENU_OFFSET 0.1f
-#define SELECTION_ALT_OFFSET 0.06f
 
 
 static int refreshLoadCups(StateInfo* stateInfo);
@@ -223,178 +218,393 @@ static MenuStage updateScreen_View(CupMenuState* cupMenuState, const KeyStates* 
 // Screen-specific Draw Functions
 // =============================================================================
 
-static void drawScreen_Initial(const CupMenuState* cupMenuState, const struct MenuData* menuData)
+static void drawScreen_Initial(const CupMenuState* cupMenuState, const RenderState* rs, ResourceManager* rm)
 {
-	// arrow
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	if (cupMenuState->pointer == 0) glTranslatef(0.15f + 0.05f, 1.0f, -0.1f);
-	else if (cupMenuState->pointer == 1) glTranslatef(0.15f + 0.05f, 1.0f, 0.0f);
-	glScalef(0.05f, 0.05f, 0.05f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
-	// catcher
-	glBindTexture(GL_TEXTURE_2D, menuData->catcherTexture);
-	glPushMatrix();
-	glTranslatef(0.7f, 1.0f, 0.0f);
-	glScalef(0.4f, 0.4f, 0.4f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
-	// batter
-	glBindTexture(GL_TEXTURE_2D, menuData->batterTexture);
-	glPushMatrix();
-	glTranslatef(-0.6f, 1.0f, 0.0f);
-	glScalef(0.4f/2, 0.4f, 0.4f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float menu_start_y = VIRTUAL_HEIGHT * 0.4f;
+	const float menu_spacing = VIRTUAL_HEIGHT * 0.1f;
+	const float title_fontsize = 120.0f;
+	const float menu_fontsize = 60.0f;
+	const float arrow_size = 80.0f;
 
-	printText("P N B", 5, -0.23f, -0.4f, 8);
-	printText("New cup", 7, -0.16f, -0.1f, 3);
-	printText("Load cup", 8, -0.18f, 0.0f, 3);
+	// --- Draw Images ---
+	// Batter
+	float imgHeight = VIRTUAL_HEIGHT * 0.8f;
+	float yPos = VIRTUAL_HEIGHT - imgHeight - (VIRTUAL_HEIGHT * 0.10f);
+	float batterImgWidth = imgHeight * 0.5f;
+	float batterX = VIRTUAL_WIDTH * 0.1f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/batter.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(batterX, yPos);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(batterX, yPos + imgHeight);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(batterX + batterImgWidth, yPos + imgHeight);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(batterX + batterImgWidth, yPos);
+	glEnd();
+
+	// Catcher
+	float catcherImgWidth = imgHeight * 0.8f;
+	float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/catcher.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(catcherX, yPos);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(catcherX, yPos + imgHeight);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(catcherX + catcherImgWidth, yPos + imgHeight);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(catcherX + catcherImgWidth, yPos);
+	glEnd();
+
+	// --- Draw Text ---
+	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("New cup", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Load cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+
+	// --- Draw Arrow ---
+	float arrow_x = center_x + 180.0f;
+	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(arrow_x, arrow_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(arrow_x, arrow_y + arrow_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(arrow_x + arrow_size, arrow_y);
+	glEnd();
 }
 
-static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const struct MenuData* menuData)
+static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*cupMenuState->pointer);
-	glScalef(0.05f, 0.05f, 0.05f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float menu_start_y = VIRTUAL_HEIGHT * 0.3f;
+	const float menu_spacing = VIRTUAL_HEIGHT * 0.08f;
+	const float title_fontsize = 80.0f;
+	const float menu_fontsize = 40.0f;
+	const float arrow_size = 60.0f;
 
-	printText("Cup menu", 8, -0.22f, -0.4f, 5);
-	printText("Next day", 8, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT, 2);
-	printText("Schedule", 8, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET, 2);
-	printText("Cup tree", 8, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 2*SELECTION_CUP_MENU_OFFSET, 2);
-	printText("Save", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 3*SELECTION_CUP_MENU_OFFSET, 2);
-	printText("Quit", 4, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 4*SELECTION_CUP_MENU_OFFSET, 2);
+	// --- Draw Text ---
+	draw_text_2d("Cup Menu", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Next day", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Schedule", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Cup tree", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Save", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Quit", center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+
 	if(stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
-		char* str = stateInfo->teamData[stateInfo->tournamentState->cupInfo.winnerIndex].name;
-		printText(str, strlen(str), -0.45f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
-		printText("has won the cup", 15, -0.45f + strlen(str)*0.04f, SELECTION_CUP_ALT_1_HEIGHT + 6*SELECTION_CUP_MENU_OFFSET, 3);
+		char buffer[100];
+		sprintf(buffer, "%s has won the cup", stateInfo->teamData[stateInfo->tournamentState->cupInfo.winnerIndex].name);
+		draw_text_2d(buffer, center_x, menu_start_y + 6 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	}
+
+	// --- Draw Arrow ---
+	float arrow_x = center_x + 200.0f;
+	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(arrow_x, arrow_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(arrow_x, arrow_y + arrow_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(arrow_x + arrow_size, arrow_y);
+	glEnd();
 }
 
-static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const struct MenuData* menuData)
+static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET*cupMenuState->pointer);
-	glScalef(0.05f, 0.05f, 0.05f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float menu_start_y = VIRTUAL_HEIGHT * 0.25f;
+	const float menu_spacing = VIRTUAL_HEIGHT * 0.07f;
+	const float title_fontsize = 60.0f;
+	const float menu_fontsize = 40.0f;
+	const float arrow_size = 60.0f;
 
 	if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
-		int i;
-		printText("Select team", 11, -0.35f, -0.4f, 5);
-		for(i = 0; i < stateInfo->numTeams; i++) {
-			char* str = stateInfo->teamData[i].name;
-			printText(str, strlen(str), SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + i*SELECTION_ALT_OFFSET, 2);
+		draw_text_2d("Select team", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+		for(int i = 0; i < stateInfo->numTeams; i++) {
+			draw_text_2d(stateInfo->teamData[i].name, center_x, menu_start_y + i * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		}
 	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
-		printText("How many wins to move forward", 29, -0.5f, -0.4f, 3);
-		printText("Normal", 6, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT, 2);
-		printText("One", 3, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
+		draw_text_2d("How many wins to move forward", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Normal", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("One", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_INNINGS) {
-		printText("How many innings in period", 26, -0.5f, -0.4f, 3);
-		printText("1", 1, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT, 2);
-		printText("2", 1, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_ALT_OFFSET, 2);
-		printText("4", 1, SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + 2*SELECTION_ALT_OFFSET, 2);
+		draw_text_2d("How many innings in period", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("1", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("2", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("4", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	}
+
+	// --- Draw Arrow ---
+	float arrow_x = center_x + 250.0f;
+	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(arrow_x, arrow_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(arrow_x, arrow_y + arrow_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(arrow_x + arrow_size, arrow_y);
+	glEnd();
 }
 
-static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const struct MenuData* menuData)
+static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	int i;
-	for(i = 0; i < SLOT_COUNT; i++) {
-		glBindTexture(GL_TEXTURE_2D, menuData->slotTexture);
-		glPushMatrix();
-		glTranslatef(cupMenuState->treeCoordinates[i].x, 1.0f, cupMenuState->treeCoordinates[i].y);
-		glScalef(0.2f, 0.15f, 0.10f);
-		glCallList(menuData->planeDisplayList);
-		glPopMatrix();
+	const float text_size = 22.0f;
+	const float slot_width = VIRTUAL_WIDTH * 0.22f;
+	const float slot_height = VIRTUAL_HEIGHT * 0.12f;
+
+	// --- Draw Slots ---
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga"));
+	for(int i = 0; i < SLOT_COUNT; i++) {
+		// Convert normalized coordinates to virtual screen coordinates
+		float x = (cupMenuState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH - (slot_width / 2.0f);
+		float y = (1.0f - cupMenuState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT - (slot_height / 2.0f);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1);
+		glVertex2f(x, y);
+		glTexCoord2f(0, 0);
+		glVertex2f(x, y + slot_height);
+		glTexCoord2f(1, 0);
+		glVertex2f(x + slot_width, y + slot_height);
+		glTexCoord2f(1, 1);
+		glVertex2f(x + slot_width, y);
+		glEnd();
 	}
-	for(i = 0; i < SLOT_COUNT; i++) {
+
+	// --- Draw Text ---
+	for(int i = 0; i < SLOT_COUNT; i++) {
 		int index = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[i];
 		if(index != -1) {
-			char* str = stateInfo->teamData[index].name;
-			char wins[2] = " ";
-			wins[0] = (char)('0' + stateInfo->tournamentState->cupInfo.slotWins[i]);
-			printText(str, strlen(str), cupMenuState->treeCoordinates[i].x - 0.15f, cupMenuState->treeCoordinates[i].y, 2);
-			printText(wins, 1, cupMenuState->treeCoordinates[i].x + 0.25f, cupMenuState->treeCoordinates[i].y, 3);
+			// Convert normalized coordinates to virtual screen coordinates for text
+			float text_center_x = (cupMenuState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
+			float text_center_y = (1.0f - cupMenuState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT;
+
+			// Adjust for better visual alignment
+			float team_name_x = text_center_x - slot_width * 0.15f;
+			float text_y = text_center_y - text_size / 2.0f; // Move text up from the bottom
+
+			char* team_name = stateInfo->teamData[index].name;
+			draw_text_2d(team_name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs);
+
+			char wins_str[2];
+			sprintf(wins_str, "%d", stateInfo->tournamentState->cupInfo.slotWins[i]);
+			float wins_x = text_center_x + slot_width * 0.35f;
+			draw_text_2d(wins_str, wins_x, text_y, text_size, TEXT_ALIGN_LEFT, rs);
 		}
 	}
 }
 
-static void drawScreen_ViewSchedule(const CupMenuState* cupMenuState, const StateInfo* stateInfo)
+static void drawScreen_ViewSchedule(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	int i;
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float list_start_y = VIRTUAL_HEIGHT * 0.3f;
+	const float list_spacing = VIRTUAL_HEIGHT * 0.1f;
+	const float title_fontsize = 60.0f;
+	const float text_fontsize = 40.0f;
+	const float team_name_offset = VIRTUAL_WIDTH * 0.2f;
+
+	draw_text_2d("Schedule", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+
 	int counter = 0;
-	int index1, index2;
-	printText("schedule", 8, -0.15f, -0.35f, 3);
-	for(i = 0; i < 4; i++) {
-		index1 = -1;
-		index2 = -1;
+	for(int i = 0; i < 4; i++) {
+		int index1 = -1;
+		int index2 = -1;
 		if(stateInfo->tournamentState->cupInfo.schedule[i][0] != -1)
 			index1 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][0]];
 		if(stateInfo->tournamentState->cupInfo.schedule[i][1] != -1)
 			index2 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][1]];
+
 		if(index1 != -1 && index2 != -1) {
-			char* str = stateInfo->teamData[index1].name;
-			char* str2 = stateInfo->teamData[index2].name;
-			printText(str, strlen(str), -0.4f, -0.15f + counter*0.1f, 2);
-			printText("-", 1, -0.02f, -0.15f + counter*0.1f, 2);
-			printText(str2, strlen(str2), 0.1f, -0.15f + counter*0.1f, 2);
+			float current_y = list_start_y + counter * list_spacing;
+			draw_text_2d(stateInfo->teamData[index1].name, center_x - team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
+			draw_text_2d("-", center_x, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
+			draw_text_2d(stateInfo->teamData[index2].name, center_x + team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
 			counter++;
 		}
 	}
 }
 
-static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const struct MenuData* menuData)
+static void getScheduleForCup(const CupInfo* cup_info, int schedule[4][2])
 {
-	glBindTexture(GL_TEXTURE_2D, menuData->arrowTexture);
-	glPushMatrix();
-	glTranslatef(SELECTION_CUP_ARROW_LEFT, 1.0f, SELECTION_CUP_ALT_1_HEIGHT + SELECTION_CUP_MENU_OFFSET*cupMenuState->pointer);
-	glScalef(0.05f, 0.05f, 0.05f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
-
-	if(cupMenuState->screen == CUP_MENU_SCREEN_LOAD_CUP) {
-		printText("Load cup", 8, -0.22f, -0.4f, 5);
-	} else {
-		printText("Save cup", 8, -0.22f, -0.4f, 5);
-	}
-	for(int i = 0; i < 5; i++) {
-		char* text;
-		char* empty = "Empty slot";
-		int index = stateInfo->tournamentState->saveData[i].userTeamIndexInTree;
-		if(index != -1) {
-			text = stateInfo->teamData[stateInfo->tournamentState->saveData[i].cupTeamIndexTree[index]].name;
+	int j;
+	int counter = 0;
+	for(j = 0; j < SLOT_COUNT/2; j++) {
+		if(cup_info->gameStructure == 0) {
+			if(cup_info->slotWins[j*2] < 3 && cup_info->slotWins[j*2+1] < 3) {
+				if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
+				        (j == 6 && cup_info->dayCount >= 2)) {
+					schedule[counter][0] = j*2;
+					schedule[counter][1] = j*2+1;
+					counter++;
+				}
+			}
 		} else {
-			text = empty;
+			if(cup_info->slotWins[j*2] < 1 && cup_info->slotWins[j*2+1] < 1) {
+				if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
+				        (j == 6 && cup_info->dayCount >= 2)) {
+					schedule[counter][0] = j*2;
+					schedule[counter][1] = j*2+1;
+					counter++;
+				}
+			}
 		}
-		printText(text, strlen(text), SELECTION_CUP_LEFT, SELECTION_CUP_ALT_1_HEIGHT + i*SELECTION_CUP_MENU_OFFSET, 2);
+	}
+	for(j = counter; j < 4; j++) {
+		schedule[j][0] = -1;
+		schedule[j][1] = -1;
 	}
 }
 
-static void drawScreen_EndCredits(const struct MenuData* menuData)
+static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	glBindTexture(GL_TEXTURE_2D, menuData->trophyTexture);
-	glPushMatrix();
-	glTranslatef(0.0f, 1.0f, -0.25f);
-	glScalef(0.3f, 0.3f, 0.3f);
-	glCallList(menuData->planeDisplayList);
-	glPopMatrix();
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float menu_start_y = VIRTUAL_HEIGHT * 0.25f;
+	const float menu_spacing = VIRTUAL_HEIGHT * 0.15f;
+	const float title_fontsize = 80.0f;
+	const float main_fontsize = 40.0f;
+	const float detail_fontsize = 30.0f;
+	const float arrow_size = 60.0f;
 
-	printText("there you go champ", 18, -0.4f, -0.45f, 4);
-	printText("so you beat the game huh", 24, -0.28f, 0.1f, 2);
-	printText("the mighty conqueror", 20, -0.23f, 0.15f, 2);
-	printText("anyway thank you for playing", 28, -0.3f, 0.2f, 2);
-	printText("made me happy", 13, -0.14f, 0.25f, 2);
-	printText("special thanks to", 17, -0.21f, 0.33f, 2);
-	printText("petri anttila juuso heinila matti pitkanen", 42, -0.5f, 0.38f, 2);
-	printText("ville viljanmaa petri mikola pekka heinila", 43, -0.5f, 0.43f, 2);
-	printText("for supporting the development in various ways", 46, -0.53f, 0.48f, 2);
+	// --- Draw Title ---
+	if(cupMenuState->screen == CUP_MENU_SCREEN_LOAD_CUP) {
+		draw_text_2d("Load Cup", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	} else {
+		draw_text_2d("Save Cup", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	}
+
+	// --- Draw Save Slots ---
+	for(int i = 0; i < 5; i++) {
+		float current_y = menu_start_y + i * menu_spacing;
+		const CupInfo* saved_cup = &stateInfo->tournamentState->saveData[i];
+		int user_team_tree_idx = saved_cup->userTeamIndexInTree;
+
+		if(user_team_tree_idx != -1) {
+			// Draw Team Name
+			char* team_name = stateInfo->teamData[saved_cup->cupTeamIndexTree[user_team_tree_idx]].name;
+			draw_text_2d(team_name, center_x, current_y, main_fontsize, TEXT_ALIGN_CENTER, rs);
+
+			// --- Draw Details ---
+			char details[100];
+			char opponent_name[50] = "N/A";
+
+			// Manually calculate winner for this save slot, as it's not stored directly
+			int winnerIndex = -1;
+			if (saved_cup->gameStructure == 1) { // Best of 1
+				if (saved_cup->slotWins[12] >= 1) winnerIndex = saved_cup->cupTeamIndexTree[12];
+				else if (saved_cup->slotWins[13] >= 1) winnerIndex = saved_cup->cupTeamIndexTree[13];
+			} else { // Best of 5 (3 wins)
+				if (saved_cup->slotWins[12] >= 3) winnerIndex = saved_cup->cupTeamIndexTree[12];
+				else if (saved_cup->slotWins[13] >= 3) winnerIndex = saved_cup->cupTeamIndexTree[13];
+			}
+
+			if (winnerIndex != -1) {
+				strcpy(opponent_name, "Cup finished");
+			} else {
+				int schedule[4][2];
+				getScheduleForCup(saved_cup, schedule);
+				int opponent_found = 0;
+				for (int j = 0; j < 4 && !opponent_found; j++) {
+					if (schedule[j][0] == user_team_tree_idx) {
+						int opponent_tree_idx = schedule[j][1];
+						if (opponent_tree_idx != -1) {
+							int opponent_team_idx = saved_cup->cupTeamIndexTree[opponent_tree_idx];
+							if (opponent_team_idx != -1) {
+								strcpy(opponent_name, stateInfo->teamData[opponent_team_idx].name);
+								opponent_found = 1;
+							}
+						}
+					} else if (schedule[j][1] == user_team_tree_idx) {
+						int opponent_tree_idx = schedule[j][0];
+						if (opponent_tree_idx != -1) {
+							int opponent_team_idx = saved_cup->cupTeamIndexTree[opponent_tree_idx];
+							if (opponent_team_idx != -1) {
+								strcpy(opponent_name, stateInfo->teamData[opponent_team_idx].name);
+								opponent_found = 1;
+							}
+						}
+					}
+				}
+			}
+
+			sprintf(details, "Day: %d | Next Opponent: %s", saved_cup->dayCount + 1, opponent_name);
+			draw_text_2d(details, center_x, current_y + main_fontsize * 1.2f, detail_fontsize, TEXT_ALIGN_CENTER, rs);
+
+		} else {
+			draw_text_2d("Empty slot", center_x, current_y, main_fontsize, TEXT_ALIGN_CENTER, rs);
+		}
+	}
+
+	// --- Draw Arrow ---
+	float arrow_x = center_x + 400.0f;
+	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - main_fontsize) / 2.0f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(arrow_x, arrow_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(arrow_x, arrow_y + arrow_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(arrow_x + arrow_size, arrow_y);
+	glEnd();
+}
+
+static void drawScreen_EndCredits(const RenderState* rs, ResourceManager* rm)
+{
+	const float center_x = VIRTUAL_WIDTH / 2.0f;
+	const float title_y = VIRTUAL_HEIGHT * 0.1f;
+	const float text_start_y = VIRTUAL_HEIGHT * 0.4f;
+	const float text_spacing = VIRTUAL_HEIGHT * 0.05f;
+	const float title_fontsize = 60.0f;
+	const float text_fontsize = 30.0f;
+
+	// --- Draw Trophy ---
+	const float trophy_size = VIRTUAL_WIDTH * 0.3f;
+	const float trophy_x = center_x - trophy_size / 2.0f;
+	const float trophy_y = VIRTUAL_HEIGHT * 0.15f;
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/menu_trophy.tga"));
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1);
+	glVertex2f(trophy_x, trophy_y);
+	glTexCoord2f(0, 0);
+	glVertex2f(trophy_x, trophy_y + trophy_size);
+	glTexCoord2f(1, 0);
+	glVertex2f(trophy_x + trophy_size, trophy_y + trophy_size);
+	glTexCoord2f(1, 1);
+	glVertex2f(trophy_x + trophy_size, trophy_y);
+	glEnd();
+
+	// --- Draw Text ---
+	draw_text_2d("There you go champ", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("So you beat the game huh", center_x, text_start_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("The mighty conqueror", center_x, text_start_y + text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Anyway thank you for playing", center_x, text_start_y + 2 * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Made me happy", center_x, text_start_y + 3 * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Special thanks to", center_x, text_start_y + 4.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Petri Anttila, Juuso Heinila, Matti Pitkanen", center_x, text_start_y + 5.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Ville Viljanmaa, Petri Mikola, Pekka Heinila", center_x, text_start_y + 6.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("For supporting the development in various ways", center_x, text_start_y + 7.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
 }
 
 
@@ -477,37 +687,43 @@ static void loadCup(StateInfo* stateInfo, int slot)
 
 void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 {
-	cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
-	cupMenuState->pointer = 0;
-	cupMenuState->rem = 2;
+	if (stateInfo->tournamentState->cupInfo.userTeamIndexInTree == -1) {
+		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
+		cupMenuState->pointer = 0;
+		cupMenuState->rem = 2;
+	} else {
+		cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
+		cupMenuState->pointer = 0;
+		cupMenuState->rem = 5;
+	}
 	cupMenuState->new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
 	cupMenuState->team_selection = 0;
 
 	// set locations for cup tree view.
 	cupMenuState->treeCoordinates[0].x = -0.65f;
-	cupMenuState->treeCoordinates[0].y = -0.45f;
+	cupMenuState->treeCoordinates[0].y = -0.6f;
 	cupMenuState->treeCoordinates[1].x = -0.65f;
-	cupMenuState->treeCoordinates[1].y = -0.15f;
+	cupMenuState->treeCoordinates[1].y = -0.2f;
 	cupMenuState->treeCoordinates[2].x = -0.65f;
-	cupMenuState->treeCoordinates[2].y =  0.15f;
+	cupMenuState->treeCoordinates[2].y =  0.2f;
 	cupMenuState->treeCoordinates[3].x = -0.65f;
-	cupMenuState->treeCoordinates[3].y =  0.45f;
+	cupMenuState->treeCoordinates[3].y =  0.6f;
 	cupMenuState->treeCoordinates[4].x =  0.65f;
-	cupMenuState->treeCoordinates[4].y = -0.45f;
+	cupMenuState->treeCoordinates[4].y = -0.6f;
 	cupMenuState->treeCoordinates[5].x =  0.65f;
-	cupMenuState->treeCoordinates[5].y = -0.15f;
+	cupMenuState->treeCoordinates[5].y = -0.2f;
 	cupMenuState->treeCoordinates[6].x =  0.65f;
-	cupMenuState->treeCoordinates[6].y =  0.15f;
+	cupMenuState->treeCoordinates[6].y =  0.2f;
 	cupMenuState->treeCoordinates[7].x =  0.65f;
-	cupMenuState->treeCoordinates[7].y =  0.45f;
+	cupMenuState->treeCoordinates[7].y =  0.6f;
 	cupMenuState->treeCoordinates[8].x = -0.45f;
-	cupMenuState->treeCoordinates[8].y = -0.3f;
+	cupMenuState->treeCoordinates[8].y = -0.4f;
 	cupMenuState->treeCoordinates[9].x = -0.45f;
-	cupMenuState->treeCoordinates[9].y =  0.3f;
+	cupMenuState->treeCoordinates[9].y =  0.4f;
 	cupMenuState->treeCoordinates[10].x =  0.45f;
-	cupMenuState->treeCoordinates[10].y = -0.3f;
+	cupMenuState->treeCoordinates[10].y = -0.4f;
 	cupMenuState->treeCoordinates[11].x =  0.45f;
-	cupMenuState->treeCoordinates[11].y =  0.3f;
+	cupMenuState->treeCoordinates[11].y =  0.4f;
 	cupMenuState->treeCoordinates[12].x = -0.25f;
 	cupMenuState->treeCoordinates[12].y = 0.0f;
 	cupMenuState->treeCoordinates[13].x =  0.25f;
@@ -551,32 +767,33 @@ MenuStage updateCupMenu(
 }
 
 
-void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const struct MenuData* menuData)
+void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
-	drawFontBackground();
+	begin_2d_render(rs);
+	drawMenuLayout2D(rm, rs);
 
 	switch (cupMenuState->screen) {
 	case CUP_MENU_SCREEN_INITIAL:
-		drawScreen_Initial(cupMenuState, menuData);
+		drawScreen_Initial(cupMenuState, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_ONGOING:
-		drawScreen_Ongoing(cupMenuState, stateInfo, menuData);
+		drawScreen_Ongoing(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_NEW_CUP:
-		drawScreen_NewCup(cupMenuState, stateInfo, menuData);
+		drawScreen_NewCup(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_VIEW_TREE:
-		drawScreen_ViewTree(cupMenuState, stateInfo, menuData);
+		drawScreen_ViewTree(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_VIEW_SCHEDULE:
-		drawScreen_ViewSchedule(cupMenuState, stateInfo);
+		drawScreen_ViewSchedule(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_LOAD_CUP:
 	case CUP_MENU_SCREEN_SAVE_CUP:
-		drawScreen_LoadOrSaveCup(cupMenuState, stateInfo, menuData);
+		drawScreen_LoadOrSaveCup(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_END_CREDITS:
-		drawScreen_EndCredits(menuData);
+		drawScreen_EndCredits(rs, rm);
 		break;
 	}
 }

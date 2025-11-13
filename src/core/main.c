@@ -68,6 +68,7 @@ int main ( int argc, char *argv[] )
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
 	stateInfo.stopSoundEffect = 0;
+	stateInfo.tournamentState->cupInfo.userTeamIndexInTree = -1;
 
 	resourceManager = resource_manager_init();
 	if (resourceManager == NULL) {

@@ -104,3 +104,13 @@ void updateInput(StateInfo* stateInfo, GLFWwindow* window)
 
 	checkKeyImitations(stateInfo);
 }
+
+void clearReleasedKeys(KeyStates* keyStates)
+{
+	int i, j;
+	for (j = 0; j < 3; j++) {
+		for (i = 0; i < KEY_COUNT; i++) {
+			keyStates->released[j][i] = 0;
+		}
+	}
+}

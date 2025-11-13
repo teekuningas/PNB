@@ -106,8 +106,8 @@ void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo)
 	for(j = 0; j < SLOT_COUNT/2; j++) {
 		if(tournamentState->cupInfo.gameStructure == 0) {
 			if(tournamentState->cupInfo.slotWins[j*2] < 3 && tournamentState->cupInfo.slotWins[j*2+1] < 3) {
-				if(j < 4 || (j < 6 && tournamentState->cupInfo.dayCount >= 5) ||
-				        (j == 6 && tournamentState->cupInfo.dayCount >= 10)) {
+				if(j < 4 || (j < 6 && tournamentState->cupInfo.dayCount >= 1) ||
+				        (j == 6 && tournamentState->cupInfo.dayCount >= 2)) {
 					tournamentState->cupInfo.schedule[counter][0] = j*2;
 					tournamentState->cupInfo.schedule[counter][1] = j*2+1;
 					counter++;

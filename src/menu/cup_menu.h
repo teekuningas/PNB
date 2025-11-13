@@ -3,7 +3,7 @@
 
 #include "menu_types.h"
 #include "input.h"   // For KeyStates
-#include "render.h"  // For GLuint
+#include "resource_manager.h"
 
 typedef struct {
 	// Data needed to start a game
@@ -27,7 +27,8 @@ MenuStage updateCupMenu(
 void drawCupMenu(
     const CupMenuState* cupMenuState,
     const StateInfo* stateInfo,
-    const struct MenuData* menuData
+    const RenderState* rs,
+    ResourceManager* rm
 );
 
 #endif /* CUP_MENU_H */

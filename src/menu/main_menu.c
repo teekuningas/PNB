@@ -16,6 +16,7 @@
 #include "menu_helpers.h"
 #include "loading_screen_menu.h"
 #include "cup_menu.h"
+#include "input.h"
 
 #define CAM_HEIGHT 2.3f
 
@@ -216,30 +217,24 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 
 				int i, j;
 				int scheduleSlot = -1;
-				int playerWon = 0;
 				for (i = 0; i < 4; i++) {
 					for (j = 0; j < 2; j++) {
 						if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->gameConclusion->userTeamIndexInTree) {
 							scheduleSlot = i;
-							if (j == stateInfo->gameConclusion->winner) playerWon = 1;
 						}
 					}
-				}
-				if (playerWon == 1) {
-					int advance = 0;
-					if (stateInfo->gameConclusion->gameStructure == 0) {
-						if (stateInfo->gameConclusion->slotWins[stateInfo->gameConclusion->userTeamIndexInTree] == 2) {
-							if (stateInfo->gameConclusion->dayCount >= 11) advance = 1;
-						}
-					} else {
-						if (stateInfo->gameConclusion->slotWins[stateInfo->gameConclusion->userTeamIndexInTree] == 0) {
-							if (stateInfo->gameConclusion->dayCount >= 3) advance = 1;
-						}
-					}
-					if (advance == 1) menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 				}
 				updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->gameConclusion->winner);
 				updateSchedule(stateInfo->tournamentState, stateInfo);
+
+				// Check if the user won the entire cup
+				if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+					int userTeamId = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].value;
+					if (stateInfo->tournamentState->cupInfo.winnerIndex == userTeamId) {
+						menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
+					}
+				}
+
 				initCupMenu(&menuData->cup_menu, stateInfo);
 			} else {
 				resetMenuForNewGame(menuData, stateInfo);
@@ -301,6 +296,9 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			menuData->halfInningsInPeriod = cup_output.innings;
 			stateInfo->globalGameInfo->isCupGame = 1;
 			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+		} else if (nextStage == MENU_STAGE_FRONT) {
+			stateInfo->globalGameInfo->isCupGame = 0;
+			stateInfo->tournamentState->cupInfo.userTeamIndexInTree = -1;
 		}
 		menuData->stage = nextStage;
 		break;
@@ -321,6 +319,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		// Quit handled in FRONT case, no update here
 		break;
 	}
+	clearReleasedKeys(keyStates);
 }
 
 // here we draw everything.
@@ -354,10 +353,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawHomerunContestMenu(&menuData->homerun2, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData);
 		break;
 	case MENU_STAGE_CUP:
-		begin_3d_render(rs);
-		glDisable(GL_LIGHTING);
-		gluLookAt(menuData->cam.x, menuData->cam.y, menuData->cam.z, menuData->look.x, menuData->look.y, menuData->look.z, menuData->up.x, menuData->up.y, menuData->up.z);
-		drawCupMenu(&menuData->cup_menu, stateInfo, menuData);
+		drawCupMenu(&menuData->cup_menu, stateInfo, rs, rm);
 		break;
 
 	case MENU_STAGE_GO_TO_GAME:
