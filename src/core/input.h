@@ -5,5 +5,6 @@
 
 int initInput(StateInfo* stateInfo);
 void updateInput(StateInfo* stateInfo, GLFWwindow* window);
+void clearReleasedKeys(KeyStates* keyStates);
 
 #endif /* INPUT_H */
