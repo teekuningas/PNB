@@ -174,6 +174,10 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			}
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				if (menuInfo->mode == MENU_ENTRY_INTER_PERIOD || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+					memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, menuData->team1_batting_order, sizeof(menuData->team1_batting_order));
+					memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, menuData->team2_batting_order, sizeof(menuData->team2_batting_order));
+					stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
+					stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
 					returnToGame(stateInfo);
 				} else {
 					GameSetup gameSetup;
