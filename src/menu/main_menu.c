@@ -227,6 +227,8 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->gameConclusion->winner);
 				updateSchedule(stateInfo->tournamentState, stateInfo);
 
+				initCupMenu(&menuData->cup_menu, stateInfo);
+
 				// Check if the user won the entire cup
 				if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
 					int userTeamId = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].value;
@@ -234,8 +236,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 						menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 					}
 				}
-
-				initCupMenu(&menuData->cup_menu, stateInfo);
 			} else {
 				resetMenuForNewGame(menuData, stateInfo);
 			}
