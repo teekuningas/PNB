@@ -36,7 +36,7 @@ MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo
 	return MENU_STAGE_FRONT;
 }
 // New orthographic-only front menu rendering
-void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm, const struct MenuData *menuData)
+void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm)
 {
 	// --- Layout Constants ---
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -57,40 +57,12 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 	// Batter on left
 	float batterImgWidth = imgHeight * 0.5f;
 	float batterX = VIRTUAL_WIDTH * 0.1f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/batter.tga"));
-	glBegin(GL_QUADS);
-	// TL
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(batterX, yPos);
-	// BL
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(batterX, yPos + imgHeight);
-	// BR
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(batterX + batterImgWidth, yPos + imgHeight);
-	// TR
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(batterX + batterImgWidth, yPos);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/batter.tga"), batterX, yPos, batterImgWidth, imgHeight);
 
 	// Catcher on right
 	float catcherImgWidth = imgHeight * 0.8f;
 	float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/catcher.tga"));
-	glBegin(GL_QUADS);
-	// TL
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(catcherX, yPos);
-	// BL
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(catcherX, yPos + imgHeight);
-	// BR
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(catcherX + catcherImgWidth, yPos + imgHeight);
-	// TR
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(catcherX + catcherImgWidth, yPos);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/catcher.tga"), catcherX, yPos, catcherImgWidth, imgHeight);
 
 	// 3. Draw Text and Arrow
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
@@ -104,22 +76,5 @@ void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceM
 	float arrow_size = 80.0f;
 	float arrow_x = center_x + 120.0f;
 	float arrow_y = menu_start_y + (state->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
-
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	// The original arrow was drawn with CW winding (BL, BR, TR, TL), so it was correct.
-	// Re-defining it here in a more standard CW order (TL, BL, BR, TR) for consistency.
-	// TL
-	glTexCoord2f(0, 1);
-	glVertex2f(arrow_x, arrow_y);
-	// BL
-	glTexCoord2f(0, 0);
-	glVertex2f(arrow_x, arrow_y + arrow_size);
-	// BR
-	glTexCoord2f(1, 0);
-	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-	// TR
-	glTexCoord2f(1, 1);
-	glVertex2f(arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }

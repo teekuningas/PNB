@@ -118,3 +118,20 @@ int fixture_parse_args(int argc, char* argv[], FixtureRequest* request)
 
 	return request->enabled;
 }
+
+void fixture_create_cup_final_super_inning(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control)
+{
+	gameSetup->gameMode = GAME_MODE_SUPER_INNING;
+	gameSetup->launchType = GAME_LAUNCH_NEW;
+	gameSetup->team1 = team1;
+	gameSetup->team2 = team2;
+	gameSetup->team1_control = team1_control;
+	gameSetup->team2_control = team2_control;
+	gameSetup->playsFirst = 0;
+	gameSetup->halfInningsInPeriod = 4; // Standard innings for periods 0 and 1
+
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		gameSetup->team1_batting_order[i] = i;
+		gameSetup->team2_batting_order[i] = i;
+	}
+}

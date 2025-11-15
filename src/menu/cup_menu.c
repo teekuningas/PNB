@@ -234,32 +234,12 @@ static void drawScreen_Initial(const CupMenuState* cupMenuState, const RenderSta
 	float yPos = VIRTUAL_HEIGHT - imgHeight - (VIRTUAL_HEIGHT * 0.10f);
 	float batterImgWidth = imgHeight * 0.5f;
 	float batterX = VIRTUAL_WIDTH * 0.1f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/batter.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(batterX, yPos);
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(batterX, yPos + imgHeight);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(batterX + batterImgWidth, yPos + imgHeight);
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(batterX + batterImgWidth, yPos);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/batter.tga"), batterX, yPos, batterImgWidth, imgHeight);
 
 	// Catcher
 	float catcherImgWidth = imgHeight * 0.8f;
 	float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/catcher.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(catcherX, yPos);
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(catcherX, yPos + imgHeight);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(catcherX + catcherImgWidth, yPos + imgHeight);
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(catcherX + catcherImgWidth, yPos);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/catcher.tga"), catcherX, yPos, catcherImgWidth, imgHeight);
 
 	// --- Draw Text ---
 	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -269,17 +249,7 @@ static void drawScreen_Initial(const CupMenuState* cupMenuState, const RenderSta
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 180.0f;
 	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(arrow_x, arrow_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(arrow_x, arrow_y + arrow_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
 static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
@@ -309,17 +279,7 @@ static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 200.0f;
 	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(arrow_x, arrow_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(arrow_x, arrow_y + arrow_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
 static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
@@ -351,17 +311,7 @@ static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo*
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 250.0f;
 	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(arrow_x, arrow_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(arrow_x, arrow_y + arrow_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
 static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
@@ -369,24 +319,14 @@ static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInf
 	const float text_size = 22.0f;
 	const float slot_width = VIRTUAL_WIDTH * 0.22f;
 	const float slot_height = VIRTUAL_HEIGHT * 0.12f;
+	const GLuint slot_texture = resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga");
 
 	// --- Draw Slots ---
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga"));
 	for(int i = 0; i < SLOT_COUNT; i++) {
 		// Convert normalized coordinates to virtual screen coordinates
 		float x = (cupMenuState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH - (slot_width / 2.0f);
 		float y = (1.0f - cupMenuState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT - (slot_height / 2.0f);
-
-		glBegin(GL_QUADS);
-		glTexCoord2f(0, 1);
-		glVertex2f(x, y);
-		glTexCoord2f(0, 0);
-		glVertex2f(x, y + slot_height);
-		glTexCoord2f(1, 0);
-		glVertex2f(x + slot_width, y + slot_height);
-		glTexCoord2f(1, 1);
-		glVertex2f(x + slot_width, y);
-		glEnd();
+		draw_texture_2d(slot_texture, x, y, slot_width, slot_height);
 	}
 
 	// --- Draw Text ---
@@ -557,17 +497,7 @@ static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const Sta
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 400.0f;
 	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - main_fontsize) / 2.0f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(arrow_x, arrow_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(arrow_x, arrow_y + arrow_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
 static void drawScreen_EndCredits(const RenderState* rs, ResourceManager* rm)
@@ -583,17 +513,7 @@ static void drawScreen_EndCredits(const RenderState* rs, ResourceManager* rm)
 	const float trophy_size = VIRTUAL_WIDTH * 0.3f;
 	const float trophy_x = center_x - trophy_size / 2.0f;
 	const float trophy_y = VIRTUAL_HEIGHT * 0.15f;
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/menu_trophy.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(trophy_x, trophy_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(trophy_x, trophy_y + trophy_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(trophy_x + trophy_size, trophy_y + trophy_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(trophy_x + trophy_size, trophy_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/menu_trophy.tga"), trophy_x, trophy_y, trophy_size, trophy_size);
 
 	// --- Draw Text ---
 	draw_text_2d("There you go champ", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);

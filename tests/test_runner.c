@@ -42,6 +42,16 @@ int test_fixture_homerun_contest_setup() {
 	return TEST_PASSED;
 }
 
+int test_fixture_cup_final_super_inning_setup() {
+	GameSetup setup;
+	fixture_create_cup_final_super_inning(&setup, 0, 1, 0, 1);
+
+	ASSERT_EQ(GAME_MODE_SUPER_INNING, setup.gameMode, "Should be super inning mode");
+	ASSERT_EQ(4, setup.halfInningsInPeriod, "Should have 4 half-innings per period");
+
+	return TEST_PASSED;
+}
+
 int test_fixture_arg_parsing() {
 	char* argv[] = {"program", "--fixture", "super-inning", "--team1", "2", "--team2", "3"};
 	int argc = 7;
@@ -52,7 +62,7 @@ int test_fixture_arg_parsing() {
 	ASSERT_EQ(1, result, "Should detect fixture flag");
 	ASSERT_EQ(1, request.enabled, "Fixture should be enabled");
 	ASSERT_STR_EQ("super-inning", request.name, "Fixture name should match");
-	ASSERT_EQ(2, request.team1, "Team 1 should be 2");
+	ASSERT_EQ(2, request.team1, "Team 1 should be 2");	
 	ASSERT_EQ(3, request.team2, "Team 2 should be 3");
 	
 	return TEST_PASSED;
@@ -73,6 +83,7 @@ int main(int argc, char* argv[]) {
 	// Fixture tests
 	RUN_TEST(test_fixture_super_inning_setup);
 	RUN_TEST(test_fixture_homerun_contest_setup);
+	RUN_TEST(test_fixture_cup_final_super_inning_setup);
 	RUN_TEST(test_fixture_arg_parsing);
 	
 	// Menu helper tests

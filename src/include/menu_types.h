@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "render.h"
+#include "game_setup.h"
 
 #define ARROW_SCALE 0.05f
 #define ARROW_SMALLER_SCALE 0.03f
@@ -171,30 +172,11 @@ typedef struct {
 } CupMenuState;
 
 typedef struct MenuData {
-	MenuStage stage;
-	FrontMenuState front_menu;
-	TeamSelectionState team_selection;
-	BattingOrderState batting_order;
-	HutunkeittoState hutunkeitto;
-	HelpMenuState help_menu;
-	CupMenuState cup_menu;
-	int pointer;
-	int rem;
-	int team1;
-	int team2;
-	int team1_control;
-	int team2_control;
-	int halfInningsInPeriod;
-	int playsFirst;
-	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int homerun_choices1[2][MAX_HOMERUN_PAIRS];
-	int homerun_choices2[2][MAX_HOMERUN_PAIRS];
-	// home-run contest state for each team
-	HomerunContestState homerun1;
-	HomerunContestState homerun2;
+	// Camera and legacy rendering data
+	Vector3D cam;
+	Vector3D up;
+	Vector3D look;
 	GLuint arrowTexture;
-	// Background texture for the new front menu (orthographic)
 	GLuint catcherTexture;
 	GLuint batterTexture;
 	GLuint slotTexture;
@@ -208,13 +190,22 @@ typedef struct MenuData {
 	GLuint team7Texture;
 	GLuint team8Texture;
 	GLuint planeDisplayList;
-	GLuint handDisplayList;
 	GLuint batDisplayList;
-	Vector3D cam, look, up;
-	float lightPos[4];
-	MeshObject* planeMesh;
-	MeshObject* handMesh;
-	MeshObject* batMesh;
+	GLuint handDisplayList;
+
+	// Game Setup Data
+	GameSetup pendingGameSetup;
+
+	// Menu State
+	MenuStage stage;
+	FrontMenuState front_menu;
+	TeamSelectionState team_selection;
+	BattingOrderState batting_order;
+	HutunkeittoState hutunkeitto;
+	HomerunContestState homerun1;
+	HomerunContestState homerun2;
+	CupMenuState cup_menu;
+	HelpMenuState help_menu;
 } MenuData;
 
 #endif /* MENU_TYPES_H */

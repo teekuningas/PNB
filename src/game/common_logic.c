@@ -955,7 +955,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 	}
 }
 
-void initializeGameFromMenu(StateInfo* stateInfo, GameSetup* gameSetup)
+void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 {
 	stateInfo->stopSoundEffect = SOUND_MENU;
 	stateInfo->screen = GAME_SCREEN;

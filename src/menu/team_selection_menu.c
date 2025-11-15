@@ -20,7 +20,7 @@ void initTeamSelectionState(TeamSelectionState *state, int numTeams)
 	state->numTeams = numTeams;
 }
 
-MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const KeyStates *keyStates, TeamSelectionMenuOutput *output)
+MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const KeyStates *keyStates, GameSetup *gameSetup)
 {
 	switch(state->state) {
 	case TEAM_SELECTION_STAGE_TEAM_1:
@@ -135,11 +135,11 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const KeyStates *ke
 			else if(state->pointer == 1) state->innings = 4;
 			else if(state->pointer == 2) state->innings = 8;
 
-			output->team1 = state->team1;
-			output->team2 = state->team2;
-			output->team1_controller = state->team1_controller;
-			output->team2_controller = state->team2_controller;
-			output->innings = state->innings;
+			gameSetup->team1 = state->team1;
+			gameSetup->team2 = state->team2;
+			gameSetup->team1_control = state->team1_controller;
+			gameSetup->team2_control = state->team2_controller;
+			gameSetup->halfInningsInPeriod = state->innings;
 
 			return MENU_STAGE_BATTING_ORDER_1;
 		}

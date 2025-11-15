@@ -45,7 +45,7 @@ void initHutunkeittoState(HutunkeittoState *state)
 	state->rem = 2;
 }
 
-MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control, HutunkeittoMenuOutput *output)
+MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control, GameSetup *gameSetup)
 {
 	if(state->state == 0) {
 		state->batTimerLimit = 30 + rand()%15;
@@ -162,7 +162,7 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 				} else {
 					state->playsFirst = 1;
 				}
-				output->playsFirst = state->playsFirst;
+				gameSetup->playsFirst = state->playsFirst;
 				return MENU_STAGE_GO_TO_GAME;
 			}
 			if(keyStates->released[control][KEY_RIGHT]) {
@@ -177,7 +177,7 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 			// ai always selects to field first
 			if(state->turnCount%2 == 0) state->playsFirst = 1;
 			else state->playsFirst = 0;
-			output->playsFirst = state->playsFirst;
+			gameSetup->playsFirst = state->playsFirst;
 			return MENU_STAGE_GO_TO_GAME;
 		}
 	}
@@ -267,16 +267,6 @@ void drawHutunkeittoMenu(const HutunkeittoState *state, const RenderState* rs, R
 		// arrow
 		float arrow_x = (state->pointer == 0) ? team1_x + 100.0f : team2_x + 100.0f;
 		float arrow_y = team_y - (arrow_size - team_size) / 2.0f;
-		glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-		glBegin(GL_QUADS);
-		glTexCoord2f(0, 1);
-		glVertex2f(arrow_x, arrow_y);
-		glTexCoord2f(0, 0);
-		glVertex2f(arrow_x, arrow_y + arrow_size);
-		glTexCoord2f(1, 0);
-		glVertex2f(arrow_x + arrow_size, arrow_y + arrow_size);
-		glTexCoord2f(1, 1);
-		glVertex2f(arrow_x + arrow_size, arrow_y);
-		glEnd();
+		draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 	}
 }

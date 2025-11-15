@@ -7,13 +7,14 @@
 
 
 
-MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyStates, MenuStage currentStage, MenuMode menuMode, BattingOrderMenuOutput *output)
+MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyStates, MenuStage currentStage, MenuMode menuMode, GameSetup *gameSetup)
 {
 	if (state->player_control == 2) { // AI control
-		memcpy(output->batting_order, state->batting_order, sizeof(state->batting_order));
 		if (currentStage == MENU_STAGE_BATTING_ORDER_1) {
+			memcpy(gameSetup->team1_batting_order, state->batting_order, sizeof(state->batting_order));
 			return MENU_STAGE_BATTING_ORDER_2;
 		} else { // Batting order 2
+			memcpy(gameSetup->team2_batting_order, state->batting_order, sizeof(state->batting_order));
 			if (menuMode == MENU_ENTRY_NORMAL || menuMode == MENU_ENTRY_SUPER_INNING) {
 				return MENU_STAGE_HUTUNKEITTO;
 			} else { // MENU_ENTRY_INTER_PERIOD
@@ -24,10 +25,11 @@ MenuStage updateBattingOrderMenu(BattingOrderState *state, const KeyStates *keyS
 
 	if (keyStates->released[state->player_control][KEY_2]) {
 		if (state->pointer == 0) { // "Continue"
-			memcpy(output->batting_order, state->batting_order, sizeof(state->batting_order));
 			if (currentStage == MENU_STAGE_BATTING_ORDER_1) {
+				memcpy(gameSetup->team1_batting_order, state->batting_order, sizeof(state->batting_order));
 				return MENU_STAGE_BATTING_ORDER_2;
 			} else { // Batting order 2
+				memcpy(gameSetup->team2_batting_order, state->batting_order, sizeof(state->batting_order));
 				if (menuMode == MENU_ENTRY_NORMAL || menuMode == MENU_ENTRY_SUPER_INNING) {
 					return MENU_STAGE_HUTUNKEITTO;
 				} else { // MENU_ENTRY_INTER_PERIOD
@@ -126,30 +128,12 @@ void drawBattingOrderMenu(const BattingOrderState *state, MenuStage currentStage
 		arrow_y = list_start_y + (state->pointer - 1) * option_spacing - (arrow_size - text_size) / 2.0f;
 		current_arrow_x = col_power_x + (VIRTUAL_WIDTH * 0.03f);
 	}
-	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/arrow.tga"));
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 1);
-	glVertex2f(current_arrow_x, arrow_y);
-	glTexCoord2f(0, 0);
-	glVertex2f(current_arrow_x, arrow_y + arrow_size);
-	glTexCoord2f(1, 0);
-	glVertex2f(current_arrow_x + arrow_size, arrow_y + arrow_size);
-	glTexCoord2f(1, 1);
-	glVertex2f(current_arrow_x + arrow_size, arrow_y);
-	glEnd();
+	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), current_arrow_x, arrow_y, arrow_size, arrow_size);
+
 	// --- Marked Player Arrow ---
 	if (state->mark != 0) {
 		float marked_arrow_y = list_start_y + (state->mark - 1) * option_spacing - (arrow_size - text_size) / 2.0f;
 		float marked_arrow_x = col_power_x + (VIRTUAL_WIDTH * 0.03f);
-		glBegin(GL_QUADS);
-		glTexCoord2f(0, 1);
-		glVertex2f(marked_arrow_x, marked_arrow_y);
-		glTexCoord2f(0, 0);
-		glVertex2f(marked_arrow_x, marked_arrow_y + arrow_size);
-		glTexCoord2f(1, 0);
-		glVertex2f(marked_arrow_x + arrow_size, marked_arrow_y + arrow_size);
-		glTexCoord2f(1, 1);
-		glVertex2f(marked_arrow_x + arrow_size, marked_arrow_y);
-		glEnd();
+		draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), marked_arrow_x, marked_arrow_y, arrow_size, arrow_size);
 	}
 }
