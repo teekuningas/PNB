@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "game_setup.h"
 
-void initializeGameFromMenu(StateInfo* stateInfo, GameSetup* gameSetup);
+void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
 int isVectorSmallEnoughSphere(Vector3D *vector, float limit);
 int isVectorSmallEnoughCircleXZV(Vector3D *vector, float limit);
 int isVectorSmallEnoughCircleXZ(float dx, float dz, float limit);

@@ -359,11 +359,6 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		stateInfo->globalGameInfo->teams[0].runs = 0;
 		stateInfo->globalGameInfo->teams[1].runs = 0;
 
-		// Set menuData for potential menu transitions
-		menuData->team1 = request->team1;
-		menuData->team2 = request->team2;
-		menuData->team1_control = request->team1_control;
-		menuData->team2_control = request->team2_control;
 	} else if (strcmp(request->name, "homerun-contest") == 0) {
 		// Create homerun contest game setup
 		fixture_create_homerun_contest(&gameSetup,
@@ -393,11 +388,43 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		stateInfo->globalGameInfo->teams[0].runs = 0;
 		stateInfo->globalGameInfo->teams[1].runs = 0;
 
-		// Set menuData for potential menu transitions
-		menuData->team1 = request->team1;
-		menuData->team2 = request->team2;
-		menuData->team1_control = request->team1_control;
-		menuData->team2_control = request->team2_control;
+	} else if (strcmp(request->name, "cup-final-super-inning") == 0) {
+		// This fixture starts a playable super-inning in the final match of a cup.
+		fixture_create_cup_final_super_inning(&gameSetup,
+		                                      request->team1,
+		                                      request->team2,
+		                                      request->team1_control,
+		                                      request->team2_control);
+		initializeGameFromMenu(stateInfo, &gameSetup);
+
+		// Set up the tournament context
+		stateInfo->globalGameInfo->isCupGame = 1;
+		stateInfo->tournamentState->cupInfo.userTeamIndexInTree = 12; // User is in the first final slot
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12] = request->team1; // User's team
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13] = request->team2; // Opponent
+		stateInfo->tournamentState->cupInfo.schedule[0][0] = 12;
+		stateInfo->tournamentState->cupInfo.schedule[0][1] = 13;
+		stateInfo->tournamentState->cupInfo.gameStructure = 1; // Best of 1
+		stateInfo->tournamentState->cupInfo.dayCount = 2; // Final day
+
+		// Set game state to a super-inning
+		stateInfo->globalGameInfo->period = 2;
+		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2;
+
+		// Set prior period scores to 0 for a clean super-inning
+		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
+		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
+		stateInfo->globalGameInfo->teams[0].runs = 0;
+		stateInfo->globalGameInfo->teams[1].runs = 0;
+
+		// Jump directly to game screen
+		stateInfo->screen = GAME_SCREEN;
+		stateInfo->changeScreen = 1;
+
 	} else {
 		printf("Unknown fixture: %s\n", request->name);
 		printf("Available fixtures: super-inning, homerun-contest\n");

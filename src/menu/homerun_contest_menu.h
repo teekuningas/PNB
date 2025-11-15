@@ -7,10 +7,6 @@
 #include "globals.h"
 #include "render.h"
 
-typedef struct {
-	int choices[2][MAX_HOMERUN_PAIRS];
-} HomerunContestMenuOutput;
-
 // Initialize or reset a home-run contest state for one team
 void initHomerunContestState(HomerunContestState *state,
                              int team_index,
@@ -21,7 +17,7 @@ void initHomerunContestState(HomerunContestState *state,
 MenuStage updateHomerunContestMenu(HomerunContestState *state,
                                    const KeyStates *keyStates,
                                    MenuStage currentStage,
-                                   HomerunContestMenuOutput *output,
+                                   GameSetup *gameSetup,
                                    const TeamData* teamData);
 
 // Draw function for a home-run contest stage

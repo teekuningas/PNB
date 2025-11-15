@@ -3,6 +3,7 @@
 #include "render.h"
 #include "font.h"
 #include "front_menu.h"
+#include "common_logic.h"
 
 // Draws a full-screen 2D background quad for menus
 // Uses the "empty_background" texture from ResourceManager
@@ -10,83 +11,47 @@ void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs)
 {
 	// Bind the shared empty background texture
 	GLuint tex = resource_manager_get_texture(rm, "data/textures/empty_background.tga");
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glBegin(GL_QUADS);
-	// TL
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(0.0f, 0.0f);
-	// BL
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(0.0f, VIRTUAL_HEIGHT);
-	// BR
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-	// TR
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(VIRTUAL_WIDTH, 0.0f);
-	glEnd();
+	draw_texture_2d(tex, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 }
 
-void createGameSetup(GameSetup* gameSetup, MenuData* menuData, MenuInfo* menuInfo)
+void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 {
-	// Set game mode based on menu entry mode
-	switch (menuInfo->mode) {
-	case MENU_ENTRY_NORMAL:
-		gameSetup->gameMode = GAME_MODE_NORMAL;
+	switch (gameSetup->launchType) {
+	case GAME_LAUNCH_NEW:
+		initializeGameFromMenu(stateInfo, gameSetup);
 		break;
-	case MENU_ENTRY_SUPER_INNING:
-		gameSetup->gameMode = GAME_MODE_SUPER_INNING;
+	case GAME_LAUNCH_RETURN_INTER_PERIOD:
+		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
+		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
+		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
+		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
+		returnToGame(stateInfo);
 		break;
-	case MENU_ENTRY_HOMERUN_CONTEST:
-		gameSetup->gameMode = GAME_MODE_HOMERUN_CONTEST;
-		break;
-	default:
-		// Default to normal, though this shouldn't be reached in normal flow
-		gameSetup->gameMode = GAME_MODE_NORMAL;
-		break;
-	}
-
-	gameSetup->team1 = menuData->team1;
-	gameSetup->team2 = menuData->team2;
-	gameSetup->team1_control = menuData->team1_control;
-	gameSetup->team2_control = menuData->team2_control;
-	gameSetup->halfInningsInPeriod = menuData->halfInningsInPeriod;
-
-	// Logic for playsFirst is now here
-	if (menuInfo->mode == MENU_ENTRY_NORMAL || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-		gameSetup->playsFirst = menuData->playsFirst;
-	} else {
-		// Default or for other modes if needed
-		gameSetup->playsFirst = 0;
-	}
-
-	memcpy(gameSetup->team1_batting_order, menuData->team1_batting_order, sizeof(menuData->team1_batting_order));
-	memcpy(gameSetup->team2_batting_order, menuData->team2_batting_order, sizeof(menuData->team2_batting_order));
-
-	if (menuInfo->mode == MENU_ENTRY_HOMERUN_CONTEST) {
-		gameSetup->homerun_choice_count = menuData->homerun1.choiceCount / 2;
+	case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
+		int pairCount = gameSetup->homerun_choice_count;
 		for (int i = 0; i < 2; i++) {
-			for (int j = 0; j < gameSetup->homerun_choice_count; j++) {
-				gameSetup->homerun_choices1[i][j] = menuData->homerun1.choices[i][j];
-				gameSetup->homerun_choices2[i][j] = menuData->homerun2.choices[i][j];
+			for (int j = 0; j < pairCount; j++) {
+				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
+				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
 			}
 		}
-	} else {
-		gameSetup->homerun_choice_count = 0;
+		stateInfo->globalGameInfo->pairCount = pairCount;
+		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+		returnToGame(stateInfo);
+	}
+	break;
 	}
 }
+
+
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 {
-	int i;
-	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		menuData->team1_batting_order[i] = i;
-		menuData->team2_batting_order[i] = i;
+	// Reset the pending game setup to a clean state
+	memset(&menuData->pendingGameSetup, 0, sizeof(GameSetup));
+	for(int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		menuData->pendingGameSetup.team1_batting_order[i] = i;
+		menuData->pendingGameSetup.team2_batting_order[i] = i;
 	}
-	menuData->halfInningsInPeriod = 0;
-	menuData->team1 = 0;
-	menuData->team2 = 0;
-	menuData->team1_control = 0;
-	menuData->team2_control = 0;
 
 	if (stateInfo->globalGameInfo->isCupGame != 1) {
 		initFrontMenuState(&menuData->front_menu);

@@ -427,11 +427,6 @@ typedef struct _GameConclusion {
 	int period2Runs[2];
 	int period3Runs[2];
 	int isCupGame;
-	// Data needed for cup logic
-	int userTeamIndexInTree;
-	int gameStructure;
-	int dayCount;
-	int slotWins[SLOT_COUNT];
 } GameConclusion;
 
 typedef struct _StateInfo {

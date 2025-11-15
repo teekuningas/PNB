@@ -28,14 +28,19 @@ void initHomerunContestState(HomerunContestState *state,
 MenuStage updateHomerunContestMenu(HomerunContestState *state,
                                    const KeyStates *keyStates,
                                    MenuStage currentStage,
-                                   HomerunContestMenuOutput *output,
+                                   GameSetup *gameSetup,
                                    const TeamData* teamData)
 {
 	int pairCount = state->choiceCount / 2;
 
 	// Common logic for finishing a team's selection
 	void finish_selection() {
-		memcpy(output->choices, state->choices, sizeof(state->choices));
+		if (currentStage == MENU_STAGE_HOMERUN_CONTEST_1) {
+			memcpy(gameSetup->homerun_choices1, state->choices, sizeof(state->choices));
+		} else {
+			memcpy(gameSetup->homerun_choices2, state->choices, sizeof(state->choices));
+		}
+		gameSetup->homerun_choice_count = pairCount;
 	}
 
 	// AI auto-selection

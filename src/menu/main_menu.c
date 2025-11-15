@@ -68,19 +68,21 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			resetMenuForNewGame(menuData, stateInfo);
 			break;
 		case MENU_ENTRY_INTER_PERIOD:
-			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+			// When returning to a game, team info is in globalGameInfo
+			initBattingOrderState(&menuData->batting_order, stateInfo->globalGameInfo->teams[0].value - 1, stateInfo->globalGameInfo->teams[0].control, stateInfo);
 			menuData->stage = MENU_STAGE_BATTING_ORDER_1;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				menuData->team1_batting_order[i] = i;
-				menuData->team2_batting_order[i] = i;
+				menuData->pendingGameSetup.team1_batting_order[i] = i;
+				menuData->pendingGameSetup.team2_batting_order[i] = i;
 			}
 			break;
 		case MENU_ENTRY_SUPER_INNING:
-			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+			// When returning to a game, team info is in globalGameInfo
+			initBattingOrderState(&menuData->batting_order, stateInfo->globalGameInfo->teams[0].value - 1, stateInfo->globalGameInfo->teams[0].control, stateInfo);
 			menuData->stage = MENU_STAGE_BATTING_ORDER_1;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				menuData->team1_batting_order[i] = i;
-				menuData->team2_batting_order[i] = i;
+				menuData->pendingGameSetup.team1_batting_order[i] = i;
+				menuData->pendingGameSetup.team2_batting_order[i] = i;
 			}
 			break;
 		case MENU_ENTRY_HOMERUN_CONTEST: {
@@ -90,11 +92,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			int team2Index = stateInfo->globalGameInfo->teams[1].value - 1;
 			initHomerunContestState(&menuData->homerun1,
 			                        team1Index,
-			                        menuData->team1_control,
+			                        stateInfo->globalGameInfo->teams[0].control,
 			                        totalPicks);
 			initHomerunContestState(&menuData->homerun2,
 			                        team2Index,
-			                        menuData->team2_control,
+			                        stateInfo->globalGameInfo->teams[1].control,
 			                        totalPicks);
 			menuData->stage = MENU_STAGE_HOMERUN_CONTEST_1;
 		}
@@ -126,18 +128,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_TEAM_SELECTION: {
-		TeamSelectionMenuOutput team_selection_output;
-		nextStage = updateTeamSelectionMenu(&menuData->team_selection, keyStates, &team_selection_output);
+		nextStage = updateTeamSelectionMenu(&menuData->team_selection, keyStates, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
-			// Copy chosen teams back to main state
-			menuData->team1 = team_selection_output.team1;
-			menuData->team2 = team_selection_output.team2;
-			menuData->team1_control = team_selection_output.team1_controller;
-			menuData->team2_control = team_selection_output.team2_controller;
-			menuData->halfInningsInPeriod = team_selection_output.innings;
 			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
-				initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+				initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_FRONT) {
 				initFrontMenuState(&menuData->front_menu);
 			}
@@ -146,15 +141,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_BATTING_ORDER_1: {
-		BattingOrderMenuOutput output;
-		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &output);
+		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
-			// Save team1's batting order
-			memcpy(menuData->team1_batting_order, output.batting_order,
-			       sizeof(output.batting_order));
 			if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
 				// Setup for team2 ordering
-				initBattingOrderState(&menuData->batting_order, menuData->team2, menuData->team2_control, stateInfo);
+				initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team2, menuData->pendingGameSetup.team2_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 			}
@@ -163,26 +154,19 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_BATTING_ORDER_2: {
-		BattingOrderMenuOutput output;
-		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &output);
+		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
-			// Save team2's batting order
-			memcpy(menuData->team2_batting_order, output.batting_order,
-			       sizeof(output.batting_order));
 			if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
 			}
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				if (menuInfo->mode == MENU_ENTRY_INTER_PERIOD || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
-					memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, menuData->team1_batting_order, sizeof(menuData->team1_batting_order));
-					memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, menuData->team2_batting_order, sizeof(menuData->team2_batting_order));
-					stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
-					stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
-					returnToGame(stateInfo);
+					menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_INTER_PERIOD;
+					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
 				} else {
-					GameSetup gameSetup;
-					createGameSetup(&gameSetup, menuData, menuInfo);
-					initializeGameFromMenu(stateInfo, &gameSetup);
+					menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
+					menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
+					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
 				}
 			}
 		}
@@ -190,16 +174,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_HUTUNKEITTO: {
-		HutunkeittoMenuOutput hutunkeitto_output;
 		nextStage = updateHutunkeittoMenu(&menuData->hutunkeitto, keyStates,
-		                                  menuData->team1_control, menuData->team2_control, &hutunkeitto_output);
+		                                  menuData->pendingGameSetup.team1_control, menuData->pendingGameSetup.team2_control, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
-			// Record who bats first
-			menuData->playsFirst = hutunkeitto_output.playsFirst;
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				GameSetup gameSetup;
-				createGameSetup(&gameSetup, menuData, menuInfo);
-				initializeGameFromMenu(stateInfo, &gameSetup);
+				menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
+				menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
+				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
 				menuInfo->mode = MENU_ENTRY_NORMAL;
 			}
 		}
@@ -207,37 +188,50 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_GAME_OVER: {
-		nextStage = updateGameOverMenu(stateInfo->gameConclusion, keyStates, menuData->team1_control, menuData->team2_control);
+		nextStage = updateGameOverMenu(stateInfo->gameConclusion, keyStates, stateInfo->globalGameInfo->teams[0].control, stateInfo->globalGameInfo->teams[1].control);
 		if (nextStage != menuData->stage) {
 			stateInfo->playSoundEffect = SOUND_MENU;
 			if (nextStage == MENU_STAGE_CUP) {
-				// Enrich the thin gameConclusion with tournament metadata before processing
-				stateInfo->gameConclusion->userTeamIndexInTree = stateInfo->tournamentState->cupInfo.userTeamIndexInTree;
-				stateInfo->gameConclusion->gameStructure = stateInfo->tournamentState->cupInfo.gameStructure;
-				stateInfo->gameConclusion->dayCount = stateInfo->tournamentState->cupInfo.dayCount;
-				for (int i = 0; i < SLOT_COUNT; i++) {
-					stateInfo->gameConclusion->slotWins[i] = stateInfo->tournamentState->cupInfo.slotWins[i];
-				}
-
-				int i, j;
+				// 1. Find the schedule slot that was just played using the correct data source.
 				int scheduleSlot = -1;
+				int i, j;
 				for (i = 0; i < 4; i++) {
 					for (j = 0; j < 2; j++) {
-						if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->gameConclusion->userTeamIndexInTree) {
+						if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->tournamentState->cupInfo.userTeamIndexInTree) {
 							scheduleSlot = i;
 						}
 					}
 				}
-				updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, stateInfo->gameConclusion->winner);
-				updateSchedule(stateInfo->tournamentState, stateInfo);
 
-				initCupMenu(&menuData->cup_menu, stateInfo);
+				// If a match was found, process the result.
+				if (scheduleSlot != -1) {
+					// 2. Determine which team in the schedule (slot 0 or 1) won the match.
+					// Get the actual team ID of the winner from the (still valid) globalGameInfo.
+					int winningTeamId = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].value - 1;
 
-				// Check if the user won the entire cup
-				if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
-					int userTeamId = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].value;
-					if (stateInfo->tournamentState->cupInfo.winnerIndex == userTeamId) {
-						menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
+					// Get the team ID for the first slot of the match that was played.
+					int teamIdInScheduleSlot0 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[scheduleSlot][0]];
+
+					int winningSlotInSchedule;
+					if (winningTeamId == teamIdInScheduleSlot0) {
+						winningSlotInSchedule = 0;
+					} else {
+						winningSlotInSchedule = 1;
+					}
+
+					// 3. Call the update function with the correct parameters.
+					updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, winningSlotInSchedule);
+					updateSchedule(stateInfo->tournamentState, stateInfo);
+
+					// 4. Re-initialize the cup menu to reflect the updated state.
+					initCupMenu(&menuData->cup_menu, stateInfo);
+
+					// 5. Check if the user won the entire cup and set the screen to the trophy/credits screen.
+					if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+						int winnerControl = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].control;
+						if (winnerControl == 0 || winnerControl == 1) { // Human player
+							menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
+						}
 					}
 				}
 			} else {
@@ -248,41 +242,26 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		break;
 	}
 	case MENU_STAGE_HOMERUN_CONTEST_1: {
-		HomerunContestMenuOutput output;
 		nextStage = updateHomerunContestMenu(&menuData->homerun1,
 		                                     keyStates,
 		                                     menuData->stage,
-		                                     &output,
+		                                     &menuData->pendingGameSetup,
 		                                     (const TeamData*)stateInfo->teamData);
 		if (nextStage != menuData->stage) {
-			memcpy(menuData->homerun_choices1, output.choices, sizeof(output.choices));
 			menuData->stage = nextStage;
 		}
 		break;
 	}
 	case MENU_STAGE_HOMERUN_CONTEST_2: {
-		HomerunContestMenuOutput output;
 		nextStage = updateHomerunContestMenu(&menuData->homerun2,
 		                                     keyStates,
 		                                     menuData->stage,
-		                                     &output,
+		                                     &menuData->pendingGameSetup,
 		                                     (const TeamData*)stateInfo->teamData);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
-				memcpy(menuData->homerun_choices2, output.choices, sizeof(output.choices));
-
-				// Update batter/runner selections from menu
-				int pairCount = menuData->homerun1.choiceCount / 2;
-				for (int i = 0; i < 2; i++) {
-					for (int j = 0; j < pairCount; j++) {
-						stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = menuData->homerun_choices1[i][j];
-						stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = menuData->homerun_choices2[i][j];
-					}
-				}
-				stateInfo->globalGameInfo->pairCount = pairCount;
-				stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
-
-				returnToGame(stateInfo);
+				menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_HOMERUN_CONTEST;
+				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
 			}
 			menuData->stage = nextStage;
 		}
@@ -292,14 +271,14 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		CupMenuOutput cup_output;
 		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, keyStates, &cup_output);
 		if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
-			// A game is starting, transfer data from cup output to menuData
-			menuData->team1 = cup_output.team1;
-			menuData->team2 = cup_output.team2;
-			menuData->team1_control = cup_output.team1_control;
-			menuData->team2_control = cup_output.team2_control;
-			menuData->halfInningsInPeriod = cup_output.innings;
+			// A game is starting, transfer data from cup output to pendingGameSetup
+			menuData->pendingGameSetup.team1 = cup_output.team1;
+			menuData->pendingGameSetup.team2 = cup_output.team2;
+			menuData->pendingGameSetup.team1_control = cup_output.team1_control;
+			menuData->pendingGameSetup.team2_control = cup_output.team2_control;
+			menuData->pendingGameSetup.halfInningsInPeriod = cup_output.innings;
 			stateInfo->globalGameInfo->isCupGame = 1;
-			initBattingOrderState(&menuData->batting_order, menuData->team1, menuData->team1_control, stateInfo);
+			initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control, stateInfo);
 		} else if (nextStage == MENU_STAGE_FRONT) {
 			stateInfo->globalGameInfo->isCupGame = 0;
 			stateInfo->tournamentState->cupInfo.userTeamIndexInTree = -1;
@@ -331,7 +310,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 {
 	switch(menuData->stage) {
 	case MENU_STAGE_FRONT:
-		drawFrontMenu(&menuData->front_menu, rs, rm, menuData);
+		drawFrontMenu(&menuData->front_menu, rs, rm);
 		break;
 	case MENU_STAGE_HELP:
 		drawHelpMenu(&menuData->help_menu, rs, rm);
@@ -344,7 +323,7 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 		drawTeamSelectionMenu(&menuData->team_selection, (const TeamData*)stateInfo->teamData, rs, rm);
 		break;
 	case MENU_STAGE_HUTUNKEITTO:
-		drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->team1, menuData->team2);
+		drawHutunkeittoMenu(&menuData->hutunkeitto, rs, rm, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team2);
 		break;
 
 	case MENU_STAGE_GAME_OVER:

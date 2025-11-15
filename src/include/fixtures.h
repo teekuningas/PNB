@@ -22,8 +22,9 @@ void fixture_create_super_inning(GameSetup* setup, int team1, int team2,
                                  int team1_control, int team2_control);
 
 // Creates a game setup for homerun contest scenario (period 4, tied 0-0)
-void fixture_create_homerun_contest(GameSetup* setup, int team1, int team2,
-                                    int team1_control, int team2_control);
+void fixture_create_homerun_contest(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control);
+void fixture_create_cup_final_super_inning(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control);
+
 
 // Creates a game setup starting at period 2
 void fixture_create_period2_start(GameSetup* setup, int team1, int team2,

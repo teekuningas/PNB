@@ -99,3 +99,26 @@ void begin_2d_render(const RenderState* rs)
 	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
 }
+
+// Draws a textured 2D quad.
+void draw_texture_2d(GLuint texture, float x, float y, float width, float height)
+{
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glBegin(GL_QUADS);
+	// Top-left
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(x, y);
+
+	// Bottom-left
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(x, y + height);
+
+	// Bottom-right
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(x + width, y + height);
+
+	// Top-right
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(x + width, y);
+	glEnd();
+}

@@ -21,5 +21,8 @@ void begin_3d_render(const RenderState* rs);
 // Sets up the 2D orthographic projection.
 void begin_2d_render(const RenderState* rs);
 
+// Draws a textured 2D quad.
+void draw_texture_2d(GLuint texture, float x, float y, float width, float height);
+
 
 #endif /* RENDER_H */

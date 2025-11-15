@@ -10,10 +10,17 @@ typedef enum {
 	GAME_MODE_HOMERUN_CONTEST
 } GameMode;
 
+typedef enum {
+	GAME_LAUNCH_NEW,
+	GAME_LAUNCH_RETURN_INTER_PERIOD,
+	GAME_LAUNCH_RETURN_HOMERUN_CONTEST
+} GameLaunchType;
+
 // This struct holds all the parameters needed to initialize a game.
 // It is populated from the menu and used to set up the game state.
 
 typedef struct GameSetup {
+	GameLaunchType launchType;
 	GameMode gameMode;
 	int team1;
 	int team2;

@@ -37,6 +37,10 @@ run-super-inning:
 run-homerun:
 	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed --fixture homerun-contest
 
+.PHONY: run-cup-final-super-inning
+run-cup-final-super-inning:
+	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed --fixture cup-final-super-inning
+
 .PHONY: clean
 clean:
 	rm -rf $(ODIR)
