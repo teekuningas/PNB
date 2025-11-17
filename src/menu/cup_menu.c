@@ -500,31 +500,24 @@ static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const Sta
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
-static void drawScreen_EndCredits(const RenderState* rs, ResourceManager* rm)
+static void drawScreen_EndCredits(const CupMenuState* cupMenuState, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
-	const float text_start_y = VIRTUAL_HEIGHT * 0.4f;
-	const float text_spacing = VIRTUAL_HEIGHT * 0.05f;
 	const float title_fontsize = 60.0f;
 	const float text_fontsize = 30.0f;
 
 	// --- Draw Trophy ---
 	const float trophy_size = VIRTUAL_WIDTH * 0.3f;
 	const float trophy_x = center_x - trophy_size / 2.0f;
-	const float trophy_y = VIRTUAL_HEIGHT * 0.15f;
+	const float trophy_y = VIRTUAL_HEIGHT * 0.20f;
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/menu_trophy.tga"), trophy_x, trophy_y, trophy_size, trophy_size);
 
 	// --- Draw Text ---
-	draw_text_2d("There you go champ", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("So you beat the game huh", center_x, text_start_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("The mighty conqueror", center_x, text_start_y + text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Anyway thank you for playing", center_x, text_start_y + 2 * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Made me happy", center_x, text_start_y + 3 * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Special thanks to", center_x, text_start_y + 4.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Petri Anttila, Juuso Heinila, Matti Pitkanen", center_x, text_start_y + 5.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Ville Viljanmaa, Petri Mikola, Pekka Heinila", center_x, text_start_y + 6.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("For supporting the development in various ways", center_x, text_start_y + 7.5f * text_spacing, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("WE HAVE A CHAMPION!", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+
+	const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
+	draw_text_2d(credits_text, cupMenuState->credits_menu.creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs);
 }
 
 
@@ -648,6 +641,7 @@ void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 	cupMenuState->treeCoordinates[12].y = 0.0f;
 	cupMenuState->treeCoordinates[13].x =  0.25f;
 	cupMenuState->treeCoordinates[13].y = 0.0f;
+	cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
 
 	if(refreshLoadCups(stateInfo) != 0) {
 		printf("Something wrong with the save file.\n");
@@ -680,7 +674,15 @@ MenuStage updateCupMenu(
 		return updateScreen_SaveCup(cupMenuState, stateInfo, keyStates);
 	case CUP_MENU_SCREEN_VIEW_SCHEDULE:
 	case CUP_MENU_SCREEN_VIEW_TREE:
+		return updateScreen_View(cupMenuState, keyStates);
 	case CUP_MENU_SCREEN_END_CREDITS:
+		const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
+		const float text_fontsize = 30.0f;
+		float text_width = getTextWidth2D(credits_text, strlen(credits_text), text_fontsize);
+		cupMenuState->credits_menu.creditsScrollX -= 1.0f;
+		if (cupMenuState->credits_menu.creditsScrollX < -text_width) {
+			cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
+		}
 		return updateScreen_View(cupMenuState, keyStates);
 	}
 	return MENU_STAGE_CUP;
@@ -713,7 +715,7 @@ void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, c
 		drawScreen_LoadOrSaveCup(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_END_CREDITS:
-		drawScreen_EndCredits(rs, rm);
+		drawScreen_EndCredits(cupMenuState, rs, rm);
 		break;
 	}
 }

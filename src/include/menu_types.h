@@ -163,12 +163,17 @@ typedef struct {
 } TreeCoordinates;
 
 typedef struct {
+	float creditsScrollX;
+} CreditsMenuState;
+
+typedef struct {
 	CupMenuScreen screen;
 	int pointer;
 	int rem;
 	NewCupStage new_cup_stage;
 	int team_selection;
 	TreeCoordinates treeCoordinates[SLOT_COUNT];
+	CreditsMenuState credits_menu;
 } CupMenuState;
 
 typedef struct MenuData {

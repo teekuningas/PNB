@@ -397,15 +397,54 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		                                      request->team2_control);
 		initializeGameFromMenu(stateInfo, &gameSetup);
 
-		// Set up the tournament context
+		// Set up the tournament context with a full, plausible history
 		stateInfo->globalGameInfo->isCupGame = 1;
-		stateInfo->tournamentState->cupInfo.userTeamIndexInTree = 12; // User is in the first final slot
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12] = request->team1; // User's team
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13] = request->team2; // Opponent
+		stateInfo->tournamentState->cupInfo.gameStructure = 1; // Best of 1 for simplicity
+		stateInfo->tournamentState->cupInfo.dayCount = 2;      // Final day
+
+		// --- Define the full tournament tree history ---
+		// Round 1 pairings
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[0] = 0;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[1] = 2;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[2] = 4;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[3] = 6;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[4] = 1;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[5] = 3;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[6] = 5;
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[7] = 7;
+		// Quarter-final winners
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[8] = 0;  // 0 beats 2
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[9] = 4;  // 4 beats 6
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[10] = 1; // 1 beats 3
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[11] = 5; // 5 beats 7
+		// Semi-final winners (the finalists)
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12] = 0; // 0 beats 4
+		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13] = 1; // 1 beats 5
+
+		// --- Set slot wins to perfectly match the history ---
+		for(int i=0; i < 14; i++) {
+			stateInfo->tournamentState->cupInfo.slotWins[i] = 0;
+		}
+		// Quarter-final match results
+		stateInfo->tournamentState->cupInfo.slotWins[0] = 1; // 0 beats 2
+		stateInfo->tournamentState->cupInfo.slotWins[2] = 1; // 4 beats 6
+		stateInfo->tournamentState->cupInfo.slotWins[4] = 1; // 1 beats 3
+		stateInfo->tournamentState->cupInfo.slotWins[6] = 1; // 5 beats 7
+		// Semi-final match results
+		stateInfo->tournamentState->cupInfo.slotWins[8] = 1; // 0 beats 4
+		stateInfo->tournamentState->cupInfo.slotWins[10] = 1; // 1 beats 5
+		// Final match has not been played, so wins are 0-0
+		stateInfo->tournamentState->cupInfo.slotWins[12] = 0;
+		stateInfo->tournamentState->cupInfo.slotWins[13] = 0;
+
+		// Set user's position and the final match schedule
+		stateInfo->tournamentState->cupInfo.userTeamIndexInTree = 12;
 		stateInfo->tournamentState->cupInfo.schedule[0][0] = 12;
 		stateInfo->tournamentState->cupInfo.schedule[0][1] = 13;
-		stateInfo->tournamentState->cupInfo.gameStructure = 1; // Best of 1
-		stateInfo->tournamentState->cupInfo.dayCount = 2; // Final day
+		for (int i = 1; i < 4; i++) {
+			stateInfo->tournamentState->cupInfo.schedule[i][0] = -1;
+			stateInfo->tournamentState->cupInfo.schedule[i][1] = -1;
+		}
 
 		// Set game state to a super-inning
 		stateInfo->globalGameInfo->period = 2;

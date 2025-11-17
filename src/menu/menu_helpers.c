@@ -66,6 +66,15 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 
 void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo)
 {
+	// If the cup is already won, there's nothing to schedule.
+	if (tournamentState->cupInfo.winnerIndex != -1) {
+		for (int i = 0; i < 4; i++) {
+			tournamentState->cupInfo.schedule[i][0] = -1;
+			tournamentState->cupInfo.schedule[i][1] = -1;
+		}
+		return;
+	}
+
 	int j;
 	int counter = 0;
 	for(j = 0; j < SLOT_COUNT/2; j++) {
@@ -137,7 +146,8 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 							tournamentState->cupInfo.userTeamIndexInTree = index;
 						}
 					} else {
-						tournamentState->cupInfo.winnerIndex = tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
+						tournamentState->cupInfo.winnerIndex =
+						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
 					}
 				}
 			} else {
@@ -149,7 +159,8 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 							tournamentState->cupInfo.userTeamIndexInTree = index;
 						}
 					} else {
-						tournamentState->cupInfo.winnerIndex = tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
+						tournamentState->cupInfo.winnerIndex =
+						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
 					}
 				}
 			}
