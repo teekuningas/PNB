@@ -67,7 +67,7 @@ int readSaveData(CupInfo* saveData, int numSlots)
 				char index[3] = "00";
 				saveData[slot].inningCount = i;
 				i = content[counter + 4] - '0';
-				saveData[slot].gameStructure = i;
+				saveData[slot].winsToAdvance = i;
 				index[0] = content[counter + 6];
 				index[1] = content[counter + 7];
 				saveData[slot].userTeamIndexInTree = atoi(index);
@@ -142,7 +142,7 @@ int writeSaveData(CupInfo* saveData, CupInfo* cupInfo, int currentSlot, int numS
 			counter++;
 			data[counter] = ' ';
 			counter++;
-			data[counter] = (char)(((int)'0')+(saveDataPtr->gameStructure));
+			data[counter] = (char)(((int)'0')+(saveDataPtr->winsToAdvance));
 			counter++;
 			data[counter] = ' ';
 			counter++;

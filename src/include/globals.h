@@ -406,7 +406,7 @@ typedef struct _LocalGameInfo {
 
 typedef struct _CupInfo {
 	int inningCount;
-	int gameStructure;
+	int winsToAdvance; // How many wins needed to advance (1 for single elimination, 3 for best of 5)
 	int dayCount;
 	int userTeamIndexInTree; // in cupTeamIndexTree the element that is the position of user's team right now.
 	int cupTeamIndexTree[14]; // indices to teamData-array, -1 means no team in this slot yet

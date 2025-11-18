@@ -45,7 +45,7 @@ static void initCupViewTreeState(CupViewTreeState* viewTreeState)
 	viewTreeState->treeCoordinates[13].y = 0.0f;
 }
 
-static void initializeNewCup(TournamentState* tournamentState, int inningsPointer, int userTeamSelection)
+static void initializeNewCup(TournamentState* tournamentState, int inningsPointer, int userTeamSelection, unsigned int seed)
 {
 	int i;
 
@@ -64,16 +64,20 @@ static void initializeNewCup(TournamentState* tournamentState, int inningsPointe
 		tournamentState->cupInfo.cupTeamIndexTree[i] = -1;
 	}
 
-	// Randomly assign 8 teams to the cup tree
-	i = 0;
-	while(i < 8) {
-		int random = rand()%8;
-		if(tournamentState->cupInfo.cupTeamIndexTree[random] == -1) {
-			tournamentState->cupInfo.cupTeamIndexTree[random] = i;
-			if(i == userTeamSelection) {
-				tournamentState->cupInfo.userTeamIndexInTree = random;
-			}
-			i++;
+	// Deterministically assign 8 teams to the cup tree using provided seed
+	// Use a simple LCG (Linear Congruential Generator)
+	unsigned int rng_state = seed;
+	for(i = 0; i < 8; i++) {
+		// Find next empty slot using seeded random
+		int slot;
+		do {
+			rng_state = rng_state * 1103515245 + 12345; // Standard LCG constants
+			slot = (rng_state / 65536) % 8;
+		} while(tournamentState->cupInfo.cupTeamIndexTree[slot] != -1);
+
+		tournamentState->cupInfo.cupTeamIndexTree[slot] = i;
+		if(i == userTeamSelection) {
+			tournamentState->cupInfo.userTeamIndexInTree = slot;
 		}
 	}
 
@@ -173,7 +177,7 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 			return MENU_STAGE_BATTING_ORDER_1;
 		} else {
 			// otherwise we simulate the day right away.
-			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, -1, 0);
+			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, -1, 0, rand() % 100);
 			updateSchedule(stateInfo->tournamentState, stateInfo);
 		}
 	} else if(cupMenuState->ongoing.pointer == 1) {
@@ -210,7 +214,8 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
-			stateInfo->tournamentState->cupInfo.gameStructure = cupMenuState->new_cup.pointer;
+			// Convert menu selection to wins needed: 0="Normal"->3 wins, 1="One"->1 win
+			stateInfo->tournamentState->cupInfo.winsToAdvance = (cupMenuState->new_cup.pointer == 0) ? 3 : 1;
 			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_INNINGS;
 			cupMenuState->new_cup.pointer = 0;
 			cupMenuState->new_cup.rem = 3;
@@ -228,7 +233,8 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 			initializeNewCup(
 			    stateInfo->tournamentState,
 			    cupMenuState->new_cup.pointer,
-			    cupMenuState->new_cup.team_selection
+			    cupMenuState->new_cup.team_selection,
+			    (unsigned int)time(NULL)  // Generate seed in UI layer
 			);
 
 			// Transition to ongoing cup screen
@@ -468,24 +474,14 @@ static void getScheduleForCup(const CupInfo* cup_info, int schedule[4][2])
 {
 	int j;
 	int counter = 0;
+	int winsNeeded = cup_info->winsToAdvance;
 	for(j = 0; j < SLOT_COUNT/2; j++) {
-		if(cup_info->gameStructure == 0) {
-			if(cup_info->slotWins[j*2] < 3 && cup_info->slotWins[j*2+1] < 3) {
-				if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
-				        (j == 6 && cup_info->dayCount >= 2)) {
-					schedule[counter][0] = j*2;
-					schedule[counter][1] = j*2+1;
-					counter++;
-				}
-			}
-		} else {
-			if(cup_info->slotWins[j*2] < 1 && cup_info->slotWins[j*2+1] < 1) {
-				if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
-				        (j == 6 && cup_info->dayCount >= 2)) {
-					schedule[counter][0] = j*2;
-					schedule[counter][1] = j*2+1;
-					counter++;
-				}
+		if(cup_info->slotWins[j*2] < winsNeeded && cup_info->slotWins[j*2+1] < winsNeeded) {
+			if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
+			        (j == 6 && cup_info->dayCount >= 2)) {
+				schedule[counter][0] = j*2;
+				schedule[counter][1] = j*2+1;
+				counter++;
 			}
 		}
 	}
@@ -530,13 +526,9 @@ static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, cons
 
 			// Manually calculate winner for this save slot, as it's not stored directly
 			int winnerIndex = -1;
-			if (saved_cup->gameStructure == 1) { // Best of 1
-				if (saved_cup->slotWins[12] >= 1) winnerIndex = saved_cup->cupTeamIndexTree[12];
-				else if (saved_cup->slotWins[13] >= 1) winnerIndex = saved_cup->cupTeamIndexTree[13];
-			} else { // Best of 5 (3 wins)
-				if (saved_cup->slotWins[12] >= 3) winnerIndex = saved_cup->cupTeamIndexTree[12];
-				else if (saved_cup->slotWins[13] >= 3) winnerIndex = saved_cup->cupTeamIndexTree[13];
-			}
+			int winsNeeded = saved_cup->winsToAdvance;
+			if (saved_cup->slotWins[12] >= winsNeeded) winnerIndex = saved_cup->cupTeamIndexTree[12];
+			else if (saved_cup->slotWins[13] >= winsNeeded) winnerIndex = saved_cup->cupTeamIndexTree[13];
 
 			if (winnerIndex != -1) {
 				strcpy(opponent_name, "Cup finished");
@@ -617,7 +609,8 @@ static int refreshLoadCups(StateInfo* stateInfo)
 		if(stateInfo->tournamentState->saveData[i].userTeamIndexInTree != -1) {
 			int valid = 1;
 			if(stateInfo->tournamentState->saveData[i].dayCount < 0) valid = 0;
-			if(stateInfo->tournamentState->saveData[i].gameStructure != 0 && stateInfo->tournamentState->saveData[i].gameStructure != 1) valid = 0;
+			int wins = stateInfo->tournamentState->saveData[i].winsToAdvance;
+			if(wins != 1 && wins != 3) valid = 0; // Only support 1 or 3 wins
 			if(stateInfo->tournamentState->saveData[i].inningCount != 2 && stateInfo->tournamentState->saveData[i].inningCount != 4 && stateInfo->tournamentState->saveData[i].inningCount != 8) valid = 0;
 			if(stateInfo->tournamentState->saveData[i].winnerIndex >= stateInfo->numTeams) valid = 0;
 			if(stateInfo->tournamentState->saveData[i].userTeamIndexInTree >= 14) valid = 0;
@@ -651,7 +644,7 @@ static void loadCup(StateInfo* stateInfo, int slot)
 {
 	int i;
 	stateInfo->tournamentState->cupInfo.inningCount = stateInfo->tournamentState->saveData[slot].inningCount;
-	stateInfo->tournamentState->cupInfo.gameStructure = stateInfo->tournamentState->saveData[slot].gameStructure;
+	stateInfo->tournamentState->cupInfo.winsToAdvance = stateInfo->tournamentState->saveData[slot].winsToAdvance;
 	stateInfo->tournamentState->cupInfo.userTeamIndexInTree = stateInfo->tournamentState->saveData[slot].userTeamIndexInTree;
 	stateInfo->tournamentState->cupInfo.dayCount = stateInfo->tournamentState->saveData[slot].dayCount;
 
@@ -660,18 +653,11 @@ static void loadCup(StateInfo* stateInfo, int slot)
 		stateInfo->tournamentState->cupInfo.slotWins[i] = stateInfo->tournamentState->saveData[slot].slotWins[i];
 	}
 	stateInfo->tournamentState->cupInfo.winnerIndex = -1;
-	if(stateInfo->tournamentState->cupInfo.gameStructure == 1) {
-		if(stateInfo->tournamentState->cupInfo.slotWins[12] == 1) {
-			stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12];
-		} else if(stateInfo->tournamentState->cupInfo.slotWins[13] == 1) {
-			stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13];
-		}
-	} else if(stateInfo->tournamentState->cupInfo.gameStructure == 0) {
-		if(stateInfo->tournamentState->cupInfo.slotWins[12] == 3) {
-			stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12];
-		} else if(stateInfo->tournamentState->cupInfo.slotWins[13] == 3) {
-			stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13];
-		}
+	int winsNeeded = stateInfo->tournamentState->cupInfo.winsToAdvance;
+	if(stateInfo->tournamentState->cupInfo.slotWins[12] >= winsNeeded) {
+		stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12];
+	} else if(stateInfo->tournamentState->cupInfo.slotWins[13] >= winsNeeded) {
+		stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13];
 	}
 
 	// Recalculate the schedule based on the loaded cup state
