@@ -204,27 +204,6 @@ typedef struct {
 } CupMenuState;
 
 typedef struct MenuData {
-	// Camera and legacy rendering data
-	Vector3D cam;
-	Vector3D up;
-	Vector3D look;
-	GLuint arrowTexture;
-	GLuint catcherTexture;
-	GLuint batterTexture;
-	GLuint slotTexture;
-	GLuint trophyTexture;
-	GLuint team1Texture;
-	GLuint team2Texture;
-	GLuint team3Texture;
-	GLuint team4Texture;
-	GLuint team5Texture;
-	GLuint team6Texture;
-	GLuint team7Texture;
-	GLuint team8Texture;
-	GLuint planeDisplayList;
-	GLuint batDisplayList;
-	GLuint handDisplayList;
-
 	// Game Setup Data
 	GameSetup pendingGameSetup;
 
