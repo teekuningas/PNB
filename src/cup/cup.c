@@ -107,3 +107,38 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 		}
 	}
 }
+
+void cup_process_finished_game(TournamentState* tournamentState, StateInfo* stateInfo, int gameWinner)
+{
+	// 1. Find the schedule slot that was just played
+	int scheduleSlot = -1;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 2; j++) {
+			if (tournamentState->cupInfo.schedule[i][j] == tournamentState->cupInfo.userTeamIndexInTree) {
+				scheduleSlot = i;
+			}
+		}
+	}
+
+	// If a match was found, process the result
+	if (scheduleSlot != -1) {
+		// 2. Determine which team in the schedule (slot 0 or 1) won the match
+		// Get the actual team ID of the winner from globalGameInfo
+		int winningTeamId = stateInfo->globalGameInfo->teams[gameWinner].value - 1;
+
+		// Get the team ID for the first slot of the match that was played
+		int teamIdInScheduleSlot0 = tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[scheduleSlot][0]];
+
+		int winningSlotInSchedule;
+		if (winningTeamId == teamIdInScheduleSlot0) {
+			winningSlotInSchedule = 0;
+		} else {
+			winningSlotInSchedule = 1;
+		}
+
+		// 3. Update cup tree and schedule with the game result
+		updateCupTreeAfterDay(tournamentState, stateInfo, scheduleSlot, winningSlotInSchedule);
+		updateSchedule(tournamentState, stateInfo);
+	}
+}
