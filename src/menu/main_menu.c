@@ -3,7 +3,6 @@
 #include "font.h"
 
 #include "main_menu.h"
-#include "common_logic.h"
 #include "save.h"
 #include "menu_types.h"
 #include "team_selection_menu.h"
@@ -16,6 +15,7 @@
 #include "menu_helpers.h"
 #include "loading_screen_menu.h"
 #include "cup_menu.h"
+#include "cup.h"
 #include "input.h"
 
 #define CAM_HEIGHT 2.3f
