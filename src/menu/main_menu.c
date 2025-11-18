@@ -23,35 +23,8 @@
 int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
 {
 	menuInfo->mode = MENU_ENTRY_NORMAL;
-	menuData->cam.x = 0.0f;
-	menuData->cam.y = CAM_HEIGHT;
-	menuData->cam.z = 0.0f;
-	menuData->up.x = 0.0f;
-	menuData->up.y = 0.0f;
-	menuData->up.z = -1.0f;
-	menuData->look.x = 0.0f;
-	menuData->look.y = 0.0f;
-	menuData->look.z = 0.0f;
 
 	resource_manager_load_all_menu_assets(rm);
-
-	// Populate MenuData for legacy code
-	menuData->arrowTexture = resource_manager_get_texture(rm, "data/textures/arrow.tga");
-	menuData->catcherTexture = resource_manager_get_texture(rm, "data/textures/catcher.tga");
-	menuData->batterTexture = resource_manager_get_texture(rm, "data/textures/batter.tga");
-	menuData->slotTexture = resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga");
-	menuData->trophyTexture = resource_manager_get_texture(rm, "data/textures/menu_trophy.tga");
-	menuData->team1Texture = resource_manager_get_texture(rm, "data/textures/team1.tga");
-	menuData->team2Texture = resource_manager_get_texture(rm, "data/textures/team2.tga");
-	menuData->team3Texture = resource_manager_get_texture(rm, "data/textures/team3.tga");
-	menuData->team4Texture = resource_manager_get_texture(rm, "data/textures/team4.tga");
-	menuData->team5Texture = resource_manager_get_texture(rm, "data/textures/team5.tga");
-	menuData->team6Texture = resource_manager_get_texture(rm, "data/textures/team6.tga");
-	menuData->team7Texture = resource_manager_get_texture(rm, "data/textures/team7.tga");
-	menuData->team8Texture = resource_manager_get_texture(rm, "data/textures/team8.tga");
-	menuData->planeDisplayList = resource_manager_get_model(rm, "data/models/plane.obj");
-	menuData->batDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_bat.obj");
-	menuData->handDisplayList = resource_manager_get_model(rm, "data/models/hutunkeitto_hand.obj");
 
 	return 0;
 }

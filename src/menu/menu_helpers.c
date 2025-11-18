@@ -59,8 +59,8 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 	} else {
 		menuData->stage = MENU_STAGE_CUP;
 		menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
-		menuData->cup_menu.pointer = 0;
-		menuData->cup_menu.rem = 5;
+		menuData->cup_menu.ongoing.pointer = 0;
+		menuData->cup_menu.ongoing.rem = 5;
 	}
 }
 
