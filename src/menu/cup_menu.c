@@ -11,6 +11,39 @@ static int refreshLoadCups(StateInfo* stateInfo);
 static void saveCup(StateInfo* stateInfo, int slot);
 static void loadCup(StateInfo* stateInfo, int slot);
 
+static void initCupViewTreeState(CupViewTreeState* viewTreeState)
+{
+	// set locations for cup tree view.
+	viewTreeState->treeCoordinates[0].x = -0.65f;
+	viewTreeState->treeCoordinates[0].y = -0.6f;
+	viewTreeState->treeCoordinates[1].x = -0.65f;
+	viewTreeState->treeCoordinates[1].y = -0.2f;
+	viewTreeState->treeCoordinates[2].x = -0.65f;
+	viewTreeState->treeCoordinates[2].y =  0.2f;
+	viewTreeState->treeCoordinates[3].x = -0.65f;
+	viewTreeState->treeCoordinates[3].y =  0.6f;
+	viewTreeState->treeCoordinates[4].x =  0.65f;
+	viewTreeState->treeCoordinates[4].y = -0.6f;
+	viewTreeState->treeCoordinates[5].x =  0.65f;
+	viewTreeState->treeCoordinates[5].y = -0.2f;
+	viewTreeState->treeCoordinates[6].x =  0.65f;
+	viewTreeState->treeCoordinates[6].y =  0.2f;
+	viewTreeState->treeCoordinates[7].x =  0.65f;
+	viewTreeState->treeCoordinates[7].y =  0.6f;
+	viewTreeState->treeCoordinates[8].x = -0.45f;
+	viewTreeState->treeCoordinates[8].y = -0.4f;
+	viewTreeState->treeCoordinates[9].x = -0.45f;
+	viewTreeState->treeCoordinates[9].y =  0.4f;
+	viewTreeState->treeCoordinates[10].x =  0.45f;
+	viewTreeState->treeCoordinates[10].y = -0.4f;
+	viewTreeState->treeCoordinates[11].x =  0.45f;
+	viewTreeState->treeCoordinates[11].y =  0.4f;
+	viewTreeState->treeCoordinates[12].x = -0.25f;
+	viewTreeState->treeCoordinates[12].y = 0.0f;
+	viewTreeState->treeCoordinates[13].x =  0.25f;
+	viewTreeState->treeCoordinates[13].y = 0.0f;
+}
+
 // =============================================================================
 // Screen-specific Update Functions
 // =============================================================================
@@ -18,21 +51,21 @@ static void loadCup(StateInfo* stateInfo, int slot);
 static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates)
 {
 	if(keyStates->released[0][KEY_DOWN]) {
-		cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
+		cupMenuState->initial.pointer = (cupMenuState->initial.pointer + 1) % cupMenuState->initial.rem;
 	}
 	if(keyStates->released[0][KEY_UP]) {
-		cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+		cupMenuState->initial.pointer = (cupMenuState->initial.pointer - 1 + cupMenuState->initial.rem) % cupMenuState->initial.rem;
 	}
 	if(keyStates->released[0][KEY_2]) {
-		if(cupMenuState->pointer == 0) {
+		if(cupMenuState->initial.pointer == 0) {
 			cupMenuState->screen = CUP_MENU_SCREEN_NEW_CUP;
-			cupMenuState->new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
-			cupMenuState->rem = stateInfo->numTeams;
-			cupMenuState->pointer = 0;
-		} else if(cupMenuState->pointer == 1) {
+			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
+			cupMenuState->new_cup.rem = stateInfo->numTeams;
+			cupMenuState->new_cup.pointer = 0;
+		} else if(cupMenuState->initial.pointer == 1) {
 			cupMenuState->screen = CUP_MENU_SCREEN_LOAD_CUP;
-			cupMenuState->rem = 5;
-			cupMenuState->pointer = 0;
+			cupMenuState->load_save.rem = 5;
+			cupMenuState->load_save.pointer = 0;
 		}
 	}
 	if(keyStates->released[0][KEY_1]) {
@@ -43,7 +76,20 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 
 static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOutput* output)
 {
-	if(cupMenuState->pointer == 0) { // "Next day"
+	if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+		// Cup is over, handle finished cup menu
+		if (cupMenuState->ongoing.pointer == 0) { // Schedule
+			cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
+		} else if (cupMenuState->ongoing.pointer == 1) { // Cup tree
+			cupMenuState->screen = CUP_MENU_SCREEN_VIEW_TREE;
+		} else if (cupMenuState->ongoing.pointer == 2) { // Quit
+			return MENU_STAGE_FRONT;
+		}
+		return MENU_STAGE_CUP;
+	}
+
+	// Cup is in progress, handle normal menu
+	if(cupMenuState->ongoing.pointer == 0) { // "Next day"
 		int userTeamIndex = -1;
 		int userPosition = 0;
 		int opponentTeamIndex = -1;
@@ -85,15 +131,15 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, -1, 0);
 			updateSchedule(stateInfo->tournamentState, stateInfo);
 		}
-	} else if(cupMenuState->pointer == 1) {
+	} else if(cupMenuState->ongoing.pointer == 1) {
 		cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
-	} else if(cupMenuState->pointer == 2) {
+	} else if(cupMenuState->ongoing.pointer == 2) {
 		cupMenuState->screen = CUP_MENU_SCREEN_VIEW_TREE;
-	} else if(cupMenuState->pointer == 3) {
+	} else if(cupMenuState->ongoing.pointer == 3) {
 		cupMenuState->screen = CUP_MENU_SCREEN_SAVE_CUP;
-		cupMenuState->pointer = 0;
-		cupMenuState->rem = 5;
-	} else if(cupMenuState->pointer == 4) {
+		cupMenuState->load_save.pointer = 0;
+		cupMenuState->load_save.rem = 5;
+	} else if(cupMenuState->ongoing.pointer == 4) {
 		return MENU_STAGE_FRONT;
 	}
 	return MENU_STAGE_CUP;
@@ -101,42 +147,42 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 
 static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates)
 {
-	if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
-		if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-		if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+	if (cupMenuState->new_cup.new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
+		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
+		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
-			cupMenuState->new_cup_stage = NEW_CUP_STAGE_WINS_TO_ADVANCE;
-			cupMenuState->team_selection = cupMenuState->pointer;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 2;
+			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_WINS_TO_ADVANCE;
+			cupMenuState->new_cup.team_selection = cupMenuState->new_cup.pointer;
+			cupMenuState->new_cup.pointer = 0;
+			cupMenuState->new_cup.rem = 2;
 		}
 		if(keyStates->released[0][KEY_1]) {
 			cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 2;
+			cupMenuState->initial.pointer = 0;
+			cupMenuState->initial.rem = 2;
 		}
-	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
-		if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-		if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+	} else if (cupMenuState->new_cup.new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
+		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
+		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
-			stateInfo->tournamentState->cupInfo.gameStructure = cupMenuState->pointer;
-			cupMenuState->new_cup_stage = NEW_CUP_STAGE_INNINGS;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 3;
+			stateInfo->tournamentState->cupInfo.gameStructure = cupMenuState->new_cup.pointer;
+			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_INNINGS;
+			cupMenuState->new_cup.pointer = 0;
+			cupMenuState->new_cup.rem = 3;
 		}
 		if(keyStates->released[0][KEY_1]) {
-			cupMenuState->new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = stateInfo->numTeams;
+			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
+			cupMenuState->new_cup.pointer = 0;
+			cupMenuState->new_cup.rem = stateInfo->numTeams;
 		}
-	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_INNINGS) {
-		if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-		if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+	} else if (cupMenuState->new_cup.new_cup_stage == NEW_CUP_STAGE_INNINGS) {
+		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
+		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
 			int i;
-			if(cupMenuState->pointer == 0) stateInfo->tournamentState->cupInfo.inningCount = 2;
-			else if(cupMenuState->pointer == 1) stateInfo->tournamentState->cupInfo.inningCount = 4;
-			else if(cupMenuState->pointer == 2) stateInfo->tournamentState->cupInfo.inningCount = 8;
+			if(cupMenuState->new_cup.pointer == 0) stateInfo->tournamentState->cupInfo.inningCount = 2;
+			else if(cupMenuState->new_cup.pointer == 1) stateInfo->tournamentState->cupInfo.inningCount = 4;
+			else if(cupMenuState->new_cup.pointer == 2) stateInfo->tournamentState->cupInfo.inningCount = 8;
 			stateInfo->tournamentState->cupInfo.userTeamIndexInTree = 0;
 			stateInfo->tournamentState->cupInfo.winnerIndex = -1;
 			stateInfo->tournamentState->cupInfo.dayCount = 0;
@@ -146,7 +192,7 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 				int random = rand()%8;
 				if(stateInfo->tournamentState->cupInfo.cupTeamIndexTree[random] == -1) {
 					stateInfo->tournamentState->cupInfo.cupTeamIndexTree[random] = i;
-					if(i == cupMenuState->team_selection) {
+					if(i == cupMenuState->new_cup.team_selection) {
 						stateInfo->tournamentState->cupInfo.userTeamIndexInTree = random;
 					}
 					i++;
@@ -158,13 +204,13 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 				stateInfo->tournamentState->cupInfo.schedule[i][1] = i*2+1;
 			}
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 5;
+			cupMenuState->ongoing.pointer = 0;
+			cupMenuState->ongoing.rem = 5;
 		}
 		if(keyStates->released[0][KEY_1]) {
-			cupMenuState->new_cup_stage = NEW_CUP_STAGE_WINS_TO_ADVANCE;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 2;
+			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_WINS_TO_ADVANCE;
+			cupMenuState->new_cup.pointer = 0;
+			cupMenuState->new_cup.rem = 2;
 		}
 	}
 	return MENU_STAGE_CUP;
@@ -172,19 +218,19 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 
 static MenuStage updateScreen_LoadCup(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates)
 {
-	if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-	if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+	if(keyStates->released[0][KEY_DOWN]) cupMenuState->load_save.pointer = (cupMenuState->load_save.pointer + 1) % cupMenuState->load_save.rem;
+	if(keyStates->released[0][KEY_UP]) cupMenuState->load_save.pointer = (cupMenuState->load_save.pointer - 1 + cupMenuState->load_save.rem) % cupMenuState->load_save.rem;
 	if(keyStates->released[0][KEY_1]) {
 		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
-		cupMenuState->pointer = 1;
-		cupMenuState->rem = 2;
+		cupMenuState->initial.pointer = 1;
+		cupMenuState->initial.rem = 2;
 	}
 	if (keyStates->released[0][KEY_2]) {
-		if (stateInfo->tournamentState->saveData[cupMenuState->pointer].userTeamIndexInTree != -1) {
-			loadCup(stateInfo, cupMenuState->pointer);
+		if (stateInfo->tournamentState->saveData[cupMenuState->load_save.pointer].userTeamIndexInTree != -1) {
+			loadCup(stateInfo, cupMenuState->load_save.pointer);
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
-			cupMenuState->pointer = 0;
-			cupMenuState->rem = 5;
+			cupMenuState->ongoing.pointer = 0;
+			cupMenuState->ongoing.rem = 5;
 		}
 	}
 	return MENU_STAGE_CUP;
@@ -192,15 +238,15 @@ static MenuStage updateScreen_LoadCup(CupMenuState* cupMenuState, StateInfo* sta
 
 static MenuStage updateScreen_SaveCup(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates)
 {
-	if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-	if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+	if(keyStates->released[0][KEY_DOWN]) cupMenuState->load_save.pointer = (cupMenuState->load_save.pointer + 1) % cupMenuState->load_save.rem;
+	if(keyStates->released[0][KEY_UP]) cupMenuState->load_save.pointer = (cupMenuState->load_save.pointer - 1 + cupMenuState->load_save.rem) % cupMenuState->load_save.rem;
 	if(keyStates->released[0][KEY_1]) {
 		cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
-		cupMenuState->pointer = 3;
-		cupMenuState->rem = 5;
+		cupMenuState->ongoing.pointer = 3;
+		cupMenuState->ongoing.rem = 5;
 	}
 	if (keyStates->released[0][KEY_2]) {
-		saveCup(stateInfo, cupMenuState->pointer);
+		saveCup(stateInfo, cupMenuState->load_save.pointer);
 	}
 	return MENU_STAGE_CUP;
 }
@@ -218,7 +264,7 @@ static MenuStage updateScreen_View(CupMenuState* cupMenuState, const KeyStates* 
 // Screen-specific Draw Functions
 // =============================================================================
 
-static void drawScreen_Initial(const CupMenuState* cupMenuState, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_Initial(const CupInitialState* initialState, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -248,11 +294,11 @@ static void drawScreen_Initial(const CupMenuState* cupMenuState, const RenderSta
 
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 180.0f;
-	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	float arrow_y = menu_start_y + (initialState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
-static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_Ongoing(const CupOngoingState* ongoingState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -262,27 +308,33 @@ static void drawScreen_Ongoing(const CupMenuState* cupMenuState, const StateInfo
 	const float menu_fontsize = 40.0f;
 	const float arrow_size = 60.0f;
 
-	// --- Draw Text ---
 	draw_text_2d("Cup Menu", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Next day", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Schedule", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Cup tree", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Save", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Quit", center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	if(stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+	if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+		// Cup is over, show finished cup menu
+		draw_text_2d("Schedule", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Cup tree", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Quit", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+
 		char buffer[100];
 		sprintf(buffer, "%s has won the cup", stateInfo->teamData[stateInfo->tournamentState->cupInfo.winnerIndex].name);
-		draw_text_2d(buffer, center_x, menu_start_y + 6 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d(buffer, center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	} else {
+		// Cup is in progress, show normal menu
+		draw_text_2d("Next day", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Schedule", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Cup tree", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Save", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Quit", center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	}
 
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 200.0f;
-	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	float arrow_y = menu_start_y + (ongoingState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
-static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_NewCup(const CupNewState* newCupState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -292,16 +344,16 @@ static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo*
 	const float menu_fontsize = 40.0f;
 	const float arrow_size = 60.0f;
 
-	if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
+	if (newCupState->new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
 		draw_text_2d("Select team", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 		for(int i = 0; i < stateInfo->numTeams; i++) {
 			draw_text_2d(stateInfo->teamData[i].name, center_x, menu_start_y + i * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		}
-	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
+	} else if (newCupState->new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
 		draw_text_2d("How many wins to move forward", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Normal", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("One", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	} else if (cupMenuState->new_cup_stage == NEW_CUP_STAGE_INNINGS) {
+	} else if (newCupState->new_cup_stage == NEW_CUP_STAGE_INNINGS) {
 		draw_text_2d("How many innings in period", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("1", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("2", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -310,11 +362,11 @@ static void drawScreen_NewCup(const CupMenuState* cupMenuState, const StateInfo*
 
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 250.0f;
-	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+	float arrow_y = menu_start_y + (newCupState->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
-static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_ViewTree(const CupViewTreeState* viewTreeState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
 	const float text_size = 22.0f;
 	const float slot_width = VIRTUAL_WIDTH * 0.22f;
@@ -324,8 +376,8 @@ static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInf
 	// --- Draw Slots ---
 	for(int i = 0; i < SLOT_COUNT; i++) {
 		// Convert normalized coordinates to virtual screen coordinates
-		float x = (cupMenuState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH - (slot_width / 2.0f);
-		float y = (1.0f - cupMenuState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT - (slot_height / 2.0f);
+		float x = (viewTreeState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH - (slot_width / 2.0f);
+		float y = (1.0f - viewTreeState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT - (slot_height / 2.0f);
 		draw_texture_2d(slot_texture, x, y, slot_width, slot_height);
 	}
 
@@ -334,8 +386,8 @@ static void drawScreen_ViewTree(const CupMenuState* cupMenuState, const StateInf
 		int index = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[i];
 		if(index != -1) {
 			// Convert normalized coordinates to virtual screen coordinates for text
-			float text_center_x = (cupMenuState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
-			float text_center_y = (1.0f - cupMenuState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT;
+			float text_center_x = (viewTreeState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
+			float text_center_y = (1.0f - viewTreeState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT;
 
 			// Adjust for better visual alignment
 			float team_name_x = text_center_x - slot_width * 0.15f;
@@ -414,7 +466,7 @@ static void getScheduleForCup(const CupInfo* cup_info, int schedule[4][2])
 	}
 }
 
-static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, const CupMenuScreen screen, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -426,7 +478,7 @@ static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const Sta
 	const float arrow_size = 60.0f;
 
 	// --- Draw Title ---
-	if(cupMenuState->screen == CUP_MENU_SCREEN_LOAD_CUP) {
+	if(screen == CUP_MENU_SCREEN_LOAD_CUP) {
 		draw_text_2d("Load Cup", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 	} else {
 		draw_text_2d("Save Cup", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -496,11 +548,11 @@ static void drawScreen_LoadOrSaveCup(const CupMenuState* cupMenuState, const Sta
 
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 400.0f;
-	float arrow_y = menu_start_y + (cupMenuState->pointer * menu_spacing) - (arrow_size - main_fontsize) / 2.0f;
+	float arrow_y = menu_start_y + (loadSaveState->pointer * menu_spacing) - (arrow_size - main_fontsize) / 2.0f;
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
 }
 
-static void drawScreen_EndCredits(const CupMenuState* cupMenuState, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -517,7 +569,7 @@ static void drawScreen_EndCredits(const CupMenuState* cupMenuState, const Render
 	draw_text_2d("WE HAVE A CHAMPION!", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
 	const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
-	draw_text_2d(credits_text, cupMenuState->credits_menu.creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs);
+	draw_text_2d(credits_text, creditsState->creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs);
 }
 
 
@@ -600,47 +652,32 @@ static void loadCup(StateInfo* stateInfo, int slot)
 
 void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 {
+	// Initialize all sub-states to a known default
+	memset(&cupMenuState->initial, 0, sizeof(CupInitialState));
+	memset(&cupMenuState->ongoing, 0, sizeof(CupOngoingState));
+	memset(&cupMenuState->new_cup, 0, sizeof(CupNewState));
+	memset(&cupMenuState->load_save, 0, sizeof(CupLoadSaveState));
+	memset(&cupMenuState->credits_menu, 0, sizeof(CreditsMenuState));
+
+	// Initialize the tree coordinates, as they are constant layout data
+	initCupViewTreeState(&cupMenuState->view_tree);
+
+	// Set the starting screen based on whether a cup is in progress
 	if (stateInfo->tournamentState->cupInfo.userTeamIndexInTree == -1) {
 		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
-		cupMenuState->pointer = 0;
-		cupMenuState->rem = 2;
+		cupMenuState->initial.pointer = 0;
+		cupMenuState->initial.rem = 2;
 	} else {
 		cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
-		cupMenuState->pointer = 0;
-		cupMenuState->rem = 5;
+		cupMenuState->ongoing.pointer = 0;
+		if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+			cupMenuState->ongoing.rem = 3;
+		} else {
+			cupMenuState->ongoing.rem = 5;
+		}
 	}
-	cupMenuState->new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
-	cupMenuState->team_selection = 0;
 
-	// set locations for cup tree view.
-	cupMenuState->treeCoordinates[0].x = -0.65f;
-	cupMenuState->treeCoordinates[0].y = -0.6f;
-	cupMenuState->treeCoordinates[1].x = -0.65f;
-	cupMenuState->treeCoordinates[1].y = -0.2f;
-	cupMenuState->treeCoordinates[2].x = -0.65f;
-	cupMenuState->treeCoordinates[2].y =  0.2f;
-	cupMenuState->treeCoordinates[3].x = -0.65f;
-	cupMenuState->treeCoordinates[3].y =  0.6f;
-	cupMenuState->treeCoordinates[4].x =  0.65f;
-	cupMenuState->treeCoordinates[4].y = -0.6f;
-	cupMenuState->treeCoordinates[5].x =  0.65f;
-	cupMenuState->treeCoordinates[5].y = -0.2f;
-	cupMenuState->treeCoordinates[6].x =  0.65f;
-	cupMenuState->treeCoordinates[6].y =  0.2f;
-	cupMenuState->treeCoordinates[7].x =  0.65f;
-	cupMenuState->treeCoordinates[7].y =  0.6f;
-	cupMenuState->treeCoordinates[8].x = -0.45f;
-	cupMenuState->treeCoordinates[8].y = -0.4f;
-	cupMenuState->treeCoordinates[9].x = -0.45f;
-	cupMenuState->treeCoordinates[9].y =  0.4f;
-	cupMenuState->treeCoordinates[10].x =  0.45f;
-	cupMenuState->treeCoordinates[10].y = -0.4f;
-	cupMenuState->treeCoordinates[11].x =  0.45f;
-	cupMenuState->treeCoordinates[11].y =  0.4f;
-	cupMenuState->treeCoordinates[12].x = -0.25f;
-	cupMenuState->treeCoordinates[12].y = 0.0f;
-	cupMenuState->treeCoordinates[13].x =  0.25f;
-	cupMenuState->treeCoordinates[13].y = 0.0f;
+	// Initialize credits screen state
 	cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
 
 	if(refreshLoadCups(stateInfo) != 0) {
@@ -661,8 +698,8 @@ MenuStage updateCupMenu(
 		// This screen is the only one that can decide to start a game,
 		// so it's the only one that needs the 'output' struct.
 		// We also handle the common up/down navigation here.
-		if(keyStates->released[0][KEY_DOWN]) cupMenuState->pointer = (cupMenuState->pointer + 1) % cupMenuState->rem;
-		if(keyStates->released[0][KEY_UP]) cupMenuState->pointer = (cupMenuState->pointer - 1 + cupMenuState->rem) % cupMenuState->rem;
+		if(keyStates->released[0][KEY_DOWN]) cupMenuState->ongoing.pointer = (cupMenuState->ongoing.pointer + 1) % cupMenuState->ongoing.rem;
+		if(keyStates->released[0][KEY_UP]) cupMenuState->ongoing.pointer = (cupMenuState->ongoing.pointer - 1 + cupMenuState->ongoing.rem) % cupMenuState->ongoing.rem;
 		if(keyStates->released[0][KEY_2]) return updateScreen_Ongoing(cupMenuState, stateInfo, output);
 		return MENU_STAGE_CUP;
 	}
@@ -675,7 +712,7 @@ MenuStage updateCupMenu(
 	case CUP_MENU_SCREEN_VIEW_SCHEDULE:
 	case CUP_MENU_SCREEN_VIEW_TREE:
 		return updateScreen_View(cupMenuState, keyStates);
-	case CUP_MENU_SCREEN_END_CREDITS:
+	case CUP_MENU_SCREEN_END_CREDITS: {
 		const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
 		const float text_fontsize = 30.0f;
 		float text_width = getTextWidth2D(credits_text, strlen(credits_text), text_fontsize);
@@ -684,6 +721,7 @@ MenuStage updateCupMenu(
 			cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
 		}
 		return updateScreen_View(cupMenuState, keyStates);
+	}
 	}
 	return MENU_STAGE_CUP;
 }
@@ -696,26 +734,26 @@ void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, c
 
 	switch (cupMenuState->screen) {
 	case CUP_MENU_SCREEN_INITIAL:
-		drawScreen_Initial(cupMenuState, rs, rm);
+		drawScreen_Initial(&cupMenuState->initial, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_ONGOING:
-		drawScreen_Ongoing(cupMenuState, stateInfo, rs, rm);
+		drawScreen_Ongoing(&cupMenuState->ongoing, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_NEW_CUP:
-		drawScreen_NewCup(cupMenuState, stateInfo, rs, rm);
+		drawScreen_NewCup(&cupMenuState->new_cup, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_VIEW_TREE:
-		drawScreen_ViewTree(cupMenuState, stateInfo, rs, rm);
+		drawScreen_ViewTree(&cupMenuState->view_tree, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_VIEW_SCHEDULE:
 		drawScreen_ViewSchedule(cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_LOAD_CUP:
 	case CUP_MENU_SCREEN_SAVE_CUP:
-		drawScreen_LoadOrSaveCup(cupMenuState, stateInfo, rs, rm);
+		drawScreen_LoadOrSaveCup(&cupMenuState->load_save, cupMenuState->screen, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_END_CREDITS:
-		drawScreen_EndCredits(cupMenuState, rs, rm);
+		drawScreen_EndCredits(&cupMenuState->credits_menu, rs, rm);
 		break;
 	}
 }
