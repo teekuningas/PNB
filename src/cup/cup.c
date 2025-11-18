@@ -14,24 +14,14 @@ void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo)
 
 	int j;
 	int counter = 0;
+	int winsNeeded = tournamentState->cupInfo.winsToAdvance;
 	for(j = 0; j < SLOT_COUNT/2; j++) {
-		if(tournamentState->cupInfo.gameStructure == 0) {
-			if(tournamentState->cupInfo.slotWins[j*2] < 3 && tournamentState->cupInfo.slotWins[j*2+1] < 3) {
-				if(j < 4 || (j < 6 && tournamentState->cupInfo.dayCount >= 1) ||
-				        (j == 6 && tournamentState->cupInfo.dayCount >= 2)) {
-					tournamentState->cupInfo.schedule[counter][0] = j*2;
-					tournamentState->cupInfo.schedule[counter][1] = j*2+1;
-					counter++;
-				}
-			}
-		} else {
-			if(tournamentState->cupInfo.slotWins[j*2] < 1 && tournamentState->cupInfo.slotWins[j*2+1] < 1) {
-				if(j < 4 || (j < 6 && tournamentState->cupInfo.dayCount >= 1) ||
-				        (j == 6 && tournamentState->cupInfo.dayCount >= 2)) {
-					tournamentState->cupInfo.schedule[counter][0] = j*2;
-					tournamentState->cupInfo.schedule[counter][1] = j*2+1;
-					counter++;
-				}
+		if(tournamentState->cupInfo.slotWins[j*2] < winsNeeded && tournamentState->cupInfo.slotWins[j*2+1] < winsNeeded) {
+			if(j < 4 || (j < 6 && tournamentState->cupInfo.dayCount >= 1) ||
+			        (j == 6 && tournamentState->cupInfo.dayCount >= 2)) {
+				tournamentState->cupInfo.schedule[counter][0] = j*2;
+				tournamentState->cupInfo.schedule[counter][1] = j*2+1;
+				counter++;
 			}
 		}
 	}
@@ -41,7 +31,7 @@ void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo)
 	}
 }
 
-void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot)
+void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot, int randomNumber)
 {
 	int i;
 	int counter = 0;
@@ -53,7 +43,6 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 			int index = 8 + tournamentState->cupInfo.schedule[counter][0] / 2;
 			int team1Points = 0;
 			int team2Points = 0;
-			int random = rand()%100;
 			int difference;
 			int winningTeam;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -65,7 +54,7 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 			difference = team2Points - team1Points;
 			// update schedule and cup tree
 			if(counter != scheduleSlot) {
-				if(random + difference*3 >= 50) {
+				if(randomNumber + difference*3 >= 50) {
 					winningTeam = 1;
 				} else {
 					winningTeam = 0;
@@ -74,31 +63,17 @@ void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInf
 				winningTeam = winningSlot;
 			}
 			tournamentState->cupInfo.slotWins[tournamentState->cupInfo.schedule[counter][winningTeam]] += 1;
-			if(tournamentState->cupInfo.gameStructure == 0) {
-				if(tournamentState->cupInfo.slotWins[tournamentState->cupInfo.schedule[counter][winningTeam]] == 3) {
-					if(index < 14) {
-						tournamentState->cupInfo.cupTeamIndexTree[index] =
-						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
-						if(tournamentState->cupInfo.schedule[counter][winningTeam] == tournamentState->cupInfo.userTeamIndexInTree) {
-							tournamentState->cupInfo.userTeamIndexInTree = index;
-						}
-					} else {
-						tournamentState->cupInfo.winnerIndex =
-						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
+			int winsNeeded = tournamentState->cupInfo.winsToAdvance;
+			if(tournamentState->cupInfo.slotWins[tournamentState->cupInfo.schedule[counter][winningTeam]] == winsNeeded) {
+				if(index < 14) {
+					tournamentState->cupInfo.cupTeamIndexTree[index] =
+					    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
+					if(tournamentState->cupInfo.schedule[counter][winningTeam] == tournamentState->cupInfo.userTeamIndexInTree) {
+						tournamentState->cupInfo.userTeamIndexInTree = index;
 					}
-				}
-			} else {
-				if(tournamentState->cupInfo.slotWins[tournamentState->cupInfo.schedule[counter][winningTeam]] == 1) {
-					if(index < 14) {
-						tournamentState->cupInfo.cupTeamIndexTree[index] =
-						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
-						if(tournamentState->cupInfo.schedule[counter][winningTeam] == tournamentState->cupInfo.userTeamIndexInTree) {
-							tournamentState->cupInfo.userTeamIndexInTree = index;
-						}
-					} else {
-						tournamentState->cupInfo.winnerIndex =
-						    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
-					}
+				} else {
+					tournamentState->cupInfo.winnerIndex =
+					    tournamentState->cupInfo.cupTeamIndexTree[tournamentState->cupInfo.schedule[counter][winningTeam]];
 				}
 			}
 			counter++;
@@ -138,7 +113,7 @@ void cup_process_finished_game(TournamentState* tournamentState, StateInfo* stat
 		}
 
 		// 3. Update cup tree and schedule with the game result
-		updateCupTreeAfterDay(tournamentState, stateInfo, scheduleSlot, winningSlotInSchedule);
+		updateCupTreeAfterDay(tournamentState, stateInfo, scheduleSlot, winningSlotInSchedule, rand() % 100);
 		updateSchedule(tournamentState, stateInfo);
 	}
 }

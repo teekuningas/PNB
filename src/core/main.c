@@ -399,8 +399,9 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 
 		// Set up the tournament context with a full, plausible history
 		stateInfo->globalGameInfo->isCupGame = 1;
-		stateInfo->tournamentState->cupInfo.gameStructure = 1; // Best of 1 for simplicity
-		stateInfo->tournamentState->cupInfo.dayCount = 2;      // Final day
+
+		// Use shared fixture helper for basic tournament setup
+		fixture_init_cup_state(stateInfo->tournamentState, 1, 2, 12, 0, 0);
 
 		// --- Define the full tournament tree history ---
 		// Round 1 pairings
@@ -422,9 +423,6 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13] = 1; // 1 beats 5
 
 		// --- Set slot wins to perfectly match the history ---
-		for(int i=0; i < 14; i++) {
-			stateInfo->tournamentState->cupInfo.slotWins[i] = 0;
-		}
 		// Quarter-final match results
 		stateInfo->tournamentState->cupInfo.slotWins[0] = 1; // 0 beats 2
 		stateInfo->tournamentState->cupInfo.slotWins[2] = 1; // 4 beats 6
@@ -433,12 +431,9 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		// Semi-final match results
 		stateInfo->tournamentState->cupInfo.slotWins[8] = 1; // 0 beats 4
 		stateInfo->tournamentState->cupInfo.slotWins[10] = 1; // 1 beats 5
-		// Final match has not been played, so wins are 0-0
-		stateInfo->tournamentState->cupInfo.slotWins[12] = 0;
-		stateInfo->tournamentState->cupInfo.slotWins[13] = 0;
+		// Final match has not been played (already set to 0 by fixture_init_cup_state)
 
-		// Set user's position and the final match schedule
-		stateInfo->tournamentState->cupInfo.userTeamIndexInTree = 12;
+		// Set the final match schedule
 		stateInfo->tournamentState->cupInfo.schedule[0][0] = 12;
 		stateInfo->tournamentState->cupInfo.schedule[0][1] = 13;
 		for (int i = 1; i < 4; i++) {

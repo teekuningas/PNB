@@ -2,6 +2,7 @@
 // These tests run WITHOUT graphics - no OpenGL/GLFW needed
 
 #include "test_helpers.h"
+#include "test_cup_logic.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -88,6 +89,10 @@ int main(int argc, char* argv[]) {
 	
 	// Menu helper tests
 	RUN_TEST(test_text_width_calculation);
+
+	// Cup logic tests
+	RUN_TEST(test_deterministic_simulation_step);
+	RUN_TEST(test_best_of_one_full_simulation);
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

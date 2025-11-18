@@ -11,10 +11,14 @@ _OBJ += cup/cup.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 # Test objects (subset without OpenGL dependencies)
-_TEST_OBJ = core/fixtures.o
+_TEST_OBJ = core/fixtures.o cup/cup.o tests/test_cup_logic.o
 TEST_OBJ = $(patsubst %,$(ODIR)/%,$(_TEST_OBJ))
 
 obj/%.o: src/%.c
+	mkdir -p $(@D)
+	$(CC) -c -o $@ $^ $(CFLAGS)
+
+obj/tests/%.o: tests/%.c
 	mkdir -p $(@D)
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
