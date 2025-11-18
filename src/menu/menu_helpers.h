@@ -8,7 +8,6 @@
 
 void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo);
-void initBattingOrderState(BattingOrderState *state, int team_index, int player_control, const StateInfo *stateInfo);
 // Draws a full-screen 2D background quad for menus
 // Uses the "empty_background" texture from ResourceManager
 void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs);

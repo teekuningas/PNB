@@ -65,21 +65,6 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 	}
 }
 
-void initBattingOrderState(BattingOrderState *state, int team_index, int player_control, const StateInfo *stateInfo)
-{
-	state->pointer = 0;
-	state->rem = 13; // 12 players + "Continue"
-	state->mark = 0;
-	state->team_index = team_index;
-	state->player_control = player_control;
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		state->batting_order[i] = i;
-		strncpy(state->players[i].name, stateInfo->teamData[team_index].players[i].name, sizeof(state->players[i].name) - 1);
-		state->players[i].name[sizeof(state->players[i].name) - 1] = '\0';
-		state->players[i].speed = stateInfo->teamData[team_index].players[i].speed;
-		state->players[i].power = stateInfo->teamData[team_index].players[i].power;
-	}
-}
 
 void draw_text_2d(const char* text, float x, float y, float size, TextAlign align, const RenderState* rs)
 {
