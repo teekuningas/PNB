@@ -167,12 +167,39 @@ typedef struct {
 } CreditsMenuState;
 
 typedef struct {
-	CupMenuScreen screen;
+	int pointer;
+	int rem;
+} CupInitialState;
+
+typedef struct {
+	int pointer;
+	int rem;
+} CupOngoingState;
+
+typedef struct {
 	int pointer;
 	int rem;
 	NewCupStage new_cup_stage;
 	int team_selection;
+} CupNewState;
+
+typedef struct {
+	int pointer;
+	int rem;
+} CupLoadSaveState;
+
+typedef struct {
 	TreeCoordinates treeCoordinates[SLOT_COUNT];
+} CupViewTreeState;
+
+typedef struct {
+	CupMenuScreen screen;
+
+	CupInitialState initial;
+	CupOngoingState ongoing;
+	CupNewState new_cup;
+	CupLoadSaveState load_save;
+	CupViewTreeState view_tree;
 	CreditsMenuState credits_menu;
 } CupMenuState;
 
