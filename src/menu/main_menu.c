@@ -165,46 +165,21 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		if (nextStage != menuData->stage) {
 			stateInfo->playSoundEffect = SOUND_MENU;
 			if (nextStage == MENU_STAGE_CUP) {
-				// 1. Find the schedule slot that was just played using the correct data source.
-				int scheduleSlot = -1;
-				int i, j;
-				for (i = 0; i < 4; i++) {
-					for (j = 0; j < 2; j++) {
-						if (stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->tournamentState->cupInfo.userTeamIndexInTree) {
-							scheduleSlot = i;
-						}
-					}
-				}
+				// 1. Process the finished game to update the tournament's logical state.
+				cup_process_finished_game(
+				    stateInfo->tournamentState,
+				    stateInfo,
+				    stateInfo->gameConclusion->winner
+				);
 
-				// If a match was found, process the result.
-				if (scheduleSlot != -1) {
-					// 2. Determine which team in the schedule (slot 0 or 1) won the match.
-					// Get the actual team ID of the winner from the (still valid) globalGameInfo.
-					int winningTeamId = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].value - 1;
+				// 2. Re-initialize the cup menu to reflect the updated state.
+				initCupMenu(&menuData->cup_menu, stateInfo);
 
-					// Get the team ID for the first slot of the match that was played.
-					int teamIdInScheduleSlot0 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[scheduleSlot][0]];
-
-					int winningSlotInSchedule;
-					if (winningTeamId == teamIdInScheduleSlot0) {
-						winningSlotInSchedule = 0;
-					} else {
-						winningSlotInSchedule = 1;
-					}
-
-					// 3. Call the update function with the correct parameters.
-					updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, scheduleSlot, winningSlotInSchedule);
-					updateSchedule(stateInfo->tournamentState, stateInfo);
-
-					// 4. Re-initialize the cup menu to reflect the updated state.
-					initCupMenu(&menuData->cup_menu, stateInfo);
-
-					// 5. Check if the user won the entire cup and set the screen to the trophy/credits screen.
-					if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
-						int winnerControl = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].control;
-						if (winnerControl == 0 || winnerControl == 1) { // Human player
-							menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
-						}
+				// 3. Check if the user won the entire cup and set the screen to the trophy/credits screen.
+				if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+					int winnerControl = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].control;
+					if (winnerControl == 0 || winnerControl == 1) { // Human player
+						menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 					}
 				}
 			} else {
