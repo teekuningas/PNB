@@ -2,9 +2,7 @@
 #define COMMON_LOGIC_H
 
 #include "globals.h"
-#include "game_setup.h"
 
-void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
 int isVectorSmallEnoughSphere(Vector3D *vector, float limit);
 int isVectorSmallEnoughCircleXZV(Vector3D *vector, float limit);
 int isVectorSmallEnoughCircleXZ(float dx, float dz, float limit);
@@ -40,6 +38,5 @@ void initializeIndexInformation(StateInfo* stateInfo);
 void initializePRAIInformation(StateInfo* stateInfo);
 void setRunnerAndBatter(StateInfo* stateInfo);
 void loadMutableWorldSettings(StateInfo* stateInfo);
-void returnToGame(StateInfo* stateInfo);
 
 #endif /* COMMON_LOGIC_H */

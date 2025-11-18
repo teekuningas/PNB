@@ -6,9 +6,7 @@
 #include "resource_manager.h"
 #include "render.h"
 
-void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo);
 void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
-void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot);
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo);
 void initBattingOrderState(BattingOrderState *state, int team_index, int player_control, const StateInfo *stateInfo);
 // Draws a full-screen 2D background quad for menus

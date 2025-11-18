@@ -16,7 +16,7 @@ typedef enum {
 	GAME_LAUNCH_RETURN_HOMERUN_CONTEST
 } GameLaunchType;
 
-// This struct holds all the parameters needed to initialize a game.
+// This struct holds all the parameters needed to initialize a a game.
 // It is populated from the menu and used to set up the game state.
 
 typedef struct GameSetup {
@@ -35,5 +35,7 @@ typedef struct GameSetup {
 	int homerun_choice_count;
 } GameSetup;
 
-#endif /* GAME_SETUP_H */
+void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
+void returnToGame(StateInfo* stateInfo);
 
+#endif /* GAME_SETUP_H */

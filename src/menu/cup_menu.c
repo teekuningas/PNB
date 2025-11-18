@@ -2,6 +2,7 @@
 #include "font.h"
 #include "render.h"
 #include "menu_helpers.h"
+#include "cup.h"
 #include "save.h"
 #include <string.h>
 
