@@ -1,52 +1,47 @@
 #include "globals.h"
 #include "common_logic.h"
+#include "vector_math.h"
 
+// Wrapper functions for backward compatibility
+// These now call the pure vector_math functions
 int isVectorSmallEnoughSphere(Vector3D *vector, float limit)
 {
-	if(sqrt((vector->x)*(vector->x) + (vector->y)*(vector->y) + (vector->z)*(vector->z)) < limit) return 1;
-	else return 0;
+	return vec3_is_small_enough_sphere(vector, limit);
 }
 
 int isVectorSmallEnoughCircleXZV(Vector3D *vector, float limit)
 {
-	if(sqrt((vector->x)*(vector->x) + (vector->z)*(vector->z)) < limit) return 1;
-	else return 0;
+	return vec3_is_small_enough_circle_xz_v(vector, limit);
 }
 
 int isVectorSmallEnoughCircleXZ(float dx, float dz, float limit)
 {
-	if(sqrt(dx*dx + dz*dz) < limit) return 1;
-	else return 0;
+	return vec3_is_small_enough_circle_xz(dx, dz, limit);
 }
 
 void setVectorXYZ(Vector3D *vector, float x, float y, float z)
 {
-	vector->x = x;
-	vector->y = y;
-	vector->z = z;
+	vec3_set_xyz(vector, x, y, z);
 }
+
 void setVectorV(Vector3D *vector1, Vector3D *vector2)
 {
-	vector1->x = vector2->x;
-	vector1->y = vector2->y;
-	vector1->z = vector2->z;
+	vec3_set_from_vector(vector1, vector2);
 }
+
 void setVectorXZ(Vector3D *vector, float x, float z)
 {
-	vector->x = x;
-	vector->z = z;
+	vec3_set_xz(vector, x, z);
 }
 
 void addToVectorXZ(Vector3D *vector, float x, float z)
 {
-	vector->x += x;
-	vector->z += z;
+	vec3_add_xz(vector, x, z);
 }
+
 void addToVectorV(Vector3D *vector1, Vector3D *vector2)
 {
-	vector1->x += vector2->x;
-	vector1->y += vector2->y;
-	vector1->z += vector2->z;
+	vec3_add_vector(vector1, vector2);
 }
 /*
 	Index is index of the player in the playerInfo-array.
