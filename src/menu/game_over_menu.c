@@ -1,8 +1,3 @@
-/*
- * game_over_menu.c
- *
- * Draws the Game-Over menu screen texts.
- */
 #include "game_over_menu.h"
 #include "font.h"
 #include "menu_helpers.h"

@@ -4,10 +4,6 @@
 #include <string.h> // For memset
 #include <mxml.h>
 
-// =============================================================================
-// NEW DYNAMIC CUP STRUCTURE (WORK IN PROGRESS)
-// =============================================================================
-
 // Helper to get an integer attribute from an mxml node
 static int mxmlElementGetAttrAsInteger(mxml_node_t *node, const char *name, int default_value)
 {
@@ -87,8 +83,6 @@ void cup_destroy(Cup* cup)
 }
 
 #include <mxml.h>
-
-// ... (previous code) ...
 
 int cup_save(const Cup* cup, const char* filename)
 {
@@ -227,7 +221,6 @@ void cup_simulate_round(Cup* cup, int round)
 		CupMatch* match = &cup->matches[i];
 		if (match->winner_id == CUP_MATCH_NO_WINNER && match->team_a_id != -1 && match->team_b_id != -1) {
 			if (match->team_a_id != cup->user_team_id && match->team_b_id != cup->user_team_id) {
-				// Simulate the match by randomly picking a winner
 				TeamID winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
 				cup_update_match_result(cup, i, winner);
 			}
@@ -241,13 +234,13 @@ int cup_get_user_match_index(const Cup* cup)
 
 	for (int i = 0; i < cup->num_matches; ++i) {
 		const CupMatch* match = &cup->matches[i];
-		if (match->winner_id == CUP_MATCH_NO_WINNER) { // Match is not decided
+		if (match->winner_id == CUP_MATCH_NO_WINNER) {
 			if (match->team_a_id == cup->user_team_id || match->team_b_id == cup->user_team_id) {
-				return i; // Found the user's next match
+				return i;
 			}
 		}
 	}
-	return -1; // No playable match for the user found
+	return -1;
 }
 
 void cup_get_schedule_for_round(const Cup* cup, int round, int* out_match_indices, int* out_count)
@@ -288,13 +281,11 @@ void cup_update_match_result(Cup* cup, int match_index, TeamID winner_team_id)
 
 	CupMatch* match = &cup->matches[match_index];
 
-	// Ensure the match is not already decided
 	if (match->winner_id != CUP_MATCH_NO_WINNER) {
 		fprintf(stderr, "Warning: Match %d already has a winner (%d). Ignoring result.\n", match_index, match->winner_id);
 		return;
 	}
 
-	// Determine which team won the game and increment their wins
 	if (match->team_a_id == winner_team_id) {
 		match->wins_a++;
 	} else if (match->team_b_id == winner_team_id) {
@@ -305,7 +296,6 @@ void cup_update_match_result(Cup* cup, int match_index, TeamID winner_team_id)
 		return;
 	}
 
-	// Check if a team has won the entire match (reached wins_to_advance)
 	TeamID match_winner_id = CUP_MATCH_NO_WINNER;
 	if (match->wins_a >= cup->wins_to_advance) {
 		match_winner_id = match->team_a_id;
@@ -314,7 +304,7 @@ void cup_update_match_result(Cup* cup, int match_index, TeamID winner_team_id)
 	}
 
 	if (match_winner_id != CUP_MATCH_NO_WINNER) {
-		match->winner_id = match_winner_id; // Set the match winner
+		match->winner_id = match_winner_id;
 
 		// Promote the winner to the parent match
 		int parent_match_index = get_parent_match_index(match_index);
@@ -354,8 +344,6 @@ static int get_match_round(const Cup* cup, int match_index)
 	}
 	return -1;
 }
-
-// Get the slot index within a round (0, 1, 2, ...)
 
 // Calculate the day range for a match based on its round and slot
 // Returns start_day for the match

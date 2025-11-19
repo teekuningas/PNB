@@ -15,7 +15,6 @@ static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo);
 
 static void initCupViewTreeState(CupViewTreeState* viewTreeState)
 {
-	// set locations for cup tree view.
 	viewTreeState->treeCoordinates[0].x = -0.65f;
 	viewTreeState->treeCoordinates[0].y = -0.6f;
 	viewTreeState->treeCoordinates[1].x = -0.65f;
@@ -93,13 +92,11 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOutput* output)
 {
 	if (stateInfo->cup == NULL) {
-		// Should not happen if initCupMenu is correct, but as a safeguard:
 		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
 		return MENU_STAGE_CUP;
 	}
 
 	if (stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
-		// Cup is over, handle finished cup menu
 		if (cupMenuState->ongoing.pointer == 0) { // Schedule
 			cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
 		} else if (cupMenuState->ongoing.pointer == 1) { // Cup tree
@@ -110,14 +107,11 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		return MENU_STAGE_CUP;
 	}
 
-	// Cup is in progress, handle normal menu
 	if(cupMenuState->ongoing.pointer == 0) { // "Next day"
-		// Get matches scheduled for today
 		int match_indices[8];
 		int match_count = 0;
 		cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
 
-		// Find if user has a match today
 		int user_match_index = -1;
 		for (int i = 0; i < match_count; i++) {
 			const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
@@ -129,7 +123,6 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		}
 
 		if (user_match_index != -1) {
-			// User has a match to play today
 			const CupMatch* match = &stateInfo->cup->matches[user_match_index];
 
 			// Keep bracket structure: team_a on left (team1), team_b on right (team2)

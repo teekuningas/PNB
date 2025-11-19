@@ -3,10 +3,6 @@
 
 #include "globals.h"
 
-// =============================================================================
-// NEW DYNAMIC CUP STRUCTURE (WORK IN PROGRESS)
-// =============================================================================
-
 typedef int TeamID;
 
 #define CUP_MATCH_NO_WINNER ((TeamID)-1)
