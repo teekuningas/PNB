@@ -3,6 +3,13 @@
 
 #include <stddef.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#else
+#include <linux/limits.h>
+#endif
+
 // Ensures the application's save directory exists.
 // ~/.pnb/saves/ on Linux
 // %USERPROFILE%/AppData/Local/PNB/saves/ on Windows

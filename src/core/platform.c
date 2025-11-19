@@ -5,12 +5,10 @@
 #include <errno.h>
 
 #ifdef _WIN32
-#include <windows.h>
-#define PATH_MAX_LENGTH MAX_PATH
+#define PATH_MAX_LENGTH PATH_MAX
 #define SEPARATOR "\\"
 #else
 #include <unistd.h>
-#include <linux/limits.h>
 #include <sys/stat.h>
 #define PATH_MAX_LENGTH PATH_MAX
 #define SEPARATOR "/"
