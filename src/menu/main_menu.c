@@ -3,7 +3,6 @@
 #include "font.h"
 
 #include "main_menu.h"
-#include "save.h"
 #include "menu_types.h"
 #include "team_selection_menu.h"
 #include "batting_order_menu.h"
@@ -166,21 +165,22 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			stateInfo->playSoundEffect = SOUND_MENU;
 			if (nextStage == MENU_STAGE_CUP) {
 				// 1. Process the finished game to update the tournament's logical state.
-				cup_process_finished_game(
-				    stateInfo->tournamentState,
-				    stateInfo,
-				    stateInfo->gameConclusion->winner
-				);
+				if (stateInfo->gameConclusion->isCupGame && stateInfo->cup != NULL) {
+					cup_update_match_result(
+						stateInfo->cup,
+						stateInfo->currently_played_cup_match_index,
+						stateInfo->gameConclusion->winner
+					);
+					// Advance to next day after user's game
+					cup_advance_day(stateInfo->cup);
+				}
 
 				// 2. Re-initialize the cup menu to reflect the updated state.
 				initCupMenu(&menuData->cup_menu, stateInfo);
 
 				// 3. Check if the user won the entire cup and set the screen to the trophy/credits screen.
-				if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
-					int winnerControl = stateInfo->globalGameInfo->teams[stateInfo->gameConclusion->winner].control;
-					if (winnerControl == 0 || winnerControl == 1) { // Human player
-						menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
-					}
+				if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id == stateInfo->cup->user_team_id) {
+					menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 				}
 			} else {
 				resetMenuForNewGame(menuData, stateInfo);
@@ -229,7 +229,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control, stateInfo);
 		} else if (nextStage == MENU_STAGE_FRONT) {
 			stateInfo->globalGameInfo->isCupGame = 0;
-			stateInfo->tournamentState->cupInfo.userTeamIndexInTree = -1;
 		}
 		menuData->stage = nextStage;
 		break;

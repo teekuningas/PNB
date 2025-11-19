@@ -3,8 +3,43 @@
 
 #include "globals.h"
 
-void updateSchedule(TournamentState* tournamentState, StateInfo* stateInfo);
-void updateCupTreeAfterDay(TournamentState* tournamentState, StateInfo* stateInfo, int scheduleSlot, int winningSlot, int randomNumber);
-void cup_process_finished_game(TournamentState* tournamentState, StateInfo* stateInfo, int gameWinner);
+// =============================================================================
+// NEW DYNAMIC CUP STRUCTURE (WORK IN PROGRESS)
+// =============================================================================
+
+typedef struct _CupMatch {
+    int team_a_id;
+    int team_b_id;
+    int wins_a;
+    int wins_b;
+    int winner_id;
+    int is_user_match;
+} CupMatch;
+
+typedef struct _Cup {
+    int num_teams;
+    int wins_to_advance;
+    int user_team_id;
+    int num_rounds;
+    int num_matches;
+    int innings_per_period;
+    int current_day;
+    CupMatch* matches;
+} Cup;
+
+// New API function prototypes
+Cup* cup_create(int num_teams, int wins_to_advance, int user_team_id, int innings_per_period, const int* initial_team_ids);
+void cup_destroy(Cup* cup);
+int cup_save(const Cup* cup, const char* filename);
+Cup* cup_load(const char* filename);
+void cup_update_match_result(Cup* cup, int match_index, int winner_team_id);
+void cup_simulate_round(Cup* cup, int round);
+int cup_get_user_match_index(const Cup* cup);
+void cup_get_schedule_for_round(const Cup* cup, int round, int* out_match_indices, int* out_count);
+
+// Day/schedule helpers
+int cup_get_current_round(const Cup* cup);
+void cup_get_matches_for_day(const Cup* cup, int day, int* out_match_indices, int* out_count);
+void cup_advance_day(Cup* cup);
 
 #endif /* CUP_H */

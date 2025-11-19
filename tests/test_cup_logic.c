@@ -1,153 +1,197 @@
 #include "test_helpers.h"
-#include "globals.h"
 #include "cup.h"
-#include "fixtures.h"
-#include "batting_order_menu.h"
-#include "menu_types.h"
-#include <string.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-// Test-specific helper to create a basic, valid StateInfo object
-static void setup_test_state_info(StateInfo* stateInfo, TournamentState* ts, TeamData* teamData, int numTeams) {
-	memset(stateInfo, 0, sizeof(StateInfo));
-	stateInfo->tournamentState = ts;
-	stateInfo->teamData = teamData;
-	stateInfo->numTeams = numTeams;
-
-	// Create mock team data with identical stats for predictable simulations
-	for (int i = 0; i < numTeams; i++) {
-		teamData[i].name = "Team";
-		// The test requires players array to be allocated.
-		teamData[i].players = malloc(sizeof(PlayerData) * (PLAYERS_IN_TEAM + JOKER_COUNT));
-		for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-			teamData[i].players[j].speed = 50;
-			teamData[i].players[j].power = 50;
-		}
-	}
+// Helper to check if a value is a power of two
+static int is_power_of_two(int n) {
+    return (n > 0) && ((n & (n - 1)) == 0);
 }
 
-// Test-specific helper to free mock data
-static void teardown_test_state_info(StateInfo* stateInfo, int numTeams) {
-	for (int i = 0; i < numTeams; i++) {
-		free(stateInfo->teamData[i].players);
-	}
+// Test the creation and initial state of a cup
+int test_cup_creation() {
+    printf("Running test: %s\n", __func__);
+    int initial_teams[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    int num_teams = 8;
+    Cup* cup = cup_create(num_teams, 1, 0, 4, initial_teams);
+
+    ASSERT_NOT_NULL(cup, "Cup should not be null");
+    ASSERT_EQ(num_teams, cup->num_teams, "Number of teams should be set correctly");
+    ASSERT_EQ(1, cup->wins_to_advance, "Wins to advance should be set correctly");
+    ASSERT_EQ(0, cup->user_team_id, "User team ID should be set correctly");
+    ASSERT_TRUE(is_power_of_two(cup->num_teams), "Number of teams should be a power of two");
+    ASSERT_EQ(num_teams - 1, cup->num_matches, "Number of matches should be num_teams - 1");
+
+    // Check initial pairings in the first round (quarter-finals for 8 teams)
+    // First round matches are at the end of the array
+    int first_round_start_index = num_teams - 1 - (num_teams / 2);
+    ASSERT_EQ(0, cup->matches[first_round_start_index + 0].team_a_id, "QF 1 Team A");
+    ASSERT_EQ(1, cup->matches[first_round_start_index + 0].team_b_id, "QF 1 Team B");
+    ASSERT_EQ(6, cup->matches[first_round_start_index + 3].team_a_id, "QF 4 Team A");
+    ASSERT_EQ(7, cup->matches[first_round_start_index + 3].team_b_id, "QF 4 Team B");
+
+    // Check that later-round matches are unpopulated
+    ASSERT_EQ(-1, cup->matches[0].team_a_id, "Final should not have teams yet");
+    ASSERT_EQ(-1, cup->matches[0].team_b_id, "Final should not have teams yet");
+
+    cup_destroy(cup);
+    return TEST_PASSED;
 }
 
-// A "glass-box" test to prove understanding of the simulation logic.
-// We manually create a state, predict the outcome of one step, and assert it.
-int test_deterministic_simulation_step() {
-	// 1. Manual Setup - No randomness
-	TournamentState ts;
-	StateInfo si;
-	TeamData teamData[8];
+// Test the progression of winners through the tournament tree
+int test_cup_progression() {
+    printf("Running test: %s\n", __func__);
+    int initial_teams[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    int num_teams = 8;
+    Cup* cup = cup_create(num_teams, 1, 0, 4, initial_teams);
 
-	memset(&ts, 0, sizeof(TournamentState));
-	setup_test_state_info(&si, &ts, teamData, 8);
+    // --- Simulate Quarter-Finals ---
+    // Winners: 1, 3, 5, 7
+    cup_update_match_result(cup, 3, 1); // Match 3 (0 vs 1), winner is 1
+    cup_update_match_result(cup, 4, 3); // Match 4 (2 vs 3), winner is 3
+    cup_update_match_result(cup, 5, 5); // Match 5 (4 vs 5), winner is 5
+    cup_update_match_result(cup, 6, 7); // Match 6 (6 vs 7), winner is 7
 
-	// Use shared fixture helper for tournament initialization
-	fixture_init_cup_state(&ts, 3, 0, -1, -1, -1); // Best of 5, day 0, no human player
+    // Assert that winners have been promoted to the semi-finals (matches 1 and 2)
+    ASSERT_EQ(1, cup->matches[1].team_a_id, "SF 1 Team A should be winner of QF 1");
+    ASSERT_EQ(3, cup->matches[1].team_b_id, "SF 1 Team B should be winner of QF 2");
+    ASSERT_EQ(5, cup->matches[2].team_a_id, "SF 2 Team A should be winner of QF 3");
+    ASSERT_EQ(7, cup->matches[2].team_b_id, "SF 2 Team B should be winner of QF 4");
 
-	// Manually create the tournament tree
-	for (int i = 0; i < 8; i++) {
-		ts.cupInfo.cupTeamIndexTree[i] = i; // Team 0 in slot 0, Team 1 in slot 1, etc.
-	}
-	
-	updateSchedule(&ts, &si); // Generate schedule from the clean state
+    // --- Simulate Semi-Finals ---
+    // Winners: 3, 7
+    cup_update_match_result(cup, 1, 3); // Match 1 (1 vs 3), winner is 3
+    cup_update_match_result(cup, 2, 7); // Match 2 (5 vs 7), winner is 7
 
-	// 2. Assert Initial State
-	ASSERT_EQ(0, ts.cupInfo.cupTeamIndexTree[0], "Initial team in slot 0 should be 0");
-	ASSERT_EQ(1, ts.cupInfo.cupTeamIndexTree[1], "Initial team in slot 1 should be 1");
-	ASSERT_EQ(0, ts.cupInfo.schedule[0][0], "Day 0, Match 0 should be slot 0");
-	ASSERT_EQ(1, ts.cupInfo.schedule[0][1], "Day 0, Match 0 should be slot 1");
-	ASSERT_EQ(6, ts.cupInfo.schedule[3][0], "Day 0, Match 3 should be slot 6");
-	ASSERT_EQ(7, ts.cupInfo.schedule[3][1], "Day 0, Match 3 should be slot 7");
-	ASSERT_EQ(0, ts.cupInfo.slotWins[0], "Initial wins for slot 0 should be 0");
-	ASSERT_EQ(0, ts.cupInfo.slotWins[1], "Initial wins for slot 1 should be 0");
+    // Assert that winners have been promoted to the final (match 0)
+    ASSERT_EQ(3, cup->matches[0].team_a_id, "Final Team A should be winner of SF 1");
+    ASSERT_EQ(7, cup->matches[0].team_b_id, "Final Team B should be winner of SF 2");
 
-	// 3. Simulate One Step
-	// The win condition is `if(randomNumber + difference*3 >= 50)`.
-	// Our mock teams have equal stats, so `difference` is 0.
-	// We pass 75 as the randomNumber, so the condition is always true,
-	// meaning the second team in each scheduled pair will win.
-	updateCupTreeAfterDay(&ts, &si, -1, 0, 75);
+    // --- Simulate Final ---
+    // Winner: 7
+    cup_update_match_result(cup, 0, 7);
 
-	// 4. Assert Next State
-	ASSERT_EQ(0, ts.cupInfo.slotWins[0], "Slot 0 (loser) should have 0 wins");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[1], "Slot 1 (winner) should have 1 win");
-	ASSERT_EQ(0, ts.cupInfo.slotWins[2], "Slot 2 (loser) should have 0 wins");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[3], "Slot 3 (winner) should have 1 win");
-	ASSERT_EQ(0, ts.cupInfo.slotWins[4], "Slot 4 (loser) should have 0 wins");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[5], "Slot 5 (winner) should have 1 win");
-	ASSERT_EQ(0, ts.cupInfo.slotWins[6], "Slot 6 (loser) should have 0 wins");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[7], "Slot 7 (winner) should have 1 win");
-	ASSERT_EQ(-1, ts.cupInfo.cupTeamIndexTree[8], "No team should have advanced to slot 8 yet");
+    // Assert that the final match has the correct winner
+    ASSERT_EQ(7, cup->matches[0].winner_id, "Final winner should be team 7");
 
-	teardown_test_state_info(&si, 8);
-	return TEST_PASSED;
+    cup_destroy(cup);
+    return TEST_PASSED;
 }
 
-int test_best_of_one_full_simulation() {
-	// This test simulates a full "Best of 1" tournament, asserting the state
-	// after each round to prove full understanding of the logic.
+// Test "best of N" win condition
+int test_cup_best_of_three() {
+    printf("Running test: %s\n", __func__);
+    int initial_teams[] = {0, 1, 2, 3};
+    int num_teams = 4;
+    // Best of 3 means 2 wins are needed
+    Cup* cup = cup_create(num_teams, 2, 0, 4, initial_teams); 
 
-	// 1. Manual Setup
-	TournamentState ts;
-	StateInfo si;
-	TeamData teamData[8];
+    // --- Simulate Semi-Finals (Matches 1 and 2 for 4 teams) ---
+    
+    // Match 1 (0 vs 1): Team 1 wins the first game
+    cup_update_match_result(cup, 1, 1);
+    ASSERT_EQ(1, cup->matches[1].wins_b, "Bo3: Team 1 should have 1 win");
+    ASSERT_EQ(-1, cup->matches[0].team_a_id, "Bo3: No team should advance after one game");
 
-	memset(&ts, 0, sizeof(TournamentState));
-	setup_test_state_info(&si, &ts, teamData, 8);
+    // Match 1 (0 vs 1): Team 0 wins the second game
+    cup_update_match_result(cup, 1, 0);
+    ASSERT_EQ(1, cup->matches[1].wins_a, "Bo3: Team 0 should have 1 win");
+    ASSERT_EQ(1, cup->matches[1].wins_b, "Bo3: Team 1 should still have 1 win");
+    ASSERT_EQ(-1, cup->matches[0].team_a_id, "Bo3: No team should advance when tied 1-1");
 
-	// Use shared fixture helper for tournament initialization
-	fixture_init_cup_state(&ts, 1, 0, -1, -1, -1); // Best of 1, day 0, no human player
+    // Match 1 (0 vs 1): Team 1 wins the third game and the match
+    cup_update_match_result(cup, 1, 1);
+    ASSERT_EQ(2, cup->matches[1].wins_b, "Bo3: Team 1 should have 2 wins");
+    ASSERT_EQ(1, cup->matches[1].winner_id, "Bo3: Team 1 should be the match winner");
+    ASSERT_EQ(1, cup->matches[0].team_a_id, "Bo3: Team 1 should advance to the final");
 
-	for (int i = 0; i < 8; i++) ts.cupInfo.cupTeamIndexTree[i] = i;
-	
-	updateSchedule(&ts, &si);
+    cup_destroy(cup);
+    return TEST_PASSED;
+}
 
-	// --- ROUND 1: QUARTERFINALS ---
-	ts.cupInfo.dayCount++; // Day 1
-	updateCupTreeAfterDay(&ts, &si, -1, 0, 75);
-	updateSchedule(&ts, &si);
-
-	// 3. Assert State After Round 1
-	ASSERT_EQ(1, ts.cupInfo.slotWins[1], "R1: Slot 1 should have 1 win");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[3], "R1: Slot 3 should have 1 win");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[5], "R1: Slot 5 should have 1 win");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[7], "R1: Slot 7 should have 1 win");
-
-	ASSERT_EQ(1, ts.cupInfo.cupTeamIndexTree[8], "R1: Team 1 should advance to slot 8");
-	ASSERT_EQ(3, ts.cupInfo.cupTeamIndexTree[9], "R1: Team 3 should advance to slot 9");
-	ASSERT_EQ(5, ts.cupInfo.cupTeamIndexTree[10], "R1: Team 5 should advance to slot 10");
-	ASSERT_EQ(7, ts.cupInfo.cupTeamIndexTree[11], "R1: Team 7 should advance to slot 11");
-
-	ASSERT_EQ(8, ts.cupInfo.schedule[0][0], "R1: New schedule should be slot 8");
-	ASSERT_EQ(9, ts.cupInfo.schedule[0][1], "R1: New schedule should be slot 9");
-	ASSERT_EQ(10, ts.cupInfo.schedule[1][0], "R1: New schedule should be slot 10");
-	ASSERT_EQ(11, ts.cupInfo.schedule[1][1], "R1: New schedule should be slot 11");
-
-	// --- ROUND 2: SEMIFINALS ---
-	ts.cupInfo.dayCount++; // Day 2
-	updateCupTreeAfterDay(&ts, &si, -1, 0, 75);
-	updateSchedule(&ts, &si);
-
-	// 5. Assert State After Round 2
-	ASSERT_EQ(1, ts.cupInfo.slotWins[9], "R2: Slot 9 should have 1 win");
-	ASSERT_EQ(1, ts.cupInfo.slotWins[11], "R2: Slot 11 should have 1 win");
-
-	ASSERT_EQ(3, ts.cupInfo.cupTeamIndexTree[12], "R2: Team 3 should advance to slot 12");
-	ASSERT_EQ(7, ts.cupInfo.cupTeamIndexTree[13], "R2: Team 7 should advance to slot 13");
-
-	ASSERT_EQ(13, ts.cupInfo.schedule[0][1], "R2: New schedule should be slot 13");
-
-	// --- ROUND 3: FINALS ---
-	ts.cupInfo.dayCount++; // Day 3
-	updateCupTreeAfterDay(&ts, &si, -1, 0, 75);
-	updateSchedule(&ts, &si);
-
-	// 7. Assert State After Round 3
-	ASSERT_EQ(1, ts.cupInfo.slotWins[13], "R3: Slot 13 should have 1 win");
-	ASSERT_EQ(7, ts.cupInfo.winnerIndex, "R3: Team 7 should be the tournament winner");
-
-	teardown_test_state_info(&si, 8);
-	return TEST_PASSED;
+// Test save and load functionality with round-trip verification
+int test_cup_save_load() {
+    printf("Running test: %s\n", __func__);
+    const char* test_filename = "test_cup_save.xml";
+    
+    // Create a cup with some progress
+    int initial_teams[] = {0, 1, 2, 3, 4, 5, 6, 7};
+    int num_teams = 8;
+    Cup* original_cup = cup_create(num_teams, 2, 3, 4, initial_teams);
+    ASSERT_NOT_NULL(original_cup, "Original cup should be created");
+    
+    // Simulate some matches to create interesting state
+    // Quarter-finals with best-of-3 (need 2 wins each to advance)
+    // QF1: Team 1 beats Team 0 (2-0)
+    cup_update_match_result(original_cup, 3, 1);
+    cup_update_match_result(original_cup, 3, 1);
+    // QF2: Team 2 beats Team 3 (2-1)
+    cup_update_match_result(original_cup, 4, 2);
+    cup_update_match_result(original_cup, 4, 3);
+    cup_update_match_result(original_cup, 4, 2);
+    // QF3: Team 5 beats Team 4 (2-0)
+    cup_update_match_result(original_cup, 5, 5);
+    cup_update_match_result(original_cup, 5, 5);
+    // QF4: Team 6 beats Team 7 (2-0)
+    cup_update_match_result(original_cup, 6, 6);
+    cup_update_match_result(original_cup, 6, 6);
+    
+    // Semi-finals: partially played (match 1 has one game, 1-0)
+    // Now teams 1, 2, 5, 6 have advanced to semis
+    cup_update_match_result(original_cup, 1, 1);
+    
+    // Save the cup
+    int save_result = cup_save(original_cup, test_filename);
+    ASSERT_EQ(0, save_result, "Save should succeed");
+    
+    // Load the cup
+    Cup* loaded_cup = cup_load(test_filename);
+    ASSERT_NOT_NULL(loaded_cup, "Loaded cup should not be null");
+    
+    // Verify all attributes match
+    ASSERT_EQ(original_cup->num_teams, loaded_cup->num_teams, "Loaded: num_teams should match");
+    ASSERT_EQ(original_cup->wins_to_advance, loaded_cup->wins_to_advance, "Loaded: wins_to_advance should match");
+    ASSERT_EQ(original_cup->user_team_id, loaded_cup->user_team_id, "Loaded: user_team_id should match");
+    ASSERT_EQ(original_cup->num_rounds, loaded_cup->num_rounds, "Loaded: num_rounds should match");
+    ASSERT_EQ(original_cup->num_matches, loaded_cup->num_matches, "Loaded: num_matches should match");
+    
+    // Verify all match states
+    for (int i = 0; i < original_cup->num_matches; i++) {
+        char msg[100];
+        sprintf(msg, "Match %d: team_a_id should match", i);
+        ASSERT_EQ(original_cup->matches[i].team_a_id, loaded_cup->matches[i].team_a_id, msg);
+        
+        sprintf(msg, "Match %d: team_b_id should match", i);
+        ASSERT_EQ(original_cup->matches[i].team_b_id, loaded_cup->matches[i].team_b_id, msg);
+        
+        sprintf(msg, "Match %d: wins_a should match", i);
+        ASSERT_EQ(original_cup->matches[i].wins_a, loaded_cup->matches[i].wins_a, msg);
+        
+        sprintf(msg, "Match %d: wins_b should match", i);
+        ASSERT_EQ(original_cup->matches[i].wins_b, loaded_cup->matches[i].wins_b, msg);
+        
+        sprintf(msg, "Match %d: winner_id should match", i);
+        ASSERT_EQ(original_cup->matches[i].winner_id, loaded_cup->matches[i].winner_id, msg);
+    }
+    
+    // Verify specific match states we set up
+    ASSERT_EQ(1, loaded_cup->matches[3].winner_id, "QF1: winner should be team 1");
+    ASSERT_EQ(2, loaded_cup->matches[4].winner_id, "QF2: winner should be team 2");
+    ASSERT_EQ(1, loaded_cup->matches[1].wins_a, "SF1: team 1 should have 1 win");
+    ASSERT_EQ(0, loaded_cup->matches[1].wins_b, "SF1: team 2 should have 0 wins");
+    ASSERT_EQ(-1, loaded_cup->matches[1].winner_id, "SF1: should not have a winner yet");
+    
+    // Continue playing on loaded cup to verify functionality
+    cup_update_match_result(loaded_cup, 1, 1); // Second game in semi-final
+    ASSERT_EQ(2, loaded_cup->matches[1].wins_a, "SF1: team 1 should now have 2 wins");
+    ASSERT_EQ(1, loaded_cup->matches[1].winner_id, "SF1: team 1 should be the winner");
+    ASSERT_EQ(1, loaded_cup->matches[0].team_a_id, "Final: team 1 should advance");
+    
+    // Clean up
+    cup_destroy(original_cup);
+    cup_destroy(loaded_cup);
+    remove(test_filename);
+    
+    return TEST_PASSED;
 }

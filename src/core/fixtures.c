@@ -136,32 +136,4 @@ void fixture_create_cup_final_super_inning(GameSetup* gameSetup, int team1, int 
 	}
 }
 
-void fixture_init_cup_state(TournamentState* ts, int winsToAdvance, int dayCount,
-                            int userTeamSlot, int finalSlot12Wins, int finalSlot13Wins)
-{
-	ts->cupInfo.winsToAdvance = winsToAdvance;
-	ts->cupInfo.dayCount = dayCount;
-	ts->cupInfo.userTeamIndexInTree = userTeamSlot;
-	ts->cupInfo.winnerIndex = -1;
-	ts->cupInfo.inningCount = 4; // Default to 2 innings per period
 
-	// Clear cup tree
-	for (int i = 0; i < SLOT_COUNT; i++) {
-		ts->cupInfo.cupTeamIndexTree[i] = -1;
-		ts->cupInfo.slotWins[i] = 0;
-	}
-
-	// Clear schedule
-	for (int i = 0; i < 4; i++) {
-		ts->cupInfo.schedule[i][0] = -1;
-		ts->cupInfo.schedule[i][1] = -1;
-	}
-
-	// Set final slot wins if provided (for cup final scenarios)
-	if (finalSlot12Wins >= 0) {
-		ts->cupInfo.slotWins[12] = finalSlot12Wins;
-	}
-	if (finalSlot13Wins >= 0) {
-		ts->cupInfo.slotWins[13] = finalSlot13Wins;
-	}
-}

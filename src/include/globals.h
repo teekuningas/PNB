@@ -401,25 +401,6 @@ typedef struct _LocalGameInfo {
 
 } LocalGameInfo;
 
-
-
-
-typedef struct _CupInfo {
-	int inningCount;
-	int winsToAdvance; // How many wins needed to advance (1 for single elimination, 3 for best of 5)
-	int dayCount;
-	int userTeamIndexInTree; // in cupTeamIndexTree the element that is the position of user's team right now.
-	int cupTeamIndexTree[14]; // indices to teamData-array, -1 means no team in this slot yet
-	int slotWins[14];
-	int schedule[4][2]; // indices to cupTeamIndexTree and slotWins. -1:s in the end mean no match for them.
-	int winnerIndex;
-} CupInfo;
-
-typedef struct _TournamentState {
-	CupInfo cupInfo;
-	CupInfo saveData[5];
-} TournamentState;
-
 typedef struct _GameConclusion {
 	int winner;
 	int period0Runs[2];
@@ -429,6 +410,9 @@ typedef struct _GameConclusion {
 	int isCupGame;
 } GameConclusion;
 
+// Forward declaration for the new Cup structure to avoid circular dependencies
+typedef struct _Cup Cup;
+
 typedef struct _StateInfo {
 	// Main menu or game screen active
 	ScreenState screen;
@@ -437,13 +421,14 @@ typedef struct _StateInfo {
 	int numTeams;
 	int playSoundEffect;
 	int stopSoundEffect;
+	int currently_played_cup_match_index; // Used to pass match context to/from game screen
 	// addresses to important information structures
 	KeyStates *keyStates;
 	TeamData *teamData;
 	FieldPositions *fieldPositions;
 	LocalGameInfo* localGameInfo;
 	GlobalGameInfo* globalGameInfo;
-	TournamentState* tournamentState;
+	Cup* cup;                  // New dynamic tournament state
 	GameConclusion* gameConclusion;
 } StateInfo;
 

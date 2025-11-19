@@ -1,8 +1,5 @@
-// Example tests for fixtures and menu logic
-// These tests run WITHOUT graphics - no OpenGL/GLFW needed
-
 #include "test_helpers.h"
-#include "test_cup_logic.h"
+#include "cup.h" // New include for the Cup API tests
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -76,6 +73,12 @@ int test_text_width_calculation() {
 	return TEST_PASSED;
 }
 
+// Declare new cup tests
+extern int test_cup_creation();
+extern int test_cup_progression();
+extern int test_cup_best_of_three();
+extern int test_cup_save_load();
+
 int main(int argc, char* argv[]) {
 	printf("========================================\n");
 	printf("PNB Test Suite (No Graphics)\n");
@@ -90,9 +93,11 @@ int main(int argc, char* argv[]) {
 	// Menu helper tests
 	RUN_TEST(test_text_width_calculation);
 
-	// Cup logic tests
-	RUN_TEST(test_deterministic_simulation_step);
-	RUN_TEST(test_best_of_one_full_simulation);
+	// New Cup logic tests
+	RUN_TEST(test_cup_creation);
+	RUN_TEST(test_cup_progression);
+	RUN_TEST(test_cup_best_of_three);
+	RUN_TEST(test_cup_save_load);
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

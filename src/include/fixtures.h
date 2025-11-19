@@ -25,11 +25,6 @@ void fixture_create_super_inning(GameSetup* setup, int team1, int team2,
 void fixture_create_homerun_contest(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control);
 void fixture_create_cup_final_super_inning(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control);
 
-// Helper to initialize tournament state for testing or fixtures
-// Can be used by both tests and the cup_final_super_inning fixture
-void fixture_init_cup_state(TournamentState* ts, int winsToAdvance, int dayCount,
-                            int userTeamSlot, int finalSlot12Wins, int finalSlot13Wins);
-
 
 // Creates a game setup starting at period 2
 void fixture_create_period2_start(GameSetup* setup, int team1, int team2,

@@ -44,4 +44,7 @@ extern int tests_failed;
 	} \
 } while(0)
 
+#define ASSERT_NOT_NULL(ptr, message) ASSERT((ptr) != NULL, message)
+#define ASSERT_TRUE(condition, message) ASSERT((condition), message)
+
 #endif /* TEST_HELPERS_H */
