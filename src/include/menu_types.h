@@ -181,12 +181,21 @@ typedef struct {
 	int rem;
 	NewCupStage new_cup_stage;
 	int team_selection;
+	int wins_to_advance;
 } CupNewState;
 
 typedef struct {
 	int pointer;
 	int rem;
 } CupLoadSaveState;
+
+typedef struct {
+	int exists;
+	int user_team_id;
+	int opponent_team_id;
+	int is_finished;
+	int current_day;
+} SaveSlotInfo;
 
 typedef struct {
 	TreeCoordinates treeCoordinates[SLOT_COUNT];
@@ -201,6 +210,8 @@ typedef struct {
 	CupLoadSaveState load_save;
 	CupViewTreeState view_tree;
 	CreditsMenuState credits_menu;
+	
+	SaveSlotInfo save_slots[5];  // Cached information about save files
 } CupMenuState;
 
 typedef struct MenuData {

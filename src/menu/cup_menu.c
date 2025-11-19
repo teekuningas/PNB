@@ -3,14 +3,28 @@
 #include "render.h"
 #include "menu_helpers.h"
 #include "cup.h"
-#include "save.h"
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <errno.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define PATH_MAX_LENGTH MAX_PATH
+#define SEPARATOR "\\"
+#else
+#include <unistd.h>
+#include <linux/limits.h>
+#define PATH_MAX_LENGTH PATH_MAX
+#define SEPARATOR "/"
+#endif
 
-
-static int refreshLoadCups(StateInfo* stateInfo);
 static void saveCup(StateInfo* stateInfo, int slot);
 static void loadCup(StateInfo* stateInfo, int slot);
+static int getSavePath(char* result, int slot);
+static int ensureSaveDirectory(void);
+static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo);
 
 static void initCupViewTreeState(CupViewTreeState* viewTreeState)
 {
@@ -45,54 +59,6 @@ static void initCupViewTreeState(CupViewTreeState* viewTreeState)
 	viewTreeState->treeCoordinates[13].y = 0.0f;
 }
 
-static void initializeNewCup(TournamentState* tournamentState, int inningsPointer, int userTeamSelection, unsigned int seed)
-{
-	int i;
-
-	// Set inning count based on selection
-	if(inningsPointer == 0) tournamentState->cupInfo.inningCount = 2;
-	else if(inningsPointer == 1) tournamentState->cupInfo.inningCount = 4;
-	else if(inningsPointer == 2) tournamentState->cupInfo.inningCount = 8;
-
-	// Initialize tournament state
-	tournamentState->cupInfo.userTeamIndexInTree = 0;
-	tournamentState->cupInfo.winnerIndex = -1;
-	tournamentState->cupInfo.dayCount = 0;
-
-	// Clear cup tree
-	for(i = 0; i < SLOT_COUNT; i++) {
-		tournamentState->cupInfo.cupTeamIndexTree[i] = -1;
-	}
-
-	// Deterministically assign 8 teams to the cup tree using provided seed
-	// Use a simple LCG (Linear Congruential Generator)
-	unsigned int rng_state = seed;
-	for(i = 0; i < 8; i++) {
-		// Find next empty slot using seeded random
-		int slot;
-		do {
-			rng_state = rng_state * 1103515245 + 12345; // Standard LCG constants
-			slot = (rng_state / 65536) % 8;
-		} while(tournamentState->cupInfo.cupTeamIndexTree[slot] != -1);
-
-		tournamentState->cupInfo.cupTeamIndexTree[slot] = i;
-		if(i == userTeamSelection) {
-			tournamentState->cupInfo.userTeamIndexInTree = slot;
-		}
-	}
-
-	// Initialize slot wins
-	for(i = 0; i < SLOT_COUNT; i++) {
-		tournamentState->cupInfo.slotWins[i] = 0;
-	}
-
-	// Set up initial schedule (first round matches)
-	for(i = 0; i < 4; i++) {
-		tournamentState->cupInfo.schedule[i][0] = i*2;
-		tournamentState->cupInfo.schedule[i][1] = i*2+1;
-	}
-}
-
 // =============================================================================
 // Screen-specific Update Functions
 // =============================================================================
@@ -106,15 +72,29 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 		cupMenuState->initial.pointer = (cupMenuState->initial.pointer - 1 + cupMenuState->initial.rem) % cupMenuState->initial.rem;
 	}
 	if(keyStates->released[0][KEY_2]) {
-		if(cupMenuState->initial.pointer == 0) {
+		int menu_offset = (stateInfo->cup != NULL) ? 1 : 0;  // Add "Resume" option if cup exists
+		
+		if(cupMenuState->initial.pointer == 0 && stateInfo->cup != NULL) {
+			// Resume existing cup
+			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
+			cupMenuState->ongoing.pointer = 0;
+			if (stateInfo->cup->matches[0].winner_id != -1) {
+				cupMenuState->ongoing.rem = 3;  // Cup finished menu
+			} else {
+				cupMenuState->ongoing.rem = 5;  // Cup in progress menu
+			}
+		} else if(cupMenuState->initial.pointer == (0 + menu_offset)) {
+			// New cup
 			cupMenuState->screen = CUP_MENU_SCREEN_NEW_CUP;
 			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
 			cupMenuState->new_cup.rem = stateInfo->numTeams;
 			cupMenuState->new_cup.pointer = 0;
-		} else if(cupMenuState->initial.pointer == 1) {
+		} else if(cupMenuState->initial.pointer == (1 + menu_offset)) {
+			// Load cup
 			cupMenuState->screen = CUP_MENU_SCREEN_LOAD_CUP;
 			cupMenuState->load_save.rem = 5;
 			cupMenuState->load_save.pointer = 0;
+			scanSaveSlots(cupMenuState, stateInfo);  // Refresh save slot info
 		}
 	}
 	if(keyStates->released[0][KEY_1]) {
@@ -125,7 +105,13 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 
 static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOutput* output)
 {
-	if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+	if (stateInfo->cup == NULL) {
+		// Should not happen if initCupMenu is correct, but as a safeguard:
+		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
+		return MENU_STAGE_CUP;
+	}
+
+	if (stateInfo->cup->matches[0].winner_id != -1) {
 		// Cup is over, handle finished cup menu
 		if (cupMenuState->ongoing.pointer == 0) { // Schedule
 			cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
@@ -139,46 +125,66 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 
 	// Cup is in progress, handle normal menu
 	if(cupMenuState->ongoing.pointer == 0) { // "Next day"
-		int userTeamIndex = -1;
-		int userPosition = 0;
-		int opponentTeamIndex = -1;
-		int i, j;
-		// find out if there is a game for human player.
-		for(i = 0; i < 4; i++) {
-			for(j = 0; j < 2; j++) {
-				if(stateInfo->tournamentState->cupInfo.schedule[i][j] == stateInfo->tournamentState->cupInfo.userTeamIndexInTree) {
-					if(j == 0) {
-						userTeamIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][0]];
-						opponentTeamIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][1]];
-						userPosition = 0;
-					} else {
-						userTeamIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][1]];
-						opponentTeamIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][0]];
-						userPosition = 1;
-					}
-				}
+		// Get matches scheduled for today
+		int match_indices[8];
+		int match_count = 0;
+		cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
+		
+		// Find if user has a match today
+		int user_match_index = -1;
+		for (int i = 0; i < match_count; i++) {
+			const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
+			if (match->team_a_id == stateInfo->cup->user_team_id || 
+			    match->team_b_id == stateInfo->cup->user_team_id) {
+				user_match_index = match_indices[i];
+				break;
 			}
 		}
-		stateInfo->tournamentState->cupInfo.dayCount++;
-		// if there is, we proceed to the match
-		if(userTeamIndex != -1) {
-			if(userPosition == 0) {
-				output->team1 = userTeamIndex;
-				output->team2 = opponentTeamIndex;
-				output->team1_control = 0;
-				output->team2_control = 2;
+
+		if (user_match_index != -1) {
+			// User has a match to play today
+			const CupMatch* match = &stateInfo->cup->matches[user_match_index];
+			
+			// Keep bracket structure: team_a on left (team1), team_b on right (team2)
+			output->team1 = match->team_a_id;
+			output->team2 = match->team_b_id;
+			
+			// User controls whichever team is theirs
+			if (match->team_a_id == stateInfo->cup->user_team_id) {
+				output->team1_control = 0;  // User controls team1 (left side)
+				output->team2_control = 2;  // AI controls team2 (right side)
 			} else {
-				output->team2 = userTeamIndex;
-				output->team1 = opponentTeamIndex;
-				output->team2_control = 0;
-				output->team1_control = 2;
+				output->team1_control = 2;  // AI controls team1 (left side)
+				output->team2_control = 0;  // User controls team2 (right side)
 			}
-			output->innings = stateInfo->tournamentState->cupInfo.inningCount;
+			
+			output->innings = stateInfo->cup->innings_per_period;
+			stateInfo->currently_played_cup_match_index = user_match_index;
 			return MENU_STAGE_BATTING_ORDER_1;
 		} else {
-			// otherwise we simulate the day right away.
-			updateCupTreeAfterDay(stateInfo->tournamentState, stateInfo, -1, 0, rand() % 100);
-			updateSchedule(stateInfo->tournamentState, stateInfo);
+			// No user match today - simulate all AI matches and skip empty days
+			do {
+				// Simulate any AI matches for current day
+				for (int i = 0; i < match_count; i++) {
+					const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
+					// TODO: Pick winner based on team stats instead of random
+					int winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
+					cup_update_match_result(stateInfo->cup, match_indices[i], winner);
+				}
+				
+				// Advance to next day
+				cup_advance_day(stateInfo->cup);
+				
+				// Check if cup is complete
+				if (stateInfo->cup->matches[0].winner_id != -1) {
+					break;  // Cup finished
+				}
+				
+				// Get matches for new day
+				cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
+			} while (match_count == 0);  // Skip empty days
+			
+			// Stay in cup menu to show updated state
 		}
 	} else if(cupMenuState->ongoing.pointer == 1) {
 		cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
@@ -188,7 +194,10 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		cupMenuState->screen = CUP_MENU_SCREEN_SAVE_CUP;
 		cupMenuState->load_save.pointer = 0;
 		cupMenuState->load_save.rem = 5;
+		scanSaveSlots(cupMenuState, stateInfo);  // Refresh save slot info
 	} else if(cupMenuState->ongoing.pointer == 4) {
+		// When quitting an in-progress cup without saving, ask for confirmation
+		// For now, we keep the cup in memory so returning to cup menu resumes it
 		return MENU_STAGE_FRONT;
 	}
 	return MENU_STAGE_CUP;
@@ -203,7 +212,7 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_WINS_TO_ADVANCE;
 			cupMenuState->new_cup.team_selection = cupMenuState->new_cup.pointer;
 			cupMenuState->new_cup.pointer = 0;
-			cupMenuState->new_cup.rem = 2;
+			cupMenuState->new_cup.rem = 3;  // Three options now
 		}
 		if(keyStates->released[0][KEY_1]) {
 			cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
@@ -214,8 +223,14 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
-			// Convert menu selection to wins needed: 0="Normal"->3 wins, 1="One"->1 win
-			stateInfo->tournamentState->cupInfo.winsToAdvance = (cupMenuState->new_cup.pointer == 0) ? 3 : 1;
+			// Save wins_to_advance selection: 0="One"->1, 1="Two"->2, 2="Three"->3
+			if (cupMenuState->new_cup.pointer == 0) {
+				cupMenuState->new_cup.wins_to_advance = 1;
+			} else if (cupMenuState->new_cup.pointer == 1) {
+				cupMenuState->new_cup.wins_to_advance = 2;
+			} else {
+				cupMenuState->new_cup.wins_to_advance = 3;
+			}
 			cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_INNINGS;
 			cupMenuState->new_cup.pointer = 0;
 			cupMenuState->new_cup.rem = 3;
@@ -229,13 +244,48 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_UP]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer - 1 + cupMenuState->new_cup.rem) % cupMenuState->new_cup.rem;
 		if(keyStates->released[0][KEY_2]) {
-			// Initialize the new tournament
-			initializeNewCup(
-			    stateInfo->tournamentState,
-			    cupMenuState->new_cup.pointer,
-			    cupMenuState->new_cup.team_selection,
-			    (unsigned int)time(NULL)  // Generate seed in UI layer
+			// Determine innings per period based on user selection
+			int innings_per_period;
+			if(cupMenuState->new_cup.pointer == 0) innings_per_period = 2;
+			else if(cupMenuState->new_cup.pointer == 1) innings_per_period = 4;
+			else innings_per_period = 8;
+
+			// Generate initial team IDs (0 to numTeams-1)
+			int* initial_team_ids = (int*)malloc(sizeof(int) * stateInfo->numTeams);
+			if (initial_team_ids == NULL) {
+				perror("Failed to allocate initial_team_ids");
+				return MENU_STAGE_CUP;
+			}
+			for (int i = 0; i < stateInfo->numTeams; ++i) {
+				initial_team_ids[i] = i;
+			}
+
+			// Randomize tournament bracket using Fisher-Yates shuffle algorithm
+			for (int i = stateInfo->numTeams - 1; i > 0; i--) {
+				int j = rand() % (i + 1);
+				int temp = initial_team_ids[i];
+				initial_team_ids[i] = initial_team_ids[j];
+				initial_team_ids[j] = temp;
+			}
+
+			// Create the new Cup with saved selections
+			if (stateInfo->cup != NULL) {
+				cup_destroy(stateInfo->cup);
+			}
+			stateInfo->cup = cup_create(
+				stateInfo->numTeams,
+				cupMenuState->new_cup.wins_to_advance,
+				cupMenuState->new_cup.team_selection,
+				innings_per_period,
+				initial_team_ids
 			);
+
+			free(initial_team_ids); // Free the temporary array
+
+			if (stateInfo->cup == NULL) {
+				fprintf(stderr, "Error: Failed to create new cup.\n");
+				return MENU_STAGE_CUP;
+			}
 
 			// Transition to ongoing cup screen
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
@@ -261,8 +311,8 @@ static MenuStage updateScreen_LoadCup(CupMenuState* cupMenuState, StateInfo* sta
 		cupMenuState->initial.rem = 2;
 	}
 	if (keyStates->released[0][KEY_2]) {
-		if (stateInfo->tournamentState->saveData[cupMenuState->load_save.pointer].userTeamIndexInTree != -1) {
-			loadCup(stateInfo, cupMenuState->load_save.pointer);
+		loadCup(stateInfo, cupMenuState->load_save.pointer);
+		if (stateInfo->cup != NULL) {
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
 			cupMenuState->ongoing.pointer = 0;
 			cupMenuState->ongoing.rem = 5;
@@ -282,6 +332,7 @@ static MenuStage updateScreen_SaveCup(CupMenuState* cupMenuState, StateInfo* sta
 	}
 	if (keyStates->released[0][KEY_2]) {
 		saveCup(stateInfo, cupMenuState->load_save.pointer);
+		scanSaveSlots(cupMenuState, stateInfo);  // Refresh UI to show save succeeded
 	}
 	return MENU_STAGE_CUP;
 }
@@ -299,7 +350,8 @@ static MenuStage updateScreen_View(CupMenuState* cupMenuState, const KeyStates* 
 // Screen-specific Draw Functions
 // =============================================================================
 
-static void drawScreen_Initial(const CupInitialState* initialState, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_Initial(const CupInitialState* initialState, const StateInfo* stateInfo, 
+                               const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -324,8 +376,13 @@ static void drawScreen_Initial(const CupInitialState* initialState, const Render
 
 	// --- Draw Text ---
 	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("New cup", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Load cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	
+	int menu_line = 0;
+	if (stateInfo->cup != NULL) {
+		draw_text_2d("Resume", center_x, menu_start_y + (menu_line++ * menu_spacing), menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	}
+	draw_text_2d("New", center_x, menu_start_y + (menu_line++ * menu_spacing), menu_fontsize, TEXT_ALIGN_CENTER, rs);
+	draw_text_2d("Load", center_x, menu_start_y + (menu_line++ * menu_spacing), menu_fontsize, TEXT_ALIGN_CENTER, rs);
 
 	// --- Draw Arrow ---
 	float arrow_x = center_x + 180.0f;
@@ -345,14 +402,14 @@ static void drawScreen_Ongoing(const CupOngoingState* ongoingState, const StateI
 
 	draw_text_2d("Cup Menu", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
+	if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != -1) {
 		// Cup is over, show finished cup menu
 		draw_text_2d("Schedule", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Cup tree", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Quit", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 
 		char buffer[100];
-		sprintf(buffer, "%s has won the cup", stateInfo->teamData[stateInfo->tournamentState->cupInfo.winnerIndex].name);
+		sprintf(buffer, "%s has won the cup", stateInfo->teamData[stateInfo->cup->matches[0].winner_id].name);
 		draw_text_2d(buffer, center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	} else {
 		// Cup is in progress, show normal menu
@@ -386,8 +443,9 @@ static void drawScreen_NewCup(const CupNewState* newCupState, const StateInfo* s
 		}
 	} else if (newCupState->new_cup_stage == NEW_CUP_STAGE_WINS_TO_ADVANCE) {
 		draw_text_2d("How many wins to move forward", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-		draw_text_2d("Normal", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-		draw_text_2d("One", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("One", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Two", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+		draw_text_2d("Three", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 	} else if (newCupState->new_cup_stage == NEW_CUP_STAGE_INNINGS) {
 		draw_text_2d("How many innings in period", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("1", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -408,8 +466,24 @@ static void drawScreen_ViewTree(const CupViewTreeState* viewTreeState, const Sta
 	const float slot_height = VIRTUAL_HEIGHT * 0.12f;
 	const GLuint slot_texture = resource_manager_get_texture(rm, "data/textures/cup_tree_slot.tga");
 
+	if (stateInfo->cup == NULL) {
+		draw_text_2d("No cup in progress.", VIRTUAL_WIDTH / 2.0f, VIRTUAL_HEIGHT / 2.0f, 40.0f, TEXT_ALIGN_CENTER, rs);
+		return;
+	}
+
+	// NOTE: This visualization is designed for 8-team tournaments only.
+	// The 14 display slots are hardcoded positions that map to:
+	//   - Slots 0-7:  Quarter-final teams (bottom of bracket)
+	//   - Slots 8-11: Semi-final teams (middle of bracket)
+	//   - Slots 12-13: Final teams (top of bracket)
+	// Match indices in the Cup structure follow binary heap ordering:
+	//   - Match 0: Final
+	//   - Matches 1-2: Semi-finals
+	//   - Matches 3-6: Quarter-finals
+	int num_slots_to_draw = stateInfo->cup->num_matches * 2;
+
 	// --- Draw Slots ---
-	for(int i = 0; i < SLOT_COUNT; i++) {
+	for(int i = 0; i < num_slots_to_draw; i++) {
 		// Convert normalized coordinates to virtual screen coordinates
 		float x = (viewTreeState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH - (slot_width / 2.0f);
 		float y = (1.0f - viewTreeState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT - (slot_height / 2.0f);
@@ -417,22 +491,46 @@ static void drawScreen_ViewTree(const CupViewTreeState* viewTreeState, const Sta
 	}
 
 	// --- Draw Text ---
-	for(int i = 0; i < SLOT_COUNT; i++) {
-		int index = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[i];
-		if(index != -1) {
-			// Convert normalized coordinates to virtual screen coordinates for text
-			float text_center_x = (viewTreeState->treeCoordinates[i].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
-			float text_center_y = (1.0f - viewTreeState->treeCoordinates[i].y) / 2.0f * VIRTUAL_HEIGHT;
+	// Map Cup match indices to display slot indices for visualization
+	// This hardcoded mapping is specific to 8-team tournaments
+	for(int i = 0; i < stateInfo->cup->num_matches; i++) {
+		const CupMatch* match = &stateInfo->cup->matches[i];
+		
+		int slot_a_idx, slot_b_idx;
+		
+		if (i == 0) { // Final match -> top bracket slots
+			slot_a_idx = 12;
+			slot_b_idx = 13;
+		} else if (i >= 1 && i <= 2) { // Semi-finals -> middle bracket slots
+			slot_a_idx = 8 + (i-1)*2;
+			slot_b_idx = 9 + (i-1)*2;
+		} else if (i >= 3 && i <= 6) { // Quarter-finals -> bottom bracket slots
+			slot_a_idx = (i-3)*2;
+			slot_b_idx = (i-3)*2 + 1;
+		} else {
+			continue; // Skip invalid match indices
+		}
 
-			// Adjust for better visual alignment
+
+		if (match->team_a_id != -1) {
+			float text_center_x = (viewTreeState->treeCoordinates[slot_a_idx].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
+			float text_center_y = (1.0f - viewTreeState->treeCoordinates[slot_a_idx].y) / 2.0f * VIRTUAL_HEIGHT;
 			float team_name_x = text_center_x - slot_width * 0.15f;
-			float text_y = text_center_y - text_size / 2.0f; // Move text up from the bottom
-
-			char* team_name = stateInfo->teamData[index].name;
-			draw_text_2d(team_name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs);
-
-			char wins_str[2];
-			sprintf(wins_str, "%d", stateInfo->tournamentState->cupInfo.slotWins[i]);
+			float text_y = text_center_y - text_size / 2.0f;
+			draw_text_2d(stateInfo->teamData[match->team_a_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs);
+			char wins_str[8];
+			sprintf(wins_str, "%d", match->wins_a);
+			float wins_x = text_center_x + slot_width * 0.35f;
+			draw_text_2d(wins_str, wins_x, text_y, text_size, TEXT_ALIGN_LEFT, rs);
+		}
+		if (match->team_b_id != -1) {
+			float text_center_x = (viewTreeState->treeCoordinates[slot_b_idx].x + 1.0f) / 2.0f * VIRTUAL_WIDTH;
+			float text_center_y = (1.0f - viewTreeState->treeCoordinates[slot_b_idx].y) / 2.0f * VIRTUAL_HEIGHT;
+			float team_name_x = text_center_x - slot_width * 0.15f;
+			float text_y = text_center_y - text_size / 2.0f;
+			draw_text_2d(stateInfo->teamData[match->team_b_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs);
+			char wins_str[8];
+			sprintf(wins_str, "%d", match->wins_b);
 			float wins_x = text_center_x + slot_width * 0.35f;
 			draw_text_2d(wins_str, wins_x, text_y, text_size, TEXT_ALIGN_LEFT, rs);
 		}
@@ -451,47 +549,35 @@ static void drawScreen_ViewSchedule(const CupMenuState* cupMenuState, const Stat
 
 	draw_text_2d("Schedule", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	int counter = 0;
-	for(int i = 0; i < 4; i++) {
-		int index1 = -1;
-		int index2 = -1;
-		if(stateInfo->tournamentState->cupInfo.schedule[i][0] != -1)
-			index1 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][0]];
-		if(stateInfo->tournamentState->cupInfo.schedule[i][1] != -1)
-			index2 = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[stateInfo->tournamentState->cupInfo.schedule[i][1]];
+	if (stateInfo->cup == NULL) {
+		draw_text_2d("No cup in progress.", center_x, VIRTUAL_HEIGHT / 2.0f, 40.0f, TEXT_ALIGN_CENTER, rs);
+		return;
+	}
 
-		if(index1 != -1 && index2 != -1) {
-			float current_y = list_start_y + counter * list_spacing;
-			draw_text_2d(stateInfo->teamData[index1].name, center_x - team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
+	// Get matches scheduled for today
+	int match_indices[8];
+	int count = 0;
+	cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &count);
+
+	for(int i = 0; i < count; i++) {
+		const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
+		if(match->team_a_id != -1 && match->team_b_id != -1) {
+			float current_y = list_start_y + i * list_spacing;
+			draw_text_2d(stateInfo->teamData[match->team_a_id].name, center_x - team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
 			draw_text_2d("-", center_x, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
-			draw_text_2d(stateInfo->teamData[index2].name, center_x + team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
-			counter++;
+			draw_text_2d(stateInfo->teamData[match->team_b_id].name, center_x + team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
 		}
 	}
+	
+	// Show current day
+	char day_text[32];
+	sprintf(day_text, "Day %d", stateInfo->cup->current_day + 1);
+	draw_text_2d(day_text, center_x, title_y + 100.0f, 30.0f, TEXT_ALIGN_CENTER, rs);
 }
 
-static void getScheduleForCup(const CupInfo* cup_info, int schedule[4][2])
-{
-	int j;
-	int counter = 0;
-	int winsNeeded = cup_info->winsToAdvance;
-	for(j = 0; j < SLOT_COUNT/2; j++) {
-		if(cup_info->slotWins[j*2] < winsNeeded && cup_info->slotWins[j*2+1] < winsNeeded) {
-			if(j < 4 || (j < 6 && cup_info->dayCount >= 1) ||
-			        (j == 6 && cup_info->dayCount >= 2)) {
-				schedule[counter][0] = j*2;
-				schedule[counter][1] = j*2+1;
-				counter++;
-			}
-		}
-	}
-	for(j = counter; j < 4; j++) {
-		schedule[j][0] = -1;
-		schedule[j][1] = -1;
-	}
-}
-
-static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, const CupMenuScreen screen, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm)
+static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, const CupMenuScreen screen, 
+                                      const CupMenuState* cupMenuState, const StateInfo* stateInfo,
+                                      const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -512,56 +598,25 @@ static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, cons
 	// --- Draw Save Slots ---
 	for(int i = 0; i < 5; i++) {
 		float current_y = menu_start_y + i * menu_spacing;
-		const CupInfo* saved_cup = &stateInfo->tournamentState->saveData[i];
-		int user_team_tree_idx = saved_cup->userTeamIndexInTree;
-
-		if(user_team_tree_idx != -1) {
+		
+		const SaveSlotInfo* slot_info = &cupMenuState->save_slots[i];
+		
+		if(slot_info->exists) {
 			// Draw Team Name
-			char* team_name = stateInfo->teamData[saved_cup->cupTeamIndexTree[user_team_tree_idx]].name;
+			char* team_name = stateInfo->teamData[slot_info->user_team_id].name;
 			draw_text_2d(team_name, center_x, current_y, main_fontsize, TEXT_ALIGN_CENTER, rs);
 
 			// --- Draw Details ---
 			char details[100];
-			char opponent_name[50] = "N/A";
-
-			// Manually calculate winner for this save slot, as it's not stored directly
-			int winnerIndex = -1;
-			int winsNeeded = saved_cup->winsToAdvance;
-			if (saved_cup->slotWins[12] >= winsNeeded) winnerIndex = saved_cup->cupTeamIndexTree[12];
-			else if (saved_cup->slotWins[13] >= winsNeeded) winnerIndex = saved_cup->cupTeamIndexTree[13];
-
-			if (winnerIndex != -1) {
-				strcpy(opponent_name, "Cup finished");
+			if (slot_info->is_finished) {
+				sprintf(details, "Day %d - Cup finished", slot_info->current_day + 1);
+			} else if (slot_info->opponent_team_id != -1) {
+				sprintf(details, "Day %d - Next: %s", slot_info->current_day + 1, 
+				        stateInfo->teamData[slot_info->opponent_team_id].name);
 			} else {
-				int schedule[4][2];
-				getScheduleForCup(saved_cup, schedule);
-				int opponent_found = 0;
-				for (int j = 0; j < 4 && !opponent_found; j++) {
-					if (schedule[j][0] == user_team_tree_idx) {
-						int opponent_tree_idx = schedule[j][1];
-						if (opponent_tree_idx != -1) {
-							int opponent_team_idx = saved_cup->cupTeamIndexTree[opponent_tree_idx];
-							if (opponent_team_idx != -1) {
-								strcpy(opponent_name, stateInfo->teamData[opponent_team_idx].name);
-								opponent_found = 1;
-							}
-						}
-					} else if (schedule[j][1] == user_team_tree_idx) {
-						int opponent_tree_idx = schedule[j][0];
-						if (opponent_tree_idx != -1) {
-							int opponent_team_idx = saved_cup->cupTeamIndexTree[opponent_tree_idx];
-							if (opponent_team_idx != -1) {
-								strcpy(opponent_name, stateInfo->teamData[opponent_team_idx].name);
-								opponent_found = 1;
-							}
-						}
-					}
-				}
+				sprintf(details, "Day %d - In progress", slot_info->current_day + 1);
 			}
-
-			sprintf(details, "Day: %d | Next Opponent: %s", saved_cup->dayCount + 1, opponent_name);
 			draw_text_2d(details, center_x, current_y + main_fontsize * 1.2f, detail_fontsize, TEXT_ALIGN_CENTER, rs);
-
 		} else {
 			draw_text_2d("Empty slot", center_x, current_y, main_fontsize, TEXT_ALIGN_CENTER, rs);
 		}
@@ -598,70 +653,206 @@ static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const Re
 // Main Public Functions
 // =============================================================================
 
-static int refreshLoadCups(StateInfo* stateInfo)
+
+
+static int ensureSaveDirectory(void)
 {
-	// load save slots into menuData->saveData
-	readSaveData(stateInfo->tournamentState->saveData, 5);
+	char* homedir;
+	char pnbPath[PATH_MAX_LENGTH];
+	char savesPath[PATH_MAX_LENGTH];
+	int result;
 
-	int i, j;
-	// go through the saveData-structure and figure out if its good.
-	for(i = 0; i < 5; i++) {
-		if(stateInfo->tournamentState->saveData[i].userTeamIndexInTree != -1) {
-			int valid = 1;
-			if(stateInfo->tournamentState->saveData[i].dayCount < 0) valid = 0;
-			int wins = stateInfo->tournamentState->saveData[i].winsToAdvance;
-			if(wins != 1 && wins != 3) valid = 0; // Only support 1 or 3 wins
-			if(stateInfo->tournamentState->saveData[i].inningCount != 2 && stateInfo->tournamentState->saveData[i].inningCount != 4 && stateInfo->tournamentState->saveData[i].inningCount != 8) valid = 0;
-			if(stateInfo->tournamentState->saveData[i].winnerIndex >= stateInfo->numTeams) valid = 0;
-			if(stateInfo->tournamentState->saveData[i].userTeamIndexInTree >= 14) valid = 0;
-			for(j = 0; j < SLOT_COUNT; j++) {
-				if(stateInfo->tournamentState->saveData[i].slotWins[j] < 0 || stateInfo->tournamentState->saveData[i].slotWins[j] > 3) valid = 0;
-				if(stateInfo->tournamentState->saveData[i].cupTeamIndexTree[j] > stateInfo->numTeams) valid = 0;
-			}
-
-			if (valid == 0) {
-				printf("Save slot %d is invalid or from an old version. Ignoring.\n", i);
-				stateInfo->tournamentState->saveData[i].userTeamIndexInTree = -1;
-			}
+#ifdef _WIN32
+	homedir = getenv("USERPROFILE");
+	if (homedir == NULL) {
+		fprintf(stderr, "Error: Could not get user profile directory\n");
+		return 1;
+	}
+	
+	// Build PNB directory path
+	result = snprintf(pnbPath, sizeof(pnbPath), "%s%sAppData%sLocal%sPNB", 
+	                  homedir, SEPARATOR, SEPARATOR, SEPARATOR);
+	if (result < 0 || result >= (int)sizeof(pnbPath)) {
+		fprintf(stderr, "Error: Path too long for PNB directory\n");
+		return 1;
+	}
+	
+	if (!CreateDirectory(pnbPath, NULL)) {
+		DWORD err = GetLastError();
+		if (err != ERROR_ALREADY_EXISTS) {
+			fprintf(stderr, "Failed to create directory %s: %lu\n", pnbPath, err);
+			return 1;
 		}
 	}
+	
+	// Build saves directory path
+	result = snprintf(savesPath, sizeof(savesPath), "%s%ssaves", pnbPath, SEPARATOR);
+	if (result < 0 || result >= (int)sizeof(savesPath)) {
+		fprintf(stderr, "Error: Path too long for saves directory\n");
+		return 1;
+	}
+	
+	if (!CreateDirectory(savesPath, NULL)) {
+		DWORD err = GetLastError();
+		if (err != ERROR_ALREADY_EXISTS) {
+			fprintf(stderr, "Failed to create saves directory %s: %lu\n", savesPath, err);
+			return 1;
+		}
+	}
+#else
+	homedir = getenv("HOME");
+	if (homedir == NULL) {
+		fprintf(stderr, "Error: Could not get HOME directory\n");
+		return 1;
+	}
+	
+	// Build PNB directory path  
+	result = snprintf(pnbPath, sizeof(pnbPath), "%s%s.pnb", homedir, SEPARATOR);
+	if (result < 0 || result >= (int)sizeof(pnbPath)) {
+		fprintf(stderr, "Error: Path too long for .pnb directory\n");
+		return 1;
+	}
+	
+	if (mkdir(pnbPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+		if (errno != EEXIST) {
+			fprintf(stderr, "Failed to create directory %s: %s\n", pnbPath, strerror(errno));
+			return 1;
+		}
+	}
+	
+	// Build saves directory path
+	result = snprintf(savesPath, sizeof(savesPath), "%s%ssaves", pnbPath, SEPARATOR);
+	if (result < 0 || result >= (int)sizeof(savesPath)) {
+		fprintf(stderr, "Error: Path too long for saves directory\n");
+		return 1;
+	}
+	
+	if (mkdir(savesPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+		if (errno != EEXIST) {
+			fprintf(stderr, "Failed to create saves directory %s: %s\n", savesPath, strerror(errno));
+			return 1;
+		}
+	}
+#endif
+
+	return 0;
+}
+
+static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo)
+{
+	for (int i = 0; i < 5; i++) {
+		cupMenuState->save_slots[i].exists = 0;
+		cupMenuState->save_slots[i].user_team_id = -1;
+		cupMenuState->save_slots[i].opponent_team_id = -1;
+		cupMenuState->save_slots[i].is_finished = 0;
+		cupMenuState->save_slots[i].current_day = 0;
+		
+		char filename[PATH_MAX_LENGTH];
+		if (getSavePath(filename, i) != 0) {
+			continue;
+		}
+		
+		Cup* saved_cup = cup_load(filename);
+		if (saved_cup != NULL) {
+			cupMenuState->save_slots[i].exists = 1;
+			cupMenuState->save_slots[i].user_team_id = saved_cup->user_team_id;
+			cupMenuState->save_slots[i].current_day = saved_cup->current_day;
+			
+			if (saved_cup->matches[0].winner_id != -1) {
+				cupMenuState->save_slots[i].is_finished = 1;
+			} else {
+				int user_match_index = cup_get_user_match_index(saved_cup);
+				if (user_match_index != -1) {
+					const CupMatch* match = &saved_cup->matches[user_match_index];
+					int opponent_id = (match->team_a_id == saved_cup->user_team_id) 
+					                   ? match->team_b_id : match->team_a_id;
+					cupMenuState->save_slots[i].opponent_team_id = opponent_id;
+				}
+			}
+			
+			cup_destroy(saved_cup);
+		}
+	}
+}
+
+static int getSavePath(char* result, int slot)
+{
+	char* homedir;
+	int snprintf_result;
+
+#ifdef _WIN32
+	homedir = getenv("USERPROFILE");
+	if (homedir == NULL) {
+		fprintf(stderr, "Error: Could not get user profile directory\n");
+		return 1;
+	}
+	
+	// Build the full path directly to avoid incremental path construction
+	snprintf_result = snprintf(result, PATH_MAX_LENGTH, "%s%sAppData%sLocal%sPNB%ssaves%scup_%d.xml",
+	                           homedir, SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR, slot);
+#else
+	homedir = getenv("HOME");
+	if (homedir == NULL) {
+		fprintf(stderr, "Error: Could not get HOME directory\n");
+		return 1;
+	}
+	
+	// Build the full path directly
+	snprintf_result = snprintf(result, PATH_MAX_LENGTH, "%s%s.pnb%ssaves%scup_%d.xml",
+	                           homedir, SEPARATOR, SEPARATOR, SEPARATOR, slot);
+#endif
+
+	if (snprintf_result < 0 || snprintf_result >= PATH_MAX_LENGTH) {
+		fprintf(stderr, "Error: Save file path too long\n");
+		return 1;
+	}
+
 	return 0;
 }
 
 static void saveCup(StateInfo* stateInfo, int slot)
 {
-	// write current cup state into save slot
-	writeSaveData(stateInfo->tournamentState->saveData, &stateInfo->tournamentState->cupInfo, slot, 5);
-
-	// Refresh
-	int result = refreshLoadCups(stateInfo);
-	if (result != 0) {
-		printf("Something wrong with the save file.\n");
+	if (stateInfo->cup == NULL) {
+		printf("No cup in progress to save.\n");
+		return;
+	}
+	
+	if (ensureSaveDirectory() != 0) {
+		fprintf(stderr, "Error: Could not create save directory.\n");
+		return;
+	}
+	
+	char filename[PATH_MAX_LENGTH];
+	if (getSavePath(filename, slot) != 0) {
+		fprintf(stderr, "Error: Could not get save path.\n");
+		return;
+	}
+	
+	if (cup_save(stateInfo->cup, filename) == 0) {
+		printf("Cup saved to slot %d (%s).\n", slot, filename);
+	} else {
+		printf("Failed to save cup to slot %d.\n", slot);
 	}
 }
 
 static void loadCup(StateInfo* stateInfo, int slot)
 {
-	int i;
-	stateInfo->tournamentState->cupInfo.inningCount = stateInfo->tournamentState->saveData[slot].inningCount;
-	stateInfo->tournamentState->cupInfo.winsToAdvance = stateInfo->tournamentState->saveData[slot].winsToAdvance;
-	stateInfo->tournamentState->cupInfo.userTeamIndexInTree = stateInfo->tournamentState->saveData[slot].userTeamIndexInTree;
-	stateInfo->tournamentState->cupInfo.dayCount = stateInfo->tournamentState->saveData[slot].dayCount;
-
-	for(i = 0; i < SLOT_COUNT; i++) {
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[i] = stateInfo->tournamentState->saveData[slot].cupTeamIndexTree[i];
-		stateInfo->tournamentState->cupInfo.slotWins[i] = stateInfo->tournamentState->saveData[slot].slotWins[i];
+	char filename[PATH_MAX_LENGTH];
+	if (getSavePath(filename, slot) != 0) {
+		fprintf(stderr, "Error: Could not get save path.\n");
+		return;
 	}
-	stateInfo->tournamentState->cupInfo.winnerIndex = -1;
-	int winsNeeded = stateInfo->tournamentState->cupInfo.winsToAdvance;
-	if(stateInfo->tournamentState->cupInfo.slotWins[12] >= winsNeeded) {
-		stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12];
-	} else if(stateInfo->tournamentState->cupInfo.slotWins[13] >= winsNeeded) {
-		stateInfo->tournamentState->cupInfo.winnerIndex = stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13];
+	
+	Cup* loaded_cup = cup_load(filename);
+	if (loaded_cup != NULL) {
+		if (stateInfo->cup != NULL) {
+			cup_destroy(stateInfo->cup);
+		}
+		stateInfo->cup = loaded_cup;
+		printf("Cup loaded from slot %d (%s).\n", slot, filename);
+	} else {
+		printf("Failed to load cup from slot %d, or slot is empty.\n", slot);
 	}
-
-	// Recalculate the schedule based on the loaded cup state
-	updateSchedule(stateInfo->tournamentState, stateInfo);
 }
 
 void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
@@ -676,27 +867,17 @@ void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 	// Initialize the tree coordinates, as they are constant layout data
 	initCupViewTreeState(&cupMenuState->view_tree);
 
-	// Set the starting screen based on whether a cup is in progress
-	if (stateInfo->tournamentState->cupInfo.userTeamIndexInTree == -1) {
-		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
-		cupMenuState->initial.pointer = 0;
-		cupMenuState->initial.rem = 2;
-	} else {
-		cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
-		cupMenuState->ongoing.pointer = 0;
-		if (stateInfo->tournamentState->cupInfo.winnerIndex != -1) {
-			cupMenuState->ongoing.rem = 3;
-		} else {
-			cupMenuState->ongoing.rem = 5;
-		}
-	}
+	// Always start at initial screen (Resume/New/Load menu)
+	cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
+	cupMenuState->initial.pointer = 0;
+	// Set rem based on whether cup exists: 3 options (Resume/New/Load) or 2 (New/Load)
+	cupMenuState->initial.rem = (stateInfo->cup != NULL) ? 3 : 2;
 
 	// Initialize credits screen state
 	cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
-
-	if(refreshLoadCups(stateInfo) != 0) {
-		printf("Something wrong with the save file.\n");
-	}
+	
+	// Scan save files to cache their info
+	scanSaveSlots(cupMenuState, stateInfo);
 }
 MenuStage updateCupMenu(
     CupMenuState* cupMenuState,
@@ -748,7 +929,7 @@ void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, c
 
 	switch (cupMenuState->screen) {
 	case CUP_MENU_SCREEN_INITIAL:
-		drawScreen_Initial(&cupMenuState->initial, rs, rm);
+		drawScreen_Initial(&cupMenuState->initial, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_ONGOING:
 		drawScreen_Ongoing(&cupMenuState->ongoing, stateInfo, rs, rm);
@@ -764,7 +945,7 @@ void drawCupMenu(const CupMenuState* cupMenuState, const StateInfo* stateInfo, c
 		break;
 	case CUP_MENU_SCREEN_LOAD_CUP:
 	case CUP_MENU_SCREEN_SAVE_CUP:
-		drawScreen_LoadOrSaveCup(&cupMenuState->load_save, cupMenuState->screen, stateInfo, rs, rm);
+		drawScreen_LoadOrSaveCup(&cupMenuState->load_save, cupMenuState->screen, cupMenuState, stateInfo, rs, rm);
 		break;
 	case CUP_MENU_SCREEN_END_CREDITS:
 		drawScreen_EndCredits(&cupMenuState->credits_menu, rs, rm);

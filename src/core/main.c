@@ -11,6 +11,7 @@
 #include "resource_manager.h"
 #include "fixtures.h"
 #include "common_logic.h"
+#include "cup.h"
 
 static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
 static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
@@ -22,7 +23,6 @@ static MenuData menuData;
 static StateInfo stateInfo;
 static LocalGameInfo localGameInfo;
 static GlobalGameInfo globalGameInfo;
-static TournamentState tournamentState;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
 static KeyStates keyStates;
@@ -62,13 +62,13 @@ int main ( int argc, char *argv[] )
 	// Initialize stateInfo structure
 	stateInfo.localGameInfo = &localGameInfo;
 	stateInfo.globalGameInfo = &globalGameInfo;
-	stateInfo.tournamentState = &tournamentState;
 	stateInfo.gameConclusion = &gameConclusion;
 	stateInfo.keyStates = &keyStates;
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
 	stateInfo.stopSoundEffect = 0;
-	stateInfo.tournamentState->cupInfo.userTeamIndexInTree = -1;
+	stateInfo.cup = NULL;
+	stateInfo.currently_played_cup_match_index = -1;
 
 	resourceManager = resource_manager_init();
 	if (resourceManager == NULL) {
@@ -397,49 +397,33 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		                                      request->team2_control);
 		initializeGameFromMenu(stateInfo, &gameSetup);
 
-		// Set up the tournament context with a full, plausible history
+		// Set up the tournament context with a full, plausible history using the new API
 		stateInfo->globalGameInfo->isCupGame = 1;
 
-		// Use shared fixture helper for basic tournament setup
-		fixture_init_cup_state(stateInfo->tournamentState, 1, 2, 12, 0, 0);
-
-		// --- Define the full tournament tree history ---
-		// Round 1 pairings
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[0] = 0;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[1] = 2;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[2] = 4;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[3] = 6;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[4] = 1;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[5] = 3;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[6] = 5;
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[7] = 7;
-		// Quarter-final winners
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[8] = 0;  // 0 beats 2
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[9] = 4;  // 4 beats 6
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[10] = 1; // 1 beats 3
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[11] = 5; // 5 beats 7
-		// Semi-final winners (the finalists)
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[12] = 0; // 0 beats 4
-		stateInfo->tournamentState->cupInfo.cupTeamIndexTree[13] = 1; // 1 beats 5
-
-		// --- Set slot wins to perfectly match the history ---
-		// Quarter-final match results
-		stateInfo->tournamentState->cupInfo.slotWins[0] = 1; // 0 beats 2
-		stateInfo->tournamentState->cupInfo.slotWins[2] = 1; // 4 beats 6
-		stateInfo->tournamentState->cupInfo.slotWins[4] = 1; // 1 beats 3
-		stateInfo->tournamentState->cupInfo.slotWins[6] = 1; // 5 beats 7
-		// Semi-final match results
-		stateInfo->tournamentState->cupInfo.slotWins[8] = 1; // 0 beats 4
-		stateInfo->tournamentState->cupInfo.slotWins[10] = 1; // 1 beats 5
-		// Final match has not been played (already set to 0 by fixture_init_cup_state)
-
-		// Set the final match schedule
-		stateInfo->tournamentState->cupInfo.schedule[0][0] = 12;
-		stateInfo->tournamentState->cupInfo.schedule[0][1] = 13;
-		for (int i = 1; i < 4; i++) {
-			stateInfo->tournamentState->cupInfo.schedule[i][0] = -1;
-			stateInfo->tournamentState->cupInfo.schedule[i][1] = -1;
+		// Specific seeding for this test fixture: alternates top and bottom bracket
+		// Creates matchups: (0v2), (4v6), (1v3), (5v7) in quarter-finals
+		int initial_teams[] = {0, 2, 4, 6, 1, 3, 5, 7};
+		if (stateInfo->cup != NULL) {
+			cup_destroy(stateInfo->cup);
 		}
+		stateInfo->cup = cup_create(8, 1, request->team1, 4, initial_teams);
+		if (stateInfo->cup == NULL) {
+			fprintf(stderr, "Error: Failed to create cup for fixture.\n");
+			return;
+		}
+
+		// Simulate quarter-finals (winners: 0, 4, 1, 5)
+		cup_update_match_result(stateInfo->cup, 3, 0); // Match 3 (0 vs 2) -> 0 wins
+		cup_update_match_result(stateInfo->cup, 4, 4); // Match 4 (4 vs 6) -> 4 wins
+		cup_update_match_result(stateInfo->cup, 5, 1); // Match 5 (1 vs 3) -> 1 wins
+		cup_update_match_result(stateInfo->cup, 6, 5); // Match 6 (5 vs 7) -> 5 wins
+
+		// Simulate semi-finals (winners: 0, 1)
+		cup_update_match_result(stateInfo->cup, 1, 0); // Match 1 (0 vs 4) -> 0 wins
+		cup_update_match_result(stateInfo->cup, 2, 1); // Match 2 (1 vs 5) -> 1 wins
+
+		// The final (match 0) is now set up with teams 0 and 1.
+		stateInfo->currently_played_cup_match_index = 0;
 
 		// Set game state to a super-inning
 		stateInfo->globalGameInfo->period = 2;
