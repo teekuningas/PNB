@@ -148,8 +148,7 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 			state->rightHandPosition = state->batTimer*MOVING_AWAY_SPEED;
 		}
 		state->handsZ = 1.0f - state->batTimer*MOVING_AWAY_SPEED/2;
-	}
-	else if(state->state == 6) {
+	} else if(state->state == 6) {
 		int control;
 		if(state->turnCount%2 == 0) {
 			control = team1_control;
