@@ -2,6 +2,7 @@
 #define GAME_SETUP_H
 
 #include "globals.h"
+#include "cup.h"
 
 // Enum to represent the game mode, decoupling game logic from menu specifics.
 typedef enum {
@@ -18,12 +19,11 @@ typedef enum {
 
 // This struct holds all the parameters needed to initialize a a game.
 // It is populated from the menu and used to set up the game state.
-
 typedef struct GameSetup {
 	GameLaunchType launchType;
 	GameMode gameMode;
-	int team1;
-	int team2;
+	TeamID team1;
+	TeamID team2;
 	int team1_control;
 	int team2_control;
 	int halfInningsInPeriod;

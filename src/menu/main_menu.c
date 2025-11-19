@@ -94,7 +94,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		} else if (nextStage == MENU_STAGE_HELP) {
 			initHelpMenu(&menuData->help_menu);
 		} else if (nextStage == MENU_STAGE_QUIT) {
-			stateInfo->screen = LOADING_SCREEN;
+			stateInfo->screen = SCREEN_LOADING;
 		}
 		menuData->stage = nextStage;
 		break;
@@ -167,9 +167,9 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				// 1. Process the finished game to update the tournament's logical state.
 				if (stateInfo->gameConclusion->isCupGame && stateInfo->cup != NULL) {
 					cup_update_match_result(
-						stateInfo->cup,
-						stateInfo->currently_played_cup_match_index,
-						stateInfo->gameConclusion->winner
+					    stateInfo->cup,
+					    stateInfo->currently_played_cup_match_index,
+					    stateInfo->gameConclusion->winner
 					);
 					// Advance to next day after user's game
 					cup_advance_day(stateInfo->cup);

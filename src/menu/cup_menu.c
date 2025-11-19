@@ -3,27 +3,14 @@
 #include "render.h"
 #include "menu_helpers.h"
 #include "cup.h"
+#include "platform.h" // For platform-specific path functions
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <sys/stat.h>
-#include <errno.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#define PATH_MAX_LENGTH MAX_PATH
-#define SEPARATOR "\\"
-#else
-#include <unistd.h>
-#include <linux/limits.h>
-#define PATH_MAX_LENGTH PATH_MAX
-#define SEPARATOR "/"
-#endif
+#include <linux/limits.h> // For PATH_MAX
 
 static void saveCup(StateInfo* stateInfo, int slot);
 static void loadCup(StateInfo* stateInfo, int slot);
-static int getSavePath(char* result, int slot);
-static int ensureSaveDirectory(void);
 static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo);
 
 static void initCupViewTreeState(CupViewTreeState* viewTreeState)
@@ -73,12 +60,12 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 	}
 	if(keyStates->released[0][KEY_2]) {
 		int menu_offset = (stateInfo->cup != NULL) ? 1 : 0;  // Add "Resume" option if cup exists
-		
+
 		if(cupMenuState->initial.pointer == 0 && stateInfo->cup != NULL) {
 			// Resume existing cup
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
 			cupMenuState->ongoing.pointer = 0;
-			if (stateInfo->cup->matches[0].winner_id != -1) {
+			if (stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
 				cupMenuState->ongoing.rem = 3;  // Cup finished menu
 			} else {
 				cupMenuState->ongoing.rem = 5;  // Cup in progress menu
@@ -111,7 +98,7 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		return MENU_STAGE_CUP;
 	}
 
-	if (stateInfo->cup->matches[0].winner_id != -1) {
+	if (stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
 		// Cup is over, handle finished cup menu
 		if (cupMenuState->ongoing.pointer == 0) { // Schedule
 			cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
@@ -129,13 +116,13 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		int match_indices[8];
 		int match_count = 0;
 		cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
-		
+
 		// Find if user has a match today
 		int user_match_index = -1;
 		for (int i = 0; i < match_count; i++) {
 			const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
-			if (match->team_a_id == stateInfo->cup->user_team_id || 
-			    match->team_b_id == stateInfo->cup->user_team_id) {
+			if (match->team_a_id == stateInfo->cup->user_team_id ||
+			        match->team_b_id == stateInfo->cup->user_team_id) {
 				user_match_index = match_indices[i];
 				break;
 			}
@@ -144,11 +131,11 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		if (user_match_index != -1) {
 			// User has a match to play today
 			const CupMatch* match = &stateInfo->cup->matches[user_match_index];
-			
+
 			// Keep bracket structure: team_a on left (team1), team_b on right (team2)
 			output->team1 = match->team_a_id;
 			output->team2 = match->team_b_id;
-			
+
 			// User controls whichever team is theirs
 			if (match->team_a_id == stateInfo->cup->user_team_id) {
 				output->team1_control = 0;  // User controls team1 (left side)
@@ -157,7 +144,7 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 				output->team1_control = 2;  // AI controls team1 (left side)
 				output->team2_control = 0;  // User controls team2 (right side)
 			}
-			
+
 			output->innings = stateInfo->cup->innings_per_period;
 			stateInfo->currently_played_cup_match_index = user_match_index;
 			return MENU_STAGE_BATTING_ORDER_1;
@@ -168,22 +155,22 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 				for (int i = 0; i < match_count; i++) {
 					const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
 					// TODO: Pick winner based on team stats instead of random
-					int winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
+					TeamID winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
 					cup_update_match_result(stateInfo->cup, match_indices[i], winner);
 				}
-				
+
 				// Advance to next day
 				cup_advance_day(stateInfo->cup);
-				
+
 				// Check if cup is complete
 				if (stateInfo->cup->matches[0].winner_id != -1) {
 					break;  // Cup finished
 				}
-				
+
 				// Get matches for new day
 				cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
 			} while (match_count == 0);  // Skip empty days
-			
+
 			// Stay in cup menu to show updated state
 		}
 	} else if(cupMenuState->ongoing.pointer == 1) {
@@ -251,7 +238,7 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 			else innings_per_period = 8;
 
 			// Generate initial team IDs (0 to numTeams-1)
-			int* initial_team_ids = (int*)malloc(sizeof(int) * stateInfo->numTeams);
+			TeamID* initial_team_ids = (TeamID*)malloc(sizeof(TeamID) * stateInfo->numTeams);
 			if (initial_team_ids == NULL) {
 				perror("Failed to allocate initial_team_ids");
 				return MENU_STAGE_CUP;
@@ -263,7 +250,7 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 			// Randomize tournament bracket using Fisher-Yates shuffle algorithm
 			for (int i = stateInfo->numTeams - 1; i > 0; i--) {
 				int j = rand() % (i + 1);
-				int temp = initial_team_ids[i];
+				TeamID temp = initial_team_ids[i];
 				initial_team_ids[i] = initial_team_ids[j];
 				initial_team_ids[j] = temp;
 			}
@@ -273,12 +260,12 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 				cup_destroy(stateInfo->cup);
 			}
 			stateInfo->cup = cup_create(
-				stateInfo->numTeams,
-				cupMenuState->new_cup.wins_to_advance,
-				cupMenuState->new_cup.team_selection,
-				innings_per_period,
-				initial_team_ids
-			);
+			                     stateInfo->numTeams,
+			                     cupMenuState->new_cup.wins_to_advance,
+			                     cupMenuState->new_cup.team_selection,
+			                     innings_per_period,
+			                     initial_team_ids
+			                 );
 
 			free(initial_team_ids); // Free the temporary array
 
@@ -350,7 +337,7 @@ static MenuStage updateScreen_View(CupMenuState* cupMenuState, const KeyStates* 
 // Screen-specific Draw Functions
 // =============================================================================
 
-static void drawScreen_Initial(const CupInitialState* initialState, const StateInfo* stateInfo, 
+static void drawScreen_Initial(const CupInitialState* initialState, const StateInfo* stateInfo,
                                const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
@@ -376,7 +363,7 @@ static void drawScreen_Initial(const CupInitialState* initialState, const StateI
 
 	// --- Draw Text ---
 	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-	
+
 	int menu_line = 0;
 	if (stateInfo->cup != NULL) {
 		draw_text_2d("Resume", center_x, menu_start_y + (menu_line++ * menu_spacing), menu_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -402,7 +389,7 @@ static void drawScreen_Ongoing(const CupOngoingState* ongoingState, const StateI
 
 	draw_text_2d("Cup Menu", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != -1) {
+	if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
 		// Cup is over, show finished cup menu
 		draw_text_2d("Schedule", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Cup tree", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -495,9 +482,9 @@ static void drawScreen_ViewTree(const CupViewTreeState* viewTreeState, const Sta
 	// This hardcoded mapping is specific to 8-team tournaments
 	for(int i = 0; i < stateInfo->cup->num_matches; i++) {
 		const CupMatch* match = &stateInfo->cup->matches[i];
-		
+
 		int slot_a_idx, slot_b_idx;
-		
+
 		if (i == 0) { // Final match -> top bracket slots
 			slot_a_idx = 12;
 			slot_b_idx = 13;
@@ -568,16 +555,16 @@ static void drawScreen_ViewSchedule(const CupMenuState* cupMenuState, const Stat
 			draw_text_2d(stateInfo->teamData[match->team_b_id].name, center_x + team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
 		}
 	}
-	
+
 	// Show current day
 	char day_text[32];
 	sprintf(day_text, "Day %d", stateInfo->cup->current_day + 1);
 	draw_text_2d(day_text, center_x, title_y + 100.0f, 30.0f, TEXT_ALIGN_CENTER, rs);
 }
 
-static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, const CupMenuScreen screen, 
-                                      const CupMenuState* cupMenuState, const StateInfo* stateInfo,
-                                      const RenderState* rs, ResourceManager* rm)
+static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, const CupMenuScreen screen,
+                                     const CupMenuState* cupMenuState, const StateInfo* stateInfo,
+                                     const RenderState* rs, ResourceManager* rm)
 {
 	const float center_x = VIRTUAL_WIDTH / 2.0f;
 	const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -598,9 +585,9 @@ static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, cons
 	// --- Draw Save Slots ---
 	for(int i = 0; i < 5; i++) {
 		float current_y = menu_start_y + i * menu_spacing;
-		
+
 		const SaveSlotInfo* slot_info = &cupMenuState->save_slots[i];
-		
+
 		if(slot_info->exists) {
 			// Draw Team Name
 			char* team_name = stateInfo->teamData[slot_info->user_team_id].name;
@@ -611,7 +598,7 @@ static void drawScreen_LoadOrSaveCup(const CupLoadSaveState* loadSaveState, cons
 			if (slot_info->is_finished) {
 				sprintf(details, "Day %d - Cup finished", slot_info->current_day + 1);
 			} else if (slot_info->opponent_team_id != -1) {
-				sprintf(details, "Day %d - Next: %s", slot_info->current_day + 1, 
+				sprintf(details, "Day %d - Next: %s", slot_info->current_day + 1,
 				        stateInfo->teamData[slot_info->opponent_team_id].name);
 			} else {
 				sprintf(details, "Day %d - In progress", slot_info->current_day + 1);
@@ -653,91 +640,6 @@ static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const Re
 // Main Public Functions
 // =============================================================================
 
-
-
-static int ensureSaveDirectory(void)
-{
-	char* homedir;
-	char pnbPath[PATH_MAX_LENGTH];
-	char savesPath[PATH_MAX_LENGTH];
-	int result;
-
-#ifdef _WIN32
-	homedir = getenv("USERPROFILE");
-	if (homedir == NULL) {
-		fprintf(stderr, "Error: Could not get user profile directory\n");
-		return 1;
-	}
-	
-	// Build PNB directory path
-	result = snprintf(pnbPath, sizeof(pnbPath), "%s%sAppData%sLocal%sPNB", 
-	                  homedir, SEPARATOR, SEPARATOR, SEPARATOR);
-	if (result < 0 || result >= (int)sizeof(pnbPath)) {
-		fprintf(stderr, "Error: Path too long for PNB directory\n");
-		return 1;
-	}
-	
-	if (!CreateDirectory(pnbPath, NULL)) {
-		DWORD err = GetLastError();
-		if (err != ERROR_ALREADY_EXISTS) {
-			fprintf(stderr, "Failed to create directory %s: %lu\n", pnbPath, err);
-			return 1;
-		}
-	}
-	
-	// Build saves directory path
-	result = snprintf(savesPath, sizeof(savesPath), "%s%ssaves", pnbPath, SEPARATOR);
-	if (result < 0 || result >= (int)sizeof(savesPath)) {
-		fprintf(stderr, "Error: Path too long for saves directory\n");
-		return 1;
-	}
-	
-	if (!CreateDirectory(savesPath, NULL)) {
-		DWORD err = GetLastError();
-		if (err != ERROR_ALREADY_EXISTS) {
-			fprintf(stderr, "Failed to create saves directory %s: %lu\n", savesPath, err);
-			return 1;
-		}
-	}
-#else
-	homedir = getenv("HOME");
-	if (homedir == NULL) {
-		fprintf(stderr, "Error: Could not get HOME directory\n");
-		return 1;
-	}
-	
-	// Build PNB directory path  
-	result = snprintf(pnbPath, sizeof(pnbPath), "%s%s.pnb", homedir, SEPARATOR);
-	if (result < 0 || result >= (int)sizeof(pnbPath)) {
-		fprintf(stderr, "Error: Path too long for .pnb directory\n");
-		return 1;
-	}
-	
-	if (mkdir(pnbPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
-		if (errno != EEXIST) {
-			fprintf(stderr, "Failed to create directory %s: %s\n", pnbPath, strerror(errno));
-			return 1;
-		}
-	}
-	
-	// Build saves directory path
-	result = snprintf(savesPath, sizeof(savesPath), "%s%ssaves", pnbPath, SEPARATOR);
-	if (result < 0 || result >= (int)sizeof(savesPath)) {
-		fprintf(stderr, "Error: Path too long for saves directory\n");
-		return 1;
-	}
-	
-	if (mkdir(savesPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
-		if (errno != EEXIST) {
-			fprintf(stderr, "Failed to create saves directory %s: %s\n", savesPath, strerror(errno));
-			return 1;
-		}
-	}
-#endif
-
-	return 0;
-}
-
 static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo)
 {
 	for (int i = 0; i < 5; i++) {
@@ -746,68 +648,33 @@ static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo)
 		cupMenuState->save_slots[i].opponent_team_id = -1;
 		cupMenuState->save_slots[i].is_finished = 0;
 		cupMenuState->save_slots[i].current_day = 0;
-		
-		char filename[PATH_MAX_LENGTH];
-		if (getSavePath(filename, i) != 0) {
+
+		char filename[PATH_MAX];
+		if (platform_get_save_path(filename, sizeof(filename), i) != 0) {
 			continue;
 		}
-		
+
 		Cup* saved_cup = cup_load(filename);
 		if (saved_cup != NULL) {
 			cupMenuState->save_slots[i].exists = 1;
 			cupMenuState->save_slots[i].user_team_id = saved_cup->user_team_id;
 			cupMenuState->save_slots[i].current_day = saved_cup->current_day;
-			
-			if (saved_cup->matches[0].winner_id != -1) {
+
+			if (saved_cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
 				cupMenuState->save_slots[i].is_finished = 1;
 			} else {
 				int user_match_index = cup_get_user_match_index(saved_cup);
 				if (user_match_index != -1) {
 					const CupMatch* match = &saved_cup->matches[user_match_index];
-					int opponent_id = (match->team_a_id == saved_cup->user_team_id) 
-					                   ? match->team_b_id : match->team_a_id;
+					TeamID opponent_id = (match->team_a_id == saved_cup->user_team_id)
+					                     ? match->team_b_id : match->team_a_id;
 					cupMenuState->save_slots[i].opponent_team_id = opponent_id;
 				}
 			}
-			
+
 			cup_destroy(saved_cup);
 		}
 	}
-}
-
-static int getSavePath(char* result, int slot)
-{
-	char* homedir;
-	int snprintf_result;
-
-#ifdef _WIN32
-	homedir = getenv("USERPROFILE");
-	if (homedir == NULL) {
-		fprintf(stderr, "Error: Could not get user profile directory\n");
-		return 1;
-	}
-	
-	// Build the full path directly to avoid incremental path construction
-	snprintf_result = snprintf(result, PATH_MAX_LENGTH, "%s%sAppData%sLocal%sPNB%ssaves%scup_%d.xml",
-	                           homedir, SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR, SEPARATOR, slot);
-#else
-	homedir = getenv("HOME");
-	if (homedir == NULL) {
-		fprintf(stderr, "Error: Could not get HOME directory\n");
-		return 1;
-	}
-	
-	// Build the full path directly
-	snprintf_result = snprintf(result, PATH_MAX_LENGTH, "%s%s.pnb%ssaves%scup_%d.xml",
-	                           homedir, SEPARATOR, SEPARATOR, SEPARATOR, slot);
-#endif
-
-	if (snprintf_result < 0 || snprintf_result >= PATH_MAX_LENGTH) {
-		fprintf(stderr, "Error: Save file path too long\n");
-		return 1;
-	}
-
-	return 0;
 }
 
 static void saveCup(StateInfo* stateInfo, int slot)
@@ -816,18 +683,18 @@ static void saveCup(StateInfo* stateInfo, int slot)
 		printf("No cup in progress to save.\n");
 		return;
 	}
-	
-	if (ensureSaveDirectory() != 0) {
+
+	if (platform_ensure_save_dir() != 0) {
 		fprintf(stderr, "Error: Could not create save directory.\n");
 		return;
 	}
-	
-	char filename[PATH_MAX_LENGTH];
-	if (getSavePath(filename, slot) != 0) {
+
+	char filename[PATH_MAX];
+	if (platform_get_save_path(filename, sizeof(filename), slot) != 0) {
 		fprintf(stderr, "Error: Could not get save path.\n");
 		return;
 	}
-	
+
 	if (cup_save(stateInfo->cup, filename) == 0) {
 		printf("Cup saved to slot %d (%s).\n", slot, filename);
 	} else {
@@ -837,12 +704,12 @@ static void saveCup(StateInfo* stateInfo, int slot)
 
 static void loadCup(StateInfo* stateInfo, int slot)
 {
-	char filename[PATH_MAX_LENGTH];
-	if (getSavePath(filename, slot) != 0) {
+	char filename[PATH_MAX];
+	if (platform_get_save_path(filename, sizeof(filename), slot) != 0) {
 		fprintf(stderr, "Error: Could not get save path.\n");
 		return;
 	}
-	
+
 	Cup* loaded_cup = cup_load(filename);
 	if (loaded_cup != NULL) {
 		if (stateInfo->cup != NULL) {
@@ -875,7 +742,7 @@ void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 
 	// Initialize credits screen state
 	cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
-	
+
 	// Scan save files to cache their info
 	scanSaveSlots(cupMenuState, stateInfo);
 }
