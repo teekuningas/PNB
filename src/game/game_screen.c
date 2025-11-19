@@ -112,7 +112,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
 		} else if(stateInfo->localGameInfo->gAI.pause == 1) {
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
-			stateInfo->screen = MAIN_MENU;
+			stateInfo->screen = SCREEN_MAIN_MENU;
 			menuInfo->mode = MENU_ENTRY_NORMAL;
 		}
 	}

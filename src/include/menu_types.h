@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "render.h"
 #include "game_setup.h"
+#include "cup.h"
 
 #define ARROW_SCALE 0.05f
 #define ARROW_SMALLER_SCALE 0.03f
@@ -180,7 +181,7 @@ typedef struct {
 	int pointer;
 	int rem;
 	NewCupStage new_cup_stage;
-	int team_selection;
+	TeamID team_selection;
 	int wins_to_advance;
 } CupNewState;
 
@@ -191,8 +192,8 @@ typedef struct {
 
 typedef struct {
 	int exists;
-	int user_team_id;
-	int opponent_team_id;
+	TeamID user_team_id;
+	TeamID opponent_team_id;
 	int is_finished;
 	int current_day;
 } SaveSlotInfo;
@@ -210,7 +211,7 @@ typedef struct {
 	CupLoadSaveState load_save;
 	CupViewTreeState view_tree;
 	CreditsMenuState credits_menu;
-	
+
 	SaveSlotInfo save_slots[5];  // Cached information about save files
 } CupMenuState;
 

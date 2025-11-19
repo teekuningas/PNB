@@ -5,7 +5,7 @@
 void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 {
 	stateInfo->stopSoundEffect = SOUND_MENU;
-	stateInfo->screen = GAME_SCREEN;
+	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 
@@ -62,7 +62,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 void returnToGame(StateInfo* stateInfo)
 {
 	stateInfo->stopSoundEffect = SOUND_MENU;
-	stateInfo->screen = GAME_SCREEN;
+	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 	loadMutableWorldSettings(stateInfo);

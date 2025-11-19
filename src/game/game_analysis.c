@@ -648,7 +648,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 				stateInfo->globalGameInfo->inning++; // have to skip the last half-inning
 			}
 			menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
-			stateInfo->screen = MAIN_MENU;
+			stateInfo->screen = SCREEN_MAIN_MENU;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 		}
@@ -689,7 +689,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			for(i = 0; i < 2; i++) {
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
-			stateInfo->screen = MAIN_MENU;
+			stateInfo->screen = SCREEN_MAIN_MENU;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 		}
@@ -719,7 +719,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
 
-			stateInfo->screen = MAIN_MENU;
+			stateInfo->screen = SCREEN_MAIN_MENU;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 		}
@@ -750,11 +750,11 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 				stateInfo->globalGameInfo->teams[i].runs = 0;
 			}
 
-			stateInfo->screen = MAIN_MENU;
+			stateInfo->screen = SCREEN_MAIN_MENU;
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 		}
-		if(stateInfo->screen != MAIN_MENU) loadMutableWorldSettings(stateInfo);
+		if(stateInfo->screen != SCREEN_MAIN_MENU) loadMutableWorldSettings(stateInfo);
 	}
 }
 

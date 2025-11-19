@@ -112,7 +112,7 @@ int main ( int argc, char *argv[] )
 	}
 
 	// draw loading screen before loading all the player meshes which will take time
-	stateInfo.screen = LOADING_SCREEN;
+	stateInfo.screen = SCREEN_LOADING;
 	// we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
 	drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
 	draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
@@ -123,7 +123,7 @@ int main ( int argc, char *argv[] )
 		return -1;
 	}
 
-	stateInfo.screen = MAIN_MENU;
+	stateInfo.screen = SCREEN_MAIN_MENU;
 	stateInfo.changeScreen = 1;
 	stateInfo.updated = 0;
 
@@ -174,10 +174,10 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window)
 	updateInput(stateInfo, window);
 	updateSound(stateInfo);
 	switch(stateInfo->screen) {
-	case GAME_SCREEN:
+	case SCREEN_GAME:
 		updateGameScreen(stateInfo, &menuInfo);
 		break;
-	case MAIN_MENU:
+	case SCREEN_MAIN_MENU:
 		updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates);
 		break;
 	default:
@@ -192,14 +192,14 @@ static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, d
 
 {
 	switch(stateInfo->screen) {
-	case GAME_SCREEN:
+	case SCREEN_GAME:
 		// Everything within drawGameScreen is currently drawn in 3d context
 		drawGameScreen(stateInfo, alpha, rs);
 		break;
-	case MAIN_MENU:
+	case SCREEN_MAIN_MENU:
 		drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
 		break;
-	case LOADING_SCREEN:
+	case SCREEN_LOADING:
 		break;
 	}
 	glfwSwapBuffers(window);
@@ -402,7 +402,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 
 		// Specific seeding for this test fixture: alternates top and bottom bracket
 		// Creates matchups: (0v2), (4v6), (1v3), (5v7) in quarter-finals
-		int initial_teams[] = {0, 2, 4, 6, 1, 3, 5, 7};
+		TeamID initial_teams[] = {0, 2, 4, 6, 1, 3, 5, 7};
 		if (stateInfo->cup != NULL) {
 			cup_destroy(stateInfo->cup);
 		}
@@ -440,7 +440,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		stateInfo->globalGameInfo->teams[1].runs = 0;
 
 		// Jump directly to game screen
-		stateInfo->screen = GAME_SCREEN;
+		stateInfo->screen = SCREEN_GAME;
 		stateInfo->changeScreen = 1;
 
 	} else {
@@ -450,6 +450,6 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 	}
 
 	// Jump directly to game screen
-	stateInfo->screen = GAME_SCREEN;
+	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 }

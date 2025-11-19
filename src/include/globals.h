@@ -22,9 +22,9 @@
 
 // game states
 typedef enum {
-	LOADING_SCREEN = -1,
-	MAIN_MENU = 0,
-	GAME_SCREEN = 1
+	SCREEN_LOADING,
+	SCREEN_MAIN_MENU,
+	SCREEN_GAME
 } ScreenState;
 
 // a lot of constants
