@@ -149,7 +149,6 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 		}
 		state->handsZ = 1.0f - state->batTimer*MOVING_AWAY_SPEED/2;
 	}
-	// finally all that messy stuff is over and we just decide the winner
 	else if(state->state == 6) {
 		int control;
 		if(state->turnCount%2 == 0) {

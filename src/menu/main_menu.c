@@ -58,7 +58,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			}
 			break;
 		case MENU_ENTRY_HOMERUN_CONTEST: {
-			// initialize both teams' home-run contest states
 			int totalPicks = (stateInfo->globalGameInfo->period == 4) ? 10 : 6;
 			int team1Index = stateInfo->globalGameInfo->teams[0].value - 1;
 			int team2Index = stateInfo->globalGameInfo->teams[1].value - 1;
@@ -82,7 +81,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			stateInfo->playSoundEffect = SOUND_MENU;
 		}
 	}
-	// main main menu.
 	switch (menuData->stage) {
 	case MENU_STAGE_FRONT: {
 		nextStage = updateFrontMenu(&menuData->front_menu, keyStates, stateInfo);
@@ -102,7 +100,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	case MENU_STAGE_TEAM_SELECTION: {
 		nextStage = updateTeamSelectionMenu(&menuData->team_selection, keyStates, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
-			// Prepare next screen
 			if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 				initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_FRONT) {
@@ -116,7 +113,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		nextStage = updateBattingOrderMenu(&menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &menuData->pendingGameSetup);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
-				// Setup for team2 ordering
 				initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team2, menuData->pendingGameSetup.team2_control, stateInfo);
 			} else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
 				initHutunkeittoState(&menuData->hutunkeitto);
@@ -252,7 +248,6 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	clearReleasedKeys(keyStates);
 }
 
-// here we draw everything.
 void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
 {
 	switch(menuData->stage) {
@@ -288,7 +283,6 @@ void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, 
 
 	case MENU_STAGE_GO_TO_GAME:
 	case MENU_STAGE_QUIT:
-		// Nothing to draw
 		break;
 
 	}
