@@ -3,11 +3,10 @@
 #include "render.h"
 #include "menu_helpers.h"
 #include "cup.h"
-#include "platform.h" // For platform-specific path functions
+#include "platform.h"
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <linux/limits.h> // For PATH_MAX
 
 static void saveCup(StateInfo* stateInfo, int slot);
 static void loadCup(StateInfo* stateInfo, int slot);
