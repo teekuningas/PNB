@@ -16,7 +16,7 @@
 static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
 static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
 static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
-static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window);
+static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, unsigned int* rng_seed);
 static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
 
 static MenuData menuData;
@@ -44,8 +44,10 @@ int main ( int argc, char *argv[] )
 	unsigned int accumulator = 0;
 	unsigned int updateInterval = UPDATE_INTERVAL;
 
-	// Initialize the random number generator
-	srand((unsigned int)time(NULL));
+	// Initialize the random number generator seed
+	// This single seed is passed down through all functions that need randomness
+	unsigned int rng_seed = (unsigned int)time(NULL);
+	srand(rng_seed);  // For legacy code that still uses rand()
 
 	// Parse command-line arguments
 	FixtureRequest fixtureRequest;
@@ -140,7 +142,7 @@ int main ( int argc, char *argv[] )
 		accumulator += frameTime;
 		// update the scene every 20ms and if for some reason there is delay, keep updating until catched up
 		while ( accumulator >= updateInterval ) {
-			result = update(&stateInfo, &menuData, window);
+			result = update(&stateInfo, &menuData, window, &rng_seed);
 			if (result != 0 || glfwWindowShouldClose(window)) {
 				done = 1;
 			}
@@ -169,7 +171,7 @@ int main ( int argc, char *argv[] )
 
 }
 
-static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window)
+static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, unsigned int* rng_seed)
 {
 	updateInput(stateInfo, window);
 	updateSound(stateInfo);
@@ -178,7 +180,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window)
 		updateGameScreen(stateInfo, &menuInfo);
 		break;
 	case SCREEN_MAIN_MENU:
-		updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates);
+		updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
 		break;
 	default:
 		return 1;

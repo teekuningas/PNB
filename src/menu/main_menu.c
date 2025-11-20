@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "render.h"
 #include "font.h"
+#include "rng.h"
 
 #include "main_menu.h"
 #include "menu_types.h"
@@ -28,7 +29,7 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, R
 	return 0;
 }
 
-void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates)
+void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates, unsigned int* rng_seed)
 {
 	MenuStage nextStage;
 	if(stateInfo->changeScreen == 1) {
@@ -85,7 +86,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	case MENU_STAGE_FRONT: {
 		nextStage = updateFrontMenu(&menuData->front_menu, keyStates, stateInfo);
 		if (nextStage == MENU_STAGE_CUP) {
-			initCupMenu(&menuData->cup_menu, stateInfo);
+			initCupMenu(&menuData->cup_menu, stateInfo, rng_seed);
 		} else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
 			stateInfo->globalGameInfo->isCupGame = 0;
 			initTeamSelectionState(&menuData->team_selection, stateInfo->numTeams);
@@ -143,7 +144,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	}
 	case MENU_STAGE_HUTUNKEITTO: {
 		nextStage = updateHutunkeittoMenu(&menuData->hutunkeitto, keyStates,
-		                                  menuData->pendingGameSetup.team1_control, menuData->pendingGameSetup.team2_control, &menuData->pendingGameSetup);
+		                                  menuData->pendingGameSetup.team1_control, menuData->pendingGameSetup.team2_control, &menuData->pendingGameSetup, rng_seed);
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
@@ -160,23 +161,48 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		if (nextStage != menuData->stage) {
 			stateInfo->playSoundEffect = SOUND_MENU;
 			if (nextStage == MENU_STAGE_CUP) {
-				// 1. Process the finished game to update the tournament's logical state.
+				// Process the finished game to update the tournament state
 				if (stateInfo->gameConclusion->isCupGame && stateInfo->cup != NULL) {
+					// 1. Record the user's game result
 					cup_update_match_result(
 					    stateInfo->cup,
 					    stateInfo->currently_played_cup_match_index,
 					    stateInfo->gameConclusion->winner
 					);
-					// Advance to next day after user's game
-					cup_advance_day(stateInfo->cup);
+
+					// 2. Simulate remaining AI matches for the current day
+					int match_indices[8];
+					int match_count = 0;
+					cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
+
+					for (int i = 0; i < match_count; i++) {
+						const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
+						// Only simulate if neither team is the user
+						if (match->team_a_id != stateInfo->cup->user_team_id &&
+						        match->team_b_id != stateInfo->cup->user_team_id) {
+							int team_a_wins = seeded_rand(rng_seed, 2);
+							TeamID winner = team_a_wins ? match->team_a_id : match->team_b_id;
+							cup_update_match_result(stateInfo->cup, match_indices[i], winner);
+						}
+					}
+
+					// 3. Advance to next match day
+					cup_advance_to_next_match_day(stateInfo->cup);
 				}
 
-				// 2. Re-initialize the cup menu to reflect the updated state.
-				initCupMenu(&menuData->cup_menu, stateInfo);
+				// 3. Set up the cup menu to show ongoing screen
+				menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
+				menuData->cup_menu.ongoing.pointer = 0;
+				if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
+					menuData->cup_menu.ongoing.rem = 3;  // Cup finished menu
+				} else {
+					menuData->cup_menu.ongoing.rem = 5;  // Cup in progress menu
+				}
 
-				// 3. Check if the user won the entire cup and set the screen to the trophy/credits screen.
+				// 4. Check if the user won the entire cup and set the screen to the trophy/credits screen
 				if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id == stateInfo->cup->user_team_id) {
 					menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
+					menuData->cup_menu.credits_menu.creditsScrollX = VIRTUAL_WIDTH;
 				}
 			} else {
 				resetMenuForNewGame(menuData, stateInfo);
@@ -213,7 +239,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	}
 	case MENU_STAGE_CUP: {
 		CupMenuOutput cup_output;
-		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, keyStates, &cup_output);
+		nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, keyStates, &cup_output, rng_seed);
 		if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
 			// A game is starting, transfer data from cup output to pendingGameSetup
 			menuData->pendingGameSetup.team1 = cup_output.team1;

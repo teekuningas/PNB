@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "menu_types.h"
 #include "menu_helpers.h"
+#include "rng.h"
 
 #define BAT_DEFAULT_HEIGHT -1.0f
 #define LEFT_HAND_DEFAULT_HEIGHT 0.1f
@@ -45,10 +46,10 @@ void initHutunkeittoState(HutunkeittoState *state)
 	state->rem = 2;
 }
 
-MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control, GameSetup *gameSetup)
+MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keyStates, int team1_control, int team2_control, GameSetup *gameSetup, unsigned int* rng_seed)
 {
 	if(state->state == 0) {
-		state->batTimerLimit = 30 + rand()%15;
+		state->batTimerLimit = 30 + seeded_rand(rng_seed, 15);
 		state->batTimer = 0;
 		state->state = 1;
 	} else if(state->state == 1) {

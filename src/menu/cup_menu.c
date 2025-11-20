@@ -4,6 +4,7 @@
 #include "menu_helpers.h"
 #include "cup.h"
 #include "platform.h"
+#include "rng.h"
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -79,7 +80,7 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 			cupMenuState->screen = CUP_MENU_SCREEN_LOAD_CUP;
 			cupMenuState->load_save.rem = 5;
 			cupMenuState->load_save.pointer = 0;
-			scanSaveSlots(cupMenuState, stateInfo);  // Refresh save slot info
+			scanSaveSlots(cupMenuState, stateInfo);
 		}
 	}
 	if(keyStates->released[0][KEY_1]) {
@@ -88,7 +89,7 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 	return MENU_STAGE_CUP;
 }
 
-static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOutput* output)
+static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOutput* output, unsigned int* rng_seed)
 {
 	if (stateInfo->cup == NULL) {
 		cupMenuState->screen = CUP_MENU_SCREEN_INITIAL;
@@ -141,29 +142,14 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 			stateInfo->currently_played_cup_match_index = user_match_index;
 			return MENU_STAGE_BATTING_ORDER_1;
 		} else {
-			// No user match today - simulate all AI matches and skip empty days
-			do {
-				// Simulate any AI matches for current day
-				for (int i = 0; i < match_count; i++) {
-					const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
-					// TODO: Pick winner based on team stats instead of random
-					TeamID winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
-					cup_update_match_result(stateInfo->cup, match_indices[i], winner);
-				}
-
-				// Advance to next day
-				cup_advance_day(stateInfo->cup);
-
-				// Check if cup is complete
-				if (stateInfo->cup->matches[0].winner_id != -1) {
-					break;  // Cup finished
-				}
-
-				// Get matches for new day
-				cup_get_matches_for_day(stateInfo->cup, stateInfo->cup->current_day, match_indices, &match_count);
-			} while (match_count == 0);  // Skip empty days
-
-			// Stay in cup menu to show updated state
+			// No user match today - simulate AI matches and advance to next match day
+			for (int i = 0; i < match_count; i++) {
+				const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
+				int team_a_wins = seeded_rand(rng_seed, 2);
+				TeamID winner = team_a_wins ? match->team_a_id : match->team_b_id;
+				cup_update_match_result(stateInfo->cup, match_indices[i], winner);
+			}
+			cup_advance_to_next_match_day(stateInfo->cup);
 		}
 	} else if(cupMenuState->ongoing.pointer == 1) {
 		cupMenuState->screen = CUP_MENU_SCREEN_VIEW_SCHEDULE;
@@ -173,7 +159,7 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 		cupMenuState->screen = CUP_MENU_SCREEN_SAVE_CUP;
 		cupMenuState->load_save.pointer = 0;
 		cupMenuState->load_save.rem = 5;
-		scanSaveSlots(cupMenuState, stateInfo);  // Refresh save slot info
+		scanSaveSlots(cupMenuState, stateInfo);
 	} else if(cupMenuState->ongoing.pointer == 4) {
 		// When quitting an in-progress cup without saving, ask for confirmation
 		// For now, we keep the cup in memory so returning to cup menu resumes it
@@ -182,7 +168,7 @@ static MenuStage updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* sta
 	return MENU_STAGE_CUP;
 }
 
-static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates)
+static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates, unsigned int* rng_seed)
 {
 	if (cupMenuState->new_cup.new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
 		if(keyStates->released[0][KEY_DOWN]) cupMenuState->new_cup.pointer = (cupMenuState->new_cup.pointer + 1) % cupMenuState->new_cup.rem;
@@ -239,13 +225,8 @@ static MenuStage updateScreen_NewCup(CupMenuState* cupMenuState, StateInfo* stat
 				initial_team_ids[i] = i;
 			}
 
-			// Randomize tournament bracket using Fisher-Yates shuffle algorithm
-			for (int i = stateInfo->numTeams - 1; i > 0; i--) {
-				int j = rand() % (i + 1);
-				TeamID temp = initial_team_ids[i];
-				initial_team_ids[i] = initial_team_ids[j];
-				initial_team_ids[j] = temp;
-			}
+			// Randomize tournament bracket with seed from parent
+			cup_shuffle_teams(initial_team_ids, stateInfo->numTeams, *rng_seed);
 
 			// Create the new Cup with saved selections
 			if (stateInfo->cup != NULL) {
@@ -311,7 +292,7 @@ static MenuStage updateScreen_SaveCup(CupMenuState* cupMenuState, StateInfo* sta
 	}
 	if (keyStates->released[0][KEY_2]) {
 		saveCup(stateInfo, cupMenuState->load_save.pointer);
-		scanSaveSlots(cupMenuState, stateInfo);  // Refresh UI to show save succeeded
+		scanSaveSlots(cupMenuState, stateInfo);  // Refresh to show save succeeded
 	}
 	return MENU_STAGE_CUP;
 }
@@ -714,7 +695,7 @@ static void loadCup(StateInfo* stateInfo, int slot)
 	}
 }
 
-void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
+void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	// Initialize all sub-states to a known default
 	memset(&cupMenuState->initial, 0, sizeof(CupInitialState));
@@ -731,18 +712,13 @@ void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 	cupMenuState->initial.pointer = 0;
 	// Set rem based on whether cup exists: 3 options (Resume/New/Load) or 2 (New/Load)
 	cupMenuState->initial.rem = (stateInfo->cup != NULL) ? 3 : 2;
-
-	// Initialize credits screen state
-	cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
-
-	// Scan save files to cache their info
-	scanSaveSlots(cupMenuState, stateInfo);
 }
 MenuStage updateCupMenu(
     CupMenuState* cupMenuState,
     StateInfo* stateInfo,
     const KeyStates* keyStates,
-    CupMenuOutput* output
+    CupMenuOutput* output,
+    unsigned int* rng_seed
 )
 {
 	switch (cupMenuState->screen) {
@@ -754,11 +730,11 @@ MenuStage updateCupMenu(
 		// We also handle the common up/down navigation here.
 		if(keyStates->released[0][KEY_DOWN]) cupMenuState->ongoing.pointer = (cupMenuState->ongoing.pointer + 1) % cupMenuState->ongoing.rem;
 		if(keyStates->released[0][KEY_UP]) cupMenuState->ongoing.pointer = (cupMenuState->ongoing.pointer - 1 + cupMenuState->ongoing.rem) % cupMenuState->ongoing.rem;
-		if(keyStates->released[0][KEY_2]) return updateScreen_Ongoing(cupMenuState, stateInfo, output);
+		if(keyStates->released[0][KEY_2]) return updateScreen_Ongoing(cupMenuState, stateInfo, output, rng_seed);
 		return MENU_STAGE_CUP;
 	}
 	case CUP_MENU_SCREEN_NEW_CUP:
-		return updateScreen_NewCup(cupMenuState, stateInfo, keyStates);
+		return updateScreen_NewCup(cupMenuState, stateInfo, keyStates, rng_seed);
 	case CUP_MENU_SCREEN_LOAD_CUP:
 		return updateScreen_LoadCup(cupMenuState, stateInfo, keyStates);
 	case CUP_MENU_SCREEN_SAVE_CUP:

@@ -1,4 +1,5 @@
 #include "cup.h"
+#include "rng.h"
 #include <stdlib.h>
 #include <math.h>   // For log2
 #include <string.h> // For memset
@@ -71,6 +72,22 @@ Cup* cup_create(int num_teams, int wins_to_advance, TeamID user_team_id, int inn
 	}
 
 	return cup;
+}
+
+void cup_shuffle_teams(TeamID* team_ids, int num_teams, unsigned int seed)
+{
+	if (team_ids == NULL || num_teams <= 1) return;
+
+	// Use seeded RNG for deterministic shuffling
+	unsigned int rng_state = seed;
+
+	// Fisher-Yates shuffle algorithm with seeded RNG
+	for (int i = num_teams - 1; i > 0; i--) {
+		int j = seeded_rand(&rng_state, i + 1);
+		TeamID temp = team_ids[i];
+		team_ids[i] = team_ids[j];
+		team_ids[j] = temp;
+	}
 }
 
 void cup_destroy(Cup* cup)
@@ -205,27 +222,6 @@ Cup* cup_load(const char* filename)
 
 	mxmlDelete(xml);
 	return cup;
-}
-
-void cup_simulate_round(Cup* cup, int round)
-{
-	if (cup == NULL) return;
-
-	// Determine the range of match indices for the given round
-	// Fixed formula: round 0 = Final, round 1 = Semis, round 2 = Quarters, etc.
-	// For round R: matches from (2^R - 1) to (2^(R+1) - 2)
-	int round_start_index = (1 << round) - 1;
-	int round_end_index = (1 << (round + 1)) - 2;
-
-	for (int i = round_start_index; i <= round_end_index; ++i) {
-		CupMatch* match = &cup->matches[i];
-		if (match->winner_id == CUP_MATCH_NO_WINNER && match->team_a_id != -1 && match->team_b_id != -1) {
-			if (match->team_a_id != cup->user_team_id && match->team_b_id != cup->user_team_id) {
-				TeamID winner = (rand() % 2 == 0) ? match->team_a_id : match->team_b_id;
-				cup_update_match_result(cup, i, winner);
-			}
-		}
-	}
 }
 
 int cup_get_user_match_index(const Cup* cup)
@@ -431,8 +427,22 @@ void cup_get_matches_for_day(const Cup* cup, int day, int* out_match_indices, in
 	}
 }
 
-void cup_advance_day(Cup* cup)
+void cup_advance_to_next_match_day(Cup* cup)
 {
 	if (cup == NULL) return;
+
+	// Advance to next day
 	cup->current_day++;
+
+	// Skip empty days until we find a day with scheduled matches or cup is finished
+	int match_indices[8];
+	int match_count = 0;
+
+	while (cup->matches[0].winner_id == CUP_MATCH_NO_WINNER) {
+		cup_get_matches_for_day(cup, cup->current_day, match_indices, &match_count);
+		if (match_count > 0) {
+			break;  // Found a day with matches
+		}
+		cup->current_day++;
+	}
 }
