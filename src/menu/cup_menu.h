@@ -15,13 +15,14 @@ typedef struct {
 } CupMenuOutput;
 
 
-void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo);
+void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed);
 
 MenuStage updateCupMenu(
     CupMenuState* cupMenuState,
     StateInfo* stateInfo, // Kept non-const for now to manage tournament state
     const KeyStates* keyStates,
-    CupMenuOutput* output
+    CupMenuOutput* output,
+    unsigned int* rng_seed
 );
 
 void drawCupMenu(

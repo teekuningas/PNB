@@ -78,6 +78,8 @@ extern int test_cup_creation();
 extern int test_cup_progression();
 extern int test_cup_best_of_three();
 extern int test_cup_save_load();
+extern int test_cup_day_progression();
+extern int test_cup_day_progression_best_of_three();
 
 int main(int argc, char* argv[]) {
 	printf("========================================\n");
@@ -98,6 +100,8 @@ int main(int argc, char* argv[]) {
 	RUN_TEST(test_cup_progression);
 	RUN_TEST(test_cup_best_of_three);
 	RUN_TEST(test_cup_save_load);
+	RUN_TEST(test_cup_day_progression);
+	RUN_TEST(test_cup_day_progression_best_of_three);
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

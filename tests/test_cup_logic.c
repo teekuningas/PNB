@@ -195,3 +195,135 @@ int test_cup_save_load() {
     
     return TEST_PASSED;
 }
+
+// Test day-based progression and AI simulation
+int test_cup_day_progression() {
+    printf("Running test: %s\n", __func__);
+    
+    int initial_teams[] = {0, 1, 2, 3};
+    int num_teams = 4;
+    int user_team_id = 0;
+    // Best of 1 means 1 win to advance, which means 1 day per match
+    Cup* cup = cup_create(num_teams, 1, user_team_id, 4, initial_teams);
+    
+    ASSERT_NOT_NULL(cup, "Cup should be created");
+    ASSERT_EQ(0, cup->current_day, "Should start at day 0");
+    
+    // Day 0: Semi-finals (matches 1 and 2)
+    int match_indices[8];
+    int match_count = 0;
+    cup_get_matches_for_day(cup, 0, match_indices, &match_count);
+    ASSERT_EQ(2, match_count, "Day 0 should have 2 matches (both semis)");
+    
+    // User plays their match (match 1: team 0 vs 1)
+    int user_match_idx = -1;
+    for (int i = 0; i < match_count; i++) {
+        const CupMatch* match = &cup->matches[match_indices[i]];
+        if (match->team_a_id == user_team_id || match->team_b_id == user_team_id) {
+            user_match_idx = match_indices[i];
+            break;
+        }
+    }
+    ASSERT_TRUE(user_match_idx != -1, "User should have a match on day 0");
+    
+    // User wins their match
+    cup_update_match_result(cup, user_match_idx, user_team_id);
+    
+    // Now simulate AI matches explicitly (like after user's game)
+    for (int i = 0; i < match_count; i++) {
+        const CupMatch* match = &cup->matches[match_indices[i]];
+        if (match->team_a_id != user_team_id && match->team_b_id != user_team_id) {
+            // For deterministic test, explicitly choose winner
+            // Let's say team_a wins (team 2 in match 2)
+            cup_update_match_result(cup, match_indices[i], match->team_a_id);
+        }
+    }
+    
+    // Advance to next match day
+    cup_advance_to_next_match_day(cup);
+    
+    // Should now be on day 2 (final day) - day 1 is skipped because it's empty
+    // In best-of-1, semis on day 0 are decided immediately, so day 1 has no matches
+    ASSERT_EQ(2, cup->current_day, "Should advance to day 2 (skipping empty day 1)");
+    
+    // Both semi-finals should be decided
+    ASSERT_TRUE(cup->matches[1].winner_id != -1, "Semi 1 should be decided");
+    ASSERT_TRUE(cup->matches[2].winner_id != -1, "Semi 2 should be decided");
+    
+    // Final should be populated with winners
+    ASSERT_EQ(user_team_id, cup->matches[0].team_a_id, "User should advance to final");
+    ASSERT_EQ(2, cup->matches[0].team_b_id, "Team 2 should advance to final");
+    
+    // Check that final is scheduled for day 2 (not day 1, which was empty)
+    cup_get_matches_for_day(cup, 2, match_indices, &match_count);
+    ASSERT_EQ(1, match_count, "Day 2 should have 1 match (final)");
+    ASSERT_EQ(0, match_indices[0], "The match should be the final");
+    
+    cup_destroy(cup);
+    return TEST_PASSED;
+}
+
+// Test day progression with multi-game matches (best-of-3)
+int test_cup_day_progression_best_of_three() {
+    printf("Running test: %s\n", __func__);
+    
+    int initial_teams[] = {0, 1, 2, 3};
+    int num_teams = 4;
+    int user_team_id = 0;
+    // Best of 3 means 2 wins to advance, which means up to 3 days per match
+    // days_per_match = (2 * 2) - 1 = 3
+    // Semis: days 0-2, Final: days 6-8 (days 3-5 are empty between rounds)
+    Cup* cup = cup_create(num_teams, 2, user_team_id, 4, initial_teams);
+    
+    ASSERT_EQ(0, cup->current_day, "Should start at day 0");
+    
+    // Day 0: First game of semi-finals
+    int match_indices[8];
+    int match_count = 0;
+    cup_get_matches_for_day(cup, 0, match_indices, &match_count);
+    ASSERT_EQ(2, match_count, "Day 0 should have 2 matches");
+    
+    // User wins first game (1-0)
+    int user_match_idx = 1; // Match 1 has user (team 0 vs team 1)
+    cup_update_match_result(cup, user_match_idx, user_team_id);
+    
+    // AI match: team 2 wins first game (1-0 for match 2)
+    cup_update_match_result(cup, 2, 2);  // team_a (2) wins
+    
+    cup_advance_to_next_match_day(cup);
+    
+    // Should be day 1, matches not decided yet
+    ASSERT_EQ(1, cup->current_day, "Should be on day 1");
+    ASSERT_EQ(-1, cup->matches[1].winner_id, "User's match not decided yet");
+    ASSERT_EQ(1, cup->matches[1].wins_a, "User should have 1 win");
+    
+    // Day 1: Second game of semi-finals
+    cup_get_matches_for_day(cup, 1, match_indices, &match_count);
+    ASSERT_EQ(2, match_count, "Day 1 should have 2 matches (game 2 of each semi)");
+    
+    // User wins second game (2-0, advances)
+    cup_update_match_result(cup, user_match_idx, user_team_id);
+    
+    // AI match: team 2 wins second game (2-0, advances)
+    cup_update_match_result(cup, 2, 2);
+    
+    cup_advance_to_next_match_day(cup);
+    
+    // Both matches decided, should skip empty days 2-5 and land on day 6 (final start)
+    ASSERT_EQ(6, cup->current_day, "Should skip to day 6 (final start)");
+    
+    // User's match should be decided now
+    ASSERT_EQ(user_team_id, cup->matches[1].winner_id, "User should win the match");
+    ASSERT_EQ(2, cup->matches[1].wins_a, "User should have 2 wins");
+    
+    // AI match should also be decided
+    ASSERT_EQ(2, cup->matches[2].winner_id, "Team 2 should win the match");
+    ASSERT_EQ(2, cup->matches[2].wins_a, "Team 2 should have 2 wins");
+    
+    // Final should be populated
+    ASSERT_EQ(user_team_id, cup->matches[0].team_a_id, "User should be in final");
+    ASSERT_EQ(2, cup->matches[0].team_b_id, "Team 2 should be in final");
+    
+    cup_destroy(cup);
+    return TEST_PASSED;
+}
