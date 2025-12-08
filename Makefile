@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/include -I./src/menu -I./src/cup -I./tests
+IDIR = -I./src/core -I./src/game -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./tests
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml

@@ -10,13 +10,13 @@ We are now moving pure physics logic out of `game/game_manipulation.c`.
     - [x] Create `src/physics/collision.h` and `src/physics/collision.c`.
     - [x] *Check:* Build (`make main`).
 
-- [ ] **Step 4: Extract Ball Gravity & Trajectory**
-    - [ ] Add `#include "globals.h"` to `src/physics/ball_physics.c` for `Vector3D` and `GRAVITY` constant.
-    - [ ] Create a pure function `physics_apply_gravity(Vector3D* velocity, float dt)` in `ball_physics.c`. This function should decrease the y-component of the velocity by `GRAVITY * dt`.
-    - [ ] Create a pure function `physics_apply_velocity(Vector3D* position, const Vector3D* velocity)` in `ball_physics.c`. This function should add the velocity components to the position components.
-    - [ ] In `src/game/game_manipulation.c`, identify the ball movement logic (where gravity is applied to velocity and velocity to position).
-    - [ ] Replace the inline gravity application in `game_manipulation.c` with a call to `physics_apply_gravity`.
-    - [ ] *Check:* Build (`make main`) and Run Tests (`make test`).
+- [x] **Step 4: Extract Ball Gravity & Trajectory**
+    - [x] Add `#include "globals.h"` to `src/physics/ball_physics.c` for `Vector3D` and `GRAVITY` constant.
+    - [x] Create a pure function `physics_apply_gravity(Vector3D* velocity, float dt)` in `ball_physics.c`. This function should decrease the y-component of the velocity by `GRAVITY * dt`.
+    - [x] Create a pure function `physics_apply_velocity(Vector3D* position, const Vector3D* velocity)` in `ball_physics.c`. This function should add the velocity components to the position components.
+    - [x] In `src/game/game_manipulation.c`, identify the ball movement logic (where gravity is applied to velocity and velocity to position).
+    - [x] Replace the inline gravity application in `game_manipulation.c` with a call to `physics_apply_gravity`.
+    - [x] *Check:* Build (`make main`) and Run Tests (`make test`).
 
 - [ ] **Step 5: Extract Ground Collision Check**
     - [ ] Identify the ground collision logic (checking y < 0, etc.) in `game_manipulation.c`.

@@ -7,6 +7,7 @@
 
 #include "game_manipulation.h"
 #include "common_logic.h"
+#include "ball_physics.h"
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -76,7 +77,7 @@ static void updateBallStatus(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->ballInfo.moving == 1) {
 		// update lastLocation and location.
 		setVectorV(&(stateInfo->localGameInfo->ballInfo.lastLocation), &(stateInfo->localGameInfo->ballInfo.location));
-		addToVectorV(&(stateInfo->localGameInfo->ballInfo.location), &(stateInfo->localGameInfo->ballInfo.velocity));
+		physics_apply_velocity(&(stateInfo->localGameInfo->ballInfo.location), &(stateInfo->localGameInfo->ballInfo.velocity));
 		if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 			// if ball is free then we make sure that it stays within the play area.
 			if(stateInfo->localGameInfo->ballInfo.location.z > FIELD_FRONT && stateInfo->localGameInfo->ballInfo.velocity.z > 0) {
@@ -91,7 +92,7 @@ static void updateBallStatus(StateInfo* stateInfo)
 			}
 			if(stateInfo->localGameInfo->ballInfo.onGround == 0) {
 				// if ball is not on the ground yet, let it be affected by gravity.
-				stateInfo->localGameInfo->ballInfo.velocity.y -= GRAVITY;
+				physics_apply_gravity(&(stateInfo->localGameInfo->ballInfo.velocity), 1.0f);
 				// if ball now comes close to the ground
 				if(stateInfo->localGameInfo->ballInfo.location.y < BALL_SIZE / 2) {
 					int outOfBounds = 0;

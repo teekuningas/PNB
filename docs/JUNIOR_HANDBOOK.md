@@ -24,6 +24,7 @@ When extracting code from `src/game/` to `src/core/` or `src/physics/`:
 1.  **Copy First:** Copy the logic to the new pure file.
 2.  **Verify Pure:** Ensure the new function depends ONLY on its arguments.
 3.  **Update Build:** Add the new `.o` file to `Makefile` **immediately**.
+3a. **Check Includes:** If you created a new directory (e.g., `src/physics`), ensure it is added to the `IDIR` variable in `Makefile` (e.g., `-I./src/physics`).
 4.  **Replace:** In the old file, include the new header and replace the logic with a call to the new function.
 
 ## 4. Troubleshooting
