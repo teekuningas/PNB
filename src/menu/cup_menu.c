@@ -604,7 +604,7 @@ static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const Re
 	// --- Draw Text ---
 	draw_text_2d("WE HAVE A CHAMPION!", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
+	const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, MIKKO SYRJÄNEN AND OTHERS..";
 	draw_text_2d(credits_text, creditsState->creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs);
 }
 

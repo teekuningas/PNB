@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "common_logic.h"
 #include "vector_math.h"
+#include "geometry.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -117,7 +118,10 @@ void runToTarget(StateInfo* stateInfo, int index, Vector3D *target)
 		     stateInfo->localGameInfo->playerInfo[index].tPI.location.x;
 		dz = stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation.z -
 		     stateInfo->localGameInfo->playerInfo[index].tPI.location.z;
-		norm = (float)sqrt(dx*dx + dz*dz);
+		
+		norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation, 
+		                               &stateInfo->localGameInfo->playerInfo[index].tPI.location);
+		
 		if(norm < EPSILON) norm = 1.0f;
 		// set the velocity
 
@@ -165,7 +169,10 @@ void moveToTarget(StateInfo* stateInfo, int index, Vector3D *target)
 			     stateInfo->localGameInfo->playerInfo[index].tPI.location.x;
 			dz = stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation.z -
 			     stateInfo->localGameInfo->playerInfo[index].tPI.location.z;
-			norm = (float)sqrt(dx*dx + dz*dz);
+			
+			norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation, 
+		                                   &stateInfo->localGameInfo->playerInfo[index].tPI.location);
+			
 			if(norm < EPSILON) norm = 1.0f;
 			setVectorXZ(&stateInfo->localGameInfo->playerInfo[index].tPI.velocity, dx*WALK_SPEED/norm, dz*WALK_SPEED/norm);
 			// if the player for some reason was running before this, set that to 0.
