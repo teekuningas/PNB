@@ -39,9 +39,9 @@ We are now moving pure physics logic out of `game/game_manipulation.c`.
 
 ## Mid-Term Roadmap (Phase A)
 
-- [ ] **Renderer Decoupling**
-    - [ ] Create `src/renderer/` module.
-    - [ ] Move OpenGL calls out of `player.c` and `ball.c`.
+*   **Renderer Decoupling**
+    *   Create `src/renderer/` module.
+    *   Move OpenGL calls out of `player.c` and `ball.c`.
 
-- [ ] **Rules Extraction**
-    - [ ] Extract pure rules (outs, runs) to `src/game/rules_pure/`.
+*   **Rules Extraction**
+    *   Extract pure rules (outs, runs) to `src/game/rules_pure/`.

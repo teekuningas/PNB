@@ -39,6 +39,10 @@ endif
 # If not, execute make command again within a nix develop shell
 ifeq ($(IN_NIX_SHELL),)
 .PHONY: test
+watch_junior:
+	@echo "Starting Junior Watcher..."
+	@./.dev/scripts/junior.py
+
 test:
 	nix develop -c -- $(MAKE) $(MAKECMDGOALS)
 else
