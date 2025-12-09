@@ -2,6 +2,15 @@
 
 This document contains the strict operational rules for executing tasks in the PNB codebase.
 
+## 0. PROTOCOL: YOLO MODE (Autonomous Execution)
+**You are running autonomously. Adhere to these constraints strictly:**
+*   **Be Conservative:** You have no user guidance. If a task is ambiguous, STOP. Do not guess.
+*   **Strict Scope:** Execute **ONLY** the checkboxes present in `.dev/TODO.md`.
+    *   **NEVER** add new items to `.dev/TODO.md`.
+    *   **NEVER** "fix" unrelated code.
+    *   **NEVER** expand the scope based on your own ideas.
+*   **Finish & Stop:** Once the specific task is checked `[x]`, STOP. Do not look for more work.
+
 ## 1. The Golden Rules
 *   **Never Break the Build:** Run `make main` after *every* file modification. If it fails, fix it immediately.
 *   **Atomic Steps:** Do exactly what the `TODO.md` asks. Do not "fix" other things you see along the way.

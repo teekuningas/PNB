@@ -13,12 +13,15 @@
 
 #include "mutable_world.h"
 #include "common_logic.h"
+#include "../renderer/player_renderer.h" // Include player_renderer.h
 
 int initMutableWorld(StateInfo* stateInfo)
 {
 	int result;
 
-	result = initPlayer(stateInfo);
+	// The initPlayer is now handled by initPlayerRenderer, which is called by initPlayer in player.c
+	// No direct call to initPlayerRenderer here.
+	result = initPlayer(stateInfo); 
 	if(result != 0) {
 		printf("Could not init player. Exiting.");
 		return -1;
@@ -51,7 +54,7 @@ void drawMutableWorld(StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
-		drawPlayer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha);
+		drawPlayerRenderer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha);
 		drawBall(&(stateInfo->localGameInfo->ballInfo), alpha);
 	}
 }
@@ -63,7 +66,7 @@ int cleanMutableWorld(StateInfo* stateInfo)
 		printf("Could not clean ball properly.\n");
 		return -1;
 	}
-	result = cleanPlayer(stateInfo);
+	result = cleanPlayerRenderer();
 	if(result != 0) {
 		printf("Could not clean player properly.\n");
 		return -1;

@@ -11,7 +11,8 @@ TODO_FILE = ".dev/TODO.md"
 JUNIOR_CMD = [
     "gemini",
     "-y",
-    "-s", "You are the Junior. Please complete the next task.",
+    "-m", "gemini-3-pro-preview"
+    "You are the Junior. Please complete the next task.",
     "--output-format", "stream-json"
 ]
 

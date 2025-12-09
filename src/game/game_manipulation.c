@@ -8,6 +8,7 @@
 #include "game_manipulation.h"
 #include "common_logic.h"
 #include "ball_physics.h"
+#include "collision.h" // Include the new header
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -80,21 +81,15 @@ static void updateBallStatus(StateInfo* stateInfo)
 		physics_apply_velocity(&(stateInfo->localGameInfo->ballInfo.location), &(stateInfo->localGameInfo->ballInfo.velocity));
 		if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 			// if ball is free then we make sure that it stays within the play area.
-			if(stateInfo->localGameInfo->ballInfo.location.z > FIELD_FRONT && stateInfo->localGameInfo->ballInfo.velocity.z > 0) {
-				stateInfo->localGameInfo->ballInfo.velocity.z = -stateInfo->localGameInfo->ballInfo.velocity.z*BALL_SLOW_FACTOR_Y;
-			} else if(stateInfo->localGameInfo->ballInfo.location.z < FIELD_BACK && stateInfo->localGameInfo->ballInfo.velocity.z < 0) {
-				stateInfo->localGameInfo->ballInfo.velocity.z = -stateInfo->localGameInfo->ballInfo.velocity.z*BALL_SLOW_FACTOR_Y;
-			}
-			if(stateInfo->localGameInfo->ballInfo.location.x > FIELD_RIGHT && stateInfo->localGameInfo->ballInfo.velocity.x > 0) {
-				stateInfo->localGameInfo->ballInfo.velocity.x = -stateInfo->localGameInfo->ballInfo.velocity.x*BALL_SLOW_FACTOR_Y;
-			} else if(stateInfo->localGameInfo->ballInfo.location.x < FIELD_LEFT && stateInfo->localGameInfo->ballInfo.velocity.x < 0) {
-				stateInfo->localGameInfo->ballInfo.velocity.x = -stateInfo->localGameInfo->ballInfo.velocity.x*BALL_SLOW_FACTOR_Y;
-			}
+			physics_resolve_field_boundaries(&(stateInfo->localGameInfo->ballInfo.location),
+			                                 &(stateInfo->localGameInfo->ballInfo.velocity),
+			                                 FIELD_FRONT, FIELD_BACK, FIELD_LEFT, FIELD_RIGHT,
+			                                 BALL_SLOW_FACTOR_Y);
 			if(stateInfo->localGameInfo->ballInfo.onGround == 0) {
 				// if ball is not on the ground yet, let it be affected by gravity.
 				physics_apply_gravity(&(stateInfo->localGameInfo->ballInfo.velocity), 1.0f);
 				// if ball now comes close to the ground
-				if(stateInfo->localGameInfo->ballInfo.location.y < BALL_SIZE / 2) {
+				if(physics_check_ground_collision(stateInfo->localGameInfo->ballInfo.location.y, BALL_SIZE / 2)) {
 					int outOfBounds = 0;
 					// we check out of bounds situation only if we are close to ground to avoid
 					// unnecesaary overhead

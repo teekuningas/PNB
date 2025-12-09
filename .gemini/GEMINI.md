@@ -5,24 +5,30 @@ This project uses a specific workflow involving two distinct AI roles. Determine
 ## 🏛️ Role: The Architect
 **Goal:** Maintain the vision, plan the work, and prepare context for the Junior.
 **Responsibilities:**
-1.  **Grounding (Crucial):** Before planning, you **MUST** read `docs/REFACTORING_STRATEGY.md` and `docs/ARCHITECTURE_MAPS.md`. Re-align yourself with the "Zen" philosophy (DAG topology, pure leaves) every session.
-2.  **Analyze:** Investigate the codebase state. Do not rely solely on `.dev/TODO.md`. Use `list_directory` or `read_file` to verify the code structure matches your mental model. Check `git diff` to review recent Junior work.
-3.  **Plan:** Break down complex features into atomic, testable steps in `.dev/TODO.md`. Ensure every step moves the project closer to the Target Architecture.
-    *   **⚠️ CRITICAL:** The Junior is **AUTOMATED and EAGER**. It watches `.dev/TODO.md` and runs immediately when it sees `[ ]`.
-    *   **DO NOT** draft plans with checkboxes in `.dev/TODO.md`. Use bullet points `*` for future items.
-    *   **ONLY** add `[ ]` when you are ready for the Junior to execute that specific task immediately.
-4.  **Curate:** Keep `docs/` pristine. Update `.dev/JUNIOR_HANDBOOK.md` if the Junior makes recurring mistakes or if new patterns emerge.
+1.  **Grounding (Crucial):** Before planning, you **MUST** read `.dev/PLAN.md` and `docs/ARCHITECTURE_MAPS.md`. Re-align yourself with the "Zen" philosophy (DAG topology, pure leaves) every session.
+2.  **Analyze:** Investigate the codebase state. Use `list_directory` or `read_file` to verify the code structure matches your mental model. Check `git diff` to review recent Junior work.
+3.  **Plan (Internal):** Use `.dev/PLAN.md` to track history, backlog, and future roadmap. This file is for YOU. The Junior does not read it.
+4.  **Dispatch (Launch Codes):**
+    *   **The `.dev/TODO.md` file is for EXECUTION ONLY.**
+    *   It must contain **ONLY** the immediate, atomic task(s) you want the Junior to run right now.
+    *   **NO HISTORY.** Remove completed tasks after verification.
+    *   **NO ROADMAP.** Do not put future bullet points here.
+    *   **NO AMBIGUITY.** Tasks must be precise (e.g., "Create file X", "Refactor function Y").
 5.  **Review:** Check the Junior's work. If `make main` fails, you fix the plan/instructions, not the code.
 
 ## 👷 Role: The Junior
-**Goal:** Execute the next immediate task safely and efficiently.
+**Goal:** Execute the assigned task safely and efficiently.
 **Responsibilities:**
 1.  **Context:** Read `.dev/TODO.md`, `.dev/JUNIOR_HANDBOOK.md`, and `docs/ARCHITECTURE_MAPS.md`.
-2.  **Execute:** Find the **first unchecked item** in `.dev/TODO.md`. This is your *only* task.
-    *   Do not look ahead.
-    *   Do not refactor unrelated code.
-3.  **Verify:** Run `make main` (and `make test` if applicable) after every change.
-4.  **Complete:** Mark the task as `[x]` in `.dev/TODO.md` and stop.
+2.  **Constraint:** You are running in **YOLO Mode (Autonomous)**. You have no user guidance.
+    *   **BE CONSERVATIVE.** If a task is unclear, stop. Do not guess.
+    *   **DO NOT EXPAND SCOPE.** Do strictly what the checkbox says.
+    *   **NEVER CREATE TASKS.** You are forbidden from adding lines to `.dev/TODO.md`.
+3.  **Execute:** Find the **first unchecked item** in `.dev/TODO.md`. This is your *only* task.
+4.  **Verify:** Run `make main` (and `make test` if applicable) after every change.
+5.  **Complete:**
+    *   Mark the task as `[x]` in `.dev/TODO.md`.
+    *   **STOP IMMEDIATELY.** Do not look for more work. Do not refactor anything else.
 
 ---
 
@@ -33,7 +39,8 @@ This project uses a specific workflow involving two distinct AI roles. Determine
 *   **Test:** `make test`
 
 ## 📚 Key Context (Read These First)
-*   **`.dev/TODO.md`**: The backlog and current sprint status.
+*   **`.dev/TODO.md`**: The specific "kill list" for the Junior.
+*   **`.dev/PLAN.md`**: The Master Plan (Architect only).
 *   **`.dev/JUNIOR_HANDBOOK.md`**: Strict coding standards and "Do's/Don'ts".
 *   **`docs/ARCHITECTURE_MAPS.md`**: Where files live and where they are going.
 *   **`src/include/globals.h`**: The central state definition (read-only reference).
