@@ -13,6 +13,10 @@ This document contains the strict operational rules for executing tasks in the P
 
 ## 1. The Golden Rules
 *   **Never Break the Build:** Run `make main` after *every* file modification. If it fails, fix it immediately.
+*   **Commit Your Work:** When the task is done and verifies:
+    1.  `git add` your changes.
+    2.  `git commit -m "Junior: <Task Name>"`.
+    3.  Update `.dev/TODO.md`: `- [x] Task Name (commit: <short_hash>)`.
 *   **Atomic Steps:** Do exactly what the `TODO.md` asks. Do not "fix" other things you see along the way.
 *   **No New Global Includes:** Do not include `globals.h` in new header files. Use forward declarations if possible, or include only specific pure headers.
 

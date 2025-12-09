@@ -1,0 +1,16 @@
+{
+  "containerEnv": {
+    "COPILOT_GITHUB_TOKEN": "${localEnv:COPILOT_GITHUB_TOKEN}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mkhl.direnv"
+      ]
+    }
+  },
+  "image": "ghcr.io/cachix/devenv/devcontainer:latest",
+  "overrideCommand": false,
+  "remoteUser": "root",
+  "updateContentCommand": "devenv print-dev-env >> /etc/bash.bashrc"
+}

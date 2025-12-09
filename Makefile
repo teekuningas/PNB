@@ -22,35 +22,25 @@ obj/tests/%.o: tests/%.c
 	mkdir -p $(@D)
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
-# Check if we are in a nix develop shell (indicated by $IN_NIX_SHELL)
-# If not, execute make command again within a nix develop shell
-ifeq ($(IN_NIX_SHELL),)
 .PHONY: main
-main:
-	nix develop -c -- $(MAKE) $(MAKECMDGOALS)
-else
-# If already in nix develop shell, proceed with normal build
 main: $(OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
-endif
 
 # Test target - compile and run tests without OpenGL
-# Check if we are in a nix develop shell (indicated by $IN_NIX_SHELL)
-# If not, execute make command again within a nix develop shell
-ifeq ($(IN_NIX_SHELL),)
-.PHONY: test
+.PHONY: watch_junior
 watch_junior:
-	@echo "Starting Junior Watcher..."
+	@echo "Starting Junior Watcher (Gemini)..."
 	@./.dev/scripts/junior.py
 
-test:
-	nix develop -c -- $(MAKE) $(MAKECMDGOALS)
-else
-# If already in nix develop shell, proceed with normal build
+.PHONY: watch_junior_copilot
+watch_junior_copilot:
+	@echo "Starting Junior Watcher (Copilot)..."
+	@./.dev/scripts/junior_copilot.py
+
+.PHONY: test
 test: $(TEST_OBJ) tests/test_runner.c
 	$(CC) tests/test_runner.c $(TEST_OBJ) -o test_runner $(CFLAGS) -lm -lmxml
 	./test_runner
-endif
 
 .PHONY: run
 run:
@@ -75,7 +65,7 @@ clean:
 
 .PHONY: shell
 shell:
-	nix develop
+	devenv shell
 
 .PHONY: format
 format:
