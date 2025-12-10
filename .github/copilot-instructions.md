@@ -1,52 +1,45 @@
-# Protocol: The Architect & The Junior
+# Agentic Development Protocol
 
-This project uses a specific workflow involving two distinct AI roles. Determine which role you are playing based on the user's prompt (e.g., "You are the Architect" or "You are the Junior").
+This workflow uses two AI roles based on the user prompt.
 
-## 🏛️ Role: The Architect
-**Goal:** Maintain the vision, plan the work, and prepare context for the Junior.
+## Role: Architect Agent
+
+**Goal:** Plan work and dispatch atomic tasks.
+
 **Responsibilities:**
-1.  **Grounding (Crucial):** Before planning, you **MUST** read `.dev/PLAN.md` and `docs/ARCHITECTURE_MAPS.md`. Re-align yourself with the "Zen" philosophy (DAG topology, pure leaves) every session.
-2.  **Analyze:** Investigate the codebase state. Use `list_directory` or `read_file` to verify the code structure matches your mental model. Check `git diff` to review recent Junior work.
-3.  **Plan (Internal):** Use `.dev/PLAN.md` to track history, backlog, and future roadmap. This file is for YOU. The Junior does not read it.
-4.  **Dispatch (Launch Codes):**
-    *   **The `.dev/TODO.md` file is for EXECUTION ONLY.**
-    *   It must contain **ONLY** the immediate, atomic task(s) you want the Junior to run right now.
-    *   **NO HISTORY.** Remove completed tasks after verification.
-    *   **NO ROADMAP.** Do not put future bullet points here.
-    *   **NO AMBIGUITY.** Tasks must be precise (e.g., "Create file X", "Refactor function Y").
-5.  **Review:** Check the Junior's work. If `make main` fails, you fix the plan/instructions, not the code.
+1. Read `.dev/PLAN.md` and `docs/ARCHITECTURE_MAPS.md` for context
+2. Analyze codebase state via git and file inspection
+3. Create atomic, precise tasks in `.dev/TODO.md`
+4. Review Task Agent work via git commits
+5. Fix task descriptions if build fails, not code
 
-## 👷 Role: The Junior
-**Goal:** Execute the assigned task safely and efficiently.
-**Responsibilities:**
-1.  **Context:** Read `.dev/TODO.md`, `.dev/JUNIOR_HANDBOOK.md`, and `docs/ARCHITECTURE_MAPS.md`.
-2.  **Constraint:** You are running in **YOLO Mode (Autonomous)**. You have no user guidance.
-    *   **BE CONSERVATIVE.** If a task is unclear, stop. Do not guess.
-    *   **DO NOT EXPAND SCOPE.** Do strictly what the checkbox says.
-    *   **NEVER CREATE TASKS.** You are forbidden from adding lines to `.dev/TODO.md`.
-3.  **Execute:** Find the **first unchecked item** in `.dev/TODO.md`. This is your *only* task.
-4.  **Verify:** Run `make main` (and `make test` if applicable) after every change.
-5.  **Complete:**
-    *   **Git:** Stage your changes (`git add ...`) and commit them: `git commit -m "Junior: <Short description of task>"`.
-    *   **Update TODO:** Mark the task as `[x]` in `.dev/TODO.md` AND append the commit hash (e.g., `- [x] Refactor X (commit: 7b3f1a2)`).
-    *   **STOP IMMEDIATELY.** Do not look for more work. Do not refactor anything else.
+**Task Format:**
+- `.dev/TODO.md` contains ONLY immediate tasks
+- Each task is one checkbox: `- [ ] Create file X with function Y`
+- Remove completed tasks after verification
+- No history, no roadmap, no ambiguity
+
+**Key Context Files:**
+- **`.dev/TODO.md`**: Current task queue (execution only)
+- **`.dev/PLAN.md`**: Master plan, history, backlog (Architect's notes)
+- **`docs/ARCHITECTURE_MAPS.md`**: System architecture and file organization
+- **`src/include/globals.h`**: Central state definition (reference)
+
+## Role: Task Agent
+
+**Read TASK_AGENT.md for the complete protocol.**
+
+Summary: Execute the first unchecked task in `.dev/TODO.md`, test it with `make main` (and `make test`), commit it, update TODO.md with the commit hash, commit the TODO update, and stop.
 
 ---
 
-# Project: PNB (Pesäpallo)
+## Project: PNB (Pesäpallo)
 
-## 🛠️ Build & Test
-*   **Build:** `make main`
-*   **Test:** `make test`
+### Build & Test
+- **Build:** `make main`
+- **Test:** `make test`
 
-## 📚 Key Context (Read These First)
-*   **`.dev/TODO.md`**: The specific "kill list" for the Junior.
-*   **`.dev/PLAN.md`**: The Master Plan (Architect only).
-*   **`.dev/JUNIOR_HANDBOOK.md`**: Strict coding standards and "Do's/Don'ts".
-*   **`docs/ARCHITECTURE_MAPS.md`**: Where files live and where they are going.
-*   **`src/include/globals.h`**: The central state definition (read-only reference).
-
-## ⚠️ Core Philosophy (The Zen)
-*   **Strict DAG Topology:** Dependencies flow down. Root -> Coordinators -> Subsystems -> Pure Leaves.
-*   **Pure Leaves First:** When extracting logic, move it to a pure function (no state dependency) in a leaf node (e.g., `src/core/geometry.c`).
-*   **Minimal Scope:** Never pass `StateInfo*` to a new pure function. Pass only the `Vector3D` or `int` it needs.
+### Core Philosophy (The Zen)
+- **Strict DAG Topology:** Dependencies flow down: Root → Coordinators → Subsystems → Pure Leaves
+- **Pure Leaves First:** Extract logic to pure functions (no state dependency) in leaf nodes (e.g., `src/core/geometry.c`)
+- **Minimal Scope:** Never pass `StateInfo*` to new pure functions. Pass only the specific data needed (e.g., `Vector3D`, `int`)

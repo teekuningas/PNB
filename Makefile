@@ -26,16 +26,15 @@ obj/tests/%.o: tests/%.c
 main: $(OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
-# Test target - compile and run tests without OpenGL
-.PHONY: watch_junior
-watch_junior:
-	@echo "Starting Junior Watcher (Gemini)..."
-	@./.dev/scripts/junior.py
+.PHONY: watch_task_agent
+watch_task_agent:
+	@echo "Starting Task Agent Watcher (Gemini)..."
+	@./.dev/scripts/task_agent.py
 
-.PHONY: watch_junior_copilot
-watch_junior_copilot:
-	@echo "Starting Junior Watcher (Copilot)..."
-	@./.dev/scripts/junior_copilot.py
+.PHONY: watch_task_agent_copilot
+watch_task_agent_copilot:
+	@echo "Starting Task Agent Watcher (Copilot)..."
+	@./.dev/scripts/task_agent_copilot.py
 
 .PHONY: test
 test: $(TEST_OBJ) tests/test_runner.c

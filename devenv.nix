@@ -2,21 +2,21 @@
 {
   languages.python.enable = true;
 
-  
   packages = with pkgs; [
     glfw3
     glew
     xorg.libX11
     libGL
     libGLU
-    miniaudio # miniaudio is not in flake.nix, but minixml is
-    minixml # miniaudio is not in flake.nix, but minixml is
+    miniaudio
+    minixml
     gcc
     astyle
     alsa-lib
-    gh # Add GitHub CLI
-    bashInteractive # Add interactive bash for robust shell environment
-    github-copilot-cli # User mentioned this in their snippet
+    gh
+    bashInteractive
+    github-copilot-cli
+    gemini-cli
   ];
 
   env.LD_LIBRARY_PATH = lib.makeLibraryPath (with pkgs; [
