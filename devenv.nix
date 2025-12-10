@@ -32,5 +32,9 @@
   devcontainer.enable = true;
   devcontainer.settings.remoteUser = "root";
   devcontainer.settings.updateContentCommand = "devenv print-dev-env >> /etc/bash.bashrc";
-  devcontainer.settings.containerEnv.COPILOT_GITHUB_TOKEN = "$" + "{localEnv:COPILOT_GITHUB_TOKEN}";
+  devcontainer.settings.containerEnv = {
+    COPILOT_GITHUB_TOKEN = "$" + "{localEnv:COPILOT_GITHUB_TOKEN}";
+    GIT_AUTHOR_NAME = "$" + "{localEnv:GIT_AUTHOR_NAME}";
+    GIT_AUTHOR_EMAIL = "$" + "{localEnv:GIT_AUTHOR_EMAIL}";
+  };
 }
