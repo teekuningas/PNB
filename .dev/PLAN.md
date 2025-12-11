@@ -11,8 +11,9 @@
 - [x] Identify pitching functions in `action_implementation.c`.
 - [x] Move core functions (`startPitch`, `continuePitch`, `releasePitch`) to `src/game/actions_messy/pitching_system.c`.
 - [ ] Extract pitching meter logic from `updateMeters` to `pitching_system.c`.
-- [ ] Extract AI pitching logic to `pitching_system.c`.
-- [ ] Fix includes and build.
+- [x] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) to `src/game/actions_messy/action_state.c` and .h.
+- [x] Extract AI pitching variables and logic to `pitching_system.c`.
+- [x] Fix includes and build.
 
 ## Cleanup Tasks (Low Priority)
 - [ ] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.

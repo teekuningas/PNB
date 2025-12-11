@@ -3,7 +3,7 @@ import sys
 from watcher import watch_and_run
 
 if __name__ == "__main__":
-    model = sys.argv[1] if len(sys.argv) > 1 else "claude-sonnet-4"
+    model = sys.argv[1] if len(sys.argv) > 1 else "claude-sonnet-4.5"
     command = [
         "copilot",
         "--allow-all-tools",
