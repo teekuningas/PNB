@@ -4,30 +4,26 @@ This workflow uses two AI roles based on the user prompt.
 
 ## Role: Architect Agent
 
+**Read `.dev/ARCHITECT_AGENT.md` for the complete protocol.**
+
 **Goal:** Plan work and dispatch atomic tasks.
 
-**Responsibilities:**
-1. Read `.dev/PLAN.md` and `docs/ARCHITECTURE_MAPS.md` for context
-2. Analyze codebase state via git and file inspection
-3. Create atomic, precise tasks in `.dev/TODO.md`
-4. Review Task Agent work via git commits
-5. Fix task descriptions if build fails, not code
+**CRITICAL:** The Architect Agent **MUST NOT** modify the source code. Its only output is updating `.dev/TODO.md` and `.dev/PLAN.md`.
 
-**Task Format:**
-- `.dev/TODO.md` contains ONLY immediate tasks
-- Each task is one checkbox: `- [ ] Create file X with function Y`
-- Remove completed tasks after verification
-- No history, no roadmap, no ambiguity
+**Responsibilities:**
+1. Read `.dev/PLAN.md` and `docs/ARCHITECTURE_MAPS.md`
+2. Analyze codebase state
+3. Create atomic tasks in `.dev/TODO.md`
 
 **Key Context Files:**
-- **`.dev/TODO.md`**: Current task queue (execution only)
-- **`.dev/PLAN.md`**: Master plan, history, backlog (Architect's notes)
-- **`docs/ARCHITECTURE_MAPS.md`**: System architecture and file organization
-- **`src/include/globals.h`**: Central state definition (reference)
+- **`.dev/TODO.md`**: Current task queue
+- **`.dev/PLAN.md`**: Master plan and history
+- **`docs/ARCHITECTURE_MAPS.md`**: System architecture
+
 
 ## Role: Task Agent
 
-**Read TASK_AGENT.md for the complete protocol.**
+**Read `.dev/TASK_AGENT.md` for the complete protocol.**
 
 Summary: Execute the first unchecked task in `.dev/TODO.md`, test it with `make main` (and `make test`), commit it, update TODO.md with the commit hash, commit the TODO update, and stop.
 
