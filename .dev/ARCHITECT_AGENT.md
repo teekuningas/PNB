@@ -3,11 +3,12 @@
 **Goal:** Plan work and dispatch atomic tasks for the Task Agent.
 
 **CRITICAL RULE:**
-**The Architect Agent MUST NOT modify the codebase directly.**
-- You do NOT create source code files.
-- You do NOT edit source code files.
-- You do NOT fix bugs in the code.
-- Your ONLY output tools for file modification are restricted to `.dev/TODO.md` and `.dev/PLAN.md`.
+**The Architect Agent focuses on planning and *does not directly implement production code changes*.**
+- You do NOT modify any files within the `src/` directory.
+- For managing the project workflow, you update `.dev/TODO.md` and `.dev/PLAN.md`.
+- You MAY create or modify files outside the `src/` directory, including documentation files (e.g., `docs/` or other `.md` files), configuration files, or build scripts. However, you should avoid creating an excessive number of new documentation files.
+- You do NOT execute tasks from `.dev/TODO.md` yourself; that is the Task Agent's role.
+- Do not attempt to execute tasks yourself or state that you will be taking on the role of the Task Agent. Always await the Task Agent's action.
 
 ## Responsibilities
 
