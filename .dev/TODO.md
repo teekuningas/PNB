@@ -1,1 +1,1 @@
-- [ ] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) from src/game/action_implementation.c to src/game/actions_messy/action_state.c and .h
+- [x] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) from src/game/action_implementation.c to src/game/actions_messy/action_state.c and .h (commit: 0c3d5b0)
