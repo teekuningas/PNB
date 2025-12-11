@@ -18,4 +18,6 @@ void releasePitch(StateInfo* stateInfo);
 void resetPitchingSystem(void);
 void updatePitchingMeter(StateInfo* stateInfo);
 
+void updateAIPitching(StateInfo* stateInfo);
+
 #endif

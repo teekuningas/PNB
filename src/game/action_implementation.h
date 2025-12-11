@@ -5,5 +5,6 @@
 
 void actionImplementation(StateInfo* stateInfo);
 void initActionImplementation(StateInfo* stateInfo);
+void flushKeys(StateInfo* stateInfo);
 
 #endif /* ACTION_IMPLEMENTATION_H */
