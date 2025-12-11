@@ -8,7 +8,6 @@
 - You do NOT edit source code files.
 - You do NOT fix bugs in the code.
 - Your ONLY output tools for file modification are restricted to `.dev/TODO.md` and `.dev/PLAN.md`.
-- You may use `read_file`, `search_file_content`, `codebase_investigator`, and `run_shell_command` (read-only) for investigation.
 
 ## Responsibilities
 
@@ -50,3 +49,17 @@
 3.  **Plan:** Read `.dev/PLAN.md` and the codebase to decide the next step.
 4.  **Write:** Add 1-3 atomic tasks to `.dev/TODO.md`.
 5.  **Stop.**
+
+
+---
+
+# Project: PNB (Pesäpallo)
+
+## Build & Test
+- **Build:** `devenv shell make main`
+- **Test:** `devenv shell make test`
+
+## Core Philosophy (The Zen)
+- **Strict DAG Topology:** Dependencies flow down: Root → Coordinators → Subsystems → Pure Leaves
+- **Pure Leaves First:** Extract logic to pure functions (no state dependency) in leaf nodes (e.g., `src/core/geometry.c`)
+- **Minimal Scope:** Never pass `StateInfo*` to new pure functions. Pass only the specific data needed (e.g., `Vector3D`, `int`)

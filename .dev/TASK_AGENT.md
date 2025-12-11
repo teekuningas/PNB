@@ -78,3 +78,16 @@ When extracting code from `src/game/` to `src/core/` or `src/physics/`:
 ### Troubleshooting
 - *Linker Error (undefined reference):* Add the new `.o` file to the `_OBJ` list in `Makefile`
 - *Implicit Declaration:* Include the header file (`.h`) in the C file using the function
+
+---
+
+# Project: PNB (Pesäpallo)
+
+## Build & Test
+- **Build:** `make main`
+- **Test:** `make test`
+
+## Core Philosophy (The Zen)
+- **Strict DAG Topology:** Dependencies flow down: Root → Coordinators → Subsystems → Pure Leaves
+- **Pure Leaves First:** Extract logic to pure functions (no state dependency) in leaf nodes (e.g., `src/core/geometry.c`)
+- **Minimal Scope:** Never pass `StateInfo*` to new pure functions. Pass only the specific data needed (e.g., `Vector3D`, `int`)
