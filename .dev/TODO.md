@@ -1,1 +1,1 @@
-- [x] Extract pitching meter logic from updateMeters in src/game/action_implementation.c to src/game/actions_messy/pitching_system.c (commit: dc4ca1d)
+- [ ] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) from src/game/action_implementation.c to src/game/actions_messy/action_state.c and .h

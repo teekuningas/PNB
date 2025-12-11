@@ -36,21 +36,7 @@
 
 #define BATTER_ANGLE_FIX (2*PI / 4)
 
-// ai action flags
-#define AI_NO_LOCK -1
-#define AI_PITCH_LOCK 0
-#define AI_THROW_LOCK 1
-#define AI_DROP_LOCK 2
 
-#define AI_WAITING_BATTER_LOCK 3
-#define AI_WAITING_WALK_LOCK 4
-#define AI_BATTING_LOCK 5
-#define AI_CHANGE_LOCK 6
-
-#define AI_CLICK_LOCK 7
-#define AI_DOUBLE_CLICK_LOCK 8
-#define AI_COME_BACK_LOCK 9
-#define AI_COME_BACK_WRONG_PITCH_LOCK 10
 
 #define TIMEOUT_CONSTANT 200
 
@@ -89,13 +75,8 @@ static int aiDropStage;
 static unsigned int aiPitchFirstLimit;
 static unsigned int aiPitchSecondLimit;
 static int aiThrowStage;
-static int aiActionEventLock;
-static int aiLockUpdate;
 static int aiMoveCounter;
 
-// we need timeouts as sometimes ai tries to do somthing too quickly before the other
-// action implementation machinery is ready for it
-static int aiLockTimeoutCounter;
 static int aiPitchTime;
 static int aiPitchPreviousTime;
 static int aiBatterReadyTimer;
