@@ -1,1 +1,1 @@
-- [x] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) from src/game/action_implementation.c to src/game/actions_messy/action_state.c and .h (commit: 0c3d5b0)
+- [x] Extract AI pitching variables and logic from aiLogic in src/game/action_implementation.c to src/game/actions_messy/pitching_system.c. (commit: 2427b62)
