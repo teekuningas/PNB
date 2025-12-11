@@ -1,1 +1,1 @@
-- [ ] Extract pitching meter logic from updateMeters in src/game/action_implementation.c to src/game/actions_messy/pitching_system.c
+- [x] Extract pitching meter logic from updateMeters in src/game/action_implementation.c to src/game/actions_messy/pitching_system.c (commit: dc4ca1d)
