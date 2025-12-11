@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "action_implementation.h"
 #include "common_logic.h"
+#include "actions_messy/action_state.h"
 
 // here some constants used in the code
 #define PITCH_BASE_SPEED 0.065f
@@ -66,9 +67,6 @@
 // the code.
 static float throwDistance;
 static Vector3D throwDirection;
-
-static unsigned int meterCounter;
-static unsigned int meterCounterMax;
 
 static int doubleClickCounter[BASE_COUNT];
 static int pitchFrameTime;
