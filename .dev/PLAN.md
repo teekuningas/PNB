@@ -2,14 +2,16 @@
 
 ## Immediate Goals (Milestone 4: The Big Split)
 
-### Step 7: Action System Scaffold (Active)
-- [ ] Create directory `src/game/actions_messy/`.
-- [ ] Create directory `src/game/actions_pure/`.
-- [ ] Create `src/game/actions_messy/README.md`.
+### Step 7: Action System Scaffold (Completed)
+- [x] Create directory `src/game/actions_messy/`.
+- [x] Create directory `src/game/actions_pure/`.
+- [x] Create `src/game/actions_messy/README.md`.
 
-### Step 8: Extract Pitching System (Milestone 4 Start)
-- [ ] Identify pitching functions in `action_implementation.c`.
-- [ ] Move them to `src/game/actions_messy/pitching_system.c` and `.h`.
+### Step 8: Extract Pitching System (Active)
+- [x] Identify pitching functions in `action_implementation.c`.
+- [x] Move core functions (`startPitch`, `continuePitch`, `releasePitch`) to `src/game/actions_messy/pitching_system.c`.
+- [ ] Extract pitching meter logic from `updateMeters` to `pitching_system.c`.
+- [ ] Extract AI pitching logic to `pitching_system.c`.
 - [ ] Fix includes and build.
 
 ## Cleanup Tasks (Low Priority)

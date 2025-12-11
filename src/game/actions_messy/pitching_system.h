@@ -16,5 +16,6 @@ void startPitch(StateInfo* stateInfo);
 void continuePitch(StateInfo* stateInfo);
 void releasePitch(StateInfo* stateInfo);
 void resetPitchingSystem(void);
+void updatePitchingMeter(StateInfo* stateInfo);
 
 #endif

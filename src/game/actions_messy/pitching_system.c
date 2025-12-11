@@ -203,3 +203,40 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 
 }
+
+void updatePitchingMeter(StateInfo* stateInfo)
+{
+	// when pitch has been started but power not yet selected,
+	// we increase meterCounter until its in its maximum
+	if(stateInfo->localGameInfo->aF.cTAF.pitch == 2) {
+		if(meterCounter < meterCounterMax) {
+			meterCounter += 1;
+		}
+		// meterValue is used to render info to screen for user.
+		stateInfo->localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
+	}
+	// when power has been selected but the angle is not yet selected,
+	// we increase meterCounter until its in its maximum
+	else if(stateInfo->localGameInfo->aF.cTAF.pitch == 4) {
+		if(meterCounter < meterCounterMax) {
+			meterCounter += 1;
+		} else {
+			// if counter reaches the maximum, it means animation has
+			// reached its end point and indicator on the meter would go off the meter.
+			// so when this happnes we terminate the pitch.
+			// first we set pitch=0 so that we can start a new pitch
+			stateInfo->localGameInfo->aF.cTAF.pitch = 0;
+			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
+			// and we set pitchGoingOn to 0 to tell other functionality in the code
+			// what happened.
+			stateInfo->localGameInfo->pRAI.pitchGoingOn = 0;
+			// ball is returned to its position with player
+			stateInfo->localGameInfo->ballInfo.location.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
+			stateInfo->localGameInfo->ballInfo.location.z = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+			// and we choose the normal model of fielder having a ball.
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 1;
+		}
+		// update what is seen on the screen.
+		stateInfo->localGameInfo->pRAI.meterValue = 1.0f - 1.0f*meterCounter / meterCounterMax;
+	}
+}
