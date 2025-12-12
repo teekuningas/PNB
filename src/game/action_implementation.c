@@ -10,6 +10,7 @@
 #include "common_logic.h"
 #include "actions_messy/action_state.h"
 #include "actions_messy/pitching_system.h"
+#include "actions_messy/batting_system.h"
 
 // here some constants used in the code
 #define THROW_TO_BASE_DISTANCE 1.0f
@@ -50,20 +51,6 @@ static Vector3D throwDirection;
 
 static int doubleClickCounter[BASE_COUNT];
 static int pitchFrameTime;
-static int batterSelect;
-static int battingFrameCount;
-static int increaseBattingFrameCount;
-static int selectedBattingPowerCount;
-static int selectedBattingAngleCount;
-static float batterAngle;
-static int batterAngleSpeed;
-static float batterAdvanceSpeed;
-static float batterAdvance;
-static int battingMode;
-static float batterAdvanceLimit;
-static int battingStopped;
-static int batterMoving;
-static int updateBatterLocationAndOrientation;
 
 // to ensure that no throws going different directions at the same time and that throwing player's orientation changes correctly
 // static int throwGoingOn; // moved to action_state
@@ -145,20 +132,7 @@ void initActionImplementation(StateInfo* stateInfo)
 
 	pitchFrameTime = 0;
 	resetPitchingSystem();
-	batterSelect = 0;
-	battingFrameCount = 0;
-	increaseBattingFrameCount = 0;
-	selectedBattingPowerCount = 0;
-	selectedBattingAngleCount = 0;
-	batterAngle = 0;
-	batterAngleSpeed = 0;
-	batterAdvanceSpeed = 0;
-	batterAdvance = 0;
-	battingMode = 0;
-	batterAdvanceLimit = 0;
-	battingStopped = 0;
-	batterMoving = 0;
-	updateBatterLocationAndOrientation = 0;
+	initBattingSystem();
 	runBatFlag = 0;
 
 	//ai uses a few flags..
