@@ -7,13 +7,21 @@
 - [x] Create directory `src/game/actions_pure/`.
 - [x] Create `src/game/actions_messy/README.md`.
 
-### Step 8: Extract Pitching System (Active)
+### Step 8: Extract Pitching System (Completed)
 - [x] Identify pitching functions in `action_implementation.c`.
 - [x] Move core functions (`startPitch`, `continuePitch`, `releasePitch`) to `src/game/actions_messy/pitching_system.c`.
-- [ ] Extract pitching meter logic from `updateMeters` to `pitching_system.c`.
+- [x] Extract pitching meter logic from `updateMeters` to `pitching_system.c`.
 - [x] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) to `src/game/actions_messy/action_state.c` and .h.
 - [x] Extract AI pitching variables and logic to `pitching_system.c`.
 - [x] Fix includes and build.
+
+### Step 9: Extract Batting System (Active)
+- [ ] Identify batting variables and logic in `action_implementation.c`.
+- [ ] Create `src/game/actions_messy/batting_system.c` and `.h`.
+- [ ] Move batting constants/variables to `src/game/actions_messy/batting_system.c` (or `action_state.c` if shared).
+- [ ] Move batting functions to `batting_system.c`.
+- [ ] Extract batting meter logic from `updateMeters` to `batting_system.c`.
+
 
 ## Cleanup Tasks (Low Priority)
 - [ ] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.

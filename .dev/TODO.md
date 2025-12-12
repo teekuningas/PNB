@@ -1,1 +1,3 @@
-- [x] Extract AI pitching variables and logic from aiLogic in src/game/action_implementation.c to src/game/actions_messy/pitching_system.c. (commit: 2427b62)
+- [ ] Clean `src/core/render.h`: Remove `#include "globals.h"`, add `<GL/glew.h>`.
+- [ ] Create `src/game/actions_messy/batting_system.c` and `.h` with include guards.
+- [ ] Move batting-related constants and static variables from `action_implementation.c` to `batting_system.c` (batterSelect, battingFrameCount, etc.). Expose them via header if needed.

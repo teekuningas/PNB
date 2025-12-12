@@ -1,7 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "globals.h"
+#include <GL/glew.h>
 #include "loadobj.h"
 
 // A struct to hold global rendering state, like window dimensions.
