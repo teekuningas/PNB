@@ -15,16 +15,23 @@
 - [x] Extract AI pitching variables and logic to `pitching_system.c`.
 - [x] Fix includes and build.
 
-### Step 9: Extract Batting System (Active)
-- [ ] Identify batting variables and logic in `action_implementation.c`.
-- [ ] Create `src/game/actions_messy/batting_system.c` and `.h`.
-- [ ] Move batting constants/variables to `src/game/actions_messy/batting_system.c` (or `action_state.c` if shared).
-- [ ] Move batting functions to `batting_system.c`.
-- [ ] Extract batting meter logic from `updateMeters` to `batting_system.c`.
+### Step 9: Extract Batting System (Completed)
+- [x] Identify batting variables and logic in `action_implementation.c`.
+- [x] Create `src/game/actions_messy/batting_system.c` and `.h`.
+- [x] Move batting constants/variables to `src/game/actions_messy/batting_system.c` (or `action_state.c` if shared).
+- [x] Move batting functions to `batting_system.c`.
+- [x] Extract batting meter logic from `updateMeters` to `batting_system.c`.
+
+### Step 10: Extract Throwing & Fielding (Pending)
+- [ ] Identify throwing/fielding variables and logic in `action_implementation.c`.
+- [ ] Create `src/game/actions_messy/throwing_system.c` and `.h`.
+- [ ] Move generic movement/throwing functions (`genericThrowRelease`, `genericThrowLoad`, `genericMove`, `genericStopMove`) to the new system.
+- [ ] Clean up `action_implementation.c` to be a pure dispatcher.
+
 
 
 ## Cleanup Tasks (Low Priority)
-- [ ] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.
+- [x] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.
 
 ## Completed History
 
