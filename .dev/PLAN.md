@@ -50,3 +50,6 @@
 ### Milestone 1: Core Utilities (Completed)
 - [x] **Step 0-2: Geometry & Field Layout**
     - [x] Extracted `src/core/geometry.c` and `src/core/field_layout.c`.
+
+## Future Improvements & Tooling
+- [ ] **State Serialization (Save/Debug Dump)**: Implement a system to serialize `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) to a file. This will aid in debugging bugs like the "double occupancy" issue by allowing exact state reproduction.
