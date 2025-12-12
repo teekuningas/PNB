@@ -1,3 +1,3 @@
-- [x] Clean `src/core/render.h`: Remove `#include "globals.h"`, add `<GL/glew.h>`. (commit: 60e243d)
-- [x] Create src/game/actions_messy/batting_system.c and .h with include guards. (commit: 48c88d3)
-- [x] Move batting-related constants and static variables from `action_implementation.c` to `batting_system.c` (batterSelect, battingFrameCount, etc.). Expose them via header if needed. (commit: 70391bf)
+- [ ] Move batting functions (`selectBatter`, `startIncreaseBatterAngle`, `stopIncreaseBatterAngle`, `startDecreaseBatterAngle`, `stopDecreaseBatterAngle`, `selectPower`, `selectAngle`, `updateBatting`) from `action_implementation.c` to `src/game/actions_messy/batting_system.c`. Ensure they are declared in `.h` and removed from original file.
+- [ ] Extract batting meter logic (cases where `swing` is 1 or 3) from `updateMeters` in `action_implementation.c` to a new function `updateBattingMeter` in `batting_system.c`. Call it from `updateMeters`.
+- [ ] Fix includes in `batting_system.c` (needs `common_logic.h`, `action_state.h`, `math.h`, etc.) and ensure build passes.
