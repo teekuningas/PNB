@@ -1,3 +1,3 @@
-- [ ] Clean `src/core/render.h`: Remove `#include "globals.h"`, add `<GL/glew.h>`.
+- [x] Clean `src/core/render.h`: Remove `#include "globals.h"`, add `<GL/glew.h>`. (commit: 60e243d)
 - [ ] Create `src/game/actions_messy/batting_system.c` and `.h` with include guards.
 - [ ] Move batting-related constants and static variables from `action_implementation.c` to `batting_system.c` (batterSelect, battingFrameCount, etc.). Expose them via header if needed.
