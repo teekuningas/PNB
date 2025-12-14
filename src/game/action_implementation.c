@@ -90,11 +90,8 @@ void initActionImplementation(StateInfo* stateInfo)
 	//ai uses a few flags..
 
 	aiDropStage = 0;
-	aiThrowStage = 0;
 	aiActionEventLock = -1;
 	aiLockUpdate = 0;
-	aiMoveCounter = 0;
-	aiLockTimeoutCounter = -1;
 
 	aiBattingKeyDown = 0;
 	aiChangingKeyDown = 0;
