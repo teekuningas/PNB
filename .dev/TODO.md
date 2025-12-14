@@ -1,1 +1,0 @@
-- [x] Remove the initialization of `aiThrowStage`, `aiMoveCounter`, and `aiLockTimeoutCounter` from `initActionImplementation` in `src/game/action_implementation.c` as these variables are now managed externally in `catching_ai.c` and `catching_ai.h`. (commit: 219a641)
