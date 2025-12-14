@@ -22,13 +22,18 @@
 - [x] Move batting functions to `batting_system.c`.
 - [x] Extract batting meter logic from `updateMeters` to `batting_system.c`.
 
-### Step 10: Extract Throwing & Fielding (Pending)
-- [ ] Identify throwing/fielding variables and logic in `action_implementation.c`.
-- [ ] Create `src/game/actions_messy/throwing_system.c` and `.h`.
-- [ ] Move generic movement/throwing functions (`genericThrowRelease`, `genericThrowLoad`, `genericMove`, `genericStopMove`) to the new system.
-- [ ] Clean up `action_implementation.c` to be a pure dispatcher.
+### Step 10: Extract Throwing & Fielding (Completed)
+- [x] Identify throwing/fielding variables and logic in `action_implementation.c`.
+- [x] Create `src/game/actions_messy/throwing_system.c` and `.h`.
+- [x] Move generic movement/throwing functions (`genericThrowRelease`, `genericThrowLoad`, `genericMove`, `genericStopMove`) to the new system.
+- [x] Clean up `action_implementation.c` to be a pure dispatcher.
 
-
+### Step 11: Extract AI Logic (In Progress)
+- [x] Create `src/game/ai_messy/catching_ai.c` and `.h`.
+- [x] Move catching AI helpers (`moveControlledPlayerToLocation`, `throwBallToBase`) to `catching_ai.c`.
+- [ ] Create `src/game/ai_messy/batting_ai.c` and `.h`.
+- [ ] Move batting AI logic and state variables from `action_implementation.c` to `batting_ai.c`.
+- [ ] Refactor `aiLogic` in `action_implementation.c` to simply call `updateCatchingAI` (or equivalent) and `updateBattingAI`.
 
 ## Cleanup Tasks (Low Priority)
 - [x] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.
