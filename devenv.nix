@@ -34,7 +34,8 @@
   devcontainer.settings.updateContentCommand = "devenv print-dev-env >> /etc/bash.bashrc";
   devcontainer.settings.containerEnv = {
     COPILOT_GITHUB_TOKEN = "$" + "{localEnv:COPILOT_GITHUB_TOKEN}";
-    GEMINI_API_KEY = "$" + "{localEnv:GEMINI_API_KEY}";
+    GOOGLE_GENAI_USE_GCA = "$" + "{localEnv:GOOGLE_GENAI_USE_GCA}";
+    GOOGLE_CLOUD_ACCESS_TOKEN = "$" + "{localEnv:GOOGLE_CLOUD_ACCESS_TOKEN}";
     GIT_AUTHOR_NAME = "$" + "{localEnv:GIT_AUTHOR_NAME}";
     GIT_AUTHOR_EMAIL = "$" + "{localEnv:GIT_AUTHOR_EMAIL}";
   };
