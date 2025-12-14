@@ -5,14 +5,6 @@ PNB - Not Baseball Since 2013
 
 Download and extract the zip file from the Releases.
 
-## Development Agent Setup
-
-### Prerequisites
-
-1. Install [devenv](https://devenv.sh/)
-2. Install [GitHub CLI](https://cli.github.com/) and authenticate: `gh auth login`
-3. Install [Gemini CLI](https://github.com/google/gemini-cli) and authenticate (see below)
-
 ### GitHub Copilot Setup
 
 GitHub Copilot uses a simple token-based authentication:
@@ -37,7 +29,7 @@ export GEMINI_FORCE_FILE_STORAGE=true
 # 2. Start Gemini CLI and login with your Google account
 gemini
 
-# 3. In the CLI, type: /login
+# 3. In the CLI, type: /auth
 # 4. Select "Login with Google"
 # 5. Complete authentication in your browser
 # 6. Exit Gemini CLI
@@ -70,15 +62,3 @@ devcontainer up --workspace-folder .
 devcontainer exec --workspace-folder . make watch_task_agent          # Gemini CLI
 devcontainer exec --workspace-folder . make watch_task_agent_copilot  # GitHub Copilot
 ```
-
-### Troubleshooting
-
-**Gemini token extraction fails:**
-- Ensure you've logged in with `GEMINI_FORCE_FILE_STORAGE=true gemini` first
-- Check that `~/.gemini/mcp-oauth-tokens-v2.json` exists
-- Verify you have Python with the `cryptography` package installed
-
-**Authentication expires:**
-- Gemini CLI tokens are refreshed automatically if you have a refresh token
-- If authentication fails, re-run the one-time Gemini CLI setup above
-

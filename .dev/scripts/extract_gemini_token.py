@@ -67,11 +67,23 @@ def decrypt(encrypted_data, key):
 
 
 def extract_token():
-    """Extract the OAuth access token from the encrypted file."""
-    token_path = get_token_path()
+    """Extract the OAuth access token from storage (tries both old and new formats)."""
+    # First, try the old unencrypted format
+    old_token_path = Path.home() / GEMINI_DIR / 'oauth_creds.json'
+    if old_token_path.exists():
+        try:
+            data = json.loads(old_token_path.read_text())
+            if 'access_token' in data:
+                print(data['access_token'])
+                return
+        except Exception as e:
+            print(f"Warning: Failed to read old token format: {e}", file=sys.stderr)
     
+    # Try the new encrypted format
+    token_path = get_token_path()
     if not token_path.exists():
-        print(f"Error: Token file not found at {token_path}", file=sys.stderr)
+        print(f"Error: No token files found", file=sys.stderr)
+        print(f"Tried: {old_token_path} and {token_path}", file=sys.stderr)
         print("Please run 'GEMINI_FORCE_FILE_STORAGE=true gemini' and use /login first.", file=sys.stderr)
         sys.exit(1)
     
@@ -83,14 +95,15 @@ def extract_token():
         
         account = tokens.get(MAIN_ACCOUNT_KEY)
         if not account or 'token' not in account or 'accessToken' not in account['token']:
-            print("Error: No main account token found in file.", file=sys.stderr)
+            print("Error: No main account token found in encrypted file.", file=sys.stderr)
+            print(f"Available keys: {list(tokens.keys())}", file=sys.stderr)
             sys.exit(1)
         
         # Output only the access token to stdout
         print(account['token']['accessToken'])
         
     except Exception as e:
-        print(f"Error extracting token: {e}", file=sys.stderr)
+        print(f"Error extracting token from encrypted file: {e}", file=sys.stderr)
         sys.exit(1)
 
 

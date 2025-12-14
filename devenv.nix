@@ -1,7 +1,5 @@
 { pkgs, lib, config, inputs, ... }:
 {
-  languages.python.enable = true;
-
   packages = with pkgs; [
     glfw3
     glew
