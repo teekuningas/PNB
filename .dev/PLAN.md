@@ -1,45 +1,48 @@
 # Refactoring Master Plan
 
-## Immediate Goals (Milestone 4: The Big Split)
+## Immediate Goals (Milestone 5: Logic Purification)
 
-### Step 7: Action System Scaffold (Completed)
-- [x] Create directory `src/game/actions_messy/`.
-- [x] Create directory `src/game/actions_pure/`.
-- [x] Create `src/game/actions_messy/README.md`.
+**Goal:** Analyze the `actions_messy` and `ai_messy` modules, identify pure logic (math, rules, state-independent calculations), and move them to `src/game/actions_pure/` or `src/game/ai_pure/`.
 
-### Step 8: Extract Pitching System (Completed)
-- [x] Identify pitching functions in `action_implementation.c`.
-- [x] Move core functions (`startPitch`, `continuePitch`, `releasePitch`) to `src/game/actions_messy/pitching_system.c`.
-- [x] Extract pitching meter logic from `updateMeters` to `pitching_system.c`.
-- [x] Move AI lock constants and variables (aiActionEventLock, aiLockUpdate, aiLockTimeoutCounter) to `src/game/actions_messy/action_state.c` and .h.
-- [x] Extract AI pitching variables and logic to `pitching_system.c`.
-- [x] Fix includes and build.
+### Step 12: Analyze & Purify Batting
+- [ ] Review `src/game/actions_messy/batting_system.c`.
+- [ ] Extract physics/math calculations (e.g., hit trajectory) to `src/game/actions_pure/batting_physics.c`.
+- [ ] **Create unit tests for `batting_physics.c`.**
+- [ ] Isolate state modifications from logic where possible.
 
-### Step 9: Extract Batting System (Completed)
-- [x] Identify batting variables and logic in `action_implementation.c`.
-- [x] Create `src/game/actions_messy/batting_system.c` and `.h`.
-- [x] Move batting constants/variables to `src/game/actions_messy/batting_system.c` (or `action_state.c` if shared).
-- [x] Move batting functions to `batting_system.c`.
-- [x] Extract batting meter logic from `updateMeters` to `batting_system.c`.
+### Step 13: Analyze & Purify Pitching
+- [ ] Review `src/game/actions_messy/pitching_system.c`.
+- [ ] Extract any pure trajectory or meter logic to `src/game/actions_pure/`.
+- [ ] **Create unit tests for extracted pure logic.**
 
-### Step 10: Extract Throwing & Fielding (Completed)
-- [x] Identify throwing/fielding variables and logic in `action_implementation.c`.
-- [x] Create `src/game/actions_messy/throwing_system.c` and `.h`.
-- [x] Move generic movement/throwing functions (`genericThrowRelease`, `genericThrowLoad`, `genericMove`, `genericStopMove`) to the new system.
-- [x] Clean up `action_implementation.c` to be a pure dispatcher.
+### Step 14: Analyze & Purify AI
+- [ ] Review `batting_ai.c` and `catching_ai.c`.
+- [ ] Extract pure decision-making logic (input state -> output command) into pure functions.
+- [ ] **Create unit tests for pure AI decision logic.**
 
-### Step 11: Extract AI Logic (In Progress)
-- [x] Create `src/game/ai_messy/catching_ai.c` and `.h`.
-- [x] Move catching AI helpers (`moveControlledPlayerToLocation`, `throwBallToBase`) to `catching_ai.c`.
-- [x] Create `src/game/ai_messy/batting_ai.c` and `.h`.
-- [x] Move batting AI logic and state variables from `action_implementation.c` to `batting_ai.c`.
-- [x] Move catching AI update logic (`catchingControl == 2`) to `catching_ai.c` (implement `updateCatchingAI`).
-- [x] Refactor `aiLogic` in `action_implementation.c` to simply call `updateCatchingAI` and `updateBattingAI`.
+## Testing Strategy
+- **Pure Functions (High Priority):** Every time logic is extracted to a `_pure` module (Milestone 5+), it **must** be accompanied by unit tests. These functions take simple inputs and return outputs, making them ideal for testing.
+- **Integration Tests (Medium Priority):** As the "messy" layers become thinner coordinators, we will write tests that initialize a minimal `StateInfo`, call the coordinator, and check specific state changes.
+- **Regression via Serialization (Long Term):** The State Serialization tool (Future Improvements) will allow us to snapshot a game state and run logic against it to verify fixes.
 
-## Cleanup Tasks (Low Priority)
-- [x] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.
+## Future Improvements & Tooling
+- [ ] **State Serialization (Save/Debug Dump)**: Implement a system to serialize `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) to a file. This will aid in debugging bugs like the "double occupancy" issue by allowing exact state reproduction.
 
 ## Completed History
+
+### Milestone 4: The Big Split (Completed)
+- [x] **Action System Scaffold**
+    - [x] Created `src/game/actions_messy/` and `src/game/actions_pure/`.
+- [x] **Extract Pitching System**
+    - [x] Moved pitching logic to `pitching_system.c`.
+- [x] **Extract Batting System**
+    - [x] Moved batting logic to `batting_system.c`.
+- [x] **Extract Throwing & Fielding**
+    - [x] Moved throwing logic to `throwing_system.c`.
+- [x] **Extract AI Logic**
+    - [x] Moved catching AI to `catching_ai.c`.
+    - [x] Moved batting AI to `batting_ai.c`.
+    - [x] Refactored `action_implementation.c` to be a lightweight coordinator.
 
 ### Milestone 3: Renderer Decoupling (Completed Early!)
 - [x] **Renderer Decoupling**
