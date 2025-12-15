@@ -1,6 +1,5 @@
-- [x] Refactor `action_implementation.c`: Extract Catching AI logic to `src/game/ai_messy/catching_ai.c`. (commit: 922f88b)
-    - Move `aiDropStage` from `action_implementation.c` to `catching_ai.c`.
-    - Implement `void updateCatchingAI(StateInfo* stateInfo)` in `catching_ai.c`.
-    - Move the content of the `if(catchingControl == 2)` block from `action_implementation.c` to `updateCatchingAI`.
-    - Export `updateCatchingAI` in `catching_ai.h`.
-    - Call `updateCatchingAI(stateInfo)` in `action_implementation.c` inside `aiLogic`.
+- [x] Cleanup `action_implementation.c`: Remove unused includes and declarations. (commit: 8b61269)
+    - Remove unused static variables (if any remain) and function declarations.
+    - Verify that `doubleClickCounter` is still needed (it seems to be used in `baseRun`).
+    - Final verification of the build.
+    - Remove empty or redundant comments.

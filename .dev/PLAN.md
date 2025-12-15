@@ -31,9 +31,10 @@
 ### Step 11: Extract AI Logic (In Progress)
 - [x] Create `src/game/ai_messy/catching_ai.c` and `.h`.
 - [x] Move catching AI helpers (`moveControlledPlayerToLocation`, `throwBallToBase`) to `catching_ai.c`.
-- [ ] Create `src/game/ai_messy/batting_ai.c` and `.h`.
-- [ ] Move batting AI logic and state variables from `action_implementation.c` to `batting_ai.c`.
-- [ ] Refactor `aiLogic` in `action_implementation.c` to simply call `updateCatchingAI` (or equivalent) and `updateBattingAI`.
+- [x] Create `src/game/ai_messy/batting_ai.c` and `.h`.
+- [x] Move batting AI logic and state variables from `action_implementation.c` to `batting_ai.c`.
+- [x] Move catching AI update logic (`catchingControl == 2`) to `catching_ai.c` (implement `updateCatchingAI`).
+- [x] Refactor `aiLogic` in `action_implementation.c` to simply call `updateCatchingAI` and `updateBattingAI`.
 
 ## Cleanup Tasks (Low Priority)
 - [x] **Clean `src/core/render.h`**: Remove `#include "globals.h"` from the header. Add `<GL/glew.h>`. Ensure `render.c` still includes `globals.h` for constants.
