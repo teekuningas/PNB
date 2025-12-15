@@ -1,6 +1,6 @@
-- [x] Refactor `action_implementation.c`: Extract Batting AI logic to `src/game/ai_messy/batting_ai.c`. (commit: 115b6d5)
-    - Create `src/game/ai_messy/batting_ai.c` and `.h`.
-    - Move batting AI specific static variables (e.g., `aiBattingKeyDown`, `aiActionKeyLock`, `aiBattingStyle`...) to the new file.
-    - Move the `battingControl == 2` block from `aiLogic` to a new function `updateBattingAI` in the new file.
-    - Export `initBattingAI` and `updateBattingAI`.
-    - Replace the moved logic in `action_implementation.c` with calls to these new functions.
+- [x] Refactor `action_implementation.c`: Extract Catching AI logic to `src/game/ai_messy/catching_ai.c`. (commit: 922f88b)
+    - Move `aiDropStage` from `action_implementation.c` to `catching_ai.c`.
+    - Implement `void updateCatchingAI(StateInfo* stateInfo)` in `catching_ai.c`.
+    - Move the content of the `if(catchingControl == 2)` block from `action_implementation.c` to `updateCatchingAI`.
+    - Export `updateCatchingAI` in `catching_ai.h`.
+    - Call `updateCatchingAI(stateInfo)` in `action_implementation.c` inside `aiLogic`.
