@@ -32,7 +32,7 @@ static int doubleClickCounter[BASE_COUNT];
 // static int runBatFlag; // moved to action_state
 
 // ai
-static int aiDropStage;
+// static int aiDropStage; // moved to catching_ai.c
 // static int aiThrowStage; // moved to catching_ai.c
 // static int aiMoveCounter; // moved to catching_ai.c
 
@@ -63,7 +63,7 @@ void initActionImplementation(StateInfo* stateInfo)
 
 	//ai uses a few flags..
 
-	aiDropStage = 0;
+	initCatchingAI();
 	aiActionEventLock = -1;
 	aiLockUpdate = 0;
 
@@ -475,110 +475,7 @@ static void aiLogic(StateInfo* stateInfo)
 	// first ai for catching team
 
 	if(catchingControl == 2) {
-		// Update AI pitching
-		updateAIPitching(stateInfo);
-		
-		// finish dropping
-		if(aiDropStage == 1) {
-			flushKeys(stateInfo);
-			aiActionEventLock = AI_NO_LOCK;
-			aiDropStage = 0;
-			aiLockUpdate = 1;
-		}
-		// finish throwing
-		if(aiThrowStage == 1) {
-			if(aiLockTimeoutCounter == -1) {
-				aiLockTimeoutCounter = 0;
-			}
-			if(meterCounter > THROW_MAX*(3.0f/4)) {
-				flushKeys(stateInfo);
-				aiThrowStage = 0;
-				aiActionEventLock = AI_NO_LOCK;
-				aiLockUpdate = 1;
-				aiLockTimeoutCounter = -1;
-			} else {
-				aiLockTimeoutCounter++;
-				if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-					aiThrowStage = 0;
-					flushKeys(stateInfo);
-					aiActionEventLock = AI_NO_LOCK;
-					aiLockUpdate = 1;
-					aiLockTimeoutCounter = -1;
-				}
-			}
-		}
-		// if noone has ball and someone is controlled, ai will try to move towards the target point calculated
-		// in game_manipulation.
-		if(stateInfo->localGameInfo->pII.hasBallIndex == -1 && stateInfo->localGameInfo->pII.controlIndex != -1) {
-			if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-				if(stateInfo->localGameInfo->pRAI.throwGoingToBase == -1 || stateInfo->localGameInfo->
-				        ballInfo.hasHitGround == 1) {
-					moveControlledPlayerToLocation(stateInfo, &(stateInfo->localGameInfo->gAI.targetPoint));
-				}
-			}
-
-		}
-		// if someone has ball
-		if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
-			int index3 = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
-			int index2 = stateInfo->localGameInfo->pII.safeOnBaseIndex[2];
-			// if we have this cool event of having player on second and third base and batter running and situation
-			// being that ball has just been catched, we drop the ball to let first player come to the base.
-			if(stateInfo->localGameInfo->gAI.woundingCatch == 1 && stateInfo->localGameInfo->gAI.batterStartedRunning == 1 &&
-			        index3 != -1 && stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase == 3 &&
-			        stateInfo->localGameInfo->playerInfo[index3].bTPI.isOnBase == 1 &&
-			        index2 != -1 && stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase == 2 &&
-			        stateInfo->localGameInfo->playerInfo[index2].bTPI.isOnBase == 1 &&
-			        stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] != stateInfo->localGameInfo->pII.hasBallIndex) {
-				if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-					aiDropStage = 1;
-					aiLockUpdate = 1;
-					aiActionEventLock = AI_DROP_LOCK;
-					flushKeys(stateInfo);
-					stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
-				}
-			}
-			// otherwise we throw or move towards a base where lead player is going. if lead player is going nowhere
-			// we take ball to home base.
-			else {
-				int leadBase = -1;
-				int throwBase = 0;
-				int i;
-				for(i = 0; i < BASE_COUNT; i++) {
-					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-					if(index != -1) {
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0 &&
-						        stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0) {
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.base > leadBase) {
-								if(stateInfo->localGameInfo->playerInfo[index].bTPI.leading == 0) {
-									leadBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
-								} else {
-									int random = rand()%500;
-									if(random == 0) {
-										leadBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base - 1;
-									}
-								}
-							}
-						}
-					}
-				}
-				if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;
-				else throwBase = 0;
-
-				if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-					Vector3D target;
-					target.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->
-					           pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.x;
-					target.z = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->
-					           pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.z;
-					moveControlledPlayerToLocation(stateInfo, &target);
-				}
-				throwBallToBase(stateInfo, throwBase);
-			}
-		}
-		if(aiLockUpdate == 1) {
-			aiLockUpdate = 0;
-		}
+		updateCatchingAI(stateInfo);
 	}
 	// then ai for batting team
 	if(battingControl == 2) {
