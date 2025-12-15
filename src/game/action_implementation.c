@@ -15,29 +15,11 @@
 #include "ai_messy/catching_ai.h"
 #include "ai_messy/batting_ai.h"
 
-// here some constants used in the code
-
 #define ANIMATION_FREQUENCY 3
 
 #define CLICK_BREAK_CONSTANT 3
 
-// some static variables that are used only in action_implementation.c
-// how they work is explained where they are needed, so if interested should check
-// the code.
-
 static int doubleClickCounter[BASE_COUNT];
-
-// to ensure that no throws going different directions at the same time and that throwing player's orientation changes correctly
-// static int throwGoingOn; // moved to action_state
-// static int runBatFlag; // moved to action_state
-
-// ai
-// static int aiDropStage; // moved to catching_ai.c
-// static int aiThrowStage; // moved to catching_ai.c
-// static int aiMoveCounter; // moved to catching_ai.c
-
-// batting team ai variables moved to batting_ai.c
-
 
 static void changeBatter(StateInfo* stateInfo);
 static void takeFreeWalkDecision(StateInfo* stateInfo);
