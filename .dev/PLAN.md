@@ -6,8 +6,8 @@
 
 ### Step 12: Analyze & Purify Batting
 - [x] Review `src/game/actions_messy/batting_system.c`.
-- [ ] Extract physics/math calculations (e.g., hit trajectory) to `src/game/actions_pure/batting_physics.c`.
-- [ ] **Create unit tests for `batting_physics.c`.**
+- [x] Extract physics/math calculations (e.g., hit trajectory) to `src/game/actions_pure/batting_physics.c`.
+- [x] **Create unit tests for `batting_physics.c`.**
 - [ ] Isolate state modifications from logic where possible.
 
 ### Step 13: Analyze & Purify Pitching
@@ -22,7 +22,8 @@
 - [x] **Test Suite Review:** Ensure we haven't over-tested volatile code. Verify that `actions_pure` tests are solid and fast.
 - [x] **Messiness Isolation Check:** Verify that `actions_messy` files are strictly coordinators/state-mutators and contain NO complex math/rules.
 - [x] **Cleanup:** Remove any temporary comments, unused includes, or transitional artifacts.
-- [ ] **Pitching AI Purification:** Extract the hidden AI logic from `pitching_system.c` to `ai_pure/pitching_ai_strategy.c` (caught during review).
+- [x] **Pitching AI Purification:** Extract the hidden AI logic from `pitching_system.c` to `ai_pure/pitching_ai_strategy.c` (caught during review).
+- [x] **RNG Purification:** Refactor Random Number Generation to use explicit seed passing (`rng_seed`) throughout the game loop, removing hidden global state dependencies in `StateInfo` and ensuring deterministic replays/testing.
 
 ## Milestone 6: Rules Engine Extraction (The Judge)
 **Goal:** Extract the complex rules logic (outs, runs, strikes) from `game_analysis.c` into a pure `src/game_logic/rules/` module.
