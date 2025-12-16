@@ -9,7 +9,7 @@
 ### RNG Refactoring (Explicit Seed Passing)
 - [ ] Refactor RNG to pass `rng_seed` explicitly instead of storing it in `StateInfo`.
     - [x] **Step 1: Header Changes**: Remove `unsigned int rng_seed;` from `LocalGameInfo` in `src/include/globals.h`. (commit: b998fba)
-    - [ ] **Step 2: Main & Game Loop**: Update `src/core/main.c` to initialize `rng_seed` locally and pass `&rng_seed` to `updateGameScreen`.
+    - [x] **Step 2: Main & Game Loop**: Update `src/core/main.c` to initialize `rng_seed` locally and pass `&rng_seed` to `updateGameScreen`. (commit: 41e2583)
     - [ ] **Step 3: Game Screen**: Update `src/game/game_screen.h/.c` `updateGameScreen` to take `unsigned int* rng_seed` and pass to `actionImplementation`.
     - [ ] **Step 4: Action Implementation**: Update `src/game/action_implementation.h/.c` `actionImplementation` and `aiLogic` to take `rng_seed` and pass to AI updates.
     - [ ] **Step 5: AI Updates**: Update `src/game/ai_messy/catching_ai.h/.c` and `src/game/ai_messy/batting_ai.h/.c` to take `rng_seed` and use `seeded_rand`.
