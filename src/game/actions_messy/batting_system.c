@@ -3,6 +3,7 @@
 #include "action_implementation.h"
 #include "actions_messy/action_state.h"
 #include "actions_messy/pitching_system.h"
+#include "actions_pure/batting_physics.h"
 #include <math.h>
 
 // Macros moved from action_implementation.c
@@ -302,14 +303,12 @@ void updateBatting(StateInfo* stateInfo)
 			// will be available too.
 			if(stateInfo->localGameInfo->aF.bTAF.swing == 0) {
 				float v = stateInfo->localGameInfo->ballInfo.velocity.y;
-				float a = -GRAVITY;
-				float s = 0;
 				// note decision s=0 makes the landing point actually to be in air,
 				// but thats convenient for our purposes. so here we count
 				// how many frames will it take for ball to go up and down again so that we can try
 				// to time our batting advancing and animation accordingly. just solve 0 = s + vt + (1/2)at^2
 				// and choose the correct branch and then add a little experience-based tweak.
-				pitchFrameTime = (int)((-v - sqrt(v*v - 2*a*s))/a) + PITCH_FRAME_TIME_TWEAK;
+				pitchFrameTime = calculate_pitch_frame_time(v, GRAVITY, 0.0f, PITCH_FRAME_TIME_TWEAK);
 				// Here initialize meterCounter and meterCounter max in a way similar to how we initialized those in pitching.
 				// relative distance from the end of meter to the indicator is the same.
 				// difference is that these values are scaled a bit, to allow as slow movement of the indicator as possible
@@ -405,16 +404,9 @@ void updateBatting(StateInfo* stateInfo)
 					float verticalAngle;
 					float horizontalAngle;
 					float power;
-					float scaleNumber;
-					float zeroNumber;
-					// here is an interesting process of finding the vertical angle ( angle with
-					// the horizontal plane ). we'll leave that as an exercise.
-					scaleNumber = (float)(selectedBattingPowerCount + (BAT_SWING_MAX - BAT_LOAD_MAX));
-					zeroNumber = BAT_SWING_MAX*(1.0f*selectedBattingPowerCount / scaleNumber);
-					// ball's y velocity affects the vertical angle
-					// y velocity in range 0.12 to 0.20
-					// 7 constant that makes 0.12 to 0.20 range to be somewhere around 1.0
-					verticalAngle = 7 * stateInfo->localGameInfo->ballInfo.velocity.y * (selectedBattingAngleCount - zeroNumber) * (scaleNumber / BAT_SWING_MAX);
+					
+					verticalAngle = calculate_batting_vertical_angle(selectedBattingPowerCount, selectedBattingAngleCount, stateInfo->localGameInfo->ballInfo.velocity.y, BAT_SWING_MAX, BAT_LOAD_MAX);
+
 					// 2 to make it possible to bat to every direction on the field and a bit over.
 					horizontalAngle = - batterAngle * 2;
 					power = (float)selectedBattingPowerCount;
@@ -425,9 +417,9 @@ void updateBatting(StateInfo* stateInfo)
 						// we can also just miss, its not so uncommon!
 						stateInfo->localGameInfo->pRAI.batMiss = 1;
 					} else {
-						float dx, dy, dz, magnitude;
 						int powerFactor;
-						float alfa, theta;
+						Vector3D velocity;
+
 						// verticalAngle in interval -5..5
 						// power in interval 0..36
 						// horizontalAngle -0.38..0.38
@@ -436,19 +428,12 @@ void updateBatting(StateInfo* stateInfo)
 						powerFactor = stateInfo->localGameInfo->
 						              playerInfo[stateInfo->localGameInfo->
 						                         pII.batterIndex].bTPI.power;
-						//magnitude = (0.01f + powerFactor*0.002f)*power;
-						magnitude = (0.0125f + powerFactor*0.0015f)*power;
-						alfa = (verticalAngle * 2 + 5) * 0.05f;
-						// x direction depends on how wrong the pitch was
-						theta = horizontalAngle + 0.05f *
-						        stateInfo->localGameInfo->ballInfo.location.x;
-						dy = (float)(sin(alfa) * cos(theta));
-						dz = - (float)(cos(alfa) * cos(theta));
-						dx = (float)sin(theta);
+						
+						velocity = calculate_batted_ball_velocity(verticalAngle, horizontalAngle, power, powerFactor, stateInfo->localGameInfo->ballInfo.location.x);
 
 
 						// make the ball fly in the air with new velocity
-						genericSlingBall(stateInfo, magnitude*dx, magnitude*dy, magnitude*dz);
+						genericSlingBall(stateInfo, velocity.x, velocity.y, velocity.z);
 						// and the sound
 						stateInfo->playSoundEffect = SOUND_SWING;
 						// bat hits
@@ -506,12 +491,10 @@ void updateBattingMeter(StateInfo* stateInfo)
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;
 		}
-		stateInfo->localGameInfo->pRAI.swingMeterValue = 1.0f*meterCounter / meterCounterMax;
+		stateInfo->localGameInfo->pRAI.swingMeterValue = calculate_power_meter_value(meterCounter, meterCounterMax);
 	}
 	// when power is selected but angle is to be selected
 	else if(stateInfo->localGameInfo->aF.bTAF.swing == 3) {
-		float upperLimit;
-		float lowerLimit;
 		// if the value is still valid, increase it
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;
@@ -520,16 +503,7 @@ void updateBattingMeter(StateInfo* stateInfo)
 		else {
 			selectedBattingAngleCount = meterCounterMax;
 		}
-		// to map this to the screen we have to think a bit.
-		// first of all our meter value goes from 0 to BAT_SWING_MAX
-		// and the selectedBattingPowerCount is only from 0 to BAT_LOAD_MAX
-		// first calculation just makes it so that upperLimit is basically the position
-		// of indicator where it was when the the power was selected. with maxpower it will be 1.
-		// with minpower it will be 4/13
-		upperLimit = (float)(selectedBattingPowerCount + (BAT_SWING_MAX - BAT_LOAD_MAX)) / BAT_SWING_MAX;
-		lowerLimit = 0.0f;
-		// then we just map the meterCounter value's range to upperLimit-lowerLimit and inverse it
-		stateInfo->localGameInfo->pRAI.swingMeterValue = upperLimit - (1.0f*meterCounter / meterCounterMax) *
-		    (upperLimit - lowerLimit);
+		
+		stateInfo->localGameInfo->pRAI.swingMeterValue = calculate_angle_meter_value(meterCounter, meterCounterMax, selectedBattingPowerCount, BAT_SWING_MAX, BAT_LOAD_MAX);
 	}
 }
