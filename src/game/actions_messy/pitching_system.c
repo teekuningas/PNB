@@ -2,6 +2,7 @@
 #include "actions_messy/action_state.h"
 #include "common_logic.h"
 #include "action_implementation.h"
+#include "pitching_ai_strategy.h"
 #include <stdlib.h> // for rand()
 
 // Required local constant (was in action_implementation.c)
@@ -330,23 +331,22 @@ void updateAIPitching(StateInfo* stateInfo)
                         int rand1 = rand()%15;
                         int rand2 = rand()%3;
                         int rand3 = rand()%10;
-                        int var = 0;
-                        if(stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount == 1) {
-                            rand1 = 0;
-                        } else if(stateInfo->localGameInfo->gAI.strikes != 0 && stateInfo->localGameInfo->gAI.balls == 0) {
-                            if(rand3 == 9) {
-                                var = 10;
-                            } else if(rand3 == 8) {
-                                var = -10;
-                            }
-                        }
+                        
                         aiActionEventLock = AI_PITCH_LOCK;
                         aiLockUpdate = 1;
                         aiPitchStage = 1;
                         flushKeys(stateInfo);
                         stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
-                        aiPitchFirstLimit = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY +  5 + rand1;
-                        aiPitchSecondLimit = ANIMATION_FREQUENCY * PITCH_DOWN_MAX - 2 + rand2 + var;
+
+                        calculate_ai_pitch_targets(
+                            rand1, rand2, rand3,
+                            stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount,
+                            stateInfo->localGameInfo->gAI.strikes,
+                            stateInfo->localGameInfo->gAI.balls,
+                            ANIMATION_FREQUENCY,
+                            &aiPitchFirstLimit,
+                            &aiPitchSecondLimit
+                        );
                     } else {
                         // to stop player from unnecessarily moving
                         flushKeys(stateInfo);
