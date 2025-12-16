@@ -16,4 +16,4 @@
     - [x] **Step 6: Pitching System**: Update `src/game/actions_messy/pitching_system.h/.c` `updateAIPitching` to take `rng_seed` (remove `stateInfo` reliance). (commit: 6232221)
     - [x] **Step 7: Game Setup**: Update `src/game/game_setup.h/.c` `initializeGameFromMenu` to take `rng_seed`. Remove `stateInfo->localGameInfo->rng_seed` assignment. Update `loadMutableWorldSettings` to pass seed. (commit: 1e8c496)
     - [x] **Step 8: Common Logic**: Update `src/game/common_logic.h/.c` `initializeSpatialPlayerInformation` to take `rng_seed` and use `seeded_rand` instead of `rand()`. (commit: 1e8c496)
-    - [ ] **Step 9: Menu**: Update `src/menu/main_menu.c` to pass `rng_seed` to `initializeGameFromMenu`.
+    - [x] **Step 9: Menu**: Update `src/menu/main_menu.c` to pass `rng_seed` to `initializeGameFromMenu`. (commit: b42088d)
