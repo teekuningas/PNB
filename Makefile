@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests
+IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
@@ -11,7 +11,7 @@ _OBJ += cup/cup.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 # Test objects (subset without OpenGL dependencies)
-_TEST_OBJ = core/fixtures.o core/rng.o cup/cup.o tests/test_cup_logic.o
+_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o game/actions_pure/batting_physics.o tests/test_cup_logic.o tests/test_batting_physics.o
 TEST_OBJ = $(patsubst %,$(ODIR)/%,$(_TEST_OBJ))
 
 obj/%.o: src/%.c
