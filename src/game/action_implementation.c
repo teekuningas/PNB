@@ -25,7 +25,7 @@ static void changeBatter(StateInfo* stateInfo);
 static void takeFreeWalkDecision(StateInfo* stateInfo);
 static void baseRun(StateInfo* stateInfo, int base);
 static void updateMeters(StateInfo* stateInfo);
-static void aiLogic(StateInfo* stateInfo);
+static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed);
 
 void initActionImplementation(StateInfo* stateInfo)
 {
@@ -54,7 +54,7 @@ void initActionImplementation(StateInfo* stateInfo)
 	flushKeys(stateInfo);
 }
 
-void actionImplementation(StateInfo* stateInfo)
+void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int i;
 	// init?
@@ -215,7 +215,7 @@ void actionImplementation(StateInfo* stateInfo)
 	*/
 	// meters need to be updated for the logic and for the screen.
 	updateMeters(stateInfo);
-	aiLogic(stateInfo);
+	aiLogic(stateInfo, rng_seed);
 }
 
 static void takeFreeWalkDecision(StateInfo* stateInfo)
@@ -448,7 +448,7 @@ static void updateMeters(StateInfo* stateInfo)
 	}
 }
 
-static void aiLogic(StateInfo* stateInfo)
+static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;

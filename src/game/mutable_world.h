@@ -5,7 +5,7 @@
 #include "menu_types.h"
 
 int initMutableWorld(StateInfo* stateInfo);
-void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo);
+void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 void drawMutableWorld(StateInfo* stateInfo, double alpha);
 int cleanMutableWorld(StateInfo* stateInfo);
 

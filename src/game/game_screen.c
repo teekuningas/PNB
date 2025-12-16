@@ -164,7 +164,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	}
 
 	// and here will a lot of logic code.
-	updateMutableWorld(stateInfo, menuInfo);
+	updateMutableWorld(stateInfo, menuInfo, rng_seed);
 
 }
 
