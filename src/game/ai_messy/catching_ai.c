@@ -5,6 +5,7 @@
 #include "common_logic.h"
 #include "vector_math.h"
 #include "catching_ai_strategy.h"
+#include "rng.h"
 
 int aiMoveCounter = 0;
 int aiThrowStage = 0;
@@ -189,7 +190,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				}
 			}
 
-			int randomVal = rand() % 500;
+			int randomVal = seeded_rand(rng_seed, 500);
 			leadBase = determine_lead_base(runners, runnerCount, randomVal);
 
 			if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;

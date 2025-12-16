@@ -7,7 +7,8 @@
 #include "action_implementation.h" // for flushKeys
 #include "actions_messy/action_state.h"
 #include "actions_messy/batting_system.h"
-#include "game_manipulation.h" 
+#include "game_manipulation.h"
+#include "rng.h" 
 
 #define CLICK_BREAK_CONSTANT 3
 
@@ -314,7 +315,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// a bunt
 		if(aiBattingStyle == 0) {
 			if(aiAngleDecided == 0) {
-				aiDecidedAngle = calculate_ai_batting_angle(0, -1, rand());
+				aiDecidedAngle = calculate_ai_batting_angle(0, -1, seeded_rand(rng_seed, RAND_MAX));
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 23 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {
@@ -342,7 +343,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 						}
 					}
 				}
-				aiDecidedAngle = calculate_ai_batting_angle(1, leadBase, rand());
+				aiDecidedAngle = calculate_ai_batting_angle(1, leadBase, seeded_rand(rng_seed, RAND_MAX));
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 10 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {
@@ -360,7 +361,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// swing that tries to get oneself wounded
 		else if(aiBattingStyle == 2) {
 			if(aiAngleDecided == 0) {
-				aiDecidedAngle = calculate_ai_batting_angle(2, -1, rand());
+				aiDecidedAngle = calculate_ai_batting_angle(2, -1, seeded_rand(rng_seed, RAND_MAX));
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 11 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {
