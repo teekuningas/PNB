@@ -5,7 +5,7 @@
 **Goal:** Analyze the `actions_messy` and `ai_messy` modules, identify pure logic (math, rules, state-independent calculations), and move them to `src/game/actions_pure/` or `src/game/ai_pure/`.
 
 ### Step 12: Analyze & Purify Batting
-- [ ] Review `src/game/actions_messy/batting_system.c`.
+- [x] Review `src/game/actions_messy/batting_system.c`.
 - [ ] Extract physics/math calculations (e.g., hit trajectory) to `src/game/actions_pure/batting_physics.c`.
 - [ ] **Create unit tests for `batting_physics.c`.**
 - [ ] Isolate state modifications from logic where possible.

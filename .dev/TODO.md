@@ -1,5 +1,3 @@
-- [x] Cleanup `action_implementation.c`: Remove unused includes and declarations. (commit: 8b61269)
-    - Remove unused static variables (if any remain) and function declarations.
-    - Verify that `doubleClickCounter` is still needed (it seems to be used in `baseRun`).
-    - Final verification of the build.
-    - Remove empty or redundant comments.
+- [ ] Create `src/game/actions_pure/batting_physics.h` and `src/game/actions_pure/batting_physics.c` to encapsulate pure batting math (trajectory, meter).
+- [ ] Create `tests/test_batting_physics.c` and register it in `tests/test_runner.c`.
+- [ ] Refactor `src/game/actions_messy/batting_system.c` to use `batting_physics.h` functions.

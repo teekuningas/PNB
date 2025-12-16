@@ -36,5 +36,7 @@
     GOOGLE_CLOUD_ACCESS_TOKEN = "$" + "{localEnv:GOOGLE_CLOUD_ACCESS_TOKEN}";
     GIT_AUTHOR_NAME = "$" + "{localEnv:GIT_AUTHOR_NAME}";
     GIT_AUTHOR_EMAIL = "$" + "{localEnv:GIT_AUTHOR_EMAIL}";
+    GIT_COMMITTER_NAME = "$" + "{localEnv:GIT_COMMITTER_NAME}";
+    GIT_COMMITTER_EMAIL = "$" + "{localEnv:GIT_COMMITTER_EMAIL}";
   };
 }

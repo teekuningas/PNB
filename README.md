@@ -40,25 +40,15 @@ gemini
 ### Starting the Agent
 
 ```bash
-# 1. Enter the development shell
 devenv shell
-
-# 2. Set up GitHub Copilot token
 export COPILOT_GITHUB_TOKEN=$(gh auth token)
-
-# 3. Set up Gemini CLI OAuth token
 export GOOGLE_GENAI_USE_GCA=true
 export GOOGLE_CLOUD_ACCESS_TOKEN=$(./.dev/scripts/extract_gemini_token.py)
-
-# 4. Set up Git identity
 export GIT_AUTHOR_NAME="$(git config user.name)"
+export GIT_COMMITTER_NAME="$(git config user.name)"
 export GIT_AUTHOR_EMAIL="$(git config user.email)"
-
-# 5. Build and start the devcontainer
+export GIT_COMMITTER_EMAIL="$(git config user.email)"
 devcontainer build --workspace-folder .
 devcontainer up --workspace-folder .
-
-# 6. Run the agent (choose one)
-devcontainer exec --workspace-folder . make watch_task_agent          # Gemini CLI
-devcontainer exec --workspace-folder . make watch_task_agent_copilot  # GitHub Copilot
+devcontainer exec --workspace-folder . make watch_task_agent
 ```
