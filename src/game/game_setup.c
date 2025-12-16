@@ -9,6 +9,9 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 
+	// Initialize RNG seed for this game
+	stateInfo->localGameInfo->rng_seed = (unsigned int)time(NULL);
+
 	// Set teams and controls for all game modes
 	stateInfo->globalGameInfo->teams[0].value = gameSetup->team1 + 1;
 	stateInfo->globalGameInfo->teams[1].value = gameSetup->team2 + 1;

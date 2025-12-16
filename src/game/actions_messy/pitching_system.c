@@ -3,6 +3,7 @@
 #include "common_logic.h"
 #include "action_implementation.h"
 #include "pitching_ai_strategy.h"
+#include "rng.h"
 #include <stdlib.h> // for rand()
 
 // Required local constant (was in action_implementation.c)
@@ -328,9 +329,9 @@ void updateAIPitching(StateInfo* stateInfo)
                 }
                 if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
                     if(homeLocationFlag == 1 && pitchFlag == 1) {
-                        int rand1 = rand()%15;
-                        int rand2 = rand()%3;
-                        int rand3 = rand()%10;
+                        int rand1 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 15);
+                        int rand2 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 3);
+                        int rand3 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 10);
                         
                         aiActionEventLock = AI_PITCH_LOCK;
                         aiLockUpdate = 1;

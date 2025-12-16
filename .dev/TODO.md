@@ -4,3 +4,4 @@
     - Ensure it is a pure function taking random values as inputs (no `rand()` inside).
 - [x] Create `tests/test_pitching_ai_strategy.c` and register it in `tests/test_runner.c`. (commit: e9499ef)
 - [x] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_ai_strategy.h`. (commit: e9499ef)
+- [ ] Modify `src/game/actions_messy/pitching_system.c` to use `seeded_rand` for generating random values `rand1`, `rand2`, and `rand3` before passing them to `calculate_ai_pitch_targets`. Ensure a `seed` is passed to `seeded_rand` that can be controlled from a higher level, potentially from `StateInfo` if an appropriate seed exists, or a new field is added for this purpose.

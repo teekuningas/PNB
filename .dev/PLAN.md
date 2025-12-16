@@ -16,17 +16,22 @@
 - [x] **Create unit tests for `pitching_physics.c`.**
 - [ ] Isolate state modifications from logic where possible.
 
-### Step 14: Analyze & Purify AI
-- [ ] Review `batting_ai.c` and `catching_ai.c`.
-- [ ] Extract pure decision-making logic (input state -> output command) into pure functions.
-- [ ] **Create unit tests for pure AI decision logic.**
-
 ## Milestone 5.5: The Vantage Point (Zen Harmony)
 **Goal:** Pause, breathe, and stabilize. Ensure the "Pure vs. Messy" separation is clean, documented, and the codebase feels safe.
-- [ ] **Architectural Review:** Update `docs/ARCHITECTURE_MAPS.md` to reflect the new `actions_pure` and `ai_pure` structures.
-- [ ] **Test Suite Review:** Ensure we haven't over-tested volatile code. Verify that `actions_pure` tests are solid and fast.
-- [ ] **Messiness Isolation Check:** Verify that `actions_messy` files are strictly coordinators/state-mutators and contain NO complex math/rules.
-- [ ] **Cleanup:** Remove any temporary comments, unused includes, or transitional artifacts.
+- [x] **Architectural Review:** Update `docs/ARCHITECTURE_MAPS.md` to reflect the new `actions_pure` and `ai_pure` structures.
+- [x] **Test Suite Review:** Ensure we haven't over-tested volatile code. Verify that `actions_pure` tests are solid and fast.
+- [x] **Messiness Isolation Check:** Verify that `actions_messy` files are strictly coordinators/state-mutators and contain NO complex math/rules.
+- [x] **Cleanup:** Remove any temporary comments, unused includes, or transitional artifacts.
+- [ ] **Pitching AI Purification:** Extract the hidden AI logic from `pitching_system.c` to `ai_pure/pitching_ai_strategy.c` (caught during review).
+
+## Milestone 6: Rules Engine Extraction (The Judge)
+**Goal:** Extract the complex rules logic (outs, runs, strikes) from `game_analysis.c` into a pure `src/game_logic/rules/` module.
+- [ ] Analyze `game_analysis.c` to identify rule evaluation vs. state mutation.
+- [ ] Create `src/game/rules_pure/` directory.
+- [ ] Extract "Out" detection logic (e.g., `is_force_out`, `is_tag_out`).
+- [ ] Extract "Scoring" logic (e.g., `calculate_runs`).
+- [ ] Extract "Strike/Ball" logic.
+- [ ] **Crucial:** Ensure these new functions take *only* the necessary data (structs), not the whole `StateInfo`.
 
 ## Testing Strategy
 - **Pure Functions (High Priority):** Every time logic is extracted to a `_pure` module (Milestone 5+), it **must** be accompanied by unit tests. These functions take simple inputs and return outputs, making them ideal for testing.

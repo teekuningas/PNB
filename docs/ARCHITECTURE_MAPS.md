@@ -66,7 +66,8 @@ src/
 │   │
 │   ├── ai_pure/               ✅ Pure Logic (Testable)
 │   │   ├── batting_ai_strategy.c/h  Decision trees
-│   │   └── catching_ai_strategy.c/h Movement & decisions
+│   │   ├── catching_ai_strategy.c/h Movement & decisions
+│   │   └── pitching_ai_strategy.c/h Target calculation strategies
 │   │
 │   ├── action_implementation.c/h  ⬇️ Shrinking coordinator
 │   ├── action_invocations.c/h     Input → action flag conversion

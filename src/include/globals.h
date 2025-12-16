@@ -397,6 +397,7 @@ typedef struct _LocalGameInfo {
 	PlayerRelatedActionInfo pRAI;
 	GameAnalysisInfo gAI;
 	BallInfo ballInfo;
+	unsigned int rng_seed;
 
 
 } LocalGameInfo;
