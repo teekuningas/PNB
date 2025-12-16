@@ -11,7 +11,7 @@
     - [x] **Step 1: Header Changes**: Remove `unsigned int rng_seed;` from `LocalGameInfo` in `src/include/globals.h`. (commit: b998fba)
     - [x] **Step 2: Main & Game Loop**: Update `src/core/main.c` to initialize `rng_seed` locally and pass `&rng_seed` to `updateGameScreen`. (commit: 41e2583)
     - [x] **Step 3: Game Screen**: Update `src/game/game_screen.h/.c` `updateGameScreen` to take `unsigned int* rng_seed` and pass to `actionImplementation`. (commit: 702a602)
-    - [ ] **Step 4: Action Implementation**: Update `src/game/action_implementation.h/.c` `actionImplementation` and `aiLogic` to take `rng_seed` and pass to AI updates.
+    - [x] **Step 4: Action Implementation**: Update `src/game/action_implementation.h/.c` `actionImplementation` and `aiLogic` to take `rng_seed` and pass to AI updates. (commit: 0d8e958)
     - [ ] **Step 5: AI Updates**: Update `src/game/ai_messy/catching_ai.h/.c` and `src/game/ai_messy/batting_ai.h/.c` to take `rng_seed` and use `seeded_rand`.
     - [ ] **Step 6: Pitching System**: Update `src/game/actions_messy/pitching_system.h/.c` `updateAIPitching` to take `rng_seed` (remove `stateInfo` reliance).
     - [ ] **Step 7: Game Setup**: Update `src/game/game_setup.h/.c` `initializeGameFromMenu` to take `rng_seed`. Remove `stateInfo->localGameInfo->rng_seed` assignment. Update `loadMutableWorldSettings` to pass seed.
