@@ -44,7 +44,7 @@ int initMutableWorld(StateInfo* stateInfo)
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
-		gameAnalysis(stateInfo, menuInfo);
+		gameAnalysis(stateInfo, menuInfo, rng_seed);
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);

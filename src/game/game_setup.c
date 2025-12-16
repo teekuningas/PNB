@@ -2,15 +2,12 @@
 #include "common_logic.h"
 #include <string.h>
 
-void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
+void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
 	stateInfo->stopSoundEffect = SOUND_MENU;
 	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
-
-	// Initialize RNG seed for this game
-	stateInfo->localGameInfo->rng_seed = (unsigned int)time(NULL);
 
 	// Set teams and controls for all game modes
 	stateInfo->globalGameInfo->teams[0].value = gameSetup->team1 + 1;
@@ -59,14 +56,14 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
 	}
 
-	loadMutableWorldSettings(stateInfo);
+	loadMutableWorldSettings(stateInfo, rng_seed);
 }
 
-void returnToGame(StateInfo* stateInfo)
+void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	stateInfo->stopSoundEffect = SOUND_MENU;
 	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
-	loadMutableWorldSettings(stateInfo);
+	loadMutableWorldSettings(stateInfo, rng_seed);
 }

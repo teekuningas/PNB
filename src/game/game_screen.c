@@ -27,7 +27,7 @@ static void drawSkyBox(StateInfo* stateInfo);
 static void drawStatistics(StateInfo* stateInfo, double alpha);
 static int initLights(StateInfo* stateInfo);
 static void initCamSettings(StateInfo* stateInfo);
-static void loadGameScreenSettings(StateInfo* stateInfo);
+static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed);
 
 static Vector3D cam, look, up;
 static Vector3D statCam, statLook, statUp;
@@ -103,7 +103,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	if(stateInfo->changeScreen == 1) {
 		stateInfo->changeScreen = 0;
 		stateInfo->updated = 1;
-		loadGameScreenSettings(stateInfo);
+		loadGameScreenSettings(stateInfo, rng_seed);
 	}
 	// with home-key, one can return to main menu.
 	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -477,13 +477,13 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 	}
 }
 
-static void loadGameScreenSettings(StateInfo* stateInfo)
+static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	gameInfoEventTimer = -1;
 	// initialize cam
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
-	loadMutableWorldSettings(stateInfo);
+	loadMutableWorldSettings(stateInfo, rng_seed);
 }
 
 static void initCamSettings(StateInfo* stateInfo)

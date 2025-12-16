@@ -131,11 +131,11 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				if (menuInfo->mode == MENU_ENTRY_INTER_PERIOD || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
 					menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_INTER_PERIOD;
-					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
+					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
 				} else {
 					menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
 					menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
-					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
+					launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
 				}
 			}
 		}
@@ -149,7 +149,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
 				menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
-				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
+				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
 				menuInfo->mode = MENU_ENTRY_NORMAL;
 			}
 		}
@@ -231,7 +231,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 		if (nextStage != menuData->stage) {
 			if (nextStage == MENU_STAGE_GO_TO_GAME) {
 				menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_HOMERUN_CONTEST;
-				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup);
+				launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
 			}
 			menuData->stage = nextStage;
 		}

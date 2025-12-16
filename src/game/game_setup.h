@@ -35,7 +35,7 @@ typedef struct GameSetup {
 	int homerun_choice_count;
 } GameSetup;
 
-void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
-void returnToGame(StateInfo* stateInfo);
+void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
+void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif /* GAME_SETUP_H */

@@ -6,7 +6,7 @@
 #include "resource_manager.h"
 #include "render.h"
 
-void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup);
+void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
 void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo);
 // Draws a full-screen 2D background quad for menus
 // Uses the "empty_background" texture from ResourceManager

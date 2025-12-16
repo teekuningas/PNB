@@ -15,18 +15,18 @@ void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs)
 	draw_texture_2d(tex, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 }
 
-void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
+void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
 	switch (gameSetup->launchType) {
 	case GAME_LAUNCH_NEW:
-		initializeGameFromMenu(stateInfo, gameSetup);
+		initializeGameFromMenu(stateInfo, gameSetup, rng_seed);
 		break;
 	case GAME_LAUNCH_RETURN_INTER_PERIOD:
 		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
 		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
 		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
 		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
-		returnToGame(stateInfo);
+		returnToGame(stateInfo, rng_seed);
 		break;
 	case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
 		int pairCount = gameSetup->homerun_choice_count;
@@ -38,7 +38,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup)
 		}
 		stateInfo->globalGameInfo->pairCount = pairCount;
 		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
-		returnToGame(stateInfo);
+		returnToGame(stateInfo, rng_seed);
 	}
 	break;
 	}

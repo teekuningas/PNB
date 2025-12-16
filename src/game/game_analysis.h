@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "menu_types.h"
 
-void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo);
+void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 void initGameAnalysis(StateInfo* stateInfo);
 
 #endif /* GAME_ANALYSIS_H */

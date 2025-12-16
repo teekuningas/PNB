@@ -17,7 +17,7 @@ static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState)
 static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
 static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, unsigned int* rng_seed);
-static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo);
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, unsigned int* rng_seed);
 
 static MenuData menuData;
 static StateInfo stateInfo;
@@ -131,7 +131,7 @@ int main ( int argc, char *argv[] )
 
 	// Apply fixture if requested (for visual testing)
 	if (fixtureRequest.enabled) {
-		applyFixture(&fixtureRequest, &stateInfo, &menuData, &menuInfo);
+		applyFixture(&fixtureRequest, &stateInfo, &menuData, &menuInfo, &rng_seed);
 	}
 
 	// to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
@@ -329,7 +329,7 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
 
 // Apply a fixture for visual testing
 // This sets up a game at a specific period/state for rapid testing
-static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo)
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	printf("Applying fixture: %s\n", request->name);
 	GameSetup gameSetup;
@@ -341,7 +341,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		                            request->team2,
 		                            request->team1_control,
 		                            request->team2_control);
-		initializeGameFromMenu(stateInfo, &gameSetup);
+		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set period state (super inning = period 2)
 		stateInfo->globalGameInfo->isCupGame = 0;
@@ -368,7 +368,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		                               request->team2,
 		                               request->team1_control,
 		                               request->team2_control);
-		initializeGameFromMenu(stateInfo, &gameSetup);
+		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set period state (homerun = period 4)
 		stateInfo->globalGameInfo->isCupGame = 0;
@@ -397,7 +397,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		                                      request->team2,
 		                                      request->team1_control,
 		                                      request->team2_control);
-		initializeGameFromMenu(stateInfo, &gameSetup);
+		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set up the tournament context with a full, plausible history using the new API
 		stateInfo->globalGameInfo->isCupGame = 1;

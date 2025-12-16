@@ -21,11 +21,11 @@ static int homeRunCameraCounter;
 static void checkForOuts(StateInfo* stateInfo);
 static void checkIfNextBatterDecision(StateInfo* stateInfo);
 static void strikesAndBalls(StateInfo* stateInfo);
-static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo);
+static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 static void woundingCatchEffects(StateInfo* stateInfo);
-static void foulPlay(StateInfo* stateInfo);
+static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed);
 static void checkForRuns(StateInfo* stateInfo);
-static void checkIfNextPair(StateInfo* stateInfo);
+static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed);
 
 static void populateGameConclusion(StateInfo* stateInfo, int winner)
 {
@@ -52,7 +52,7 @@ void initGameAnalysis(StateInfo* stateInfo)
 	homeRunCameraCounter = -1;
 }
 
-void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo)
+void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
 		initGameAnalysis(stateInfo);
@@ -75,10 +75,10 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo)
 	checkIfNextBatterDecision(stateInfo);
 	strikesAndBalls(stateInfo);
 	woundingCatchEffects(stateInfo);
-	foulPlay(stateInfo);
+	foulPlay(stateInfo, rng_seed);
 	checkForRuns(stateInfo);
-	checkIfEndOfInning(stateInfo, menuInfo);
-	checkIfNextPair(stateInfo);
+	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
+	checkIfNextPair(stateInfo, rng_seed);
 
 }
 
@@ -376,7 +376,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 }
 // so in case of foul play, we will stop the game
 // return players to their original bases and start again with the screen of pitcher getting ball.
-static void foulPlay(StateInfo* stateInfo)
+static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	// so if outOfBounds == 1 which has been checked and set when ball lands in game_manipulation
 	if(stateInfo->localGameInfo->gAI.outOfBounds == 1) {
@@ -402,7 +402,7 @@ static void foulPlay(StateInfo* stateInfo)
 
 			initializeIndexInformation(stateInfo);
 			initializePRAIInformation(stateInfo);
-			initializeSpatialPlayerInformation(stateInfo);
+			initializeSpatialPlayerInformation(stateInfo, rng_seed);
 
 			initializeNonCriticalPlayerInformation(stateInfo);
 
@@ -605,7 +605,7 @@ static void checkForRuns(StateInfo* stateInfo)
 }
 
 
-static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
+static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	// if three outs or
 	// no more players to bat. set flag on the player selection to indicate that no more players left.
@@ -754,11 +754,11 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo)
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 		}
-		if(stateInfo->screen != SCREEN_MAIN_MENU) loadMutableWorldSettings(stateInfo);
+		if(stateInfo->screen != SCREEN_MAIN_MENU) loadMutableWorldSettings(stateInfo, rng_seed);
 	}
 }
 
-static void checkIfNextPair(StateInfo* stateInfo)
+static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->globalGameInfo->period >= 4) {
 
@@ -799,7 +799,7 @@ static void checkIfNextPair(StateInfo* stateInfo)
 				if((stateInfo->globalGameInfo->inning+1)%2 == 0 && pairsLeft*2 + battingRuns < catchingRuns) {
 					stateInfo->localGameInfo->gAI.endPeriod = 1;
 				} else {
-					loadMutableWorldSettings(stateInfo);
+					loadMutableWorldSettings(stateInfo, rng_seed);
 				}
 			}
 		}

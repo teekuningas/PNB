@@ -2,6 +2,7 @@
 #include "common_logic.h"
 #include "vector_math.h"
 #include "geometry.h"
+#include "rng.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -517,7 +518,7 @@ void calculateFreeWalk(StateInfo* stateInfo)
 	positions and orientations on the field and ball looks like its thrown to pitcher. Models
 	are updated also. Before calling this the fielding team must have its position-attributes filled.
 */
-void initializeSpatialPlayerInformation(StateInfo* stateInfo)
+void initializeSpatialPlayerInformation(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int i;
 	Vector3D* fieldPosition;
@@ -529,7 +530,7 @@ void initializeSpatialPlayerInformation(StateInfo* stateInfo)
 	}
 	i = 0;
 	while(i < PLAYERS_IN_TEAM + JOKER_COUNT) {
-		int random = rand()%(PLAYERS_IN_TEAM + JOKER_COUNT);
+		int random = seeded_rand(rng_seed, PLAYERS_IN_TEAM + JOKER_COUNT);
 		if(battingTeamPlacement[random] == -1) {
 			battingTeamPlacement[random] = i;
 			i++;
@@ -956,7 +957,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 	}
 }
 
-void loadMutableWorldSettings(StateInfo* stateInfo)
+void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	/*
 	* called always when half-inning starts.
@@ -977,7 +978,7 @@ void loadMutableWorldSettings(StateInfo* stateInfo)
 	// this is information that stays for the whole inning
 	initializeInningPermanentPlayerInformation(stateInfo);
 	// information about location and models and orientations. will be flushed when foul play happens
-	initializeSpatialPlayerInformation(stateInfo);
+	initializeSpatialPlayerInformation(stateInfo, rng_seed);
 	// information about players than can be flushed.
 	initializeNonCriticalPlayerInformation(stateInfo);
 	// information that cant be flushed when foul play. like originalBase.

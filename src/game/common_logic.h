@@ -26,7 +26,7 @@ int checkIfBallIsOutOfBounds(StateInfo* stateInfo);
 void changePlayer(StateInfo* stateInfo);
 void prepareBatter(StateInfo* stateInfo);
 void calculateFreeWalk(StateInfo* stateInfo);
-void initializeSpatialPlayerInformation(StateInfo* stateInfo);
+void initializeSpatialPlayerInformation(StateInfo* stateInfo, unsigned int* rng_seed);
 void initializeInningPermanentPlayerInformation(StateInfo* stateInfo);
 void initializeNonCriticalPlayerInformation(StateInfo* stateInfo);
 void initializeCriticalBattingTeamInformation(StateInfo* stateInfo);
@@ -37,6 +37,6 @@ void initializeCriticalGameInfo(StateInfo* stateInfo);
 void initializeIndexInformation(StateInfo* stateInfo);
 void initializePRAIInformation(StateInfo* stateInfo);
 void setRunnerAndBatter(StateInfo* stateInfo);
-void loadMutableWorldSettings(StateInfo* stateInfo);
+void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif /* COMMON_LOGIC_H */
