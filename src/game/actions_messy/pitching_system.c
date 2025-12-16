@@ -258,7 +258,7 @@ void updatePitchingMeter(StateInfo* stateInfo)
 	}
 }
 
-void updateAIPitching(StateInfo* stateInfo)
+void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     int pitcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
     // here we finish pitching if started.
@@ -329,9 +329,9 @@ void updateAIPitching(StateInfo* stateInfo)
                 }
                 if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
                     if(homeLocationFlag == 1 && pitchFlag == 1) {
-                        int rand1 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 15);
-                        int rand2 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 3);
-                        int rand3 = seeded_rand(&stateInfo->localGameInfo->rng_seed, 10);
+                        int rand1 = seeded_rand(rng_seed, 15);
+                        int rand2 = seeded_rand(rng_seed, 3);
+                        int rand3 = seeded_rand(rng_seed, 10);
                         
                         aiActionEventLock = AI_PITCH_LOCK;
                         aiLockUpdate = 1;
