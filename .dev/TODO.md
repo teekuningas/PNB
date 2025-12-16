@@ -1,3 +1,7 @@
-- [x] Create `src/game/actions_pure/batting_physics.h` and `src/game/actions_pure/batting_physics.c` to encapsulate pure batting math (trajectory, meter). (commit: 7793128)
-- [x] Create `tests/test_batting_physics.c` and register it in `tests/test_runner.c`. (commit: 360c792)
-- [x] Refactor `src/game/actions_messy/batting_system.c` to use `batting_physics.h` functions. (commit: 826131d)
+- [ ] Create `src/game/actions_pure/pitching_physics.h` and `src/game/actions_pure/pitching_physics.c`.
+    - Extract calculation of `pitchPower` (from meter counter).
+    - Extract calculation of `pitchAngle` (from meter counter).
+    - Extract calculation of `dx` and `dy` (ball velocity) given angle and power.
+    - Extract meter value calculation for UI.
+- [ ] Create `tests/test_pitching_physics.c` and register it in `tests/test_runner.c`.
+- [ ] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_physics.h` functions.

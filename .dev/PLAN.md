@@ -11,7 +11,7 @@
 - [ ] Isolate state modifications from logic where possible.
 
 ### Step 13: Analyze & Purify Pitching
-- [ ] Review `src/game/actions_messy/pitching_system.c`.
+- [x] Review `src/game/actions_messy/pitching_system.c`.
 - [ ] Extract any pure trajectory or meter logic to `src/game/actions_pure/`.
 - [ ] **Create unit tests for extracted pure logic.**
 

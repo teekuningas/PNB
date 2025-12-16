@@ -95,7 +95,7 @@ void continuePitch(StateInfo* stateInfo)
 		stateInfo->localGameInfo->aF.cTAF.pitch = 4;
 		// here we select pitchpower, and as selected it will be in the interval from
 		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
-		pitchPower = 1.0f*meterCounter / meterCounterMax;
+		pitchPower = calculate_pitch_power(meterCounter, meterCounterMax);
 		// we select the animation
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 7;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
@@ -134,14 +134,14 @@ void releasePitch(StateInfo* stateInfo)
 	float pitchAngle;
 	// as meterCounter goes from 0 to PITCH_UP_MAX and the zero point will be at the 9/13, we minus
 	// that to get the selected angle
-	pitchAngle = 1.0f*meterCounter / meterCounterMax - 1.0f*PITCH_DOWN_MAX/PITCH_UP_MAX;
+	pitchAngle = calculate_pitch_angle(meterCounter, meterCounterMax);
 	// So here we set the velocity for the ball when it finally leaves the hand of the pitcher.
 	// dx is going to be the error term and it doesnt depend on the power so when ball is pitched higher, the error will have more time to
 	// increase
-	dx = pitchAngle*PITCH_ANGLE_CONSTANT;
+	dx = calculate_pitch_dx(pitchAngle);
 	// simple formula, just have base_speed so that there wont any very low pitches and then add some power if wanted.
 	// it will be made so that its more difficult to hit the ball the higher the pitch is.
-	dy = PITCH_BASE_SPEED + pitchPower * PITCH_POWER_CONSTANT;
+	dy = calculate_pitch_dy(pitchPower);
 	// we prepare to move the pitcher a bit
 	target.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;
 	target.z = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
@@ -228,7 +228,7 @@ void updatePitchingMeter(StateInfo* stateInfo)
 			meterCounter += 1;
 		}
 		// meterValue is used to render info to screen for user.
-		stateInfo->localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
+		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(2, meterCounter, meterCounterMax);
 	}
 	// when power has been selected but the angle is not yet selected,
 	// we increase meterCounter until its in its maximum
@@ -252,7 +252,7 @@ void updatePitchingMeter(StateInfo* stateInfo)
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 1;
 		}
 		// update what is seen on the screen.
-		stateInfo->localGameInfo->pRAI.meterValue = 1.0f - 1.0f*meterCounter / meterCounterMax;
+		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(4, meterCounter, meterCounterMax);
 	}
 }
 
