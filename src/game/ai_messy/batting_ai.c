@@ -89,7 +89,7 @@ void initBattingAI(void)
 	}
 }
 
-void updateBattingAI(StateInfo* stateInfo)
+void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     int i;
 	int isDoubleClickingOk = 0;

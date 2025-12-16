@@ -4,6 +4,6 @@
 #include "globals.h"
 
 void initBattingAI(void);
-void updateBattingAI(StateInfo* stateInfo);
+void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif

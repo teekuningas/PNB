@@ -457,11 +457,11 @@ static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 	// first ai for catching team
 
 	if(catchingControl == 2) {
-		updateCatchingAI(stateInfo);
+		updateCatchingAI(stateInfo, rng_seed);
 	}
 	// then ai for batting team
 	if(battingControl == 2) {
-		updateBattingAI(stateInfo);
+		updateBattingAI(stateInfo, rng_seed);
 	}
 
 }

@@ -10,7 +10,7 @@ extern int aiMoveCounter;
 extern int aiThrowStage;
 
 void initCatchingAI(void);
-void updateCatchingAI(StateInfo* stateInfo);
+void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed);
 void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target);
 void throwBallToBase(StateInfo* stateInfo, int base);
 

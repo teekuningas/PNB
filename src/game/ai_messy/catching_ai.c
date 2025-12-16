@@ -89,7 +89,7 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 	}
 }
 
-void updateCatchingAI(StateInfo* stateInfo)
+void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	// Update AI pitching
 	updateAIPitching(stateInfo);
