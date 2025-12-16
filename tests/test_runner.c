@@ -3,6 +3,7 @@
 #include "test_batting_physics.h" // New include for Batting Physics tests
 #include "test_pitching_physics.h"
 #include "test_batting_ai_strategy.h"
+#include "test_catching_ai_strategy.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -123,6 +124,15 @@ int main(int argc, char* argv[]) {
 	RUN_TEST(test_should_change_batter);
 	RUN_TEST(test_is_wrong_pitch);
 	RUN_TEST(test_calculate_ai_batting_angle);
+
+	// Catching AI Strategy tests
+	RUN_TEST(test_calculate_movement_keys_up_left);
+	RUN_TEST(test_calculate_movement_keys_right);
+	RUN_TEST(test_should_ai_throw_normal);
+	RUN_TEST(test_should_ai_throw_replacer);
+	RUN_TEST(test_should_ai_drop_ball_scenario);
+	RUN_TEST(test_determine_lead_base_simple);
+	RUN_TEST(test_determine_lead_base_random);
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

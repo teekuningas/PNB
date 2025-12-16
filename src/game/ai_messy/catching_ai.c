@@ -4,6 +4,7 @@
 #include "actions_messy/pitching_system.h"
 #include "common_logic.h"
 #include "vector_math.h"
+#include "catching_ai_strategy.h"
 
 int aiMoveCounter = 0;
 int aiThrowStage = 0;
@@ -23,31 +24,17 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 	float pz = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].tPI.location.z;
 	float tx = target->x;
 	float tz = target->z;
-	if(!isVectorSmallEnoughCircleXZ((px-tx), (pz-tz), 1.0f)) {
+	float dx = tx - px;
+	float dz = tz - pz;
+
+	if(!isVectorSmallEnoughCircleXZ(dx, dz, 1.0f)) {
 		if(aiMoveCounter >= 10) {
-			float angle = (float)atan2(-(tz-pz), (tx-px));
 			flushKeys(stateInfo);
-			if(angle > 7*PI/8 || angle <= -7*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-			} else if(angle <= 7*PI/8 && angle > 5*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-				stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
-			} else if(angle <= 5*PI/8 && angle > 3*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
-			} else if(angle <= 3*PI/8 && angle > PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
-				stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-			} else if(angle <= PI/8 && angle > -PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-			} else if(angle <= -PI/8 && angle > -3*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-			} else if(angle <= -3*PI/8 && angle > -5*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-			} else if(angle <= -5*PI/8 && angle > -7*PI/8) {
-				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-				stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-			}
+			MovementKeys keys = calculate_movement_keys(dx, dz);
+			if (keys.up) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+			if (keys.down) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
+			if (keys.left) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
+			if (keys.right) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
 			aiMoveCounter = 0;
 		}
 	} else {
@@ -61,21 +48,27 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 {
 	if(aiThrowStage == 0) {
 		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-			int shouldThrow = 0;
-			// we can throw if there is a normal catcher or a replacer on that base.
-			if(stateInfo->localGameInfo->pII.hasBallIndex != stateInfo->localGameInfo->pII.catcherOnBaseIndex[base]) {
-				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[base]].cTPI.
-				        isNearHomeLocation == 1) {
-					shouldThrow = 1;
-				}
+			int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
+			int catcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[base];
+			int catcherNearHome = 0;
+			if(catcherIndex != -1) {
+				catcherNearHome = stateInfo->localGameInfo->playerInfo[catcherIndex].cTPI.isNearHomeLocation;
 			}
-			if(stateInfo->localGameInfo->pII.hasBallIndex != stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base]) {
-				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base]].cTPI.replacingStage == 1 &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base]].cTPI.replacingBase == base &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base]].cPI.moving == 0) {
-					shouldThrow = 1;
-				}
+
+			int replacerIndex = stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base];
+			int replacerStage = 0;
+			int replacerBase = -1;
+			int replacerMoving = 0;
+			if(replacerIndex != -1) {
+				replacerStage = stateInfo->localGameInfo->playerInfo[replacerIndex].cTPI.replacingStage;
+				replacerBase = stateInfo->localGameInfo->playerInfo[replacerIndex].cTPI.replacingBase;
+				replacerMoving = stateInfo->localGameInfo->playerInfo[replacerIndex].cPI.moving;
 			}
+
+			int shouldThrow = should_ai_throw(hasBallIndex, catcherIndex, catcherNearHome,
+			                                  replacerIndex, replacerStage, replacerBase, replacerMoving,
+			                                  base);
+
 			if(shouldThrow == 1) {
 				aiThrowStage = 1;
 				aiLockUpdate = 1;
@@ -145,14 +138,29 @@ void updateCatchingAI(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		int index3 = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
 		int index2 = stateInfo->localGameInfo->pII.safeOnBaseIndex[2];
-		// if we have this cool event of having player on second and third base and batter running and situation
-		// being that ball has just been catched, we drop the ball to let first player come to the base.
-		if(stateInfo->localGameInfo->gAI.woundingCatch == 1 && stateInfo->localGameInfo->gAI.batterStartedRunning == 1 &&
-		        index3 != -1 && stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase == 3 &&
-		        stateInfo->localGameInfo->playerInfo[index3].bTPI.isOnBase == 1 &&
-		        index2 != -1 && stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase == 2 &&
-		        stateInfo->localGameInfo->playerInfo[index2].bTPI.isOnBase == 1 &&
-		        stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] != stateInfo->localGameInfo->pII.hasBallIndex) {
+
+		int r3OriginalBase = -1;
+		int r3IsOnBase = 0;
+		if (index3 != -1) {
+			r3OriginalBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase;
+			r3IsOnBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.isOnBase;
+		}
+
+		int r2OriginalBase = -1;
+		int r2IsOnBase = 0;
+		if (index2 != -1) {
+			r2OriginalBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase;
+			r2IsOnBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.isOnBase;
+		}
+
+		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
+		int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
+
+		if(should_ai_drop_ball(stateInfo->localGameInfo->gAI.woundingCatch,
+		                       stateInfo->localGameInfo->gAI.batterStartedRunning,
+		                       r3OriginalBase, r3IsOnBase,
+		                       r2OriginalBase, r2IsOnBase,
+		                       catcherHomeIndex, hasBallIndex)) {
 			if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
 				aiDropStage = 1;
 				aiLockUpdate = 1;
@@ -166,25 +174,24 @@ void updateCatchingAI(StateInfo* stateInfo)
 		else {
 			int leadBase = -1;
 			int throwBase = 0;
+			
+			CatchingRunnerInfo runners[BASE_COUNT];
+			int runnerCount = 0;
 			int i;
 			for(i = 0; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0 &&
-					        stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0) {
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base > leadBase) {
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.leading == 0) {
-								leadBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
-							} else {
-								int random = rand()%500;
-								if(random == 0) {
-									leadBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base - 1;
-								}
-							}
-						}
-					}
+					runners[runnerCount].isOnBase = stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase;
+					runners[runnerCount].takingFreeWalk = stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk;
+					runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+					runners[runnerCount].leading = stateInfo->localGameInfo->playerInfo[index].bTPI.leading;
+					runnerCount++;
 				}
 			}
+
+			int randomVal = rand() % 500;
+			leadBase = determine_lead_base(runners, runnerCount, randomVal);
+
 			if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;
 			else throwBase = 0;
 
