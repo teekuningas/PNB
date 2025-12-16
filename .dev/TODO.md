@@ -1,3 +1,3 @@
 - [x] Create `src/game/actions_pure/batting_physics.h` and `src/game/actions_pure/batting_physics.c` to encapsulate pure batting math (trajectory, meter). (commit: 7793128)
 - [x] Create `tests/test_batting_physics.c` and register it in `tests/test_runner.c`. (commit: 360c792)
-- [ ] Refactor `src/game/actions_messy/batting_system.c` to use `batting_physics.h` functions.
+- [x] Refactor `src/game/actions_messy/batting_system.c` to use `batting_physics.h` functions. (commit: 826131d)
