@@ -41,38 +41,4 @@
 
 ## Future Improvements & Tooling
 - [ ] **State Serialization (Save/Debug Dump)**: Implement a system to serialize `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) to a file. This will aid in debugging bugs like the "double occupancy" issue by allowing exact state reproduction.
-
-## Completed History
-
-### Milestone 4: The Big Split (Completed)
-- [x] **Action System Scaffold**
-    - [x] Created `src/game/actions_messy/` and `src/game/actions_pure/`.
-- [x] **Extract Pitching System**
-    - [x] Moved pitching logic to `pitching_system.c`.
-- [x] **Extract Batting System**
-    - [x] Moved batting logic to `batting_system.c`.
-- [x] **Extract Throwing & Fielding**
-    - [x] Moved throwing logic to `throwing_system.c`.
-- [x] **Extract AI Logic**
-    - [x] Moved catching AI to `catching_ai.c`.
-    - [x] Moved batting AI to `batting_ai.c`.
-    - [x] Refactored `action_implementation.c` to be a lightweight coordinator.
-
-### Milestone 3: Renderer Decoupling (Completed Early!)
-- [x] **Renderer Decoupling**
-    - [x] Created `src/renderer/` module.
-    - [x] Moved `player.c` rendering to `src/renderer/player_renderer.c`.
-    - [x] Moved `ball.c` rendering to `src/renderer/ball_renderer.c`.
-    - [x] Cleaned up OpenGL calls from `player.c` and `ball.c`.
-
-### Milestone 2: Physics Isolation (Completed)
-- [x] **Step 3-6: Physics**
-    - [x] Extracted `physics/ball_physics.c` and `collision.c`.
-    - [x] Integrated into `game_manipulation.c`.
-
-### Milestone 1: Core Utilities (Completed)
-- [x] **Step 0-2: Geometry & Field Layout**
-    - [x] Extracted `src/core/geometry.c` and `src/core/field_layout.c`.
-
-## Future Improvements & Tooling
-- [ ] **State Serialization (Save/Debug Dump)**: Implement a system to serialize `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) to a file. This will aid in debugging bugs like the "double occupancy" issue by allowing exact state reproduction.
+- [ ] **Game Loop Functional Dataflow**: Refactor the main game loop (`gameManipulation`, `actionImplementation`) to follow the Menu's "Functional Dataflow" pattern. Break `LocalGameInfo` into distinct sub-states (Physics, Rules, AI) and pass only the relevant data explicitly to update functions, removing the reliance on the global `StateInfo` god-object.
