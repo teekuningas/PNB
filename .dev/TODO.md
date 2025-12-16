@@ -1,6 +1,6 @@
 - [x] Remove commented-out "Original logic" code from `src/game/actions_pure/batting_physics.c` to keep the file clean. (commit: 9b7bb73)
-- [ ] Create `src/game/ai_pure/pitching_ai_strategy.h` and `src/game/ai_pure/pitching_ai_strategy.c`.
+- [x] Create `src/game/ai_pure/pitching_ai_strategy.h` and `src/game/ai_pure/pitching_ai_strategy.c`. (commit: e9499ef)
     - Extract `calculate_ai_pitch_targets` (calculates limits based on randomness and game state).
     - Ensure it is a pure function taking random values as inputs (no `rand()` inside).
-- [ ] Create `tests/test_pitching_ai_strategy.c` and register it in `tests/test_runner.c`.
-- [ ] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_ai_strategy.h`.
+- [x] Create `tests/test_pitching_ai_strategy.c` and register it in `tests/test_runner.c`. (commit: e9499ef)
+- [x] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_ai_strategy.h`. (commit: e9499ef)
