@@ -1,21 +1,6 @@
-- [x] Create `src/game/actions_pure/pitching_physics.h` and `src/game/actions_pure/pitching_physics.c`. (commit: e8556b0)
-    - Extract calculation of `pitchPower` (from meter counter).
-    - Extract calculation of `pitchAngle` (from meter counter).
-    - Extract calculation of `dx` and `dy` (ball velocity) given angle and power.
-    - Extract meter value calculation for UI.
-- [x] Create `tests/test_pitching_physics.c` and register it in `tests/test_runner.c`. (commit: e8556b0)
-- [x] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_physics.h` functions. (commit: e8556b0)
-- [x] Create `src/game/ai_pure/batting_ai_strategy.h` and `src/game/ai_pure/batting_ai_strategy.c`. (commit: 2cba8f4)
-    - Extract `calculate_batting_strategy` (batting style decision tree).
-    - Extract `calculate_ai_batting_angle` (angle decision logic).
-    - Extract `is_wrong_pitch` (wrong pitch detection).
-    - Extract `should_change_batter` (batter selection strategy).
-- [x] Create `tests/test_batting_ai_strategy.c` and register it in `tests/test_runner.c`. (commit: 2cba8f4)
-- [x] Refactor `src/game/ai_messy/batting_ai.c` to use `batting_ai_strategy.h` functions. (commit: 2cba8f4)
-- [x] Create `src/game/ai_pure/catching_ai_strategy.h` and `src/game/ai_pure/catching_ai_strategy.c`. (commit: 338f277)
-    - Extract `calculate_movement_keys` (movement decision based on target).
-    - Extract `should_ai_throw` (decision if AI should throw to a base).
-    - Extract `should_ai_drop_ball` (decision to drop ball in wounding catch scenario).
-    - Extract `determine_lead_base` (identifying which base a runner is leading).
-- [x] Create `tests/test_catching_ai_strategy.c` and register it in `tests/test_runner.c`. (commit: 338f277)
-- [x] Refactor `src/game/ai_messy/catching_ai.c` to use `catching_ai_strategy.h` functions. (commit: 338f277)
+- [x] Remove commented-out "Original logic" code from `src/game/actions_pure/batting_physics.c` to keep the file clean. (commit: 9b7bb73)
+- [ ] Create `src/game/ai_pure/pitching_ai_strategy.h` and `src/game/ai_pure/pitching_ai_strategy.c`.
+    - Extract `calculate_ai_pitch_targets` (calculates limits based on randomness and game state).
+    - Ensure it is a pure function taking random values as inputs (no `rand()` inside).
+- [ ] Create `tests/test_pitching_ai_strategy.c` and register it in `tests/test_runner.c`.
+- [ ] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_ai_strategy.h`.
