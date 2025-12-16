@@ -177,7 +177,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, 
 	updateSound(stateInfo);
 	switch(stateInfo->screen) {
 	case SCREEN_GAME:
-		updateGameScreen(stateInfo, &menuInfo);
+		updateGameScreen(stateInfo, &menuInfo, rng_seed);
 		break;
 	case SCREEN_MAIN_MENU:
 		updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);

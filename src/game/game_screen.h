@@ -5,7 +5,7 @@
 #include "menu_types.h"
 
 int initGameScreen(StateInfo* stateInfo);
-void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo);
+void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs);
 int cleanGameScreen(StateInfo* stateInfo);
 

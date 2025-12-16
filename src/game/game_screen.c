@@ -96,7 +96,7 @@ int initGameScreen(StateInfo* stateInfo)
 	return 0;
 }
 
-void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
+void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
 	// if we just changed here, load basic settings.
