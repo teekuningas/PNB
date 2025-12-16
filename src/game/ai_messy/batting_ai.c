@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "batting_ai.h"
+#include "batting_ai_strategy.h"
 #include "action_implementation.h" // for flushKeys
 #include "actions_messy/action_state.h"
 #include "actions_messy/batting_system.h"
@@ -140,22 +141,12 @@ void updateBattingAI(StateInfo* stateInfo)
 		else if(secondBaseIndex != -1 || thirdBaseIndex != -1) fieldStatus = 1;
 		else fieldStatus = 0;
 
+		aiChange = should_change_batter(
+			fieldStatus,
+			stateInfo->localGameInfo->playerInfo[index].bTPI.power,
+			stateInfo->localGameInfo->playerInfo[index].bTPI.speed
+		);
 
-		if(fieldStatus == 0) {
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.speed > 2) {
-				aiChange = 0;
-			} else {
-				aiChange = 1;
-			}
-		} else if(fieldStatus == 2) {
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.power > 2) {
-				aiChange = 0;
-			} else {
-				aiChange = 1;
-			}
-		} else {
-			aiChange = 0;
-		}
 		if(aiFirstIndexSelected == 0) {
 			aiFirstIndex = index;
 			aiFirstIndexSelected = 1;
@@ -202,120 +193,23 @@ void updateBattingAI(StateInfo* stateInfo)
 			int power = stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.power;
 			int speed = stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.speed;
 			int fieldStatus;
-			int hasPower;
-			int isFast;
-			if(power > 2) hasPower = 1;
-			else hasPower = 0;
-			if(speed > 2) isFast = 1;
-			else isFast = 0;
+
 			if(firstBaseIndex != -1) fieldStatus = 2;
 			else if(secondBaseIndex != -1 || thirdBaseIndex != -1) fieldStatus = 1;
 			else fieldStatus = 0;
-			if(stateInfo->globalGameInfo->period < 4) {
-				if(stateInfo->localGameInfo->gAI.strikes == 0) {
-					aiBattingStyle = 1;
-					aiRunningBaseRunners = 0;
-					aiRunningBatter = 0;
-				} else if(stateInfo->localGameInfo->gAI.strikes == 1) {
-					if(fieldStatus == 0) {
-						if(isFast == 0) {
-							aiBattingStyle = 2;
-							aiRunningBaseRunners = 0;
-							aiRunningBatter = 1;
-						} else {
-							aiBattingStyle = 0;
-							aiRunningBaseRunners = 0;
-							aiRunningBatter = 1;
-						}
-					} else if(fieldStatus == 1) {
-						if(hasPower == 1) {
-							if(isFast == 0) {
-								aiBattingStyle = 1;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 0;
-							} else {
-								aiBattingStyle = 1;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 1;
-							}
-						} else {
-							if(isFast == 0) {
-								aiBattingStyle = 2;
-								aiRunningBaseRunners = 0;
-								aiRunningBatter = 1;
-							} else {
-								aiBattingStyle = 0;
-								aiRunningBaseRunners = 0;
-								aiRunningBatter = 1;
-							}
-						}
-					} else if(fieldStatus == 2) {
-						if(hasPower == 1) {
-							if(isFast == 0) {
-								aiBattingStyle = 1;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 0;
-							} else {
-								aiBattingStyle = 1;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 1;
-							}
-						} else {
-							if(isFast == 0) {
-								aiBattingStyle = 0;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 0;
-							} else {
-								aiBattingStyle = 0;
-								aiRunningBaseRunners = 1;
-								aiRunningBatter = 1;
-							}
-						}
-					}
-				} else if(stateInfo->localGameInfo->gAI.strikes == 2) {
-					if(fieldStatus == 0) {
-						if(isFast == 0) {
-							aiBattingStyle = 2;
-							aiRunningBaseRunners = 0;
-							aiRunningBatter = 1;
-						} else {
-							aiBattingStyle = 0;
-							aiRunningBaseRunners = 0;
-							aiRunningBatter = 1;
-						}
-					} else if(fieldStatus == 1) {
-						aiBattingStyle = 2;
-						aiRunningBaseRunners = 0;
-						aiRunningBatter = 1;
-					} else if(fieldStatus == 2) {
-						if(hasPower == 1) {
-							aiBattingStyle = 1;
-							aiRunningBaseRunners = 1;
-							aiRunningBatter = 1;
-						} else {
-							aiBattingStyle = 0;
-							aiRunningBaseRunners = 1;
-							aiRunningBatter = 1;
-						}
-					}
-				}
-			} else {
-				if(stateInfo->localGameInfo->gAI.strikes == 0 || stateInfo->localGameInfo->gAI.strikes == 1) {
-					aiBattingStyle = 1;
-					aiRunningBaseRunners = 0;
-					aiRunningBatter = 0;
-				} else {
-					if(hasPower == 1) {
-						aiBattingStyle = 1;
-						aiRunningBaseRunners = 1;
-						aiRunningBatter = 1;
-					} else {
-						aiBattingStyle = 0;
-						aiRunningBaseRunners = 1;
-						aiRunningBatter = 0;
-					}
-				}
-			}
+			
+			BattingStrategy strategy = calculate_batting_strategy(
+				stateInfo->localGameInfo->gAI.strikes,
+				fieldStatus,
+				power,
+				speed,
+				stateInfo->globalGameInfo->period
+			);
+
+			aiBattingStyle = strategy.style;
+			aiRunningBaseRunners = strategy.runBaseRunners;
+			aiRunningBatter = strategy.runBatter;
+			
 			aiPlanCalculated = 1;
 		}
 		// if we decide that batter should run, we click down once.
@@ -386,12 +280,12 @@ void updateBattingAI(StateInfo* stateInfo)
 	else if(stateInfo->localGameInfo->pRAI.pitchInAir == 1) {
 		int i;
 		// predict if pitch is going to be ball
-		float v_x = (float)fabs(stateInfo->localGameInfo->ballInfo.velocity.x);
-		float v_y = stateInfo->localGameInfo->ballInfo.velocity.y;
-		float g = GRAVITY;
-		float t = v_y*2/g;
-		float offset = v_x*t;
-		if(offset > PLATE_WIDTH/2 && aiWrongPitch == 0) {
+		if(aiWrongPitch == 0 && is_wrong_pitch(
+			stateInfo->localGameInfo->ballInfo.velocity.x,
+			stateInfo->localGameInfo->ballInfo.velocity.y,
+			GRAVITY,
+			PLATE_WIDTH
+		)) {
 			aiWrongPitch = 1;
 		}
 		if(aiWrongPitch == 1) {
@@ -420,8 +314,7 @@ void updateBattingAI(StateInfo* stateInfo)
 		// a bunt
 		if(aiBattingStyle == 0) {
 			if(aiAngleDecided == 0) {
-				int random = rand()%4 + 2;
-				aiDecidedAngle = (float)random / 20.0f;
+				aiDecidedAngle = calculate_ai_batting_angle(0, -1, rand());
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 23 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {
@@ -439,7 +332,6 @@ void updateBattingAI(StateInfo* stateInfo)
 		// a normal swing
 		else if(aiBattingStyle == 1) {
 			if(aiAngleDecided == 0) {
-				int random;
 				int i;
 				int leadBase = -1;
 				for(i = 0; i < BASE_COUNT; i++) {
@@ -450,17 +342,7 @@ void updateBattingAI(StateInfo* stateInfo)
 						}
 					}
 				}
-				if(leadBase == 2) {
-					random = -rand()%16;
-					aiDecidedAngle = (float)random / 45.0f;
-				} else if(leadBase == 1) {
-					random = rand()%16;
-					aiDecidedAngle = (float)random / 45.0f;
-				} else {
-					random = rand()%33;
-					random = random - 16;
-					aiDecidedAngle = (float)random / 45.0f;
-				}
+				aiDecidedAngle = calculate_ai_batting_angle(1, leadBase, rand());
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 10 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {
@@ -478,9 +360,7 @@ void updateBattingAI(StateInfo* stateInfo)
 		// swing that tries to get oneself wounded
 		else if(aiBattingStyle == 2) {
 			if(aiAngleDecided == 0) {
-				int random = rand()%5;
-				random = random - 2;
-				aiDecidedAngle = (float)random / 20.0f;
+				aiDecidedAngle = calculate_ai_batting_angle(2, -1, rand());
 				aiAngleDecided = 1;
 			}
 			if(meterCounter > BAT_SWING_MAX - 11 && aiBattingKeyDown == 0 && aiActionKeyLock == AI_NO_LOCK && aiWrongPitch == 0) {

@@ -12,13 +12,21 @@
 
 ### Step 13: Analyze & Purify Pitching
 - [x] Review `src/game/actions_messy/pitching_system.c`.
-- [ ] Extract any pure trajectory or meter logic to `src/game/actions_pure/`.
-- [ ] **Create unit tests for extracted pure logic.**
+- [x] Extract physics/math calculations (e.g., hit trajectory) to `src/game/actions_pure/pitching_physics.c`.
+- [x] **Create unit tests for `pitching_physics.c`.**
+- [ ] Isolate state modifications from logic where possible.
 
 ### Step 14: Analyze & Purify AI
 - [ ] Review `batting_ai.c` and `catching_ai.c`.
 - [ ] Extract pure decision-making logic (input state -> output command) into pure functions.
 - [ ] **Create unit tests for pure AI decision logic.**
+
+## Milestone 5.5: The Vantage Point (Zen Harmony)
+**Goal:** Pause, breathe, and stabilize. Ensure the "Pure vs. Messy" separation is clean, documented, and the codebase feels safe.
+- [ ] **Architectural Review:** Update `docs/ARCHITECTURE_MAPS.md` to reflect the new `actions_pure` and `ai_pure` structures.
+- [ ] **Test Suite Review:** Ensure we haven't over-tested volatile code. Verify that `actions_pure` tests are solid and fast.
+- [ ] **Messiness Isolation Check:** Verify that `actions_messy` files are strictly coordinators/state-mutators and contain NO complex math/rules.
+- [ ] **Cleanup:** Remove any temporary comments, unused includes, or transitional artifacts.
 
 ## Testing Strategy
 - **Pure Functions (High Priority):** Every time logic is extracted to a `_pure` module (Milestone 5+), it **must** be accompanied by unit tests. These functions take simple inputs and return outputs, making them ideal for testing.

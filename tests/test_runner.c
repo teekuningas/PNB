@@ -2,6 +2,7 @@
 #include "cup.h" // New include for the Cup API tests
 #include "test_batting_physics.h" // New include for Batting Physics tests
 #include "test_pitching_physics.h"
+#include "test_batting_ai_strategy.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -116,6 +117,12 @@ int main(int argc, char* argv[]) {
 	RUN_TEST(test_pitch_angle_calc);
 	RUN_TEST(test_pitch_velocity);
 	RUN_TEST(test_pitch_meter_ui);
+
+	// Batting AI Strategy tests
+	RUN_TEST(test_batting_strategy_decision_tree);
+	RUN_TEST(test_should_change_batter);
+	RUN_TEST(test_is_wrong_pitch);
+	RUN_TEST(test_calculate_ai_batting_angle);
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

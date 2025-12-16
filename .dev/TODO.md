@@ -5,3 +5,17 @@
     - Extract meter value calculation for UI.
 - [x] Create `tests/test_pitching_physics.c` and register it in `tests/test_runner.c`. (commit: e8556b0)
 - [x] Refactor `src/game/actions_messy/pitching_system.c` to use `pitching_physics.h` functions. (commit: e8556b0)
+- [ ] Create `src/game/ai_pure/batting_ai_strategy.h` and `src/game/ai_pure/batting_ai_strategy.c`.
+    - Extract `calculate_batting_strategy` (batting style decision tree).
+    - Extract `calculate_ai_batting_angle` (angle decision logic).
+    - Extract `is_wrong_pitch` (wrong pitch detection).
+    - Extract `should_change_batter` (batter selection strategy).
+- [ ] Create `tests/test_batting_ai_strategy.c` and register it in `tests/test_runner.c`.
+- [ ] Refactor `src/game/ai_messy/batting_ai.c` to use `batting_ai_strategy.h` functions.
+- [ ] Create `src/game/ai_pure/catching_ai_strategy.h` and `src/game/ai_pure/catching_ai_strategy.c`.
+    - Extract `calculate_movement_keys` (movement decision based on target).
+    - Extract `should_ai_throw` (decision if AI should throw to a base).
+    - Extract `should_ai_drop_ball` (decision to drop ball in wounding catch scenario).
+    - Extract `determine_lead_base` (identifying which base a runner is leading).
+- [ ] Create `tests/test_catching_ai_strategy.c` and register it in `tests/test_runner.c`.
+- [ ] Refactor `src/game/ai_messy/catching_ai.c` to use `catching_ai_strategy.h` functions.
