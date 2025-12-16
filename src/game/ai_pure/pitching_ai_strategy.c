@@ -13,18 +13,18 @@ void calculate_ai_pitch_targets(
     unsigned int* out_second_limit
 )
 {
-    int var = 0;
+	int var = 0;
 
-    if (batting_team_players_on_field_count == 1) {
-        rand1 = 0;
-    } else if (strikes != 0 && balls == 0) {
-        if (rand3 == 9) {
-            var = 10;
-        } else if (rand3 == 8) {
-            var = -10;
-        }
-    }
+	if (batting_team_players_on_field_count == 1) {
+		rand1 = 0;
+	} else if (strikes != 0 && balls == 0) {
+		if (rand3 == 9) {
+			var = 10;
+		} else if (rand3 == 8) {
+			var = -10;
+		}
+	}
 
-    *out_first_limit = (PITCH_UP_MAX - PITCH_DOWN_MAX) * animation_frequency + 5 + rand1;
-    *out_second_limit = animation_frequency * PITCH_DOWN_MAX - 2 + rand2 + var;
+	*out_first_limit = (PITCH_UP_MAX - PITCH_DOWN_MAX) * animation_frequency + 5 + rand1;
+	*out_second_limit = animation_frequency * PITCH_DOWN_MAX - 2 + rand2 + var;
 }

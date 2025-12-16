@@ -119,10 +119,10 @@ void runToTarget(StateInfo* stateInfo, int index, Vector3D *target)
 		     stateInfo->localGameInfo->playerInfo[index].tPI.location.x;
 		dz = stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation.z -
 		     stateInfo->localGameInfo->playerInfo[index].tPI.location.z;
-		
-		norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation, 
+
+		norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation,
 		                               &stateInfo->localGameInfo->playerInfo[index].tPI.location);
-		
+
 		if(norm < EPSILON) norm = 1.0f;
 		// set the velocity
 
@@ -170,10 +170,10 @@ void moveToTarget(StateInfo* stateInfo, int index, Vector3D *target)
 			     stateInfo->localGameInfo->playerInfo[index].tPI.location.x;
 			dz = stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation.z -
 			     stateInfo->localGameInfo->playerInfo[index].tPI.location.z;
-			
-			norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation, 
-		                                   &stateInfo->localGameInfo->playerInfo[index].tPI.location);
-			
+
+			norm = geometry_distance_2d_xz(&stateInfo->localGameInfo->playerInfo[index].tPI.targetLocation,
+			                               &stateInfo->localGameInfo->playerInfo[index].tPI.location);
+
 			if(norm < EPSILON) norm = 1.0f;
 			setVectorXZ(&stateInfo->localGameInfo->playerInfo[index].tPI.velocity, dx*WALK_SPEED/norm, dz*WALK_SPEED/norm);
 			// if the player for some reason was running before this, set that to 0.

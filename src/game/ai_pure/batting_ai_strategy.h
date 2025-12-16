@@ -2,9 +2,9 @@
 #define BATTING_AI_STRATEGY_H
 
 typedef struct {
-    int style;              // 0=bunt, 1=normal, 2=wound
-    int runBaseRunners;     // 0 or 1
-    int runBatter;          // 0 or 1
+	int style;              // 0=bunt, 1=normal, 2=wound
+	int runBaseRunners;     // 0 or 1
+	int runBatter;          // 0 or 1
 } BattingStrategy;
 
 BattingStrategy calculate_batting_strategy(int strikes, int fieldStatus, int power, int speed, int period);

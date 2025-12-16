@@ -6,17 +6,17 @@ extern "C" {
 #endif
 
 typedef struct {
-    int up;
-    int down;
-    int left;
-    int right;
+	int up;
+	int down;
+	int left;
+	int right;
 } MovementKeys;
 
 typedef struct {
-    int isOnBase;
-    int takingFreeWalk;
-    int base;
-    int leading;
+	int isOnBase;
+	int takingFreeWalk;
+	int base;
+	int leading;
 } CatchingRunnerInfo;
 
 MovementKeys calculate_movement_keys(float dx, float dz);

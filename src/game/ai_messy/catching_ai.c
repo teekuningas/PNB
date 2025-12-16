@@ -175,7 +175,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		else {
 			int leadBase = -1;
 			int throwBase = 0;
-			
+
 			CatchingRunnerInfo runners[BASE_COUNT];
 			int runnerCount = 0;
 			int i;

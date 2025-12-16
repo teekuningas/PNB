@@ -7,7 +7,7 @@
 - [x] Modify `src/game/actions_messy/pitching_system.c` to use `seeded_rand` for generating random values `rand1`, `rand2`, and `rand3` before passing them to `calculate_ai_pitch_targets`. (commit: d9b2c8f)
 
 ### RNG Refactoring (Explicit Seed Passing)
-- [ ] Refactor RNG to pass `rng_seed` explicitly instead of storing it in `StateInfo`.
+- [x] Refactor RNG to pass `rng_seed` explicitly instead of storing it in `StateInfo`.
     - [x] **Step 1: Header Changes**: Remove `unsigned int rng_seed;` from `LocalGameInfo` in `src/include/globals.h`. (commit: b998fba)
     - [x] **Step 2: Main & Game Loop**: Update `src/core/main.c` to initialize `rng_seed` locally and pass `&rng_seed` to `updateGameScreen`. (commit: 41e2583)
     - [x] **Step 3: Game Screen**: Update `src/game/game_screen.h/.c` `updateGameScreen` to take `unsigned int* rng_seed` and pass to `actionImplementation`. (commit: 702a602)

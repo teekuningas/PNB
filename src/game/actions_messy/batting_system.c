@@ -404,7 +404,7 @@ void updateBatting(StateInfo* stateInfo)
 					float verticalAngle;
 					float horizontalAngle;
 					float power;
-					
+
 					verticalAngle = calculate_batting_vertical_angle(selectedBattingPowerCount, selectedBattingAngleCount, stateInfo->localGameInfo->ballInfo.velocity.y, BAT_SWING_MAX, BAT_LOAD_MAX);
 
 					// 2 to make it possible to bat to every direction on the field and a bit over.
@@ -428,7 +428,7 @@ void updateBatting(StateInfo* stateInfo)
 						powerFactor = stateInfo->localGameInfo->
 						              playerInfo[stateInfo->localGameInfo->
 						                         pII.batterIndex].bTPI.power;
-						
+
 						velocity = calculate_batted_ball_velocity(verticalAngle, horizontalAngle, power, powerFactor, stateInfo->localGameInfo->ballInfo.location.x);
 
 
@@ -503,7 +503,7 @@ void updateBattingMeter(StateInfo* stateInfo)
 		else {
 			selectedBattingAngleCount = meterCounterMax;
 		}
-		
+
 		stateInfo->localGameInfo->pRAI.swingMeterValue = calculate_angle_meter_value(meterCounter, meterCounterMax, selectedBattingPowerCount, BAT_SWING_MAX, BAT_LOAD_MAX);
 	}
 }

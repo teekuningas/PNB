@@ -21,7 +21,7 @@ int initMutableWorld(StateInfo* stateInfo)
 
 	// The initPlayer is now handled by initPlayerRenderer, which is called by initPlayer in player.c
 	// No direct call to initPlayerRenderer here.
-	result = initPlayer(stateInfo); 
+	result = initPlayer(stateInfo);
 	if(result != 0) {
 		printf("Could not init player. Exiting.");
 		return -1;

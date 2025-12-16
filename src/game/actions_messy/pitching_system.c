@@ -21,7 +21,7 @@ static int aiBatterReadyTimer;
 
 void resetPitchingSystem(void)
 {
-    pitchPower = 0;
+	pitchPower = 0;
 	aiPitchStage = 0;
 	aiPitchTime = -1;
 	aiPitchPreviousTime = -1;
@@ -260,116 +260,116 @@ void updatePitchingMeter(StateInfo* stateInfo)
 
 void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-    int pitcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
-    // here we finish pitching if started.
-    // here i use these weird lock timeouts. im not sure if they are necessary
-    // but they could be. not gonna try anymore.
-    if(aiPitchStage == 1) {
-        if(aiLockTimeoutCounter == -1) {
-            aiLockTimeoutCounter = 0;
-        }
-        if(meterCounter > aiPitchFirstLimit) {
-            aiPitchStage = 2;
-            stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
-            aiLockTimeoutCounter = -1;
-        } else {
-            aiLockTimeoutCounter++;
-            if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-                aiPitchStage = 0;
-                flushKeys(stateInfo);
-                aiActionEventLock = AI_NO_LOCK;
-                aiLockUpdate = 1;
-                aiLockTimeoutCounter = -1;
-            }
-        }
-    } else if(aiPitchStage == 2) {
-        if(aiLockTimeoutCounter == -1) {
-            aiLockTimeoutCounter = 0;
-        }
-        if(meterCounter > aiPitchSecondLimit) {
-            aiPitchStage = 3;
-            stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
-            aiLockTimeoutCounter = -1;
-        } else {
-            aiLockTimeoutCounter++;
-            if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-                aiPitchStage = 0;
-                flushKeys(stateInfo);
-                aiActionEventLock = AI_NO_LOCK;
-                aiLockUpdate = 1;
-                aiLockTimeoutCounter = -1;
-            }
-        }
-    } else if(aiPitchStage == 3) {
-        aiPitchStage = 0;
-        flushKeys(stateInfo);
-        aiActionEventLock = AI_NO_LOCK;
-        aiLockUpdate = 1;
-    }
+	int pitcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
+	// here we finish pitching if started.
+	// here i use these weird lock timeouts. im not sure if they are necessary
+	// but they could be. not gonna try anymore.
+	if(aiPitchStage == 1) {
+		if(aiLockTimeoutCounter == -1) {
+			aiLockTimeoutCounter = 0;
+		}
+		if(meterCounter > aiPitchFirstLimit) {
+			aiPitchStage = 2;
+			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
+			aiLockTimeoutCounter = -1;
+		} else {
+			aiLockTimeoutCounter++;
+			if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
+				aiPitchStage = 0;
+				flushKeys(stateInfo);
+				aiActionEventLock = AI_NO_LOCK;
+				aiLockUpdate = 1;
+				aiLockTimeoutCounter = -1;
+			}
+		}
+	} else if(aiPitchStage == 2) {
+		if(aiLockTimeoutCounter == -1) {
+			aiLockTimeoutCounter = 0;
+		}
+		if(meterCounter > aiPitchSecondLimit) {
+			aiPitchStage = 3;
+			stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+			aiLockTimeoutCounter = -1;
+		} else {
+			aiLockTimeoutCounter++;
+			if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
+				aiPitchStage = 0;
+				flushKeys(stateInfo);
+				aiActionEventLock = AI_NO_LOCK;
+				aiLockUpdate = 1;
+				aiLockTimeoutCounter = -1;
+			}
+		}
+	} else if(aiPitchStage == 3) {
+		aiPitchStage = 0;
+		flushKeys(stateInfo);
+		aiActionEventLock = AI_NO_LOCK;
+		aiLockUpdate = 1;
+	}
 
-    // if pitcher has the ball and he is in correct position
-    if(stateInfo->localGameInfo->pII.hasBallIndex == pitcherIndex &&
-            stateInfo->localGameInfo->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1) {
-        // and lets give player some time to prepare
-        if(aiBatterReadyTimer > 70) {
-            // try pitching.
-            if(aiPitchStage == 0) {
-                int i;
-                int homeLocationFlag = 1;
-                int pitchFlag = 0;
+	// if pitcher has the ball and he is in correct position
+	if(stateInfo->localGameInfo->pII.hasBallIndex == pitcherIndex &&
+	        stateInfo->localGameInfo->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1) {
+		// and lets give player some time to prepare
+		if(aiBatterReadyTimer > 70) {
+			// try pitching.
+			if(aiPitchStage == 0) {
+				int i;
+				int homeLocationFlag = 1;
+				int pitchFlag = 0;
 
-                aiPitchTime++;
-                if(aiPitchTime >= 100) {
-                    pitchFlag = 1;
-                }
-                for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                    if(stateInfo->localGameInfo->playerInfo[i].cTPI.isNearHomeLocation == 0) {
-                        homeLocationFlag = 0;
-                    }
-                }
-                if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-                    if(homeLocationFlag == 1 && pitchFlag == 1) {
-                        int rand1 = seeded_rand(rng_seed, 15);
-                        int rand2 = seeded_rand(rng_seed, 3);
-                        int rand3 = seeded_rand(rng_seed, 10);
-                        
-                        aiActionEventLock = AI_PITCH_LOCK;
-                        aiLockUpdate = 1;
-                        aiPitchStage = 1;
-                        flushKeys(stateInfo);
-                        stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				aiPitchTime++;
+				if(aiPitchTime >= 100) {
+					pitchFlag = 1;
+				}
+				for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+					if(stateInfo->localGameInfo->playerInfo[i].cTPI.isNearHomeLocation == 0) {
+						homeLocationFlag = 0;
+					}
+				}
+				if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+					if(homeLocationFlag == 1 && pitchFlag == 1) {
+						int rand1 = seeded_rand(rng_seed, 15);
+						int rand2 = seeded_rand(rng_seed, 3);
+						int rand3 = seeded_rand(rng_seed, 10);
 
-                        calculate_ai_pitch_targets(
-                            rand1, rand2, rand3,
-                            stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount,
-                            stateInfo->localGameInfo->gAI.strikes,
-                            stateInfo->localGameInfo->gAI.balls,
-                            ANIMATION_FREQUENCY,
-                            &aiPitchFirstLimit,
-                            &aiPitchSecondLimit
-                        );
-                    } else {
-                        // to stop player from unnecessarily moving
-                        flushKeys(stateInfo);
-                    }
-                }
-            }
-        }
-    }
+						aiActionEventLock = AI_PITCH_LOCK;
+						aiLockUpdate = 1;
+						aiPitchStage = 1;
+						flushKeys(stateInfo);
+						stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 
-    if(aiPitchPreviousTime == aiPitchTime) {
-        aiPitchTime = 0;
-    }
-    aiPitchPreviousTime = aiPitchTime;
-    // this batterReadyTimer is used to give human player a bit more time before AI pitches.
-    if(stateInfo->localGameInfo->pRAI.batterReady == 1 &&
-            stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] == stateInfo->localGameInfo->pII.hasBallIndex &&
-            aiBatterReadyTimer == -1) {
-        aiBatterReadyTimer = 0;
-    } else if(stateInfo->localGameInfo->pRAI.batterReady == 0) {
-        aiBatterReadyTimer = -1;
-    }
-    if(aiBatterReadyTimer != -1) {
-        aiBatterReadyTimer++;
-    }
+						calculate_ai_pitch_targets(
+						    rand1, rand2, rand3,
+						    stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount,
+						    stateInfo->localGameInfo->gAI.strikes,
+						    stateInfo->localGameInfo->gAI.balls,
+						    ANIMATION_FREQUENCY,
+						    &aiPitchFirstLimit,
+						    &aiPitchSecondLimit
+						);
+					} else {
+						// to stop player from unnecessarily moving
+						flushKeys(stateInfo);
+					}
+				}
+			}
+		}
+	}
+
+	if(aiPitchPreviousTime == aiPitchTime) {
+		aiPitchTime = 0;
+	}
+	aiPitchPreviousTime = aiPitchTime;
+	// this batterReadyTimer is used to give human player a bit more time before AI pitches.
+	if(stateInfo->localGameInfo->pRAI.batterReady == 1 &&
+	        stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] == stateInfo->localGameInfo->pII.hasBallIndex &&
+	        aiBatterReadyTimer == -1) {
+		aiBatterReadyTimer = 0;
+	} else if(stateInfo->localGameInfo->pRAI.batterReady == 0) {
+		aiBatterReadyTimer = -1;
+	}
+	if(aiBatterReadyTimer != -1) {
+		aiBatterReadyTimer++;
+	}
 }

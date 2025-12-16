@@ -442,8 +442,7 @@ static void updateMeters(StateInfo* stateInfo)
 			meterCounter += 1;
 		}
 		stateInfo->localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
-	}
-	else {
+	} else {
 		updateBattingMeter(stateInfo);
 	}
 }

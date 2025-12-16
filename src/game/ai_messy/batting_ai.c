@@ -8,7 +8,7 @@
 #include "actions_messy/action_state.h"
 #include "actions_messy/batting_system.h"
 #include "game_manipulation.h"
-#include "rng.h" 
+#include "rng.h"
 
 #define CLICK_BREAK_CONSTANT 3
 
@@ -92,7 +92,7 @@ void initBattingAI(void)
 
 void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-    int i;
+	int i;
 	int isDoubleClickingOk = 0;
 	// update some flags
 	for(i = 0; i < BASE_COUNT; i++) {
@@ -143,10 +143,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		else fieldStatus = 0;
 
 		aiChange = should_change_batter(
-			fieldStatus,
-			stateInfo->localGameInfo->playerInfo[index].bTPI.power,
-			stateInfo->localGameInfo->playerInfo[index].bTPI.speed
-		);
+		               fieldStatus,
+		               stateInfo->localGameInfo->playerInfo[index].bTPI.power,
+		               stateInfo->localGameInfo->playerInfo[index].bTPI.speed
+		           );
 
 		if(aiFirstIndexSelected == 0) {
 			aiFirstIndex = index;
@@ -198,25 +198,25 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			if(firstBaseIndex != -1) fieldStatus = 2;
 			else if(secondBaseIndex != -1 || thirdBaseIndex != -1) fieldStatus = 1;
 			else fieldStatus = 0;
-			
+
 			BattingStrategy strategy = calculate_batting_strategy(
-				stateInfo->localGameInfo->gAI.strikes,
-				fieldStatus,
-				power,
-				speed,
-				stateInfo->globalGameInfo->period
-			);
+			                               stateInfo->localGameInfo->gAI.strikes,
+			                               fieldStatus,
+			                               power,
+			                               speed,
+			                               stateInfo->globalGameInfo->period
+			                           );
 
 			aiBattingStyle = strategy.style;
 			aiRunningBaseRunners = strategy.runBaseRunners;
 			aiRunningBatter = strategy.runBatter;
-			
+
 			aiPlanCalculated = 1;
 		}
 		// if we decide that batter should run, we click down once.
 		if(aiRunningBatter == 1) {
 			if(aiBaseRunnerDecisionMade[0] == 0 && aiBaseRunnerKeyDown[0] == 0 && aiBaseRunnerLock[0] == AI_NO_LOCK &&
-					aiClickBreak[0] > CLICK_BREAK_CONSTANT) {
+			        aiClickBreak[0] > CLICK_BREAK_CONSTANT) {
 				aiBaseRunnerKeyDown[0] = 1;
 				aiBaseRunnerLock[0] = AI_CLICK_LOCK;
 				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
@@ -233,8 +233,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int i;
 			for(i = 1; i < BASE_COUNT; i++) {
 				if(aiBaseRunnerDecisionMade[i] == 0 && stateInfo->localGameInfo->pII.safeOnBaseIndex[i] != -1 &&
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.isOnBase == 1 &&
-						aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
+				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.isOnBase == 1 &&
+				        aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_CLICK_LOCK;
 					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
@@ -258,8 +258,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int i;
 			for(i = 1; i < 3; i++) {
 				if(stateInfo->localGameInfo->pII.safeOnBaseIndex[i] != -1 &&
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.leading == 1 &&
-						aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
+				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.leading == 1 &&
+				        aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_COME_BACK_LOCK;
 					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
@@ -282,11 +282,11 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int i;
 		// predict if pitch is going to be ball
 		if(aiWrongPitch == 0 && is_wrong_pitch(
-			stateInfo->localGameInfo->ballInfo.velocity.x,
-			stateInfo->localGameInfo->ballInfo.velocity.y,
-			GRAVITY,
-			PLATE_WIDTH
-		)) {
+		            stateInfo->localGameInfo->ballInfo.velocity.x,
+		            stateInfo->localGameInfo->ballInfo.velocity.y,
+		            GRAVITY,
+		            PLATE_WIDTH
+		        )) {
 			aiWrongPitch = 1;
 		}
 		if(aiWrongPitch == 1) {
@@ -295,7 +295,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			for(i = 1; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[i];
 				if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward == 1 && aiBaseRunnerKeyDown[i] == 0 &&
-						aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
+				        aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
 					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
@@ -398,8 +398,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	//here we check if ball is going somewhere out of bounds so that players can try to run towards next bases.
 	if(stateInfo->localGameInfo->ballInfo.hasHitGroundOutOfBounds == 1 && stateInfo->localGameInfo->pRAI.batHit == 1 &&
-			stateInfo->localGameInfo->pRAI.throwGoingToBase == -1 && stateInfo->localGameInfo->pII.hasBallIndex == -1 &&
-			stateInfo->localGameInfo->ballInfo.moving == 1) {
+	        stateInfo->localGameInfo->pRAI.throwGoingToBase == -1 && stateInfo->localGameInfo->pII.hasBallIndex == -1 &&
+	        stateInfo->localGameInfo->ballInfo.moving == 1) {
 		isDoubleClickingOk = 1;
 	}
 	// we will run with everyone so we need to simulate double click here.
@@ -421,8 +421,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 		// if everything ok, initiate running.
 		if(shouldRun == 1 && isDoubleClickingOk == 1 && aiBaseRunnerLock[i] == AI_NO_LOCK &&
-				aiBaseRunnerKeyDown[i] == 0 && index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward != 1 &&
-				aiAmountOfClicks[i] == 0 && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
+		        aiBaseRunnerKeyDown[i] == 0 && index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward != 1 &&
+		        aiAmountOfClicks[i] == 0 && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 			aiBaseRunnerKeyDown[i] = 1;
 			aiBaseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
 			if(i == 0) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
