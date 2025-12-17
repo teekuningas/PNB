@@ -26,13 +26,29 @@
 - [x] **RNG Purification:** Refactor Random Number Generation to use explicit seed passing (`rng_seed`) throughout the game loop, removing hidden global state dependencies in `StateInfo` and ensuring deterministic replays/testing.
 
 ## Milestone 6: Rules Engine Extraction (The Judge)
-**Goal:** Extract the complex rules logic (outs, runs, strikes) from `game_analysis.c` into a pure `src/game_logic/rules/` module.
-- [ ] Analyze `game_analysis.c` to identify rule evaluation vs. state mutation.
-- [ ] Create `src/game/rules_pure/` directory.
-- [ ] Extract "Out" detection logic (e.g., `is_force_out`, `is_tag_out`).
-- [ ] Extract "Scoring" logic (e.g., `calculate_runs`).
-- [ ] Extract "Strike/Ball" logic.
-- [ ] **Crucial:** Ensure these new functions take *only* the necessary data (structs), not the whole `StateInfo`.
+**Goal:** Extract the complex rules logic (outs, runs, strikes) from `game_analysis.c` into a pure `src/game/rules_pure/` module, mapping them to the official rules (`docs/SAANNOT.md`). This is the final major "Brain" extraction before we can consider larger architectural dataflow changes.
+
+**Safety Protocol:** "One Slice at a Time." Do not attempt to refactor the entire file at once. Extract one rule type, integrate it, verify it works, and then move to the next.
+
+- [ ] **Phase 1: Outs (Pesäkilpa §33)**
+    - [ ] Setup: Create `src/game/rules_pure/rules_outs.h/c` and tests.
+    - [ ] Extract: Move "Out" detection logic to `rules_outs.c`.
+    - [ ] Map: Reference **§33 Pesäkilpa** in comments.
+    - [ ] Verify: Ensure `game_analysis.c` uses the new function and tests pass.
+
+- [ ] **Phase 2: Runs (Juoksu §41, Kunniajuoksu §42)**
+    - [ ] Setup: Create `src/game/rules_pure/rules_runs.h/c` and tests.
+    - [ ] Extract: Move scoring logic to `rules_runs.c`.
+    - [ ] Map: Reference **§41 Juoksu** and **§42 Kunniajuoksu**.
+    - [ ] Verify: Ensure integration and tests pass.
+
+- [ ] **Phase 3: Strikes/Balls (Syöttö §26)**
+    - [ ] Setup: Create `src/game/rules_pure/rules_strikes.h/c` and tests.
+    - [ ] Extract: Move strike/ball logic to `rules_strikes.c`.
+    - [ ] Map: Reference **§26 Syötön tuomitseminen**.
+    - [ ] Verify: Ensure integration and tests pass.
+
+- [ ] **Final Cleanup:** Remove legacy code comments and ensure all tests pass.
 
 ## Testing Strategy
 - **Pure Functions (High Priority):** Every time logic is extracted to a `_pure` module (Milestone 5+), it **must** be accompanied by unit tests. These functions take simple inputs and return outputs, making them ideal for testing.

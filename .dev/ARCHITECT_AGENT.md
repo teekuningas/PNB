@@ -32,7 +32,7 @@
 
 ## Task Format (in `.dev/TODO.md`)
 
-- The `TODO.md` file should contain a linear list of tasks.
+- The `TODO.md` file should contain a **flat, linear list of atomic tasks**. Avoid nested task structures.
 - **Atomic:** Each task should be doable in one go (e.g., "Extract function X", "Create header Y").
 - **Clear:** Specify exactly *what* to do and *where*.
 - **Format:**
