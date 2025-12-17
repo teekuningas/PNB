@@ -16,7 +16,7 @@
 - [x] Update `tests/test_runner.c`: Include `test_rules_runs.h` and add a call to `run_rules_runs_tests()`. (commit: 731e2da)
 - [x] Run `devenv shell make test` to verify compilation of new empty files and test registration. (verified)
 - [x] In `src/game/rules_pure/rules_runs.h`, declare `int calculate_runs(int player_base, int player_original_base, int player_is_wounded, int can_make_run_of_honor, int has_made_run_on_third_base);` with comments referencing §41 Juoksu and §42 Kunniajuoksu. (commit: 1f2eb55)
-- [ ] In `src/game/rules_pure/rules_runs.c`, implement a **dummy** `calculate_runs` that always returns `0`.
+- [x] In `src/game/rules_pure/rules_runs.c`, implement a **dummy** `calculate_runs` that always returns `0`. (commit: 048cefa)
 - [ ] In `src/game/game_analysis.c`, within the `checkForRuns` function, replace the `if` blocks (where `runs += 1;` is set for `player_base == 4` and `player_base == 3`) with a call to the new dummy `calculate_runs` function. The `old_string` for this task will be substantial, matching the existing `if` block precisely, and the `new_string` will wrap this logic in the new function call.
 - [ ] Run `devenv shell make test` to ensure integration compiles with the dummy function.
 - [ ] In `tests/test_rules_runs.c`, add comprehensive unit tests for `calculate_runs`, covering conditions from the original `game_analysis.c` logic (e.g., `player_base == 4`, `player_base == 3 && original_base == 0 && can_make_run_of_honor == 1`, `is_wounded`).
