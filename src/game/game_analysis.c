@@ -6,6 +6,7 @@
 #include "game_analysis.h"
 #include "common_logic.h"
 #include "menu_types.h"
+#include "rules_outs.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -149,33 +150,29 @@ static void checkForOuts(StateInfo* stateInfo)
 						if(i > 0) baseIndex = i - 1;
 						else baseIndex = 3;
 
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == baseIndex) {
-							// no way to get checking this if isOnBase == 1, as if player's base is the previous base
-							// and he is on the base, he is safe. if he is not safe, he will automatically also
-							// not be on a base as he is running to enxt one.
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0) {
-								// cant make these normal outs if out of bounds or taking free walk
-								if(stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0 &&
-								        stateInfo->localGameInfo->gAI.outOfBounds == 0) {
-									// we set player's out flag so that his movement is easy to control
-									stateInfo->localGameInfo->playerInfo[index].bTPI.out = 1;
-									// send a message to screen
-									stateInfo->localGameInfo->gAI.gameInfoEvent = 1;
-									// add out
-									stateInfo->localGameInfo->gAI.outs += 1;
-									// remove player from the array
-									stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-									stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
-									// and walk him out.
-									movePlayerOut(stateInfo, index);
-									// if we was safe on previous base, now he is not anymore.
-									if(stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] == index) {
-										stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] = -1;
-									}
-									// if he was a batter, he is not anymore.
-									if(stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
-								}
+						if(is_runner_forced_out(
+						            stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						            stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase,
+						            i,
+						            stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk,
+						            stateInfo->localGameInfo->gAI.outOfBounds)) {
+							// we set player's out flag so that his movement is easy to control
+							stateInfo->localGameInfo->playerInfo[index].bTPI.out = 1;
+							// send a message to screen
+							stateInfo->localGameInfo->gAI.gameInfoEvent = 1;
+							// add out
+							stateInfo->localGameInfo->gAI.outs += 1;
+							// remove player from the array
+							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
+							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							// and walk him out.
+							movePlayerOut(stateInfo, index);
+							// if we was safe on previous base, now he is not anymore.
+							if(stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] == index) {
+								stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] = -1;
 							}
+							// if he was a batter, he is not anymore.
+							if(stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
 						}
 						// if the batter manages to get over second base he still has chance
 						// to make run even if ball has been to basecatchers with the exception of
