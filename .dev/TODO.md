@@ -33,4 +33,4 @@
 - [x] Run `devenv shell make test` to ensure integration compiles with the dummy function. (verified)
 - [x] In `tests/test_rules_strikes.c`, add comprehensive unit tests for `should_change_batter_on_strikes`, covering conditions (strikes == 3, safeOnBaseIndex[0] != -1). (commit: 039854f)
 - [x] In `src/game/rules_pure/rules_strikes.c`, implement the **actual logic** for `should_change_batter_on_strikes` by porting the conditions from `game_analysis.c`. (commit: fa81a8c)
-- [ ] Run `devenv shell make test` to verify all tests pass.
+- [x] Run `devenv shell make test` to verify all tests pass. (commit: 9745742)
