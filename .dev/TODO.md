@@ -19,6 +19,6 @@
 - [x] In `src/game/rules_pure/rules_runs.c`, implement a **dummy** `calculate_runs` that always returns `0`. (commit: 048cefa)
 - [x] In `src/game/game_analysis.c`, within the `checkForRuns` function, replace the `if` blocks (where `runs += 1;` is set for `player_base == 4` and `player_base == 3`) with a call to the new dummy `calculate_runs` function. The `old_string` for this task will be substantial, matching the existing `if` block precisely, and the `new_string` will wrap this logic in the new function call. (commit: 7a56f46)
 - [x] Run `devenv shell make test` to ensure integration compiles with the dummy function. (verified)
-- [ ] In `tests/test_rules_runs.c`, add comprehensive unit tests for `calculate_runs`, covering conditions from the original `game_analysis.c` logic (e.g., `player_base == 4`, `player_base == 3 && original_base == 0 && can_make_run_of_honor == 1`, `is_wounded`).
-- [ ] In `src/game/rules_pure/rules_runs.c`, implement the **actual logic** for `calculate_runs` by porting the conditions from `game_analysis.c`.
-- [ ] Run `devenv shell make test` to verify all tests pass.
+- [x] In tests/test_rules_runs.c, add comprehensive unit tests for calculate_runs, covering conditions from the original game_analysis.c logic (e.g., player_base == 4, player_base == 3 && original_base == 0 && can_make_run_of_honor == 1, is_wounded). (commit: 687ecfd)
+- [x] In src/game/rules_pure/rules_runs.c, implement the actual logic for calculate_runs by porting the conditions from game_analysis.c. (commit: 687ecfd)
+- [x] Run `devenv shell make test` to verify all tests pass. (verified)
