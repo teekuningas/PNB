@@ -24,7 +24,7 @@
 - [x] Run `devenv shell make test` to verify all tests pass. (verified)
 
 - [x] Create empty files: `src/game/rules_pure/rules_strikes.h`, `src/game/rules_pure/rules_strikes.c`, `tests/test_rules_strikes.h`, and `tests/test_rules_strikes.c`. (commit: 0054a05)
-- [ ] Update `Makefile`: Add `obj/game/rules_pure/rules_strikes.o` to `_OBJ` and `_TEST_OBJ` definitions.
+- [x] Update `Makefile`: Add `obj/game/rules_pure/rules_strikes.o` to `_OBJ` and `_TEST_OBJ` definitions. (commit: b72efd8)
 - [ ] Update `tests/test_runner.c`: Include `test_rules_strikes.h` and add a call to `run_rules_strikes_tests()`.
 - [ ] Run `devenv shell make test` to verify compilation of new empty files and test registration.
 - [ ] In `src/game/rules_pure/rules_strikes.h`, declare `int should_change_batter_on_strikes(int strikes, int safe_on_first_base_index);` with comments referencing §26 Syötön tuomitseminen.
