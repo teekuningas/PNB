@@ -36,11 +36,11 @@
     - [x] Map: Reference **§33 Pesäkilpa** in comments.
     - [x] Verify: Ensure `game_analysis.c` uses the new function and tests pass.
 
-- [ ] **Phase 2: Runs (Juoksu §41, Kunniajuoksu §42)**
-    - [ ] Setup: Create `src/game/rules_pure/rules_runs.h/c` and tests.
-    - [ ] Extract: Move scoring logic to `rules_runs.c`.
-    - [ ] Map: Reference **§41 Juoksu** and **§42 Kunniajuoksu**.
-    - [ ] Verify: Ensure integration and tests pass.
+- [x] **Phase 2: Runs (Juoksu §41, Kunniajuoksu §42)**
+    - [x] Setup: Create `src/game/rules_pure/rules_runs.h/c` and tests.
+    - [x] Extract: Move scoring logic to `rules_runs.c`.
+    - [x] Map: Reference **§41 Juoksu** and **§42 Kunniajuoksu**.
+    - [x] Verify: Ensure integration and tests pass.
 
 - [ ] **Phase 3: Strikes/Balls (Syöttö §26)**
     - [ ] Setup: Create `src/game/rules_pure/rules_strikes.h/c` and tests.
