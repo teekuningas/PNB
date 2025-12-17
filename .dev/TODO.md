@@ -13,7 +13,7 @@
 
 - [x] Create empty files: `src/game/rules_pure/rules_runs.h`, `src/game/rules_pure/rules_runs.c`, `tests/test_rules_runs.h`, and `tests/test_rules_runs.c`. (commit: 7f617b0)
 - [x] Update `Makefile`: Add `obj/game/rules_pure/rules_runs.o` to `_OBJ` and `_TEST_OBJ` definitions. (commit: 642ee9c)
-- [ ] Update `tests/test_runner.c`: Include `test_rules_runs.h` and add a call to `run_rules_runs_tests()`.
+- [x] Update `tests/test_runner.c`: Include `test_rules_runs.h` and add a call to `run_rules_runs_tests()`. (commit: 731e2da)
 - [ ] Run `devenv shell make test` to verify compilation of new empty files and test registration.
 - [ ] In `src/game/rules_pure/rules_runs.h`, declare `int calculate_runs(int player_base, int player_original_base, int player_is_wounded, int can_make_run_of_honor, int has_made_run_on_third_base);` with comments referencing §41 Juoksu and §42 Kunniajuoksu.
 - [ ] In `src/game/rules_pure/rules_runs.c`, implement a **dummy** `calculate_runs` that always returns `0`.
