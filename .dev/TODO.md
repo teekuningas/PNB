@@ -4,7 +4,7 @@
 - [x] Update tests/test_runner.c to include `test_rules_outs.h` and add a call to `run_rules_outs_tests()`. (commit: 1ccd669)
 - [x] Run `devenv shell make test` to verify compilation of new empty files and test registration. (verified)
 - [x] In `src/game/rules_pure/rules_outs.h`, declare `int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_target_base_index, int taking_free_walk, int is_out_of_bounds);` with a comment referencing §33 Pesäkilpa. (commit: cfc0412)
-- [ ] In `src/game/rules_pure/rules_outs.c`, implement a **dummy** `is_runner_forced_out` that always returns `0` (false).
+- [x] In src/game/rules_pure/rules_outs.c, implement a **dummy** is_runner_forced_out that always returns 0 (false). (commit: 1e2b756)
 - [ ] In `src/game/game_analysis.c`, within `checkForOuts`, replace the specific `if` block determining if a runner is out (where `bTPI.out` is set) with a call to the new dummy `is_runner_forced_out` function.
 - [ ] Run `devenv shell make test` to ensure integration compiles with the dummy function.
 - [ ] In `tests/test_rules_outs.c`, add comprehensive unit tests for `is_runner_forced_out` covering all conditions from the original logic.
