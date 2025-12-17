@@ -71,11 +71,15 @@ src/
 │   │
 │   ├── action_implementation.c/h  ⬇️ Shrinking coordinator
 │   ├── action_invocations.c/h     Input → action flag conversion
-│   ├── game_analysis.c/h          Rules & Events
+│   ├── game_analysis.c/h          ⬇️ Shrinking coordinator (Rules delegation)
 │   ├── game_manipulation.c/h      Physics integration
 │   ├── common_logic.c/h           Misc logic
 │   ├── player.c/h                 Legacy player logic
-│   └── ball.c/h                   Legacy ball logic
+│   ├── ball.c/h                   Legacy ball logic
+│   └── rules_pure/              ✅ Pure Logic (Testable)
+│       ├── rules_outs.c/h         Out determination (§33 Pesäkilpa)
+│       ├── rules_runs.c/h         Run calculation (§41 Juoksu, §42 Kunniajuoksu)
+│       └── rules_strikes.c/h      Strike/Ball logic (§26 Syötön tuomitseminen)
 │
 ├── menu/             [~2.7k lines] ✓ CLEAN
 │   └── [11 menu files] ...
@@ -100,6 +104,7 @@ src/
 **Progress**:
 - **Actions**: Split into `actions_messy` (coordinators) and `actions_pure` (math/physics).
 - **AI**: Split into `ai_messy` (state mutators) and `ai_pure` (decision strategies).
+- **Rules**: Split into `game_analysis.c` (coordinator) and `rules_pure` (pure rule evaluations).
 - **Physics**: Core ball physics extracted to `src/physics/`.
 - **Renderer**: Entity rendering moved to `src/renderer/`.
 
@@ -139,14 +144,14 @@ STILL DEPENDENCY HEAVY, BUT LAYERS EMERGING:
                            │
                 ┌──────────┴──────────┐
                 │                     │
-        ┌───────▼──────┐       ┌──────▼──────┐
-        │ actions_pure │       │   ai_pure   │
-        │ (NO STATE!)  │       │ (NO STATE!) │
-        └──────────────┘       └─────────────┘
+        ┌───────▼──────┐       ┌──────▼──────┐       ┌───────▼──────┐
+        │ actions_pure │       │   ai_pure   │       │  rules_pure  │
+        │ (NO STATE!)  │       │ (NO STATE!) │       │ (NO STATE!)  │
+        └──────────────┘       └─────────────┘       └──────────────┘
 
 Progress:
-- `actions_pure` and `ai_pure` do NOT depend on `globals.h` (StateInfo).
-- `actions_messy` depends on `actions_pure` and `globals.h`.
+- `actions_pure`, `ai_pure`, and `rules_pure` do NOT depend on `globals.h` (StateInfo).
+- `actions_messy`, `ai_messy`, and `game_analysis.c` depend on their respective pure modules and `globals.h`.
 - This creates a clean "Leaf Node" layer of pure logic.
 ```
 

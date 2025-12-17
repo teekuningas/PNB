@@ -42,13 +42,13 @@
     - [x] Map: Reference **§41 Juoksu** and **§42 Kunniajuoksu**.
     - [x] Verify: Ensure integration and tests pass.
 
-- [ ] **Phase 3: Strikes/Balls (Syöttö §26)**
-    - [ ] Setup: Create `src/game/rules_pure/rules_strikes.h/c` and tests.
-    - [ ] Extract: Move strike/ball logic to `rules_strikes.c`.
-    - [ ] Map: Reference **§26 Syötön tuomitseminen**.
-    - [ ] Verify: Ensure integration and tests pass.
+- [x] **Phase 3: Strikes/Balls (Syöttö §26)**
+    - [x] Setup: Create `src/game/rules_pure/rules_strikes.h/c` and tests.
+    - [x] Extract: Move strike/ball logic to `rules_strikes.c`.
+    - [x] Map: Reference **§26 Syötön tuomitseminen**.
+    - [x] Verify: Ensure integration and tests pass.
 
-- [ ] **Final Cleanup:** Remove legacy code comments and ensure all tests pass.
+- [x] **Final Cleanup:** Remove legacy code comments and ensure all tests pass.
 
 ## Milestone 7: Data Renaissance (Structure Shapes Logic)
 **Goal:** Shift from "Code modifying flags" to "Data defining state." We cannot build a clean system on top of ambiguous data.
