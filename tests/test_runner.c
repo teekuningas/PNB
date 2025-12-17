@@ -5,6 +5,7 @@
 #include "test_batting_ai_strategy.h"
 #include "test_catching_ai_strategy.h"
 #include "test_pitching_ai_strategy.h"
+#include "test_rules_outs.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -137,6 +138,9 @@ int main(int argc, char* argv[]) {
 
 	// Pitching AI Strategy tests
 	RUN_TEST(test_calculate_ai_pitch_targets);
+
+	// Rules Outs tests
+	run_rules_outs_tests();
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);
