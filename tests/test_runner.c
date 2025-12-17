@@ -7,6 +7,7 @@
 #include "test_pitching_ai_strategy.h"
 #include "test_rules_outs.h"
 #include "test_rules_runs.h"
+#include "test_rules_strikes.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -145,6 +146,9 @@ int main(int argc, char* argv[]) {
 
 	// Rules Runs tests
 	run_rules_runs_tests();
+
+	// Rules Strikes tests
+	run_rules_strikes_tests();
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);
