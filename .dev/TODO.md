@@ -1,5 +1,5 @@
-- [ ] Create directory `src/game/rules_pure/`.
-- [ ] Create empty files: `src/game/rules_pure/rules_outs.h`, `src/game/rules_pure/rules_outs.c`, `tests/test_rules_outs.h`, and `tests/test_rules_outs.c`.
+- [x] Create directory `src/game/rules_pure/`. (commit: b635970)
+- [x] Create empty files: `src/game/rules_pure/rules_outs.h`, `src/game/rules_pure/rules_outs.c`, `tests/test_rules_outs.h`, and `tests/test_rules_outs.c`. (commit: b635970)
 - [ ] Update `Makefile` to add `obj/game/rules_pure/rules_outs.o` to `_OBJ` and `_TEST_OBJ` definitions.
 - [ ] Update `tests/test_runner.c` to include `test_rules_outs.h` and add a call to `run_rules_outs_tests()`.
 - [ ] Run `devenv shell make test` to verify compilation of new empty files and test registration.
