@@ -8,6 +8,7 @@
 #include "menu_types.h"
 #include "rules_outs.h"
 #include "rules_runs.h"
+#include "rules_strikes.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -243,7 +244,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 static void strikesAndBalls(StateInfo* stateInfo)
 {
 	// so if there are three strikes
-	if(stateInfo->localGameInfo->gAI.strikes == 3) {
+	if(should_change_batter_on_strikes(stateInfo->localGameInfo->gAI.strikes, stateInfo->localGameInfo->pII.safeOnBaseIndex[0])) {
 		// we force running of batter
 		if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
 			runToNextBase(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[0], 0);
