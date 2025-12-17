@@ -7,6 +7,7 @@
 #include "common_logic.h"
 #include "menu_types.h"
 #include "rules_outs.h"
+#include "rules_runs.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -523,45 +524,42 @@ static void checkForRuns(StateInfo* stateInfo)
 					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
 					if(index != -1) {
 						int runMade = 0;
-						// so if player is at homebase
+						// Check if a run is scored using the pure function
+						int runScored = calculate_runs(
+						                    stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
+						                    stateInfo->localGameInfo->playerInfo[index].bTPI.wounded,
+						                    stateInfo->localGameInfo->gAI.canMakeRunOfHonor,
+						                    stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase);
+
+						// Handle side effects for home base arrival (removal from field)
+						// This happens regardless of whether a run is scored (e.g. if wounded)
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
 							// remove player from the field.
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
-							// if he isn't wounded
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.wounded == 0) {
-								// add a run
-								stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-								stateInfo->localGameInfo->gAI.runsInTheInning += 1;
-								runMade = 1;
-								if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
-									stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-									stateInfo->localGameInfo->gAI.noMorePlayers = 0;
-								}
-								// set info to screen
-								stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+						}
+
+						if(runScored) {
+							// Specific update for Run of Honor
+							if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
+								stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 1;
 							}
 
-						}
-						// if the player arrives third base and has been batter with this same pitch.
-						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3 &&
-						        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 0 &&
-						        stateInfo->localGameInfo->gAI.canMakeRunOfHonor == 1) {
-							// cant have run if wounded
-							// nor if he has made a run before. otherwise could happen that
-							// he arrives third base and makes run and the runner previously on third base run
-							// home and then we will get two runs for a total of 3.
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.wounded == 0 &&
-							        stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase == 0) {
-								stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 1;
-								stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-								stateInfo->localGameInfo->gAI.runsInTheInning += 1;
-								runMade = 1;
-								if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
-									stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+							// Common run updates
+							stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
+							stateInfo->localGameInfo->gAI.runsInTheInning += 1;
+							runMade = 1;
+							stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+
+							if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
+								stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+								// Only reset noMorePlayers for normal runs (home base arrival)
+								// If it was a home run, base is now -1 due to removal above.
+								if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == -1) {
+									stateInfo->localGameInfo->gAI.noMorePlayers = 0;
 								}
-								stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
 							}
 						}
 						// if run was made and and this was last half-inning of the period and batting team
