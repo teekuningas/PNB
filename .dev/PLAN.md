@@ -30,11 +30,11 @@
 
 **Safety Protocol:** "One Slice at a Time." Do not attempt to refactor the entire file at once. Extract one rule type, integrate it, verify it works, and then move to the next.
 
-- [ ] **Phase 1: Outs (Pesäkilpa §33)**
-    - [ ] Setup: Create `src/game/rules_pure/rules_outs.h/c` and tests.
-    - [ ] Extract: Move "Out" detection logic to `rules_outs.c`.
-    - [ ] Map: Reference **§33 Pesäkilpa** in comments.
-    - [ ] Verify: Ensure `game_analysis.c` uses the new function and tests pass.
+- [x] **Phase 1: Outs (Pesäkilpa §33)**
+    - [x] Setup: Create `src/game/rules_pure/rules_outs.h/c` and tests.
+    - [x] Extract: Move "Out" detection logic to `rules_outs.c`.
+    - [x] Map: Reference **§33 Pesäkilpa** in comments.
+    - [x] Verify: Ensure `game_analysis.c` uses the new function and tests pass.
 
 - [ ] **Phase 2: Runs (Juoksu §41, Kunniajuoksu §42)**
     - [ ] Setup: Create `src/game/rules_pure/rules_runs.h/c` and tests.
@@ -50,11 +50,16 @@
 
 - [ ] **Final Cleanup:** Remove legacy code comments and ensure all tests pass.
 
-## Testing Strategy
-- **Pure Functions (High Priority):** Every time logic is extracted to a `_pure` module (Milestone 5+), it **must** be accompanied by unit tests. These functions take simple inputs and return outputs, making them ideal for testing.
-- **Integration Tests (Medium Priority):** As the "messy" layers become thinner coordinators, we will write tests that initialize a minimal `StateInfo`, call the coordinator, and check specific state changes.
-- **Regression via Serialization (Long Term):** The State Serialization tool (Future Improvements) will allow us to snapshot a game state and run logic against it to verify fixes.
+## Milestone 7: Data Renaissance (Structure Shapes Logic)
+**Goal:** Shift from "Code modifying flags" to "Data defining state." We cannot build a clean system on top of ambiguous data.
+- [ ] **Enums over Magic Numbers:** Replace raw integers (e.g., `period >= 4`, `base == 4`) with semantic Enums (e.g., `GameMode::HOMERUN_CONTEST`, `Base::HOME`).
+- [ ] **Explicit State Machines:** Replace dependent boolean flags (e.g., `isOnBase=1` && `out=0`) with single source-of-truth Enums (e.g., `PlayerState { RUNNING, SAFE, OUT }`).
+- [ ] **Componentization:** Begin breaking the `StateInfo` God-object into distinct, cohesive structs (`PhysicsState`, `RulesState`, `ScoreState`).
+- [ ] **Strict Data Contracts:** Ensure pure functions define their own explicit input structs (e.g., `BattingContext`) rather than accepting generic chunks of state.
 
-## Future Improvements & Tooling
+## Milestone 8: Functional Dataflow & Tooling
+**Goal:** The "Big Flip." Refactor the main game loop to follow a functional dataflow pattern, utilizing the clean data structures from Milestone 7.
 - [ ] **State Serialization (Save/Debug Dump)**: Implement a system to serialize `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) to a file. This will aid in debugging bugs like the "double occupancy" issue by allowing exact state reproduction.
 - [ ] **Game Loop Functional Dataflow**: Refactor the main game loop (`gameManipulation`, `actionImplementation`) to follow the Menu's "Functional Dataflow" pattern. Break `LocalGameInfo` into distinct sub-states (Physics, Rules, AI) and pass only the relevant data explicitly to update functions, removing the reliance on the global `StateInfo` god-object.
+
+## Testing Strategy
