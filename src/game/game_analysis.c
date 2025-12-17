@@ -155,7 +155,7 @@ static void checkForOuts(StateInfo* stateInfo)
 						if(is_runner_forced_out(
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.base,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase,
-						            i,
+						            baseIndex,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk,
 						            stateInfo->localGameInfo->gAI.outOfBounds)) {
 							// we set player's out flag so that his movement is easy to control
