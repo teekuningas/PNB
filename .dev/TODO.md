@@ -1,7 +1,7 @@
 - [x] Create directory `src/game/rules_pure/`. (commit: b635970)
 - [x] Create empty files: `src/game/rules_pure/rules_outs.h`, `src/game/rules_pure/rules_outs.c`, `tests/test_rules_outs.h`, and `tests/test_rules_outs.c`. (commit: b635970)
 - [x] Update `Makefile` to add `obj/game/rules_pure/rules_outs.o` to `_OBJ` and `_TEST_OBJ` definitions. (commit: d6044d6)
-- [ ] Update `tests/test_runner.c` to include `test_rules_outs.h` and add a call to `run_rules_outs_tests()`.
+- [x] Update tests/test_runner.c to include `test_rules_outs.h` and add a call to `run_rules_outs_tests()`. (commit: 1ccd669)
 - [ ] Run `devenv shell make test` to verify compilation of new empty files and test registration.
 - [ ] In `src/game/rules_pure/rules_outs.h`, declare `int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_target_base_index, int taking_free_walk, int is_out_of_bounds);` with a comment referencing §33 Pesäkilpa.
 - [ ] In `src/game/rules_pure/rules_outs.c`, implement a **dummy** `is_runner_forced_out` that always returns `0` (false).
