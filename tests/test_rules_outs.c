@@ -44,6 +44,15 @@ int test_out_of_bounds_protection() {
     return TEST_PASSED;
 }
 
+int test_regression_runner_from_base_zero() {
+    // Regression test: Runner at base 0, running to base 1, ball at base 1 -> OUT
+    // Previously failed due to incorrect parameter passing (used loop index i instead of baseIndex)
+    // When ball is at base 1 (i=1), we check with baseIndex=0 (i-1)
+    int result = is_runner_forced_out(0, 0, 0, 0, 0);
+    ASSERT_EQ(1, result, "Runner from base 0 running to base 1 should be out if ball is at base 1");
+    return TEST_PASSED;
+}
+
 void run_rules_outs_tests() {
     RUN_TEST(test_forced_out_at_first_base);
     RUN_TEST(test_safe_on_first_base);
@@ -51,4 +60,5 @@ void run_rules_outs_tests() {
     RUN_TEST(test_forced_out_at_second_base);
     RUN_TEST(test_free_walk_protection);
     RUN_TEST(test_out_of_bounds_protection);
+    RUN_TEST(test_regression_runner_from_base_zero);
 }

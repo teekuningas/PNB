@@ -28,9 +28,9 @@ int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_a
 	}
 
 	// Force out condition:
-	// The runner is advancing to a base (player_base) and the ball is controlled at that base
-	// (ball_at_base_index). Since the runner is not yet on the base (checked above),
-	// they lose the "base race" (pesäkilpa).
+	// The third parameter (ball_at_base_index) represents the player's FROM base.
+	// We check if the player's current base matches the expected FROM base.
+	// Context: When ball is caught at base i, we check if player at base i-1 gets out.
 	if (player_base == ball_at_base_index) {
 		return 1;
 	}
