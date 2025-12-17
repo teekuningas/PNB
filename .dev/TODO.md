@@ -30,7 +30,7 @@
 - [x] In `src/game/rules_pure/rules_strikes.h`, declare `int should_change_batter_on_strikes(int strikes, int safe_on_first_base_index);` with comments referencing §26 Syötön tuomitseminen. (commit: f8d4a69)
 - [x] In `src/game/rules_pure/rules_strikes.c`, implement a **dummy** `should_change_batter_on_strikes` that always returns `0`. (commit: 7ae927a)
 - [x] In `src/game/game_analysis.c`, within the `strikesAndBalls` function, replace the `if (stateInfo->localGameInfo->gAI.strikes == 3)` block with a call to the new dummy `should_change_batter_on_strikes` function. (commit: 68a9915)
-- [ ] Run `devenv shell make test` to ensure integration compiles with the dummy function.
+- [x] Run `devenv shell make test` to ensure integration compiles with the dummy function. (verified)
 - [ ] In `tests/test_rules_strikes.c`, add comprehensive unit tests for `should_change_batter_on_strikes`, covering conditions (strikes == 3, safeOnBaseIndex[0] != -1).
 - [ ] In `src/game/rules_pure/rules_strikes.c`, implement the **actual logic** for `should_change_batter_on_strikes` by porting the conditions from `game_analysis.c`.
 - [ ] Run `devenv shell make test` to verify all tests pass.
