@@ -57,6 +57,16 @@
 - ⚠️ Technical debt identified (non-blocking): Magic numbers (`period >= 4`), complex boolean logic in coordinators
 - 🎯 **Foundation Rating: 8.5/10 - READY FOR MILESTONE 7**
 
+**Critical Bug Found (2025-12-17 - Post-Audit Manual Testing):**
+- ❌ **BUG**: `is_runner_forced_out()` receiving wrong parameter (`i` instead of `baseIndex`)
+- **Impact**: Outs not being called when ball reaches base before runner
+- **Root Cause**: Misunderstanding of `player.base` semantics during extraction
+  - `player.base` = "where player IS or running FROM" (NOT running TO)
+  - Original: compared `player.base == baseIndex` (i-1)
+  - Broken: compared `player.base == i` (ball location)
+- **Audit Status**: rules_runs ✓ CORRECT, rules_strikes ✓ CORRECT, rules_outs ✗ BROKEN
+- **See**: `docs/MILESTONE6_RULES_AUDIT.md` for full analysis
+
 ## Milestone 7: Data Renaissance (Structure Shapes Logic)
 **Goal:** Shift from "Code modifying flags" to "Data defining state." We cannot build a clean system on top of ambiguous data.
 - [ ] **Enums over Magic Numbers:** Replace raw integers (e.g., `period >= 4`, `base == 4`) with semantic Enums (e.g., `GameMode::HOMERUN_CONTEST`, `Base::HOME`).
