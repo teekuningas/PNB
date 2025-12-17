@@ -22,3 +22,15 @@
 - [x] In tests/test_rules_runs.c, add comprehensive unit tests for calculate_runs, covering conditions from the original game_analysis.c logic (e.g., player_base == 4, player_base == 3 && original_base == 0 && can_make_run_of_honor == 1, is_wounded). (commit: 687ecfd)
 - [x] In src/game/rules_pure/rules_runs.c, implement the actual logic for calculate_runs by porting the conditions from game_analysis.c. (commit: 687ecfd)
 - [x] Run `devenv shell make test` to verify all tests pass. (verified)
+
+- [x] Create empty files: `src/game/rules_pure/rules_strikes.h`, `src/game/rules_pure/rules_strikes.c`, `tests/test_rules_strikes.h`, and `tests/test_rules_strikes.c`. (commit: 0054a05)
+- [ ] Update `Makefile`: Add `obj/game/rules_pure/rules_strikes.o` to `_OBJ` and `_TEST_OBJ` definitions.
+- [ ] Update `tests/test_runner.c`: Include `test_rules_strikes.h` and add a call to `run_rules_strikes_tests()`.
+- [ ] Run `devenv shell make test` to verify compilation of new empty files and test registration.
+- [ ] In `src/game/rules_pure/rules_strikes.h`, declare `int should_change_batter_on_strikes(int strikes, int safe_on_first_base_index);` with comments referencing §26 Syötön tuomitseminen.
+- [ ] In `src/game/rules_pure/rules_strikes.c`, implement a **dummy** `should_change_batter_on_strikes` that always returns `0`.
+- [ ] In `src/game/game_analysis.c`, within the `strikesAndBalls` function, replace the `if (stateInfo->localGameInfo->gAI.strikes == 3)` block with a call to the new dummy `should_change_batter_on_strikes` function.
+- [ ] Run `devenv shell make test` to ensure integration compiles with the dummy function.
+- [ ] In `tests/test_rules_strikes.c`, add comprehensive unit tests for `should_change_batter_on_strikes`, covering conditions (strikes == 3, safeOnBaseIndex[0] != -1).
+- [ ] In `src/game/rules_pure/rules_strikes.c`, implement the **actual logic** for `should_change_batter_on_strikes` by porting the conditions from `game_analysis.c`.
+- [ ] Run `devenv shell make test` to verify all tests pass.
