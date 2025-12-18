@@ -1,5 +1,4 @@
-- [x] Fix bug in `src/game/game_analysis.c` line 158: Change third parameter from `i` to `baseIndex` in `is_runner_forced_out()` call. (commit: 0e0327f)
-- [x] Update `src/game/rules_pure/rules_outs.h`: Rename parameter `ball_at_target_base_index` to `ball_at_base_index` and update comment to clarify it's the base player is running FROM (i.e., baseIndex = i-1). (commit: ce62aaf)
-- [x] Update `src/game/rules_pure/rules_outs.c`: Update parameter name and add comment explaining the baseIndex semantics (player.base represents current/from base, not target). (commit: 0187558)
-- [x] Add regression test in `tests/test_rules_outs.c` for the bug scenario: runner at base 0, running to base 1, ball at base 1 → should return OUT. (commit: e7962fe)
-- [x] Run `devenv shell make test` to verify all tests pass after fixes. (commit: 08e1d5b)
+# TODO - Current Tasks
+
+(No active tasks. Awaiting Architect's next planning session for Milestone 7.)
+

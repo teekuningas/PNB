@@ -318,16 +318,42 @@ src/
 3. Clear use case for decoupling (e.g., adding multiplayer)
 
 **What it involves**:
-- Breaking up messy_action_system into event-driven actions
-- Making rules engine truly pure (events in → events out)
+- Breaking up messy_action_system into cleaner subsystems
+- Making rules engine truly pure (pure functions only)
 - Eliminating static variables in AI
-- Full entity-component system for players
+- Cleaner state management (not entity-component, just cleaner)
 
 **Duration**: 3-4 months
 **Risk**: High (touching complex logic)
 **Benefit**: Perfect architecture
 
 **But honestly**: Phase A might be enough! Don't let perfect be enemy of good!
+
+---
+
+## Current Status (Updated 2025-12-18)
+
+### ✅ Completed (Milestones 1-6)
+- Pure utilities extracted to `src/core/` (vector_math, geometry, field_layout)
+- Ball physics isolated in `src/physics/`
+- Entity rendering decoupled in `src/renderer/`
+- Actions split: `actions_messy/` (coordinators) + `actions_pure/` (testable)
+- AI split: `ai_messy/` (coordinators) + `ai_pure/` (testable)
+- Rules extracted: `rules_pure/` (testable)
+- **48 unit tests passing**
+- **Foundation quality: 8.5/10 - Production Ready**
+
+### 🎯 In Progress (Milestone 7 - Data Renaissance)
+- Data-first approach: redesign structures BEFORE adding enums
+- Multi-layer testing for safe migration
+- Integration tests for behavior validation
+- Adapter pattern for safe migration
+
+### 📋 Planned (Milestone 8+)
+- Functional dataflow refactor (synchronous, NOT event-driven)
+- Overlay/HUD rendering extraction
+- Animation state machine extraction
+- Optional: Coordinator renames
 
 ---
 

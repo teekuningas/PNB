@@ -194,3 +194,61 @@ Rules: Dependencies only flow downward!
 - rules engine never mutates state
 - No circular dependencies
 ```
+
+---
+
+## The Game Loop: Functional Dataflow (NOT Event-Driven!)
+
+**CRITICAL:** We do NOT want event buses, message queues, or async patterns!
+
+### What We Want: Synchronous Function Call Pipeline
+
+```
+main.c (The Orchestrator)
+  │
+  ├─> InputState input = poll_input()
+  │       └─> Read keyboard/controller state
+  │
+  ├─> StateInfo new_state = update_game(current_state, input)
+  │       │
+  │       ├─> update_physics(state, input)
+  │       │     └─> Ball trajectories, collisions (pure math)
+  │       │
+  │       ├─> update_movement(state, input)
+  │       │     └─> Player positions, animations
+  │       │
+  │       ├─> update_rules(state)
+  │       │     └─> Check outs, runs, strikes (pure logic)
+  │       │
+  │       ├─> update_ai(state)
+  │       │     └─> AI decisions (pure strategy)
+  │       │
+  │       └─> return modified_state
+  │
+  ├─> render_game(new_state)
+  │       ├─> render_3d_world(new_state)
+  │       └─> render_overlay(new_state)
+  │
+  └─> current_state = new_state
+  │
+  └─> Loop repeats (60 FPS)
+```
+
+### Key Principles
+
+✅ **Explicit function calls** - main → coordinators → subsystems → pure  
+✅ **Synchronous execution** - Easy to debug, single call stack  
+✅ **Data flows in/out** - Like breathing (in: state+input, out: new state)  
+✅ **Top-down control** - No sideways messaging between subsystems  
+✅ **Pure functions dominate** - 80% of code is pure, 20% is coordination  
+
+### What We DON'T Want
+
+❌ **Event bus** - No message queue, no pub/sub  
+❌ **Observer pattern** - No listeners, no callbacks  
+❌ **Async messaging** - No "fire and forget" events  
+❌ **Sideways coupling** - Subsystems don't talk to each other  
+
+**Why:** Simplicity, debuggability, and understandability trump architectural flexibility.
+
+---

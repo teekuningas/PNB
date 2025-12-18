@@ -1,70 +1,85 @@
 # Data Renaissance Audit (Milestone 7)
 
-## Objective:
-To identify ambiguous flags and magic numbers within `StateInfo` (specifically `LocalGameInfo` and `GlobalGameInfo`) and propose replacements with clear enums and more specific data structures.
+## ⚠️ IMPORTANT: Data-First Approach
 
-## Initial Audit Observations & Proposals:
+**Updated 2025-12-18:** This document proposes enums, but Milestone 7 now follows a **data-first approach**:
 
-### 1. Game Periods (`stateInfo->globalGameInfo->period`)
-- **Current Usage:** Integers (e.g., `period >= 4` for homerun contest).
-- **Problem:** "Magic number" `4` is unclear without context. `period` is also overloaded (regular innings, super innings, homerun contest).
-- **Proposal:** Introduce an enum `GameMode` or `GamePeriodType`.
+1. **Phase 0:** Audit current data mess, design CLEAN model (without enums yet)
+2. **Phase 1:** Add integration tests (behavior validation)
+3. **Phase 2:** Migrate data structures using adapter pattern
+4. **Phase 3:** Add enums to the CLEAN model (proposals below)
+
+**See `.dev/PLAN.md` for full Milestone 7 strategy.**
+
+---
+
+## Objective
+
+Identify ambiguous flags and magic numbers within `StateInfo` and propose cleaner data structures with semantic enums.
+
+## Enum Proposals (To Apply After Data Migration)
+
+### 1. Game Periods → `GamePeriodType` enum
+- **Current:** `period >= 4` magic number (5 occurrences)
+- **Problem:** Unclear meaning, overloaded semantics
+- **Proposal:**
     ```c
     typedef enum {
-        NORMAL_PERIOD_1 = 0,
-        NORMAL_PERIOD_2,
-        SUPER_INNING,
-        HOMERUN_CONTEST,
-        // ... others as needed
+        PERIOD_NORMAL_1 = 0,
+        PERIOD_NORMAL_2 = 1,
+        PERIOD_SUPER_INNING = 2,
+        PERIOD_EXTRA_INNING = 3,
+        PERIOD_HOMERUN_CONTEST = 4
     } GamePeriodType;
-    
-    // Usage:
-    // stateInfo->globalGameInfo->periodType = HOMERUN_CONTEST;
-    // if (stateInfo->globalGameInfo->periodType == HOMERUN_CONTEST) { ... }
     ```
+- **Note:** Can add immediately (simple magic number replacement)
 
-### 2. Player Base (`playerInfo[index].bTPI.base`)
-- **Current Usage:** Integers (e.g., `base == 0` for home, `base == 1` for first, `base == 4` for home after run).
-- **Problem:** `0` for home base as start, but `4` for home base as arrival. Inconsistent and prone to errors. Magic numbers.
-- **Proposal:** Introduce an enum `BasePosition`.
+---
+
+### 2. Player Base → `BasePosition` enum
+- **Current:** `base` integers (0=home start, 4=home after run)
+- **Problem:** Semantic confusion (0 means two different things!)
+- **Discovery:** From Milestone 6 audit - `player.base` = "where player IS or running FROM"
+- **Proposal:**
     ```c
     typedef enum {
-        HOME_BASE = 0,
-        FIRST_BASE = 1,
-        SECOND_BASE = 2,
-        THIRD_BASE = 3,
-        HOME_PLATE_AFTER_RUN = 4, // distinct from HOME_BASE_START
-        // ... potentially others like NOT_ON_BASE = -1
+        BASE_HOME = 0,
+        BASE_FIRST = 1,
+        BASE_SECOND = 2,
+        BASE_THIRD = 3,
+        BASE_HOME_SCORED = 4,  // Distinct from BASE_HOME
+        BASE_NONE = -1
     } BasePosition;
-    
-    // Usage:
-    // if (playerInfo[index].bTPI.base == HOME_BASE) { ... }
-    // if (playerInfo[index].bTPI.base == HOME_PLATE_AFTER_RUN) { ... }
     ```
+- **Note:** Requires data migration (clarify semantics first)
 
-### 3. Player State Flags (`playerInfo[index].bTPI.isOnBase`, `playerInfo[index].bTPI.out`, `playerInfo[index].bTPI.wounded`, `playerInfo[index].bTPI.takingFreeWalk`)
-- **Current Usage:** Multiple boolean flags that are often dependent or mutually exclusive.
-- **Problem:** Leads to complex `if` conditions (e.g., `isOnBase == 0 && out == 0 && takingFreeWalk == 0`). A single source of truth is better.
-- **Proposal:** Introduce an enum `PlayerRunnerState`.
+---
+
+### 3. Player State Flags → `PlayerState` enum
+- **Current:** Multiple boolean flags (`isOnBase`, `out`, `wounded`, `takingFreeWalk`)
+- **Problem:** Flag soup, complex conditions: `isOnBase=0 && out=0 && takingFreeWalk=0`
+- **Discovery:** These represent a SINGLE state machine, not independent flags
+- **Proposal:**
     ```c
     typedef enum {
+        PLAYER_STATE_BATTING,
         PLAYER_STATE_RUNNING,
         PLAYER_STATE_SAFE_ON_BASE,
+        PLAYER_STATE_LEADING,
+        PLAYER_STATE_TAKING_FREE_WALK,
         PLAYER_STATE_OUT,
         PLAYER_STATE_WOUNDED,
-        PLAYER_STATE_TAKING_FREE_WALK,
-        // ... other states like BATTING, PITCHING
-    } PlayerRunnerState;
-    
-    // Usage:
-    // playerInfo[index].bTPI.runnerState = PLAYER_STATE_OUT;
-    // if (playerInfo[index].bTPI.runnerState == PLAYER_STATE_SAFE_ON_BASE) { ... }
+        PLAYER_STATE_SCORED
+    } PlayerState;
     ```
+- **Note:** Requires data migration (map all flag combinations first)
 
-### 4. Game Info Events (`stateInfo->localGameInfo->gAI.gameInfoEvent`)
-- **Current Usage:** Integers (e.g., `gameInfoEvent = 1` for out, `gameInfoEvent = 3` for run).
-- **Problem:** Magic numbers for display events.
-- **Proposal:** Introduce an enum `GameEventDisplayType`.
+---
+
+### 4. Game Info Events → `GameEventType` enum
+- **Current:** `gameInfoEvent = 1/2/3/4...` magic numbers
+- **Problem:** Undocumented event codes
+- **Proposal:**
     ```c
     typedef enum {
         EVENT_NONE = 0,
@@ -75,13 +90,18 @@ To identify ambiguous flags and magic numbers within `StateInfo` (specifically `
         EVENT_STRIKE = 5,
         EVENT_BALL = 6,
         EVENT_END_OF_INNING = 7,
-        EVENT_NEXT_PAIR = 8,
-    } GameEventDisplayType;
+        EVENT_NEXT_PAIR = 8
+    } GameEventType;
     ```
+- **Note:** Can add immediately (simple magic number replacement)
 
-## Next Steps:
-This document serves as the preliminary audit for Milestone 7. The next session will involve: 
-1. Integrating these enums into `globals.h` (or appropriate new header).
-2. Systematically replacing magic numbers and flag combinations in core logic files. 
-3. Updating affected pure functions and their tests to use the new enums. 
-4. Extending this audit to other parts of `StateInfo` as needed.
+---
+
+## Phase 0 Tasks (Before Enums)
+
+1. **Map flag combinations** - Document all uses of player state flags
+2. **Draw state diagrams** - Visualize player state machine
+3. **Design clean model** - Propose simpler structure
+4. **Plan migration** - Adapter pattern strategy
+
+**See `.dev/PLAN.md` Milestone 7 for detailed migration strategy.**
