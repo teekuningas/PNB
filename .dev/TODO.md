@@ -1,8 +1,11 @@
 # TODO - Current Tasks
 
 - [x] Create directory tests/integration/ (commit: 8cc7fcf)
-- [ ] Create `tests/integration/integration_runner.c` (copy of test_runner.c adapted for integration tests)
-- [ ] Create `tests/integration/fixtures.c` and `.h` to help setup specific `StateInfo` scenarios (e.g. `setup_runner_at_first_base`)
+- [x] Create `tests/integration/integration_runner.c` (copy of test_runner.c adapted for integration tests) (commit: 0d430a0)
+- [ ] Create `tests/integration/fixtures.c` and `.h`:
+    - Implement `setup_test_state()` to allocate `StateInfo` + sub-structs
+    - Mock `TeamData` (dummy players) and `FieldPositions` (standard coordinates)
+    - Provide helpers like `setup_runner_at_first_base` using `initializeGameFromMenu`
 - [ ] Create `tests/integration/test_scenario_outs.c` to test "Runner Forced Out" behavior using current flags
 - [ ] Create `tests/integration/test_scenario_runs.c` to test "Run Scored" behavior
 - [ ] Create `tests/integration/test_scenario_wounded.c` to test "Wounded" behavior
