@@ -2,6 +2,7 @@
  * this module tries to tackle rule-related things.
  */
 
+#include <stdio.h>
 #include "globals.h"
 #include "game_analysis.h"
 #include "common_logic.h"

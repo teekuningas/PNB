@@ -11,7 +11,7 @@
 
 int initPlayer(StateInfo* stateInfo) {
 #ifndef NO_RENDER
-    if(initPlayerRenderer(stateInfo) != 0) return -1;
+    if(initPlayerRenderer() != 0) return -1;
 #endif
     return 0;
 }

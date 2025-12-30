@@ -27,6 +27,51 @@ typedef enum {
 	SCREEN_GAME
 } ScreenState;
 
+// NEW ENUMS FOR MILESTONE 7 (DATA RENAISSANCE)
+// --------------------------------------------
+
+typedef enum {
+	PLAYER_STATE_IDLE = 0,
+	PLAYER_STATE_AT_BAT,
+	PLAYER_STATE_SAFE_ON_BASE,      // Replaces isOnBase=1
+	PLAYER_STATE_RUNNING,           // Replaces isOnBase=0, out=0, wounded=0
+	PLAYER_STATE_ADVANCING_FREELY,  // Replaces takingFreeWalk=1
+	PLAYER_STATE_LEADING,           // Replaces leading=1
+	PLAYER_STATE_OUT,               // Replaces out=1
+	PLAYER_STATE_WOUNDED,           // Replaces wounded=1
+	PLAYER_STATE_SCORED             // Explicit state for having scored
+} PlayerUnitState;
+
+typedef enum {
+	BASE_HOME = 0,
+	BASE_FIRST = 1,
+	BASE_SECOND = 2,
+	BASE_THIRD = 3,
+	BASE_HOME_SCORED = 4, // Explicitly distinct from starting at home
+	BASE_NONE = -1
+} BaseID;
+
+typedef enum {
+	EVENT_NONE = 0,
+	EVENT_OUT = 1,
+	EVENT_WOUNDED = 2,
+	EVENT_RUN_SCORED = 3,
+	EVENT_OUT_OF_BOUNDS = 4,
+	EVENT_STRIKE = 5,
+	EVENT_BALL = 6,
+	EVENT_INNING_ENDING = 7,
+	EVENT_NEXT_PAIR = 8,
+	EVENT_TWO_RUNS_SCORED = 9
+} GameEventType;
+
+typedef enum {
+	GAME_MODE_NORMAL = 0,
+	GAME_MODE_SUPER_INNING = 1,    // Potential mapping for period 2/3 if distinct
+	GAME_MODE_HOMERUN_CONTEST = 2  // Replaces period >= 4
+} GamePeriodMode;
+
+// --------------------------------------------
+
 // a lot of constants
 #define LIGHT_SOURCE_POSITION_X 30.0f
 #define LIGHT_SOURCE_POSITION_Y 50.0f
@@ -225,6 +270,10 @@ typedef struct _BattingTeamPlayerInfo {
 	int isOnBase; // is the player at a base right now
 	int leading; // is player leading
 	int hasMadeRunOnThirdBase; // cant make a run always when checkForRun flag is set.
+
+	// NEW FIELDS FOR MILESTONE 7 (DATA RENAISSANCE)
+	PlayerUnitState state;
+	BaseID baseId;
 } BattingTeamPlayerInfo;
 
 typedef struct _CommonPlayerInfo {

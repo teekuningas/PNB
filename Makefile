@@ -4,45 +4,43 @@ CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
 ODIR=obj
 
-_OBJ = core/main.o core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/geometry.o core/field_layout.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
-_OBJ += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/action_state.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o
-_OBJ += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
-_OBJ += cup/cup.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+# Object list shared by all builds
+_OBJ_COMMON = core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/geometry.o core/field_layout.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
+_OBJ_COMMON += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/action_state.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o
+_OBJ_COMMON += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
+_OBJ_COMMON += cup/cup.o
 
-# Integration test objects (LOGIC ONLY)
-_INT_TEST_LOGIC_OBJ = core/fixtures.o core/rng.o core/vector_math.o core/fill_player_data.o core/geometry.o core/field_layout.o cup/cup.o game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/action_state.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o physics/ball_physics.o physics/collision.o tests/integration/fixtures.o tests/integration/test_scenario_outs.o tests/integration/test_scenario_runs.o tests/integration/test_scenario_wounded.o
-INT_TEST_LOGIC_OBJ = $(patsubst %,$(ODIR)/%,$(_INT_TEST_LOGIC_OBJ))
+# Build-specific object paths
+OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
+OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/test_scenario_outs.o tests/integration/test_scenario_runs.o tests/integration/test_scenario_wounded.o)
 
-# Main App objects
-_OBJ = core/main.o core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/geometry.o core/field_layout.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
-_OBJ += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/action_state.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o
-_OBJ += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
-_OBJ += cup/cup.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-# Test objects (subset without OpenGL dependencies)
+# Unit test objects (No OpenGL)
 _TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o tests/test_cup_logic.o tests/test_batting_physics.o tests/test_pitching_physics.o tests/test_batting_ai_strategy.o tests/test_catching_ai_strategy.o tests/test_pitching_ai_strategy.o tests/test_rules_outs.o tests/test_rules_runs.o tests/test_rules_strikes.o
-TEST_OBJ = $(patsubst %,$(ODIR)/%,$(_TEST_OBJ))
+TEST_OBJ = $(patsubst %,$(ODIR)/unit/%,$(_TEST_OBJ))
 
-# Integration test objects
-_INT_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o core/fill_player_data.o core/geometry.o core/field_layout.o core/render.o core/font.o core/resource_manager.o core/loadobj.o cup/cup.o game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_analysis.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/action_state.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o tests/integration/fixtures.o tests/integration/test_scenario_outs.o tests/integration/test_scenario_runs.o tests/integration/test_scenario_wounded.o
-INT_TEST_OBJ = $(patsubst %,$(ODIR)/%,$(_INT_TEST_OBJ))
+# Generic rules for each build type
+$(ODIR)/main/%.o: src/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-obj/%.o: src/%.c
-	mkdir -p $(@D)
-	$(CC) -c -o $@ $^ $(CFLAGS)
+$(ODIR)/int/%.o: src/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
 
-obj/tests/%.o: tests/%.c
-	mkdir -p $(@D)
-	$(CC) -c -o $@ $^ $(CFLAGS)
+$(ODIR)/int/tests/integration/%.o: tests/integration/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
 
-obj/tests/integration/%.o: tests/integration/%.c
-	mkdir -p $(@D)
-	$(CC) -c -o $@ $^ $(CFLAGS)
+$(ODIR)/unit/%.o: src/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(ODIR)/unit/tests/%.o: tests/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 .PHONY: main
-main: $(OBJ)
+main: $(OBJ_MAIN)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
 .PHONY: watch_task_agent
@@ -60,12 +58,9 @@ test: $(TEST_OBJ) tests/test_runner.c
 	$(CC) tests/test_runner.c $(TEST_OBJ) -o test_runner $(CFLAGS) -lm -lmxml
 	./test_runner
 
-$(INT_TEST_LOGIC_OBJ): CFLAGS += -DNO_RENDER
-
 .PHONY: integration_runner
-integration_runner: CFLAGS += -DNO_RENDER
-integration_runner: $(INT_TEST_LOGIC_OBJ) tests/integration/integration_runner.c
-	$(CC) tests/integration/integration_runner.c $(INT_TEST_LOGIC_OBJ) -o integration_runner $(CFLAGS) -lm -lmxml
+integration_runner: $(OBJ_INT) tests/integration/integration_runner.c
+	$(CC) tests/integration/integration_runner.c $(OBJ_INT) -o integration_runner $(CFLAGS) $(LFLAGS)
 
 .PHONY: integration_test
 integration_test: integration_runner
@@ -90,7 +85,7 @@ run-cup-final-super-inning:
 .PHONY: clean
 clean:
 	rm -rf $(ODIR)
-	rm -f *~ core test_runner
+	rm -f *~ core test_runner integration_runner main
 
 .PHONY: shell
 shell:

@@ -5,11 +5,7 @@
 #include "cup.h"
 
 // Enum to represent the game mode, decoupling game logic from menu specifics.
-typedef enum {
-	GAME_MODE_NORMAL,
-	GAME_MODE_SUPER_INNING,
-	GAME_MODE_HOMERUN_CONTEST
-} GameMode;
+typedef GamePeriodMode GameMode;
 
 typedef enum {
 	GAME_LAUNCH_NEW,

@@ -2,6 +2,7 @@ __pycache__
 obj/
 main
 test_runner
+integration_runner
 *.orig
 
 # Devenv

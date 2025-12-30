@@ -31,10 +31,16 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     state->localGameInfo->gAI.firstCatchMade = 1;
     state->localGameInfo->gAI.initLocals = 1;
 
+    // First, let the initialization phase finish to stabilize static counters
+    unsigned int seed = 0;
+    while (state->localGameInfo->gAI.initLocals != 0) {
+        gameAnalysis(state, NULL, &seed);
+    }
+
+    // Now trigger the wounding catch
     state->localGameInfo->gAI.woundingCatch = 1;
     state->localGameInfo->gAI.woundingCatchHandled = 0;
 
-    unsigned int seed = 0;
     for (int i = 0; i < 65; ++i) {
         gameAnalysis(state, NULL, &seed);
     }
