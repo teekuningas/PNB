@@ -51,6 +51,24 @@ void setup_runner_at_first_base(StateInfo* state) {
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 1;
 }
 
+void setup_runner_at_third_base(StateInfo* state) {
+    unsigned int seed = 0;
+    GameSetup setup = {0};
+    setup.launchType = GAME_LAUNCH_NEW;
+    setup.gameMode = GAME_MODE_NORMAL;
+    setup.team1 = 0;
+    setup.team2 = 1;
+    setup.team1_control = 0;
+    setup.team2_control = 2;
+    setup.halfInningsInPeriod = 4;
+    setup.playsFirst = 0;
+
+    initializeGameFromMenu(state, &setup, &seed);
+    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
+    state->localGameInfo->playerInfo[0].bTPI.base = 3;
+    state->localGameInfo->playerInfo[0].bTPI.originalBase = 3;
+}
+
 void cleanup_test_state(StateInfo* state) {
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 12; ++j) {

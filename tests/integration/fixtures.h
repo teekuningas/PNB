@@ -6,5 +6,6 @@
 StateInfo* setup_test_state();
 void cleanup_test_state(StateInfo* state);
 void setup_runner_at_first_base(StateInfo* state);
+void setup_runner_at_third_base(StateInfo* state);
 
 #endif // INTEGRATION_FIXTURES_H
