@@ -11,7 +11,8 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     StateInfo* state = setup_test_state();
     setup_runner_at_first_base(state);
     
-    int runnerIndex = 0; // The runner is player 0 from the fixture
+    const int runnerIndex = 0; // The runner is player 0 from the fixture
+    const int fielderIndex = 14;
 
     // Batter hits
     state->localGameInfo->pII.batterIndex = 1;
@@ -25,7 +26,7 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     state->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 0;
     
     // Ball is caught by a fielder
-    state->localGameInfo->pII.hasBallIndex = 14;
+    state->localGameInfo->pII.hasBallIndex = fielderIndex;
     state->localGameInfo->gAI.firstCatchMade = 1;
 
     unsigned int seed = 0;
