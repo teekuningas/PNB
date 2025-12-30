@@ -10,6 +10,7 @@
 #include "rules_outs.h"
 #include "rules_runs.h"
 #include "rules_strikes.h"
+#include "state_adapter.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -65,6 +66,9 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 			stateInfo->localGameInfo->gAI.initLocals = 0;
 		}
 	}
+	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
+	}
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
 	if(homeRunCameraCounter >= 0) {
@@ -83,6 +87,10 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	checkForRuns(stateInfo);
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
+
+	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		update_player_flags_from_state(&stateInfo->localGameInfo->playerInfo[i]);
+	}
 
 }
 
