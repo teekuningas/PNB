@@ -22,11 +22,11 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     
     // Runner on 1st starts running towards 2nd
     state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 1;
-    state->localGameInfo->playerInfo[runnerIndex].isSafe = 0;
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 0;
     
     // Ball is caught by a fielder
-    state->localGameInfo->pRAI.ballCaught = 1;
-    state->localGameInfo->gAI.checkForOuts = 1;
+    state->localGameInfo->pII.hasBallIndex = 14;
+    state->localGameInfo->gAI.firstCatchMade = 1;
 
     unsigned int seed = 0;
     gameAnalysis(state, NULL, &seed);
