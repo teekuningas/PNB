@@ -29,6 +29,6 @@
           update_player_flags_from_state(&stateInfo->localGameInfo->playerInfo[i]);
       }
       ```
-- [ ] Update `Makefile` to include `game/state_adapter.o`:
+- [x] Update `Makefile` to include `game/state_adapter.o` (commit: 5ab5ea6):
     - Add `game/state_adapter.o` to the `_OBJ_COMMON` list.
 - [ ] Run `devenv shell make integration_test` and verify all tests still pass (this proves the adapter works without breaking logic)
