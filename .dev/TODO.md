@@ -15,7 +15,7 @@
 - [x] Create `src/game/state_adapter.c` and `.h`:
     - Implement `update_player_state_from_flags(PlayerInfo* p)` (Flags -> Enum)
     - Implement `update_player_flags_from_state(PlayerInfo* p)` (Enum -> Flags)
-- [ ] Hook up `state_adapter` in `src/game/game_analysis.c`:
+- [x] Hook up `state_adapter` in `src/game/game_analysis.c` (commit: c3d9b95):
     - Add `#include "state_adapter.h"` at the top
     - In `gameAnalysis` function, at the very beginning (after `initLocals` check), add a loop to sync Enum from Flags:
       ```c
@@ -30,7 +30,5 @@
       }
       ```
 - [ ] Update `Makefile` to include `game/state_adapter.o`:
-    - Add `game/state_adapter.o` to `_OBJ` (for the main app)
-    - Add `game/state_adapter.o` to `_INT_TEST_LOGIC_OBJ` (for logic tests)
-    - Add `game/state_adapter.o` to `_INT_TEST_OBJ` (for integration tests)
-- [ ] Run `devenv shell make integration_test` and verify all tests still pass
+    - Add `game/state_adapter.o` to the `_OBJ_COMMON` list.
+- [ ] Run `devenv shell make integration_test` and verify all tests still pass (this proves the adapter works without breaking logic)
