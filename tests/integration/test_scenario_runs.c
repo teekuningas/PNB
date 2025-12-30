@@ -26,7 +26,8 @@ static int test_runner_scores_from_third_base_scenario() {
     state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 4;
 
     unsigned int seed = 0;
-    gameAnalysis(state, NULL, &seed);
+    MenuInfo menu = {0};
+    gameAnalysis(state, &menu, &seed);
 
     int runs = state->localGameInfo->gAI.runsInTheInning;
     cleanup_test_state(state);

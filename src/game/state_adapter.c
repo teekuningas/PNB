@@ -36,8 +36,11 @@ void update_player_state_from_flags(PlayerInfo* p) {
     // If not on base, not out, not wounded, and not walking -> Running
     // (Assuming they are active in the play)
     if (b->base != -1) { // -1 usually implies not on field, but context matters
-         b->state = PLAYER_STATE_RUNNING;
+        b->state = PLAYER_STATE_RUNNING;
     }
+
+    // Sync baseId from base
+    b->baseId = (BaseID)b->base;
 }
 
 void update_player_flags_from_state(PlayerInfo* p) {
@@ -81,4 +84,40 @@ void update_player_flags_from_state(PlayerInfo* p) {
             // but we ensure they aren't marked as "out"
             break;
     }
+
+    // Sync base from baseId
+    b->base = (int)b->baseId;
+}
+
+void update_global_state_from_flags(StateInfo* state) {
+    // Sync GameMode
+    if (state->globalGameInfo->period >= 4) {
+        state->globalGameInfo->mode = GAME_MODE_HOMERUN_CONTEST;
+    } else if (state->globalGameInfo->period >= 2) {
+        state->globalGameInfo->mode = GAME_MODE_SUPER_INNING;
+    } else {
+        state->globalGameInfo->mode = GAME_MODE_NORMAL;
+    }
+
+    // Sync GameEvent
+    state->localGameInfo->gAI.event = (GameEventType)state->localGameInfo->gAI.gameInfoEvent;
+}
+
+void update_global_flags_from_state(StateInfo* state) {
+    // Sync period from mode
+    switch (state->globalGameInfo->mode) {
+        case GAME_MODE_NORMAL:
+            // We don't force period to 0 if it's already 1, as both are GAME_MODE_NORMAL
+            if (state->globalGameInfo->period > 1) state->globalGameInfo->period = 0;
+            break;
+        case GAME_MODE_SUPER_INNING:
+            if (state->globalGameInfo->period < 2) state->globalGameInfo->period = 2;
+            break;
+        case GAME_MODE_HOMERUN_CONTEST:
+            if (state->globalGameInfo->period < 4) state->globalGameInfo->period = 4;
+            break;
+    }
+
+    // Sync gameInfoEvent from event
+    state->localGameInfo->gAI.gameInfoEvent = (int)state->localGameInfo->gAI.event;
 }

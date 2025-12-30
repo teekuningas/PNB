@@ -25,6 +25,7 @@ int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, R
 	menuInfo->mode = MENU_ENTRY_NORMAL;
 
 	resource_manager_load_all_menu_assets(rm);
+	initFrontMenuState(&menuData->front_menu);
 
 	return 0;
 }
@@ -164,10 +165,12 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 				// Process the finished game to update the tournament state
 				if (stateInfo->gameConclusion->isCupGame && stateInfo->cup != NULL) {
 					// 1. Record the user's game result
+					int winner_index = stateInfo->gameConclusion->winner;
+					TeamID winner_id = stateInfo->globalGameInfo->teams[winner_index].value - 1;
 					cup_update_match_result(
 					    stateInfo->cup,
 					    stateInfo->currently_played_cup_match_index,
-					    stateInfo->gameConclusion->winner
+					    winner_id
 					);
 
 					// 2. Simulate remaining AI matches for the current day
@@ -190,6 +193,9 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 					cup_advance_to_next_match_day(stateInfo->cup);
 				}
 
+				// Initialize the cup menu logic/coordinates before setting specific state
+				initCupMenu(&menuData->cup_menu, stateInfo, rng_seed);
+
 				// 3. Set up the cup menu to show ongoing screen
 				menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
 				menuData->cup_menu.ongoing.pointer = 0;
@@ -199,8 +205,13 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 					menuData->cup_menu.ongoing.rem = 5;  // Cup in progress menu
 				}
 
-				// 4. Check if the user won the entire cup and set the screen to the trophy/credits screen
-				if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id == stateInfo->cup->user_team_id) {
+				// 4. Check if the winner is human-controlled (Player 1 or Player 2) and the cup is finished
+				int local_winner_index = stateInfo->gameConclusion->winner;
+				int winner_control = stateInfo->globalGameInfo->teams[local_winner_index].control;
+
+				if (stateInfo->cup != NULL &&
+				        stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER &&
+				        winner_control != 2) { // 2 = AI
 					menuData->cup_menu.screen = CUP_MENU_SCREEN_END_CREDITS;
 					menuData->cup_menu.credits_menu.creditsScrollX = VIRTUAL_WIDTH;
 				}
@@ -251,6 +262,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 			initBattingOrderState(&menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control, stateInfo);
 		} else if (nextStage == MENU_STAGE_FRONT) {
 			stateInfo->globalGameInfo->isCupGame = 0;
+			initFrontMenuState(&menuData->front_menu);
 		}
 		menuData->stage = nextStage;
 		break;

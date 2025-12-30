@@ -24,7 +24,8 @@ static int test_runner_forced_out_at_first_base_scenario() {
     state->localGameInfo->pII.hasBallIndex = 13; // Give ball to first baseman
 
     // Now check for outs.
-    gameAnalysis(state, NULL, NULL);
+    MenuInfo menu = {0};
+    gameAnalysis(state, &menu, NULL);
 
     int outs = state->localGameInfo->gAI.outs;
     cleanup_test_state(state);

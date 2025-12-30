@@ -1,9 +1,9 @@
 # Refactoring Master Plan
 
-## Current Status: Milestone 7 - Phase 2 (Data Migration) 🔄
+## Current Status: Milestone 7 - Phase 3 (Rendering Migration) 🔄
 
 **Foundation Quality:** 8.5/10 - Production Ready
-**Current Task:** Setting up the "Dual State" adapter (Enum <-> Flags).
+**Current Task:** Refactoring `player_renderer.c` and `game_screen.c` to read Enums.
 
 ---
 
@@ -11,9 +11,9 @@
 
 We are currently at **Base Camp** (Phase 2). Here is the path to the Summit (removing the old flags).
 
-### Base Camp: Dual State Adapter (Current)
+### Base Camp: Dual State Adapter (Completed)
 - **Goal:** The system maintains both old flags (`out`, `wounded`) and new Enums (`PlayerState`) in perfect sync.
-- **Status:** Adapter created, hooking up to Game Loop now.
+- **Status:** ✅ Adapter created & hooked up. Tests pass.
 - **Verification:** Integration tests pass transparently.
 
 ### Ascent Stage 1: Rendering & UI Migration (Next)
@@ -76,8 +76,8 @@ Once we reach the summit (Milestone 7 complete), we unlock **Milestone 8: Functi
 ### High Priority (Milestone 7 - Data Renaissance)
 - [x] **Phase 0:** Data model audit & design
 - [x] **Phase 1:** Integration test foundation
-- [ ] **Phase 2:** Data structure migration (Adapter setup) **<-- DOING**
-- [ ] **Phase 3:** Refactor Rendering/UI to use Enums
+- [x] **Phase 2:** Data structure migration (Adapter setup)
+- [ ] **Phase 3:** Refactor Rendering/UI to use Enums **<-- DOING**
 - [ ] **Phase 4:** Refactor Logic/AI to use Enums
 - [ ] **Phase 5:** Delete old flags
 

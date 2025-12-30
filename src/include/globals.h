@@ -383,6 +383,7 @@ typedef struct _GameAnalysisInfo {
 	int batterStartedRunning; // used to help AI to drop ball sometimes
 	int gameInfoEvent; // used to give information for user about the events in game.
 	// check game_screen.c for more information
+	GameEventType event; // NEW field for Milestone 7
 	int checkForRun; // if player arrives homebase or third base after running through all the base on same pitch
 	// we can check if the run is valid. it is decided when ball lands.
 	int freeWalkIndex; // index used in free walk decision
@@ -434,6 +435,7 @@ typedef struct _GlobalGameInfo {
 	int halfInningsInPeriod;
 	int inning;
 	int period;
+	GamePeriodMode mode; // NEW field for Milestone 7
 	int pairCount;
 	int playsFirst;
 	int isCupGame;

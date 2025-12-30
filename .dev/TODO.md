@@ -1,34 +1,10 @@
 # TODO - Current Tasks
 
-### Phase 1: Integration Safety Net (Completed)
-- [x] Create directory tests/integration/ (commit: 8cc7fcf)
-- [x] Create `tests/integration/integration_runner.c` (commit: 0d430a0)
-- [x] Create `tests/integration/fixtures.c` and `.h` (commit: 937480f)
-- [x] Create `tests/integration/test_scenario_outs.c` (commit: c1b279d)
-- [x] Create `tests/integration/test_scenario_runs.c` (commit: 22c8606)
-- [x] Create `tests/integration/test_scenario_wounded.c` (commit: 8804b65, fixed in recent commits)
-- [x] Add `integration_test` target to `Makefile` (commit: 85122e2)
-
-### Phase 2: Data Structure Migration (Next)
-- [x] Define `PlayerUnitState` and `BaseID` enums in `src/include/globals.h` (alongside existing structs)
-- [x] Add `PlayerUnitState state` and `BaseID baseId` fields to `BattingTeamPlayerInfo` struct in `globals.h`
-- [x] Create `src/game/state_adapter.c` and `.h`:
-    - Implement `update_player_state_from_flags(PlayerInfo* p)` (Flags -> Enum)
-    - Implement `update_player_flags_from_state(PlayerInfo* p)` (Enum -> Flags)
-- [x] Hook up `state_adapter` in `src/game/game_analysis.c` (commit: c3d9b95):
-    - Add `#include "state_adapter.h"` at the top
-    - In `gameAnalysis` function, at the very beginning (after `initLocals` check), add a loop to sync Enum from Flags:
-      ```c
-      for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-          update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
-      }
-      ```
-    - In `gameAnalysis` function, at the very end, add a loop to sync Flags from Enum:
-      ```c
-      for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-          update_player_flags_from_state(&stateInfo->localGameInfo->playerInfo[i]);
-      }
-      ```
-- [x] Update `Makefile` to include `game/state_adapter.o` (commit: 5ab5ea6):
-    - Add `game/state_adapter.o` to the `_OBJ_COMMON` list.
-- [ ] Run `devenv shell make integration_test` and verify all tests still pass (this proves the adapter works without breaking logic)
+### Phase 3: Ascent Stage 1 - Rendering & UI (Next)
+- [ ] Refactor `src/renderer/player_renderer.c` to use `PlayerUnitState` and `BaseID` enums instead of flags.
+    - Replace usage of `bTPI.isOnBase`, `bTPI.joker` (if relevant to state), etc. with switch on `bTPI.state`.
+    - **Note:** Do NOT remove the old flags yet. Just change the reader to use the Enums.
+- [ ] Refactor `src/game/game_screen.c` (Overlay/HUD) to use Enums.
+    - Update `drawStatistics` to check `gAI.event` (enum) instead of `gAI.gameInfoEvent` (int).
+    - Update `drawStatistics` to check `bTPI.baseId` instead of `bTPI.base` for base markers.
+- [ ] Verify visually.

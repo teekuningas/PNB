@@ -33,8 +33,9 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
 
     // First, let the initialization phase finish to stabilize static counters
     unsigned int seed = 0;
+    MenuInfo menu = {0}; // Dummy menu
     while (state->localGameInfo->gAI.initLocals != 0) {
-        gameAnalysis(state, NULL, &seed);
+        gameAnalysis(state, &menu, &seed);
     }
 
     // Now trigger the wounding catch
@@ -42,7 +43,7 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     state->localGameInfo->gAI.woundingCatchHandled = 0;
 
     for (int i = 0; i < 65; ++i) {
-        gameAnalysis(state, NULL, &seed);
+        gameAnalysis(state, &menu, &seed);
     }
 
     int isWounded = state->localGameInfo->playerInfo[runnerIndex].bTPI.wounded;

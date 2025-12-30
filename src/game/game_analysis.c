@@ -66,6 +66,7 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 			stateInfo->localGameInfo->gAI.initLocals = 0;
 		}
 	}
+	update_global_state_from_flags(stateInfo);
 	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
 	}
@@ -89,8 +90,9 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	checkIfNextPair(stateInfo, rng_seed);
 
 	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		update_player_flags_from_state(&stateInfo->localGameInfo->playerInfo[i]);
+		update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
 	}
+	update_global_state_from_flags(stateInfo);
 
 }
 
