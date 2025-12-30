@@ -34,6 +34,9 @@ def watch_and_run(command_list):
         log(f"Critical Error: {TODO_FILE} does not exist. Exiting.")
         sys.exit(1)
 
+    # Set SSL_CERT_DIR for OpenSSL to find certificates
+    os.environ['SSL_CERT_DIR'] = '/etc/ssl/certs'
+
     log(f"Starting Watcher on {TODO_FILE} (Polling Mode)...")
     log(f"Command: {' '.join(command_list)}")
     log("Waiting for tasks...")
