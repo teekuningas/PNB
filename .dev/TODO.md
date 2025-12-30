@@ -2,7 +2,7 @@
 
 - [x] Create directory tests/integration/ (commit: 8cc7fcf)
 - [x] Create `tests/integration/integration_runner.c` (copy of test_runner.c adapted for integration tests) (commit: 0d430a0)
-- [ ] Create `tests/integration/fixtures.c` and `.h`:
+- [x] Create `tests/integration/fixtures.c` and `.h`: (commit: 937480f)
     - Implement `setup_test_state()` to allocate `StateInfo` + sub-structs
     - Mock `TeamData` (dummy players) and `FieldPositions` (standard coordinates)
     - Provide helpers like `setup_runner_at_first_base` using `initializeGameFromMenu`
