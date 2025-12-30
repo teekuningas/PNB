@@ -62,10 +62,13 @@ test: $(TEST_OBJ) tests/test_runner.c
 
 $(INT_TEST_LOGIC_OBJ): CFLAGS += -DNO_RENDER
 
-.PHONY: integration_test
-integration_test: CFLAGS += -DNO_RENDER
-integration_test: $(INT_TEST_LOGIC_OBJ) tests/integration/integration_runner.c
+.PHONY: integration_runner
+integration_runner: CFLAGS += -DNO_RENDER
+integration_runner: $(INT_TEST_LOGIC_OBJ) tests/integration/integration_runner.c
 	$(CC) tests/integration/integration_runner.c $(INT_TEST_LOGIC_OBJ) -o integration_runner $(CFLAGS) -lm -lmxml
+
+.PHONY: integration_test
+integration_test: integration_runner
 	./integration_runner
 
 .PHONY: run
