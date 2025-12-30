@@ -9,9 +9,10 @@
 #include "../renderer/player_renderer.h"
 #endif
 
-int initPlayer(StateInfo* stateInfo) {
+int initPlayer(StateInfo* stateInfo)
+{
 #ifndef NO_RENDER
-    if(initPlayerRenderer() != 0) return -1;
+	if(initPlayerRenderer() != 0) return -1;
 #endif
-    return 0;
+	return 0;
 }
