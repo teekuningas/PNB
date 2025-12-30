@@ -29,6 +29,7 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Ball is caught by a fielder
     state->localGameInfo->pII.hasBallIndex = fielderIndex;
     state->localGameInfo->gAI.firstCatchMade = 1;
+    state->localGameInfo->gAI.initLocals = 1;
 
     state->localGameInfo->gAI.woundingCatch = 1;
     state->localGameInfo->gAI.woundingCatchHandled = 0;
