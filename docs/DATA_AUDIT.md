@@ -1,107 +1,173 @@
-# Data Renaissance Audit (Milestone 7)
+# Data Audit & Renaissance Plan (Milestone 7)
 
-## ⚠️ IMPORTANT: Data-First Approach
-
-**Updated 2025-12-18:** This document proposes enums, but Milestone 7 now follows a **data-first approach**:
-
-1. **Phase 0:** Audit current data mess, design CLEAN model (without enums yet)
-2. **Phase 1:** Add integration tests (behavior validation)
-3. **Phase 2:** Migrate data structures using adapter pattern
-4. **Phase 3:** Add enums to the CLEAN model (proposals below)
-
-**See `.dev/PLAN.md` for full Milestone 7 strategy.**
+**Goal:** Transform "Flag Soup" and "Magic Numbers" into explicit, safe, and semantic data structures.
+**Philosophy:** Functional Data Flow. Data structures should be robust, general, and self-documenting.
 
 ---
 
-## Objective
+## 1. Current State Analysis
 
-Identify ambiguous flags and magic numbers within `StateInfo` and propose cleaner data structures with semantic enums.
+### A. The "Flag Soup" (Player Status)
+Currently, a player's state is determined by a combination of boolean flags in `BattingTeamPlayerInfo`.
 
-## Enum Proposals (To Apply After Data Migration)
+**Flags:**
+- `isOnBase`: 1 if safe on a base, 0 if running or out.
+- `out`: 1 if the player is out.
+- `wounded`: 1 if the player was "wounded" (caught off base but not out).
+- `takingFreeWalk`: 1 if the player is advancing freely (e.g., on a walk).
+- `leading`: 1 if the player is leading off a base.
 
-### 1. Game Periods → `GamePeriodType` enum
-- **Current:** `period >= 4` magic number (5 occurrences)
-- **Problem:** Unclear meaning, overloaded semantics
-- **Proposal:**
-    ```c
-    typedef enum {
-        PERIOD_NORMAL_1 = 0,
-        PERIOD_NORMAL_2 = 1,
-        PERIOD_SUPER_INNING = 2,
-        PERIOD_EXTRA_INNING = 3,
-        PERIOD_HOMERUN_CONTEST = 4
-    } GamePeriodType;
-    ```
-- **Note:** Can add immediately (simple magic number replacement)
+**Observed Combinations (Implicit States):**
+| isOnBase | out | wounded | takingFreeWalk | implied State |
+|:---:|:---:|:---:|:---:|---|
+| 0 | 0 | 0 | 0 | **RUNNING** (Vulnerable) |
+| 1 | 0 | 0 | 0 | **SAFE_ON_BASE** |
+| 0 | 1 | 0 | 0 | **OUT** |
+| 0 | 0 | 1 | 0 | **WOUNDED** (Removed from field) |
+| 0 | 0 | 0 | 1 | **WALKING** (Invulnerable) |
+| 1 | 0 | 0 | 0 | **LEADING** (if `leading` flag is separate) |
 
----
+**Problem:** Invalid states are possible (e.g., `isOnBase=1` AND `out=1`). Logic requires checking multiple flags.
 
-### 2. Player Base → `BasePosition` enum
-- **Current:** `base` integers (0=home start, 4=home after run)
-- **Problem:** Semantic confusion (0 means two different things!)
-- **Discovery:** From Milestone 6 audit - `player.base` = "where player IS or running FROM"
-- **Proposal:**
-    ```c
-    typedef enum {
-        BASE_HOME = 0,
-        BASE_FIRST = 1,
-        BASE_SECOND = 2,
-        BASE_THIRD = 3,
-        BASE_HOME_SCORED = 4,  // Distinct from BASE_HOME
-        BASE_NONE = -1
-    } BasePosition;
-    ```
-- **Note:** Requires data migration (clarify semantics first)
+### B. Magic Numbers: `gameInfoEvent`
+Used to trigger on-screen messages in `game_screen.c`.
 
----
+| Value | Meaning (Text) | Context |
+|:---:|---|---|
+| 1 | **OUT** | Player burned at base |
+| 2 | **WOUNDED** | Player caught but not out |
+| 3 | **RUN** | Run scored |
+| 4 | **OUT OF BOUNDS** | Ball went out |
+| 5 | **STRIKE** | Strike called |
+| 6 | **BALL** | Ball called |
+| 7 | **HALF-INNING ENDS** | 3 outs or max runs |
+| 8 | **NEXT PAIR** | Homerun contest next pair |
+| 9 | **TWO RUNS** | Homerun contest scoring |
 
-### 3. Player State Flags → `PlayerState` enum
-- **Current:** Multiple boolean flags (`isOnBase`, `out`, `wounded`, `takingFreeWalk`)
-- **Problem:** Flag soup, complex conditions: `isOnBase=0 && out=0 && takingFreeWalk=0`
-- **Discovery:** These represent a SINGLE state machine, not independent flags
-- **Proposal:**
-    ```c
-    typedef enum {
-        PLAYER_STATE_BATTING,
-        PLAYER_STATE_RUNNING,
-        PLAYER_STATE_SAFE_ON_BASE,
-        PLAYER_STATE_LEADING,
-        PLAYER_STATE_TAKING_FREE_WALK,
-        PLAYER_STATE_OUT,
-        PLAYER_STATE_WOUNDED,
-        PLAYER_STATE_SCORED
-    } PlayerState;
-    ```
-- **Note:** Requires data migration (map all flag combinations first)
+### C. Magic Numbers: `period`
+Used to determine the game phase.
+
+| Value | Meaning | Context |
+|:---:|---|---|
+| 0-3 | **Normal Innings** | Standard gameplay |
+| >= 4 | **Homerun Contest** | "Hutunkeitto" / Tie-breaker |
+
+### D. Ambiguous Semantics: `player.base`
+- **Context 1:** Base the player is currently SAFE at.
+- **Context 2:** Base the player is running FROM (during movement).
+- **Context 3:** Value 4 means "Home/Scored" in some contexts, but 0 means "Home" in others.
 
 ---
 
-### 4. Game Info Events → `GameEventType` enum
-- **Current:** `gameInfoEvent = 1/2/3/4...` magic numbers
-- **Problem:** Undocumented event codes
-- **Proposal:**
-    ```c
-    typedef enum {
-        EVENT_NONE = 0,
-        EVENT_OUT = 1,
-        EVENT_WOUNDED = 2,
-        EVENT_RUN_SCORED = 3,
-        EVENT_FOUL_PLAY = 4,
-        EVENT_STRIKE = 5,
-        EVENT_BALL = 6,
-        EVENT_END_OF_INNING = 7,
-        EVENT_NEXT_PAIR = 8
-    } GameEventType;
-    ```
-- **Note:** Can add immediately (simple magic number replacement)
+## 2. Proposed Design (The Renaissance)
+
+We will introduce strictly typed Enums to replace these magic values.
+
+### A. `PlayerUnitState` (Replaces Flag Soup)
+A single source of truth for the player's current status.
+
+```c
+typedef enum {
+    // Default state
+    PLAYER_STATE_IDLE = 0,
+    
+    // Batting states
+    PLAYER_STATE_AT_BAT,
+    
+    // Runner states
+    PLAYER_STATE_SAFE_ON_BASE,      // Replaces isOnBase=1
+    PLAYER_STATE_RUNNING,           // Replaces isOnBase=0, out=0, wounded=0
+    PLAYER_STATE_ADVANCING_FREELY,  // Replaces takingFreeWalk=1
+    PLAYER_STATE_LEADING,           // Replaces leading=1
+    
+    // Terminal states (for the inning)
+    PLAYER_STATE_OUT,               // Replaces out=1
+    PLAYER_STATE_WOUNDED,           // Replaces wounded=1
+    PLAYER_STATE_SCORED             // Explicit state for having scored
+} PlayerUnitState;
+```
+
+### B. `BaseID` (Replaces `player.base` integers)
+Explicit base identifiers to avoid 0 vs 4 confusion.
+
+```c
+typedef enum {
+    BASE_HOME = 0,
+    BASE_FIRST = 1,
+    BASE_SECOND = 2,
+    BASE_THIRD = 3,
+    BASE_HOME_SCORED = 4, // Explicitly distinct from starting at home
+    BASE_NONE = -1
+} BaseID;
+```
+
+### C. `GameEventType` (Replaces `gameInfoEvent`)
+```c
+typedef enum {
+    EVENT_NONE = 0,
+    EVENT_OUT = 1,
+    EVENT_WOUNDED = 2,
+    EVENT_RUN_SCORED = 3,
+    EVENT_OUT_OF_BOUNDS = 4,
+    EVENT_STRIKE = 5,
+    EVENT_BALL = 6,
+    EVENT_INNING_ENDING = 7,
+    EVENT_NEXT_PAIR = 8,
+    EVENT_TWO_RUNS_SCORED = 9
+} GameEventType;
+```
+
+### D. `GamePeriodMode` (Replaces `period >= 4`)
+```c
+typedef enum {
+    GAME_MODE_REGULAR_INNING = 0,
+    GAME_MODE_SUPER_INNING = 1,    // Potential mapping for period 2/3 if distinct
+    GAME_MODE_HOMERUN_CONTEST = 2  // Replaces period >= 4
+} GamePeriodMode;
+```
 
 ---
 
-## Phase 0 Tasks (Before Enums)
+## 3. Migration Strategy (Safety First)
 
-1. **Map flag combinations** - Document all uses of player state flags
-2. **Draw state diagrams** - Visualize player state machine
-3. **Design clean model** - Propose simpler structure
-4. **Plan migration** - Adapter pattern strategy
+We will use an **Adapter Pattern** to migrate without breaking the 48 existing unit tests or the game logic.
 
-**See `.dev/PLAN.md` Milestone 7 for detailed migration strategy.**
+### Phase 1: Integration Safety Net
+Before changing ANY data structures, we must add **Integration Tests** that verify high-level behavior.
+- Test: "Runner moves from Base 1 to Base 2 -> State changes to Safe on Base 2"
+- Test: "Ball caught -> Runner off base becomes Wounded"
+- **Goal:** These tests must pass on the OLD code and the NEW code.
+
+### Phase 2: Hybrid Data Structures
+We will add the new Enums alongside the old flags in the structs.
+
+```c
+typedef struct {
+    // ... old flags ...
+    int isOnBase;
+    int out;
+    
+    // ... NEW field ...
+    PlayerUnitState state; 
+} BattingTeamPlayerInfo;
+```
+
+### Phase 3: Adapter Logic
+We will write helper functions to sync them.
+- `update_player_state(player)`: Reads flags -> sets Enum.
+- `update_player_flags(player)`: Reads Enum -> sets flags.
+
+### Phase 4: Refactor & Cleanup
+1. Switch logic to read/write Enums.
+2. Use `update_player_flags` to keep legacy rendering/UI code working.
+3. Eventually remove the flags once all systems are converted.
+
+---
+
+## 4. Immediate Next Steps (Task Agent)
+
+1.  **Create Integration Test Harness:** Set up `tests/integration/` and a simple fixture loader.
+2.  **Write Baseline Tests:** Implement 3-4 critical scenario tests using current flags.
+    -   Force out at base.
+    -   Scoring a run.
+    -   Wounded player logic.

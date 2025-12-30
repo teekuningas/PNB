@@ -5,12 +5,13 @@
 
 #include "globals.h"
 #include "player.h"
-#include "../renderer/player_renderer.h" // Include the new renderer header
+#ifndef NO_RENDER
+#include "../renderer/player_renderer.h"
+#endif
 
-#define PLAYER_SCALE 0.24f
-#define SELECTION_BALL_SCALE 0.2f
-
-int initPlayer(StateInfo* stateInfo)
-{
-	return initPlayerRenderer();
+int initPlayer(StateInfo* stateInfo) {
+#ifndef NO_RENDER
+    if(initPlayerRenderer(stateInfo) != 0) return -1;
+#endif
+    return 0;
 }

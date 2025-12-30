@@ -54,8 +54,10 @@ void drawMutableWorld(StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
 	if(stateInfo->localGameInfo->gAI.pause == 0) {
+#ifndef NO_RENDER
 		drawPlayerRenderer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha);
 		drawBall(&(stateInfo->localGameInfo->ballInfo), alpha);
+#endif
 	}
 }
 int cleanMutableWorld(StateInfo* stateInfo)
@@ -66,10 +68,12 @@ int cleanMutableWorld(StateInfo* stateInfo)
 		printf("Could not clean ball properly.\n");
 		return -1;
 	}
+#ifndef NO_RENDER
 	result = cleanPlayerRenderer();
 	if(result != 0) {
 		printf("Could not clean player properly.\n");
 		return -1;
 	}
+#endif
 	return 0;
 }

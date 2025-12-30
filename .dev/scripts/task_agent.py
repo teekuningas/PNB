@@ -3,7 +3,7 @@ import sys
 from watcher import watch_and_run
 
 if __name__ == "__main__":
-    model = sys.argv[1] if len(sys.argv) > 1 else "gemini-3-pro-preview"
+    model = sys.argv[1] if len(sys.argv) > 1 else "gemini-2.5-pro"
     
     # Use gemini CLI with default text output (streams directly)
     command = [

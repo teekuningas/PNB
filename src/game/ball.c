@@ -1,6 +1,8 @@
 #include "globals.h"
 #include "ball.h"
-#include "../renderer/ball_renderer.h" // Include the new renderer header
+#ifndef NO_RENDER
+#include "../renderer/ball_renderer.h"
+#endif
 
 #define BALL_SCALE BALL_SIZE
 #define SHADOW_CONSTANT 0.2f
@@ -9,18 +11,23 @@
 // initializes ball as an entity in the empty space. ball has to be located to the field in a different place
 int initBall()
 {
-	return initBallRenderer();
+#ifndef NO_RENDER
+	if (initBallRenderer() != 0) return -1;
+#endif
+	return 0;
 }
-
 void drawBall(BallInfo* ballInfo, double alpha)
 {
+#ifndef NO_RENDER
 	drawBallRenderer(ballInfo, alpha);
+#endif
 }
-
-
-// cleaning keeps the house tidy
 int cleanBall()
 {
+#ifndef NO_RENDER
 	return cleanBallRenderer();
+#else
+	return 0;
+#endif
 }
 
