@@ -8,5 +8,9 @@
     - Provide helpers like `setup_runner_at_first_base` using `initializeGameFromMenu`
 - [x] Create `tests/integration/test_scenario_outs.c` to test "Runner Forced Out" behavior using current flags (commit: c1b279d)
 - [x] Create `tests/integration/test_scenario_runs.c` to test "Run Scored" behavior (commit: 22c8606)
-- [x] Create `tests/integration/test_scenario_wounded.c` to test "Wounded" behavior (commit: a818b4f)
+- [x] Fix compilation errors in `tests/integration/test_scenario_wounded.c` (commit: 8804b65):
+    - Replace `state->localGameInfo->playerInfo[runnerIndex].isSafe = 0` with `state->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 0`
+    - Replace `state->localGameInfo->pRAI.ballCaught = 1` with `state->localGameInfo->gAI.firstCatchMade = 1`
+    - Remove `state->localGameInfo->gAI.checkForOuts = 1` (this flag does not exist, `gameAnalysis` handles it)
+    - Ensure `state->localGameInfo->pII.hasBallIndex` is set to a fielder (e.g. 14) to simulate catch
 - [x] Add `integration_test` target to `Makefile` to run these new tests (commit: 85122e2)
