@@ -9,5 +9,4 @@
 - [x] Create `tests/integration/test_scenario_outs.c` to test "Runner Forced Out" behavior using current flags (commit: c1b279d)
 - [x] Create `tests/integration/test_scenario_runs.c` to test "Run Scored" behavior (commit: 22c8606)
 - [x] Create `tests/integration/test_scenario_wounded.c` to test "Wounded" behavior (commit: a818b4f)
-- [ ] Add `integration_test` target to `Makefile` to run these new tests
-
+- [x] Add `integration_test` target to `Makefile` to run these new tests (commit: 85122e2)
