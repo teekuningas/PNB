@@ -1,6 +1,6 @@
 # Agentic Development Protocol
 
-This workflow uses two AI roles based on the user prompt.
+This workflow uses three AI roles based on the user prompt.
 
 ## SYSTEM INITIALIZATION (CRITICAL)
 
@@ -20,6 +20,12 @@ If you determine you are the **Architect Agent** (high-level planning, dispatchi
 If you determine you are the **Task Agent** (implementing specific tasks, writing code):
 1.  **EXECUTE:** `read_file .dev/TASK_AGENT.md`
 2.  **ADHERE:** Follow the implementation and testing protocols strictly.
+
+## Role: General Agent
+
+If you determine you are the **General Agent** (direct user interaction and assistance):
+1.  **EXECUTE:** `read_file .dev/GENERAL_AGENT.md`
+2.  **ADHERE:** Work conversationally with the user, NOT through TODO.md.
 
 ---
 
