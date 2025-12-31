@@ -8,9 +8,11 @@
 
 ### Phase 4: Migrate Reads to Use New Enum Fields (In Progress)
 - [ ] **Player State Reads:** Migrate from legacy flags to `state` enum
-  - [ ] Audit all reads of `isOnBase`, `out`, `wounded`, `leading`, `takingFreeWalk`
-  - [ ] Replace with reads of `state` enum and switch statements
-  - [ ] Test after each migration
+  - [x] Harden Integration Tests (commit: 4df410e)
+  - [x] Migrate `src/game/ai_messy/` (batting_ai.c, catching_ai.c) (commit: 4df410e)
+  - [ ] Migrate `src/game/common_logic.c` and `game_manipulation.c`
+  - [ ] Migrate `src/game/game_analysis.c` (Rules)
+  - [ ] Migrate `src/game/action_implementation.c` (Actions)
 - [ ] **Base Location Reads:** Migrate from `base` to `baseId`
   - [ ] Audit all reads of `base` field
   - [ ] Replace with reads of `baseId` enum
