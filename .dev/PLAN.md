@@ -54,20 +54,19 @@ We are currently at **Phase 5: Migrate Reads** (After Summit).
 
 ## Beyond the Summit: The View (Milestone 8) 🔭
 
-Once we reach the summit (Milestone 7 complete), we unlock **Milestone 8: Functional Dataflow**.
+Once we reach the summit (Milestone 7 complete), we unlock **Milestone 8: The Referee Architecture**.
 
 **The New Reality:**
-1.  **Synchronous "Breathing" Loop:**
-    - Because state is clean (no hidden flags), we can implement `State new = update(old, input)`.
-2.  **Snapshotting & Replay:**
-    - Clean structs = easy serialization. We can save the *exact* frame state and reload it.
-    - Enables "Instant Replay" features and powerful debugging (rewind time).
-3.  **Parallelism Potential:**
-    - Pure functions + clean state = potential to run AI or Physics on separate threads (future).
-4.  **Modding/Scripting:**
-    - A clean data model is the first step towards exposing game logic to Lua/Python scripts.
+1.  **The Referee Layer:**
+    - A dedicated system that analyzes the physical world and outputs **Abstract State** (Outs, Runs) and **Permissions** ("Can Pitch", "Can Bat").
+2.  **Explicit Permissions:**
+    - Player code no longer calculates *if* it can do something. It simply checks the Referee's permissions.
+3.  **Synchronous "Breathing" Loop:**
+    - Input -> Physics -> Referee (Analysis) -> Logic/AI -> Render.
+4.  **Snapshotting & Replay:**
+    - Clean state enables instant replay and rewinding time.
 
-**Current Focus:** finish **The Summit** so we can enjoy the view.
+**Current Focus:** Finish **The Summit** (Milestone 7) so we can build the Referee.
 
 ---
 

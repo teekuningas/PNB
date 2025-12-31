@@ -310,24 +310,36 @@ src/
 
 ---
 
-## PHASE B: Decouple Messiness (Optional Future)
+## PHASE B: The Referee Architecture (Target State)
 
-**Only start if**:
-1. Phase A is complete
-2. Team still has energy
-3. Clear use case for decoupling (e.g., adding multiplayer)
+**Goal:** Decouple Rules from Actions via explicit "Abstract State" (The "Referee" Pattern).
 
-**What it involves**:
-- Breaking up messy_action_system into cleaner subsystems
-- Making rules engine truly pure (pure functions only)
-- Eliminating static variables in AI
-- Cleaner state management (not entity-component, just cleaner)
+**The Architectural Vision:**
 
-**Duration**: 3-4 months
-**Risk**: High (touching complex logic)
-**Benefit**: Perfect architecture
+1.  **The Referee Layer (Rule Analysis):**
+    - Acts like a real-world umpire.
+    - **Input:** Physical world state (positions, velocities) + Game Rules.
+    - **Output:**
+        - **Abstract State:** "Inning 1", "3 Outs", "Home Run".
+        - **Permissions:** "Pitching Allowed", "Batting Allowed", "Walk Allowed".
+    - *Crucial Distinction:* It does not *move* players. It only observes and judges.
 
-**But honestly**: Phase A might be enough! Don't let perfect be enemy of good!
+2.  **The Lifecycle Layer (Game Flow):**
+    - Observes the Referee's output.
+    - Executes forceful state changes: "Reset Field", "Start New Inning", "End Game".
+
+3.  **The Action Layer (Players & Physics):**
+    - **Physical Laws:** Pure physics simulation (gravity, collisions).
+    - **Player Logic:** AI or Human control.
+    - *Constraint:* Players can "want" to do anything, but are constrained by **Permissions** from the Referee.
+    - *Example:* Pitcher AI checks `state.permissions.canPitch` instead of calculating complex game state rules itself.
+
+**Benefit:**
+- **Decoupling:** Player code doesn't need to know *why* it can't pitch, only *that* it can't.
+- **Clarity:** The "Rules" are centralized in one place (The Referee), not scattered across player logic.
+- **Explicit State:** The "Abstract State" becomes the single source of truth for the game's logical status.
+
+**Prerequisite:** Phase A (Isolation) must be complete to ensure the code is clean enough to support this split.
 
 ---
 
