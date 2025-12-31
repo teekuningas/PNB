@@ -67,9 +67,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 		}
 	}
 	update_global_state_from_flags(stateInfo);
-	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
-	}
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
 	if(homeRunCameraCounter >= 0) {
@@ -88,11 +85,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	checkForRuns(stateInfo);
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
-
-	for(int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		update_player_state_from_flags(&stateInfo->localGameInfo->playerInfo[i]);
-	}
-	update_global_state_from_flags(stateInfo);
 
 }
 
@@ -170,9 +162,11 @@ static void checkForOuts(StateInfo* stateInfo)
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk,
 						            stateInfo->localGameInfo->gAI.outOfBounds)) {
 							// we set player's out flag so that his movement is easy to control
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_OUT;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.out = 1;
 							// send a message to screen
 							stateInfo->localGameInfo->gAI.gameInfoEvent = 1;
+							stateInfo->localGameInfo->gAI.event = EVENT_OUT;
 							// add out
 							stateInfo->localGameInfo->gAI.outs += 1;
 							// remove player from the array
@@ -355,10 +349,12 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				if(index != -1) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply == 1) {
 						int base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
-						// set wounded=1 so that movement will be handled correctly.
+						// set state to wounded
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
 						stateInfo->localGameInfo->playerInfo[index].bTPI.wounded = 1;
 						// info to screen.
 						stateInfo->localGameInfo->gAI.gameInfoEvent = 2;
+						stateInfo->localGameInfo->gAI.event = EVENT_WOUNDED;
 						// no safe on previous base anymore.
 						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[base] = -1;
@@ -395,6 +391,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 		// and send some info to screen. and do that only once.
 		if(foulPlayEventFlag == 0) {
 			stateInfo->localGameInfo->gAI.gameInfoEvent = 4;
+			stateInfo->localGameInfo->gAI.event = EVENT_OUT_OF_BOUNDS;
 			foulPlayEventFlag = 1;
 		}
 		if(outOfBoundsCounter > OUT_OF_BOUNDS_THRESHOLD) {
@@ -439,9 +436,11 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 						// and he will be out.
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == -1) {
 							stateInfo->localGameInfo->gAI.gameInfoEvent = 1;
+							stateInfo->localGameInfo->gAI.event = EVENT_OUT;
 							stateInfo->localGameInfo->gAI.outs += 1;
 
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 
@@ -449,7 +448,9 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 						} else {
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base =
 							    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.base;
 						}
 
 						// in case that player was taking a free walk from third base when this happened
@@ -461,8 +462,10 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							stateInfo->localGameInfo->gAI.runsInTheInning += 1;
 							// and send a message that run was made to screen.
 							stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+							stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
 							// and remove player from the field.
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
@@ -479,6 +482,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 								stateInfo->localGameInfo->gAI.outs += 1;
 								// remove from the field.
 								stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
+								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 								stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
 								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 								stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
@@ -551,6 +555,7 @@ static void checkForRuns(StateInfo* stateInfo)
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 						}
 
 						if(runScored) {
@@ -564,6 +569,7 @@ static void checkForRuns(StateInfo* stateInfo)
 							stateInfo->localGameInfo->gAI.runsInTheInning += 1;
 							runMade = 1;
 							stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+							stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
 
 							if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
 								stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
@@ -627,6 +633,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 			// so that user wont be prompted for this after inning has ended but screen hasnt changed yet.
 			stateInfo->localGameInfo->gAI.waitingForBatterDecision = 0;
 			stateInfo->localGameInfo->gAI.gameInfoEvent = 7;
+			stateInfo->localGameInfo->gAI.event = EVENT_INNING_ENDING;
 		}
 	}
 	if(endOfInningCounter != -1) {
@@ -784,6 +791,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 				// send message only if its not end of inning also.
 				if(endOfInningCounter == -1) {
 					stateInfo->localGameInfo->gAI.gameInfoEvent = 8;
+					stateInfo->localGameInfo->gAI.event = EVENT_NEXT_PAIR;
 				}
 			}
 		}

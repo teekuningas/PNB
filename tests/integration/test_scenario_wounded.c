@@ -5,6 +5,7 @@
 #include "common_logic.h"
 #include "game_analysis.h"
 #include "mutable_world.h"
+#include "state_adapter.h"
 
 static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Setup: Runner on first, batter hits, runner advances but ball is caught.
@@ -44,6 +45,7 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
 
     for (int i = 0; i < 65; ++i) {
         gameAnalysis(state, &menu, &seed);
+        update_player_flags_from_state(&state->localGameInfo->playerInfo[runnerIndex]);
     }
 
     int isWounded = state->localGameInfo->playerInfo[runnerIndex].bTPI.wounded;

@@ -247,9 +247,11 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
 					stateInfo->localGameInfo->gAI.runsInTheInning += 1;
 					stateInfo->localGameInfo->gAI.gameInfoEvent = 9;
+					stateInfo->localGameInfo->gAI.event = EVENT_TWO_RUNS_SCORED;
 				} else {
 					// set info to screen
 					stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+					stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
 				}
 
 				if((stateInfo->globalGameInfo->inning + 1)%2 == 0) {
@@ -267,6 +269,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 
 					// set takingFreeWalk flag so that this player cant get wounded or tagged
 					// when he's running
+					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
 					stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 1;
 					// if he's safe on previous base, set the safeOnBaseIndex for that base to -1
 					if(stateInfo->localGameInfo->pII.safeOnBaseIndex[stateInfo->localGameInfo->playerInfo[index].bTPI.base] == index) {
@@ -298,6 +301,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					}
 					// set info to screen
 					stateInfo->localGameInfo->gAI.gameInfoEvent = 3;
+					stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
 
 					if((stateInfo->globalGameInfo->inning + 1)%stateInfo->globalGameInfo->halfInningsInPeriod == 0 ||
 					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 + 2) {

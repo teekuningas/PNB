@@ -313,37 +313,38 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
 	// so we have these events thats are triggered in other parts of code just by gameInfoEvent = i;
 	// we have a counter so that the info will disappear after some time.
-	if(stateInfo->localGameInfo->gAI.gameInfoEvent != 0) {
+	if(stateInfo->localGameInfo->gAI.event != EVENT_NONE) {
 		gameInfoEventTimer = 0;
-		gameInfoEvent = stateInfo->localGameInfo->gAI.gameInfoEvent;
-		stateInfo->localGameInfo->gAI.gameInfoEvent = 0;
+		gameInfoEvent = (int)stateInfo->localGameInfo->gAI.event;
+		stateInfo->localGameInfo->gAI.event = EVENT_NONE;
+		stateInfo->localGameInfo->gAI.gameInfoEvent = 0;  // Also clear old field
 	}
 	if(gameInfoEventTimer != -1) {
-		if(gameInfoEvent == 1) {
+		if(gameInfoEvent == EVENT_OUT) {
 			printText("        OUT", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 2) {
+		if(gameInfoEvent == EVENT_WOUNDED) {
 			printText("     WOUNDED", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 3) {
+		if(gameInfoEvent == EVENT_RUN_SCORED) {
 			printText("        RUN", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 4) {
+		if(gameInfoEvent == EVENT_OUT_OF_BOUNDS) {
 			printText("  OUT OF BOUNDS", 15, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 5) {
+		if(gameInfoEvent == EVENT_STRIKE) {
 			printText("      STRIKE", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 6) {
+		if(gameInfoEvent == EVENT_BALL) {
 			printText("        BALL", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 7) {
+		if(gameInfoEvent == EVENT_INNING_ENDING) {
 			printText("HALF-INNING ENDS", 16, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 8) {
+		if(gameInfoEvent == EVENT_NEXT_PAIR) {
 			printText("    NEXT PAIR", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == 9) {
+		if(gameInfoEvent == EVENT_TWO_RUNS_SCORED) {
 			printText("     TWO RUNS", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
 	}
@@ -435,7 +436,7 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 			int base = 0;
 			float distance;
 			// for batter we say at 0 until we have passed the homeline.
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 0) {
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
 				if(stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
 				        HOME_LINE_Z > 0) {
 					phase = 0.0f;
@@ -445,22 +446,22 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 					         HOME_LINE_Z) / distance;
 				}
 				base = 0;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 1) {
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
 				distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
 				         stateInfo->fieldPositions->firstBaseRun.x) / distance;
 				base = 1;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 2) {
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 				distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
 				         stateInfo->fieldPositions->secondBaseRun.x) / distance;
 				base = 2;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD) {
 				distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
 				         stateInfo->fieldPositions->thirdBase.z) / distance;
 				base = 3;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
+			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 				// and for player who arrives homebase we just set  the marker to be at the last position.
 				phase = 0.0f;
 				base = 4;

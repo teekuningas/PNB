@@ -1,10 +1,32 @@
 # TODO - Current Tasks
 
-### Phase 3: Ascent Stage 1 - Rendering & UI (Next)
-- [ ] Refactor `src/renderer/player_renderer.c` to use `PlayerUnitState` and `BaseID` enums instead of flags.
-    - Replace usage of `bTPI.isOnBase`, `bTPI.joker` (if relevant to state), etc. with switch on `bTPI.state`.
-    - **Note:** Do NOT remove the old flags yet. Just change the reader to use the Enums.
-- [ ] Refactor `src/game/game_screen.c` (Overlay/HUD) to use Enums.
-    - Update `drawStatistics` to check `gAI.event` (enum) instead of `gAI.gameInfoEvent` (int).
-    - Update `drawStatistics` to check `bTPI.baseId` instead of `bTPI.base` for base markers.
-- [ ] Verify visually.
+## Milestone 7: Data Renaissance - Phase 4 (Migrate Reads)
+
+**Strategy:** Write-Both Pattern (All writes update both old and new fields)
+**Current:** Migrating read sites from legacy to new enum fields
+**Next:** Delete legacy fields once all reads migrated
+
+### Phase 4: Migrate Reads to Use New Enum Fields (In Progress)
+- [ ] **Player State Reads:** Migrate from legacy flags to `state` enum
+  - [ ] Audit all reads of `isOnBase`, `out`, `wounded`, `leading`, `takingFreeWalk`
+  - [ ] Replace with reads of `state` enum and switch statements
+  - [ ] Test after each migration
+- [ ] **Base Location Reads:** Migrate from `base` to `baseId`
+  - [ ] Audit all reads of `base` field
+  - [ ] Replace with reads of `baseId` enum
+  - [ ] Test after each migration
+- [ ] **Event Reads:** Already mostly done! ✅
+  - [x] `game_screen.c` uses `event` enum
+  - [ ] Check if any other files read `gameInfoEvent`
+
+### Phase 5: Delete Legacy Fields (Next)
+- [ ] Remove legacy field definitions from `BattingTeamPlayerInfo`:
+  - [ ] Delete `isOnBase`, `out`, `wounded`, `leading`, `takingFreeWalk`
+  - [ ] Delete `base` field (keep only `baseId`)
+  - [ ] Delete `gameInfoEvent` (keep only `event`)
+- [ ] Remove adapter functions (unused):
+  - [ ] Delete `update_player_state_from_flags()`
+  - [ ] Delete `update_player_flags_from_state()`
+  - [ ] Remove `state_adapter.h` and `state_adapter.c`
+  - [ ] Remove includes
+- [ ] Final verification

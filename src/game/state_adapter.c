@@ -17,26 +17,27 @@ void update_player_state_from_flags(PlayerInfo* p)
 		return;
 	}
 
-	// 2. Safe states
-	if (b->isOnBase) {
-		if (b->leading) {
-			b->state = PLAYER_STATE_LEADING;
-		} else {
-			b->state = PLAYER_STATE_SAFE_ON_BASE;
-		}
+	// 2. Special movement: Leading (Must be checked before isOnBase because leading=1 implies isOnBase=0 in legacy)
+	if (b->leading) {
+		b->state = PLAYER_STATE_LEADING;
 		return;
 	}
 
-	// 3. Special movement
+	// 3. Safe states
+	if (b->isOnBase) {
+		b->state = PLAYER_STATE_SAFE_ON_BASE;
+		return;
+	}
+
+	// 4. Special movement: Free walk
 	if (b->takingFreeWalk) {
 		b->state = PLAYER_STATE_ADVANCING_FREELY;
 		return;
 	}
 
-	// 4. Default running
-	// If not on base, not out, not wounded, and not walking -> Running
-	// (Assuming they are active in the play)
-	if (b->base != -1) { // -1 usually implies not on field, but context matters
+	// 5. Default running
+	// If not on base, not out, not wounded, not leading, and not walking -> Running
+	if (b->base != -1) {
 		b->state = PLAYER_STATE_RUNNING;
 	}
 
@@ -72,7 +73,7 @@ void update_player_flags_from_state(PlayerInfo* p)
 		b->takingFreeWalk = 1;
 		break;
 	case PLAYER_STATE_LEADING:
-		b->isOnBase = 1; // Leading is a sub-state of being on base (usually)
+		b->isOnBase = 0; // Legacy: Leading players are technically not "on base"
 		b->leading = 1;
 		break;
 	case PLAYER_STATE_OUT:
@@ -82,8 +83,6 @@ void update_player_flags_from_state(PlayerInfo* p)
 		b->wounded = 1;
 		break;
 	case PLAYER_STATE_SCORED:
-		// Scored players are usually removed from field arrays, so flags might not matter
-		// but we ensure they aren't marked as "out"
 		break;
 	}
 

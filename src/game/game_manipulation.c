@@ -121,11 +121,13 @@ static void updateBallStatus(StateInfo* stateInfo)
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
 								stateInfo->localGameInfo->gAI.strikes += 1;
 								stateInfo->localGameInfo->gAI.gameInfoEvent = 5;
+								stateInfo->localGameInfo->gAI.event = EVENT_STRIKE;
 							}
 						} else {
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
 								stateInfo->localGameInfo->gAI.balls += 1;
 								stateInfo->localGameInfo->gAI.gameInfoEvent = 6;
+								stateInfo->localGameInfo->gAI.event = EVENT_BALL;
 
 								// here we also set freeWalk flags because it could be possible that batting team now
 								// has right for free walk.
@@ -389,6 +391,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 									if(fieldIndex != -1) {
 										stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
 										stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.state = PLAYER_STATE_WOUNDED;
 										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.wounded = 1;
 										movePlayerOut(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
 										stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
@@ -443,6 +446,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 						}
 
 					}
@@ -758,12 +762,15 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									// set new base-value and isOnBase-vaule to 1.
 									stateInfo->localGameInfo->playerInfo[i].bTPI.base =
 									    stateInfo->localGameInfo->playerInfo[i].bTPI.base + 1;
+									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[i].bTPI.base;
+									stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 									// also these are needed to do continued calculations only when needed.
 									stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
 
 								} else {
+									stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 								}
 							}
@@ -783,6 +790,8 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
 
 										stateInfo->localGameInfo->playerInfo[i].bTPI.base = 4;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 										stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
@@ -801,6 +810,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									} else {
 										// otherwise we are at the third base
 
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										stopTargetLookingPlayer(stateInfo, i);
 										needToStop = 0;
