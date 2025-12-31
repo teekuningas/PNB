@@ -49,6 +49,7 @@ void setup_runner_at_first_base(StateInfo* state) {
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.base = 1;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 1;
+    set_test_player_state(state, 0, PLAYER_STATE_SAFE_ON_BASE);
 }
 
 void setup_runner_at_third_base(StateInfo* state) {
@@ -67,6 +68,7 @@ void setup_runner_at_third_base(StateInfo* state) {
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.base = 3;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 3;
+    set_test_player_state(state, 0, PLAYER_STATE_SAFE_ON_BASE);
 }
 
 void cleanup_test_state(StateInfo* state) {
@@ -81,5 +83,48 @@ void cleanup_test_state(StateInfo* state) {
     free(state->fieldPositions);
     free(state->teamData);
     free(state);
+}
+
+void set_test_player_state(StateInfo* state, int playerIndex, PlayerUnitState newState) {
+    BattingTeamPlayerInfo* b = &state->localGameInfo->playerInfo[playerIndex].bTPI;
+    
+    // Set new state
+    b->state = newState;
+    
+    // Reset flags
+    b->isOnBase = 0;
+    b->out = 0;
+    b->wounded = 0;
+    b->takingFreeWalk = 0;
+    b->leading = 0;
+
+    switch (newState) {
+        case PLAYER_STATE_IDLE:
+            break;
+        case PLAYER_STATE_AT_BAT:
+            b->isOnBase = 1; // Batter is technically "safe" at home until hit
+            break;
+        case PLAYER_STATE_SAFE_ON_BASE:
+            b->isOnBase = 1;
+            break;
+        case PLAYER_STATE_RUNNING:
+            // All flags 0
+            break;
+        case PLAYER_STATE_ADVANCING_FREELY:
+            b->takingFreeWalk = 1;
+            break;
+        case PLAYER_STATE_LEADING:
+            b->isOnBase = 0; // Legacy: Leading players are technically not "on base"
+            b->leading = 1;
+            break;
+        case PLAYER_STATE_OUT:
+            b->out = 1;
+            break;
+        case PLAYER_STATE_WOUNDED:
+            b->wounded = 1;
+            break;
+        case PLAYER_STATE_SCORED:
+            break;
+    }
 }
 

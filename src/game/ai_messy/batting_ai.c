@@ -233,7 +233,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int i;
 			for(i = 1; i < BASE_COUNT; i++) {
 				if(aiBaseRunnerDecisionMade[i] == 0 && stateInfo->localGameInfo->pII.safeOnBaseIndex[i] != -1 &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.isOnBase == 1 &&
+				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.state == PLAYER_STATE_SAFE_ON_BASE &&
 				        aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_CLICK_LOCK;
@@ -258,7 +258,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int i;
 			for(i = 1; i < 3; i++) {
 				if(stateInfo->localGameInfo->pII.safeOnBaseIndex[i] != -1 &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.leading == 1 &&
+				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[i]].bTPI.state == PLAYER_STATE_LEADING &&
 				        aiBaseRunnerKeyDown[i] == 0 && aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_COME_BACK_LOCK;

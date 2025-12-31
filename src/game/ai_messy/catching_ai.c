@@ -144,14 +144,14 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int r3IsOnBase = 0;
 		if (index3 != -1) {
 			r3OriginalBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase;
-			r3IsOnBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.isOnBase;
+			r3IsOnBase = (stateInfo->localGameInfo->playerInfo[index3].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
 		}
 
 		int r2OriginalBase = -1;
 		int r2IsOnBase = 0;
 		if (index2 != -1) {
 			r2OriginalBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase;
-			r2IsOnBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.isOnBase;
+			r2IsOnBase = (stateInfo->localGameInfo->playerInfo[index2].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
 		}
 
 		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
@@ -182,10 +182,11 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			for(i = 0; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
-					runners[runnerCount].isOnBase = stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase;
-					runners[runnerCount].takingFreeWalk = stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk;
+					PlayerUnitState s = stateInfo->localGameInfo->playerInfo[index].bTPI.state;
+					runners[runnerCount].isOnBase = (s == PLAYER_STATE_SAFE_ON_BASE || s == PLAYER_STATE_AT_BAT);
+					runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
 					runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
-					runners[runnerCount].leading = stateInfo->localGameInfo->playerInfo[index].bTPI.leading;
+					runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
 					runnerCount++;
 				}
 			}

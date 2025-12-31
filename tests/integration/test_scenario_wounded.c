@@ -25,7 +25,7 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Runner on 1st starts running towards 2nd
     state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 2;
     state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 0;
+    set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
     // Ball is caught by a fielder
     state->localGameInfo->pII.hasBallIndex = fielderIndex;
@@ -45,7 +45,6 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
 
     for (int i = 0; i < 65; ++i) {
         gameAnalysis(state, &menu, &seed);
-        update_player_flags_from_state(&state->localGameInfo->playerInfo[runnerIndex]);
     }
 
     int isWounded = state->localGameInfo->playerInfo[runnerIndex].bTPI.wounded;

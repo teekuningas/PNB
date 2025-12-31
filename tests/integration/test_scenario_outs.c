@@ -17,7 +17,7 @@ static int test_runner_forced_out_at_first_base_scenario() {
     // Simulate a hit
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
-    state->localGameInfo->playerInfo[0].bTPI.isOnBase = 0;
+    set_test_player_state(state, 0, PLAYER_STATE_RUNNING);
 
     // Move ball to first base
     state->localGameInfo->ballInfo.location = state->fieldPositions->firstBase;
