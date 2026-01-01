@@ -89,11 +89,21 @@ extern int test_cup_save_load();
 extern int test_cup_day_progression();
 extern int test_cup_day_progression_best_of_three();
 
+// Declare new base logic tests
+extern int test_base_sequence();
+extern int test_base_properties();
+extern int test_base_comparisons();
+
 int main(int argc, char* argv[]) {
 	printf("========================================\n");
 	printf("PNB Test Suite (No Graphics)\n");
 	printf("========================================\n\n");
 	
+	// Base Logic tests (Milestone 7 helpers)
+	RUN_TEST(test_base_sequence);
+	RUN_TEST(test_base_properties);
+	RUN_TEST(test_base_comparisons);
+
 	// Fixture tests
 	RUN_TEST(test_fixture_super_inning_setup);
 	RUN_TEST(test_fixture_homerun_contest_setup);

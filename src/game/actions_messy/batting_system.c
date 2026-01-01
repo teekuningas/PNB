@@ -5,6 +5,7 @@
 #include "actions_messy/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include <math.h>
+#include "base_logic.h"
 
 // Macros moved from action_implementation.c
 #define BATTER_ANGLE_SPEED_CONSTANT 0.02f
@@ -128,8 +129,8 @@ void selectBatter(StateInfo* stateInfo)
 		// new batting team player on the field.
 		stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount++;
 		// has base of zero, is on base and original base is zero too.
-		stateInfo->localGameInfo->playerInfo[index].bTPI.base = 0;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_HOME;
+		stateInfo->localGameInfo->playerInfo[index].bTPI.base = 0; // Legacy sync
 		stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 1;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = 0;

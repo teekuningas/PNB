@@ -10,6 +10,7 @@
 #include "rules_outs.h"
 #include "rules_runs.h"
 #include "rules_strikes.h"
+#include "base_logic.h"
 #include "state_adapter.h"
 
 #define BASE_RADIUS 2.0f
@@ -184,7 +185,7 @@ static void checkForOuts(StateInfo* stateInfo)
 						// if the batter manages to get over second base he still has chance
 						// to make run even if ball has been to basecatchers with the exception of
 						// third base.
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base >= 2 &&
+						if(base_is_at_least(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId, BASE_SECOND) &&
 						        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 0 && i != 3) {
 							canMakeRunOfHonor = 1;
 						}
@@ -315,19 +316,19 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				// if player is taking a free walk its always not wound. if not and ball is out of base,
 				// its a wound, its also wound if the player has arrived the next base already.
 				if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE ||
-				        stateInfo->localGameInfo->playerInfo[index].bTPI.base != stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
+				        stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 					stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 1;
 					printf("DEBUG: Player %d marked for wound. State: %d, Base: %d, Orig: %d\n",
 					       index,
 					       stateInfo->localGameInfo->playerInfo[index].bTPI.state,
-					       stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+					       (int)stateInfo->localGameInfo->playerInfo[index].bTPI.baseId,
 					       stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
 				} else {
 					printf("DEBUG: Player %d SAFE from wound. State: %d, Base: %d, Orig: %d\n",
 					       index,
 					       stateInfo->localGameInfo->playerInfo[index].bTPI.state,
-					       stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+					       (int)stateInfo->localGameInfo->playerInfo[index].bTPI.baseId,
 					       stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
 				}
 			}
@@ -365,7 +366,8 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				if(index != -1) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply == 1) {
 						printf("DEBUG: Applying wound to Player %d\n", index);
-						int base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+						int base_idx = base_to_int_index(baseId);
 						// set state to wounded
 						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
 						stateInfo->localGameInfo->playerInfo[index].bTPI.wounded = 1;
@@ -373,13 +375,13 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						stateInfo->localGameInfo->gAI.gameInfoEvent = 2;
 						stateInfo->localGameInfo->gAI.event = EVENT_WOUNDED;
 						// no safe on previous base anymore.
-						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
-							stateInfo->localGameInfo->pII.safeOnBaseIndex[base] = -1;
+						if(base_idx != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[base_idx] == index) {
+							stateInfo->localGameInfo->pII.safeOnBaseIndex[base_idx] = -1;
 						}
 						// try to avoid out by running if not on next base yet.
 						// rest of the wound handling code will be in the base arrivals.
-						if(base == stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) {
-							runToNextBase(stateInfo, index, base);
+						if(baseId == (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) {
+							runToNextBase(stateInfo, index, (int)baseId);
 						}
 						// if already on the next base, just remove from the base. wounded already set.
 						else {

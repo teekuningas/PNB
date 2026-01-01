@@ -5,6 +5,7 @@
 #include "pitching_ai_strategy.h"
 #include "rng.h"
 #include <stdlib.h> // for rand()
+#include "base_logic.h"
 
 // Required local constant (was in action_implementation.c)
 #define ANIMATION_FREQUENCY 3
@@ -177,7 +178,9 @@ void releasePitch(StateInfo* stateInfo)
 	for(i = 0; i < BASE_COUNT; i++) {
 		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 		if(index != -1) {
-			int base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+			BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+			int base = base_to_int_index(baseId);
+
 			// we dont do it though in the case of free walks, as we dont want players to return previous bases
 			// after taking a free walk, even if there is foul play. so thats the reason for conditions.
 			// free walks set original base to base that follows the base where player was when the
@@ -197,7 +200,7 @@ void releasePitch(StateInfo* stateInfo)
 					}
 				}
 				if(done == 0) {
-					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = (int)baseId;
 				}
 			}
 		}

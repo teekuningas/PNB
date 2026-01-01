@@ -9,6 +9,7 @@
 #include "actions_messy/batting_system.h"
 #include "game_manipulation.h"
 #include "rng.h"
+#include "base_logic.h"
 
 #define CLICK_BREAK_CONSTANT 3
 
@@ -337,9 +338,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				int leadBase = -1;
 				for(i = 0; i < BASE_COUNT; i++) {
 					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-					if(index != -1) {
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base > leadBase) {
-							leadBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
+						BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+						int currentBaseInt = base_to_int_index(currentBaseId);
+
+						if(currentBaseInt != -1 && currentBaseInt > leadBase) {
+							leadBase = currentBaseInt;
 						}
 					}
 				}
@@ -412,7 +416,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		for(j = 0; j < BASE_COUNT; j++) {
 			int runnerIndex = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
 			if(runnerIndex != -1) {
-				if(stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.base == i) {
+				BaseID baseId = stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.baseId;
+				int baseInt = base_to_int_index(baseId);
+
+				if(baseInt == i) {
 					if(runnerIndex != index) {
 						shouldRun = 0;
 					}

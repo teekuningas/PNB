@@ -3,6 +3,7 @@
 #include "vector_math.h"
 #include "geometry.h"
 #include "rng.h"
+#include "base_logic.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -368,7 +369,7 @@ void lead(StateInfo* stateInfo, int index)
 		Vector3D target;
 		// now to lead we must be either on first base or second base, as it doesnt make much sense in
 		// third base nor in homebase.
-		if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 1) {
+		if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
 			// lead target is selected by adding a small step to current location to next bases' direction
 			// using firstBase  instead of location in the difference is because we want the step size to stay
 			// same
@@ -380,7 +381,7 @@ void lead(StateInfo* stateInfo, int index)
 			if(stateInfo->localGameInfo->playerInfo[index].tPI.location.x > stateInfo->fieldPositions->firstBaseRun.x +
 			        0.5f*(stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x))
 				done = 1;
-		} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 2) {
+		} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 			// same as in previous but from second to third base
 			target.x = stateInfo->localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(stateInfo->fieldPositions->thirdBaseRun.x -
 			           stateInfo->fieldPositions->secondBaseRun.x);
@@ -498,7 +499,7 @@ void calculateFreeWalk(StateInfo* stateInfo)
 {
 	int i;
 	int maxOriginalBase = -1;
-	int maxBase = -1;
+	BaseID maxBaseId = BASE_NONE;
 	int maxIndex = -1;
 	// we go throush every (nonwounded) candidate and check who has the biggest base value
 	// if there are many of those who have same base value, we will pick the one who has
@@ -508,15 +509,17 @@ void calculateFreeWalk(StateInfo* stateInfo)
 	for(i = 0; i < BASE_COUNT; i++) {
 		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 		if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.base >= maxBase) {
-				if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == maxBase) {
+			BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+			// Use base_cmp to compare bases semantically (replaces >=)
+			if(base_cmp(currentBaseId, maxBaseId) >= 0) {
+				if(currentBaseId == maxBaseId) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase > maxOriginalBase) {
-						maxBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+						maxBaseId = currentBaseId;
 						maxOriginalBase = stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
 						maxIndex = index;
 					}
 				} else {
-					maxBase = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+					maxBaseId = currentBaseId;
 					maxOriginalBase = stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
 					maxIndex = index;
 				}
@@ -525,7 +528,8 @@ void calculateFreeWalk(StateInfo* stateInfo)
 		}
 	}
 	stateInfo->localGameInfo->gAI.freeWalkIndex = maxIndex;
-	if(maxIndex != -1) stateInfo->localGameInfo->gAI.freeWalkBase = stateInfo->localGameInfo->playerInfo[maxIndex].bTPI.base;
+	// Convert back to int for legacy API using helper
+	if(maxIndex != -1) stateInfo->localGameInfo->gAI.freeWalkBase = base_to_int_index(stateInfo->localGameInfo->playerInfo[maxIndex].bTPI.baseId);
 	else stateInfo->localGameInfo->gAI.freeWalkBase = -1;
 }
 /*
@@ -761,8 +765,8 @@ void initializeNonCriticalPlayerInformation(StateInfo* stateInfo)
 			stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.woundedApply = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.hasMadeRunOnThirdBase = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.base = -1;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = (BaseID)-1;
+			stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_NONE;
+			stateInfo->localGameInfo->playerInfo[i].bTPI.base = -1; // Keep legacy sync
 		}
 	}
 
@@ -912,8 +916,8 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount = 2;
 		// batter
 		if(batterIndex != -1) {
-			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.base = 0;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
+			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.base = 0; // Legacy sync
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.isOnBase = 1;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.originalBase = 0;
@@ -928,8 +932,8 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 		}
 		// runner
 		if(runnerIndex != -1) {
-			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.base = 3;
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
+			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.base = 3; // Legacy sync
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 1;
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 3;

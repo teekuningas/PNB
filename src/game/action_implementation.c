@@ -14,6 +14,7 @@
 #include "actions_messy/throwing_system.h"
 #include "ai_messy/catching_ai.h"
 #include "ai_messy/batting_ai.h"
+#include "base_logic.h"
 
 #define ANIMATION_FREQUENCY 3
 
@@ -262,8 +263,10 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 				}
 				stateInfo->localGameInfo->gAI.forceNextPair = 1;
 			} else {
+				BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+				int currentBaseInt = base_to_int_index(currentBaseId);
 
-				if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == base) {
+				if(currentBaseInt == base) {
 					// we start running to the next base
 					runToNextBase(stateInfo, index, base);
 
@@ -272,8 +275,8 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
 					stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 1;
 					// if he's safe on previous base, set the safeOnBaseIndex for that base to -1
-					if(stateInfo->localGameInfo->pII.safeOnBaseIndex[stateInfo->localGameInfo->playerInfo[index].bTPI.base] == index) {
-						stateInfo->localGameInfo->pII.safeOnBaseIndex[stateInfo->localGameInfo->playerInfo[index].bTPI.base] = -1;
+					if(currentBaseInt != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseInt] == index) {
+						stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseInt] = -1;
 					}
 					// if he was batter, set the batterIndex to -1 so that we can have a new batter.
 					if(stateInfo->localGameInfo->pII.batterIndex == index) {

@@ -6,6 +6,7 @@
 #include "vector_math.h"
 #include "catching_ai_strategy.h"
 #include "rng.h"
+#include "base_logic.h"
 
 int aiMoveCounter = 0;
 int aiThrowStage = 0;
@@ -185,7 +186,10 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 					PlayerUnitState s = stateInfo->localGameInfo->playerInfo[index].bTPI.state;
 					runners[runnerCount].isOnBase = (s == PLAYER_STATE_SAFE_ON_BASE || s == PLAYER_STATE_AT_BAT);
 					runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
-					runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+					runners[runnerCount].base = base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId);
+					// Legacy fallback if needed, but base_to_int_index handles strict cases.
+					// If base is -1 or > 3, we just pass what we have (or -1).
+					if (runners[runnerCount].base == -1) runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
 					runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
 					runnerCount++;
 				}

@@ -36,7 +36,35 @@ bool base_is_safe_haven(BaseID id);
 /**
  * Checks if the ID is a valid base index (0-3).
  * Useful for array indexing (like baseRun[4]).
+ * Equivalent to: id >= BASE_HOME && id <= BASE_THIRD
  */
 bool base_is_index(BaseID id);
+
+/**
+ * Checks if a base allows advancement (running forward).
+ * True for HOME, FIRST, SECOND.
+ * False for THIRD (can't advance to 4th base, you score instead), HOME_SCORED, NONE.
+ * Replaces logic like: base >= 0 && base < 3
+ */
+bool base_can_advance(BaseID id);
+
+/**
+ * Checks if id is numerically greater than or equal to threshold.
+ * Relying on the enum order: HOME(0) < FIRST(1) < SECOND(2) < THIRD(3) < HOME_SCORED(4)
+ */
+bool base_is_at_least(BaseID id, BaseID threshold);
+
+/**
+ * Compares two bases.
+ * Returns positive if a > b, negative if a < b, 0 if equal.
+ * Useful for finding the "most advanced" runner.
+ */
+int base_cmp(BaseID a, BaseID b);
+
+/**
+ * Safely converts BaseID to an integer index.
+ * Returns -1 if not a valid index (HOME..THIRD).
+ */
+int base_to_int_index(BaseID id);
 
 #endif

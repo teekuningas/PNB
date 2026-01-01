@@ -8,7 +8,10 @@
 #include "game_manipulation.h"
 #include "common_logic.h"
 #include "ball_physics.h"
-#include "collision.h" // Include the new header
+#include "collision.h"
+#include "vector_math.h"
+#include "geometry.h"
+#include "base_logic.h"
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -754,20 +757,17 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 						// if we are legally running bases
 						else {
 							// if we are at homebase, first base or second base and not leading
-							if(stateInfo->localGameInfo->playerInfo[i].bTPI.base >= 0 &&
-							        stateInfo->localGameInfo->playerInfo[i].bTPI.base < 3 &&
+							if(base_can_advance(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId) &&
 							        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_LEADING) {
 								// and moving forward
 								if(stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 1 ) {
 									// set going forward flag to 0 as we are stopped now
 									stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 									// set new base-value and isOnBase-vaule to 1.
-									stateInfo->localGameInfo->playerInfo[i].bTPI.base =
-									    stateInfo->localGameInfo->playerInfo[i].bTPI.base + 1;
-									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[i].bTPI.base;
+									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = base_get_next(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId);
+									stateInfo->localGameInfo->playerInfo[i].bTPI.base = (int)stateInfo->localGameInfo->playerInfo[i].bTPI.baseId; // Legacy sync
 
 									printf("DEBUG: Player %d arrived at base %d. State: %d\n", i, stateInfo->localGameInfo->playerInfo[i].bTPI.base, stateInfo->localGameInfo->playerInfo[i].bTPI.state);
-
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
@@ -789,7 +789,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 								}
 							}
 							// so if we are on base 3
-							else if(stateInfo->localGameInfo->playerInfo[i].bTPI.base == 3) {
+							else if(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId == BASE_THIRD) {
 								if(stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 1) {
 									// if we are moving forward and have not passed the flag yet, change the direction
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0) {
@@ -803,10 +803,9 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										Vector3D target;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
 
-										stateInfo->localGameInfo->playerInfo[i].bTPI.base = 4;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
-										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+										stateInfo->localGameInfo->playerInfo[i].bTPI.base = 4;
+										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 											stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										}
