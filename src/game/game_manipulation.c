@@ -363,19 +363,19 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					// homeruns are checked here though, in that case base==4? so its out of this loop.
 					for(j = 1; j < BASE_COUNT; j++) {
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == j) {
-					// arrived to base
-					// if we were taking a free walk, we stop it now
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
-						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
-						stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
+							// arrived to base
+							// if we were taking a free walk, we stop it now
+							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
+								stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
 							}
-														// if we were wounded we must be removed out of the field and
-														// also basemen already on the base must be removed as they get wounded too.
-														if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
-															printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
-															stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-															stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
-															movePlayerOut(stateInfo, index);
+							// if we were wounded we must be removed out of the field and
+							// also basemen already on the base must be removed as they get wounded too.
+							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
+								printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
+								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
+								stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+								movePlayerOut(stateInfo, index);
 								// if there was a player on this base before and he isnt safe here
 								// it means he had tried to run to next base and is wounded already so need for this.
 								// if there is a player safe here:
@@ -728,12 +728,12 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 						// so if we are moving out of the field after being wounded or tagged.
 						// here we first move to a some point outside the limits of game area
 						// and then back to a point in homebase, and then to own place on the circle.
-								// check for running because otherwise we players who were wounded before arriving a base
-								// would be stuck there standing.
-								if((stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
-								        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
-								         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
-									Vector3D target;
+						// check for running because otherwise we players who were wounded before arriving a base
+						// would be stuck there standing.
+						if((stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
+						        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
+						         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
+							Vector3D target;
 							if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0) {
 								stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 1;
 								target.x = stateInfo->fieldPositions->pitchPlate.x;
@@ -765,7 +765,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									stateInfo->localGameInfo->playerInfo[i].bTPI.base =
 									    stateInfo->localGameInfo->playerInfo[i].bTPI.base + 1;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[i].bTPI.base;
-									
+
 									printf("DEBUG: Player %d arrived at base %d. State: %d\n", i, stateInfo->localGameInfo->playerInfo[i].bTPI.base, stateInfo->localGameInfo->playerInfo[i].bTPI.state);
 
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&

@@ -318,17 +318,17 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.base != stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 					stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 1;
-					printf("DEBUG: Player %d marked for wound. State: %d, Base: %d, Orig: %d\n", 
-						index, 
-						stateInfo->localGameInfo->playerInfo[index].bTPI.state,
-						stateInfo->localGameInfo->playerInfo[index].bTPI.base,
-						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
+					printf("DEBUG: Player %d marked for wound. State: %d, Base: %d, Orig: %d\n",
+					       index,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.state,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
 				} else {
-					printf("DEBUG: Player %d SAFE from wound. State: %d, Base: %d, Orig: %d\n", 
-						index, 
-						stateInfo->localGameInfo->playerInfo[index].bTPI.state,
-						stateInfo->localGameInfo->playerInfo[index].bTPI.base,
-						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
+					printf("DEBUG: Player %d SAFE from wound. State: %d, Base: %d, Orig: %d\n",
+					       index,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.state,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+					       stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
 				}
 			}
 		}
