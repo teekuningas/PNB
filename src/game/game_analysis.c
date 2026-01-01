@@ -118,7 +118,7 @@ static void checkForOuts(StateInfo* stateInfo)
 					if(homeRunCameraCounter == -1 && stateInfo->localGameInfo->gAI.homeRunCameraFlag == 1 &&
 					        (stateInfo->localGameInfo->pII.safeOnBaseIndex[3] == -1 ||
 					         stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[3]].
-					         bTPI.isOnBase == 1)) {
+					         bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
 						homeRunCameraCounter = 0;
 					}
 				}
@@ -134,7 +134,7 @@ static void checkForOuts(StateInfo* stateInfo)
 						// remove safety from last base?
 						// happens if player is out of base and ball arrives the previous one.
 						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[i] == index) {
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0) {
+							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE) {
 								// in case player was leading of coming back, we now force him to continue
 								// to next base
 								runToNextBase(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[i], i);
@@ -157,9 +157,9 @@ static void checkForOuts(StateInfo* stateInfo)
 
 						if(is_runner_forced_out(
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.base,
-						            stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase,
+						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE,
 						            baseIndex,
-						            stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk,
+						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
 						            stateInfo->localGameInfo->gAI.outOfBounds)) {
 							// we set player's out flag so that his movement is easy to control
 							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_OUT;
@@ -283,10 +283,12 @@ static void strikesAndBalls(StateInfo* stateInfo)
 		stateInfo->localGameInfo->gAI.freeWalkCalculationMade = 1;
 	} else {
 		// so that if player just ran without taking hiw free walk, and got wounded or out, then stop asking
-		// for the free walk.
-		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.wounded == 1 ||
-		        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.out == 1) {
-			stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 0;
+		// that question.
+		if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
+			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
+			        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
+				stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 0;
+			}
 		}
 	}
 }
@@ -304,6 +306,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		woundingCatchCounter = 0;
 		stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound = 0;
 		stateInfo->localGameInfo->gAI.woundingCatchHandled = 1;
+		printf("DEBUG: Wounding catch started! Counter reset.\n");
 
 		for(i = 0; i < BASE_COUNT; i++) {
 			// so we check every batting team player.
@@ -311,10 +314,21 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 			if(index != -1) {
 				// if player is taking a free walk its always not wound. if not and ball is out of base,
 				// its a wound, its also wound if the player has arrived the next base already.
-				if((stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0 ||
+				if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE ||
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.base != stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
-				        stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0) {
+				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 					stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 1;
+					printf("DEBUG: Player %d marked for wound. State: %d, Base: %d, Orig: %d\n", 
+						index, 
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state,
+						stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
+				} else {
+					printf("DEBUG: Player %d SAFE from wound. State: %d, Base: %d, Orig: %d\n", 
+						index, 
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state,
+						stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase);
 				}
 			}
 		}
@@ -330,6 +344,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		} else threshold = (int)WOUNDING_CATCH_THRESHOLD;
 		// if unWounding happens, then stop the counter and continue the game normally.
 		if(stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound == 1) {
+			printf("DEBUG: Wounding CANCELLED! Ball hit ground.\n");
 			int i;
 			woundingCatchCounter = -1;
 			for(i = 0; i < BASE_COUNT; i++) {
@@ -342,12 +357,14 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		// otherwise there is a real possibility for wounding
 		// and we check if there are players that are out of base etc at that moment.
 		if(woundingCatchCounter > threshold) {
+			printf("DEBUG: Wounding catch timer expired. Applying wounds.\n");
 			int i;
 			for(i = 0; i < BASE_COUNT; i++) {
 				// so we check every batting team player.
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply == 1) {
+						printf("DEBUG: Applying wound to Player %d\n", index);
 						int base = stateInfo->localGameInfo->playerInfo[index].bTPI.base;
 						// set state to wounded
 						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
@@ -544,7 +561,7 @@ static void checkForRuns(StateInfo* stateInfo)
 						int runScored = calculate_runs(
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.base,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
-						                    stateInfo->localGameInfo->playerInfo[index].bTPI.wounded,
+						                    stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED,
 						                    stateInfo->localGameInfo->gAI.canMakeRunOfHonor,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase);
 

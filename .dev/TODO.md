@@ -10,9 +10,9 @@
 - [ ] **Player State Reads:** Migrate from legacy flags to `state` enum
   - [x] Harden Integration Tests (commit: 4df410e)
   - [x] Migrate `src/game/ai_messy/` (batting_ai.c, catching_ai.c) (commit: 4df410e)
-  - [ ] Migrate `src/game/common_logic.c` and `game_manipulation.c`
-  - [ ] Migrate `src/game/game_analysis.c` (Rules)
-  - [ ] Migrate `src/game/action_implementation.c` (Actions)
+  - [x] Migrate `src/game/common_logic.c` and `game_manipulation.c`
+  - [x] Migrate `src/game/game_analysis.c` (Rules)
+  - [x] Migrate `src/game/action_implementation.c` (Actions)
 - [ ] **Base Location Reads:** Migrate from `base` to `baseId`
   - [ ] Audit all reads of `base` field
   - [ ] Replace with reads of `baseId` enum

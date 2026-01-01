@@ -354,7 +354,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 				stateInfo->localGameInfo->playerInfo[index].bTPI.arrivedToBase = 0;
 				// if out has been made, player is removed immediately from the game so we wouldnt be here.
 				// if wound has been made, player still tries to get to next base, so we have to handle that here.
-				if(stateInfo->localGameInfo->playerInfo[index].bTPI.out != 1) {
+				if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
 					int j;
 					// so after we have a valid player, we are going to check to which base he arrived
 					// and after that do the actions corresponding to base and direction.
@@ -363,16 +363,19 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					// homeruns are checked here though, in that case base==4? so its out of this loop.
 					for(j = 1; j < BASE_COUNT; j++) {
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == j) {
-							// if we were taking a free walk, now its done and we can set the flag off.
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 1) {
-								stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
+					// arrived to base
+					// if we were taking a free walk, we stop it now
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
+						stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
 							}
-							// if we were wounded we must be removed out of the field and
-							// also basemen already on the base must be removed as they get wounded too.
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.wounded == 1) {
-								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-								stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
-								movePlayerOut(stateInfo, index);
+														// if we were wounded we must be removed out of the field and
+														// also basemen already on the base must be removed as they get wounded too.
+														if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
+															printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
+															stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
+															stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+															movePlayerOut(stateInfo, index);
 								// if there was a player on this base before and he isnt safe here
 								// it means he had tried to run to next base and is wounded already so need for this.
 								// if there is a player safe here:
@@ -438,7 +441,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						// unless a new pitch is pitched and then our originalBase changes.
 						if((stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase != 0 ||
 						        stateInfo->localGameInfo->gAI.canMakeRunOfHonor == 0) &&
-						        stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk == 0) {
+						        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 							stateInfo->localGameInfo->gAI.checkForRun = 1;
 						} else {
 							// if was 0, we just remove this player from field.
@@ -725,13 +728,12 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 						// so if we are moving out of the field after being wounded or tagged.
 						// here we first move to a some point outside the limits of game area
 						// and then back to a point in homebase, and then to own place on the circle.
-						// check for running because otherwise we players who were wounded before arriving a base
-						// would be handled by this, which is of course a mistake.
-						if(stateInfo->localGameInfo->playerInfo[i].bTPI.out == 1 ||
-						        (stateInfo->localGameInfo->playerInfo[i].bTPI.wounded == 1 &&
-						         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
-							Vector3D target;
-
+								// check for running because otherwise we players who were wounded before arriving a base
+								// would be stuck there standing.
+								if((stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
+								        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
+								         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
+									Vector3D target;
 							if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0) {
 								stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 1;
 								target.x = stateInfo->fieldPositions->pitchPlate.x;
@@ -754,7 +756,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 							// if we are at homebase, first base or second base and not leading
 							if(stateInfo->localGameInfo->playerInfo[i].bTPI.base >= 0 &&
 							        stateInfo->localGameInfo->playerInfo[i].bTPI.base < 3 &&
-							        stateInfo->localGameInfo->playerInfo[i].bTPI.leading == 0) {
+							        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_LEADING) {
 								// and moving forward
 								if(stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 1 ) {
 									// set going forward flag to 0 as we are stopped now
@@ -763,15 +765,27 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									stateInfo->localGameInfo->playerInfo[i].bTPI.base =
 									    stateInfo->localGameInfo->playerInfo[i].bTPI.base + 1;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[i].bTPI.base;
-									stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-									stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+									
+									printf("DEBUG: Player %d arrived at base %d. State: %d\n", i, stateInfo->localGameInfo->playerInfo[i].bTPI.base, stateInfo->localGameInfo->playerInfo[i].bTPI.state);
+
+									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
+									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+										printf("DEBUG: Player %d state set to SAFE_ON_BASE\n", i);
+									} else {
+										printf("DEBUG: Player %d state PRESERVED (Wounded/Out)\n", i);
+									}
 									// also these are needed to do continued calculations only when needed.
 									stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
 									stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
 
 								} else {
-									stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-									stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
+									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+									}
 								}
 							}
 							// so if we are on base 3
@@ -791,8 +805,11 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 
 										stateInfo->localGameInfo->playerInfo[i].bTPI.base = 4;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
+										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+											stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+										}
 										stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 										stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
 										stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
@@ -810,8 +827,11 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									} else {
 										// otherwise we are at the third base
 
-										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
+										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+											stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
+										}
 										stopTargetLookingPlayer(stateInfo, i);
 										needToStop = 0;
 									}

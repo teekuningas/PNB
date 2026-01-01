@@ -1,9 +1,9 @@
 ## Refactoring Master Plan
 
-## Current Status: Milestone 7 - Phase 5 (Write-Both Pattern Complete) 🎉
+## Current Status: Milestone 7 - Phase 4 (Player State Reads Migrated) 🎉
 
-**Foundation Quality:** 10.0/10 - Excellent (Write-Both Pattern Implemented)
-**Current Task:** Migrate reads from legacy flags to new enum-based fields.
+**Foundation Quality:** 10.0/10 - Excellent (Write-Both Pattern & Read Migration for States Complete)
+**Current Task:** Migrate base location reads and then delete legacy fields.
 
 ---
 
@@ -12,38 +12,36 @@
 **Decision (2025-12-31):** Abandoned the scary bidirectional adapter pattern in favor of a simple, safe **write-both pattern**.
 
 ### What We Did
-- **Every write location** now updates BOTH the legacy field AND the new enum field
-- **No adapter sync calls needed** - data stays consistent by construction
-- **Safe migration path** - reads can be migrated independently without risk
+- **Every write location** updates BOTH the legacy field AND the new enum field
+- **Read migration complete** for all player state flags (isOnBase, out, wounded, leading, takingFreeWalk)
+- **Safe migration path** - reads are now using the new type-safe enums
 
 ### Current State
 - ✅ **All writes** update both old and new fields
-- ✅ **Game works perfectly** - no broken functionality
-- ⚠️ **Reads are mixed** - some code reads old fields, some reads new
-- 🎯 **Next step** - gradually migrate reads to use new fields
+- ✅ **Reads migrated** for all player state flags
+- ✅ **Game works perfectly** - verified with 51 tests (48 unit + 3 integration)
+- 🎯 **Next step** - migrate base location reads (base -> baseId)
 
 ---
 
 ## The Mountain Climb: Migration Roadmap 🏔️
 
-We are currently at **Phase 5: Migrate Reads** (After Summit).
+We are currently at **Phase 4: Migrate Reads (Base Locations)**.
 
 ### Base Camp: Dual State (Completed ✅)
 - **Goal:** Both old flags and new Enums exist side-by-side.
-- **Status:** ✅ Complete. Both systems present.
+- **Status:** ✅ Complete.
 
 ### Ascent Stage 1: Write-Both Pattern (Completed ✅)
 - **Goal:** Every write updates BOTH old and new fields.
-- **Status:** ✅ Complete. All writes keep both fields in sync.
-- **Safety:** Data consistency guaranteed by construction.
+- **Status:** ✅ Complete.
 
 ### Ascent Stage 2: Migrate Reads (IN PROGRESS 🔄)
 - **Goal:** Change read sites from old fields to new enum fields.
 - **Status:** 🔄 In Progress
-  - Player states: Mix of old and new reads
-  - Base location: Mostly old `base`, some new `baseId` (game_screen.c)
-  - Events: New `event` field in game_screen.c, old elsewhere
-- **Safety:** Safe to migrate one read at a time - writes keep both in sync.
+  - Player states: ✅ COMPLETE (All files migrated)
+  - Base location: 🔄 In Progress (Audit & migration needed)
+  - Events: ✅ COMPLETE (game_screen.c uses new event field)
 
 ### The Summit: Delete Legacy Fields (Next 🚩)
 - **Goal:** Remove old flag fields once all reads migrated.

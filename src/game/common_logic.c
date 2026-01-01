@@ -507,7 +507,7 @@ void calculateFreeWalk(StateInfo* stateInfo)
 	// either.
 	for(i = 0; i < BASE_COUNT; i++) {
 		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.wounded == 0) {
+		if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.base >= maxBase) {
 				if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == maxBase) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase > maxOriginalBase) {

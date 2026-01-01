@@ -400,8 +400,8 @@ static void baseRun(StateInfo* stateInfo, int base)
 	if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] != -1) {
 		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == 1) {
 			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[base];
-			if(stateInfo->localGameInfo->playerInfo[index].
-			        bTPI.isOnBase == 1) {
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+			        stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
 				if(stateInfo->localGameInfo->pRAI.willStartRunning[base] == 0) {
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].cPI.moving == 0) {
 						stateInfo->localGameInfo->pRAI.willStartRunning[base] = 1;
@@ -415,7 +415,8 @@ static void baseRun(StateInfo* stateInfo, int base)
 			} else {
 				stateInfo->localGameInfo->pRAI.willStartRunning[base] = 0;
 				if(index != -1) {
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase == 0) {
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE &&
+					        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
 						runToPreviousBase(stateInfo, index, base);
 					}
 				}
