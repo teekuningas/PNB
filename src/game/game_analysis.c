@@ -157,7 +157,7 @@ static void checkForOuts(StateInfo* stateInfo)
 						else baseIndex = 3;
 
 						if(is_runner_forced_out(
-						            stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						            base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId),
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE,
 						            baseIndex,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
@@ -469,11 +469,11 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 1;
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.base;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
 						}
 
 						// in case that player was taking a free walk from third base when this happened
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
+						if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 							int battingTeamIndex = (stateInfo->globalGameInfo->
 							                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 							// we will get a run.
@@ -494,7 +494,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							}
 						}
 						// if this player is a batter
-						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 0) {
+						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
 							if(stateInfo->localGameInfo->gAI.strikes == 3) {
 								// if out of bounds follows his third strike, we well get a out.
 								stateInfo->localGameInfo->gAI.gameInfoEvent = 1;
@@ -515,19 +515,19 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							}
 						}
 						// other bases straightforwardly.
-						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 1) {
+						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.x =
 							    stateInfo->fieldPositions->firstBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->firstBaseRun.z;
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[1] = index;
-						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 2) {
+						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.x =
 							    stateInfo->fieldPositions->secondBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->secondBaseRun.z;
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[2] = index;
-						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
+						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD) {
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.x =
 							    stateInfo->fieldPositions->thirdBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
@@ -559,9 +559,13 @@ static void checkForRuns(StateInfo* stateInfo)
 					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
 					if(index != -1) {
 						int runMade = 0;
+						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+						int baseInt = base_to_int_index(baseId);
+						if (baseId == BASE_HOME_SCORED) baseInt = 4;
+
 						// Check if a run is scored using the pure function
 						int runScored = calculate_runs(
-						                    stateInfo->localGameInfo->playerInfo[index].bTPI.base,
+						                    baseInt,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED,
 						                    stateInfo->localGameInfo->gAI.canMakeRunOfHonor,
@@ -569,7 +573,7 @@ static void checkForRuns(StateInfo* stateInfo)
 
 						// Handle side effects for home base arrival (removal from field)
 						// This happens regardless of whether a run is scored (e.g. if wounded)
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
+						if(baseId == BASE_HOME_SCORED) {
 							// remove player from the field.
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
@@ -579,7 +583,7 @@ static void checkForRuns(StateInfo* stateInfo)
 
 						if(runScored) {
 							// Specific update for Run of Honor
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
+							if(baseId == BASE_THIRD) {
 								stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 1;
 							}
 
@@ -594,7 +598,7 @@ static void checkForRuns(StateInfo* stateInfo)
 								stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 								// Only reset noMorePlayers for normal runs (home base arrival)
 								// If it was a home run, base is now -1 due to removal above.
-								if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == -1) {
+								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_NONE) {
 									stateInfo->localGameInfo->gAI.noMorePlayers = 0;
 								}
 							}

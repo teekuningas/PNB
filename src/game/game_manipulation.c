@@ -365,7 +365,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					// it didn't need much of a work, so its handled in target checking function.
 					// homeruns are checked here though, in that case base==4? so its out of this loop.
 					for(j = 1; j < BASE_COUNT; j++) {
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == j) {
+						if(base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId) == j) {
 							// arrived to base
 							// if we were taking a free walk, we stop it now
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
@@ -419,7 +419,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 									stateInfo->localGameInfo->pII.safeOnBaseIndex[j-1] = -1;
 								}
 								// if we arrived to base 3 and were originally from homebase
-								if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3 &&
+								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD &&
 								        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 0 &&
 								        stateInfo->localGameInfo->gAI.outs < 3) {
 									// set flag to check if our run is valid. difficult to imagine situation where
@@ -435,7 +435,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					// so that next player can go batting.
 					if(stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
 					// if the player arrived to a base and had it marked as 4, it means that it possibly a run.
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 						// if we were safe at base 3, we are not anymore.
 						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[3] == index) {
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[3] = -1;
