@@ -311,13 +311,12 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 		str3[3] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[1].runs/10));
 	}
 	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
-	// so we have these events thats are triggered in other parts of code just by gameInfoEvent = i;
+	// so we have these events thats are triggered in other parts of code by event = <enum>;
 	// we have a counter so that the info will disappear after some time.
 	if(stateInfo->localGameInfo->gAI.event != EVENT_NONE) {
 		gameInfoEventTimer = 0;
 		gameInfoEvent = (int)stateInfo->localGameInfo->gAI.event;
 		stateInfo->localGameInfo->gAI.event = EVENT_NONE;
-		stateInfo->localGameInfo->gAI.gameInfoEvent = 0;  // Also clear old field
 	}
 	if(gameInfoEventTimer != -1) {
 		if(gameInfoEvent == EVENT_OUT) {

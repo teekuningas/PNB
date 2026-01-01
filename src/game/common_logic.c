@@ -296,11 +296,6 @@ void runToNextBase(StateInfo* stateInfo, int index, int base)
 		if (stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
 		        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
 			stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.out = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.wounded = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.leading = 0;
 		}
 		// and we are moving forward
 		stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 1;
@@ -350,11 +345,6 @@ void runToPreviousBase(StateInfo* stateInfo, int index, int base)
 		if (stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
 		        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
 			stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.out = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.wounded = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.leading = 0;
 		}
 		// and runToTarget can handle the rest
 
@@ -399,11 +389,8 @@ void lead(StateInfo* stateInfo, int index)
 			moveToTarget(stateInfo, index, &target);
 			// now we in fact are leading
 			stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.leading = 1;
-			stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 0;
 			// but we dont set going forward flag.
 			stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 0;
-			// we arent in any base, adapter handles isOnBase = 0
 		}
 
 	}
@@ -756,17 +743,11 @@ void initializeNonCriticalPlayerInformation(StateInfo* stateInfo)
 		} else {
 			stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.out = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.wounded = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.takingFreeWalk = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.leading = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.woundedApply = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.hasMadeRunOnThirdBase = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_NONE;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.base = -1; // Keep legacy sync
 		}
 	}
 
@@ -828,7 +809,6 @@ void initializeTemporaryGameAnalysisInfo(StateInfo* stateInfo)
 	stateInfo->localGameInfo->gAI.woundingCatchHandled = 0;
 	stateInfo->localGameInfo->gAI.batterStartedRunning = 0;
 
-	stateInfo->localGameInfo->gAI.gameInfoEvent = 0;
 	stateInfo->localGameInfo->gAI.event = EVENT_NONE;
 	stateInfo->localGameInfo->gAI.checkForRun = 0;
 	stateInfo->localGameInfo->gAI.freeWalkIndex = -1;
@@ -917,9 +897,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 		// batter
 		if(batterIndex != -1) {
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
-			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.base = 0; // Legacy sync
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.isOnBase = 1;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.originalBase = 0;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.number = stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1;
 			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
@@ -933,9 +911,7 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 		// runner
 		if(runnerIndex != -1) {
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
-			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.base = 3; // Legacy sync
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.isOnBase = 1;
 			stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 3;
 			stateInfo->localGameInfo->pII.safeOnBaseIndex[3] = runnerIndex;
 

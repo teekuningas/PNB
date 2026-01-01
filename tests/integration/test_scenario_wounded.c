@@ -5,7 +5,6 @@
 #include "common_logic.h"
 #include "game_analysis.h"
 #include "mutable_world.h"
-#include "state_adapter.h"
 
 // Defined in game_analysis.c
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -20,13 +19,13 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
 
     // Batter hits
     state->localGameInfo->pII.batterIndex = 1;
-    state->localGameInfo->playerInfo[1].bTPI.base = -1;
+    state->localGameInfo->playerInfo[1].bTPI.baseId = BASE_NONE;
     state->localGameInfo->pII.battingTeamOnFieldIndices[1] = 1;
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
     
     // Runner on 1st starts running towards 2nd
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 2;
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
@@ -63,7 +62,7 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     const int runnerIndex = 0; 
     
     // Runner running between bases
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 2;
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
@@ -114,7 +113,7 @@ static int test_runner_not_wounded_if_starts_running_late() {
     const int runnerIndex = 0; 
     
     // Runner is SAFE at original base
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 1;
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_SAFE_ON_BASE);
     
@@ -140,7 +139,7 @@ static int test_runner_not_wounded_if_starts_running_late() {
     }
 
     // Now runner starts running!
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.base = 2; // Moved towards 2nd (conceptually)
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND; // Moved towards 2nd (conceptually)
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
     // Run loop until threshold

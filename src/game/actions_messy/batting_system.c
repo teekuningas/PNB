@@ -130,9 +130,7 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount++;
 		// has base of zero, is on base and original base is zero too.
 		stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_HOME;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.base = 0; // Legacy sync
 		stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.isOnBase = 1;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = 0;
 		// this guy will begin with 0 strikes and 0 balls.
 		stateInfo->localGameInfo->gAI.strikes = 0;
@@ -144,10 +142,7 @@ void selectBatter(StateInfo* stateInfo)
 		// just set default values so that the player can have a fresh start at
 		// the field.
 		stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.wounded = 0;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.leading = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.out = 0;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint = 0;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 0;
 		// if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
@@ -471,7 +466,6 @@ void updateBatting(StateInfo* stateInfo)
 					// always when batting,
 					// we get a strike
 					stateInfo->localGameInfo->gAI.strikes += 1;
-					stateInfo->localGameInfo->gAI.gameInfoEvent = 5;
 				}
 				// if the ball went to far away and we still continued our batting
 				// we just miss. set the flags, trigger the event and
@@ -479,7 +473,6 @@ void updateBatting(StateInfo* stateInfo)
 				else {
 					stateInfo->localGameInfo->pRAI.batMiss = 1;
 					stateInfo->localGameInfo->gAI.strikes += 1;
-					stateInfo->localGameInfo->gAI.gameInfoEvent = 5;
 				}
 			}
 		}

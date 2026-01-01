@@ -1,83 +1,203 @@
-# PNB Documentation
+# PNB - Documentation
 
-## Quick Start (Start Here!)
+## Current Status
 
-**Current Status:** Milestone 6 Complete (8.5/10) → Starting Milestone 7 (Data Renaissance)
+**Milestone 7 COMPLETE ✅** (2026-01-01)  
+**Current Focus:** Milestone 7.5 - Data Structure Cleanup
 
-**For new session:**
-1. Read `.dev/PLAN.md` - Master plan, current status, next milestone details
-2. Read `MILESTONE6_COMPLETE.md` - Summary of completed work and semantic discoveries
-3. Read `ARCHITECTURE_MAPS.md` - System structure, file organization, target architecture
+### What We've Achieved
+- Type-safe domain state (PlayerUnitState, BaseID, GameEventType)
+- Eliminated 6 legacy boolean flags
+- 51 unit tests + 5 integration tests passing
+- Clean, compiler-enforced correctness
 
-**Starting Milestone 7 (Data Renaissance):**
-- Read `DATA_AUDIT.md` - Enum proposals and migration strategy
-- See `.dev/PLAN.md` Milestone 7 section for phased approach
-
----
-
-## Living Documents (Active Reference)
-
-- **`ARCHITECTURE_MAPS.md`** (253 lines) - Current & target architecture, file organization, functional dataflow principles
-- **`MILESTONE6_COMPLETE.md`** (271 lines) - Completed logic purification, bug fixes, semantic insights
-- **`DATA_AUDIT.md`** (97 lines) - Enum proposals for Milestone 7 (updated for data-first approach)
-- **`REFACTORING_STRATEGY.md`** (487 lines) - Refactoring philosophy, milestone roadmap, patterns
-- **`SAANNOT.md`** (2686 lines) - Official Pesäpallo rules (Finnish) - reference for rule implementations
+### What's Next
+**Philosophy:** Data shapes architecture - clean the foundation before building the Referee pattern.
 
 ---
 
-## Working Documents (Project Management)
+## Quick Start
 
-- **`.dev/PLAN.md`** - Master refactoring plan (updated 2025-12-18)
-  - Tracks all milestones (1-8+)
-  - Current status and next steps
-  - Data-first Milestone 7 strategy with safety layers
-  - Functional dataflow architecture (NOT event-driven)
-  
-- **`.dev/TODO.md`** - Atomic tasks for Task Agent
-  - Updated by Architect only
-  - Flat list of checkboxes
-  - Small batches (1-5 tasks)
-  - Currently empty (awaiting Milestone 7 planning)
+### Understanding the Codebase
+1. Read `.dev/PLAN.md` - High-level roadmap and current status
+2. Read `.dev/TODO.md` - Current tasks and detailed steps
+3. Read this README - Documentation guide
 
----
+### Key Documents
 
-## Historical Archive
+**Strategy & Planning:**
+- `DATA_STRUCTURE_STRATEGY.md` - **START HERE** - Why data cleanup before Referee
+- `MILESTONE7_POSITION_ANALYSIS.md` - Comprehensive analysis before next steps
+- `REFACTORING_STRATEGY.md` - Historical refactoring decisions
 
-Detailed audit reports and methodology (for reference only):
-- `archive/MILESTONE6_*.md` - Detailed function-by-function audits
-- `archive/REFACTORING_AUDIT_PLAN.md` - Audit methodology
-- `archive/*_audit.md` - Verification details
+**Technical Documentation:**
+- `ARCHITECTURE_MAPS.md` - Component relationships and data flow
+- `MIGRATION_AUDIT.md` - Milestone 7 verification audit
+- `DATA_AUDIT.md` - Pre-Milestone 7 analysis (historical)
 
-**When to use archive:**
-- Understanding HOW verification was done
-- Debugging similar issues
-- Historical reference
+**Completed Milestones:**
+- `MILESTONE6_COMPLETE.md` - Rules engine extraction complete
+- `MILESTONE7_COMPLETE.md` - *(To be created after Phase 5)*
 
-**Day-to-day work:** Use living documents above, not archive.
+**Game Rules:**
+- `SAANNOT.md` - Finnish baseball rules (in Finnish)
 
 ---
 
-## Key Architecture Principles (Updated 2025-12-18)
+## Document Guide
 
-✅ **Functional dataflow** - Synchronous function calls (main → coordinators → subsystems → pure)  
-✅ **Data flows in/out** - Like breathing (not sideways between subsystems)  
-✅ **Pure functions dominate** - 80% pure logic, 20% coordination  
-✅ **DAG topology** - Dependencies flow down only  
+### 📋 .dev/ - Active Planning (Read First!)
 
-❌ **No event buses** - No message queues or pub/sub patterns  
-❌ **No observer pattern** - No callbacks or listeners  
-❌ **No async messaging** - Synchronous, debuggable execution  
+**PLAN.md** - Master roadmap
+- Current milestone status
+- Next steps
+- Completed milestones
+- Decision log
+
+**TODO.md** - Current tasks
+- Detailed checklist for current milestone
+- What to do today/tomorrow
+- Phase breakdowns
+
+### 📚 docs/ - Reference Documentation
+
+#### Strategy Documents (Understanding WHY)
+
+**DATA_STRUCTURE_STRATEGY.md** ⭐ **IMPORTANT**
+- Why data cleanup before Referee pattern
+- Detailed analysis of control flag pollution
+- The path forward (Milestone 7.5 → 8)
+- ~600 lines of deep strategic thinking
+
+**MILESTONE7_POSITION_ANALYSIS.md**
+- Comprehensive assessment after Milestone 7
+- Data model analysis
+- Pure functions assessment
+- Test suite review
+- Risk assessment for Milestone 8
+
+**REFACTORING_STRATEGY.md**
+- Historical refactoring decisions
+- Lessons learned
+- Patterns that worked/didn't work
+
+#### Technical Documents (Understanding HOW)
+
+**ARCHITECTURE_MAPS.md**
+- System component diagram
+- Data flow visualization
+- Layer boundaries
+- Dependency relationships
+
+**MIGRATION_AUDIT.md**
+- Milestone 7 verification
+- Field-by-field analysis
+- Write/read migration audit
+- Safety verification
+
+**DATA_AUDIT.md** (Historical)
+- Pre-Milestone 7 state
+- Original data model mess
+- Problems identified
+- Solutions proposed
+
+#### Milestone Completions
+
+**MILESTONE6_COMPLETE.md**
+- Rules engine extraction
+- Pure function creation
+- Test coverage achieved
+
+*(More to be added as we complete milestones)*
 
 ---
 
-## Document Status Summary
+## The Refactoring Journey
 
-| Document | Lines | Status | Last Updated |
-|----------|-------|--------|--------------|
-| ARCHITECTURE_MAPS.md | 253 | ✅ Current | 2025-12-18 |
-| DATA_AUDIT.md | 97 | ✅ Current | 2025-12-18 |
-| MILESTONE6_COMPLETE.md | 271 | ✅ Final | 2025-12-17 |
-| REFACTORING_STRATEGY.md | 487 | ✅ Current | 2025-12-18 |
-| SAANNOT.md | 2686 | ✅ Reference | (unchanging) |
-| .dev/PLAN.md | ~350 | ✅ Current | 2025-12-18 |
-| .dev/TODO.md | ~5 | ✅ Current | Empty (ready) |
+### Completed Milestones
+
+**Milestone 5: Logic Purification**
+- Extracted physics to pure functions
+- Extracted AI to pure functions
+- Created unit test foundation
+
+**Milestone 6: Rules Engine Extraction**
+- Extracted outs/runs/strikes to `rules_pure/`
+- Comprehensive audit (found 1 bug!)
+- 100% rules coverage
+
+**Milestone 7: Data Renaissance** ✅
+- Eliminated legacy state flags
+- Type-safe enums (PlayerUnitState, BaseID, GameEventType)
+- Write-both pattern migration
+- Deleted state_adapter.c/h
+- All tests passing
+
+### Current Work
+
+**Milestone 7.5: Data Structure Cleanup** (1-2 weeks)
+- Phase 0: Audit GameAnalysisInfo God object
+- Phase 1: Extract PlayerRuntimeState
+- Phase 2: Split GameAnalysisInfo
+- Phase 3: Stabilize & document
+
+**Goal:** Separate domain state from control state
+
+### Future Work
+
+**Milestone 8: The Referee Architecture** (2-3 weeks)
+- Implement pure Referee layer
+- Analyze game state → abstract state
+- Calculate permissions explicitly
+- Enable snapshotting & replay
+
+---
+
+## Key Principles
+
+### 1. Data Shapes Architecture
+Clean data structures make good architecture obvious. Messy data makes good architecture impossible.
+
+### 2. Pure Functions First
+Extract logic to pure functions before changing architecture. This makes the system testable and understandable.
+
+### 3. Small, Safe Steps
+Make the smallest possible change. Test. Then make the next small change.
+
+### 4. Tests Are Safety Nets
+51 unit tests + 5 integration tests give us confidence to refactor boldly.
+
+### 5. Foundation Before Skyscraper
+Don't build complex architectural patterns on messy foundations. Clean first, build second.
+
+---
+
+## Contributing
+
+### For New Contributors
+1. Read `DATA_STRUCTURE_STRATEGY.md` - understand our current focus
+2. Read `.dev/PLAN.md` - understand the roadmap
+3. Read `.dev/TODO.md` - see current tasks
+4. Pick an unchecked box and start coding!
+
+### For AI Agents
+See `.dev/ARCHITECT_AGENT.md`, `.dev/TASK_AGENT.md`, or `.dev/GENERAL_AGENT.md` for your specific role.
+
+---
+
+## Questions?
+
+**"Where are we now?"** → Read `.dev/PLAN.md`
+
+**"What should I do next?"** → Read `.dev/TODO.md`
+
+**"Why this approach?"** → Read `docs/DATA_STRUCTURE_STRATEGY.md`
+
+**"How does the system work?"** → Read `docs/ARCHITECTURE_MAPS.md`
+
+**"What have we achieved?"** → Read `docs/MILESTONE*_COMPLETE.md` files
+
+---
+
+**Last Updated:** 2026-01-01  
+**Status:** Ready for Milestone 7.5 🚀

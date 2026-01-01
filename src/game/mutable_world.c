@@ -13,7 +13,6 @@
 
 #include "mutable_world.h"
 #include "common_logic.h"
-#include "state_adapter.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
 
 int initMutableWorld(StateInfo* stateInfo)

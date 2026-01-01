@@ -123,13 +123,11 @@ static void updateBallStatus(StateInfo* stateInfo)
 						if(stateInfo->localGameInfo->ballInfo.location.x < PLATE_WIDTH/2 && stateInfo->localGameInfo->ballInfo.location.x > -PLATE_WIDTH/2) {
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
 								stateInfo->localGameInfo->gAI.strikes += 1;
-								stateInfo->localGameInfo->gAI.gameInfoEvent = 5;
 								stateInfo->localGameInfo->gAI.event = EVENT_STRIKE;
 							}
 						} else {
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
 								stateInfo->localGameInfo->gAI.balls += 1;
-								stateInfo->localGameInfo->gAI.gameInfoEvent = 6;
 								stateInfo->localGameInfo->gAI.event = EVENT_BALL;
 
 								// here we also set freeWalk flags because it could be possible that batting team now
@@ -370,7 +368,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							// if we were taking a free walk, we stop it now
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
 								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
-								stateInfo->localGameInfo->playerInfo[index].bTPI.takingFreeWalk = 0;
 							}
 							// if we were wounded we must be removed out of the field and
 							// also basemen already on the base must be removed as they get wounded too.
@@ -398,7 +395,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 										stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
 										stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.state = PLAYER_STATE_WOUNDED;
-										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.wounded = 1;
 										movePlayerOut(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
 										stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
 									}
@@ -451,7 +447,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							// if it wasnt 0, player will be removed afterwards.
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
-							stateInfo->localGameInfo->playerInfo[index].bTPI.base = -1;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 						}
 
@@ -765,13 +760,10 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 									// set new base-value and isOnBase-vaule to 1.
 									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = base_get_next(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId);
-									stateInfo->localGameInfo->playerInfo[i].bTPI.base = (int)stateInfo->localGameInfo->playerInfo[i].bTPI.baseId; // Legacy sync
 
-									printf("DEBUG: Player %d arrived at base %d. State: %d\n", i, stateInfo->localGameInfo->playerInfo[i].bTPI.base, stateInfo->localGameInfo->playerInfo[i].bTPI.state);
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										printf("DEBUG: Player %d state set to SAFE_ON_BASE\n", i);
 									} else {
 										printf("DEBUG: Player %d state PRESERVED (Wounded/Out)\n", i);
@@ -784,7 +776,6 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 									}
 								}
 							}
@@ -804,10 +795,8 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
 
 										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.base = 4;
 										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-											stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										}
 										stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
 										stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
@@ -829,7 +818,6 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-											stateInfo->localGameInfo->playerInfo[i].bTPI.isOnBase = 1;
 										}
 										stopTargetLookingPlayer(stateInfo, i);
 										needToStop = 0;

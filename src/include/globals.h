@@ -257,21 +257,15 @@ typedef struct _BattingTeamPlayerInfo {
 	int speed; // used to make some player a bit faster than others
 	int power; // used to make some players bat a bit harder than others
 	int number; // number is shown on screen
-	int base; // base is defined as the base you are on, or the base you were last if you arent on any base now
 	int originalBase; // base when pitch started
 	int joker; // 0 original player, 1 has right to be used, 2 has been used already
 	int arrivedToBase; // set to 1 when player arrives to base, purpose to reduce overhead
-	int wounded; // set to 1 when ball is caught and player is no in his original base
 	int woundedApply;
-	int takingFreeWalk; // 1 when taking a free walk and is inbetween the bases
-	int out; // if out of made, this will be set to player
 	int passedPathPoint; // path point used in walking players home and running from third base to home.
 	int goingForward; // is the player running forward or not. used to determine actions when arriving a base
-	int isOnBase; // is the player at a base right now
-	int leading; // is player leading
 	int hasMadeRunOnThirdBase; // cant make a run always when checkForRun flag is set.
 
-	// NEW FIELDS FOR MILESTONE 7 (DATA RENAISSANCE)
+	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
 	PlayerUnitState state;
 	BaseID baseId;
 } BattingTeamPlayerInfo;
@@ -381,9 +375,7 @@ typedef struct _GameAnalysisInfo {
 	// if there are players not on their original bases that we could wound.
 	int woundingCatchHandled;
 	int batterStartedRunning; // used to help AI to drop ball sometimes
-	int gameInfoEvent; // used to give information for user about the events in game.
-	// check game_screen.c for more information
-	GameEventType event; // NEW field for Milestone 7
+	GameEventType event; // MILESTONE 7: Type-safe event field (used to give information for user about the events in game)
 	int checkForRun; // if player arrives homebase or third base after running through all the base on same pitch
 	// we can check if the run is valid. it is decided when ball lands.
 	int freeWalkIndex; // index used in free walk decision
