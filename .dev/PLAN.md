@@ -61,19 +61,21 @@ typedef struct _BattingTeamPlayerInfo {
 
 ### Phases
 
-**Phase 0: Data Structure Audit** (1 day)
+**Phase 0: Data Structure Audit** (COMPLETE ✅)
 - Map all flags in GameAnalysisInfo (40+ fields!)
 - Understand purpose of each flag
 - Classify: Domain, Control, Camera, or Eliminable
 - Document dependencies between flags
+- Output: `docs/DATA_STRUCTURE_AUDIT.md` (Done)
 
-**Phase 1: Extract PlayerRuntimeState** (2 days)
+**Phase 1: Extract PlayerRuntimeState** (NEXT UP)
 - Create `PlayerRuntimeState` struct for control flags
 - Move control flags OUT of `BattingTeamPlayerInfo`
 - Migrate one flag at a time (testable, safe)
 - Keep domain state clean
+- See `docs/DATA_STRUCTURE_VISION.md` for target state
 
-**Phase 2: Split GameAnalysisInfo God Object** (3-4 days)
+**Phase 2: Split GameAnalysisInfo God Object** (Planned)
 - Break 40+ field monster into focused structs:
   - `GameState` (outs, strikes, balls, runs)
   - `GameControlFlags` (pause, initLocals, etc.)
@@ -83,7 +85,7 @@ typedef struct _BattingTeamPlayerInfo {
 - Mechanical refactoring (moving fields)
 - Test continuously
 
-**Phase 3: Stabilize & Document** (1-2 days)
+**Phase 3: Stabilize & Document** (Planned)
 - Update all documentation
 - Draw new hierarchy diagrams
 - Full test suite + manual playtest

@@ -27,10 +27,12 @@
 
 **Strategy & Planning:**
 - `DATA_STRUCTURE_STRATEGY.md` - **START HERE** - Why data cleanup before Referee
+- `DATA_STRUCTURE_VISION.md` - **TARGET STATE** - The "After" picture of our data models
 - `MILESTONE7_POSITION_ANALYSIS.md` - Comprehensive analysis before next steps
 - `REFACTORING_STRATEGY.md` - Historical refactoring decisions
 
 **Technical Documentation:**
+- `DATA_STRUCTURE_AUDIT.md` - **AUDIT** - Detailed mapping of "God Objects" to clean structures
 - `ARCHITECTURE_MAPS.md` - Component relationships and data flow
 - `MIGRATION_AUDIT.md` - Milestone 7 verification audit
 - `DATA_AUDIT.md` - Pre-Milestone 7 analysis (historical)

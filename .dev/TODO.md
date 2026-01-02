@@ -8,38 +8,60 @@
 
 ---
 
-### Phase 0: Data Structure Audit (START HERE - 1 day)
+### Phase 0: Data Structure Audit (COMPLETE ✅)
 
-- [ ] **Audit GameAnalysisInfo**
-  - [ ] List all 40+ fields
-  - [ ] Document purpose of each field
-  - [ ] Classify each: Domain, Control, Camera, or Eliminable?
-  - [ ] Draw dependency diagram
-  - [ ] Create `docs/DATA_STRUCTURE_AUDIT.md`
-
-**Expected Discovery:** Some flags can be eliminated entirely, not just moved!
+- [x] **Audit GameAnalysisInfo** (Done 2026-01-02)
+  - [x] List all 40+ fields
+  - [x] Document purpose of each field
+  - [x] Classify each: Domain, Control, Camera, or Eliminable?
+  - [x] Draw dependency diagram
+  - [x] Create `docs/DATA_STRUCTURE_AUDIT.md`
 
 ---
 
-### Phase 1: Extract PlayerRuntimeState (2 days)
+### Phase 1: Extract PlayerRuntimeState (NEXT UP)
 
 - [ ] **Create new struct**
-  - [ ] Define `PlayerRuntimeState` in globals.h
-  - [ ] Add `PlayerRuntimeState runtime[24]` to LocalGameInfo
+  - [ ] Define `PlayerRuntimeState` in `src/include/globals.h`
+    ```c
+    typedef struct _PlayerRuntimeState {
+        int arrivedToBase;
+        int woundedApply;
+        int passedPathPoint;
+        int goingForward;
+        int hasMadeRunOnThirdBase;
+    } PlayerRuntimeState;
+    ```
+  - [ ] Add `PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT];` to `LocalGameInfo` in `globals.h` (parallel to playerInfo)
+  - [ ] Initialize `playerRuntime` (likely in `game_setup.c` or where `playerInfo` is cleared)
   
-- [ ] **Migrate control flags from BattingTeamPlayerInfo**
-  - [ ] Move `arrivedToBase` (simple optimization flag)
-  - [ ] Move `woundedApply` (deferred execution queue)
-  - [ ] Move `passedPathPoint` (state machine variable)
-  - [ ] Move `goingForward` (direction tracking)
-  - [ ] Move `hasMadeRunOnThirdBase` (guard flag)
-  - [ ] Run tests after EACH migration
+- [ ] **Migrate control flags (One by one)**
+  - [ ] **Migrate `arrivedToBase`** (Optimization flag)
+    - [ ] Replace `bTPI.arrivedToBase` with `playerRuntime[i].arrivedToBase`
+    - [ ] Remove from `BattingTeamPlayerInfo`
+    - [ ] Verify build & tests
+  - [ ] **Migrate `woundedApply`** (Deferred execution)
+    - [ ] Replace `bTPI.woundedApply` with `playerRuntime[i].woundedApply`
+    - [ ] Remove from `BattingTeamPlayerInfo`
+    - [ ] Verify build & tests
+  - [ ] **Migrate `passedPathPoint`** (State machine)
+    - [ ] Replace `bTPI.passedPathPoint` with `playerRuntime[i].passedPathPoint`
+    - [ ] Remove from `BattingTeamPlayerInfo`
+    - [ ] Verify build & tests
+  - [ ] **Migrate `goingForward`** (Direction)
+    - [ ] Replace `bTPI.goingForward` with `playerRuntime[i].goingForward`
+    - [ ] Remove from `BattingTeamPlayerInfo`
+    - [ ] Verify build & tests
+  - [ ] **Migrate `hasMadeRunOnThirdBase`** (Guard)
+    - [ ] Replace `bTPI.hasMadeRunOnThirdBase` with `playerRuntime[i].hasMadeRunOnThirdBase`
+    - [ ] Remove from `BattingTeamPlayerInfo`
+    - [ ] Verify build & tests
 
-**Result:** Clean BattingTeamPlayerInfo with domain state only
+**Result:** `BattingTeamPlayerInfo` contains ONLY domain state (serializable "truth").
 
 ---
 
-### Phase 2: Split GameAnalysisInfo God Object (3-4 days)
+### Phase 2: Split GameAnalysisInfo God Object (Planned)
 
 - [ ] **Create focused structs**
   - [ ] Define `GameState` (outs, strikes, balls, runs)
@@ -65,7 +87,7 @@
 
 ---
 
-### Phase 3: Stabilize & Document (1-2 days)
+### Phase 3: Stabilize & Document (Planned)
 
 - [ ] **Update documentation**
   - [ ] Update `docs/DATA_STRUCTURE_AUDIT.md` with new structure
