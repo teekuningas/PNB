@@ -141,10 +141,10 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->pRAI.batterCanAdvance = 0;
 		// just set default values so that the player can have a fresh start at
 		// the field.
-		stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint = 0;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 0;
+		stateInfo->localGameInfo->playerRuntime[index].goingForward = 0;
+		stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
+		stateInfo->localGameInfo->playerRuntime[index].passedPathPoint = 0;
+		stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase = 0;
 		// if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
 		if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker == 1) {
 			stateInfo->localGameInfo->gAI.jokersLeft--;

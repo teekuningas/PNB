@@ -19,49 +19,59 @@
 
 ---
 
-### Phase 1: Extract PlayerRuntimeState (NEXT UP)
+### Phase 1: Extract PlayerRuntimeState (COMPLETE ✅)
 
-- [ ] **Create new struct**
-  - [ ] Define `PlayerRuntimeState` in `src/include/globals.h`
-    ```c
-    typedef struct _PlayerRuntimeState {
-        int arrivedToBase;
-        int woundedApply;
-        int passedPathPoint;
-        int goingForward;
-        int hasMadeRunOnThirdBase;
-    } PlayerRuntimeState;
-    ```
-  - [ ] Add `PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT];` to `LocalGameInfo` in `globals.h` (parallel to playerInfo)
-  - [ ] Initialize `playerRuntime` (likely in `game_setup.c` or where `playerInfo` is cleared)
-  
-- [ ] **Migrate control flags (One by one)**
-  - [ ] **Migrate `arrivedToBase`** (Optimization flag)
-    - [ ] Replace `bTPI.arrivedToBase` with `playerRuntime[i].arrivedToBase`
-    - [ ] Remove from `BattingTeamPlayerInfo`
-    - [ ] Verify build & tests
-  - [ ] **Migrate `woundedApply`** (Deferred execution)
-    - [ ] Replace `bTPI.woundedApply` with `playerRuntime[i].woundedApply`
-    - [ ] Remove from `BattingTeamPlayerInfo`
-    - [ ] Verify build & tests
-  - [ ] **Migrate `passedPathPoint`** (State machine)
-    - [ ] Replace `bTPI.passedPathPoint` with `playerRuntime[i].passedPathPoint`
-    - [ ] Remove from `BattingTeamPlayerInfo`
-    - [ ] Verify build & tests
-  - [ ] **Migrate `goingForward`** (Direction)
-    - [ ] Replace `bTPI.goingForward` with `playerRuntime[i].goingForward`
-    - [ ] Remove from `BattingTeamPlayerInfo`
-    - [ ] Verify build & tests
-  - [ ] **Migrate `hasMadeRunOnThirdBase`** (Guard)
-    - [ ] Replace `bTPI.hasMadeRunOnThirdBase` with `playerRuntime[i].hasMadeRunOnThirdBase`
-    - [ ] Remove from `BattingTeamPlayerInfo`
-    - [ ] Verify build & tests
+- [x] Create `PlayerRuntimeState` struct in `src/include/globals.h`, add `playerRuntime` array to `LocalGameInfo`, and initialize it in `src/game/common_logic.c`
+
+- [x] **Migrate control flags (One by one)**
+  - [x] **Migrate `arrivedToBase`** (Optimization flag)
+    - [x] Replace `bTPI.arrivedToBase` with `playerRuntime[i].arrivedToBase`
+    - [x] Remove from `BattingTeamPlayerInfo`
+    - [x] Verify build & tests
+  - [x] **Migrate `woundedApply`** (Deferred execution)
+    - [x] Replace `bTPI.woundedApply` with `playerRuntime[i].woundedApply`
+    - [x] Remove from `BattingTeamPlayerInfo`
+    - [x] Verify build & tests
+  - [x] **Migrate `passedPathPoint`** (State machine)
+    - [x] Replace `bTPI.passedPathPoint` with `playerRuntime[i].passedPathPoint`
+    - [x] Remove from `BattingTeamPlayerInfo`
+    - [x] Verify build & tests
+  - [x] **Migrate `goingForward`** (Direction)
+    - [x] Replace `bTPI.goingForward` with `playerRuntime[i].goingForward`
+    - [x] Remove from `BattingTeamPlayerInfo`
+    - [x] Verify build & tests
+  - [x] **Migrate `hasMadeRunOnThirdBase`** (Guard)
+    - [x] Replace `bTPI.hasMadeRunOnThirdBase` with `playerRuntime[i].hasMadeRunOnThirdBase`
+    - [x] Remove from `BattingTeamPlayerInfo`
+    - [x] Verify build & tests
 
 **Result:** `BattingTeamPlayerInfo` contains ONLY domain state (serializable "truth").
 
 ---
 
-### Phase 2: Split GameAnalysisInfo God Object (Planned)
+### Phase 2: Split GameAnalysisInfo God Object (NEXT UP)
+
+- [ ] **Create focused structs in `globals.h`**
+  - [ ] `GameState` (outs, strikes, balls, runs, event)
+  - [ ] `GameControlFlags` (pause, initLocals, etc.)
+  - [ ] `WoundingState` (woundingCatch, handled)
+  - [ ] `CameraState` (camera flags, targetPoint)
+  - [ ] `PlayerCounters` (battingTeamPlayers, nonJokers, jokers)
+  - [ ] `GameModeState` (pairCounter, runOfHonor, forceNextPair)
+
+- [ ] **Add new structs to `LocalGameInfo`**
+
+- [ ] **Migrate fields group by group**
+  - [ ] Migrate `GameState` fields
+  - [ ] Migrate `GameControlFlags`
+  - [ ] Migrate `WoundingState`
+  - [ ] Migrate `CameraState`
+  - [ ] Migrate `PlayerCounters`
+  - [ ] Migrate `GameModeState` and others
+
+- [ ] **Remove `GameAnalysisInfo` struct**
+
+- [ ] **Test continuously**
 
 - [ ] **Create focused structs**
   - [ ] Define `GameState` (outs, strikes, balls, runs)

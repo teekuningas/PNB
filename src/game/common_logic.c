@@ -211,7 +211,7 @@ void movePlayerOut(StateInfo* stateInfo, int index)
 		target.z = stateInfo->fieldPositions->rightPoint.z + 10.0f;
 	}
 	// path point not passed yet.
-	stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint = 0;
+	stateInfo->localGameInfo->playerRuntime[index].passedPathPoint = 0;
 	// and move to target takes care of the rest.
 	moveToTarget(stateInfo, index, &target);
 }
@@ -274,12 +274,12 @@ void runToNextBase(StateInfo* stateInfo, int index, int base)
 			// if we are running home, there is the "flag" point, and we must change the direction there.
 			// how it matters here is that if we have already passed the flag, we must run towards homebase,
 			// if not, we must run towards flag.
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint == 0) {
+			if(stateInfo->localGameInfo->playerRuntime[index].passedPathPoint == 0) {
 				target.x = stateInfo->fieldPositions->runLeftPoint.x;
 				target.z = stateInfo->fieldPositions->runLeftPoint.z;
 
 				stateInfo->localGameInfo->gAI.homeRunCameraFlag = 1;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint == 1) {
+			} else if(stateInfo->localGameInfo->playerRuntime[index].passedPathPoint == 1) {
 				target.x = stateInfo->fieldPositions->homeRunPoint.x;
 				target.z = stateInfo->fieldPositions->homeRunPoint.z;
 			} else {
@@ -298,7 +298,7 @@ void runToNextBase(StateInfo* stateInfo, int index, int base)
 			stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
 		}
 		// and we are moving forward
-		stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 1;
+		stateInfo->localGameInfo->playerRuntime[index].goingForward = 1;
 		// and runToTarget can continue the job with index and the already set target.
 		runToTarget(stateInfo, index, &target);
 	}
@@ -323,10 +323,10 @@ void runToPreviousBase(StateInfo* stateInfo, int index, int base)
 			target.z = stateInfo->fieldPositions->secondBaseRun.z;
 		} else if(base == 3) {
 			// here we again select the target by our current location relative to flag
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint == 0) {
+			if(stateInfo->localGameInfo->playerRuntime[index].passedPathPoint == 0) {
 				target.x = stateInfo->fieldPositions->thirdBaseRun.x;
 				target.z = stateInfo->fieldPositions->thirdBaseRun.z;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.passedPathPoint == 1) {
+			} else if(stateInfo->localGameInfo->playerRuntime[index].passedPathPoint == 1) {
 				target.x = stateInfo->fieldPositions->runLeftPoint.x;
 				target.z = stateInfo->fieldPositions->runLeftPoint.z;
 			} else {
@@ -340,7 +340,7 @@ void runToPreviousBase(StateInfo* stateInfo, int index, int base)
 		// and set it so that next player has to have a will of his own to run
 		stateInfo->localGameInfo->pRAI.willStartRunning[base] = 0;
 		// we arent going forward
-		stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 0;
+		stateInfo->localGameInfo->playerRuntime[index].goingForward = 0;
 		// set state to running, BUT only if we aren't already WOUNDED or OUT
 		if (stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
 		        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
@@ -390,7 +390,7 @@ void lead(StateInfo* stateInfo, int index)
 			// now we in fact are leading
 			stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
 			// but we dont set going forward flag.
-			stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward = 0;
+			stateInfo->localGameInfo->playerRuntime[index].goingForward = 0;
 		}
 
 	}
@@ -716,6 +716,13 @@ void initializeNonCriticalPlayerInformation(StateInfo* stateInfo)
 {
 	int i, j;
 	for( i = 0; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		// MILESTONE 7.5: Initialize control state
+		stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 0;
+		stateInfo->localGameInfo->playerRuntime[i].woundedApply = 0;
+		stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 0;
+		stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
+		stateInfo->localGameInfo->playerRuntime[i].hasMadeRunOnThirdBase = 0;
+
 		stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency = 1;
 		stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = 0;
 		stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount = 0;
@@ -741,12 +748,7 @@ void initializeNonCriticalPlayerInformation(StateInfo* stateInfo)
 				stateInfo->localGameInfo->playerInfo[i].cTPI.movesToDirection[j] = 0;
 			}
 		} else {
-			stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.woundedApply = 0;
-			stateInfo->localGameInfo->playerInfo[i].bTPI.hasMadeRunOnThirdBase = 0;
 			stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_NONE;
 		}
 	}

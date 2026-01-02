@@ -82,7 +82,7 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     // Run 1 frame to set woundedApply = 1
     gameAnalysis(state, &menu, &seed);
     
-    if (state->localGameInfo->playerInfo[runnerIndex].bTPI.woundedApply != 1) {
+    if (state->localGameInfo->playerRuntime[runnerIndex].woundedApply != 1) {
          cleanup_test_state(state);
          ASSERT_EQ(1, 0, "Runner should have been marked for wound initially");
     }
@@ -98,7 +98,7 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
 
     // Verify NOT wounded
     int isWounded = (state->localGameInfo->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED);
-    int isWoundedApply = state->localGameInfo->playerInfo[runnerIndex].bTPI.woundedApply;
+    int isWoundedApply = state->localGameInfo->playerRuntime[runnerIndex].woundedApply;
     
     cleanup_test_state(state);
     ASSERT_EQ(0, isWounded, "Runner should NOT be wounded if ball hits ground");
@@ -133,7 +133,7 @@ static int test_runner_not_wounded_if_starts_running_late() {
     // Run 1 frame. woundedApply should be 0 because runner is safe.
     gameAnalysis(state, &menu, &seed);
     
-    if (state->localGameInfo->playerInfo[runnerIndex].bTPI.woundedApply != 0) {
+    if (state->localGameInfo->playerRuntime[runnerIndex].woundedApply != 0) {
          cleanup_test_state(state);
          ASSERT_EQ(0, 1, "Runner should NOT be marked for wound while safe");
     }

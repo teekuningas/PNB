@@ -295,7 +295,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			// this code will make baserunners come back if wrong pitch is pitched
 			for(i = 1; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[i];
-				if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward == 1 && aiBaseRunnerKeyDown[i] == 0 &&
+				if(index != -1 && stateInfo->localGameInfo->playerRuntime[index].goingForward == 1 && aiBaseRunnerKeyDown[i] == 0 &&
 				        aiBaseRunnerLock[i] == AI_NO_LOCK && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 					aiBaseRunnerKeyDown[i] = 1;
 					aiBaseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
@@ -428,7 +428,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 		// if everything ok, initiate running.
 		if(shouldRun == 1 && isDoubleClickingOk == 1 && aiBaseRunnerLock[i] == AI_NO_LOCK &&
-		        aiBaseRunnerKeyDown[i] == 0 && index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.goingForward != 1 &&
+		        aiBaseRunnerKeyDown[i] == 0 && index != -1 && stateInfo->localGameInfo->playerRuntime[index].goingForward != 1 &&
 		        aiAmountOfClicks[i] == 0 && aiClickBreak[i] > CLICK_BREAK_CONSTANT) {
 			aiBaseRunnerKeyDown[i] = 1;
 			aiBaseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;

@@ -20,17 +20,18 @@
 | `joker` | int | **Domain** | Attribute/Role | Keep |
 | `state` | PlayerUnitState | **Domain** | **Core State** (New) | Keep |
 | `baseId` | BaseID | **Domain** | **Core State** (New) | Keep |
-| `arrivedToBase` | int | **Control** | Optimization flag | **MOVE** to `PlayerRuntimeState` |
-| `woundedApply` | int | **Control** | Deferred execution | **MOVE** to `PlayerRuntimeState` |
-| `passedPathPoint` | int | **Control** | Pathfinding state | **MOVE** to `PlayerRuntimeState` |
-| `goingForward` | int | **Control** | Movement direction | **MOVE** to `PlayerRuntimeState` |
-| `hasMadeRunOnThirdBase`| int | **Control** | Rule guard | **MOVE** to `PlayerRuntimeState` |
+| `arrivedToBase` | int | **Control** | Optimization flag | **MOVED** to `PlayerRuntimeState` ✅ |
+| `woundedApply` | int | **Control** | Deferred execution | **MOVED** to `PlayerRuntimeState` ✅ |
+| `passedPathPoint` | int | **Control** | Pathfinding state | **MOVED** to `PlayerRuntimeState` ✅ |
+| `goingForward` | int | **Control** | Movement direction | **MOVED** to `PlayerRuntimeState` ✅ |
+| `hasMadeRunOnThirdBase`| int | **Control** | Rule guard | **MOVED** to `PlayerRuntimeState` ✅ |
 
 ### New Structure Proposal
 
 ```c
 // src/include/globals.h
 
+// IMPLEMENTED ✅
 typedef struct _PlayerRuntimeState {
     int arrivedToBase;
     int woundedApply;
@@ -125,7 +126,7 @@ typedef struct _PlayerRuntimeState {
 
 ## Migration Strategy
 
-**Phase 1: PlayerRuntimeState (High Value, Low Risk)**
+**Phase 1: PlayerRuntimeState (COMPLETE ✅)**
 1. Define `PlayerRuntimeState`.
 2. Add to `LocalGameInfo`.
 3. Move `arrivedToBase` (Optimization).

@@ -350,9 +350,9 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 			int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 			// these indices can be -1 so we have to check for that and also we'll check if this particular player
 			// was one who arrived. there can be many though so we cant break out after this.
-			if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.arrivedToBase == 1) {
+			if(index != -1 && stateInfo->localGameInfo->playerRuntime[index].arrivedToBase == 1) {
 				// no need to check on this player anymore when next runner arrives and this one has stayed where he was.
-				stateInfo->localGameInfo->playerInfo[index].bTPI.arrivedToBase = 0;
+				stateInfo->localGameInfo->playerRuntime[index].arrivedToBase = 0;
 				// if out has been made, player is removed immediately from the game so we wouldnt be here.
 				// if wound has been made, player still tries to get to next base, so we have to handle that here.
 				if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
@@ -711,7 +711,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 				if(isVectorSmallEnoughCircleXZ(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
 					int needToStop = 1;
 					if(	i == stateInfo->localGameInfo->pII.batterIndex &&
-					        stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 0) {
+					        stateInfo->localGameInfo->playerRuntime[i].goingForward == 0) {
 						prepareBatter(stateInfo);
 					} else {
 						// select correct model for catchers.
@@ -732,12 +732,12 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 						        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
 						         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
 							Vector3D target;
-							if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0) {
-								stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 1;
+							if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 0) {
+								stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 1;
 								target.x = stateInfo->fieldPositions->pitchPlate.x;
 								target.z = stateInfo->fieldPositions->pitchPlate.z + HOME_RADIUS;
-							} else if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 1) {
-								stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
+							} else if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 1) {
+								stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 2;
 								target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 								target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
 							} else {
@@ -755,9 +755,9 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 							if(base_can_advance(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId) &&
 							        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_LEADING) {
 								// and moving forward
-								if(stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 1 ) {
+								if(stateInfo->localGameInfo->playerRuntime[i].goingForward == 1 ) {
 									// set going forward flag to 0 as we are stopped now
-									stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
+									stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
 									// set new base-value and isOnBase-vaule to 1.
 									stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = base_get_next(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId);
 
@@ -770,7 +770,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									}
 									// also these are needed to do continued calculations only when needed.
 									stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
-									stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
+									stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 
 								} else {
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
@@ -781,26 +781,26 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 							}
 							// so if we are on base 3
 							else if(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-								if(stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward == 1) {
+								if(stateInfo->localGameInfo->playerRuntime[i].goingForward == 1) {
 									// if we are moving forward and have not passed the flag yet, change the direction
-									if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 0) {
-										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 1;
+									if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 0) {
+										stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 1;
 										runToNextBase(stateInfo, i, 3);
 										needToStop = 0;
 									}
 									// if have passed the flag we are at homebase, so set the base to 4
 									// and move player to its circle.
-									else if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 1) {
+									else if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 1) {
 										Vector3D target;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 2;
+										stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 2;
 
 										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
 										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 										}
-										stateInfo->localGameInfo->playerInfo[i].bTPI.goingForward = 0;
+										stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
 										stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
-										stateInfo->localGameInfo->playerInfo[i].bTPI.arrivedToBase = 1;
+										stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 										target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 										target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
 										moveToTarget(stateInfo, i, &target);
@@ -808,8 +808,8 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									}
 								} else {
 									// if we are coming back and have passed the point, change direction
-									if(stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint == 1) {
-										stateInfo->localGameInfo->playerInfo[i].bTPI.passedPathPoint = 0;
+									if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 1) {
+										stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 0;
 										runToPreviousBase(stateInfo, i, 3);
 										needToStop = 0;
 									} else {

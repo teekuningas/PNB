@@ -314,7 +314,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE ||
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
-					stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 1;
+					stateInfo->localGameInfo->playerRuntime[index].woundedApply = 1;
 					printf("DEBUG: Player %d marked for wound. State: %d, Base: %d, Orig: %d\n",
 					       index,
 					       stateInfo->localGameInfo->playerInfo[index].bTPI.state,
@@ -347,7 +347,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 			for(i = 0; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
-					stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 0;
+					stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
 				}
 			}
 		}
@@ -360,7 +360,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				// so we check every batting team player.
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply == 1) {
+					if(stateInfo->localGameInfo->playerRuntime[index].woundedApply == 1) {
 						printf("DEBUG: Applying wound to Player %d\n", index);
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 						int base_idx = base_to_int_index(baseId);
@@ -383,7 +383,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
 							movePlayerOut(stateInfo, index);
 						}
-						stateInfo->localGameInfo->playerInfo[index].bTPI.woundedApply = 0;
+						stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
 
 					}
 				}
@@ -551,7 +551,7 @@ static void checkForRuns(StateInfo* stateInfo)
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED,
 						                    stateInfo->localGameInfo->gAI.canMakeRunOfHonor,
-						                    stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase);
+						                    stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase);
 
 						// Handle side effects for home base arrival (removal from field)
 						// This happens regardless of whether a run is scored (e.g. if wounded)
@@ -565,7 +565,7 @@ static void checkForRuns(StateInfo* stateInfo)
 						if(runScored) {
 							// Specific update for Run of Honor
 							if(baseId == BASE_THIRD) {
-								stateInfo->localGameInfo->playerInfo[index].bTPI.hasMadeRunOnThirdBase = 1;
+								stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase = 1;
 							}
 
 							// Common run updates

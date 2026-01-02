@@ -251,6 +251,16 @@ typedef struct _TechnicalPlayerInfo {
 	Vector3D velocity;
 	Vector3D orientation;
 } TechnicalPlayerInfo;
+
+// MILESTONE 7.5 - Separating Control State from Domain State
+typedef struct _PlayerRuntimeState {
+	int arrivedToBase;       // Optimization flag
+	int woundedApply;        // Deferred execution
+	int passedPathPoint;     // State machine variable
+	int goingForward;        // Direction tracking
+	int hasMadeRunOnThirdBase; // Guard flag
+} PlayerRuntimeState;
+
 // batting team related flags.
 typedef struct _BattingTeamPlayerInfo {
 	char* name; // some info to be shown in screen to guide player
@@ -259,11 +269,6 @@ typedef struct _BattingTeamPlayerInfo {
 	int number; // number is shown on screen
 	int originalBase; // base when pitch started
 	int joker; // 0 original player, 1 has right to be used, 2 has been used already
-	int arrivedToBase; // set to 1 when player arrives to base, purpose to reduce overhead
-	int woundedApply;
-	int passedPathPoint; // path point used in walking players home and running from third base to home.
-	int goingForward; // is the player running forward or not. used to determine actions when arriving a base
-	int hasMadeRunOnThirdBase; // cant make a run always when checkForRun flag is set.
 
 	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
 	PlayerUnitState state;
@@ -435,6 +440,7 @@ typedef struct _GlobalGameInfo {
 
 typedef struct _LocalGameInfo {
 	PlayerInfo playerInfo[2*PLAYERS_IN_TEAM + JOKER_COUNT];
+	PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
 	ActionFlags aF;
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;

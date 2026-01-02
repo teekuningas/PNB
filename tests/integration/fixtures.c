@@ -3,6 +3,8 @@
 #include "fill_player_data.h"
 #include "game_setup.h"
 #include "mutable_world.h"
+#include "common_logic.h"
+#include "game_analysis.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,6 +48,12 @@ void setup_runner_at_first_base(StateInfo* state) {
     setup.playsFirst = 0;
 
     initializeGameFromMenu(state, &setup, &seed);
+    
+    // Flush initLocals to prevent wiping state later
+    loadMutableWorldSettings(state, &seed);
+    state->localGameInfo->gAI.initLocals = 0;
+    initGameAnalysis(state);
+
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 1;
@@ -65,6 +73,12 @@ void setup_runner_at_third_base(StateInfo* state) {
     setup.playsFirst = 0;
 
     initializeGameFromMenu(state, &setup, &seed);
+
+    // Flush initLocals
+    loadMutableWorldSettings(state, &seed);
+    state->localGameInfo->gAI.initLocals = 0;
+    initGameAnalysis(state);
+
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 3;
