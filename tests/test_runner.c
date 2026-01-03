@@ -8,6 +8,7 @@
 #include "test_rules_outs.h"
 #include "test_rules_runs.h"
 #include "test_rules_strikes.h"
+#include "test_collision.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -132,6 +133,13 @@ int main(int argc, char* argv[]) {
 	RUN_TEST(test_pitch_angle_calc);
 	RUN_TEST(test_pitch_velocity);
 	RUN_TEST(test_pitch_meter_ui);
+
+	// Collision Physics tests
+	RUN_TEST(test_collision_resolve_boundaries_no_collision);
+	RUN_TEST(test_collision_resolve_boundaries_z_front);
+	RUN_TEST(test_collision_resolve_boundaries_z_back);
+	RUN_TEST(test_collision_resolve_boundaries_x_right);
+	RUN_TEST(test_collision_resolve_boundaries_x_left);
 
 	// Batting AI Strategy tests
 	RUN_TEST(test_batting_strategy_decision_tree);

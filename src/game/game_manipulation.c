@@ -84,10 +84,13 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 		physics_apply_velocity(&(localGameInfo->ballInfo.location), &(localGameInfo->ballInfo.velocity));
 		if(localGameInfo->pII.hasBallIndex == -1) {
 			// if ball is free then we make sure that it stays within the play area.
-			physics_resolve_field_boundaries(&(localGameInfo->ballInfo.location),
+			if(physics_resolve_field_boundaries(&(localGameInfo->ballInfo.location),
 			                                 &(localGameInfo->ballInfo.velocity),
 			                                 FIELD_FRONT, FIELD_BACK, FIELD_LEFT, FIELD_RIGHT,
-			                                 BALL_SLOW_FACTOR_Y);
+			                                 BALL_SLOW_FACTOR_Y)) {
+				// if ball hit a wall, we need to refresh AI targets because the prediction is now wrong
+				localGameInfo->pRAI.refreshCatchAndChange = 1;
+			}
 			if(localGameInfo->ballInfo.onGround == 0) {
 				// if ball is not on the ground yet, let it be affected by gravity.
 				physics_apply_gravity(&(localGameInfo->ballInfo.velocity), 1.0f);

@@ -50,7 +50,6 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 {
 	if(aiThrowStage == 0) {
 		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
-			int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 			int catcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[base];
 			int catcherNearHome = 0;
 			if(catcherIndex != -1) {
