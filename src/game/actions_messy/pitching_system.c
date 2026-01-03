@@ -48,7 +48,7 @@ void startPitch(StateInfo* stateInfo)
 	        stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
 		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-			stopMovement(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+			stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 		}
 		// we choose animation of pitcher crouching.
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 6;
@@ -155,7 +155,7 @@ void releasePitch(StateInfo* stateInfo)
 	// set the velocity by our dx and dy
 	setVectorXYZ(&(stateInfo->localGameInfo->ballInfo.velocity), dx, dy, 0);
 	// .. and move the pitcher
-	moveToTarget(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex, &target);
+	moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex, &target);
 	// set lastHadBallIndex so that pitcher wont catch the ball without it hitting ground first
 	stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex; // to allow ball to avoid catching by same player when thrown
 	// pitcher doesnt have the ball anymore
@@ -213,7 +213,7 @@ void releasePitch(StateInfo* stateInfo)
 			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[i];
 			stateInfo->localGameInfo->pRAI.willStartRunning[i] = 0;
 			if(index != -1) {
-				runToNextBase(stateInfo, index, i);
+				runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, i);
 			}
 		}
 	}
@@ -344,9 +344,8 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 
 						calculate_ai_pitch_targets(
 						    rand1, rand2, rand3,
-						    stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount,
-						    stateInfo->localGameInfo->gameState.strikes,
-						    stateInfo->localGameInfo->gameState.balls,
+						    &(stateInfo->localGameInfo->playerCounters),
+						    &(stateInfo->localGameInfo->gameState),
 						    ANIMATION_FREQUENCY,
 						    &aiPitchFirstLimit,
 						    &aiPitchSecondLimit

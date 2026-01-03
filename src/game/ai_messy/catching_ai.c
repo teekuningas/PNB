@@ -67,7 +67,7 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 				replacerMoving = stateInfo->localGameInfo->playerInfo[replacerIndex].cPI.moving;
 			}
 
-			int shouldThrow = should_ai_throw(hasBallIndex, catcherIndex, catcherNearHome,
+			int shouldThrow = should_ai_throw(&(stateInfo->localGameInfo->pII), catcherNearHome,
 			                                  replacerIndex, replacerStage, replacerBase, replacerMoving,
 			                                  base);
 
@@ -158,8 +158,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
 		int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 
-		if(should_ai_drop_ball(stateInfo->localGameInfo->woundingState.woundingCatch,
-		                       stateInfo->localGameInfo->gameControl.batterStartedRunning,
+		if(should_ai_drop_ball(&(stateInfo->localGameInfo->woundingState),
+		                       &(stateInfo->localGameInfo->gameControl),
 		                       r3OriginalBase, r3IsOnBase,
 		                       r2OriginalBase, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {

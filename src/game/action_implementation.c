@@ -156,7 +156,7 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 			}
 			// and then set the flag, so that other parts of code can handle
 			// the job
-			changePlayer(stateInfo);
+			changePlayer(stateInfo->localGameInfo);
 		}
 		stateInfo->localGameInfo->aF.cTAF.changePlayer = 0;
 		stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
@@ -266,7 +266,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 
 				if(currentBaseInt == base) {
 					// we start running to the next base
-					runToNextBase(stateInfo, index, base);
+					runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 
 					// set takingFreeWalk flag so that this player cant get wounded or tagged
 					// when he's running
@@ -375,19 +375,19 @@ static void changeBatter(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pII.batterSelectionIndex = index;
 }
 
-void genericSlingBall(StateInfo* stateInfo, float x, float y, float z)
+void genericSlingBall(LocalGameInfo* localGameInfo, float x, float y, float z)
 {
 	// this is called for example when throwing and batting
 	// in these cases we want the change player arrays to update and to have new selected player from
 	// those arrays
-	stateInfo->localGameInfo->pRAI.refreshCatchAndChange = 1;
-	stateInfo->localGameInfo->pRAI.initPlayerSelection = 1;
+	localGameInfo->pRAI.refreshCatchAndChange = 1;
+	localGameInfo->pRAI.initPlayerSelection = 1;
 	// make ball visible and updatable
-	stateInfo->localGameInfo->ballInfo.visible = 1;
-	stateInfo->localGameInfo->ballInfo.moving = 1;
+	localGameInfo->ballInfo.visible = 1;
+	localGameInfo->ballInfo.moving = 1;
 
 	// and set the new velocity
-	setVectorXYZ(&(stateInfo->localGameInfo->ballInfo.velocity), x, y, z);
+	setVectorXYZ(&(localGameInfo->ballInfo.velocity), x, y, z);
 
 }
 
@@ -405,7 +405,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].cPI.moving == 0) {
 						stateInfo->localGameInfo->pRAI.willStartRunning[base] = 1;
 						if(base == 1 || base == 2) {
-							lead(stateInfo, index);
+							lead(stateInfo->localGameInfo, stateInfo->fieldPositions, index);
 						}
 					}
 				} else {
@@ -416,7 +416,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 				if(index != -1) {
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE &&
 					        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
-						runToPreviousBase(stateInfo, index, base);
+						runToPreviousBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 					}
 				}
 			}
@@ -425,7 +425,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 			} else {
 				if(doubleClickCounter[base] >= 0) {
 					if(index != -1) {
-						runToNextBase(stateInfo, index, base);
+						runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 					}
 
 				}

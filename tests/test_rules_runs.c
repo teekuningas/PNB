@@ -7,44 +7,57 @@
 
 static int test_normal_run_home_base() {
     // Basic run: Player arrives at home base (4), not wounded
-    ASSERT_EQ(1, calculate_runs(4, 1, 0, 0, 0), "Should score run when arriving at home base");
-    ASSERT_EQ(1, calculate_runs(4, 3, 0, 1, 0), "Should score run when arriving at home base (even if run of honor possible)");
+    GameModeState gms = {0};
+    ASSERT_EQ(1, calculate_runs(4, 1, 0, &gms, 0), "Should score run when arriving at home base");
+    gms.canMakeRunOfHonor = 1;
+    ASSERT_EQ(1, calculate_runs(4, 3, 0, &gms, 0), "Should score run when arriving at home base (even if run of honor possible)");
     return TEST_PASSED;
 }
 
 static int test_run_of_honor() {
     // Run of Honor: Batter (originalBase 0) arrives at 3rd base (3), allowed to make run of honor
-    ASSERT_EQ(1, calculate_runs(3, 0, 0, 1, 0), "Should score run of honor");
+    GameModeState gms = {0};
+    gms.canMakeRunOfHonor = 1;
+    ASSERT_EQ(1, calculate_runs(3, 0, 0, &gms, 0), "Should score run of honor");
     return TEST_PASSED;
 }
 
 static int test_no_run_wounded() {
     // Wounded players cannot score
-    ASSERT_EQ(0, calculate_runs(4, 1, 1, 0, 0), "Wounded player at home base should not score");
-    ASSERT_EQ(0, calculate_runs(3, 0, 1, 1, 0), "Wounded player at 3rd base should not score run of honor");
+    GameModeState gms = {0};
+    ASSERT_EQ(0, calculate_runs(4, 1, 1, &gms, 0), "Wounded player at home base should not score");
+    gms.canMakeRunOfHonor = 1;
+    ASSERT_EQ(0, calculate_runs(3, 0, 1, &gms, 0), "Wounded player at 3rd base should not score run of honor");
     return TEST_PASSED;
 }
 
 static int test_no_run_of_honor_conditions() {
+    GameModeState gms = {0};
+    gms.canMakeRunOfHonor = 1;
     // Not original batter (originalBase != 0)
-    ASSERT_EQ(0, calculate_runs(3, 1, 0, 1, 0), "Player starting from 1st base cannot score run of honor");
-    ASSERT_EQ(0, calculate_runs(3, 2, 0, 1, 0), "Player starting from 2nd base cannot score run of honor");
+    ASSERT_EQ(0, calculate_runs(3, 1, 0, &gms, 0), "Player starting from 1st base cannot score run of honor");
+    ASSERT_EQ(0, calculate_runs(3, 2, 0, &gms, 0), "Player starting from 2nd base cannot score run of honor");
 
     // Run of Honor flag not set
-    ASSERT_EQ(0, calculate_runs(3, 0, 0, 0, 0), "Cannot score run of honor if can_make_run_of_honor is false");
+    gms.canMakeRunOfHonor = 0;
+    ASSERT_EQ(0, calculate_runs(3, 0, 0, &gms, 0), "Cannot score run of honor if can_make_run_of_honor is false");
 
     // Already made run of honor
-    ASSERT_EQ(0, calculate_runs(3, 0, 0, 1, 1), "Cannot score run of honor if already made on this base visit");
+    gms.canMakeRunOfHonor = 1;
+    ASSERT_EQ(0, calculate_runs(3, 0, 0, &gms, 1), "Cannot score run of honor if already made on this base visit");
     
     return TEST_PASSED;
 }
 
 static int test_other_bases() {
     // Arriving at 1st or 2nd base never scores a run
-    ASSERT_EQ(0, calculate_runs(1, 0, 0, 1, 0), "Arriving at 1st base does not score");
-    ASSERT_EQ(0, calculate_runs(2, 0, 0, 1, 0), "Arriving at 2nd base does not score");
+    GameModeState gms = {0};
+    gms.canMakeRunOfHonor = 1;
+    ASSERT_EQ(0, calculate_runs(1, 0, 0, &gms, 0), "Arriving at 1st base does not score");
+    ASSERT_EQ(0, calculate_runs(2, 0, 0, &gms, 0), "Arriving at 2nd base does not score");
     // Arriving at 3rd base but not run of honor conditions
-    ASSERT_EQ(0, calculate_runs(3, 2, 0, 0, 0), "Arriving at 3rd base normally does not score");
+    gms.canMakeRunOfHonor = 0;
+    ASSERT_EQ(0, calculate_runs(3, 2, 0, &gms, 0), "Arriving at 3rd base normally does not score");
     return TEST_PASSED;
 }
 

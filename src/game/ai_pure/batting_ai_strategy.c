@@ -2,18 +2,24 @@
 #include <math.h>
 #include <stdlib.h>
 
-BattingStrategy calculate_batting_strategy(int strikes, int fieldStatus, int power, int speed, int period)
+BattingStrategy calculate_batting_strategy(const GameState* gameState, int fieldStatus, int power, int speed, int period)
 {
-	BattingStrategy strategy = {0, 0, 0}; // default
+	BattingStrategy strategy = {1, 0, 0}; // Default: normal style, no running
+
+	// §26 Syötön tuomitseminen
+	// If 2 strikes, be more conservative
+	if (gameState->strikes >= 2) {
+		strategy.style = 1; // Normal swing to ensure contact
+	}
 	int hasPower = (power > 2) ? 1 : 0;
 	int isFast = (speed > 2) ? 1 : 0;
 
 	if (period < 4) {
-		if (strikes == 0) {
+		if (gameState->strikes == 0) {
 			strategy.style = 1;
 			strategy.runBaseRunners = 0;
 			strategy.runBatter = 0;
-		} else if (strikes == 1) {
+		} else if (gameState->strikes == 1) {
 			if (fieldStatus == 0) {
 				if (isFast == 0) {
 					strategy.style = 2;
@@ -69,7 +75,7 @@ BattingStrategy calculate_batting_strategy(int strikes, int fieldStatus, int pow
 					}
 				}
 			}
-		} else if (strikes == 2) {
+		} else if (gameState->strikes == 2) {
 			if (fieldStatus == 0) {
 				if (isFast == 0) {
 					strategy.style = 2;
@@ -97,7 +103,7 @@ BattingStrategy calculate_batting_strategy(int strikes, int fieldStatus, int pow
 			}
 		}
 	} else {
-		if (strikes == 0 || strikes == 1) {
+		if (gameState->strikes == 0 || gameState->strikes == 1) {
 			strategy.style = 1;
 			strategy.runBaseRunners = 0;
 			strategy.runBatter = 0;

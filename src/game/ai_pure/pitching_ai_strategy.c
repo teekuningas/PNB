@@ -5,14 +5,16 @@ void calculate_ai_pitch_targets(
     int rand1,
     int rand2,
     int rand3,
-    int batting_team_players_on_field_count,
-    int strikes,
-    int balls,
+    const PlayerCounters* playerCounters,
+    const GameState* gameState,
     int animation_frequency,
     unsigned int* out_first_limit,
     unsigned int* out_second_limit
 )
 {
+	int strikes = gameState->strikes;
+	int balls = gameState->balls;
+	int batting_team_players_on_field_count = playerCounters->battingTeamPlayersOnFieldCount;
 	int var = 0;
 
 	if (batting_team_players_on_field_count == 1) {

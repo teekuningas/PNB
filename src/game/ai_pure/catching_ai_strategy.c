@@ -39,36 +39,43 @@ MovementKeys calculate_movement_keys(float dx, float dz)
 	return keys;
 }
 
-int should_ai_throw(int hasBallIndex, int catcherIndex, int catcherNearHome,
+int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
                     int replacerIndex, int replacerStage, int replacerBase, int replacerMoving,
                     int targetBase)
 {
+	int hasBallIndex = playerIndices->hasBallIndex;
+	int catcherIndex = playerIndices->catcherOnBaseIndex[targetBase];
+
 	int shouldThrow = 0;
-
-	// Check normal catcher
-	if (hasBallIndex != catcherIndex) {
-		if (catcherNearHome == 1) {
-			shouldThrow = 1;
+	if (hasBallIndex != -1 && catcherIndex != -1) {
+		// Check normal catcher
+		if (hasBallIndex != catcherIndex) {
+			if (catcherNearHome == 1) {
+				shouldThrow = 1;
+			}
 		}
-	}
 
-	// Check replacer
-	if (hasBallIndex != replacerIndex) {
-		if (replacerStage == 1 &&
-		        replacerBase == targetBase &&
-		        replacerMoving == 0) {
-			shouldThrow = 1;
+		// Check replacer
+		if (hasBallIndex != replacerIndex) {
+			if (replacerStage == 1 &&
+			        replacerBase == targetBase &&
+			        replacerMoving == 0) {
+				shouldThrow = 1;
+			}
 		}
 	}
 
 	return shouldThrow;
 }
 
-int should_ai_drop_ball(int woundingCatch, int batterStartedRunning,
+int should_ai_drop_ball(const WoundingState* woundingState, const GameControlFlags* gameControl,
                         int runner3OriginalBase, int runner3IsOnBase,
                         int runner2OriginalBase, int runner2IsOnBase,
                         int catcherHomeIndex, int hasBallIndex)
 {
+	int woundingCatch = woundingState->woundingCatch;
+	int batterStartedRunning = gameControl->batterStartedRunning;
+
 	if (woundingCatch == 1 && batterStartedRunning == 1 &&
 	        runner3OriginalBase == 3 && runner3IsOnBase == 1 &&
 	        runner2OriginalBase == 2 && runner2IsOnBase == 1 &&

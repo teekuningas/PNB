@@ -159,7 +159,7 @@ void selectBatter(StateInfo* stateInfo)
 		target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 		target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 		// move to target can take care of the rest.
-		moveToTarget(stateInfo, index, &target);
+		moveToTarget(stateInfo->localGameInfo, index, &target);
 	}
 }
 
@@ -391,7 +391,7 @@ void updateBatting(StateInfo* stateInfo)
 
 			target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-			moveToTarget(stateInfo, stateInfo->localGameInfo->pII.batterIndex, &target);
+			moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.batterIndex, &target);
 		}
 		// so here we check if the bat hits. this event happens always the pitch has been in air
 		else if(battingFrameCount > pitchFrameTime) {
@@ -431,7 +431,7 @@ void updateBatting(StateInfo* stateInfo)
 
 
 						// make the ball fly in the air with new velocity
-						genericSlingBall(stateInfo, velocity.x, velocity.y, velocity.z);
+						genericSlingBall(stateInfo->localGameInfo, velocity.x, velocity.y, velocity.z);
 						// and the sound
 						stateInfo->playSoundEffect = SOUND_SWING;
 						// bat hits
@@ -458,7 +458,7 @@ void updateBatting(StateInfo* stateInfo)
 							int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[0];
 							stateInfo->localGameInfo->pRAI.willStartRunning[0] = 0;
 							if(index != -1) {
-								runToNextBase(stateInfo, index, 0);
+								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, 0);
 								runBatFlag = 1;
 							}
 						}

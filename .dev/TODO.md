@@ -1,97 +1,71 @@
 # TODO - Current Tasks
 
-## Milestone 7.5: Data Structure Cleanup (CURRENT)
+## Milestone 8: The Great Narrowing (COMPLETE ✅)
 
-**Philosophy:** Data shapes architecture. Clean the foundation before building the Referee.
+**Philosophy:** "Write-only what you need" - Narrow function signatures to specific structs.
 
-**Goal:** Separate domain state from control state in our data structures.
-
----
-
-### Phase 0: Data Structure Audit (COMPLETE ✅)
-
-- [x] **Audit GameAnalysisInfo** (Done 2026-01-02)
-  - [x] List all 40+ fields
-  - [x] Document purpose of each field
-  - [x] Classify each: Domain, Control, Camera, or Eliminable?
-  - [x] Draw dependency diagram
-  - [x] Create `docs/DATA_STRUCTURE_AUDIT.md`
+**Goal:** Decouple utility/physics logic from the global God Object (`StateInfo`).
 
 ---
 
-### Phase 1: Extract PlayerRuntimeState (COMPLETE ✅)
+### Phase 1: Narrow Movement Logic (common_logic.c) - COMPLETE ✅
 
-- [x] Create `PlayerRuntimeState` struct in `src/include/globals.h`, add `playerRuntime` array to `LocalGameInfo`, and initialize it in `src/game/common_logic.c`
+- [x] **Refactor atomic movement functions** (Done 2026-01-03)
+  - [x] `stopMovement(LocalGameInfo*, int)`
+  - [x] `stopTargetLookingPlayer(LocalGameInfo*, int)`
+  - [x] `setOrientation(LocalGameInfo*, int)`
+- [x] **Refactor complex movement functions** (Done 2026-01-03)
+  - [x] `runToTarget(LocalGameInfo*, int, Vector3D*)`
+  - [x] `moveToTarget(LocalGameInfo*, int, Vector3D*)`
+- [x] **Refactor rule-adjacent movement** (Done 2026-01-03)
+  - [x] `movePlayerOut(LocalGameInfo*, FieldPositions*, int)`
+  - [x] `runToNextBase(LocalGameInfo*, FieldPositions*, int, int)`
+  - [x] `runToPreviousBase(LocalGameInfo*, FieldPositions*, int, int)`
+  - [x] `lead(LocalGameInfo*, FieldPositions*, int)`
 
-- [x] **Migrate control flags (One by one)**
-  - [x] **Migrate `arrivedToBase`** (Optimization flag)
-  - [x] **Migrate `woundedApply`** (Deferred execution)
-  - [x] **Migrate `passedPathPoint`** (State machine)
-  - [x] **Migrate `goingForward`** (Direction)
-  - [x] **Migrate `hasMadeRunOnThirdBase`** (Guard)
+### Phase 2: Narrow Ball Logic (ball.c) - COMPLETE ✅
 
-**Result:** `BattingTeamPlayerInfo` contains ONLY domain state (serializable "truth").
+- [x] `updateBallStatus(LocalGameInfo*, FieldPositions*)` (Done 2026-01-03)
+- [x] `updateBallToPlayer(LocalGameInfo*)` (Done 2026-01-03)
+- [x] `genericSlingBall(LocalGameInfo*, float, float, float)` (Done 2026-01-03)
 
----
+### Phase 3: Narrow AI Strategy (ai_pure/) - COMPLETE ✅
 
-### Phase 2: Split GameAnalysisInfo God Object (COMPLETE ✅)
+- [x] `calculate_batting_strategy(const GameState*, ...)` (Done 2026-01-03)
+- [x] `calculate_ai_pitch_targets(..., const PlayerCounters*, const GameState*, ...)` (Done 2026-01-03)
+- [x] `should_ai_drop_ball(const WoundingState*, const GameControlFlags*, ...)` (Done 2026-01-03)
+- [x] `should_ai_throw(const PlayerIndexInfo*, ...)` (Done 2026-01-03)
 
-- [x] **Create focused structs in `globals.h`** (Done 2026-01-03)
-  - [x] `GameState` (outs, strikes, balls, runs, event)
-  - [x] `GameControlFlags` (pause, initLocals, etc.)
-  - [x] `WoundingState` (woundingCatch, handled)
-  - [x] `CameraState` (camera flags, targetPoint)
-  - [x] `PlayerCounters` (battingTeamPlayers, nonJokers, jokers)
-  - [x] `GameModeState` (pairCounter, runOfHonor, forceNextPair)
+### Phase 4: Test Suite Refinement - COMPLETE ✅
 
-- [x] **Add new structs to `LocalGameInfo`**
-
-- [x] **Migrate fields group by group**
-  - [x] Migrate `GameState` fields
-  - [x] Migrate `GameControlFlags`
-  - [x] Migrate `WoundingState`
-  - [x] Migrate `CameraState`
-  - [x] Migrate `PlayerCounters`
-  - [x] Migrate `GameModeState`
-
-- [x] **Remove `GameAnalysisInfo` struct**
-
-- [x] **Test continuously** (All 51 tests passing)
-
-**Result:** Focused, single-responsibility structs.
+- [x] Update unit tests to use narrowed structs (Done 2026-01-03)
+- [x] Verify all 51 tests pass (Done 2026-01-03)
 
 ---
 
-### Phase 3: Stabilize & Document (CURRENT 🎯)
+## Milestone 9: Type Safety & State Machines (CURRENT 🎯)
 
-- [ ] **Update documentation**
-  - [ ] Update `docs/DATA_STRUCTURE_AUDIT.md` with new structure
-  - [ ] Draw new hierarchy diagram
-  - [ ] Document each struct's purpose
-  - [ ] Add usage examples
+**Goal:** Replace "int flags" with strong Enums and State Machines.
 
-- [ ] **Testing & verification**
-  - [ ] Full unit test suite
-  - [ ] Full integration test suite
-  - [ ] Manual playthrough (full game)
-  - [ ] Verify save/load still works
-
-- [ ] **Celebrate!**
-  - [ ] Create `docs/MILESTONE7.5_COMPLETE.md`
-  - [ ] Update PLAN.md
-  - [ ] Commit all changes
-
-**Result:** Clean, documented, tested foundation for Milestone 8
+- [ ] Define `PlayerAnimationModel` enum for animation IDs.
+- [ ] Define `PitchCycleState` enum for `PlayerRelatedActionInfo`.
+- [ ] Investigate typing `ActionFlags`.
 
 ---
 
-## Next Up: Milestone 8 - The Referee Architecture
+## Milestone 10: The Referee Architecture (PLANNED)
 
-Will be done AFTER data cleanup is complete. The Referee pattern will emerge naturally from clean data structures.
+- [ ] Implement the Referee pattern.
 
 ---
 
 ## Completed ✅
+
+### Milestone 7.5: Data Structure Cleanup (Complete 2026-01-03)
+- [x] Phase 0: Data Structure Audit
+- [x] Phase 1: Extract PlayerRuntimeState
+- [x] Phase 2: Split GameAnalysisInfo God Object
+- [x] Phase 3: Stabilize & Document (Baseline)
 
 ### Milestone 7: Data Renaissance (Complete 2026-01-01)
 - [x] Eliminated ALL legacy state flags

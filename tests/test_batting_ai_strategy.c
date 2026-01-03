@@ -11,30 +11,36 @@ int test_batting_strategy_decision_tree() {
     printf("Running test: %s\n", __func__);
     
     BattingStrategy s;
+    GameState gs = {0};
     
     // Period < 4, Strikes 0 -> Style 1, No run
-    s = calculate_batting_strategy(0, 0, 0, 0, 0);
+    gs.strikes = 0;
+    s = calculate_batting_strategy(&gs, 0, 0, 0, 0);
     ASSERT_EQ(1, s.style, "Strikes 0 -> Style 1");
     ASSERT_EQ(0, s.runBaseRunners, "Strikes 0 -> No run base");
     ASSERT_EQ(0, s.runBatter, "Strikes 0 -> No run batter");
 
     // Period < 4, Strikes 1, Field 0 (empty), Slow batter (speed <= 2)
-    s = calculate_batting_strategy(1, 0, 0, 2, 0); // speed 2 is slow
+    gs.strikes = 1;
+    s = calculate_batting_strategy(&gs, 0, 0, 2, 0); // speed 2 is slow
     ASSERT_EQ(2, s.style, "S1, F0, Slow -> Style 2 (Wound)");
     ASSERT_EQ(1, s.runBatter, "S1, F0, Slow -> Run Batter");
 
     // Period < 4, Strikes 1, Field 0, Fast batter (speed > 2)
-    s = calculate_batting_strategy(1, 0, 0, 3, 0); // speed 3 is fast
+    gs.strikes = 1;
+    s = calculate_batting_strategy(&gs, 0, 0, 3, 0); // speed 3 is fast
     ASSERT_EQ(0, s.style, "S1, F0, Fast -> Style 0 (Bunt)");
     ASSERT_EQ(1, s.runBatter, "S1, F0, Fast -> Run Batter");
 
     // Period < 4, Strikes 2, Field 2 (1st base occupied), Power batter
-    s = calculate_batting_strategy(2, 2, 3, 0, 0); // power 3
+    gs.strikes = 2;
+    s = calculate_batting_strategy(&gs, 2, 3, 0, 0); // power 3
     ASSERT_EQ(1, s.style, "S2, F2, Power -> Style 1");
     ASSERT_EQ(1, s.runBaseRunners, "S2, F2, Power -> Run Base");
 
     // Period >= 4 (last inning/super inning), Strikes 2, No Power
-    s = calculate_batting_strategy(2, 0, 2, 0, 4); // period 4
+    gs.strikes = 2;
+    s = calculate_batting_strategy(&gs, 0, 2, 0, 4); // period 4
     ASSERT_EQ(0, s.style, "Per4, S2, NoPower -> Style 0");
     ASSERT_EQ(1, s.runBaseRunners, "Per4, S2, NoPower -> Run Base");
     ASSERT_EQ(0, s.runBatter, "Per4, S2, NoPower -> No Run Batter");

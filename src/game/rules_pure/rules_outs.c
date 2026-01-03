@@ -9,11 +9,11 @@
  * Note: player_base represents the base the runner is currently at (running FROM), not the target base.
  * For example, if baseIndex = i-1, the player is at base i-1 and running toward base i.
  */
-int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, int is_out_of_bounds)
+int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, const GameState* gameState)
 {
 	// If the play is out of bounds (foul), outs are generally not recorded this way
 	// (or the situation is handled by foulPlay logic reset).
-	if (is_out_of_bounds) {
+	if (gameState->outOfBounds) {
 		return 0;
 	}
 

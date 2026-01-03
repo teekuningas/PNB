@@ -41,45 +41,57 @@ int test_calculate_movement_keys_right() {
 }
 
 int test_should_ai_throw_normal() {
+    PlayerIndexInfo pii = {0};
+    pii.hasBallIndex = 0;
+    pii.catcherOnBaseIndex[0] = 1;
     // hasBallIndex != catcherIndex, catcherNearHome = 1
-    int result = should_ai_throw(0, 1, 1, 99, 0, 0, 0, 0);
+    int result = should_ai_throw(&pii, 1, 99, 0, 0, 0, 0);
     ASSERT_EQ(1, result, "Should throw if catcher is near home and doesn't have ball");
     
     // catcherNearHome = 0
-    result = should_ai_throw(0, 1, 0, 99, 0, 0, 0, 0);
+    result = should_ai_throw(&pii, 0, 99, 0, 0, 0, 0);
     ASSERT_EQ(0, result, "Should not throw if catcher not near home");
 
     // hasBallIndex == catcherIndex
-    result = should_ai_throw(1, 1, 1, 99, 0, 0, 0, 0);
+    pii.hasBallIndex = 1;
+    result = should_ai_throw(&pii, 1, 99, 0, 0, 0, 0);
     ASSERT_EQ(0, result, "Should not throw if catcher has ball");
     
     return TEST_PASSED;
 }
 
 int test_should_ai_throw_replacer() {
+    PlayerIndexInfo pii = {0};
+    pii.hasBallIndex = 0;
+    pii.catcherOnBaseIndex[2] = 99;
     // replacer checks
     // hasBall != replacerIndex, stage=1, base=target, moving=0
-    int result = should_ai_throw(0, 99, 0, 1, 1, 2, 0, 2);
+    int result = should_ai_throw(&pii, 0, 1, 1, 2, 0, 2);
     ASSERT_EQ(1, result, "Should throw to replacer in position");
     
     // wrong base
-    result = should_ai_throw(0, 99, 0, 1, 1, 1, 0, 2);
+    result = should_ai_throw(&pii, 0, 1, 1, 1, 0, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer on wrong base");
     
     // moving
-    result = should_ai_throw(0, 99, 0, 1, 1, 2, 1, 2);
+    result = should_ai_throw(&pii, 0, 1, 1, 2, 1, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer is moving");
     
     return TEST_PASSED;
 }
 
 int test_should_ai_drop_ball_scenario() {
+    WoundingState ws = {0};
+    GameControlFlags gc = {0};
+    ws.woundingCatch = 1;
+    gc.batterStartedRunning = 1;
     // woundingCatch=1, batterStartedRunning=1, r3=3, r3On=1, r2=2, r2On=1, home!=hasBall
-    int result = should_ai_drop_ball(1, 1, 3, 1, 2, 1, 0, 1);
+    int result = should_ai_drop_ball(&ws, &gc, 3, 1, 2, 1, 0, 1);
     ASSERT_EQ(1, result, "Should drop ball in wounding catch scenario");
     
     // Not wounding catch
-    result = should_ai_drop_ball(0, 1, 3, 1, 2, 1, 0, 1);
+    ws.woundingCatch = 0;
+    result = should_ai_drop_ball(&ws, &gc, 3, 1, 2, 1, 0, 1);
     ASSERT_EQ(0, result, "Should not drop if not wounding catch");
     
     return TEST_PASSED;

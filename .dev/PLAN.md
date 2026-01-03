@@ -1,180 +1,101 @@
 ## Refactoring Master Plan
 
-## Current Status: Milestone 7 COMPLETE ✅ → Milestone 7.5 (Data Structure Cleanup)
+## Current Status: Milestone 7.5 COMPLETE ✅ → Milestone 8 (The Great Narrowing)
 
 **Foundation Quality:** 10.0/10 - Excellent Type-Safe Domain State
-**Current Focus:** Clean up data structures before Milestone 8 (Referee Pattern)
-**Philosophy:** Data shapes architecture - clean the foundation before building the skyscraper
+**Current Focus:** Function Signature Narrowing
+**Philosophy:** "Write-only what you need" - Functions should not see the whole world.
 
 ---
 
-## Milestone 7: Data Renaissance - COMPLETE ✅
+## Milestone 7.5: Data Structure Cleanup - COMPLETE ✅
 
-**Achievement (2026-01-01):** Successfully eliminated ALL legacy state flags!
+**Achievement (2026-01-03):** Successfully decomposed `GameAnalysisInfo` God Object!
 
 ### What We Accomplished
-- ✅ Deleted 6 boolean flags: `isOnBase`, `out`, `wounded`, `leading`, `takingFreeWalk`
-- ✅ Replaced with type-safe enums: `PlayerUnitState`, `BaseID`, `GameEventType`
-- ✅ Eliminated impossible states (compiler-enforced correctness)
-- ✅ All 51 unit tests + 5 integration tests passing
-- ✅ Deleted state_adapter.c/h (no longer needed)
-
-### Key Insight Discovered
-The flags we eliminated were **DOMAIN STATE** (representing game reality).
-The flags remaining are **CONTROL STATE** (implementation bookkeeping).
-
-**This distinction is critical for next steps.**
+- ✅ Created 6 focused structs: `GameState`, `GameControlFlags`, `WoundingState`, `CameraState`, `PlayerCounters`, `GameModeState`
+- ✅ Migrated all fields from `GameAnalysisInfo`
+- ✅ Deleted `GameAnalysisInfo` struct
+- ✅ All 51 unit tests passed
 
 ---
 
-## Milestone 7.5: Data Structure Cleanup (CURRENT - 1-2 weeks)
+## Milestone 8: The Great Narrowing (CURRENT - 1 week)
 
-**Philosophy:** Data shapes architecture. Clean the foundation before building the Referee pattern.
+**Goal:** Refactor function signatures to take specific structs instead of `StateInfo*`.
 
-### Why Data First?
-1. **Architectural patterns reflect data structures** - Can't build clean architecture on messy data
-2. **Understanding through doing** - Cleaning data teaches us the game loop deeply
-3. **Safety** - Small, testable steps vs. large architectural leaps
-4. **Natural emergence** - Referee pattern will become obvious after cleanup
+**Why:**
+- Prove we understand dependencies.
+- Prevent accidental side effects (e.g., movement logic changing the score).
+- Simplify unit tests (no need to mock `StateInfo`).
 
-### The Remaining Pollution
-
-**Problem:** Control flags mixed with domain data in structs
-
-**Example:**
-```c
-typedef struct _BattingTeamPlayerInfo {
-    // Domain: Game state ✅ CLEAN
-    PlayerUnitState state;
-    BaseID baseId;
-    
-    // Control: Implementation bookkeeping ⚠️ POLLUTION
-    int arrivedToBase;       // Optimization flag
-    int woundedApply;        // Deferred execution
-    int passedPathPoint;     // State machine variable
-    int goingForward;        // Direction tracking
-    int hasMadeRunOnThirdBase; // Guard flag
-} BattingTeamPlayerInfo;
-```
-
-**Goal:** Separate domain state from control state
-
-### Phases
-
-**Phase 0: Data Structure Audit** (COMPLETE ✅)
-- Map all flags in GameAnalysisInfo (40+ fields!)
-- Understand purpose of each flag
-- Classify: Domain, Control, Camera, or Eliminable
-- Document dependencies between flags
-- Output: `docs/DATA_STRUCTURE_AUDIT.md` (Done)
-
-**Phase 1: Extract PlayerRuntimeState** (NEXT UP)
-- Create `PlayerRuntimeState` struct for control flags
-- Move control flags OUT of `BattingTeamPlayerInfo`
-- Migrate one flag at a time (testable, safe)
-- Keep domain state clean
-- See `docs/DATA_STRUCTURE_VISION.md` for target state
-
-**Phase 2: Split GameAnalysisInfo God Object** (Planned)
-- Break 40+ field monster into focused structs:
-  - `GameState` (outs, strikes, balls, runs)
-  - `GameControlFlags` (pause, initLocals, etc.)
-  - `WoundingState` (wounding system)
-  - `CameraState` (camera/UI)
-  - `PlayerCounters` (player tracking)
-- Mechanical refactoring (moving fields)
-- Test continuously
-
-**Phase 3: Stabilize & Document** (Planned)
-- Update all documentation
-- Draw new hierarchy diagrams
-- Full test suite + manual playtest
-- Celebrate clean foundation!
-
-### Expected Outcome
-- Clear separation: Domain vs Control vs UI state
-- Referee pattern boundaries become obvious
-- Safe, tested foundation for Milestone 8
+**Tasks:**
+1.  **Narrow Movement Logic:** `moveToTarget`, `runToTarget` → Take `LocalGameInfo*` or `PlayerInfo*`.
+2.  **Narrow Ball Logic:** `updateBall`, `genericSlingBall` → Take `BallInfo*` and `PlayerInfo*`.
+3.  **Narrow AI Strategy:** Verify `*_ai_strategy.c` use `const GameState*`.
+4.  **Test Suite Upgrade:** Refactor tests to setup only required structs.
 
 ---
 
-## Milestone 8: The Referee Architecture (2-3 weeks) 🔭
+## Milestone 9: Type Safety & State Machines (Next)
 
-**AFTER** data cleanup, implement the Referee pattern.
+**Goal:** Replace "int flags" with strong Enums and State Machines.
 
-### The Vision
+**Why:**
+- `player.model = 12` is unreadable.
+- `pitchGoingOn` + `battingGoingOn` is fragile.
 
-**The Referee Layer:**
-- Analyzes physical world (player positions, ball state)
-- Outputs **Abstract State** (Outs, Runs, Strikes)
-- Outputs **Permissions** ("Can Pitch", "Can Bat", "Can Throw to Base X")
+**Tasks:**
+1.  **Animation Enums:** Replace magic numbers (0-16) with `PlayerAnimationModel`.
+2.  **Pitch Cycle State Machine:** Replace loose flags in `PlayerRelatedActionInfo` with `PitchCycleState`.
+3.  **Action Flag Types:** Investigate typing `ActionFlags`.
 
-**Benefits:**
-1. **Explicit Permissions** - Code checks permissions, doesn't calculate them
-2. **Synchronous "Breathing"** - Input → Physics → Referee → Logic → Render
-3. **Snapshotting & Replay** - Clean state enables instant replay
-4. **Testability** - Referee is pure function (easier to test)
+---
 
-### Why After Data Cleanup?
+## Milestone 10: The Referee Architecture (Future)
 
-The Referee pattern NEEDS clean separation of:
-- What to analyze (domain state)
-- What NOT to analyze (control flags)
-- What to output (abstract state)
+**Goal:** Implement the high-level logic arbitrator.
 
-**Clean data makes Referee obvious. Messy data makes Referee impossible.**
+**The Vision:**
+- **Referee Layer:** Analyzes physical world → Outputs Abstract State & Permissions.
+- **Benefits:** Explicit permissions, synchronous breathing, replayability.
+
+**Why Wait?**
+- Needs clean data (Milestone 7.5 ✅).
+- Needs narrow functions (Milestone 8).
+- Needs strong types (Milestone 9).
 
 ---
 
 ## Completed Milestones
 
+### ✅ Milestone 7.5: Data Structure Cleanup (COMPLETE 2026-01-03)
+- Decomposed `GameAnalysisInfo` into `GameState`, `GameControlFlags`, etc.
+- Migrated 34+ fields.
+- 51 Tests passing.
+
 ### ✅ Milestone 7: Data Renaissance (COMPLETE 2026-01-01)
-- Eliminated ALL legacy state flags
-- Type-safe enums: PlayerUnitState, BaseID, GameEventType
-- 51 unit + 5 integration tests passing
-- Compiler-enforced correctness
+- Eliminated ALL legacy state flags.
+- Type-safe enums: `PlayerUnitState`, `BaseID`.
 
 ### ✅ Milestone 6: Rules Engine Extraction
-- Extracted outs, runs, strikes to `rules_pure/`
-- Comprehensive audit completed (1 bug found/fixed)
-- All game "brains" now pure and tested
-
-### ✅ Milestone 5: Logic Purification
-- Extracted physics and AI to pure functions
-- Created comprehensive unit tests
+- Extracted pure rules logic.
 
 ---
 
 ## Decision Log
 
+### 2026-01-03: The Three-Step Climb
+**Decision:** Split future work into Narrowing (M8) -> Type Safety (M9) -> Referee (M10).
+**Rationale:**
+- Doing everything at once is too risky.
+- Narrowing validates the data structure changes immediately.
+- Type safety makes the code readable before we write complex Referee logic.
+
 ### 2026-01-01: Data First, Then Architecture
 **Decision:** Do Milestone 7.5 (data cleanup) BEFORE Milestone 8 (Referee pattern)
 **Rationale:**
-- Data structures shape architecture
-- Can't build clean architecture on messy data
-- Small, safe steps vs. large architectural leaps
-- Understanding through doing (cleanup teaches us the game loop)
-- Referee pattern will emerge naturally from clean data
-
-### 2025-12-31: The "Write-Both" Pattern
-**Decision:** Abandoned bidirectional adapter pattern in favor of write-both.
-**Rationale:**
-- Bidirectional adapter was scary - easy to overwrite data accidentally
-- Write-both is simple, obvious, and safe
-- Local reasoning at each write site
-- No timing dependencies or order-sensitive sync calls
-- Safe migration of reads can happen gradually
-
-### 2025-12-30: The "Climb" Strategy
-**Decision:** Break migration into Rendering first, then Logic.
-**Rationale:****
-- Rendering is "read-only" relative to game state. Safer to migrate first.
-- Visual feedback provides immediate confirmation of Adapter correctness.
-- Logic migration is higher risk, so it comes second.
-
-### 2025-12-18: Data-First Strategy
-**Decision:** Don't add enums to messy structures. Clean first.
+- Data structures shape architecture.
+- Can't build clean architecture on messy data.
 
 ---
-
-*For detailed milestone achievements, see `docs/MILESTONE6_COMPLETE.md`*

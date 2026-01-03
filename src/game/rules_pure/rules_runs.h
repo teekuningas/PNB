@@ -1,6 +1,8 @@
 #ifndef RULES_RUNS_H
 #define RULES_RUNS_H
 
+#include "globals.h"
+
 /**
  * Calculates whether a run is scored.
  *
@@ -12,10 +14,10 @@
  * @param player_base Current base of the player (4 for home base, 3 for 3rd base).
  * @param player_original_base The base the player started from before this play.
  * @param player_is_wounded Whether the player has been wounded (put out) during the play.
- * @param can_make_run_of_honor Game state flag indicating if a run of honor is possible (valid hit etc).
+ * @param gameModeState Current game mode state containing can_make_run_of_honor.
  * @param has_made_run_on_third_base Flag to prevent double counting a run of honor for the same player.
  * @return 1 if a run is scored, 0 otherwise.
  */
-int calculate_runs(int player_base, int player_original_base, int player_is_wounded, int can_make_run_of_honor, int has_made_run_on_third_base);
+int calculate_runs(int player_base, int player_original_base, int player_is_wounded, const GameModeState* gameModeState, int has_made_run_on_third_base);
 
 #endif // RULES_RUNS_H

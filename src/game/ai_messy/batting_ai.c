@@ -201,7 +201,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			else fieldStatus = 0;
 
 			BattingStrategy strategy = calculate_batting_strategy(
-			                               stateInfo->localGameInfo->gameState.strikes,
+			                               &(stateInfo->localGameInfo->gameState),
 			                               fieldStatus,
 			                               power,
 			                               speed,

@@ -70,7 +70,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 		throwDirection.z = throwDirection.z / throwDistance;
 		throwDirection.y = 0.06f;
 		// ... and then edit them a bit more and send them to genericSlingBall.
-		genericSlingBall(stateInfo, throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
+		genericSlingBall(stateInfo->localGameInfo, throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
 		// set lastHadBallIndex, its used for example to prevent this player of catching
 		// the ball right after throwing.
 		stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
@@ -97,7 +97,7 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			// stop player if he is moving, moving won't look good as the animation
 			// doesn't have foot movement
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-				stopMovement(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+				stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 			}
 			// set the animation
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 8;
@@ -172,7 +172,7 @@ void dropBall(StateInfo* stateInfo)
 
 			// players' movement will be stopped when doing this, similar to throwing.
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-				stopMovement(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+				stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 			}
 			// model is set to be the basic standing without ball model.
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 0;
@@ -184,7 +184,7 @@ void dropBall(StateInfo* stateInfo)
 			dx = dx / norm;
 			dz = dz / norm;
 			// and use genericSlingBall again to get the ball to the world.
-			genericSlingBall(stateInfo, dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
+			genericSlingBall(stateInfo->localGameInfo, dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
 			// and set the lastHadBallIndex so that this player cannot catch it before it hits ground
 			stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 			// and no player has the ball anymore.
