@@ -48,7 +48,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 			}
 		}
 		stateInfo->globalGameInfo->pairCount = half;
-		stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+		stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter = 0;
 	} else {
 		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
 		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;

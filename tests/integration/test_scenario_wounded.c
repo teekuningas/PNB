@@ -31,19 +31,19 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     
     // Ball is caught by a fielder
     state->localGameInfo->pII.hasBallIndex = fielderIndex;
-    state->localGameInfo->gAI.firstCatchMade = 1;
-    state->localGameInfo->gAI.initLocals = 1;
+    state->localGameInfo->gameControl.firstCatchMade = 1;
+    state->localGameInfo->gameControl.initLocals = 1;
 
     // First, let the initialization phase finish to stabilize static counters
     unsigned int seed = 0;
     MenuInfo menu = {0}; // Dummy menu
-    while (state->localGameInfo->gAI.initLocals != 0) {
+    while (state->localGameInfo->gameControl.initLocals != 0) {
         gameAnalysis(state, &menu, &seed);
     }
 
     // Now trigger the wounding catch
-    state->localGameInfo->gAI.woundingCatch = 1;
-    state->localGameInfo->gAI.woundingCatchHandled = 0;
+    state->localGameInfo->woundingState.woundingCatch = 1;
+    state->localGameInfo->woundingState.woundingCatchHandled = 0;
 
     for (int i = 0; i < 65; ++i) {
         gameAnalysis(state, &menu, &seed);
@@ -67,17 +67,17 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
     // Initial stabilization
-    state->localGameInfo->gAI.firstCatchMade = 1;
-    state->localGameInfo->gAI.initLocals = 1;
+    state->localGameInfo->gameControl.firstCatchMade = 1;
+    state->localGameInfo->gameControl.initLocals = 1;
     unsigned int seed = 0;
     MenuInfo menu = {0};
-    while (state->localGameInfo->gAI.initLocals != 0) {
+    while (state->localGameInfo->gameControl.initLocals != 0) {
         gameAnalysis(state, &menu, &seed);
     }
 
     // Trigger wounding catch
-    state->localGameInfo->gAI.woundingCatch = 1;
-    state->localGameInfo->gAI.woundingCatchHandled = 0;
+    state->localGameInfo->woundingState.woundingCatch = 1;
+    state->localGameInfo->woundingState.woundingCatchHandled = 0;
     
     // Run 1 frame to set woundedApply = 1
     gameAnalysis(state, &menu, &seed);
@@ -118,17 +118,17 @@ static int test_runner_not_wounded_if_starts_running_late() {
     set_test_player_state(state, runnerIndex, PLAYER_STATE_SAFE_ON_BASE);
     
     // Stabilization
-    state->localGameInfo->gAI.firstCatchMade = 1;
-    state->localGameInfo->gAI.initLocals = 1;
+    state->localGameInfo->gameControl.firstCatchMade = 1;
+    state->localGameInfo->gameControl.initLocals = 1;
     unsigned int seed = 0;
     MenuInfo menu = {0};
-    while (state->localGameInfo->gAI.initLocals != 0) {
+    while (state->localGameInfo->gameControl.initLocals != 0) {
         gameAnalysis(state, &menu, &seed);
     }
 
     // Trigger wounding catch
-    state->localGameInfo->gAI.woundingCatch = 1;
-    state->localGameInfo->gAI.woundingCatchHandled = 0;
+    state->localGameInfo->woundingState.woundingCatch = 1;
+    state->localGameInfo->woundingState.woundingCatchHandled = 0;
     
     // Run 1 frame. woundedApply should be 0 because runner is safe.
     gameAnalysis(state, &menu, &seed);

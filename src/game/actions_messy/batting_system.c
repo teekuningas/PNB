@@ -108,7 +108,7 @@ void selectBatter(StateInfo* stateInfo)
 		// we set the batterSelect to be 0 so that it will be correct one next time we have the decision
 		batterSelect = 0;
 		// and set these to 0 as decision made.
-		stateInfo->localGameInfo->gAI.waitingForBatterDecision = 0;
+		stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
 		stateInfo->localGameInfo->aF.bTAF.chooseBatter = 0;
 
 		// here we look for a free spot in battingTeamOnFieldIndices[]
@@ -127,14 +127,14 @@ void selectBatter(StateInfo* stateInfo)
 
 		}
 		// new batting team player on the field.
-		stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount++;
+		stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount++;
 		// has base of zero, is on base and original base is zero too.
 		stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_HOME;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = 0;
 		// this guy will begin with 0 strikes and 0 balls.
-		stateInfo->localGameInfo->gAI.strikes = 0;
-		stateInfo->localGameInfo->gAI.balls = 0;
+		stateInfo->localGameInfo->gameState.strikes = 0;
+		stateInfo->localGameInfo->gameState.balls = 0;
 		// set batterIndex
 		stateInfo->localGameInfo->pII.batterIndex = index;
 		// cant advance yet
@@ -147,11 +147,11 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase = 0;
 		// if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
 		if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker == 1) {
-			stateInfo->localGameInfo->gAI.jokersLeft--;
+			stateInfo->localGameInfo->playerCounters.jokersLeft--;
 			stateInfo->localGameInfo->playerInfo[index].bTPI.joker = 2;
 		} else {
 			// otherwise he is not a joker player and we must decrease the amount of those.
-			stateInfo->localGameInfo->gAI.nonJokerPlayersLeft--;
+			stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft--;
 			// also the batterIndex will increase(mod 9)
 			stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrderIndex = (stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrderIndex + 1)%PLAYERS_IN_TEAM;
 		}
@@ -438,19 +438,19 @@ void updateBatting(StateInfo* stateInfo)
 						stateInfo->localGameInfo->pRAI.batHit = 1;
 						// firstCatchMade set to zero. its used for example to condition checking for runs
 						// or out of bounds events.
-						stateInfo->localGameInfo->gAI.firstCatchMade = 0;
+						stateInfo->localGameInfo->gameControl.firstCatchMade = 0;
 						// not a pitch anymore
 						stateInfo->localGameInfo->pRAI.pitchInAir = 0;
 						// pitchGoingOn goes 0 here too.
 						stateInfo->localGameInfo->pRAI.pitchGoingOn = 0;
 						// this batter has chance to make run now by running to third base.
-						stateInfo->localGameInfo->gAI.canMakeRunOfHonor = 1;
+						stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor = 1;
 						// no throw going on now
 						stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
 						// prepare for wounds
-						stateInfo->localGameInfo->gAI.woundingCatch = 0;
-						stateInfo->localGameInfo->gAI.woundingCatchHandled = 0;
-						stateInfo->localGameInfo->gAI.batterStartedRunning = 0;
+						stateInfo->localGameInfo->woundingState.woundingCatch = 0;
+						stateInfo->localGameInfo->woundingState.woundingCatchHandled = 0;
+						stateInfo->localGameInfo->gameControl.batterStartedRunning = 0;
 
 						// move the batter if wanted
 
@@ -465,14 +465,14 @@ void updateBatting(StateInfo* stateInfo)
 					}
 					// always when batting,
 					// we get a strike
-					stateInfo->localGameInfo->gAI.strikes += 1;
+					stateInfo->localGameInfo->gameState.strikes += 1;
 				}
 				// if the ball went to far away and we still continued our batting
 				// we just miss. set the flags, trigger the event and
 				// add a strike.
 				else {
 					stateInfo->localGameInfo->pRAI.batMiss = 1;
-					stateInfo->localGameInfo->gAI.strikes += 1;
+					stateInfo->localGameInfo->gameState.strikes += 1;
 				}
 			}
 		}

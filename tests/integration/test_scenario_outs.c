@@ -27,7 +27,7 @@ static int test_runner_forced_out_at_first_base_scenario() {
     MenuInfo menu = {0};
     gameAnalysis(state, &menu, NULL);
 
-    int outs = state->localGameInfo->gAI.outs;
+    int outs = state->localGameInfo->gameState.outs;
     cleanup_test_state(state);
     ASSERT_EQ(1, outs, "Runner should be forced out at first base");
     return TEST_PASSED;

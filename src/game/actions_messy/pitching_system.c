@@ -45,7 +45,7 @@ void startPitch(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0 &&
 	        stateInfo->localGameInfo->pRAI.batterReady == 1 && throwGoingOn == 0 &&
 	        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
-	        stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 0) {
+	        stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
 		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
 			stopMovement(stateInfo, stateInfo->localGameInfo->pII.hasBallIndex);
@@ -171,7 +171,7 @@ void releasePitch(StateInfo* stateInfo)
 	// let ai do the calculation for ball again
 	aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
-	stateInfo->localGameInfo->gAI.homeRunCameraFlag = 0;
+	stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
 	// always when pitch reaches the stage of ball going to air, we update baserunners'
 	// original bases to their current bases, so that we can make decisions about
 	// foul plays and wounds etc.
@@ -344,9 +344,9 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 
 						calculate_ai_pitch_targets(
 						    rand1, rand2, rand3,
-						    stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount,
-						    stateInfo->localGameInfo->gAI.strikes,
-						    stateInfo->localGameInfo->gAI.balls,
+						    stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount,
+						    stateInfo->localGameInfo->gameState.strikes,
+						    stateInfo->localGameInfo->gameState.balls,
 						    ANIMATION_FREQUENCY,
 						    &aiPitchFirstLimit,
 						    &aiPitchSecondLimit

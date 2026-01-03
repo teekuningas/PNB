@@ -59,11 +59,11 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int i;
 	// init?
-	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
+	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
 		initActionImplementation(stateInfo);
-		stateInfo->localGameInfo->gAI.initLocals++;
-		if(stateInfo->localGameInfo->gAI.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gAI.initLocals = 0;
+		stateInfo->localGameInfo->gameControl.initLocals++;
+		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
+			stateInfo->localGameInfo->gameControl.initLocals = 0;
 		}
 	}
 
@@ -226,8 +226,8 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == 1) {
 		// index and base have been selected before. they are the lead runner 's base and index when
 		// to decision opportunity came available
-		int index = stateInfo->localGameInfo->gAI.freeWalkIndex;
-		int base = stateInfo->localGameInfo->gAI.freeWalkBase;
+		int index = stateInfo->localGameInfo->gameControl.freeWalkIndex;
+		int base = stateInfo->localGameInfo->gameControl.freeWalkBase;
 		if(index != -1) {
 			// there can be a little gap between the decision and when the possibility to decide came
 			// so player might have run already to the following base, and free walk actually
@@ -242,24 +242,24 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 
 				// add a run
 				stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-				stateInfo->localGameInfo->gAI.runsInTheInning += 1;
+				stateInfo->localGameInfo->gameState.runsInTheInning += 1;
 
-				if(stateInfo->localGameInfo->gAI.balls >= 3) {
+				if(stateInfo->localGameInfo->gameState.balls >= 3) {
 					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-					stateInfo->localGameInfo->gAI.runsInTheInning += 1;
-					stateInfo->localGameInfo->gAI.event = EVENT_TWO_RUNS_SCORED;
+					stateInfo->localGameInfo->gameState.runsInTheInning += 1;
+					stateInfo->localGameInfo->gameState.event = EVENT_TWO_RUNS_SCORED;
 				} else {
 					// set info to screen
-					stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
+					stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 				}
 
 				if((stateInfo->globalGameInfo->inning + 1)%2 == 0) {
 					if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
 					        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-						stateInfo->localGameInfo->gAI.endPeriod = 1;
+						stateInfo->localGameInfo->gameState.endPeriod = 1;
 					}
 				}
-				stateInfo->localGameInfo->gAI.forceNextPair = 1;
+				stateInfo->localGameInfo->gameModeState.forceNextPair = 1;
 			} else {
 				BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 				int currentBaseInt = base_to_int_index(currentBaseId);
@@ -294,26 +294,26 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 
 					// add a run
 					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-					stateInfo->localGameInfo->gAI.runsInTheInning += 1;
-					if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
-						stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-						stateInfo->localGameInfo->gAI.noMorePlayers = 0;
+					stateInfo->localGameInfo->gameState.runsInTheInning += 1;
+					if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
+						stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+						stateInfo->localGameInfo->playerCounters.noMorePlayers = 0;
 					}
 					// set info to screen
-					stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
+					stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 
 					if((stateInfo->globalGameInfo->inning + 1)%stateInfo->globalGameInfo->halfInningsInPeriod == 0 ||
 					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 + 2) {
 						if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-							stateInfo->localGameInfo->gAI.endPeriod = 1;
+							stateInfo->localGameInfo->gameState.endPeriod = 1;
 						}
 						if(stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 &&
 						        stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs >
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].period0Runs &&
 						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs ==
 						        stateInfo->globalGameInfo->teams[battingTeamIndex].runs ) {
-							stateInfo->localGameInfo->gAI.endPeriod = 1;
+							stateInfo->localGameInfo->gameState.endPeriod = 1;
 						}
 					}
 				}
@@ -321,7 +321,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 		}
 	}
 	// no more decision to make.
-	stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 0;
+	stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
 	stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = 0;
 }
 // so when there is no batter and few other conditions hold
@@ -347,10 +347,10 @@ static void changeBatter(StateInfo* stateInfo)
 	// there is not at least one player.
 	while(done == 0) {
 		if(batterSelect == 0) {
-			if(stateInfo->localGameInfo->gAI.nonJokerPlayersLeft != 0) done = 1;
+			if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft != 0) done = 1;
 			else batterSelect = 1;
 		} else if(batterSelect == 4) {
-			if(stateInfo->localGameInfo->gAI.nonJokerPlayersLeft != 0) {
+			if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft != 0) {
 				batterSelect = 0;
 				done = 1;
 			} else batterSelect = 1;

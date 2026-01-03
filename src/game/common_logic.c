@@ -244,7 +244,7 @@ void moveRankedToCatch(StateInfo* stateInfo)
 					// set busycatching flag, and move player towards the target point
 					// that has been specified beforehand.
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
-					moveToTarget(stateInfo, index, &stateInfo->localGameInfo->gAI.targetPoint);
+					moveToTarget(stateInfo, index, &stateInfo->localGameInfo->cameraState.targetPoint);
 				}
 			}
 		}
@@ -263,7 +263,7 @@ void runToNextBase(StateInfo* stateInfo, int index, int base)
 			// here as it is the batter, we'll also stop any batting to be able to run freely.
 			stateInfo->localGameInfo->pRAI.batterReady = 0;
 			stateInfo->localGameInfo->pRAI.battingGoingOn = 0;
-			stateInfo->localGameInfo->gAI.batterStartedRunning = 1;
+			stateInfo->localGameInfo->gameControl.batterStartedRunning = 1;
 		} else if(base == 1) {
 			target.x = stateInfo->fieldPositions->secondBaseRun.x;
 			target.z = stateInfo->fieldPositions->secondBaseRun.z;
@@ -278,7 +278,7 @@ void runToNextBase(StateInfo* stateInfo, int index, int base)
 				target.x = stateInfo->fieldPositions->runLeftPoint.x;
 				target.z = stateInfo->fieldPositions->runLeftPoint.z;
 
-				stateInfo->localGameInfo->gAI.homeRunCameraFlag = 1;
+				stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 1;
 			} else if(stateInfo->localGameInfo->playerRuntime[index].passedPathPoint == 1) {
 				target.x = stateInfo->fieldPositions->homeRunPoint.x;
 				target.z = stateInfo->fieldPositions->homeRunPoint.z;
@@ -514,10 +514,10 @@ void calculateFreeWalk(StateInfo* stateInfo)
 
 		}
 	}
-	stateInfo->localGameInfo->gAI.freeWalkIndex = maxIndex;
+	stateInfo->localGameInfo->gameControl.freeWalkIndex = maxIndex;
 	// Convert back to int for legacy API using helper
-	if(maxIndex != -1) stateInfo->localGameInfo->gAI.freeWalkBase = base_to_int_index(stateInfo->localGameInfo->playerInfo[maxIndex].bTPI.baseId);
-	else stateInfo->localGameInfo->gAI.freeWalkBase = -1;
+	if(maxIndex != -1) stateInfo->localGameInfo->gameControl.freeWalkBase = base_to_int_index(stateInfo->localGameInfo->playerInfo[maxIndex].bTPI.baseId);
+	else stateInfo->localGameInfo->gameControl.freeWalkBase = -1;
 }
 /*
 	Here we initialize all the locations and velocities so that players will be in their correct
@@ -800,31 +800,31 @@ void initializeActionInfo(StateInfo* stateInfo)
 // these can be flushed
 void initializeTemporaryGameAnalysisInfo(StateInfo* stateInfo)
 {
-	stateInfo->localGameInfo->gAI.freeWalkCalculationMade = 1;
-	stateInfo->localGameInfo->gAI.waitingForBatterDecision = 0;
-	stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 0;
-	stateInfo->localGameInfo->gAI.outOfBounds = 0;
-	stateInfo->localGameInfo->gAI.noMorePlayers = 0;
-	stateInfo->localGameInfo->gAI.ballHome = 0;
-	stateInfo->localGameInfo->gAI.endPeriod = 0;
-	stateInfo->localGameInfo->gAI.woundingCatch = 0;
-	stateInfo->localGameInfo->gAI.woundingCatchHandled = 0;
-	stateInfo->localGameInfo->gAI.batterStartedRunning = 0;
+	stateInfo->localGameInfo->gameControl.freeWalkCalculationMade = 1;
+	stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
+	stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
+	stateInfo->localGameInfo->gameState.outOfBounds = 0;
+	stateInfo->localGameInfo->playerCounters.noMorePlayers = 0;
+	stateInfo->localGameInfo->gameState.ballHome = 0;
+	stateInfo->localGameInfo->gameState.endPeriod = 0;
+	stateInfo->localGameInfo->woundingState.woundingCatch = 0;
+	stateInfo->localGameInfo->woundingState.woundingCatchHandled = 0;
+	stateInfo->localGameInfo->gameControl.batterStartedRunning = 0;
 
-	stateInfo->localGameInfo->gAI.event = EVENT_NONE;
-	stateInfo->localGameInfo->gAI.checkForRun = 0;
-	stateInfo->localGameInfo->gAI.freeWalkIndex = -1;
-	stateInfo->localGameInfo->gAI.freeWalkBase = -1;
-	stateInfo->localGameInfo->gAI.playerArrivedToBase = 0;
-	stateInfo->localGameInfo->gAI.firstCatchMade = 0;
-	stateInfo->localGameInfo->gAI.pause = 0;
-	stateInfo->localGameInfo->gAI.initLocals = 1;
-	stateInfo->localGameInfo->gAI.forceNextPair = 0;
-	stateInfo->localGameInfo->gAI.homeRunCameraFlag = 0;
-	stateInfo->localGameInfo->gAI.canMakeRunOfHonor = 0;
-	stateInfo->localGameInfo->gAI.targetPoint.x = 0.0f;
-	stateInfo->localGameInfo->gAI.targetPoint.y = 0.0f;
-	stateInfo->localGameInfo->gAI.targetPoint.z = 0.0f;
+	stateInfo->localGameInfo->gameState.event = EVENT_NONE;
+	stateInfo->localGameInfo->gameControl.checkForRun = 0;
+	stateInfo->localGameInfo->gameControl.freeWalkIndex = -1;
+	stateInfo->localGameInfo->gameControl.freeWalkBase = -1;
+	stateInfo->localGameInfo->gameControl.playerArrivedToBase = 0;
+	stateInfo->localGameInfo->gameControl.firstCatchMade = 0;
+	stateInfo->localGameInfo->gameControl.pause = 0;
+	stateInfo->localGameInfo->gameControl.initLocals = 1;
+	stateInfo->localGameInfo->gameModeState.forceNextPair = 0;
+	stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
+	stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor = 0;
+	stateInfo->localGameInfo->cameraState.targetPoint.x = 0.0f;
+	stateInfo->localGameInfo->cameraState.targetPoint.y = 0.0f;
+	stateInfo->localGameInfo->cameraState.targetPoint.z = 0.0f;
 }
 // these should be kept when foul play
 void initializeCriticalGameInfo(StateInfo* stateInfo)
@@ -832,13 +832,13 @@ void initializeCriticalGameInfo(StateInfo* stateInfo)
 	int i;
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-	stateInfo->localGameInfo->gAI.outs = 0;
-	stateInfo->localGameInfo->gAI.balls = 0;
-	stateInfo->localGameInfo->gAI.strikes = 0;
-	stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-	stateInfo->localGameInfo->gAI.jokersLeft = 3;
-	stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount = 0;
-	stateInfo->localGameInfo->gAI.runsInTheInning = 0;
+	stateInfo->localGameInfo->gameState.outs = 0;
+	stateInfo->localGameInfo->gameState.balls = 0;
+	stateInfo->localGameInfo->gameState.strikes = 0;
+	stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+	stateInfo->localGameInfo->playerCounters.jokersLeft = 3;
+	stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 0;
+	stateInfo->localGameInfo->gameState.runsInTheInning = 0;
 	stateInfo->localGameInfo->pII.batterSelectionIndex =
 	    stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrder[stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
 	for(i = 0; i < BASE_COUNT; i++) {
@@ -888,20 +888,20 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 	Vector3D target;
 	int i;
-	if(stateInfo->localGameInfo->gAI.runnerBatterPairCounter < stateInfo->globalGameInfo->pairCount) {
+	if(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter < stateInfo->globalGameInfo->pairCount) {
 		int runnerIndex = stateInfo->globalGameInfo->teams[battingTeamIndex].
-		                  batterRunnerIndices[1][stateInfo->localGameInfo->gAI.runnerBatterPairCounter];
+		                  batterRunnerIndices[1][stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter];
 		int batterIndex = stateInfo->globalGameInfo->teams[battingTeamIndex].
-		                  batterRunnerIndices[0][stateInfo->localGameInfo->gAI.runnerBatterPairCounter];
+		                  batterRunnerIndices[0][stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter];
 		stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[0] = runnerIndex;
 		stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[1] = batterIndex;
-		stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount = 2;
+		stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 2;
 		// batter
 		if(batterIndex != -1) {
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
 			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.originalBase = 0;
-			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.number = stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1;
+			stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.number = stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter + 1;
 			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
 			// the batting location
 			stateInfo->localGameInfo->pII.batterIndex = batterIndex;
@@ -936,11 +936,11 @@ void setRunnerAndBatter(StateInfo* stateInfo)
 			    -stateInfo->localGameInfo->playerInfo[runnerIndex].tPI.location.x;
 		}
 		// set other runners next to the third base.
-		for(i = stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1; i < stateInfo->globalGameInfo->pairCount; i++) {
+		for(i = stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter + 1; i < stateInfo->globalGameInfo->pairCount; i++) {
 			int index = stateInfo->globalGameInfo->teams[battingTeamIndex].batterRunnerIndices[1][i];
 			if(index != -1) {
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.x = stateInfo->fieldPositions->thirdBaseRun.x -
-				    2.0f - (i-(stateInfo->localGameInfo->gAI.runnerBatterPairCounter + 1))*1.5f;
+				    2.0f - (i-(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter + 1))*1.5f;
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.y =
 				    stateInfo->fieldPositions->thirdBaseRun.y;
 				stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
@@ -989,10 +989,10 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initializeCriticalBattingTeamInformation(stateInfo);
 
 	if(stateInfo->globalGameInfo->period >= 4) {
-		if(!(stateInfo->localGameInfo->gAI.runnerBatterPairCounter > 0 &&
-		        stateInfo->localGameInfo->gAI.runnerBatterPairCounter <
+		if(!(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter > 0 &&
+		        stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter <
 		        stateInfo->globalGameInfo->pairCount)) {
-			stateInfo->localGameInfo->gAI.runnerBatterPairCounter = 0;
+			stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter = 0;
 		}
 		setRunnerAndBatter(stateInfo);
 	}

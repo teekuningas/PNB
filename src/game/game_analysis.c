@@ -59,11 +59,11 @@ void initGameAnalysis(StateInfo* stateInfo)
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
+	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
 		initGameAnalysis(stateInfo);
-		stateInfo->localGameInfo->gAI.initLocals++;
-		if(stateInfo->localGameInfo->gAI.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gAI.initLocals = 0;
+		stateInfo->localGameInfo->gameControl.initLocals++;
+		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
+			stateInfo->localGameInfo->gameControl.initLocals = 0;
 		}
 	}
 	// when player from third base starts running, we change camera view. when the situation is over we
@@ -71,7 +71,7 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	if(homeRunCameraCounter >= 0) {
 		homeRunCameraCounter++;
 		if(homeRunCameraCounter > 50) {
-			stateInfo->localGameInfo->gAI.homeRunCameraFlag = 0;
+			stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
 			homeRunCameraCounter = -1;
 		}
 	}
@@ -90,7 +90,7 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 static void checkForOuts(StateInfo* stateInfo)
 {
 	// for the check of end of inning we set this to 0 on every update and if ball happens to be on home base then we put it to 1.
-	stateInfo->localGameInfo->gAI.ballHome = 0;
+	stateInfo->localGameInfo->gameState.ballHome = 0;
 	// so here we are going to check if we ball is at some base and if that will imply with other conditions that
 	// there will be an out and player is to be removed from the field.
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
@@ -113,8 +113,8 @@ static void checkForOuts(StateInfo* stateInfo)
 				dz = stateInfo->localGameInfo->ballInfo.location.z - HOME_LINE_Z;
 				if(stateInfo->localGameInfo->ballInfo.location.z > HOME_LINE_Z && isVectorSmallEnoughCircleXZ(dx, dz, HOME_RADIUS)) {
 					smallEnough = 1;
-					stateInfo->localGameInfo->gAI.ballHome = 1;
-					if(homeRunCameraCounter == -1 && stateInfo->localGameInfo->gAI.homeRunCameraFlag == 1 &&
+					stateInfo->localGameInfo->gameState.ballHome = 1;
+					if(homeRunCameraCounter == -1 && stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 1 &&
 					        (stateInfo->localGameInfo->pII.safeOnBaseIndex[3] == -1 ||
 					         stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[3]].
 					         bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
@@ -159,16 +159,16 @@ static void checkForOuts(StateInfo* stateInfo)
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE,
 						            baseIndex,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-						            stateInfo->localGameInfo->gAI.outOfBounds)) {
+						            stateInfo->localGameInfo->gameState.outOfBounds)) {
 							// we set player's out flag so that his movement is easy to control
 							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_OUT;
 							// send a message to screen
-							stateInfo->localGameInfo->gAI.event = EVENT_OUT;
+							stateInfo->localGameInfo->gameState.event = EVENT_OUT;
 							// add out
-							stateInfo->localGameInfo->gAI.outs += 1;
+							stateInfo->localGameInfo->gameState.outs += 1;
 							// remove player from the array
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// and walk him out.
 							movePlayerOut(stateInfo, index);
 							// if we was safe on previous base, now he is not anymore.
@@ -192,7 +192,7 @@ static void checkForOuts(StateInfo* stateInfo)
 
 		}
 		if(canMakeRunOfHonor == 0) {
-			stateInfo->localGameInfo->gAI.canMakeRunOfHonor = 0;
+			stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor = 0;
 		}
 	}
 
@@ -204,24 +204,24 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 	// so this will be called only once when possible.
 	if(stateInfo->globalGameInfo->period >= 4) {
 
-	} else if(stateInfo->localGameInfo->pII.batterIndex == -1 && stateInfo->localGameInfo->gAI.waitingForBatterDecision == 0 &&
+	} else if(stateInfo->localGameInfo->pII.batterIndex == -1 && stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 0 &&
 	          endOfInningCounter == -1) {
 		// there have to be a player available
-		if(stateInfo->localGameInfo->gAI.nonJokerPlayersLeft + stateInfo->localGameInfo->gAI.jokersLeft > 0) {
+		if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft + stateInfo->localGameInfo->playerCounters.jokersLeft > 0) {
 			// have to check that there is only three players in the field too and that it is not a out of bounds situation.
-			if(stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount < BASE_COUNT && stateInfo->localGameInfo->gAI.outOfBounds == 0) {
+			if(stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount < BASE_COUNT && stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
-				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gAI.firstCatchMade == 1) {
+				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameControl.firstCatchMade == 1) {
 					// if that happens we can now start.
 					int battingTeamIndex = (stateInfo->globalGameInfo->
 					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 					// this will give work to action_invocatin.c and action_implementation.c
-					stateInfo->localGameInfo->gAI.waitingForBatterDecision = 1;
+					stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 1;
 					// we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
 					// just select the next batter in order there. if not, we select the first joker we find that is still unused.
 					// one of these must be true, as we checked there is joker or non-joker left before.
-					if(stateInfo->localGameInfo->gAI.nonJokerPlayersLeft != 0) {
+					if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft != 0) {
 						stateInfo->localGameInfo->pII.batterSelectionIndex =
 						    stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrder[stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
 					} else {
@@ -237,7 +237,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 				}
 			}
 		} else {
-			stateInfo->localGameInfo->gAI.noMorePlayers = 1;
+			stateInfo->localGameInfo->playerCounters.noMorePlayers = 1;
 		}
 	}
 }
@@ -246,7 +246,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 static void strikesAndBalls(StateInfo* stateInfo)
 {
 	// so if there are three strikes
-	if(should_change_batter_on_strikes(stateInfo->localGameInfo->gAI.strikes, stateInfo->localGameInfo->pII.safeOnBaseIndex[0])) {
+	if(should_change_batter_on_strikes(stateInfo->localGameInfo->gameState.strikes, stateInfo->localGameInfo->pII.safeOnBaseIndex[0])) {
 		// we force running of batter
 		if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
 			runToNextBase(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[0], 0);
@@ -258,33 +258,33 @@ static void strikesAndBalls(StateInfo* stateInfo)
 	// we calculate the player and the base he has right to go freely only once, and that is when
 	// the ball happens. if player moves to next base and user after that decides to make the free walk
 	// that wont have any effect.
-	if(stateInfo->localGameInfo->gAI.freeWalkCalculationMade == 0) {
-		if(stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount == 1) {
+	if(stateInfo->localGameInfo->gameControl.freeWalkCalculationMade == 0) {
+		if(stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount == 1) {
 			// if only one player on the field, thats the batter, and then free walks can be made after one pitch.
-			if(stateInfo->localGameInfo->gAI.balls >= 1) {
+			if(stateInfo->localGameInfo->gameState.balls >= 1) {
 				// calculate the index and the base.
 				calculateFreeWalk(stateInfo);
 				// and tell action_implementation.c to take care of the rest.
-				stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 1;
+				stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 1;
 
 			}
 		} else {
 			// otherwise there is some non-batter leadrunner and he can have free walks after too balls.
-			if(stateInfo->localGameInfo->gAI.balls >= 2) {
+			if(stateInfo->localGameInfo->gameState.balls >= 2) {
 				// calculate the index and the base.
 				calculateFreeWalk(stateInfo);
 				// and tell action_implementation.c to take care of the rest.
-				stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 1;
+				stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 1;
 			}
 		}
-		stateInfo->localGameInfo->gAI.freeWalkCalculationMade = 1;
+		stateInfo->localGameInfo->gameControl.freeWalkCalculationMade = 1;
 	} else {
 		// so that if player just ran without taking hiw free walk, and got wounded or out, then stop asking
 		// that question.
-		if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
-			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
-			        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gAI.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
-				stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision = 0;
+		if(stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 1) {
+			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gameControl.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
+			        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->gameControl.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
+				stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
 			}
 		}
 	}
@@ -298,11 +298,11 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 {
 	// so we check the flag, if its true and then set counter to zero to start counting and
 	// also set hitsGroundToUnWound to 0 so that we can see if that changes in this short time period.
-	if(stateInfo->localGameInfo->gAI.woundingCatch == 1 && stateInfo->localGameInfo->gAI.woundingCatchHandled == 0) {
+	if(stateInfo->localGameInfo->woundingState.woundingCatch == 1 && stateInfo->localGameInfo->woundingState.woundingCatchHandled == 0) {
 		int i;
 		woundingCatchCounter = 0;
 		stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound = 0;
-		stateInfo->localGameInfo->gAI.woundingCatchHandled = 1;
+		stateInfo->localGameInfo->woundingState.woundingCatchHandled = 1;
 		printf("DEBUG: Wounding catch started! Counter reset.\n");
 
 		for(i = 0; i < BASE_COUNT; i++) {
@@ -367,7 +367,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// set state to wounded
 						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
 						// info to screen.
-						stateInfo->localGameInfo->gAI.event = EVENT_WOUNDED;
+						stateInfo->localGameInfo->gameState.event = EVENT_WOUNDED;
 						// no safe on previous base anymore.
 						if(base_idx != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[base_idx] == index) {
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[base_idx] = -1;
@@ -380,7 +380,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// if already on the next base, just remove from the base. wounded already set.
 						else {
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							movePlayerOut(stateInfo, index);
 						}
 						stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
@@ -388,7 +388,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 					}
 				}
 			}
-			stateInfo->localGameInfo->gAI.woundingCatch = 0;
+			stateInfo->localGameInfo->woundingState.woundingCatch = 0;
 			woundingCatchCounter = -1;
 		}
 	}
@@ -398,19 +398,19 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	// so if outOfBounds == 1 which has been checked and set when ball lands in game_manipulation
-	if(stateInfo->localGameInfo->gAI.outOfBounds == 1) {
+	if(stateInfo->localGameInfo->gameState.outOfBounds == 1) {
 		// we use a counter so that there is some time to realize what happened.
 		outOfBoundsCounter += 1;
 		// and send some info to screen. and do that only once.
 		if(foulPlayEventFlag == 0) {
-			stateInfo->localGameInfo->gAI.event = EVENT_OUT_OF_BOUNDS;
+			stateInfo->localGameInfo->gameState.event = EVENT_OUT_OF_BOUNDS;
 			foulPlayEventFlag = 1;
 		}
 		if(outOfBoundsCounter > OUT_OF_BOUNDS_THRESHOLD) {
 			int j;
 			outOfBoundsCounter = 0;
 			foulPlayEventFlag = 0;
-			stateInfo->localGameInfo->gAI.outOfBounds = 0;
+			stateInfo->localGameInfo->gameState.outOfBounds = 0;
 
 			// so now initialize everything like in beginning of the inning except important non-volatile stuff
 			// like runs in the inning and outs. we cannot initialize originalBases either as players' bases
@@ -447,12 +447,12 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 						// that when the pitch was pitched, he had not safety on any base
 						// and he will be out.
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == -1) {
-							stateInfo->localGameInfo->gAI.event = EVENT_OUT;
-							stateInfo->localGameInfo->gAI.outs += 1;
+							stateInfo->localGameInfo->gameState.event = EVENT_OUT;
+							stateInfo->localGameInfo->gameState.outs += 1;
 
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 
 							continue;
 						} else {
@@ -466,27 +466,27 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 							// we will get a run.
 							stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-							stateInfo->localGameInfo->gAI.runsInTheInning += 1;
+							stateInfo->localGameInfo->gameState.runsInTheInning += 1;
 							// and send a message that run was made to screen.
-							stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
+							stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 							// and remove player from the field.
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// always when two runs is got, we will get a new round of batters.
-							if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
-								stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+							if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
+								stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 							}
 						}
 						// if this player is a batter
 						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
-							if(stateInfo->localGameInfo->gAI.strikes == 3) {
+							if(stateInfo->localGameInfo->gameState.strikes == 3) {
 								// if out of bounds follows his third strike, we well get a out.
-								stateInfo->localGameInfo->gAI.outs += 1;
+								stateInfo->localGameInfo->gameState.outs += 1;
 								// remove from the field.
 								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-								stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 								// new batter needed.
 								stateInfo->localGameInfo->pII.batterIndex = -1;
 							} else {
@@ -526,13 +526,13 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 // we decide if player has made a run by arriving homebase or arriving third base.
 static void checkForRuns(StateInfo* stateInfo)
 {
-	if(stateInfo->localGameInfo->gAI.checkForRun == 1) {
+	if(stateInfo->localGameInfo->gameControl.checkForRun == 1) {
 		// check runs only after we know if the runner could have been wounded.
-		if((stateInfo->localGameInfo->gAI.firstCatchMade == 1 ||
+		if((stateInfo->localGameInfo->gameControl.firstCatchMade == 1 ||
 		        stateInfo->localGameInfo->ballInfo.hasHitGround == 1) && woundingCatchCounter == -1 &&
 		        endOfInningCounter == -1) {
 			// if its out of bounds, no love
-			if(stateInfo->localGameInfo->gAI.outOfBounds == 0) {
+			if(stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				int j;
 				int battingTeamIndex = (stateInfo->globalGameInfo->
 				                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
@@ -550,7 +550,7 @@ static void checkForRuns(StateInfo* stateInfo)
 						                    baseInt,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED,
-						                    stateInfo->localGameInfo->gAI.canMakeRunOfHonor,
+						                    stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor,
 						                    stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase);
 
 						// Handle side effects for home base arrival (removal from field)
@@ -558,7 +558,7 @@ static void checkForRuns(StateInfo* stateInfo)
 						if(baseId == BASE_HOME_SCORED) {
 							// remove player from the field.
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 						}
 
@@ -570,16 +570,16 @@ static void checkForRuns(StateInfo* stateInfo)
 
 							// Common run updates
 							stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-							stateInfo->localGameInfo->gAI.runsInTheInning += 1;
+							stateInfo->localGameInfo->gameState.runsInTheInning += 1;
 							runMade = 1;
-							stateInfo->localGameInfo->gAI.event = EVENT_RUN_SCORED;
+							stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 
-							if(stateInfo->localGameInfo->gAI.runsInTheInning%2 == 0) {
-								stateInfo->localGameInfo->gAI.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+							if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
+								stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 								// Only reset noMorePlayers for normal runs (home base arrival)
 								// If it was a home run, base is now -1 due to removal above.
 								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_NONE) {
-									stateInfo->localGameInfo->gAI.noMorePlayers = 0;
+									stateInfo->localGameInfo->playerCounters.noMorePlayers = 0;
 								}
 							}
 						}
@@ -592,21 +592,21 @@ static void checkForRuns(StateInfo* stateInfo)
 								        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod * 2 + 2) {
 									if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
 									        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-										stateInfo->localGameInfo->gAI.endPeriod = 1;
+										stateInfo->localGameInfo->gameState.endPeriod = 1;
 									}
 									if(stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 &&
 									        stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs >
 									        stateInfo->globalGameInfo->teams[catchingTeamIndex].period0Runs &&
 									        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs ==
 									        stateInfo->globalGameInfo->teams[battingTeamIndex].runs ) {
-										stateInfo->localGameInfo->gAI.endPeriod = 1;
+										stateInfo->localGameInfo->gameState.endPeriod = 1;
 									}
 								}
 							} else {
 								if((stateInfo->globalGameInfo->inning + 1)%2 == 0) {
 									if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
 									        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-										stateInfo->localGameInfo->gAI.endPeriod = 1;
+										stateInfo->localGameInfo->gameState.endPeriod = 1;
 									}
 								}
 							}
@@ -615,7 +615,7 @@ static void checkForRuns(StateInfo* stateInfo)
 				}
 			}
 			// we set checkForRun to 0 after ball has landed.
-			stateInfo->localGameInfo->gAI.checkForRun = 0;
+			stateInfo->localGameInfo->gameControl.checkForRun = 0;
 		}
 	}
 }
@@ -626,16 +626,16 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 	// if three outs or
 	// no more players to bat. set flag on the player selection to indicate that no more players left.
 	// then if ball comes to pitcher, then we can quit this inning.
-	if(stateInfo->localGameInfo->gAI.outs >= 3 || (stateInfo->localGameInfo->gAI.noMorePlayers == 1 &&
-	        stateInfo->localGameInfo->gAI.ballHome == 1) || stateInfo->localGameInfo->gAI.endPeriod == 1 ||
-	        (stateInfo->globalGameInfo->period >= 4 && stateInfo->localGameInfo->gAI.runnerBatterPairCounter >=
+	if(stateInfo->localGameInfo->gameState.outs >= 3 || (stateInfo->localGameInfo->playerCounters.noMorePlayers == 1 &&
+	        stateInfo->localGameInfo->gameState.ballHome == 1) || stateInfo->localGameInfo->gameState.endPeriod == 1 ||
+	        (stateInfo->globalGameInfo->period >= 4 && stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter >=
 	         stateInfo->globalGameInfo->pairCount)) {
 
 		if(endOfInningCounter == -1) {
 			endOfInningCounter = 0;
 			// so that user wont be prompted for this after inning has ended but screen hasnt changed yet.
-			stateInfo->localGameInfo->gAI.waitingForBatterDecision = 0;
-			stateInfo->localGameInfo->gAI.event = EVENT_INNING_ENDING;
+			stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
+			stateInfo->localGameInfo->gameState.event = EVENT_INNING_ENDING;
 		}
 	}
 	if(endOfInningCounter != -1) {
@@ -783,16 +783,16 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - batterIndex == -1 and ball is at home( and player can make no run of honor ). after three strikes this happens automatically.
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
-		if((stateInfo->localGameInfo->gAI.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
-		        stateInfo->localGameInfo->gAI.canMakeRunOfHonor == 0) ||
+		if((stateInfo->localGameInfo->gameState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
+		        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        (stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[0] == -1 &&
-		         stateInfo->localGameInfo->gAI.canMakeRunOfHonor == 0) ||
-		        stateInfo->localGameInfo->gAI.forceNextPair == 1) {
+		         stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
+		        stateInfo->localGameInfo->gameModeState.forceNextPair == 1) {
 			if(nextPairCounter == -1) {
 				nextPairCounter = 0;
 				// send message only if its not end of inning also.
 				if(endOfInningCounter == -1) {
-					stateInfo->localGameInfo->gAI.event = EVENT_NEXT_PAIR;
+					stateInfo->localGameInfo->gameState.event = EVENT_NEXT_PAIR;
 				}
 			}
 		}
@@ -802,10 +802,10 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		if(nextPairCounter > 200) {
 			// set to -2 so that we avoid this being called twice. it will be set to -1 in the beginning of the next pair
 			nextPairCounter = -2;
-			stateInfo->localGameInfo->gAI.runnerBatterPairCounter++;
+			stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter++;
 			// if equality holds, ending of inning will load the settings.
-			if(stateInfo->localGameInfo->gAI.runnerBatterPairCounter != stateInfo->globalGameInfo->pairCount) {
-				int pairsLeft = stateInfo->globalGameInfo->pairCount - stateInfo->localGameInfo->gAI.runnerBatterPairCounter;
+			if(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter != stateInfo->globalGameInfo->pairCount) {
+				int pairsLeft = stateInfo->globalGameInfo->pairCount - stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter;
 				int battingTeamIndex = (stateInfo->globalGameInfo->
 				                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 				int catchingTeamIndex = (battingTeamIndex+1)%2;
@@ -813,7 +813,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 				int catchingRuns = stateInfo->globalGameInfo->teams[catchingTeamIndex].runs;
 				// this will allow game to end if catching team has too many runs for batting team ever to catch up.
 				if((stateInfo->globalGameInfo->inning+1)%2 == 0 && pairsLeft*2 + battingRuns < catchingRuns) {
-					stateInfo->localGameInfo->gAI.endPeriod = 1;
+					stateInfo->localGameInfo->gameState.endPeriod = 1;
 				} else {
 					loadMutableWorldSettings(stateInfo, rng_seed);
 				}

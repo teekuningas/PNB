@@ -43,7 +43,7 @@ int initMutableWorld(StateInfo* stateInfo)
 
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	if(stateInfo->localGameInfo->gAI.pause == 0) {
+	if(stateInfo->localGameInfo->gameControl.pause == 0) {
 		gameAnalysis(stateInfo, menuInfo, rng_seed);
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
@@ -53,7 +53,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 void drawMutableWorld(StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
-	if(stateInfo->localGameInfo->gAI.pause == 0) {
+	if(stateInfo->localGameInfo->gameControl.pause == 0) {
 #ifndef NO_RENDER
 		drawPlayerRenderer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha);
 		drawBall(&(stateInfo->localGameInfo->ballInfo), alpha);

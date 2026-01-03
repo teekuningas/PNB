@@ -359,49 +359,54 @@ typedef struct _PlayerIndexInfo {
 	int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
 } PlayerIndexInfo;
 
-typedef struct _GameAnalysisInfo {
-	int battingTeamPlayersOnFieldCount; // how many batting team players on field
-	int nonJokerPlayersLeft; // number of nonJokers to be used for batting in this inning
-	int jokersLeft; // jokers to be used for batting in this inning
+// MILESTONE 7.5 - Focused Structs
+typedef struct _GameState {
+	int outs;
+	int balls;
+	int strikes;
+	int runsInTheInning;
+	GameEventType event;
+	int outOfBounds; // Rule state: ball is out of bounds
+	int ballHome;    // Rule state: ball is at home base
+	int endPeriod;   // Rule state: period should end
+} GameState;
 
-	int outs; // how many outs has batting team
-	int balls; // how many balls have been pitched for current batter
-	int strikes; // how many strikes for current batter
-	int runsInTheInning; // runs in this inning. used to give new rounds of batters.
+typedef struct _GameControlFlags {
+	int pause;
+	int initLocals;
+	int waitingForBatterDecision;
+	int waitingForFreeWalkDecision;
+	int freeWalkCalculationMade;
+	int freeWalkIndex;
+	int freeWalkBase;
+	int checkForRun;
+	int playerArrivedToBase;
+	int firstCatchMade;
+	int batterStartedRunning;
+} GameControlFlags;
 
-	int freeWalkCalculationMade; // freeWalk calculation done only at the moment when ball is caught.
-	int waitingForBatterDecision; // user is prompted for batter decision
-	int waitingForFreeWalkDecision; // user is prompted for free walk decision
-	int outOfBounds; // if ball has landed out of bounds, this is 1
-	int noMorePlayers; // if no more players, we can end the inning
-	int ballHome; // in that case ball also needed to be at homebase
-	int endPeriod;
-	int woundingCatch; // if some conditions hold, we will have a situation where we can check
-	// if there are players not on their original bases that we could wound.
-	int woundingCatchHandled;
-	int batterStartedRunning; // used to help AI to drop ball sometimes
-	GameEventType event; // MILESTONE 7: Type-safe event field (used to give information for user about the events in game)
-	int checkForRun; // if player arrives homebase or third base after running through all the base on same pitch
-	// we can check if the run is valid. it is decided when ball lands.
-	int freeWalkIndex; // index used in free walk decision
-	int freeWalkBase; // base for the that player
+typedef struct _WoundingState {
+	int woundingCatch;        // Pending wounding opportunity
+	int woundingCatchHandled; // Has been processed
+} WoundingState;
 
-	int playerArrivedToBase; // if player arrives base we put this flag, so that we dont do useless
-	// base-player-checking when nothing has changed.
-	int firstCatchMade; // first catch made. many decisions depend on knowledge of ball landing. but it is
-	// often ok if ball doesn hit ground but is caught instead.
-	int initLocals; // when foul play and when starting the game we need to init local variables of
-	// game analysis and action implementation
-	int runnerBatterPairCounter; // what pair to be used in the homerun-batting contest
+typedef struct _CameraState {
+	int homeRunCameraFlag;
+	Vector3D targetPoint; // For camera or AI focus
+} CameraState;
+
+typedef struct _PlayerCounters {
+	int battingTeamPlayersOnFieldCount;
+	int nonJokerPlayersLeft;
+	int jokersLeft;
+	int noMorePlayers;
+} PlayerCounters;
+
+typedef struct _GameModeState {
+	int runnerBatterPairCounter;
 	int canMakeRunOfHonor;
 	int forceNextPair;
-
-	int homeRunCameraFlag;
-	Vector3D targetPoint; // point where players start to move when busy catchin'
-
-	int pause;
-
-} GameAnalysisInfo;
+} GameModeState;
 
 typedef struct _PlayerRelatedActionInfo {
 	float meterValue; // meter for pitching and throwing
@@ -444,7 +449,12 @@ typedef struct _LocalGameInfo {
 	ActionFlags aF;
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;
-	GameAnalysisInfo gAI;
+	GameState gameState; // MILESTONE 7.5 - New core state
+	GameControlFlags gameControl; // MILESTONE 7.5 - Implementation flags
+	WoundingState woundingState; // MILESTONE 7.5 - Wounding system state
+	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
+	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
+	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state
 	BallInfo ballInfo;
 
 } LocalGameInfo;

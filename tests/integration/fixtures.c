@@ -51,7 +51,7 @@ void setup_runner_at_first_base(StateInfo* state) {
     
     // Flush initLocals to prevent wiping state later
     loadMutableWorldSettings(state, &seed);
-    state->localGameInfo->gAI.initLocals = 0;
+    state->localGameInfo->gameControl.initLocals = 0;
     initGameAnalysis(state);
 
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
@@ -76,7 +76,7 @@ void setup_runner_at_third_base(StateInfo* state) {
 
     // Flush initLocals
     loadMutableWorldSettings(state, &seed);
-    state->localGameInfo->gAI.initLocals = 0;
+    state->localGameInfo->gameControl.initLocals = 0;
     initGameAnalysis(state);
 
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;

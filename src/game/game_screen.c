@@ -107,18 +107,18 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	}
 	// with home-key, one can return to main menu.
 	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-		if(stateInfo->localGameInfo->gAI.pause == 0) {
-			stateInfo->localGameInfo->gAI.pause = 1;
-		} else if(stateInfo->localGameInfo->gAI.pause == 1) {
+		if(stateInfo->localGameInfo->gameControl.pause == 0) {
+			stateInfo->localGameInfo->gameControl.pause = 1;
+		} else if(stateInfo->localGameInfo->gameControl.pause == 1) {
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 			stateInfo->screen = SCREEN_MAIN_MENU;
 			menuInfo->mode = MENU_ENTRY_NORMAL;
 		}
 	}
-	if(stateInfo->localGameInfo->gAI.pause == 1) {
+	if(stateInfo->localGameInfo->gameControl.pause == 1) {
 		if(((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-			stateInfo->localGameInfo->gAI.pause = 0;
+			stateInfo->localGameInfo->gameControl.pause = 0;
 		}
 	}
 	// update camera
@@ -143,7 +143,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 15.0f + (float)fabs(camTargetLocation.x)/2;
 	}
 	// if runner coming from third base
-	else if(stateInfo->localGameInfo->gAI.homeRunCameraFlag == 0 ) {
+	else if(stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 0 ) {
 		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f;
 		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f;
 	}
@@ -261,7 +261,7 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 	// because of the camera settings.
 	drawFontBackground();
 	if(stateInfo->globalGameInfo->period < 4) {
-		switch(stateInfo->localGameInfo->gAI.outs) {
+		switch(stateInfo->localGameInfo->gameState.outs) {
 		case 0:
 			break;
 		case 3:
@@ -287,15 +287,15 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 	printText(str6, 3, OTHER_STATS_X - 0.04f, STATISTICS_TEXT_HEIGHT, 2);
 
 	// here for outs and runs we have to take care of that sometimes we will have more than 9 of them
-	if(stateInfo->localGameInfo->gAI.balls < 10)
-		str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.balls);
+	if(stateInfo->localGameInfo->gameState.balls < 10)
+		str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gameState.balls);
 	else {
-		str[2] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls%10));
-		str[1] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls/10));
+		str[2] = (char)(((int)'0')+(stateInfo->localGameInfo->gameState.balls%10));
+		str[1] = (char)(((int)'0')+(stateInfo->localGameInfo->gameState.balls/10));
 	}
 	printText(str, 3, OTHER_STATS_X + 0.04f, STATISTICS_TEXT_HEIGHT, 2);
 
-	str2[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.strikes);
+	str2[2] = (char)(((int)'0')+stateInfo->localGameInfo->gameState.strikes);
 	printText(str2, 3, OTHER_STATS_X + 0.12f, STATISTICS_TEXT_HEIGHT, 2);
 
 	if(stateInfo->globalGameInfo->teams[0].runs < 10)
@@ -313,10 +313,10 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
 	// so we have these events thats are triggered in other parts of code by event = <enum>;
 	// we have a counter so that the info will disappear after some time.
-	if(stateInfo->localGameInfo->gAI.event != EVENT_NONE) {
+	if(stateInfo->localGameInfo->gameState.event != EVENT_NONE) {
 		gameInfoEventTimer = 0;
-		gameInfoEvent = (int)stateInfo->localGameInfo->gAI.event;
-		stateInfo->localGameInfo->gAI.event = EVENT_NONE;
+		gameInfoEvent = (int)stateInfo->localGameInfo->gameState.event;
+		stateInfo->localGameInfo->gameState.event = EVENT_NONE;
 	}
 	if(gameInfoEventTimer != -1) {
 		if(gameInfoEvent == EVENT_OUT) {
@@ -348,7 +348,7 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 		}
 	}
 	// when free walk decision and batter decision are both waiting at the same time, choose walk.
-	else if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
+	else if(stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 1) {
 		printText(" Take a walk", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 	}
 	// when waiting for batter decision we show "select" and players name and number
@@ -367,7 +367,7 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 			int battingTeamIndex = (stateInfo->globalGameInfo->
 			                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 			index = stateInfo->globalGameInfo->teams[battingTeamIndex].
-			        batterRunnerIndices[0][stateInfo->localGameInfo->gAI.runnerBatterPairCounter];
+			        batterRunnerIndices[0][stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter];
 			if(index == -1) shouldContinue = 0;
 		}
 		if(shouldContinue == 1) {

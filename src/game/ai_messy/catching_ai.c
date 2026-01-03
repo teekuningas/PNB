@@ -131,7 +131,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
 			if(stateInfo->localGameInfo->pRAI.throwGoingToBase == -1 || stateInfo->localGameInfo->
 			        ballInfo.hasHitGround == 1) {
-				moveControlledPlayerToLocation(stateInfo, &(stateInfo->localGameInfo->gAI.targetPoint));
+				moveControlledPlayerToLocation(stateInfo, &(stateInfo->localGameInfo->cameraState.targetPoint));
 			}
 		}
 
@@ -158,8 +158,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
 		int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 
-		if(should_ai_drop_ball(stateInfo->localGameInfo->gAI.woundingCatch,
-		                       stateInfo->localGameInfo->gAI.batterStartedRunning,
+		if(should_ai_drop_ball(stateInfo->localGameInfo->woundingState.woundingCatch,
+		                       stateInfo->localGameInfo->gameControl.batterStartedRunning,
 		                       r3OriginalBase, r3IsOnBase,
 		                       r2OriginalBase, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {

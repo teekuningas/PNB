@@ -45,11 +45,11 @@ static void updateModels(StateInfo* stateInfo);
 void gameManipulation(StateInfo* stateInfo)
 {
 	// init?
-	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
+	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
 		initGameManipulation(stateInfo);
-		stateInfo->localGameInfo->gAI.initLocals++;
-		if(stateInfo->localGameInfo->gAI.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gAI.initLocals = 0;
+		stateInfo->localGameInfo->gameControl.initLocals++;
+		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
+			stateInfo->localGameInfo->gameControl.initLocals = 0;
 		}
 	}
 
@@ -104,15 +104,15 @@ static void updateBallStatus(StateInfo* stateInfo)
 					if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
 						// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
 						stateInfo->localGameInfo->ballInfo.hasHitGround = 1;
-						stateInfo->localGameInfo->gAI.woundingCatch = 0;
+						stateInfo->localGameInfo->woundingState.woundingCatch = 0;
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound = 1;
 						// if no catch made and bat hit and we hit the ground and ball is out of bounds,
 						// we are going to have a foul play.
 						if(stateInfo->localGameInfo->pRAI.batHit == 1 &&
-						        stateInfo->localGameInfo->gAI.firstCatchMade == 0) {
+						        stateInfo->localGameInfo->gameControl.firstCatchMade == 0) {
 							if(outOfBounds == 1) {
-								stateInfo->localGameInfo->gAI.outOfBounds = 1;
+								stateInfo->localGameInfo->gameState.outOfBounds = 1;
 							}
 						}
 					}
@@ -122,19 +122,19 @@ static void updateBallStatus(StateInfo* stateInfo)
 						// in ball hits the plate, it is a strike, if not its a ball
 						if(stateInfo->localGameInfo->ballInfo.location.x < PLATE_WIDTH/2 && stateInfo->localGameInfo->ballInfo.location.x > -PLATE_WIDTH/2) {
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
-								stateInfo->localGameInfo->gAI.strikes += 1;
-								stateInfo->localGameInfo->gAI.event = EVENT_STRIKE;
+								stateInfo->localGameInfo->gameState.strikes += 1;
+								stateInfo->localGameInfo->gameState.event = EVENT_STRIKE;
 							}
 						} else {
 							if(stateInfo->localGameInfo->pRAI.batMiss != 1) {
-								stateInfo->localGameInfo->gAI.balls += 1;
-								stateInfo->localGameInfo->gAI.event = EVENT_BALL;
+								stateInfo->localGameInfo->gameState.balls += 1;
+								stateInfo->localGameInfo->gameState.event = EVENT_BALL;
 
 								// here we also set freeWalk flags because it could be possible that batting team now
 								// has right for free walk.
-								stateInfo->localGameInfo->gAI.freeWalkCalculationMade = 0;
-								stateInfo->localGameInfo->gAI.freeWalkIndex = -1;
-								stateInfo->localGameInfo->gAI.freeWalkBase = -1;
+								stateInfo->localGameInfo->gameControl.freeWalkCalculationMade = 0;
+								stateInfo->localGameInfo->gameControl.freeWalkIndex = -1;
+								stateInfo->localGameInfo->gameControl.freeWalkBase = -1;
 							}
 						}
 						stateInfo->localGameInfo->pRAI.pitchInAir = 0;
@@ -278,14 +278,14 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						// set the has ball model.
 						stateInfo->localGameInfo->playerInfo[i].cPI.model = 1;
 						// wounding catchs are the catchs that come directly from the bat.
-						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gAI.firstCatchMade == 0 &&
+						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameControl.firstCatchMade == 0 &&
 						        stateInfo->localGameInfo->pRAI.batHit == 1) {
-							stateInfo->localGameInfo->gAI.woundingCatch = 1;
+							stateInfo->localGameInfo->woundingState.woundingCatch = 1;
 						}
 						// make sound
 						stateInfo->playSoundEffect = SOUND_CATCH;
 						// this could be the fifth but the first is still made.
-						stateInfo->localGameInfo->gAI.firstCatchMade = 1;
+						stateInfo->localGameInfo->gameControl.firstCatchMade = 1;
 						stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
 						stateInfo->localGameInfo->pII.controlIndex = i;
 						stateInfo->localGameInfo->pII.hasBallIndex = i;
@@ -343,7 +343,7 @@ static void checkIfNearHomeLocation(StateInfo* stateInfo)
 static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 {
 	// so everything starts with some player arriving base, this flag is set on target checking function.
-	if(stateInfo->localGameInfo->gAI.playerArrivedToBase == 1) {
+	if(stateInfo->localGameInfo->gameControl.playerArrivedToBase == 1) {
 		int i;
 		// we check every player who is a baserunner ( or batter )
 		for(i = 0; i < BASE_COUNT; i++) {
@@ -374,7 +374,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
 								printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
 								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-								stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 								movePlayerOut(stateInfo, index);
 								// if there was a player on this base before and he isnt safe here
 								// it means he had tried to run to next base and is wounded already so need for this.
@@ -393,7 +393,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 									// we set the flags and off he goes.
 									if(fieldIndex != -1) {
 										stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
-										stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+										stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.state = PLAYER_STATE_WOUNDED;
 										movePlayerOut(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
 										stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
@@ -417,12 +417,12 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								// if we arrived to base 3 and were originally from homebase
 								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD &&
 								        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 0 &&
-								        stateInfo->localGameInfo->gAI.outs < 3) {
+								        stateInfo->localGameInfo->gameState.outs < 3) {
 									// set flag to check if our run is valid. difficult to imagine situation where
 									// it wasnt right away, ball had to be swinged to like heaven and back again
 									// so that it could be caught or be determined to be foul play after
 									// player has run all the way from base 0 to 3. but anyway.
-									stateInfo->localGameInfo->gAI.checkForRun = 1;
+									stateInfo->localGameInfo->gameControl.checkForRun = 1;
 								}
 							}
 						}
@@ -439,14 +439,14 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						// if our originalBase was 0, we would have had a run at base 3 already so this wont be run
 						// unless a new pitch is pitched and then our originalBase changes.
 						if((stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase != 0 ||
-						        stateInfo->localGameInfo->gAI.canMakeRunOfHonor == 0) &&
+						        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) &&
 						        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
-							stateInfo->localGameInfo->gAI.checkForRun = 1;
+							stateInfo->localGameInfo->gameControl.checkForRun = 1;
 						} else {
 							// if was 0, we just remove this player from field.
 							// if it wasnt 0, player will be removed afterwards.
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-							stateInfo->localGameInfo->gAI.battingTeamPlayersOnFieldCount--;
+							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
 						}
 
@@ -455,7 +455,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 			}
 		}
 		// set the flag off as now everything has been handled.
-		stateInfo->localGameInfo->gAI.playerArrivedToBase = 0;
+		stateInfo->localGameInfo->gameControl.playerArrivedToBase = 0;
 	}
 }
 
@@ -577,23 +577,23 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 			else if(multiplier > 0.6f) multiplier = 0.6f;
 			else multiplier = (multiplier - 0.35f)*0.6f/0.25f;
 
-			stateInfo->localGameInfo->gAI.targetPoint.x = (1-multiplier)*ballDropX + multiplier*finalPointXApprox;
-			stateInfo->localGameInfo->gAI.targetPoint.z = (1-multiplier)*ballDropZ + multiplier*finalPointZApprox;
+			stateInfo->localGameInfo->cameraState.targetPoint.x = (1-multiplier)*ballDropX + multiplier*finalPointXApprox;
+			stateInfo->localGameInfo->cameraState.targetPoint.z = (1-multiplier)*ballDropZ + multiplier*finalPointZApprox;
 
 			evalBallX = ballDropX + stateInfo->localGameInfo->ballInfo.velocity.x*BALL_DROP_EVAL_CONSTANT*0.25f/(time*0.01f);
 			evalBallZ = ballDropZ + stateInfo->localGameInfo->ballInfo.velocity.z*BALL_DROP_EVAL_CONSTANT*0.25f/(time*0.01f);
 		} else if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 && stateInfo->localGameInfo->ballInfo.onGround == 0) {
-			stateInfo->localGameInfo->gAI.targetPoint.x = ballDropX + stateInfo->localGameInfo->ballInfo.velocity.x*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
-			stateInfo->localGameInfo->gAI.targetPoint.z = ballDropZ + stateInfo->localGameInfo->ballInfo.velocity.z*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
+			stateInfo->localGameInfo->cameraState.targetPoint.x = ballDropX + stateInfo->localGameInfo->ballInfo.velocity.x*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
+			stateInfo->localGameInfo->cameraState.targetPoint.z = ballDropZ + stateInfo->localGameInfo->ballInfo.velocity.z*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
 
-			evalBallX = stateInfo->localGameInfo->gAI.targetPoint.x;
-			evalBallZ = stateInfo->localGameInfo->gAI.targetPoint.z;
+			evalBallX = stateInfo->localGameInfo->cameraState.targetPoint.x;
+			evalBallZ = stateInfo->localGameInfo->cameraState.targetPoint.z;
 		} else {
-			stateInfo->localGameInfo->gAI.targetPoint.x = ballDropX + stateInfo->localGameInfo->ballInfo.velocity.x*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
-			stateInfo->localGameInfo->gAI.targetPoint.z = ballDropZ + stateInfo->localGameInfo->ballInfo.velocity.z*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
+			stateInfo->localGameInfo->cameraState.targetPoint.x = ballDropX + stateInfo->localGameInfo->ballInfo.velocity.x*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
+			stateInfo->localGameInfo->cameraState.targetPoint.z = ballDropZ + stateInfo->localGameInfo->ballInfo.velocity.z*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
 
-			evalBallX = stateInfo->localGameInfo->gAI.targetPoint.x;
-			evalBallZ = stateInfo->localGameInfo->gAI.targetPoint.z;
+			evalBallX = stateInfo->localGameInfo->cameraState.targetPoint.x;
+			evalBallZ = stateInfo->localGameInfo->cameraState.targetPoint.z;
 		}
 
 		// check only catching team players
@@ -769,7 +769,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										printf("DEBUG: Player %d state PRESERVED (Wounded/Out)\n", i);
 									}
 									// also these are needed to do continued calculations only when needed.
-									stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
+									stateInfo->localGameInfo->gameControl.playerArrivedToBase = 1;
 									stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 
 								} else {
@@ -799,7 +799,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 										}
 										stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
-										stateInfo->localGameInfo->gAI.playerArrivedToBase = 1;
+										stateInfo->localGameInfo->gameControl.playerArrivedToBase = 1;
 										stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 										target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 										target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;

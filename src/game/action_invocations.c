@@ -29,11 +29,11 @@ void actionInvocations(StateInfo* stateInfo)
 	int battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
 	int catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
 
-	if(stateInfo->localGameInfo->gAI.initLocals > 0) {
+	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
 		initActionInvocations(stateInfo);
-		stateInfo->localGameInfo->gAI.initLocals++;
-		if(stateInfo->localGameInfo->gAI.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gAI.initLocals = 0;
+		stateInfo->localGameInfo->gameControl.initLocals++;
+		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
+			stateInfo->localGameInfo->gameControl.initLocals = 0;
 		}
 	}
 
@@ -58,9 +58,9 @@ void actionInvocations(StateInfo* stateInfo)
 
 	// check these only if necessary. also if it happened to be so that
 	// they are both asked the same time, choose the free walk first
-	if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
+	if(stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 1) {
 		checkFreeWalkDecision(stateInfo, KEY_2, KEY_1, battingControl);
-	} else if(stateInfo->localGameInfo->gAI.waitingForBatterDecision == 1) {
+	} else if(stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 1) {
 		checkBatterSelection(stateInfo, KEY_1, KEY_2, battingControl);
 	}
 	checkBatterAngle(stateInfo, KEY_PLUS, KEY_MINUS, battingControl);

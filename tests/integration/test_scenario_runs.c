@@ -19,7 +19,7 @@ static int test_runner_scores_from_third_base_scenario() {
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
     
-    state->localGameInfo->gAI.checkForRun = 1;
+    state->localGameInfo->gameControl.checkForRun = 1;
     state->localGameInfo->ballInfo.hasHitGround = 1;
     
     // Runner on 3rd runs home
@@ -29,7 +29,7 @@ static int test_runner_scores_from_third_base_scenario() {
     MenuInfo menu = {0};
     gameAnalysis(state, &menu, &seed);
 
-    int runs = state->localGameInfo->gAI.runsInTheInning;
+    int runs = state->localGameInfo->gameState.runsInTheInning;
     cleanup_test_state(state);
     ASSERT_EQ(1, runs, "Runner should have scored a run");
     return TEST_PASSED;

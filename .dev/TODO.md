@@ -25,79 +25,44 @@
 
 - [x] **Migrate control flags (One by one)**
   - [x] **Migrate `arrivedToBase`** (Optimization flag)
-    - [x] Replace `bTPI.arrivedToBase` with `playerRuntime[i].arrivedToBase`
-    - [x] Remove from `BattingTeamPlayerInfo`
-    - [x] Verify build & tests
   - [x] **Migrate `woundedApply`** (Deferred execution)
-    - [x] Replace `bTPI.woundedApply` with `playerRuntime[i].woundedApply`
-    - [x] Remove from `BattingTeamPlayerInfo`
-    - [x] Verify build & tests
   - [x] **Migrate `passedPathPoint`** (State machine)
-    - [x] Replace `bTPI.passedPathPoint` with `playerRuntime[i].passedPathPoint`
-    - [x] Remove from `BattingTeamPlayerInfo`
-    - [x] Verify build & tests
   - [x] **Migrate `goingForward`** (Direction)
-    - [x] Replace `bTPI.goingForward` with `playerRuntime[i].goingForward`
-    - [x] Remove from `BattingTeamPlayerInfo`
-    - [x] Verify build & tests
   - [x] **Migrate `hasMadeRunOnThirdBase`** (Guard)
-    - [x] Replace `bTPI.hasMadeRunOnThirdBase` with `playerRuntime[i].hasMadeRunOnThirdBase`
-    - [x] Remove from `BattingTeamPlayerInfo`
-    - [x] Verify build & tests
 
 **Result:** `BattingTeamPlayerInfo` contains ONLY domain state (serializable "truth").
 
 ---
 
-### Phase 2: Split GameAnalysisInfo God Object (NEXT UP)
+### Phase 2: Split GameAnalysisInfo God Object (COMPLETE ✅)
 
-- [ ] **Create focused structs in `globals.h`**
-  - [ ] `GameState` (outs, strikes, balls, runs, event)
-  - [ ] `GameControlFlags` (pause, initLocals, etc.)
-  - [ ] `WoundingState` (woundingCatch, handled)
-  - [ ] `CameraState` (camera flags, targetPoint)
-  - [ ] `PlayerCounters` (battingTeamPlayers, nonJokers, jokers)
-  - [ ] `GameModeState` (pairCounter, runOfHonor, forceNextPair)
+- [x] **Create focused structs in `globals.h`** (Done 2026-01-03)
+  - [x] `GameState` (outs, strikes, balls, runs, event)
+  - [x] `GameControlFlags` (pause, initLocals, etc.)
+  - [x] `WoundingState` (woundingCatch, handled)
+  - [x] `CameraState` (camera flags, targetPoint)
+  - [x] `PlayerCounters` (battingTeamPlayers, nonJokers, jokers)
+  - [x] `GameModeState` (pairCounter, runOfHonor, forceNextPair)
 
-- [ ] **Add new structs to `LocalGameInfo`**
+- [x] **Add new structs to `LocalGameInfo`**
 
-- [ ] **Migrate fields group by group**
-  - [ ] Migrate `GameState` fields
-  - [ ] Migrate `GameControlFlags`
-  - [ ] Migrate `WoundingState`
-  - [ ] Migrate `CameraState`
-  - [ ] Migrate `PlayerCounters`
-  - [ ] Migrate `GameModeState` and others
+- [x] **Migrate fields group by group**
+  - [x] Migrate `GameState` fields
+  - [x] Migrate `GameControlFlags`
+  - [x] Migrate `WoundingState`
+  - [x] Migrate `CameraState`
+  - [x] Migrate `PlayerCounters`
+  - [x] Migrate `GameModeState`
 
-- [ ] **Remove `GameAnalysisInfo` struct**
+- [x] **Remove `GameAnalysisInfo` struct**
 
-- [ ] **Test continuously**
+- [x] **Test continuously** (All 51 tests passing)
 
-- [ ] **Create focused structs**
-  - [ ] Define `GameState` (outs, strikes, balls, runs)
-  - [ ] Define `GameControlFlags` (pause, initLocals, etc.)
-  - [ ] Define `WoundingState` (wounding system state)
-  - [ ] Define `CameraState` (camera/UI state)
-  - [ ] Define `PlayerCounters` (player tracking)
-
-- [ ] **Migrate fields group by group**
-  - [ ] Migrate game state counters
-  - [ ] Migrate control flags
-  - [ ] Migrate wounding state
-  - [ ] Migrate camera state
-  - [ ] Migrate player counters
-  - [ ] Update ALL references (mechanical but large)
-
-- [ ] **Test continuously**
-  - [ ] Run unit tests after each group
-  - [ ] Run integration tests after each group
-  - [ ] Manual playtest at end
-
-**Result:** Focused, single-responsibility structs
+**Result:** Focused, single-responsibility structs.
 
 ---
 
-### Phase 3: Stabilize & Document (Planned)
+### Phase 3: Stabilize & Document (CURRENT 🎯)
 
 - [ ] **Update documentation**
   - [ ] Update `docs/DATA_STRUCTURE_AUDIT.md` with new structure
