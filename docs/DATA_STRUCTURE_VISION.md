@@ -1,7 +1,7 @@
 # The Vision: Data Structure Refactoring
 
-**Date:** 2026-01-02
-**Status:** Vision/Draft
+**Date:** 2026-01-03
+**Status:** IMPLEMENTED ✅
 
 This document visualizes the transformation of the game's core data structures.
 
@@ -9,25 +9,7 @@ This document visualizes the transformation of the game's core data structures.
 
 ## 1. The Player: Separating "Who" from "How"
 
-We separate **Domain Identity** (Serializable, "Real") from **Runtime Control** (Ephemeral, Implementation Detail).
-
-### BEFORE
-```c
-typedef struct _BattingTeamPlayerInfo {
-    // Mixed Concerns!
-    char* name;             // Domain
-    int speed;              // Domain
-    PlayerUnitState state;  // Domain
-    BaseID baseId;          // Domain
-    
-    int arrivedToBase;      // Control (Optimization)
-    int woundedApply;       // Control (Logic Queue)
-    int passedPathPoint;    // Control (Pathfinding)
-    int goingForward;       // Control (Movement)
-} BattingTeamPlayerInfo;
-```
-
-### AFTER
+We have successfully separated **Domain Identity** (Serializable, "Real") from **Runtime Control** (Ephemeral, Implementation Detail).
 
 **Domain Object (Clean)**
 *Can be passed to UI, Rules, and Save System.*
@@ -37,24 +19,24 @@ typedef struct _BattingTeamPlayerInfo {
     int speed;
     int power;
     int number;
+    int originalBase;
     int joker;
-    
+
     // The "Truth" of the game
     PlayerUnitState state;
     BaseID baseId;
-    int originalBase;
 } BattingTeamPlayerInfo;
 ```
 
 **Control Object (Hidden)**
-*Only needed by Update/Movement logic.*
+*Only needed by Update/Movement logic. Contained in `LocalGameInfo.playerRuntime`.*
 ```c
 typedef struct _PlayerRuntimeState {
-    int arrivedToBase;        // Optimization flag
-    int woundedApply;         // Deferred wounding
-    int passedPathPoint;      // Path index
-    int goingForward;         // Direction state
-    int hasMadeRunOnThirdBase;// Logic guard
+	int arrivedToBase;       // Optimization flag
+	int woundedApply;        // Deferred execution
+	int passedPathPoint;     // State machine variable
+	int goingForward;        // Direction tracking
+	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 ```
 
@@ -62,31 +44,20 @@ typedef struct _PlayerRuntimeState {
 
 ## 2. The Game State: Exploding the God Object
 
-We break `GameAnalysisInfo` (34 mixed fields) into semantic components.
-
-### BEFORE
-```c
-typedef struct _GameAnalysisInfo {
-    int outs; int strikes; int balls;        // Rules
-    int pause; int endPeriod;                // Control
-    int ballHome; int outOfBounds;           // Physics
-    int woundingCatch;                       // Specific System
-    int homeRunCameraFlag;                   // Camera
-    // ... + 25 more
-} GameAnalysisInfo;
-```
-
-### AFTER
+`GameAnalysisInfo` (34 mixed fields) has been broken into semantic components.
 
 **1. GameState (The "Scoreboard")**
 *Pure input for Rules Engine. Output of Referee.*
 ```c
 typedef struct _GameState {
-    int outs;
-    int strikes;
-    int balls;
-    int runsInTheInning;
-    GameEventType lastEvent;  // e.g., EVENT_OUT, EVENT_RUN
+	int outs;
+	int balls;
+	int strikes;
+	int runsInTheInning;
+	GameEventType event;
+	int outOfBounds; 
+	int ballHome;    
+	int endPeriod;   
 } GameState;
 ```
 
@@ -94,112 +65,80 @@ typedef struct _GameState {
 *Internal loop management.*
 ```c
 typedef struct _GameControlFlags {
-    int pause;
-    int endPeriod;
-    int noMorePlayers;
-    int initLocals;
-    int waitingForBatterDecision;
-    int waitingForFreeWalkDecision;
+	int pause;
+	int initLocals;
+	int waitingForBatterDecision;
+	int waitingForFreeWalkDecision;
+	int freeWalkCalculationMade;
+	int freeWalkIndex;
+	int freeWalkBase;
+	int checkForRun;
+	int playerArrivedToBase;
+	int firstCatchMade;
+	int batterStartedRunning;
 } GameControlFlags;
 ```
 
-**3. WorldSensors (The "Eyes")**
-*Physics results used by logic.*
-```c
-typedef struct _WorldSensors {
-    int ballAtHomePlate;      // was ballHome
-    int ballOutOfBounds;      // was outOfBounds
-    int firstCatchMade;
-} WorldSensors;
-```
-
-**4. Subsystem States**
+**3. Subsystem States**
 ```c
 typedef struct _WoundingState {
-    int pendingCatch;         // was woundingCatch
-    int handled;              // was woundingCatchHandled
+	int woundingCatch;        // Pending wounding opportunity
+	int woundingCatchHandled; // Has been processed
 } WoundingState;
 
 typedef struct _CameraState {
-    int homeRunMode;          // was homeRunCameraFlag
-    Vector3D focusTarget;     // was targetPoint
+	int homeRunCameraFlag;
+	Vector3D targetPoint; // For camera or AI focus
 } CameraState;
+
+typedef struct _PlayerCounters {
+	int battingTeamPlayersOnFieldCount;
+	int nonJokerPlayersLeft;
+	int jokersLeft;
+	int noMorePlayers;
+} PlayerCounters;
+
+typedef struct _GameModeState {
+	int runnerBatterPairCounter;
+	int canMakeRunOfHonor;
+	int forceNextPair;
+} GameModeState;
 ```
 
 ---
 
 ## 3. The Grand Assembly: LocalGameInfo
 
-How it all fits together in the main state container.
+The current state of the main container.
 
-### BEFORE
 ```c
 typedef struct _LocalGameInfo {
-    PlayerInfo playerInfo[...]; // Polluted inside
-    GameAnalysisInfo gAI;       // The God Object
-    // ...
-} LocalGameInfo;
-```
-
-### AFTER
-```c
-typedef struct _LocalGameInfo {
-    // --- ENTITIES ---
-    // Domain Data (Who they are)
-    PlayerInfo playerInfo[...]; 
-    
-    // Runtime Data (What they are doing - Parallel Array)
-    PlayerRuntimeState playerRuntime[...]; 
-
-    // --- GAME LOGIC ---
-    // The "Truth" (Rules engine operates on this)
-    GameState gameState;
-
-    // --- ENGINE SUPPORT ---
-    // Control Flow
-    GameControlFlags control;
-    
-    // Physics/World Sensing
-    WorldSensors sensors;
-
-    // Subsystem specific
-    WoundingState wounding;
-    CameraState camera;
-    PlayerCounters counters;
-
-    // --- LEGACY (To be refactored later) ---
-    ActionFlags aF;
-    PlayerIndexInfo pII;
-    PlayerRelatedActionInfo pRAI;
-    BallInfo ballInfo;
+	PlayerInfo playerInfo[...];
+	PlayerRuntimeState playerRuntime[...]; // Parallel Array
+	ActionFlags aF;
+	PlayerIndexInfo pII;
+	PlayerRelatedActionInfo pRAI;
+	
+	// NEW FOCUSED STATE
+	GameState gameState;
+	GameControlFlags gameControl;
+	WoundingState woundingState;
+	CameraState cameraState;
+	PlayerCounters playerCounters;
+	GameModeState gameModeState;
+	
+	BallInfo ballInfo;
 } LocalGameInfo;
 ```
 
 ---
 
-## 4. The Payoff: Function Signatures
+## 4. The Payoff: Next Steps (Refining Signatures)
 
-This structure allows us to write **Pure Functions** with **Specific Scope**.
+This structure now allows us to rewrite logic functions with restricted scope.
 
-**Bad (Current):**
-```c
-// Needs the whole universe to check if an out happened
-void check_out(StateInfo* s, int playerIndex); 
-```
+**Example: Rules Engine**
+Instead of `void check_outs(StateInfo* state)`, we can now have:
+`void update_out_logic(GameState* gameState, PlayerInfo* players, ...)`
 
-**Good (Target):**
-```c
-// 1. Rules: Depends ONLY on GameState
-int is_inning_over(const GameState* gs);
-
-// 2. Logic: Depends ONLY on Player Domain State
-int can_player_advance(const BattingTeamPlayerInfo* player, const GameState* gs);
-
-// 3. Engine: Updates Runtime State independently
-void update_movement(PlayerRuntimeState* runtime, const BattingTeamPlayerInfo* domain, ...);
-```
-
-### Benefits
-1.  **Testability:** We can create a `GameState` struct in a test without mocking the entire engine.
-2.  **Safety:** A rendering function taking `const BattingTeamPlayerInfo*` CANNOT accidentally modify `woundedApply` or `arrivedToBase`.
-3.  **Clarity:** The signature tells you exactly what data the function reads and writes.
+This is the foundation for the **Referee Pattern** in Milestone 8.

@@ -246,7 +246,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 static void strikesAndBalls(StateInfo* stateInfo)
 {
 	// so if there are three strikes
-	if(should_change_batter_on_strikes(stateInfo->localGameInfo->gameState.strikes, stateInfo->localGameInfo->pII.safeOnBaseIndex[0])) {
+	if(should_change_batter_on_strikes(&(stateInfo->localGameInfo->gameState), stateInfo->localGameInfo->pII.safeOnBaseIndex[1])) {
 		// we force running of batter
 		if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
 			runToNextBase(stateInfo, stateInfo->localGameInfo->pII.safeOnBaseIndex[0], 0);

@@ -1,145 +1,117 @@
 # Data Structure Audit: The "God Objects"
 
-**Date:** 2026-01-02
-**Status:** Audit Complete
-**Goal:** Map the pollution in `BattingTeamPlayerInfo` and `GameAnalysisInfo` to prepare for cleanup.
+**Date:** 2026-01-03
+**Status:** COMPLETE ✅
+**Goal:** Map and eliminate the pollution in `BattingTeamPlayerInfo` and `GameAnalysisInfo`.
 
 ---
 
-## 1. BattingTeamPlayerInfo (The Player State)
+## 1. BattingTeamPlayerInfo (The Player State) - COMPLETE ✅
 
-**Current Status:** Mixed Domain and Control state.
+**Status:** Successfully separated Domain Identity from Runtime Control.
 
-| Field Name | Type | Classification | Purpose | Plan |
-|:---|:---|:---|:---|:---|
-| `name` | char* | **Domain** | Player identity | Keep |
-| `speed` | int | **Domain** | Attribute | Keep |
-| `power` | int | **Domain** | Attribute | Keep |
-| `number` | int | **Domain** | Identity | Keep |
-| `originalBase` | int | **Domain** | Game Logic (Rules) | Keep |
-| `joker` | int | **Domain** | Attribute/Role | Keep |
-| `state` | PlayerUnitState | **Domain** | **Core State** (New) | Keep |
-| `baseId` | BaseID | **Domain** | **Core State** (New) | Keep |
-| `arrivedToBase` | int | **Control** | Optimization flag | **MOVED** to `PlayerRuntimeState` ✅ |
-| `woundedApply` | int | **Control** | Deferred execution | **MOVED** to `PlayerRuntimeState` ✅ |
-| `passedPathPoint` | int | **Control** | Pathfinding state | **MOVED** to `PlayerRuntimeState` ✅ |
-| `goingForward` | int | **Control** | Movement direction | **MOVED** to `PlayerRuntimeState` ✅ |
-| `hasMadeRunOnThirdBase`| int | **Control** | Rule guard | **MOVED** to `PlayerRuntimeState` ✅ |
+| Field Name | Classification | Purpose | Outcome |
+|:---|:---|:---|:---|
+| `name`, `speed`, `power`, `number`, `joker` | **Domain** | Identity & Attributes | Kept in `BattingTeamPlayerInfo` |
+| `state`, `baseId`, `originalBase` | **Domain** | **Core Rule State** | Kept in `BattingTeamPlayerInfo` |
+| `arrivedToBase` | **Control** | Optimization flag | **MOVED** to `PlayerRuntimeState` ✅ |
+| `woundedApply` | **Control** | Deferred execution | **MOVED** to `PlayerRuntimeState` ✅ |
+| `passedPathPoint` | **Control** | Pathfinding state | **MOVED** to `PlayerRuntimeState` ✅ |
+| `goingForward` | **Control** | Movement direction | **MOVED** to `PlayerRuntimeState` ✅ |
+| `hasMadeRunOnThirdBase`| **Control** | Rule guard | **MOVED** to `PlayerRuntimeState` ✅ |
 
-### New Structure Proposal
+### New Structure
 
 ```c
-// src/include/globals.h
-
-// IMPLEMENTED ✅
 typedef struct _PlayerRuntimeState {
-    int arrivedToBase;
-    int woundedApply;
-    int passedPathPoint;
-    int goingForward;
-    int hasMadeRunOnThirdBase;
+	int arrivedToBase;       // Optimization flag
+	int woundedApply;        // Deferred execution
+	int passedPathPoint;     // State machine variable
+	int goingForward;        // Direction tracking
+	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
-// Add to LocalGameInfo:
-// PlayerRuntimeState playerRuntime[24];
+// In LocalGameInfo:
+// PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT];
 ```
 
 ---
 
-## 2. GameAnalysisInfo (The God Object)
+## 2. GameAnalysisInfo (The God Object) - DECOMPOSED ✅
 
-**Current Status:** 34 fields mixing Rules, UI, Control Flow, and Physics.
+**Status:** The 34-field `GameAnalysisInfo` struct has been deleted. Its fields are now in focused, single-responsibility structs.
 
-### Group A: Pure Game State (The "Scoreboard")
-*What the Referee generates and the UI displays.*
-
-| Field | Purpose | Target Struct |
-|:---|:---|:---|
-| `outs` | Number of outs (0-3) | `GameState` |
-| `strikes` | Number of strikes (0-3) | `GameState` |
-| `balls` | Number of balls (0-4) | `GameState` |
-| `runsInTheInning` | Runs scored this turn | `GameState` |
-| `event` | Last game event (Type-safe) | `GameState` |
-
-### Group B: Control Flow Flags
-*Internal bookkeeping for the game loop.*
+### Group A: GameState (The "Scoreboard")
+*Pure game rules state. Input for Rules Engine.*
 
 | Field | Purpose | Target Struct |
 |:---|:---|:---|
-| `pause` | Game paused? | `GameControlFlags` |
-| `endPeriod` | Signal to end period | `GameControlFlags` |
-| `noMorePlayers` | Signal inning end | `GameControlFlags` |
-| `initLocals` | Reset signal | `GameControlFlags` |
-| `waitingForBatterDecision` | UI input block | `GameControlFlags` |
-| `waitingForFreeWalkDecision`| UI input block | `GameControlFlags` |
-| `freeWalkCalculationMade` | Optimization flag | `GameControlFlags` |
-| `firstCatchMade` | Logic trigger | `GameControlFlags` |
-| `playerArrivedToBase` | Global optimization flag | `GameControlFlags` |
+| `outs` | Number of outs | `GameState.outs` |
+| `strikes` | Number of strikes | `GameState.strikes` |
+| `balls` | Number of balls | `GameState.balls` |
+| `runsInTheInning` | Runs scored | `GameState.runsInTheInning` |
+| `event` | Last game event | `GameState.event` |
+| `outOfBounds` | Rule state | `GameState.outOfBounds` |
+| `ballHome` | Rule state | `GameState.ballHome` |
+| `endPeriod` | Rule state | `GameState.endPeriod` |
 
-### Group C: Physics/World State
-*Physical reality checks.*
-
-| Field | Purpose | Target Struct |
-|:---|:---|:---|
-| `ballHome` | Is ball at home plate? | `GamePhysicsState` (or similar) |
-| `outOfBounds` | Is ball out of bounds? | `GamePhysicsState` |
-
-### Group D: Wounding System
-*Specific sub-system state.*
+### Group B: GameControlFlags (The "Engine Room")
+*Internal loop management and implementation bookkeeping.*
 
 | Field | Purpose | Target Struct |
 |:---|:---|:---|
-| `woundingCatch` | Trigger for wounding check | `WoundingState` |
-| `woundingCatchHandled` | Debounce flag | `WoundingState` |
+| `pause` | Game paused? | `gameControl.pause` |
+| `initLocals` | Reset signal | `gameControl.initLocals` |
+| `waitingForBatterDecision` | UI input block | `gameControl.waitingForBatterDecision` |
+| `waitingForFreeWalkDecision`| UI input block | `gameControl.waitingForFreeWalkDecision` |
+| `freeWalkCalculationMade` | Optimization flag | `gameControl.freeWalkCalculationMade` |
+| `freeWalkIndex` | Temp variable | `gameControl.freeWalkIndex` |
+| `freeWalkBase` | Temp variable | `gameControl.freeWalkBase` |
+| `checkForRun` | Rule trigger | `gameControl.checkForRun` |
+| `playerArrivedToBase` | Optimization flag | `gameControl.playerArrivedToBase` |
+| `firstCatchMade` | Logic trigger | `gameControl.firstCatchMade` |
+| `batterStartedRunning` | AI/Rule hint | `gameControl.batterStartedRunning` |
 
-### Group E: Camera/Visuals
-*Rendering directives.*
-
-| Field | Purpose | Target Struct |
-|:---|:---|:---|
-| `homeRunCameraFlag` | Camera mode trigger | `CameraState` |
-| `targetPoint` | Camera focus point | `CameraState` |
-
-### Group F: Player Tracking / Counters
-*Counts of entities.*
-
-| Field | Purpose | Target Struct |
-|:---|:---|:---|
-| `battingTeamPlayersOnFieldCount` | Helper count | `PlayerCounters` |
-| `nonJokerPlayersLeft` | Helper count | `PlayerCounters` |
-| `jokersLeft` | Helper count | `PlayerCounters` |
-
-### Group G: Specific Logic Helpers (The "Misc" Drawer)
-*These might need individual review.*
+### Group C: WoundingState
+*Specialized state for the wounding system.*
 
 | Field | Purpose | Target Struct |
 |:---|:---|:---|
-| `batterStartedRunning` | AI hint | `AIState` (maybe) |
-| `checkForRun` | Rule trigger | `GameState` (maybe) |
-| `freeWalkIndex` | Temp variable | `GameControlFlags` |
-| `freeWalkBase` | Temp variable | `GameControlFlags` |
-| `runnerBatterPairCounter`| Tournament/Mode state | `GameModeState` |
-| `canMakeRunOfHonor` | Game mode rule | `GameModeState` |
-| `forceNextPair` | Game mode rule | `GameModeState` |
+| `woundingCatch` | Trigger for wounding check | `woundingState.woundingCatch` |
+| `woundingCatchHandled` | Debounce flag | `woundingState.woundingCatchHandled` |
+
+### Group D: CameraState
+*Presentation directives.*
+
+| Field | Purpose | Target Struct |
+|:---|:---|:---|
+| `homeRunCameraFlag` | Camera mode | `cameraState.homeRunCameraFlag` |
+| `targetPoint` | Focus point | `cameraState.targetPoint` |
+
+### Group E: PlayerCounters
+*Helper counts for tracking players.*
+
+| Field | Purpose | Target Struct |
+|:---|:---|:---|
+| `battingTeamPlayersOnFieldCount` | Helper count | `playerCounters.battingTeamPlayersOnFieldCount` |
+| `nonJokerPlayersLeft` | Helper count | `playerCounters.nonJokerPlayersLeft` |
+| `jokersLeft` | Helper count | `playerCounters.jokersLeft` |
+| `noMorePlayers` | Inning end signal | `playerCounters.noMorePlayers` |
+
+### Group F: GameModeState
+*State specific to tournament or alternate game modes.*
+
+| Field | Purpose | Target Struct |
+|:---|:---|:---|
+| `runnerBatterPairCounter`| Mode state | `gameModeState.runnerBatterPairCounter` |
+| `canMakeRunOfHonor` | Mode rule | `gameModeState.canMakeRunOfHonor` |
+| `forceNextPair` | Mode rule | `gameModeState.forceNextPair` |
 
 ---
 
-## Migration Strategy
+## Summary of Results
 
-**Phase 1: PlayerRuntimeState (COMPLETE ✅)**
-1. Define `PlayerRuntimeState`.
-2. Add to `LocalGameInfo`.
-3. Move `arrivedToBase` (Optimization).
-4. Move `woundedApply` (Logic).
-5. Move remaining flags.
-
-**Phase 2: Split GameAnalysisInfo (High Value, Medium Risk)**
-1. Define `GameState` (Pure score data).
-2. Move Group A fields.
-3. Define `GameControlFlags`.
-4. Move Group B fields.
-5. Define remaining structs and migrate.
-
-**Phase 3: Cleanup**
-1. Update `StateInfo` to hold new structs (or keep in `LocalGameInfo`).
-2. Update all references.
+1.  **Strict Typing:** Grouped data by semantics rather than usage site.
+2.  **Logic Isolation:** Rules engine (Referee) can now operate on `GameState` without touching `cameraState`.
+3.  **Clean Player State:** `BattingTeamPlayerInfo` is now clean, domain-only data.
+4.  **Zero God Objects:** `GameAnalysisInfo` is completely removed.
