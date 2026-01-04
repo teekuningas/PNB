@@ -1,6 +1,29 @@
 # TODO - Current Tasks
 
-## Milestone 10: The Referee Architecture (PLANNED)
+## Milestone 10: Stabilization & Cleanup (CURRENT)
+
+**Goal:** Eliminate globals, enforce const-correctness, and complete enum-ification.
+
+### Phase 1: Eliminate Action Globals
+- [ ] Create `PendingActionState` struct in `globals.h`.
+- [ ] Move `meterCounter`, `meterCounterMax` to `PendingActionState`.
+- [ ] Move `throwGoingOn`, `runBatFlag`, `aiWrongPitch` to `PendingActionState`.
+- [ ] Move AI lock variables (`aiActionEventLock`, etc.) to `PendingActionState` (or `AIState`).
+- [ ] Remove `src/game/actions_messy/action_state.h` and `.c`.
+
+### Phase 2: Enum-ify Remaining States
+- [ ] Define `TeamControlMode` enum (Human P1, Human P2, AI).
+- [ ] Define `TeamSide` enum (Batting, Catching).
+- [ ] Define `ReplacementState` enum for `replacingStage`.
+- [ ] Update `TeamInfo`, `CommonPlayerInfo`, and `CatchingTeamPlayerInfo` to use these enums.
+
+### Phase 3: Const-Correctness Sweep
+- [ ] Update `draw*` functions in `src/renderer` and `src/game` to take `const` pointers.
+- [ ] Update pure logic functions in `src/game/rules_pure` and `src/game/ai_pure` to take `const` pointers.
+
+---
+
+## Milestone 11: The Referee Architecture (PLANNED)
 
 **Goal:** Implement the high-level logic arbitrator.
 

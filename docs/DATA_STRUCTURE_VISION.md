@@ -1,7 +1,7 @@
 # The Vision: Data Structure Refactoring
 
-**Date:** 2026-01-03
-**Status:** IMPLEMENTED ✅
+**Date:** 2026-01-04
+**Status:** IMPLEMENTED ✅ (Milestones 7.5, 8, 9 Complete)
 
 This document visualizes the transformation of the game's core data structures.
 
@@ -26,6 +26,29 @@ typedef struct _BattingTeamPlayerInfo {
     PlayerUnitState state;
     BaseID baseId;
 } BattingTeamPlayerInfo;
+```
+
+**Common Object (Shared)**
+```c
+typedef enum {
+	PLAYER_ANIM_STAND_NO_BALL = 0,
+	// ... (see globals.h for full list)
+	PLAYER_ANIM_BAT_SWING_3 = 16
+} PlayerAnimationModel;
+
+typedef struct _CommonPlayerInfo {
+	int team;
+	int moving;
+	int running;
+	int looksForTarget;
+	int lastLastLocationUpdate;
+	
+	// MILESTONE 9: Strong Enums
+	PlayerAnimationModel model;
+	int animationStage;
+	int animationStageCount;
+	int animationFrequency;
+} CommonPlayerInfo;
 ```
 
 **Control Object (Hidden)**
@@ -112,10 +135,34 @@ typedef struct _GameModeState {
 The current state of the main container.
 
 ```c
+typedef enum {
+	PITCH_STAGE_NONE = 0,
+	PITCH_STAGE_WINDUP = 1,
+	PITCH_STAGE_AIRBORNE = 2
+} PitchCycleState;
+
+typedef struct _PlayerRelatedActionInfo {
+	float meterValue;
+	float swingMeterValue;
+
+	PitchCycleState pitchState; // MILESTONE 9: Replaced int flags
+
+	int throwGoingToBase;
+	int willStartRunning[BASE_COUNT];
+	int initBatter;
+	int batterReady;
+	int batHit;
+	int batMiss;
+	int battingGoingOn;
+	int batterCanAdvance;
+	int refreshCatchAndChange;
+	int initPlayerSelection;
+} PlayerRelatedActionInfo;
+
 typedef struct _LocalGameInfo {
 	PlayerInfo playerInfo[...];
 	PlayerRuntimeState playerRuntime[...]; // Parallel Array
-	ActionFlags aF;
+	ActionFlags aF; // Now uses strong enums (ActionTriggerState, PitchActionPhase, etc.)
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;
 	
@@ -141,4 +188,4 @@ This structure now allows us to rewrite logic functions with restricted scope.
 Instead of `void check_outs(StateInfo* state)`, we can now have:
 `void update_out_logic(GameState* gameState, PlayerInfo* players, ...)`
 
-This is the foundation for the **Referee Pattern** in Milestone 8.
+This is the foundation for the **Referee Pattern** in Milestone 11.

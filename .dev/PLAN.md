@@ -1,50 +1,30 @@
 ## Refactoring Master Plan
 
-## Current Status: Milestone 9 COMPLETE ✅ → Milestone 10 (The Referee Architecture)
+## Current Status: Milestone 9 COMPLETE ✅ → Milestone 10 (Stabilization & Cleanup)
 
 **Foundation Quality:** 10.0/10 - Excellent Type-Safe Domain State & Minimal Scope Functions
-**Current Focus:** Architectural Pattern Implementation
-**Philosophy:** "Separate Rules from Reality" - The Referee decides, the Engine executes.
+**Current Focus:** Stability & Code Hygiene
+**Philosophy:** "Clean inputs, clean outputs, no hidden state."
 
 ---
 
-## Milestone 7.5: Data Structure Cleanup - COMPLETE ✅
+## Milestone 10: Stabilization & Cleanup (CURRENT)
 
-**Achievement (2026-01-03):** Successfully decomposed `GameAnalysisInfo` God Object!
+**Goal:** Eliminate globals, enforce const-correctness, and complete enum-ification.
 
-### What We Accomplished
-- ✅ Created 6 focused structs: `GameState`, `GameControlFlags`, `WoundingState`, `CameraState`, `PlayerCounters`, `GameModeState`
-- ✅ Migrated all fields from `GameAnalysisInfo`
-- ✅ Deleted `GameAnalysisInfo` struct
-- ✅ All 51 unit tests passed
+**Why:**
+- **Globals:** Hidden dependencies (`action_state.c`) make the Referee pattern impossible to implement safely.
+- **Const:** We need to be 100% sure which functions *read* the world vs *change* the world.
+- **Enums:** Finishing the job started in Milestone 9.
 
----
-
-## Milestone 8: The Great Narrowing - COMPLETE ✅
-
-**Achievement (2026-01-04):** Decoupled utility/physics logic from global state.
-
-### What We Accomplished
-- ✅ Narrowed movement functions to use `PlayerInfo*` instead of `LocalGameInfo*`.
-- ✅ Narrowed ball logic to use `BallInfo*`.
-- ✅ Narrowed AI strategies to use `const GameState*`.
-- ✅ Verified with full test suite.
+**Tasks:**
+1.  **Eliminate Action Globals:** Move `meterCounter`, `throwGoingOn`, etc. to `LocalGameInfo`.
+2.  **Enum-ify Remaining States:** `TeamControlMode`, `TeamSide`, `ReplacementState`.
+3.  **Const-Correctness:** Lock down read-only parameters.
 
 ---
 
-## Milestone 9: Type Safety & State Machines - COMPLETE ✅
-
-**Achievement (2026-01-04):** Replaced "int flags" with strong Enums.
-
-### What We Accomplished
-- ✅ Defined `PlayerAnimationModel` enum (replaced magic 0-16).
-- ✅ Defined `PitchCycleState` enum (replaced loose flags).
-- ✅ Defined `ActionTriggerState`, `PitchActionPhase`, `BatActionPhase` for `ActionFlags`.
-- ✅ All magic numbers eliminated from action systems.
-
----
-
-## Milestone 10: The Referee Architecture (CURRENT)
+## Milestone 11: The Referee Architecture (Future)
 
 **Goal:** Implement the high-level logic arbitrator.
 
