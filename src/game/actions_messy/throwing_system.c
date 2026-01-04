@@ -55,7 +55,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 		// throw not going anymore, ball already flyin'
 		throwGoingOn = 0;
 		// release animation
-		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 9;
+		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStageCount = 21;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = 2;
@@ -70,7 +70,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 		throwDirection.z = throwDirection.z / throwDistance;
 		throwDirection.y = 0.06f;
 		// ... and then edit them a bit more and send them to genericSlingBall.
-		genericSlingBall(stateInfo->localGameInfo, throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
+		genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
 		// set lastHadBallIndex, its used for example to prevent this player of catching
 		// the ball right after throwing.
 		stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
@@ -97,10 +97,10 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			// stop player if he is moving, moving won't look good as the animation
 			// doesn't have foot movement
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-				stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+				stopMovement(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 			}
 			// set the animation
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 8;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_WINDUP;
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStageCount = 11;
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = 3;
@@ -108,7 +108,7 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			meterCounter = 0;
 			meterCounterMax = THROW_MAX; // arbitrary decision, seems about right though
 			// continue to next phase
-			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = 2;
+			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_ACTIVE;
 			// set the flag that is used for example to determine can you move the player.
 			throwGoingOn = 1;
 			// to avoid twitching when moving key is still pressed and player cant move as hes throwing
@@ -118,7 +118,7 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.z = throwDirection.z;
 		} else {
 			// if too close to base, terminate throwing.
-			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = 0;
+			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_IDLE;
 			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 			throwGoingOn = 0;
 			stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
@@ -130,11 +130,11 @@ void genericMove(StateInfo* stateInfo, int direction)
 {
 	// we can move if there is no throw going on and no pitch going on
 	// .. and we have same player controlled
-	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0 &&
+	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pII.controlIndex != -1) {
 		// stopping only possible when moving already going on
 		// so thats the reason for this value 2
-		stateInfo->localGameInfo->aF.cTAF.move[direction] = 2;
+		stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_ACTIVE;
 
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cTPI.movesToDirection[direction] = 1;
 		// and we call this generic function that utilizes this movesToDirection to select
@@ -150,9 +150,9 @@ void genericStopMove(StateInfo* stateInfo, int direction)
 {
 	// stopping cant be done either when pitching or throwing as updateControlledPlayerSpeed can
 	// have effects on player's model
-	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0 &&
+	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pII.controlIndex != -1) {
-		stateInfo->localGameInfo->aF.cTAF.move[direction] = 0;
+		stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_IDLE;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
 		updateControlledPlayerSpeed(stateInfo);
 	} else {
@@ -165,17 +165,17 @@ void dropBall(StateInfo* stateInfo)
 	// there is a possibility to drop ball if to the ground if you want. it could be convenient when
 	// you want a baserunner to be able to get safe from a base for some strategical reason.
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
-		if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0) {
+		if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE) {
 			float norm;
 			float dx;
 			float dz;
 
 			// players' movement will be stopped when doing this, similar to throwing.
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-				stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+				stopMovement(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 			}
 			// model is set to be the basic standing without ball model.
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 0;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 			// and then just set a little upward-forward -directed value for ball so that we'll see the dropping
 			dx = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.x;
 			dz = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.z;
@@ -184,14 +184,14 @@ void dropBall(StateInfo* stateInfo)
 			dx = dx / norm;
 			dz = dz / norm;
 			// and use genericSlingBall again to get the ball to the world.
-			genericSlingBall(stateInfo->localGameInfo, dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
+			genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
 			// and set the lastHadBallIndex so that this player cannot catch it before it hits ground
 			stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 			// and no player has the ball anymore.
 			stateInfo->localGameInfo->pII.hasBallIndex = -1;
 		}
 	}
-	stateInfo->localGameInfo->aF.cTAF.dropBall = 0;
+	stateInfo->localGameInfo->aF.cTAF.dropBall = ACTION_IDLE;
 	stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 }
 
@@ -216,9 +216,9 @@ void updateControlledPlayerSpeed(StateInfo* stateInfo)
 				// if controlled player has also ball, set corresponding model
 				// otherwise set model without ball
 				if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.controlIndex)
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = 1;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 				else
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = 0;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 				// when stopping movement, need to update last location.
 				stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.lastLastLocationUpdate = 1;
 			} else {
@@ -241,10 +241,10 @@ void updateControlledPlayerSpeed(StateInfo* stateInfo)
 				stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.animationStageCount = 20;
 				// if has ball, then running with ball model, otherwise running without ball
 				if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.controlIndex) {
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = 5;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = PLAYER_ANIM_RUN_WITH_BALL;
 
 				} else {
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = 4;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = PLAYER_ANIM_RUN_NO_BALL;
 				}
 			}
 		}

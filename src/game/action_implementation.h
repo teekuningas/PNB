@@ -6,6 +6,6 @@
 void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed);
 void initActionImplementation(StateInfo* stateInfo);
 void flushKeys(StateInfo* stateInfo);
-void genericSlingBall(LocalGameInfo* localGameInfo, float x, float y, float z);
+void genericSlingBall(BallInfo* ballInfo, PlayerRelatedActionInfo* pRAI, float x, float y, float z);
 
 #endif /* ACTION_IMPLEMENTATION_H */

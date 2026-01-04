@@ -185,7 +185,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 
 		}
 
-	} else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchInAir == 0 && stateInfo->localGameInfo->gameState.ballHome == 1) {
+	} else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameState.ballHome == 1) {
 		// decision tree.. contents can be read within
 		if(aiPlanCalculated == 0) {
 			int batterIndex = stateInfo->localGameInfo->pII.batterIndex;
@@ -254,7 +254,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	}
 	// if ball is not home, we return players from first and second base to their bases
-	else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchInAir == 0 && stateInfo->localGameInfo->gameState.ballHome == 0) {
+	else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameState.ballHome == 0) {
 		if(aiRunningBaseRunners == 1) {
 			int i;
 			for(i = 1; i < 3; i++) {
@@ -279,7 +279,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	}
 	// and here we bat
-	else if(stateInfo->localGameInfo->pRAI.pitchInAir == 1) {
+	else if(stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_AIRBORNE) {
 		int i;
 		// predict if pitch is going to be ball
 		if(aiWrongPitch == 0 && is_wrong_pitch(
@@ -397,7 +397,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 
 	}
-	if(stateInfo->localGameInfo->pRAI.pitchInAir == 0 && aiAngleDecided == 1) {
+	if(stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && aiAngleDecided == 1) {
 		aiAngleDecided = 0;
 	}
 	//here we check if ball is going somewhere out of bounds so that players can try to run towards next bases.

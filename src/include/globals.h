@@ -214,27 +214,64 @@ typedef struct _TeamData {
 	int numPlayers;
 	PlayerData* players;
 } TeamData;
+typedef enum {
+	ACTION_IDLE = 0,
+	ACTION_TRIGGER_START = 1,
+	ACTION_ACTIVE = 2,
+	ACTION_TRIGGER_STOP = 3
+} ActionTriggerState;
+
+typedef enum {
+	PITCH_ACTION_IDLE = 0,
+	PITCH_ACTION_START = 1,      // Trigger: start windup
+	PITCH_ACTION_POWER_WAIT = 2,  // Active: winding up, waiting for power select
+	PITCH_ACTION_POWER_SET = 3,   // Trigger: power selected
+	PITCH_ACTION_ANGLE_WAIT = 4,  // Active: throw animation, waiting for angle select
+	PITCH_ACTION_ANGLE_SET = 5    // Trigger: angle selected, release ball
+} PitchActionPhase;
+
+typedef enum {
+	BAT_ACTION_IDLE = 0,
+	BAT_ACTION_WAIT_FOR_BALL = 1, // Active: batter ready, ball in air
+	BAT_ACTION_POWER_SET = 2,     // Trigger: swing button pressed (select power)
+	BAT_ACTION_ANGLE_WAIT = 3,    // Active: swinging, waiting for angle select
+	BAT_ACTION_ANGLE_SET = 4,      // Trigger: angle selected
+	BAT_ACTION_DONE = 5           // Active: animation finishing
+} BatActionPhase;
+
+typedef enum {
+	CHOOSE_BATTER_IDLE = 0,
+	CHOOSE_BATTER_NEXT = 1,
+	CHOOSE_BATTER_SELECT = 2
+} ChooseBatterAction;
+
+typedef enum {
+	FREE_WALK_IDLE = 0,
+	FREE_WALK_ACCEPT = 1,
+	FREE_WALK_REJECT = 2
+} FreeWalkAction;
+
 /*
 Action flags. used in action_invocation.c and action_implementation.c.
 flag is set when key event happens in action_invocation, then its set off or modified when its handled in
 action_implementation
 */
 typedef struct _BattingTeamActionFlags {
-	int baseRun[4];
-	int chooseBatter;
-	int takeFreeWalk;
-	int swing;
-	int increaseBatterAngle;
-	int decreaseBatterAngle;
+	ActionTriggerState baseRun[4];
+	ChooseBatterAction chooseBatter;
+	FreeWalkAction takeFreeWalk;
+	BatActionPhase swing;
+	ActionTriggerState increaseBatterAngle;
+	ActionTriggerState decreaseBatterAngle;
 } BattingTeamActionFlags;
 
 typedef struct _CatchingTeamActionFlags {
-	int move[4];
-	int throwToBase[4];
-	int changePlayer;
-	int run;
-	int dropBall;
-	int pitch;
+	ActionTriggerState move[4];
+	ActionTriggerState throwToBase[4];
+	ActionTriggerState changePlayer;
+	ActionTriggerState run;
+	ActionTriggerState dropBall;
+	PitchActionPhase pitch;
 	int actionKeyLock;
 } CatchingTeamActionFlags;
 
@@ -275,6 +312,26 @@ typedef struct _BattingTeamPlayerInfo {
 	BaseID baseId;
 } BattingTeamPlayerInfo;
 
+typedef enum {
+	PLAYER_ANIM_STAND_NO_BALL = 0,
+	PLAYER_ANIM_STAND_WITH_BALL = 1,
+	PLAYER_ANIM_WALK_NO_BALL = 2,
+	PLAYER_ANIM_WALK_WITH_BALL = 3,
+	PLAYER_ANIM_RUN_NO_BALL = 4,
+	PLAYER_ANIM_RUN_WITH_BALL = 5,
+	PLAYER_ANIM_PITCH_WINDUP = 6,
+	PLAYER_ANIM_PITCH_THROW = 7,
+	PLAYER_ANIM_THROW_WINDUP = 8,
+	PLAYER_ANIM_THROW_RELEASE = 9,
+	PLAYER_ANIM_STAND_BARE = 10,
+	PLAYER_ANIM_WALK_BARE = 11,
+	PLAYER_ANIM_RUN_BARE = 12,
+	PLAYER_ANIM_BATTER_READY = 13,
+	PLAYER_ANIM_BAT_SWING_1 = 14,
+	PLAYER_ANIM_BAT_SWING_2 = 15,
+	PLAYER_ANIM_BAT_SWING_3 = 16
+} PlayerAnimationModel;
+
 typedef struct _CommonPlayerInfo {
 	// player information. name is shown on the screen sometimes, team is used in players.c
 	// and stats are used to make players behave in different ways on some situations.
@@ -285,25 +342,9 @@ typedef struct _CommonPlayerInfo {
 	int looksForTarget; // used in conjuction with targetLocation when trying to go catching a ball for example
 	int lastLastLocationUpdate; // player needs to have his lastLocation updated, necessary when controlling player and moving stops. twitching without this
 	/* how to intepret the model number:
-		0 standing_without_ball
-		1 standing_with_ball
-		2 walking_without_ball
-		3 walking_with_ball
-		4 running_without_ball
-		5 running_with_ball
-		6 pitching part1
-		7 pitching part2
-		8 throwing part1
-		9 throwing part2
-		10 standing_bare_hands
-	    11 walking_bare_hands
-		12 running_bare_hands
-		13 batter ready
-		14 batting v1
-		15 batting v2
-		16 batting v3
+		See PlayerAnimationModel enum above
 	*/
-	int model;
+	PlayerAnimationModel model;
 	int animationStage;
 	int animationStageCount;
 	int animationFrequency;
@@ -408,12 +449,17 @@ typedef struct _GameModeState {
 	int forceNextPair;
 } GameModeState;
 
+typedef enum {
+	PITCH_STAGE_NONE = 0,
+	PITCH_STAGE_WINDUP = 1,   // Pitcher winding up
+	PITCH_STAGE_AIRBORNE = 2  // Ball in air towards plate
+} PitchCycleState;
+
 typedef struct _PlayerRelatedActionInfo {
 	float meterValue; // meter for pitching and throwing
 	float swingMeterValue; // meter for batting
 
-	int pitchGoingOn; // sets to 1 when pitcher starts to crouch and goes to 0 when bat hits or ball hits ground.
-	int pitchInAir; // this goes to 1 when ball is released from hand and goes to 0 in same spots as last one
+	PitchCycleState pitchState; // Replaces pitchGoingOn and pitchInAir
 
 	int throwGoingToBase; // to avoid moving basecatchers out in the wild when ball is thrown to them.
 

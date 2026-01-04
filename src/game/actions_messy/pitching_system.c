@@ -42,16 +42,16 @@ void startPitch(StateInfo* stateInfo)
 		v) pitcher is close enough to pitching location.
 		vi) no free walk decisions pending
 	*/
-	if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0 &&
+	if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pRAI.batterReady == 1 && throwGoingOn == 0 &&
 	        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
 	        stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
 		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
-			stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex);
+			stopMovement(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.hasBallIndex);
 		}
 		// we choose animation of pitcher crouching.
-		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 6;
+		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_WINDUP;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStageCount = PITCH_DOWN_MAX;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
@@ -72,20 +72,20 @@ void startPitch(StateInfo* stateInfo)
 
 		// we enter the next stage where the meter moves and user needs to
 		// select the power to continue
-		stateInfo->localGameInfo->aF.cTAF.pitch = 2;
-		// we set pitchGoingOn flag to 1 which will hold to the moment
+		stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_POWER_WAIT;
+		// we set pitchState flag to PITCH_STAGE_WINDUP which will hold to the moment
 		// of bat hitting ball, meter going all the way down ( no angle selected )
 		// or ball hitting ground.
-		stateInfo->localGameInfo->pRAI.pitchGoingOn = 1;
+		stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_WINDUP;
 		// so initialize meterCounter and meterCounterMax values. synchronization with the animation here is nice
 		// as it will let user press the buttons when its natural in the animation. But basically
 		// we start from the point 4/13 and go to 1 on the meter.
 		meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY;
 		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
 	} else {
-		// if conditions dont hold then put pitch=0 so that user can try to
+		// if conditions dont hold then put pitch=PITCH_ACTION_IDLE so that user can try to
 		// initiate new pitch if he wants.
-		stateInfo->localGameInfo->aF.cTAF.pitch = 0;
+		stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 		stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 	}
 }
@@ -95,12 +95,12 @@ void continuePitch(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		// as power is selected now, we move to the next phase of meter going down, animation
 		// going from crouching to releasing and user to selecting the angle.
-		stateInfo->localGameInfo->aF.cTAF.pitch = 4;
+		stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_WAIT;
 		// here we select pitchpower, and as selected it will be in the interval from
 		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
 		pitchPower = calculate_pitch_power(meterCounter, meterCounterMax);
 		// we select the animation
-		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 7;
+		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_THROW;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
 
 		// current stage depends on the stage of the last animation. if user quickly selects
@@ -155,14 +155,14 @@ void releasePitch(StateInfo* stateInfo)
 	// set the velocity by our dx and dy
 	setVectorXYZ(&(stateInfo->localGameInfo->ballInfo.velocity), dx, dy, 0);
 	// .. and move the pitcher
-	moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.hasBallIndex, &target);
+	moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.hasBallIndex, &target);
 	// set lastHadBallIndex so that pitcher wont catch the ball without it hitting ground first
 	stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex; // to allow ball to avoid catching by same player when thrown
 	// pitcher doesnt have the ball anymore
 	stateInfo->localGameInfo->pII.hasBallIndex = -1;
 	// pitch in air so that for example the batting can be
 	// updated.
-	stateInfo->localGameInfo->pRAI.pitchInAir = 1;
+	stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
 	// this flag's purpose is to take care of batter who starts running towards first base and comes back
 	// during the pitch.
 	runBatFlag = 0;
@@ -218,8 +218,8 @@ void releasePitch(StateInfo* stateInfo)
 		}
 	}
 
-	// and pitch is zero so we can try to start pitch again when necessary conditions hold
-	stateInfo->localGameInfo->aF.cTAF.pitch = 0;
+	// and pitch is PITCH_ACTION_IDLE so we can try to start pitch again when necessary conditions hold
+	stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 	stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 
 }
@@ -228,7 +228,7 @@ void updatePitchingMeter(StateInfo* stateInfo)
 {
 	// when pitch has been started but power not yet selected,
 	// we increase meterCounter until its in its maximum
-	if(stateInfo->localGameInfo->aF.cTAF.pitch == 2) {
+	if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;
 		}
@@ -237,24 +237,24 @@ void updatePitchingMeter(StateInfo* stateInfo)
 	}
 	// when power has been selected but the angle is not yet selected,
 	// we increase meterCounter until its in its maximum
-	else if(stateInfo->localGameInfo->aF.cTAF.pitch == 4) {
+	else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;
 		} else {
 			// if counter reaches the maximum, it means animation has
 			// reached its end point and indicator on the meter would go off the meter.
 			// so when this happnes we terminate the pitch.
-			// first we set pitch=0 so that we can start a new pitch
-			stateInfo->localGameInfo->aF.cTAF.pitch = 0;
+			// first we set pitch=PITCH_ACTION_IDLE so that we can start a new pitch
+			stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
-			// and we set pitchGoingOn to 0 to tell other functionality in the code
+			// and we set pitchState to PITCH_STAGE_NONE to tell other functionality in the code
 			// what happened.
-			stateInfo->localGameInfo->pRAI.pitchGoingOn = 0;
+			stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 			// ball is returned to its position with player
 			stateInfo->localGameInfo->ballInfo.location.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 			stateInfo->localGameInfo->ballInfo.location.z = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 			// and we choose the normal model of fielder having a ball.
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = 1;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 		}
 		// update what is seen on the screen.
 		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(4, meterCounter, meterCounterMax);

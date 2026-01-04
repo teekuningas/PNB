@@ -11,18 +11,18 @@ void setVectorV(Vector3D *vector1, Vector3D *vector2);
 void setVectorXZ(Vector3D *vector, float x, float z);
 void addToVectorXZ(Vector3D *vector, float x, float z);
 void addToVectorV(Vector3D *vector1, Vector3D *vector2);
-void stopMovement(LocalGameInfo* localGameInfo, int index);
-void smoothOutMovement(LocalGameInfo* localGameInfo);
-void stopTargetLookingPlayer(LocalGameInfo* localGameInfo, int index);
-void setOrientation(LocalGameInfo* localGameInfo, int i);
-void runToTarget(LocalGameInfo* localGameInfo, int index, Vector3D *target);
-void moveToTarget(LocalGameInfo* localGameInfo, int index, Vector3D *target);
-void movePlayerOut(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index);
+void stopMovement(PlayerInfo* playerInfo, int index);
+void smoothOutMovement(LocalGameInfo* localGameInfo); // Still needs ActionFlags
+void stopTargetLookingPlayer(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index);
+void setOrientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i);
+void runToTarget(PlayerInfo* playerInfo, int index, Vector3D *target);
+void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D *target);
+void movePlayerOut(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
 void moveRankedToCatch(LocalGameInfo* localGameInfo);
-void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base);
-void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base);
-void lead(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index);
-int checkIfBallIsOutOfBounds(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions);
+void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base); // Needs GameControl, PRAI
+void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base); // Needs PRAI
+void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
+int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions);
 void changePlayer(LocalGameInfo* localGameInfo);
 void prepareBatter(LocalGameInfo* localGameInfo);
 void calculateFreeWalk(LocalGameInfo* localGameInfo);

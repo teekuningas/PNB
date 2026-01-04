@@ -63,14 +63,14 @@ void initBattingSystem(void)
 
 void startIncreaseBatterAngle(StateInfo* stateInfo)
 {
-	stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = 2;
+	stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_ACTIVE;
 	// set batterAngleSpeed to 1 to indicate that the direction of the movement is cw
 	batterAngleSpeed = 1;
 
 }
 void stopIncreaseBatterAngle(StateInfo* stateInfo)
 {
-	stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = 0;
+	stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_IDLE;
 	// when stopping the increasing of the angle, we want not to interrupt an ongoing decreasing of the angle
 	if(batterAngleSpeed != -1) {
 		batterAngleSpeed = 0;
@@ -80,14 +80,14 @@ void stopIncreaseBatterAngle(StateInfo* stateInfo)
 
 void startDecreaseBatterAngle(StateInfo* stateInfo)
 {
-	stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = 2;
+	stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_ACTIVE;
 	// set batterAngleSpeed to 1 to indicate that the direction of the movement is ccw
 	batterAngleSpeed = -1;
 
 }
 void stopDecreaseBatterAngle(StateInfo* stateInfo)
 {
-	stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = 0;
+	stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_IDLE;
 	// when stopping the decreasing of the angle, we want not to interrupt an ongoing increasing of the angle
 	if(batterAngleSpeed != 1) {
 		batterAngleSpeed = 0;
@@ -109,7 +109,7 @@ void selectBatter(StateInfo* stateInfo)
 		batterSelect = 0;
 		// and set these to 0 as decision made.
 		stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
-		stateInfo->localGameInfo->aF.bTAF.chooseBatter = 0;
+		stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_IDLE;
 
 		// here we look for a free spot in battingTeamOnFieldIndices[]
 		// and put our new guy there. there will be a spot as we cannot get here
@@ -159,15 +159,15 @@ void selectBatter(StateInfo* stateInfo)
 		target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 		target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 		// move to target can take care of the rest.
-		moveToTarget(stateInfo->localGameInfo, index, &target);
+		moveToTarget(stateInfo->localGameInfo->playerInfo, index, &target);
 	}
 }
 
 // so this function is called when we decide the power
 void selectPower(StateInfo* stateInfo)
 {
-	// swing is set to 3 so that the meter indicator on the screen can start decreasing etc.
-	stateInfo->localGameInfo->aF.bTAF.swing = 3;
+	// swing is set to BAT_ACTION_ANGLE_WAIT so that the meter indicator on the screen can start decreasing etc.
+	stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_WAIT;
 	// we select meterCounter value as the power but we move it a bit so that the smallest value isnt 4/13 but instead 0.
 	selectedBattingPowerCount = meterCounter - (BAT_SWING_MAX - BAT_LOAD_MAX);
 	// and then for angle we start again from zero and go to the max and later on we'll scale it a bit to look nice on the screen.
@@ -179,7 +179,7 @@ void selectPower(StateInfo* stateInfo)
 	if(selectedBattingPowerCount < BUNT_THRESHOLD) {
 		// and its updated here only if the player is moving already so that the animation wont start too early.
 		if(batterMoving == 1) {
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = 15;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BAT_SWING_2;
 		}
 		// will allow us to move bit further when bunting as the model needs to be closer to ball to look nice.
 		batterAdvanceLimit = BUNT_ADVANCE;
@@ -194,14 +194,14 @@ void selectPower(StateInfo* stateInfo)
 void selectAngle(StateInfo* stateInfo)
 {
 	// simple enough, enter the state of waiting for animation to end
-	stateInfo->localGameInfo->aF.bTAF.swing = 5;
+	stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_DONE;
 	// and set angle to be the meterCounter value, its processed further afterwards.
 	selectedBattingAngleCount = meterCounter;
 }
 
 void updateBatting(StateInfo* stateInfo)
 {
-	if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchInAir == 0 && stateInfo->localGameInfo->pRAI.battingGoingOn == 0) {
+	if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->pRAI.battingGoingOn == 0) {
 		stateInfo->localGameInfo->pRAI.battingGoingOn = 1;
 	}
 	// so battingGoingOn goes 1 when batter arrives to its ready position and pitch is not in air.
@@ -289,17 +289,17 @@ void updateBatting(StateInfo* stateInfo)
 
 
 		// so now can actually start thinking about advancing as the ball is in air.
-		if(stateInfo->localGameInfo->pRAI.pitchInAir == 1 && runBatFlag == 0) {
+		if(stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_AIRBORNE && runBatFlag == 0) {
 			// start the animation and advancing.
 			if(increaseBattingFrameCount == 0) {
 				increaseBattingFrameCount = 1;
 			}
-			// so at the beginning swing==0. advancing and animation doesnt necessarily start
+			// so at the beginning swing==BAT_ACTION_IDLE. advancing and animation doesnt necessarily start
 			// immediately. if pitch is very high the batting animation will take a lot shorter time
 			// than what it takes for ball to get down, so the animation and advancing will start a bit
 			// later. meter updating on the hand will start immediately and power selection
 			// will be available too.
-			if(stateInfo->localGameInfo->aF.bTAF.swing == 0) {
+			if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_IDLE) {
 				float v = stateInfo->localGameInfo->ballInfo.velocity.y;
 				// note decision s=0 makes the landing point actually to be in air,
 				// but thats convenient for our purposes. so here we count
@@ -314,7 +314,7 @@ void updateBatting(StateInfo* stateInfo)
 				meterCounter = BAT_SWING_MAX - BAT_LOAD_MAX;
 				meterCounterMax = BAT_SWING_MAX;
 				// so allow user to select power
-				stateInfo->localGameInfo->aF.bTAF.swing = 1;
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_WAIT_FOR_BALL;
 				// and set batHit and batMiss flags to zero. these are needed in other parts of
 				// code.
 				stateInfo->localGameInfo->pRAI.batHit = 0;
@@ -337,15 +337,15 @@ void updateBatting(StateInfo* stateInfo)
 					// so if we are still to swing
 					// select corresponding animation
 					if(battingMode == 0) {
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = 14;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BAT_SWING_1;
 					}
 					// to bunt, select bunting animation
 					else if(battingMode == 1) {
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = 15;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BAT_SWING_2;
 					}
 					// to stop the batting select the hands spread -animation
 					else {
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = 16;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BAT_SWING_3;
 					}
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.animationStage = 0;
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.animationStageCount = 34;
@@ -359,11 +359,11 @@ void updateBatting(StateInfo* stateInfo)
 			}
 			// if meter indicator reaches the limit, any batting won't happen and
 			// we'll just show the animation of player spreading hands.
-			if(stateInfo->localGameInfo->aF.bTAF.swing == 1) {
+			if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_WAIT_FOR_BALL) {
 				if(meterCounter - (BAT_SWING_MAX - BAT_LOAD_MAX) >= BAT_LOAD_MAX) {
 					// change animation to hands spreading
 					if(batterMoving == 1) {
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = 16;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BAT_SWING_3;
 					}
 					// set battingMode to 2 just in case that the indicator went off the meter so early that
 					// the batter didnt even start moving yet, so that we know to choose the right one when moving starts.
@@ -373,9 +373,9 @@ void updateBatting(StateInfo* stateInfo)
 					// set flag to indicate that batting has stopped so that we there wont be checking for if the
 					// bat has hit the ball
 					battingStopped = 1;
-					// set swing to 5 to indicate that theres no
+					// set swing to BAT_ACTION_DONE to indicate that theres no
 					// further functionality, we just wait for the animation to end.
-					stateInfo->localGameInfo->aF.bTAF.swing = 5;
+					stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_DONE;
 				}
 			}
 
@@ -391,7 +391,7 @@ void updateBatting(StateInfo* stateInfo)
 
 			target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-			moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.batterIndex, &target);
+			moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.batterIndex, &target);
 		}
 		// so here we check if the bat hits. this event happens always the pitch has been in air
 		else if(battingFrameCount > pitchFrameTime) {
@@ -431,7 +431,7 @@ void updateBatting(StateInfo* stateInfo)
 
 
 						// make the ball fly in the air with new velocity
-						genericSlingBall(stateInfo->localGameInfo, velocity.x, velocity.y, velocity.z);
+						genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), velocity.x, velocity.y, velocity.z);
 						// and the sound
 						stateInfo->playSoundEffect = SOUND_SWING;
 						// bat hits
@@ -440,9 +440,7 @@ void updateBatting(StateInfo* stateInfo)
 						// or out of bounds events.
 						stateInfo->localGameInfo->gameControl.firstCatchMade = 0;
 						// not a pitch anymore
-						stateInfo->localGameInfo->pRAI.pitchInAir = 0;
-						// pitchGoingOn goes 0 here too.
-						stateInfo->localGameInfo->pRAI.pitchGoingOn = 0;
+						stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 						// this batter has chance to make run now by running to third base.
 						stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor = 1;
 						// no throw going on now
@@ -483,14 +481,14 @@ void updateBattingMeter(StateInfo* stateInfo)
 {
 	// when power has yet to be selected but is to be selected we increase the counter
 	// and map the value to proper floating point value to let us show it on the screen.
-	if(stateInfo->localGameInfo->aF.bTAF.swing == 1) {
+	if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_WAIT_FOR_BALL) {
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;
 		}
 		stateInfo->localGameInfo->pRAI.swingMeterValue = calculate_power_meter_value(meterCounter, meterCounterMax);
 	}
 	// when power is selected but angle is to be selected
-	else if(stateInfo->localGameInfo->aF.bTAF.swing == 3) {
+	else if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_ANGLE_WAIT) {
 		// if the value is still valid, increase it
 		if(meterCounter < meterCounterMax) {
 			meterCounter += 1;

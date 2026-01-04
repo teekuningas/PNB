@@ -85,9 +85,9 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 		if(localGameInfo->pII.hasBallIndex == -1) {
 			// if ball is free then we make sure that it stays within the play area.
 			if(physics_resolve_field_boundaries(&(localGameInfo->ballInfo.location),
-			                                 &(localGameInfo->ballInfo.velocity),
-			                                 FIELD_FRONT, FIELD_BACK, FIELD_LEFT, FIELD_RIGHT,
-			                                 BALL_SLOW_FACTOR_Y)) {
+			                                    &(localGameInfo->ballInfo.velocity),
+			                                    FIELD_FRONT, FIELD_BACK, FIELD_LEFT, FIELD_RIGHT,
+			                                    BALL_SLOW_FACTOR_Y)) {
 				// if ball hit a wall, we need to refresh AI targets because the prediction is now wrong
 				localGameInfo->pRAI.refreshCatchAndChange = 1;
 			}
@@ -101,7 +101,7 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 					// unnecesaary overhead
 					if(closeToGround == 0) {
 						closeToGround = 1;
-						outOfBounds = checkIfBallIsOutOfBounds(localGameInfo, fieldPositions);
+						outOfBounds = checkIfBallIsOutOfBounds(&(localGameInfo->ballInfo), fieldPositions);
 					}
 					// it could be its first time
 					if(localGameInfo->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
@@ -121,7 +121,7 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 					}
 					// if pitch is going on, it means that batter didnt bat or missed and
 					// we need to set pitch-flags to 0 and make checks for strikes and balls and trigger corresponding events
-					if(localGameInfo->pRAI.pitchGoingOn == 1) {
+					if(localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
 						// in ball hits the plate, it is a strike, if not its a ball
 						if(localGameInfo->ballInfo.location.x < PLATE_WIDTH/2 && localGameInfo->ballInfo.location.x > -PLATE_WIDTH/2) {
 							if(localGameInfo->pRAI.batMiss != 1) {
@@ -140,8 +140,7 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 								localGameInfo->gameControl.freeWalkBase = -1;
 							}
 						}
-						localGameInfo->pRAI.pitchInAir = 0;
-						localGameInfo->pRAI.pitchGoingOn = 0;
+						localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 					}
 					// if ball has enough y-velocity it will bounce
 					if(localGameInfo->ballInfo.velocity.y < -BALL_BOUNCE_THRESHOLD) {
@@ -213,7 +212,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 	// so to go to do checking we should first confirm that it even is possible by checking that no one has ball
 	// and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
 	// as that could make some weird things happen. try on the next frame again.
-	if(stateInfo->localGameInfo->pII.hasBallIndex == -1 && stateInfo->localGameInfo->pRAI.pitchGoingOn == 0 &&
+	if(stateInfo->localGameInfo->pII.hasBallIndex == -1 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pRAI.refreshCatchAndChange != 1) {
 		for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
 			// so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.
@@ -256,12 +255,12 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						// ensure that player that previously was controlled doesnt continue his key-controlled movement when key is still down when control changes.
 						// note this could be different player than the one who caught the ball.
 						if(stateInfo->localGameInfo->pII.controlIndex != -1 && stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.moving == 1) {
-							stopMovement(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.controlIndex);
+							stopMovement(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.controlIndex);
 						}
 						// if throwRecoil is 1, model will be automatically set to 0 when animation ends
 						// but if its 0, we must change it from having ball to not having ball.
 						if(stateInfo->localGameInfo->pII.controlIndex != -1 && stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cTPI.throwRecoil == 0) {
-							stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = 0;
+							stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 						}
 						// set busyCatching to 0 for every one who was busy if ball is caught so that
 						// players are free to be moved to their home locations.
@@ -269,16 +268,16 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 							if(stateInfo->localGameInfo->playerInfo[j].cTPI.busyCatching == 1) {
 								stateInfo->localGameInfo->playerInfo[j].cTPI.busyCatching = 0;
 								// also stop them so that decisions about moving to home location can be made.
-								stopMovement(stateInfo->localGameInfo, j);
+								stopMovement(stateInfo->localGameInfo->playerInfo, j);
 							}
 
 						}
 						// stop the guy who caught the ball
-						stopMovement(stateInfo->localGameInfo, i);
+						stopMovement(stateInfo->localGameInfo->playerInfo, i);
 						// but start moving again if movement key being held at the same time. for smooth movement.
 						smoothOutMovement(stateInfo->localGameInfo);
 						// set the has ball model.
-						stateInfo->localGameInfo->playerInfo[i].cPI.model = 1;
+						stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 						// wounding catchs are the catchs that come directly from the bat.
 						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameControl.firstCatchMade == 0 &&
 						        stateInfo->localGameInfo->pRAI.batHit == 1) {
@@ -377,7 +376,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
 								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-								movePlayerOut(stateInfo->localGameInfo, stateInfo->fieldPositions, index);
+								movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 								// if there was a player on this base before and he isnt safe here
 								// it means he had tried to run to next base and is wounded already so need for this.
 								// if there is a player safe here:
@@ -397,7 +396,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 										stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
 										stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.state = PLAYER_STATE_WOUNDED;
-										movePlayerOut(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
+										movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
 										stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
 									}
 								}
@@ -470,7 +469,7 @@ static void basemenReplacements(StateInfo* stateInfo)
 			// start moving replacer there instead if he is not moving already or if player does not control him
 			if(stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i] != stateInfo->localGameInfo->pII.controlIndex) {
 				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage == 0) {
-					moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
+					moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 					             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[i]].tPI.homeLocation));
 
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 1;
@@ -486,7 +485,7 @@ static void basemenReplacements(StateInfo* stateInfo)
 			if(stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i] != stateInfo->localGameInfo->pII.controlIndex) {
 				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage != 0) {
 					if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == i) {
-						moveToTarget(stateInfo->localGameInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
+						moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 						             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].tPI.homeLocation));
 
 						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 0;
@@ -508,7 +507,7 @@ static void moveIdlingPlayersToHomeLocation(StateInfo* stateInfo)
 				if(stateInfo->localGameInfo->playerInfo[i].cTPI.isNearHomeLocation == 0) {
 					if(stateInfo->localGameInfo->playerInfo[i].cTPI.replacingStage == 0) {
 						if(stateInfo->localGameInfo->playerInfo[i].cTPI.busyCatching == 0) {
-							moveToTarget(stateInfo->localGameInfo, i, &(stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation));
+							moveToTarget(stateInfo->localGameInfo->playerInfo, i, &(stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation));
 						}
 					}
 				}
@@ -671,7 +670,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 			if(i != stateInfo->localGameInfo->pII.hasBallIndex) {
 				if(stateInfo->localGameInfo->playerInfo[i].cPI.running == 0) {
 					if(i != stateInfo->localGameInfo->pII.batterIndex) {
-						setOrientation(stateInfo->localGameInfo, i);
+						setOrientation(stateInfo->localGameInfo->playerInfo, &(stateInfo->localGameInfo->ballInfo), i);
 					}
 				}
 			}
@@ -718,9 +717,9 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 					} else {
 						// select correct model for catchers.
 						if(i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-							stateInfo->localGameInfo->playerInfo[i].cPI.model = 0;
+							stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 						} else {
-							stateInfo->localGameInfo->playerInfo[i].cPI.model = 10;
+							stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
 						}
 					}
 					// if no out is made of this player ( batting team player )
@@ -743,12 +742,12 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 								target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 								target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
 							} else {
-								stopTargetLookingPlayer(stateInfo->localGameInfo, i);
-								setOrientation(stateInfo->localGameInfo, i);
+								stopTargetLookingPlayer(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, i);
+								setOrientation(stateInfo->localGameInfo->playerInfo, &(stateInfo->localGameInfo->ballInfo), i);
 								continue;
 							}
 							// and move to target
-							moveToTarget(stateInfo->localGameInfo, i, &target);
+							moveToTarget(stateInfo->localGameInfo->playerInfo, i, &target);
 							continue;
 						}
 						// if we are legally running bases
@@ -805,7 +804,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 										target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 										target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
-										moveToTarget(stateInfo->localGameInfo, i, &target);
+										moveToTarget(stateInfo->localGameInfo->playerInfo, i, &target);
 										needToStop = 0;
 									}
 								} else {
@@ -821,7 +820,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 										}
-										stopTargetLookingPlayer(stateInfo->localGameInfo, i);
+										stopTargetLookingPlayer(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, i);
 										needToStop = 0;
 									}
 								}
@@ -831,8 +830,8 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 					// if procedures higher didnt handle stopping themselves
 					// we stop the player here.
 					if(needToStop == 1) {
-						stopTargetLookingPlayer(stateInfo->localGameInfo, i);
-						setOrientation(stateInfo->localGameInfo, i);
+						stopTargetLookingPlayer(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, i);
+						setOrientation(stateInfo->localGameInfo->playerInfo, &(stateInfo->localGameInfo->ballInfo), i);
 					}
 				}
 			}
@@ -852,46 +851,52 @@ static void updateModels(StateInfo* stateInfo)
 	// every player has some animations.
 	for(i = 0; i < PLAYERS_IN_TEAM*2 + JOKER_COUNT; i++) {
 		switch(stateInfo->localGameInfo->playerInfo[i].cPI.model) {
-		case 2:
-		case 3:
-		case 4:
-		case 5:
+		case PLAYER_ANIM_WALK_NO_BALL:
+		case PLAYER_ANIM_WALK_WITH_BALL:
+		case PLAYER_ANIM_RUN_NO_BALL:
+		case PLAYER_ANIM_RUN_WITH_BALL:
 			// so first animations for walking and running. they are loops, the stage will be in range of 0 to count*freq.
 			// reason this seemingly complicated way of doing this is just to provide possibility to have animations
 			// with same meshcounts to have animations of different speeds.
 			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
 			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
-		case 6:
-		case 7:
-		case 8:
+		case PLAYER_ANIM_PITCH_WINDUP:
+		case PLAYER_ANIM_PITCH_THROW:
+		case PLAYER_ANIM_THROW_WINDUP:
 			// throwing animations are not loops and they must end when the last stage is encountered.
 			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
 				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
 			}
 			break;
-		case 9:
+		case PLAYER_ANIM_THROW_RELEASE:
 			// here we do the same thing but set recoil to 0 after animation so that player can start moving and stuff again.
 			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
 				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
 			} else {
 				stateInfo->localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
-				stateInfo->localGameInfo->playerInfo[i].cPI.model = 0;
+				stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 			}
 			break;
-		case 11:
-		case 12:
+		case PLAYER_ANIM_WALK_BARE:
+		case PLAYER_ANIM_RUN_BARE:
 			// running and walking animations for batting team
 			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
 			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
 			break;
-		case 14:
-		case 15:
-		case 16:
+		case PLAYER_ANIM_BAT_SWING_1:
+		case PLAYER_ANIM_BAT_SWING_2:
+		case PLAYER_ANIM_BAT_SWING_3:
 			// batting animations are not loops, so theyll end after finishing. swinging, bunting, and spreading hands.
 			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
 				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
 			}
+			break;
+		case PLAYER_ANIM_STAND_NO_BALL:
+		case PLAYER_ANIM_STAND_WITH_BALL:
+		case PLAYER_ANIM_STAND_BARE:
+		case PLAYER_ANIM_BATTER_READY:
+		default:
 			break;
 
 		}

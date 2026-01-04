@@ -83,24 +83,24 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 
 	for(i = 0; i < BASE_COUNT; i++) {
 		// for every direction we check if throw key has been pressed
-		if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] == 1) {
+		if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_START) {
 			int throwNotReleasingYet = 1;
 			int j;
 			for(j = 0; j < BASE_COUNT; j++) {
-				if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] >= 3) {
+				if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] >= ACTION_TRIGGER_STOP) {
 					throwNotReleasingYet = 0;
 				}
 			}
 			// can throw only if someone has the ball and no throw is already going on
 			if(throwNotReleasingYet == 1 && stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 				for(j = 0; j < BASE_COUNT; j++) {
-					if(j != i) stateInfo->localGameInfo->aF.cTAF.throwToBase[j] = 0;
+					if(j != i) stateInfo->localGameInfo->aF.cTAF.throwToBase[j] = ACTION_IDLE;
 				}
 				// stop pitching if throwing
-				if(stateInfo->localGameInfo->pRAI.pitchGoingOn == 1) {
-					stateInfo->localGameInfo->aF.cTAF.pitch = 0;
+				if(stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
+					stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 					stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
-					stateInfo->localGameInfo->pRAI.pitchGoingOn = 0;
+					stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 					// when pitching the ball is moved to the center of the plate so now when we are terminating the pitch
 					// to throw, we must move the ball back to the player
 					stateInfo->localGameInfo->ballInfo.location.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
@@ -114,15 +114,15 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 				genericThrowLoad(stateInfo, i);
 			} else {
 				// if no luck, then set throwToBase to one so that can try again
-				stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = 0;
+				stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = ACTION_IDLE;
 				stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 			}
 		}
 		// if already on release phase, then continue with that and
 		// set the throwToBase to zero so that one can start trying to throw again
 		// immediately
-		else if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] == 3) {
-			stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = 0;
+		else if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_STOP) {
+			stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = ACTION_IDLE;
 			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 			genericThrowRelease(stateInfo);
 		}
@@ -133,15 +133,15 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 	// if move keys have been pressed, depending on if its down or release
 	// call corresponding function for every direction
 	for(i = 0; i < DIRECTION_COUNT; i++) {
-		if(stateInfo->localGameInfo->aF.cTAF.move[i] == 1) {
+		if(stateInfo->localGameInfo->aF.cTAF.move[i] == ACTION_TRIGGER_START) {
 			genericMove(stateInfo, i);
-		} else if(stateInfo->localGameInfo->aF.cTAF.move[i] == 3) {
+		} else if(stateInfo->localGameInfo->aF.cTAF.move[i] == ACTION_TRIGGER_STOP) {
 			genericStopMove(stateInfo, i);
 		}
 	}
 
 	//if change player key has been pressed
-	if(stateInfo->localGameInfo->aF.cTAF.changePlayer == 1) {
+	if(stateInfo->localGameInfo->aF.cTAF.changePlayer == ACTION_TRIGGER_START) {
 		// no one must have the ball
 		if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 			// we go to next element in changePlayerArray.
@@ -158,50 +158,50 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 			// the job
 			changePlayer(stateInfo->localGameInfo);
 		}
-		stateInfo->localGameInfo->aF.cTAF.changePlayer = 0;
+		stateInfo->localGameInfo->aF.cTAF.changePlayer = ACTION_IDLE;
 		stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 	}
 	// if drop ball key has been pressed, try dropping
-	if(stateInfo->localGameInfo->aF.cTAF.dropBall == 1) {
+	if(stateInfo->localGameInfo->aF.cTAF.dropBall == ACTION_TRIGGER_START) {
 		dropBall(stateInfo);
 	}
 	// pitching
-	if(stateInfo->localGameInfo->aF.cTAF.pitch == 1) {
+	if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_START) {
 		startPitch(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.cTAF.pitch == 3) {
+	} else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_POWER_SET) {
 		continuePitch(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.cTAF.pitch == 5) {
+	} else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
 		releasePitch(stateInfo);
 	}
 	/*
 	 * BATTING TEAM
 	 */
 	// when there's no batter, user is prompted to select the next batter
-	if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == 1) {
+	if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_NEXT) {
 		changeBatter(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == 2) {
+	} else if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_SELECT) {
 		selectBatter(stateInfo);
 	}
 	// free walk decisions, takeFreeWalk can be 0, 1 or 2. if its 2
 	// takeFreeWalkDecision() is called but will basically just set takeFreeWalk to 0.
-	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk > 0) {
+	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk > FREE_WALK_IDLE) {
 		takeFreeWalkDecision(stateInfo);
 	}
 	// batter angles
-	if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == 1) {
+	if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_START) {
 		startIncreaseBatterAngle(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == 3) {
+	} else if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_STOP) {
 		stopIncreaseBatterAngle(stateInfo);
 	}
-	if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == 1) {
+	if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_START) {
 		startDecreaseBatterAngle(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == 3) {
+	} else if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_STOP) {
 		stopDecreaseBatterAngle(stateInfo);
 	}
 	// batting
-	if(stateInfo->localGameInfo->aF.bTAF.swing == 2) {
+	if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_POWER_SET) {
 		selectPower(stateInfo);
-	} else if(stateInfo->localGameInfo->aF.bTAF.swing == 4) {
+	} else if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_ANGLE_SET) {
 		selectAngle(stateInfo);
 	}
 	// baserunners must be able to run!
@@ -223,7 +223,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 {
 	// so if user selected to take a free walk, this will happen. otherwise we just set freewalk-actionflag
 	// to 0 and dont have any further actions
-	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == 1) {
+	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_ACCEPT) {
 		// index and base have been selected before. they are the lead runner 's base and index when
 		// to decision opportunity came available
 		int index = stateInfo->localGameInfo->gameControl.freeWalkIndex;
@@ -322,7 +322,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 	}
 	// no more decision to make.
 	stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
-	stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = 0;
+	stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_IDLE;
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
@@ -375,19 +375,19 @@ static void changeBatter(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pII.batterSelectionIndex = index;
 }
 
-void genericSlingBall(LocalGameInfo* localGameInfo, float x, float y, float z)
+void genericSlingBall(BallInfo* ballInfo, PlayerRelatedActionInfo* pRAI, float x, float y, float z)
 {
 	// this is called for example when throwing and batting
 	// in these cases we want the change player arrays to update and to have new selected player from
 	// those arrays
-	localGameInfo->pRAI.refreshCatchAndChange = 1;
-	localGameInfo->pRAI.initPlayerSelection = 1;
+	pRAI->refreshCatchAndChange = 1;
+	pRAI->initPlayerSelection = 1;
 	// make ball visible and updatable
-	localGameInfo->ballInfo.visible = 1;
-	localGameInfo->ballInfo.moving = 1;
+	ballInfo->visible = 1;
+	ballInfo->moving = 1;
 
 	// and set the new velocity
-	setVectorXYZ(&(localGameInfo->ballInfo.velocity), x, y, z);
+	setVectorXYZ(&(ballInfo->velocity), x, y, z);
 
 }
 
@@ -397,7 +397,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
 	if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] != -1) {
-		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == 1) {
+		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
 			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[base];
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 			        stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
@@ -405,7 +405,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].cPI.moving == 0) {
 						stateInfo->localGameInfo->pRAI.willStartRunning[base] = 1;
 						if(base == 1 || base == 2) {
-							lead(stateInfo->localGameInfo, stateInfo->fieldPositions, index);
+							lead(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 						}
 					}
 				} else {
@@ -434,7 +434,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 		}
 
 	}
-	stateInfo->localGameInfo->aF.bTAF.baseRun[base] = 0;
+	stateInfo->localGameInfo->aF.bTAF.baseRun[base] = ACTION_IDLE;
 }
 
 static void updateMeters(StateInfo* stateInfo)

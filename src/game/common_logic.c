@@ -52,21 +52,21 @@ void addToVectorV(Vector3D *vector1, Vector3D *vector2)
 	where the change of controlled player will leave the previously controlled
 	player moving so this is commonly used to stop these ones.
 */
-void stopMovement(LocalGameInfo* localGameInfo, int index)
+void stopMovement(PlayerInfo* playerInfo, int index)
 {
 	int j;
 	if(index != -1) {
 		for(j = 0; j < DIRECTION_COUNT; j++) {
-			localGameInfo->playerInfo[index].cTPI.movesToDirection[j] = 0;
+			playerInfo[index].cTPI.movesToDirection[j] = 0;
 		}
 		// and after stopping movement, also ensure that no animation stays.
-		if(localGameInfo->playerInfo[index].cTPI.throwRecoil == 0) {
-			localGameInfo->playerInfo[index].cPI.model = 0;
+		if(playerInfo[index].cTPI.throwRecoil == 0) {
+			playerInfo[index].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 		}
-		localGameInfo->playerInfo[index].cPI.looksForTarget = 0;
-		localGameInfo->playerInfo[index].cPI.moving = 0;
+		playerInfo[index].cPI.looksForTarget = 0;
+		playerInfo[index].cPI.moving = 0;
 
-		localGameInfo->playerInfo[index].cPI.lastLastLocationUpdate = 1;
+		playerInfo[index].cPI.lastLastLocationUpdate = 1;
 	}
 }
 // sometimes for example after a catch, we stop the the player, so that it wouldnt continue
@@ -82,26 +82,26 @@ void smoothOutMovement(LocalGameInfo* localGameInfo)
 	}
 }
 // this is for batting team players
-void stopTargetLookingPlayer(LocalGameInfo* localGameInfo, int index)
+void stopTargetLookingPlayer(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index)
 {
-	localGameInfo->playerInfo[index].cPI.moving = 0;
-	localGameInfo->playerInfo[index].cPI.running = 0;
-	localGameInfo->playerInfo[index].cPI.looksForTarget = 0;
-	localGameInfo->playerInfo[index].cPI.lastLastLocationUpdate = 1;
+	playerInfo[index].cPI.moving = 0;
+	playerInfo[index].cPI.running = 0;
+	playerInfo[index].cPI.looksForTarget = 0;
+	playerInfo[index].cPI.lastLastLocationUpdate = 1;
 }
 
-void setOrientation(LocalGameInfo* localGameInfo, int i)
+void setOrientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
 {
 	// simply set player to orient towards the ball
 	if(i != -1) {
-		float dx = localGameInfo->ballInfo.location.x - localGameInfo->playerInfo[i].tPI.location.x;
-		float dz = localGameInfo->ballInfo.location.z - localGameInfo->playerInfo[i].tPI.location.z;
-		localGameInfo->playerInfo[i].tPI.orientation.x = dx;
-		localGameInfo->playerInfo[i].tPI.orientation.z = dz;
+		float dx = ballInfo->location.x - playerInfo[i].tPI.location.x;
+		float dz = ballInfo->location.z - playerInfo[i].tPI.location.z;
+		playerInfo[i].tPI.orientation.x = dx;
+		playerInfo[i].tPI.orientation.z = dz;
 	}
 }
 
-void runToTarget(LocalGameInfo* localGameInfo, int index, Vector3D *target)
+void runToTarget(PlayerInfo* playerInfo, int index, Vector3D *target)
 {
 	if(index != -1) {
 		float dx;
@@ -109,101 +109,101 @@ void runToTarget(LocalGameInfo* localGameInfo, int index, Vector3D *target)
 		float speed;
 		float norm;
 		// so set target location
-		localGameInfo->playerInfo[index].tPI.targetLocation.x =
+		playerInfo[index].tPI.targetLocation.x =
 		    target->x;
-		localGameInfo->playerInfo[index].tPI.targetLocation.z =
+		playerInfo[index].tPI.targetLocation.z =
 		    target->z;
 		// looking for target yeah
-		localGameInfo->playerInfo[index].cPI.looksForTarget = 1;
+		playerInfo[index].cPI.looksForTarget = 1;
 		// find the direction
-		dx = localGameInfo->playerInfo[index].tPI.targetLocation.x -
-		     localGameInfo->playerInfo[index].tPI.location.x;
-		dz = localGameInfo->playerInfo[index].tPI.targetLocation.z -
-		     localGameInfo->playerInfo[index].tPI.location.z;
+		dx = playerInfo[index].tPI.targetLocation.x -
+		     playerInfo[index].tPI.location.x;
+		dz = playerInfo[index].tPI.targetLocation.z -
+		     playerInfo[index].tPI.location.z;
 
-		norm = geometry_distance_2d_xz(&localGameInfo->playerInfo[index].tPI.targetLocation,
-		                               &localGameInfo->playerInfo[index].tPI.location);
+		norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation,
+		                               &playerInfo[index].tPI.location);
 
 		if(norm < EPSILON) norm = 1.0f;
 		// set the velocity
 
-		speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED/16)*localGameInfo->playerInfo[index].bTPI.speed;
-		setVectorXZ(&localGameInfo->playerInfo[index].tPI.velocity, dx*speed/norm, dz*speed/norm);
+		speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED/16)*playerInfo[index].bTPI.speed;
+		setVectorXZ(&playerInfo[index].tPI.velocity, dx*speed/norm, dz*speed/norm);
 		// we are running now, ( so for example our orientation wont change now unless we stop running)
-		localGameInfo->playerInfo[index].cPI.running = 1;
+		playerInfo[index].cPI.running = 1;
 		// we are moving too
-		localGameInfo->playerInfo[index].cPI.moving = 1;
+		playerInfo[index].cPI.moving = 1;
 		// orientation to our direction
-		localGameInfo->playerInfo[index].tPI.orientation.x = dx;
-		localGameInfo->playerInfo[index].tPI.orientation.z = dz;
+		playerInfo[index].tPI.orientation.x = dx;
+		playerInfo[index].tPI.orientation.z = dz;
 		// and set the running animation
-		localGameInfo->playerInfo[index].cPI.model = 12;
-		localGameInfo->playerInfo[index].cPI.animationStage = 0;
-		localGameInfo->playerInfo[index].cPI.animationStageCount = 20;
-		localGameInfo->playerInfo[index].cPI.animationFrequency = 3;
+		playerInfo[index].cPI.model = PLAYER_ANIM_RUN_BARE;
+		playerInfo[index].cPI.animationStage = 0;
+		playerInfo[index].cPI.animationStageCount = 20;
+		playerInfo[index].cPI.animationFrequency = 3;
 	}
 }
 /*
 	this function puts player with index in the argument moving to some specified
 	target by walking. is used for both fielders and batting team.
 */
-void moveToTarget(LocalGameInfo* localGameInfo, int index, Vector3D *target)
+void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D *target)
 {
 	if(index != -1) {
 		// cant start this if throw is going on. when ball is thrown the
 		// control will often change automatically and we dont want the player to
 		// start moving with walking animation before its throw animation has finished.
-		if(localGameInfo->playerInfo[index].cTPI.throwRecoil == 0) {
+		if(playerInfo[index].cTPI.throwRecoil == 0) {
 			float dx;
 			float dz;
 			float norm;
-			localGameInfo->playerInfo[index].tPI.targetLocation.x =
+			playerInfo[index].tPI.targetLocation.x =
 			    target->x;
-			localGameInfo->playerInfo[index].tPI.targetLocation.z =
+			playerInfo[index].tPI.targetLocation.z =
 			    target->z;
 			// looksForTarget is important flag to avoid unnecessary
 			// overhead of checking whether the player has
 			// arrived to target location.
-			localGameInfo->playerInfo[index].cPI.looksForTarget = 1;
+			playerInfo[index].cPI.looksForTarget = 1;
 			// first find the unit vector for direction and then set player's
 			// velocity to be the direction vector times the walk_speed.
-			dx = localGameInfo->playerInfo[index].tPI.targetLocation.x -
-			     localGameInfo->playerInfo[index].tPI.location.x;
-			dz = localGameInfo->playerInfo[index].tPI.targetLocation.z -
-			     localGameInfo->playerInfo[index].tPI.location.z;
+			dx = playerInfo[index].tPI.targetLocation.x -
+			     playerInfo[index].tPI.location.x;
+			dz = playerInfo[index].tPI.targetLocation.z -
+			     playerInfo[index].tPI.location.z;
 
-			norm = geometry_distance_2d_xz(&localGameInfo->playerInfo[index].tPI.targetLocation,
-			                               &localGameInfo->playerInfo[index].tPI.location);
+			norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation,
+			                               &playerInfo[index].tPI.location);
 
 			if(norm < EPSILON) norm = 1.0f;
-			setVectorXZ(&localGameInfo->playerInfo[index].tPI.velocity, dx*WALK_SPEED/norm, dz*WALK_SPEED/norm);
+			setVectorXZ(&playerInfo[index].tPI.velocity, dx*WALK_SPEED/norm, dz*WALK_SPEED/norm);
 			// if the player for some reason was running before this, set that to 0.
 			// could happen for example if baserunner gets out.
-			localGameInfo->playerInfo[index].cPI.running = 0;
+			playerInfo[index].cPI.running = 0;
 			// and set moving to 1 so that player's location will be updated.
-			localGameInfo->playerInfo[index].cPI.moving = 1;
+			playerInfo[index].cPI.moving = 1;
 			// choose different walking animation for fielders and batting team.
 			if(index < PLAYERS_IN_TEAM + JOKER_COUNT) {
-				localGameInfo->playerInfo[index].cPI.model = 11;
+				playerInfo[index].cPI.model = PLAYER_ANIM_WALK_BARE;
 			} else {
-				localGameInfo->playerInfo[index].cPI.model = 2;
+				playerInfo[index].cPI.model = PLAYER_ANIM_WALK_NO_BALL;
 			}
-			localGameInfo->playerInfo[index].cPI.animationStage = 0;
-			localGameInfo->playerInfo[index].cPI.animationStageCount = 16;
-			localGameInfo->playerInfo[index].cPI.animationFrequency = 3;
+			playerInfo[index].cPI.animationStage = 0;
+			playerInfo[index].cPI.animationStageCount = 16;
+			playerInfo[index].cPI.animationFrequency = 3;
 
 		}
 	}
 }
 // so this function is called when outs happen but also when wounds happen. it just moves
 // players out of the field and then to homebase.
-void movePlayerOut(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index)
+void movePlayerOut(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index)
 {
 	Vector3D target;
 	// we are walking
-	localGameInfo->playerInfo[index].cPI.running = 0;
+	playerInfo[index].cPI.running = 0;
 	// left or right?
-	if(localGameInfo->playerInfo[index].tPI.location.x < 0) {
+	if(playerInfo[index].tPI.location.x < 0) {
 		target.x = fieldPositions->leftPoint.x - 5.0f;
 		target.z = fieldPositions->leftPoint.z + 10.0f;
 	} else {
@@ -211,9 +211,9 @@ void movePlayerOut(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 		target.z = fieldPositions->rightPoint.z + 10.0f;
 	}
 	// path point not passed yet.
-	localGameInfo->playerRuntime[index].passedPathPoint = 0;
+	playerRuntime[index].passedPathPoint = 0;
 	// and move to target takes care of the rest.
-	moveToTarget(localGameInfo, index, &target);
+	moveToTarget(playerInfo, index, &target);
 }
 // so we have the ranked fielders-array and those are players who are somewhat important in relation
 // to ball's current location and velocity. so its natural that we have those players moving to catch
@@ -244,7 +244,7 @@ void moveRankedToCatch(LocalGameInfo* localGameInfo)
 					// set busycatching flag, and move player towards the target point
 					// that has been specified beforehand.
 					localGameInfo->playerInfo[localGameInfo->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
-					moveToTarget(localGameInfo, index, &localGameInfo->cameraState.targetPoint);
+					moveToTarget(localGameInfo->playerInfo, index, &localGameInfo->cameraState.targetPoint);
 				}
 			}
 		}
@@ -300,7 +300,7 @@ void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 		// and we are moving forward
 		localGameInfo->playerRuntime[index].goingForward = 1;
 		// and runToTarget can continue the job with index and the already set target.
-		runToTarget(localGameInfo, index, &target);
+		runToTarget(localGameInfo->playerInfo, index, &target);
 	}
 }
 
@@ -348,36 +348,36 @@ void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositi
 		}
 		// and runToTarget can handle the rest
 
-		runToTarget(localGameInfo, index, &target);
+		runToTarget(localGameInfo->playerInfo, index, &target);
 	}
 }
 
-void lead(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index)
+void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index)
 {
 	if(index != -1) {
 		int done = 0;
 		Vector3D target;
 		// now to lead we must be either on first base or second base, as it doesnt make much sense in
 		// third base nor in homebase.
-		if(localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
+		if(playerInfo[index].bTPI.baseId == BASE_FIRST) {
 			// lead target is selected by adding a small step to current location to next bases' direction
 			// using firstBase  instead of location in the difference is because we want the step size to stay
 			// same
-			target.x = localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(fieldPositions->secondBaseRun.x -
+			target.x = playerInfo[index].tPI.location.x + LEAD_STEP*(fieldPositions->secondBaseRun.x -
 			           fieldPositions->firstBaseRun.x);
-			target.z = localGameInfo->playerInfo[index].tPI.location.z + LEAD_STEP*(fieldPositions->secondBaseRun.z -
+			target.z = playerInfo[index].tPI.location.z + LEAD_STEP*(fieldPositions->secondBaseRun.z -
 			           fieldPositions->firstBaseRun.z);
 			// if we go over half way, we disallow any leading, you should just run from there.
-			if(localGameInfo->playerInfo[index].tPI.location.x > fieldPositions->firstBaseRun.x +
+			if(playerInfo[index].tPI.location.x > fieldPositions->firstBaseRun.x +
 			        0.5f*(fieldPositions->secondBaseRun.x - fieldPositions->firstBaseRun.x))
 				done = 1;
-		} else if(localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
+		} else if(playerInfo[index].bTPI.baseId == BASE_SECOND) {
 			// same as in previous but from second to third base
-			target.x = localGameInfo->playerInfo[index].tPI.location.x + LEAD_STEP*(fieldPositions->thirdBaseRun.x -
+			target.x = playerInfo[index].tPI.location.x + LEAD_STEP*(fieldPositions->thirdBaseRun.x -
 			           fieldPositions->secondBaseRun.x);
-			target.z = localGameInfo->playerInfo[index].tPI.location.z + LEAD_STEP*(fieldPositions->thirdBaseRun.z -
+			target.z = playerInfo[index].tPI.location.z + LEAD_STEP*(fieldPositions->thirdBaseRun.z -
 			           fieldPositions->secondBaseRun.z);
-			if(localGameInfo->playerInfo[index].tPI.location.x < fieldPositions->secondBaseRun.x +
+			if(playerInfo[index].tPI.location.x < fieldPositions->secondBaseRun.x +
 			        0.5f*(fieldPositions->thirdBaseRun.x - fieldPositions->secondBaseRun.x))
 				done = 1;
 		} else {
@@ -386,27 +386,27 @@ void lead(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int inde
 		// if our
 		if(done == 0) {
 			// walk to our target
-			moveToTarget(localGameInfo, index, &target);
+			moveToTarget(playerInfo, index, &target);
 			// now we in fact are leading
-			localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
+			playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
 			// but we dont set going forward flag.
-			localGameInfo->playerRuntime[index].goingForward = 0;
+			playerRuntime[index].goingForward = 0;
 		}
 
 	}
 }
 // so a little function to check if ball's x and z coordinates indicate that ball is out of the
 // playing field.
-int checkIfBallIsOutOfBounds(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions)
+int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions)
 {
 	int value = 1;
 	// first, is ball behind the line at the back, or too much at right or too much at left
 	// or in front of the homeline
 	// if not, continue
-	if(localGameInfo->ballInfo.location.z > fieldPositions->backLeftPoint.z &&
-	        localGameInfo->ballInfo.location.x < fieldPositions->backRightPoint.x &&
-	        localGameInfo->ballInfo.location.x > fieldPositions->backLeftPoint.x &&
-	        localGameInfo->ballInfo.location.z < HOME_LINE_Z) {
+	if(ballInfo->location.z > fieldPositions->backLeftPoint.z &&
+	        ballInfo->location.x < fieldPositions->backRightPoint.x &&
+	        ballInfo->location.x > fieldPositions->backLeftPoint.x &&
+	        ballInfo->location.z < HOME_LINE_Z) {
 		float z0 = 1.0f;
 		float x = fieldPositions->rightPoint.x;
 		float z = fieldPositions->rightPoint.z - z0;
@@ -417,13 +417,13 @@ int checkIfBallIsOutOfBounds(LocalGameInfo* localGameInfo, FieldPositions* field
 		slope2 = z/x;
 		// then here we just have basic line equations to check if the ball is
 		// out or inside the lines from pitchPlate to rightPoint and leftPoint.
-		if(localGameInfo->ballInfo.location.z - slope1*localGameInfo->ballInfo.location.x - z0 < 0 &&
-		        localGameInfo->ballInfo.location.z - slope2*localGameInfo->ballInfo.location.x - z0 < 0) {
+		if(ballInfo->location.z - slope1*ballInfo->location.x - z0 < 0 &&
+		        ballInfo->location.z - slope2*ballInfo->location.x - z0 < 0) {
 			value = 0;
 		}
 	}
 	if(value == 1) {
-		localGameInfo->ballInfo.hasHitGroundOutOfBounds = 1;
+		ballInfo->hasHitGroundOutOfBounds = 1;
 	}
 	return value;
 }
@@ -432,16 +432,13 @@ void changePlayer(LocalGameInfo* localGameInfo)
 {
 	// this is called by user explicitly and sometimes after updating changePlayer lists.
 	// so cant change pitch if pitch is going on
-	if(localGameInfo->pRAI.pitchGoingOn == 0) {
-		// again we must ensure that the movement of previous player stops because user
-		// initiated movement cant stop without user explicitly stopping it and we dont want
-		// that the player will start randomly floating after control changes to next player.
+	if(localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE) {
+		// player will start randomly floating after control changes to next player.
 		if(localGameInfo->pII.controlIndex != -1) {
-			stopMovement(localGameInfo, localGameInfo->pII.controlIndex);
+			stopMovement(localGameInfo->playerInfo, localGameInfo->pII.controlIndex);
 		}
 
-		if(localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex] != -1) {
-			// set control to new index from the array
+		if(localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex] != -1) {			// set control to new index from the array
 			localGameInfo->pII.controlIndex = localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex];
 			// and set him to run
 			localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cPI.running = 1;
@@ -457,7 +454,7 @@ void changePlayer(LocalGameInfo* localGameInfo)
 			// move others to catch( so that the previous one for example doesnt just stop if its near the ball )
 			moveRankedToCatch(localGameInfo);
 			// stop player who has the selection now
-			stopMovement(localGameInfo, localGameInfo->pII.controlIndex);
+			stopMovement(localGameInfo->playerInfo, localGameInfo->pII.controlIndex);
 			// but start moving again if movement key being held at the same time. for smooth movement.
 			// smoothOutMovement still needs StateInfo due to ActionFlags being in Local but also needing KeyStates?
 			// Wait, smoothOutMovement implementation:
@@ -482,7 +479,7 @@ void prepareBatter(LocalGameInfo* localGameInfo)
 {
 	if(localGameInfo->pII.batterIndex != -1) {
 		// batter ready model
-		localGameInfo->playerInfo[localGameInfo->pII.batterIndex].cPI.model = 13;
+		localGameInfo->playerInfo[localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
 		// can pitch now
 		localGameInfo->pRAI.batterReady = 1;
 		// waiting for pitch to go in air before starting the batting movement
@@ -570,7 +567,7 @@ void initializeSpatialPlayerInformation(LocalGameInfo* localGameInfo, FieldPosit
 	// set locations and models for batting team players
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i])/20.0f);
-		localGameInfo->playerInfo[i].cPI.model = 10;
+		localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
 
 		localGameInfo->playerInfo[i].tPI.homeLocation.x = (float)(fieldPositions->pitchPlate.x +
 		    (HOME_RADIUS) * radiusFix * cos(PI - (battingTeamPlacement[i]+1)*PI/(PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
@@ -589,7 +586,7 @@ void initializeSpatialPlayerInformation(LocalGameInfo* localGameInfo, FieldPosit
 	}
 	// set locations and models for fielders. here we need positions set.
 	for(i = 12; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		localGameInfo->playerInfo[i].cPI.model = 0;
+		localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 
 		switch(i-12) {
 		case 0:
@@ -877,8 +874,7 @@ void initializeIndexInformation(LocalGameInfo* localGameInfo)
 void initializePRAIInformation(LocalGameInfo* localGameInfo)
 {
 	int i;
-	localGameInfo->pRAI.pitchGoingOn = 0;
-	localGameInfo->pRAI.pitchInAir = 0;
+	localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 	localGameInfo->pRAI.meterValue = 0.0f;
 	localGameInfo->pRAI.swingMeterValue = 0.0f;
 	localGameInfo->pRAI.battingGoingOn = 0;
@@ -921,7 +917,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 			// move player to default batter ready position
 			target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-			moveToTarget(localGameInfo, batterIndex, &target);
+			moveToTarget(localGameInfo->playerInfo, batterIndex, &target);
 		}
 		// runner
 		if(runnerIndex != -1) {

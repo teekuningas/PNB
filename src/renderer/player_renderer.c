@@ -352,58 +352,56 @@ static void modelSelection(StateInfo* stateInfo, int index)
 	// in mesh arrays.
 	int animIndex = stateInfo->localGameInfo->playerInfo[index].cPI.animationStage / stateInfo->localGameInfo->playerInfo[index].cPI.animationFrequency;
 	switch(stateInfo->localGameInfo->playerInfo[index].cPI.model) {
-	case 0:
+	case PLAYER_ANIM_STAND_NO_BALL:
 		glCallList(playerGloveWithoutBallStandingDisplayList);
 		break;
-	case 1:
+	case PLAYER_ANIM_STAND_WITH_BALL:
 		glCallList(playerGloveWithBallStandingDisplayList);
 		break;
-	case 2:
+	case PLAYER_ANIM_WALK_NO_BALL:
 		glCallList(playerGloveWithoutBallWalkingDisplayList[animIndex]);
 		break;
-	case 3:
+	case PLAYER_ANIM_WALK_WITH_BALL:
 		glCallList(playerGloveWithBallWalkingDisplayList[animIndex]);
 		break;
-	case 4:
+	case PLAYER_ANIM_RUN_NO_BALL:
 		glCallList(playerGloveWithoutBallRunningDisplayList[animIndex]);
 		break;
-	case 5:
+	case PLAYER_ANIM_RUN_WITH_BALL:
 		glCallList(playerGloveWithBallRunningDisplayList[animIndex]);
 		break;
-	case 6:
+	case PLAYER_ANIM_PITCH_WINDUP:
 		glCallList(pitchDownDisplayList[animIndex]);
 		break;
-	case 7:
+	case PLAYER_ANIM_PITCH_THROW:
 		glCallList(pitchUpDisplayList[animIndex]);
 		break;
-	case 8:
+	case PLAYER_ANIM_THROW_WINDUP:
 		glCallList(throwLoadDisplayList[animIndex]);
 		break;
-	case 9:
+	case PLAYER_ANIM_THROW_RELEASE:
 		glCallList(throwReleaseDisplayList[animIndex]);
 		break;
-	case 10:
+	case PLAYER_ANIM_STAND_BARE:
 		glCallList(playerBareHandsStandingDisplayList);
 		break;
-	case 11:
+	case PLAYER_ANIM_WALK_BARE:
 		glCallList(playerBareHandsWalkingDisplayList[animIndex]);
 		break;
-	case 12:
+	case PLAYER_ANIM_RUN_BARE:
 		glCallList(playerBareHandsRunningDisplayList[animIndex]);
 		break;
-	case 13:
+	case PLAYER_ANIM_BATTER_READY:
 		glCallList(swingDisplayList[0]);
 		break;
-	case 14:
+	case PLAYER_ANIM_BAT_SWING_1:
 		glCallList(swingDisplayList[animIndex]);
 		break;
-	case 15:
+	case PLAYER_ANIM_BAT_SWING_2:
 		glCallList(buntDisplayList[animIndex]);
 		break;
-	case 16:
+	case PLAYER_ANIM_BAT_SWING_3:
 		glCallList(battingStopDisplayList[animIndex]);
-		break;
-	case 17:
 		break;
 	default:
 		break;

@@ -170,7 +170,7 @@ static void checkForOuts(StateInfo* stateInfo)
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// and walk him out.
-							movePlayerOut(stateInfo->localGameInfo, stateInfo->fieldPositions, index);
+							movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 							// if we was safe on previous base, now he is not anymore.
 							if(stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] == index) {
 								stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] = -1;
@@ -381,7 +381,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						else {
 							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-							movePlayerOut(stateInfo->localGameInfo, stateInfo->fieldPositions, index);
+							movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 						}
 						stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
 
