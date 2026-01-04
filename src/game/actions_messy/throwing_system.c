@@ -1,6 +1,5 @@
 #include "throwing_system.h"
 #include "action_implementation.h"
-#include "actions_messy/action_state.h"
 #include "common_logic.h"
 #include "vector_math.h"
 #include <math.h>
@@ -53,7 +52,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		float power;
 		// throw not going anymore, ball already flyin'
-		throwGoingOn = 0;
+		stateInfo->localGameInfo->pendingActionState.throwGoingOn = 0;
 		// release animation
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStage = 0;
@@ -64,7 +63,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cTPI.throwRecoil = 1;
 
 		// take power naturally from meterCounter value
-		power = 1.0f*meterCounter / meterCounterMax;
+		power = 1.0f*stateInfo->localGameInfo->pendingActionState.meterCounter / stateInfo->localGameInfo->pendingActionState.meterCounterMax;
 		// update these values a bit
 		throwDirection.x = throwDirection.x / throwDistance;
 		throwDirection.z = throwDirection.z / throwDistance;
@@ -105,12 +104,12 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationStageCount = 11;
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = 3;
 			// initialize meters.
-			meterCounter = 0;
-			meterCounterMax = THROW_MAX; // arbitrary decision, seems about right though
+			stateInfo->localGameInfo->pendingActionState.meterCounter = 0;
+			stateInfo->localGameInfo->pendingActionState.meterCounterMax = THROW_MAX; // arbitrary decision, seems about right though
 			// continue to next phase
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_ACTIVE;
 			// set the flag that is used for example to determine can you move the player.
-			throwGoingOn = 1;
+			stateInfo->localGameInfo->pendingActionState.throwGoingOn = 1;
 			// to avoid twitching when moving key is still pressed and player cant move as hes throwing
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
 			// and orient player to look at the base too.
@@ -120,7 +119,7 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			// if too close to base, terminate throwing.
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_IDLE;
 			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
-			throwGoingOn = 0;
+			stateInfo->localGameInfo->pendingActionState.throwGoingOn = 0;
 			stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
 		}
 	}
@@ -130,7 +129,7 @@ void genericMove(StateInfo* stateInfo, int direction)
 {
 	// we can move if there is no throw going on and no pitch going on
 	// .. and we have same player controlled
-	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
+	if(stateInfo->localGameInfo->pendingActionState.throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pII.controlIndex != -1) {
 		// stopping only possible when moving already going on
 		// so thats the reason for this value 2
@@ -150,7 +149,7 @@ void genericStopMove(StateInfo* stateInfo, int direction)
 {
 	// stopping cant be done either when pitching or throwing as updateControlledPlayerSpeed can
 	// have effects on player's model
-	if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
+	if(stateInfo->localGameInfo->pendingActionState.throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->localGameInfo->pII.controlIndex != -1) {
 		stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_IDLE;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
@@ -165,7 +164,7 @@ void dropBall(StateInfo* stateInfo)
 	// there is a possibility to drop ball if to the ground if you want. it could be convenient when
 	// you want a baserunner to be able to get safe from a base for some strategical reason.
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
-		if(throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE) {
+		if(stateInfo->localGameInfo->pendingActionState.throwGoingOn == 0 && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE) {
 			float norm;
 			float dx;
 			float dz;

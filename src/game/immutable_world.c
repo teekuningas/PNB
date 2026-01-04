@@ -67,7 +67,7 @@ int initImmutableWorld(StateInfo* stateInfo)
 }
 
 
-void drawImmutableWorld(StateInfo* stateInfo, double alpha)
+void drawImmutableWorld(const StateInfo* stateInfo, double alpha)
 {
 	drawGround();
 	drawFence();

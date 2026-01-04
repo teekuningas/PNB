@@ -4,7 +4,7 @@
 #include "globals.h"
 
 int initBall();
-void drawBall(BallInfo* ballInfo, double alpha);
+void drawBall(const BallInfo* ballInfo, double alpha);
 int cleanBall();
 
 #endif /* BALL_H */

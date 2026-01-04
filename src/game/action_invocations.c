@@ -6,16 +6,16 @@
 #include "globals.h"
 #include "action_invocations.h"
 
-static void checkThrow(StateInfo* stateInfo, int key, int actionKey, int control, int base);
-static void checkDrop(StateInfo* stateInfo, int key, int control);
-static void checkMove(StateInfo* stateInfo, int key, int control, int direction);
-static void checkChangePlayer(StateInfo* stateInfo, int key, int control);
-static void checkPitch(StateInfo* stateInfo, int key, int control);
-static void checkBatterSelection(StateInfo* stateInfo, int change, int select, int control);
-static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, int control);
-static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, int control);
-static void checkSwing(StateInfo* stateInfo, int key, int control);
-static void checkBattingTeamRun(StateInfo* stateInfo, int key, int control, int base);
+static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, int base);
+static void checkDrop(StateInfo* stateInfo, int key, TeamControlMode control);
+static void checkMove(StateInfo* stateInfo, int key, TeamControlMode control, int direction);
+static void checkChangePlayer(StateInfo* stateInfo, int key, TeamControlMode control);
+static void checkPitch(StateInfo* stateInfo, int key, TeamControlMode control);
+static void checkBatterSelection(StateInfo* stateInfo, int change, int select, TeamControlMode control);
+static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, TeamControlMode control);
+static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, TeamControlMode control);
+static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control);
+static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, int base);
 
 void initActionInvocations(StateInfo* stateInfo)
 {
@@ -26,8 +26,8 @@ void actionInvocations(StateInfo* stateInfo)
 {
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-	int battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
-	int catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
+	TeamControlMode battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
+	TeamControlMode catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
 
 	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
 		initActionInvocations(stateInfo);
@@ -73,7 +73,7 @@ void actionInvocations(StateInfo* stateInfo)
 
 }
 
-static void checkThrow(StateInfo* stateInfo, int key, int actionKey, int control, int base)
+static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, int base)
 {
 	if(stateInfo->keyStates->down[control][key] == 1 && stateInfo->keyStates->down[control][actionKey] == 1) {
 		if(stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_IDLE) {
@@ -87,7 +87,7 @@ static void checkThrow(StateInfo* stateInfo, int key, int actionKey, int control
 	}
 }
 
-static void checkMove(StateInfo* stateInfo, int key, int control, int direction)
+static void checkMove(StateInfo* stateInfo, int key, TeamControlMode control, int direction)
 {
 	if(stateInfo->keyStates->down[control][key] == 1) {
 		if(stateInfo->localGameInfo->aF.cTAF.move[direction] == ACTION_IDLE) {
@@ -101,7 +101,7 @@ static void checkMove(StateInfo* stateInfo, int key, int control, int direction)
 	}
 }
 
-static void checkChangePlayer(StateInfo* stateInfo, int key, int control)
+static void checkChangePlayer(StateInfo* stateInfo, int key, TeamControlMode control)
 {
 	if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
 		if(stateInfo->keyStates->released[control][key] == 1) {
@@ -113,7 +113,7 @@ static void checkChangePlayer(StateInfo* stateInfo, int key, int control)
 	}
 }
 
-static void checkDrop(StateInfo* stateInfo, int key, int control)
+static void checkDrop(StateInfo* stateInfo, int key, TeamControlMode control)
 {
 	if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
 		if(stateInfo->keyStates->released[control][key] == 1) {
@@ -125,7 +125,7 @@ static void checkDrop(StateInfo* stateInfo, int key, int control)
 	}
 }
 
-static void checkPitch(StateInfo* stateInfo, int key, int control)
+static void checkPitch(StateInfo* stateInfo, int key, TeamControlMode control)
 {
 	if(stateInfo->keyStates->down[control][key] == 1) {
 		if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_IDLE) {
@@ -143,7 +143,7 @@ static void checkPitch(StateInfo* stateInfo, int key, int control)
 	}
 }
 
-static void checkBatterSelection(StateInfo* stateInfo, int change, int select, int control)
+static void checkBatterSelection(StateInfo* stateInfo, int change, int select, TeamControlMode control)
 {
 	if(stateInfo->keyStates->released[control][change] == 1) {
 
@@ -157,7 +157,7 @@ static void checkBatterSelection(StateInfo* stateInfo, int change, int select, i
 	}
 }
 
-static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, int control)
+static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, TeamControlMode control)
 {
 	if(stateInfo->keyStates->released[control][accept] == 1) {
 
@@ -171,7 +171,7 @@ static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, 
 	}
 }
 
-static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, int control)
+static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, TeamControlMode control)
 {
 	if(stateInfo->keyStates->down[control][increase] == 1) {
 		if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
@@ -201,7 +201,7 @@ static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, i
 	}
 }
 
-static void checkSwing(StateInfo* stateInfo, int key, int control)
+static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control)
 {
 	if(stateInfo->keyStates->down[control][key] == 1) {
 		if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_WAIT_FOR_BALL) {
@@ -214,7 +214,7 @@ static void checkSwing(StateInfo* stateInfo, int key, int control)
 	}
 }
 
-static void checkBattingTeamRun(StateInfo* stateInfo, int key, int control, int base)
+static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, int base)
 {
 	if(stateInfo->keyStates->released[control][key] == 1) {
 		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_IDLE) {

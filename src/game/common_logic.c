@@ -226,7 +226,7 @@ void moveRankedToCatch(LocalGameInfo* localGameInfo)
 		int index = localGameInfo->pII.fielderRankedIndices[i];
 		// controlled player wont get the chance.
 		if(index != localGameInfo->pII.controlIndex && localGameInfo->playerInfo[index].
-		        cTPI.replacingStage == 0) {
+		        cTPI.replacingStage == REPLACEMENT_IDLE) {
 			// if we are throwing ( towards a base ) we dont want the baseman there to start moving
 			// as it would be nice that he is at the base when ball is caught if baserunner is going there.
 			if(localGameInfo->pRAI.throwGoingToBase == -1 ||
@@ -442,10 +442,9 @@ void changePlayer(LocalGameInfo* localGameInfo)
 			localGameInfo->pII.controlIndex = localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex];
 			// and set him to run
 			localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cPI.running = 1;
-			// set replacing stage to 0, as after player is changed again, we dont want these things to leave
-			// hanging.
-			if(localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cTPI.replacingStage == 1) {
-				localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cTPI.replacingStage = 0;
+			// logic about coming back from replacement if controlled
+			if(localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
+				localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cTPI.replacingStage = REPLACEMENT_IDLE;
 			}
 			// same for busyCatching.
 			if(localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cTPI.busyCatching == 1) {
@@ -654,7 +653,6 @@ void initializeInningPermanentPlayerInformation(LocalGameInfo* localGameInfo, Gl
 {
 	int battingTeamIndex = (globalGameInfo->
 	                        inning+globalGameInfo->playsFirst+globalGameInfo->period)%2;
-	int catchingTeamIndex = (battingTeamIndex+1)%2;
 	int i;
 	int jokerCounter = 0;
 
@@ -664,19 +662,19 @@ void initializeInningPermanentPlayerInformation(LocalGameInfo* localGameInfo, Gl
 			localGameInfo->playerInfo[globalGameInfo->teams[battingTeamIndex].
 			                          batterOrder[i]].bTPI.number = i + 1;
 			localGameInfo->playerInfo[globalGameInfo->teams[battingTeamIndex].
-			                          batterOrder[i]].bTPI.joker = 0;
+			                          batterOrder[i]].bTPI.joker = JOKER_REGULAR;
 		} else {
 			localGameInfo->playerInfo[globalGameInfo->teams[battingTeamIndex].
 			                          batterOrder[i]].bTPI.number = 0;
 			localGameInfo->playerInfo[globalGameInfo->teams[battingTeamIndex].
-			                          batterOrder[i]].bTPI.joker = 1;
+			                          batterOrder[i]].bTPI.joker = JOKER_AVAILABLE;
 		}
 	}
 	// initialize batting team
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		localGameInfo->playerInfo[i].cPI.team = battingTeamIndex;
+		localGameInfo->playerInfo[i].cPI.team = TEAM_BATTING;
 
-		if(localGameInfo->playerInfo[i].bTPI.joker == 1) {
+		if(localGameInfo->playerInfo[i].bTPI.joker == JOKER_AVAILABLE) {
 			localGameInfo->pII.jokerIndices[jokerCounter] = i;
 			jokerCounter++;
 		}
@@ -691,7 +689,7 @@ void initializeInningPermanentPlayerInformation(LocalGameInfo* localGameInfo, Gl
 	}
 	// initialize fielders
 	for(i = 12; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		localGameInfo->playerInfo[i].cPI.team = catchingTeamIndex;
+		localGameInfo->playerInfo[i].cPI.team = TEAM_CATCHING;
 
 		// here we set catcherOnBaseIndices and catcherReplacerOnBaseIndices.
 		switch(i-12) {
@@ -743,7 +741,7 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 		if( i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
 
 			localGameInfo->playerInfo[i].cTPI.isNearHomeLocation = 1;
-			localGameInfo->playerInfo[i].cTPI.replacingStage = 0;
+			localGameInfo->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
 			localGameInfo->playerInfo[i].cTPI.replacingBase = -1;
 			localGameInfo->playerInfo[i].cTPI.busyCatching = 0;
 			localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;

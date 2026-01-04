@@ -26,7 +26,8 @@ int initBallRenderer(void)
 	return 0;
 }
 
-void drawBallRenderer(BallInfo* ballInfo, double alpha)
+// Function to draw the ball
+void drawBallRenderer(const BallInfo* ballInfo, double alpha)
 {
 	if(ballInfo->visible == 1) {
 		// we draw ball and its shadow. shadow's x offset is just proportional to ball's height.

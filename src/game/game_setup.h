@@ -20,8 +20,8 @@ typedef struct GameSetup {
 	GameMode gameMode;
 	TeamID team1;
 	TeamID team2;
-	int team1_control;
-	int team2_control;
+	TeamControlMode team1_control;
+	TeamControlMode team2_control;
 	int halfInningsInPeriod;
 	int playsFirst;
 	int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];

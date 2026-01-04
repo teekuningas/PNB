@@ -137,8 +137,8 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState *state, const KeyStates *ke
 
 			gameSetup->team1 = state->team1;
 			gameSetup->team2 = state->team2;
-			gameSetup->team1_control = state->team1_controller;
-			gameSetup->team2_control = state->team2_controller;
+			gameSetup->team1_control = (TeamControlMode)state->team1_controller;
+			gameSetup->team2_control = (TeamControlMode)state->team2_controller;
 			gameSetup->halfInningsInPeriod = state->innings;
 
 			return MENU_STAGE_BATTING_ORDER_1;

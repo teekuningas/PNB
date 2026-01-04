@@ -84,8 +84,8 @@ static MeshObject* shadowMesh;
 static GLuint shadowDisplayList;
 
 // Forward declarations for static helper functions
-static void textureSelection(StateInfo* stateInfo, int team, int joker, int type);
-static void modelSelection(StateInfo* stateInfo, int index);
+static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type);
+static void modelSelection(const StateInfo* stateInfo, int index);
 
 
 int initPlayerRenderer(void)
@@ -229,7 +229,7 @@ int initPlayerRenderer(void)
 	return 0;
 }
 
-void drawPlayerRenderer(StateInfo* stateInfo, PlayerInfo *playerInfo, double alpha)
+void drawPlayerRenderer(const StateInfo* stateInfo, const PlayerInfo *playerInfo, double alpha)
 {
 	int i;
 	int j = 0;
@@ -277,7 +277,7 @@ void drawPlayerRenderer(StateInfo* stateInfo, PlayerInfo *playerInfo, double alp
 	}
 }
 
-static void textureSelection(StateInfo* stateInfo, int team, int joker, int type)
+static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type)
 {
 	// theres two types of texture selections, texture selection for player and texture selection for marker.
 	if(type == 0) {
@@ -345,7 +345,7 @@ static void textureSelection(StateInfo* stateInfo, int team, int joker, int type
 	}
 }
 
-static void modelSelection(StateInfo* stateInfo, int index)
+static void modelSelection(const StateInfo* stateInfo, int index)
 {
 	// and then we must select which mesh we use and call the corresponding display list.
 	// for animations we just use the animationStage, that is being updated in game_manipulation, as index

@@ -8,7 +8,6 @@
 #include "globals.h"
 #include "action_implementation.h"
 #include "common_logic.h"
-#include "actions_messy/action_state.h"
 #include "actions_messy/pitching_system.h"
 #include "actions_messy/batting_system.h"
 #include "actions_messy/throwing_system.h"
@@ -33,24 +32,24 @@ void initActionImplementation(StateInfo* stateInfo)
 	// just initialize everyone of these static variables to zero
 	int i;
 
-	meterCounter = 0;
-	meterCounterMax = 0;
+	stateInfo->localGameInfo->pendingActionState.meterCounter = 0;
+	stateInfo->localGameInfo->pendingActionState.meterCounterMax = 0;
 	for(i = 0; i < BASE_COUNT; i++) {
 		doubleClickCounter[i] = -1;
 	}
 
 	resetPitchingSystem();
-	initBattingSystem();
+	initBattingSystem(stateInfo);
 	initThrowingSystem();
-	runBatFlag = 0;
+	stateInfo->localGameInfo->pendingActionState.runBatFlag = 0;
 
 	//ai uses a few flags..
 
 	initCatchingAI();
-	aiActionEventLock = -1;
-	aiLockUpdate = 0;
+	stateInfo->localGameInfo->pendingActionState.aiActionEventLock = -1;
+	stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 0;
 
-	initBattingAI();
+	initBattingAI(stateInfo);
 
 	flushKeys(stateInfo);
 }
@@ -338,7 +337,7 @@ static void changeBatter(StateInfo* stateInfo)
 	stateInfo->localGameInfo->aF.bTAF.chooseBatter = 0;
 	// batterSelect variable will point to the current player in selection
 	// and now as we are changing the selection, we add one to it.
-	batterSelect++;
+	stateInfo->localGameInfo->pendingActionState.batterSelect++;
 	// here we have a loop that basically just searches through the possible players and selects
 	// the next one. batterSelect == 0 indicates that it is a normal player, batterSelect != 0 indicates
 	// it is a joker player.
@@ -346,18 +345,18 @@ static void changeBatter(StateInfo* stateInfo)
 	// waitingForBatterDecision-flag, and that can flag cant be true if
 	// there is not at least one player.
 	while(done == 0) {
-		if(batterSelect == 0) {
+		if(stateInfo->localGameInfo->pendingActionState.batterSelect == 0) {
 			if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft != 0) done = 1;
-			else batterSelect = 1;
-		} else if(batterSelect == 4) {
+			else stateInfo->localGameInfo->pendingActionState.batterSelect = 1;
+		} else if(stateInfo->localGameInfo->pendingActionState.batterSelect == 4) {
 			if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft != 0) {
-				batterSelect = 0;
+				stateInfo->localGameInfo->pendingActionState.batterSelect = 0;
 				done = 1;
-			} else batterSelect = 1;
+			} else stateInfo->localGameInfo->pendingActionState.batterSelect = 1;
 
 		} else {
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->
-			                                        pII.jokerIndices[batterSelect - 1]].bTPI.joker == 2) batterSelect++;
+			                                        pII.jokerIndices[stateInfo->localGameInfo->pendingActionState.batterSelect - 1]].bTPI.joker == JOKER_USED) stateInfo->localGameInfo->pendingActionState.batterSelect++;
 			else done = 1;
 
 		}
@@ -366,10 +365,10 @@ static void changeBatter(StateInfo* stateInfo)
 	}
 	// now we have the batterSelect value and we just need to find a corresponding index for that
 	// player.
-	if(batterSelect == 0) {
+	if(stateInfo->localGameInfo->pendingActionState.batterSelect == 0) {
 		index = stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrder[stateInfo->globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
 	} else {
-		index = stateInfo->localGameInfo->pII.jokerIndices[batterSelect - 1];
+		index = stateInfo->localGameInfo->pII.jokerIndices[stateInfo->localGameInfo->pendingActionState.batterSelect - 1];
 	}
 	// and set it here.
 	stateInfo->localGameInfo->pII.batterSelectionIndex = index;
@@ -441,11 +440,11 @@ static void updateMeters(StateInfo* stateInfo)
 {
 	updatePitchingMeter(stateInfo);
 
-	if(throwGoingOn == 1) {
-		if(meterCounter < meterCounterMax) {
-			meterCounter += 1;
+	if(stateInfo->localGameInfo->pendingActionState.throwGoingOn == 1) {
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter < stateInfo->localGameInfo->pendingActionState.meterCounterMax) {
+			stateInfo->localGameInfo->pendingActionState.meterCounter += 1;
 		}
-		stateInfo->localGameInfo->pRAI.meterValue = 1.0f*meterCounter / meterCounterMax;
+		stateInfo->localGameInfo->pRAI.meterValue = 1.0f*stateInfo->localGameInfo->pendingActionState.meterCounter / stateInfo->localGameInfo->pendingActionState.meterCounterMax;
 	} else {
 		updateBattingMeter(stateInfo);
 	}
@@ -455,15 +454,15 @@ static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-	int battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
-	int catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
+	TeamControlMode battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
+	TeamControlMode catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
 	// first ai for catching team
 
-	if(catchingControl == 2) {
+	if(catchingControl == CONTROL_AI) {
 		updateCatchingAI(stateInfo, rng_seed);
 	}
 	// then ai for batting team
-	if(battingControl == 2) {
+	if(battingControl == CONTROL_AI) {
 		updateBattingAI(stateInfo, rng_seed);
 	}
 

@@ -227,7 +227,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 					} else {
 						int i;
 						for(i = 0; i < JOKER_COUNT; i++) {
-							if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.jokerIndices[i]].bTPI.joker == 1) {
+							if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) {
 								stateInfo->localGameInfo->pII.batterSelectionIndex =
 								    stateInfo->localGameInfo->pII.jokerIndices[i];
 								break;

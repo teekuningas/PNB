@@ -23,8 +23,8 @@
 static int gameInfoEventTimer;
 static int gameInfoEvent;
 
-static void drawSkyBox(StateInfo* stateInfo);
-static void drawStatistics(StateInfo* stateInfo, double alpha);
+static void drawSkyBox(const StateInfo* stateInfo);
+static void drawStatistics(const StateInfo* stateInfo, double alpha);
 static int initLights(StateInfo* stateInfo);
 static void initCamSettings(StateInfo* stateInfo);
 static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed);
@@ -168,7 +168,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 
 }
 
-void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs)
+void drawGameScreen(const StateInfo* stateInfo, double alpha, const RenderState* rs)
 {
 	// Ensure the 3D rendering state is correctly set up before drawing the game screen.
 	begin_3d_render(rs);
@@ -237,7 +237,7 @@ static int initLights(StateInfo* stateInfo)
 	return 0;
 }
 
-static void drawSkyBox(StateInfo* stateInfo)
+static void drawSkyBox(const StateInfo* stateInfo)
 {
 	glBindTexture(GL_TEXTURE_2D, skyTexture);
 	glPushMatrix();
@@ -246,7 +246,7 @@ static void drawSkyBox(StateInfo* stateInfo)
 	glPopMatrix();
 }
 
-static void drawStatistics(StateInfo* stateInfo, double alpha)
+static void drawStatistics(const StateInfo* stateInfo, double alpha)
 {
 	int i;
 	char str[4] = "B  ";
@@ -378,7 +378,7 @@ static void drawStatistics(StateInfo* stateInfo, double alpha)
 			printText(str, 5, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 			str4 = stateInfo->localGameInfo->playerInfo[index].bTPI.name;
 			printText(str4, strlen(str4), INFO_X + 0.14f, STATISTICS_TEXT_HEIGHT, 2);
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo->globalGameInfo->period < 4) {
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker != JOKER_REGULAR && stateInfo->globalGameInfo->period < 4) {
 				str5[0] = 'J';
 			} else {
 				str5[0] = (char)(((int)'0')+stateInfo->localGameInfo->playerInfo[index].bTPI.number);

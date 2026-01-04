@@ -4,7 +4,7 @@
 #include "globals.h"
 
 int initImmutableWorld(StateInfo* stateInfo);
-void drawImmutableWorld(StateInfo* stateInfo, double alpha);
+void drawImmutableWorld(const StateInfo* stateInfo, double alpha);
 int cleanImmutableWorld(StateInfo* stateInfo);
 
 #endif /* IMMUTABLE_WORLD_H */

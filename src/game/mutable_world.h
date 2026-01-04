@@ -6,7 +6,7 @@
 
 int initMutableWorld(StateInfo* stateInfo);
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
-void drawMutableWorld(StateInfo* stateInfo, double alpha);
+void drawMutableWorld(const StateInfo* stateInfo, double alpha);
 int cleanMutableWorld(StateInfo* stateInfo);
 
 #endif /* MUTABLE_WORLD_H */

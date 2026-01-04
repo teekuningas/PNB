@@ -1,5 +1,4 @@
 #include "actions_messy/pitching_system.h"
-#include "actions_messy/action_state.h"
 #include "common_logic.h"
 #include "action_implementation.h"
 #include "pitching_ai_strategy.h"
@@ -43,7 +42,7 @@ void startPitch(StateInfo* stateInfo)
 		vi) no free walk decisions pending
 	*/
 	if(stateInfo->localGameInfo->pII.hasBallIndex == stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] && stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_NONE &&
-	        stateInfo->localGameInfo->pRAI.batterReady == 1 && throwGoingOn == 0 &&
+	        stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pendingActionState.throwGoingOn == 0 &&
 	        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
 	        stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
@@ -80,8 +79,8 @@ void startPitch(StateInfo* stateInfo)
 		// so initialize meterCounter and meterCounterMax values. synchronization with the animation here is nice
 		// as it will let user press the buttons when its natural in the animation. But basically
 		// we start from the point 4/13 and go to 1 on the meter.
-		meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY;
-		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
+		stateInfo->localGameInfo->pendingActionState.meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX)*ANIMATION_FREQUENCY;
+		stateInfo->localGameInfo->pendingActionState.meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
 	} else {
 		// if conditions dont hold then put pitch=PITCH_ACTION_IDLE so that user can try to
 		// initiate new pitch if he wants.
@@ -98,7 +97,7 @@ void continuePitch(StateInfo* stateInfo)
 		stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_WAIT;
 		// here we select pitchpower, and as selected it will be in the interval from
 		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
-		pitchPower = calculate_pitch_power(meterCounter, meterCounterMax);
+		pitchPower = calculate_pitch_power(stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
 		// we select the animation
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_THROW;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
@@ -123,8 +122,8 @@ void continuePitch(StateInfo* stateInfo)
 
 		// so now we initialize meterCounter to be what was left to the full amount in previous phase and set counterMax to full maximum.
 		// on the screen this meterCounter-value is kind of reversed so that we get a nice indicator going up, indicator going down -effect.
-		meterCounter = meterCounterMax - meterCounter;
-		meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
+		stateInfo->localGameInfo->pendingActionState.meterCounter = stateInfo->localGameInfo->pendingActionState.meterCounterMax - stateInfo->localGameInfo->pendingActionState.meterCounter;
+		stateInfo->localGameInfo->pendingActionState.meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
 	}
 }
 
@@ -137,7 +136,7 @@ void releasePitch(StateInfo* stateInfo)
 	float pitchAngle;
 	// as meterCounter goes from 0 to PITCH_UP_MAX and the zero point will be at the 9/13, we minus
 	// that to get the selected angle
-	pitchAngle = calculate_pitch_angle(meterCounter, meterCounterMax);
+	pitchAngle = calculate_pitch_angle(stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
 	// So here we set the velocity for the ball when it finally leaves the hand of the pitcher.
 	// dx is going to be the error term and it doesnt depend on the power so when ball is pitched higher, the error will have more time to
 	// increase
@@ -165,11 +164,11 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
 	// this flag's purpose is to take care of batter who starts running towards first base and comes back
 	// during the pitch.
-	runBatFlag = 0;
+	stateInfo->localGameInfo->pendingActionState.runBatFlag = 0;
 	// batter can advance now
 	stateInfo->localGameInfo->pRAI.batterCanAdvance = 1;
 	// let ai do the calculation for ball again
-	aiWrongPitch = 0;
+	stateInfo->localGameInfo->pendingActionState.aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
 	stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
 	// always when pitch reaches the stage of ball going to air, we update baserunners'
@@ -229,17 +228,17 @@ void updatePitchingMeter(StateInfo* stateInfo)
 	// when pitch has been started but power not yet selected,
 	// we increase meterCounter until its in its maximum
 	if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
-		if(meterCounter < meterCounterMax) {
-			meterCounter += 1;
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter < stateInfo->localGameInfo->pendingActionState.meterCounterMax) {
+			stateInfo->localGameInfo->pendingActionState.meterCounter += 1;
 		}
 		// meterValue is used to render info to screen for user.
-		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(2, meterCounter, meterCounterMax);
+		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(2, stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
 	}
 	// when power has been selected but the angle is not yet selected,
 	// we increase meterCounter until its in its maximum
 	else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
-		if(meterCounter < meterCounterMax) {
-			meterCounter += 1;
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter < stateInfo->localGameInfo->pendingActionState.meterCounterMax) {
+			stateInfo->localGameInfo->pendingActionState.meterCounter += 1;
 		} else {
 			// if counter reaches the maximum, it means animation has
 			// reached its end point and indicator on the meter would go off the meter.
@@ -257,7 +256,7 @@ void updatePitchingMeter(StateInfo* stateInfo)
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 		}
 		// update what is seen on the screen.
-		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(4, meterCounter, meterCounterMax);
+		stateInfo->localGameInfo->pRAI.meterValue = calculate_meter_value(4, stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
 	}
 }
 
@@ -268,46 +267,46 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 	// here i use these weird lock timeouts. im not sure if they are necessary
 	// but they could be. not gonna try anymore.
 	if(aiPitchStage == 1) {
-		if(aiLockTimeoutCounter == -1) {
-			aiLockTimeoutCounter = 0;
+		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
-		if(meterCounter > aiPitchFirstLimit) {
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter > aiPitchFirstLimit) {
 			aiPitchStage = 2;
 			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
-			aiLockTimeoutCounter = -1;
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
-			aiLockTimeoutCounter++;
-			if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
+			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				aiPitchStage = 0;
 				flushKeys(stateInfo);
-				aiActionEventLock = AI_NO_LOCK;
-				aiLockUpdate = 1;
-				aiLockTimeoutCounter = -1;
+				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
+				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 			}
 		}
 	} else if(aiPitchStage == 2) {
-		if(aiLockTimeoutCounter == -1) {
-			aiLockTimeoutCounter = 0;
+		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
-		if(meterCounter > aiPitchSecondLimit) {
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter > aiPitchSecondLimit) {
 			aiPitchStage = 3;
 			stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
-			aiLockTimeoutCounter = -1;
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
-			aiLockTimeoutCounter++;
-			if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
+			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				aiPitchStage = 0;
 				flushKeys(stateInfo);
-				aiActionEventLock = AI_NO_LOCK;
-				aiLockUpdate = 1;
-				aiLockTimeoutCounter = -1;
+				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
+				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 			}
 		}
 	} else if(aiPitchStage == 3) {
 		aiPitchStage = 0;
 		flushKeys(stateInfo);
-		aiActionEventLock = AI_NO_LOCK;
-		aiLockUpdate = 1;
+		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
+		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 	}
 
 	// if pitcher has the ball and he is in correct position
@@ -330,14 +329,14 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 						homeLocationFlag = 0;
 					}
 				}
-				if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+				if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 					if(homeLocationFlag == 1 && pitchFlag == 1) {
 						int rand1 = seeded_rand(rng_seed, 15);
 						int rand2 = seeded_rand(rng_seed, 3);
 						int rand3 = seeded_rand(rng_seed, 10);
 
-						aiActionEventLock = AI_PITCH_LOCK;
-						aiLockUpdate = 1;
+						stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_PITCH_LOCK;
+						stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 						aiPitchStage = 1;
 						flushKeys(stateInfo);
 						stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;

@@ -286,7 +286,7 @@ void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo
 	clearReleasedKeys(keyStates);
 }
 
-void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
+void drawMainMenu(const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs)
 {
 	switch(menuData->stage) {
 	case MENU_STAGE_FRONT:

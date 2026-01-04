@@ -16,8 +16,9 @@ int initBall()
 #endif
 	return 0;
 }
-void drawBall(BallInfo* ballInfo, double alpha)
+void drawBall(const BallInfo* ballInfo, double alpha)
 {
+	// well ball renderer handles the ball drawing
 #ifndef NO_RENDER
 	drawBallRenderer(ballInfo, alpha);
 #endif

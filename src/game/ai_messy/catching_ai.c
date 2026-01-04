@@ -49,7 +49,7 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 void throwBallToBase(StateInfo* stateInfo, int base)
 {
 	if(aiThrowStage == 0) {
-		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+		if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 			int catcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[base];
 			int catcherNearHome = 0;
 			if(catcherIndex != -1) {
@@ -57,7 +57,7 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 			}
 
 			int replacerIndex = stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[base];
-			int replacerStage = 0;
+			ReplacementState replacerStage = REPLACEMENT_IDLE;
 			int replacerBase = -1;
 			int replacerMoving = 0;
 			if(replacerIndex != -1) {
@@ -72,8 +72,8 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 
 			if(shouldThrow == 1) {
 				aiThrowStage = 1;
-				aiLockUpdate = 1;
-				aiActionEventLock = AI_THROW_LOCK;
+				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_THROW_LOCK;
 				flushKeys(stateInfo);
 				if(base == 0) {
 					stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
@@ -98,36 +98,36 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	// finish dropping
 	if(aiDropStage == 1) {
 		flushKeys(stateInfo);
-		aiActionEventLock = AI_NO_LOCK;
+		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 		aiDropStage = 0;
-		aiLockUpdate = 1;
+		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 	}
 	// finish throwing
 	if(aiThrowStage == 1) {
-		if(aiLockTimeoutCounter == -1) {
-			aiLockTimeoutCounter = 0;
+		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
-		if(meterCounter > THROW_MAX*(3.0f/4)) {
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter > THROW_MAX*(3.0f/4)) {
 			flushKeys(stateInfo);
 			aiThrowStage = 0;
-			aiActionEventLock = AI_NO_LOCK;
-			aiLockUpdate = 1;
-			aiLockTimeoutCounter = -1;
+			stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
+			stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
-			aiLockTimeoutCounter++;
-			if(aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
+			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
+			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				aiThrowStage = 0;
 				flushKeys(stateInfo);
-				aiActionEventLock = AI_NO_LOCK;
-				aiLockUpdate = 1;
-				aiLockTimeoutCounter = -1;
+				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
+				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 			}
 		}
 	}
 	// if noone has ball and someone is controlled, ai will try to move towards the target point calculated
 	// in game_manipulation.
 	if(stateInfo->localGameInfo->pII.hasBallIndex == -1 && stateInfo->localGameInfo->pII.controlIndex != -1) {
-		if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+		if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 			if(stateInfo->localGameInfo->pRAI.throwGoingToBase == -1 || stateInfo->localGameInfo->
 			        ballInfo.hasHitGround == 1) {
 				moveControlledPlayerToLocation(stateInfo, &(stateInfo->localGameInfo->cameraState.targetPoint));
@@ -162,10 +162,10 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		                       r3OriginalBase, r3IsOnBase,
 		                       r2OriginalBase, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {
-			if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+			if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 				aiDropStage = 1;
-				aiLockUpdate = 1;
-				aiActionEventLock = AI_DROP_LOCK;
+				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
+				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_DROP_LOCK;
 				flushKeys(stateInfo);
 				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 			}
@@ -200,7 +200,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;
 			else throwBase = 0;
 
-			if(aiActionEventLock == AI_NO_LOCK && aiLockUpdate == 0) {
+			if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 				Vector3D target;
 				target.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->
 				           pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.x;
@@ -211,7 +211,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			throwBallToBase(stateInfo, throwBase);
 		}
 	}
-	if(aiLockUpdate == 1) {
-		aiLockUpdate = 0;
+	if(stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 1) {
+		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 0;
 	}
 }

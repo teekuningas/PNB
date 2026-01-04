@@ -7,7 +7,7 @@
 int initPlayerRenderer(void);
 
 // Function to draw players
-void drawPlayerRenderer(StateInfo* stateInfo, PlayerInfo* playerInfo, double alpha);
+void drawPlayerRenderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha);
 
 // Function to clean up player rendering resources
 int cleanPlayerRenderer(void);

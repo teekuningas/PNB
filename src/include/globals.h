@@ -298,6 +298,12 @@ typedef struct _PlayerRuntimeState {
 	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
+typedef enum {
+	JOKER_REGULAR = 0,
+	JOKER_AVAILABLE = 1,
+	JOKER_USED = 2
+} JokerStatus;
+
 // batting team related flags.
 typedef struct _BattingTeamPlayerInfo {
 	char* name; // some info to be shown in screen to guide player
@@ -305,7 +311,7 @@ typedef struct _BattingTeamPlayerInfo {
 	int power; // used to make some players bat a bit harder than others
 	int number; // number is shown on screen
 	int originalBase; // base when pitch started
-	int joker; // 0 original player, 1 has right to be used, 2 has been used already
+	JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
 
 	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
 	PlayerUnitState state;
@@ -332,10 +338,26 @@ typedef enum {
 	PLAYER_ANIM_BAT_SWING_3 = 16
 } PlayerAnimationModel;
 
+typedef enum {
+	CONTROL_PLAYER_1 = 0,
+	CONTROL_PLAYER_2 = 1,
+	CONTROL_AI = 2
+} TeamControlMode;
+
+typedef enum {
+	TEAM_BATTING = 0,
+	TEAM_CATCHING = 1
+} TeamSide;
+
+typedef enum {
+	REPLACEMENT_IDLE = 0,
+	REPLACEMENT_ACTIVE = 1
+} ReplacementState;
+
 typedef struct _CommonPlayerInfo {
 	// player information. name is shown on the screen sometimes, team is used in players.c
 	// and stats are used to make players behave in different ways on some situations.
-	int team;
+	TeamSide team;
 
 	int moving; // 0 doesnt, 1 moves
 	int running; // 0 doesnt, 1 runs
@@ -355,7 +377,7 @@ typedef struct _CatchingTeamPlayerInfo {
 	int position; // pitcher, catcher, 1st baseman..
 	int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
 	int isNearHomeLocation; // used to do base replacing stuff.
-	int replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
+	ReplacementState replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
 	int replacingBase; // in which base is the player replacing
 	int busyCatching; // flag set when player is trying to run in hopes of catching the ball
 	int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
@@ -371,7 +393,7 @@ typedef struct _PlayerInfo {
 
 typedef struct _TeamInfo {
 	int value; // which team, like 1 for ankkurit, 2 for vimpeli etc.
-	int control; // who controls, 0 player 1, 1, player 2, 2 AI
+	TeamControlMode control; // who controls, 0 player 1, 1, player 2, 2 AI
 	int runs; // how many runs has this team
 	int period0Runs;
 	int period1Runs;
@@ -443,6 +465,56 @@ typedef struct _PlayerCounters {
 	int noMorePlayers;
 } PlayerCounters;
 
+typedef enum {
+	AI_NO_LOCK = -1,
+	AI_PITCH_LOCK = 0,
+	AI_THROW_LOCK = 1,
+	AI_DROP_LOCK = 2,
+	AI_WAITING_BATTER_LOCK = 3,
+	AI_WAITING_WALK_LOCK = 4,
+	AI_BATTING_LOCK = 5,
+	AI_CHANGE_LOCK = 6,
+	AI_CLICK_LOCK = 7,
+	AI_DOUBLE_CLICK_LOCK = 8,
+	AI_COME_BACK_LOCK = 9,
+	AI_COME_BACK_WRONG_PITCH_LOCK = 10
+} AILockType;
+
+typedef enum {
+	BATTING_MODE_SWING = 0,
+	BATTING_MODE_BUNT = 1,
+	BATTING_MODE_STOP = 2
+} BattingMode;
+
+typedef struct _PendingActionState {
+	unsigned int meterCounter;
+	unsigned int meterCounterMax;
+
+	int throwGoingOn;
+	int runBatFlag;
+	int aiWrongPitch;
+	int batterSelect;
+
+	AILockType aiActionEventLock;
+	int aiLockUpdate;
+	int aiLockTimeoutCounter;
+
+	// Batting related
+	int battingFrameCount;
+	int increaseBattingFrameCount;
+	int selectedBattingPowerCount;
+	int selectedBattingAngleCount;
+	float batterAngle;
+	int batterAngleSpeed;
+	float batterAdvanceSpeed;
+	float batterAdvance;
+	BattingMode battingMode;
+	float batterAdvanceLimit;
+	int battingStopped;
+	int batterMoving;
+	int updateBatterLocationAndOrientation;
+} PendingActionState;
+
 typedef struct _GameModeState {
 	int runnerBatterPairCounter;
 	int canMakeRunOfHonor;
@@ -501,6 +573,7 @@ typedef struct _LocalGameInfo {
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
 	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state
+	PendingActionState pendingActionState; // Milestone 10 - Action globals
 	BallInfo ballInfo;
 
 } LocalGameInfo;

@@ -468,11 +468,11 @@ static void basemenReplacements(StateInfo* stateInfo)
 		if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[i]].cTPI.isNearHomeLocation == 0) {
 			// start moving replacer there instead if he is not moving already or if player does not control him
 			if(stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i] != stateInfo->localGameInfo->pII.controlIndex) {
-				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage == 0) {
+				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage == REPLACEMENT_IDLE) {
 					moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 					             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[i]].tPI.homeLocation));
 
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 1;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = REPLACEMENT_ACTIVE;
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = i;
 					// can go replacing even if was busy catching before.
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.busyCatching = 0;
@@ -483,12 +483,12 @@ static void basemenReplacements(StateInfo* stateInfo)
 		else if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[i]].cTPI.isNearHomeLocation == 1) {
 			// and there's someone there or going there, move him back ( if player doesnt control )
 			if(stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i] != stateInfo->localGameInfo->pII.controlIndex) {
-				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage != 0) {
+				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage != REPLACEMENT_IDLE) {
 					if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == i) {
 						moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 						             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].tPI.homeLocation));
 
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = 0;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = REPLACEMENT_IDLE;
 						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = -1;
 					}
 				}
@@ -505,7 +505,7 @@ static void moveIdlingPlayersToHomeLocation(StateInfo* stateInfo)
 		if(stateInfo->localGameInfo->playerInfo[i].cPI.moving == 0) {
 			if(i != stateInfo->localGameInfo->pII.controlIndex) {
 				if(stateInfo->localGameInfo->playerInfo[i].cTPI.isNearHomeLocation == 0) {
-					if(stateInfo->localGameInfo->playerInfo[i].cTPI.replacingStage == 0) {
+					if(stateInfo->localGameInfo->playerInfo[i].cTPI.replacingStage == REPLACEMENT_IDLE) {
 						if(stateInfo->localGameInfo->playerInfo[i].cTPI.busyCatching == 0) {
 							moveToTarget(stateInfo->localGameInfo->playerInfo, i, &(stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation));
 						}

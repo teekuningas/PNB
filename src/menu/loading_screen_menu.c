@@ -7,7 +7,7 @@
 #include "loading_screen_menu.h"
 
 // Reset main-menu state and render loading screen using new 2D pipeline
-void drawLoadingScreen(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo,
+void drawLoadingScreen(const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo,
                        ResourceManager* rm, const RenderState* rs)
 {
 

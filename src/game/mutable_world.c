@@ -50,7 +50,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		gameManipulation(stateInfo);
 	}
 }
-void drawMutableWorld(StateInfo* stateInfo, double alpha)
+void drawMutableWorld(const StateInfo* stateInfo, double alpha)
 {
 	// players and ball are the building blocks of all the action on the screen.
 	if(stateInfo->localGameInfo->gameControl.pause == 0) {

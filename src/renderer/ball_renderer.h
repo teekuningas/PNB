@@ -7,7 +7,7 @@
 int initBallRenderer(void);
 
 // Function to draw the ball
-void drawBallRenderer(BallInfo* ballInfo, double alpha);
+void drawBallRenderer(const BallInfo* ballInfo, double alpha);
 
 // Function to clean up ball rendering resources
 int cleanBallRenderer(void);
