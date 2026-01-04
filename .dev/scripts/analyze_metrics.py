@@ -2,10 +2,11 @@
 """
 Information-theoretic code quality metrics analyzer.
 
-Computes three key metrics for tracking refactoring progress:
+Computes two key metrics for tracking refactoring progress:
 1. I_sig - Average signature weight (recursive type complexity)
-2. C_ratio - StateInfo coupling ratio
-3. LOC_avg - Average function size
+2. LOC_avg - Average function size
+
+Also reports test coverage if available.
 
 Usage: ./analyze_metrics.py [source_dir]
 """
@@ -114,18 +115,15 @@ def analyze_signature(func, type_weights, primitives):
     """Analyze function signature."""
     params = func['params']
     if not params or params == 'void':
-        return {'sig_weight': 0, 'has_stateinfo': False}
+        return {'sig_weight': 0}
     
     param_list = [p.strip() for p in params.split(',')]
     sig_weight = 0
-    has_stateinfo = False
     
     for param in param_list:
         parts = param.split()
         if len(parts) >= 2:
             param_type = ' '.join(parts[:-1]).replace('const', '').replace('*', '').strip()
-            if 'StateInfo' in param:
-                has_stateinfo = True
             if param_type in primitives:
                 sig_weight += 1
             elif param_type in type_weights:
@@ -133,7 +131,7 @@ def analyze_signature(func, type_weights, primitives):
             else:
                 sig_weight += 3
     
-    return {'sig_weight': sig_weight, 'has_stateinfo': has_stateinfo}
+    return {'sig_weight': sig_weight}
 
 def analyze_codebase(src_dir):
     """Analyze entire codebase and return metrics."""
@@ -161,19 +159,49 @@ def analyze_codebase(src_dir):
         return None
     
     total_sig_weight = sum(f['sig_weight'] for f in all_funcs)
-    stateinfo_count = sum(1 for f in all_funcs if f['has_stateinfo'])
     
     i_sig = total_sig_weight / total_funcs
-    c_ratio = stateinfo_count / total_funcs
     loc_avg = total_loc / total_funcs
     
     return {
         'I_sig': i_sig,
-        'C_ratio': c_ratio,
         'LOC_avg': loc_avg,
         'total_funcs': total_funcs,
         'total_loc': total_loc
     }
+
+def run_tests():
+    """Run tests and extract coverage information."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['devenv', 'shell', 'make', 'test'],
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        
+        # Extract test results
+        output = result.stdout + result.stderr
+        tests_run = 0
+        tests_failed = 0
+        
+        for line in output.split('\n'):
+            if 'Tests run:' in line:
+                tests_run = int(line.split(':')[1].strip())
+            elif 'Tests failed:' in line:
+                tests_failed = int(line.split(':')[1].strip())
+        
+        if tests_run > 0:
+            return {
+                'tests_run': tests_run,
+                'tests_passed': tests_run - tests_failed,
+                'tests_failed': tests_failed
+            }
+    except:
+        pass
+    
+    return None
 
 def main():
     if len(sys.argv) < 2:
@@ -192,16 +220,22 @@ def main():
         print("No functions found")
         return
     
+    # Run tests if available
+    test_results = run_tests()
+    
     print("\n" + "="*70)
     print("INFORMATION-THEORETIC CODE QUALITY METRICS")
     print("="*70)
     print(f"\nTotal Functions: {metrics['total_funcs']}")
     print(f"Total LOC: {metrics['total_loc']}")
+    
+    if test_results:
+        print(f"Tests: {test_results['tests_passed']}/{test_results['tests_run']} passed")
+    
     print(f"\n{'Metric':<30} {'Value':>10} {'Goal':>10}")
     print("-" * 70)
-    print(f"{'I_sig (avg signature weight)':<30} {metrics['I_sig']:>10.2f} {'↓ lower':>10}")
-    print(f"{'C_ratio (StateInfo coupling)':<30} {metrics['C_ratio']:>10.3f} {'↓ lower':>10}")
-    print(f"{'LOC_avg (avg function size)':<30} {metrics['LOC_avg']:>10.1f} {'↓ lower':>10}")
+    print(f"{'I_sig (signature weight)':<30} {metrics['I_sig']:>10.2f} {'↓ lower':>10}")
+    print(f"{'LOC_avg (function size)':<30} {metrics['LOC_avg']:>10.1f} {'↓ lower':>10}")
     print("="*70)
 
 if __name__ == '__main__':
