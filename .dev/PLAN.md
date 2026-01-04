@@ -11,30 +11,39 @@ We are preparing the codebase for a major architectural shift towards a **Functi
 ### ✅ Milestone 9: Type Safety & State Machines (Completed 2026-01-04)
 - Strong enums for Animations, Pitching, and Actions.
 
-### 🚧 Milestone 10: Stabilization & Cleanup (CURRENT)
-- **Goal:** Centralize all state. Eliminate hidden static globals.
-- **Tasks:**
-    - [ ] Move action globals to `LocalGameInfo`.
-    - [ ] Enum-ify `TeamControlMode`, `TeamSide`, `ReplacementState`.
-    - [ ] Enforce `const` correctness.
+### ✅ Milestone 10: Initial Stabilization (Completed 2026-01-04)
+- Centralize `action_state.c` globals into `LocalGameInfo`.
+- Enum-ify `TeamControlMode`, `TeamSide`, `ReplacementState`, etc.
+- Initial const-correctness sweep.
 
-### 🔮 Milestone 11: The Great Decoupling (Read vs. Write)
+### 🚧 Milestone 11: The State Consolidation (Logic) (CURRENT)
+- **Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`.
+- **Tasks:**
+    - Move AI statics into `AIState`.
+    - Move game flow counters into `GameFlowState`.
+    - Move action system internal variables into `PendingActionState`.
+
+### 🔮 Milestone 12: The Rendering Unification
+- **Goal:** Modernize in-game rendering to match the Menu system.
+- **Tasks:** Adopt `ResourceManager`, eliminate orphan `GLuint` globals, and unify GL context setup.
+
+### 🔮 Milestone 13: The Great Decoupling (Read vs. Write)
 - **Goal:** Split `game_analysis` and `action_implementation` into Query/Apply pairs.
 - **Why:** Essential for phase-based execution.
 
-### 🔮 Milestone 12: The Intent Phase
+### 🔮 Milestone 14: The Intent Phase
 - **Goal:** Explicit `UserIntent` struct decoupled from immediate execution.
 
-### 🔮 Milestone 13: The Referee (Judgment Phase)
+### 🔮 Milestone 15: The Referee (Judgment Phase)
 - **Goal:** Pure function `Referee(State) -> Decisions`.
 
-### 🔮 Milestone 14: The Resolver (Resolution Phase)
+### 🔮 Milestone 16: The Resolver (Resolution Phase)
 - **Goal:** Centralized state mutation `Resolver(Decisions) -> NewState`.
 
-### 🔮 Milestone 15: The Pipeline Integration
+### 🔮 Milestone 17: The Pipeline Integration
 - **Goal:** Explicit linear game loop: `Input -> Sim -> Judge -> Resolve -> Render`.
 
 ---
 
 ## Technical Debt / Cleanup
-- `action_state.c` is the primary target for elimination in M10.
+- Milestone 11 targets the elimination of all hidden state in `src/game`.
