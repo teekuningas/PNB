@@ -13,15 +13,8 @@
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
 
-typedef struct _GroundUnit {
-	GLuint texture;
-	int x;
-	int y;
-} GroundUnit;
-
-// functions used internally by this c-file
-static int initGround();
-static void drawGround();
+static int initGround(StateInfo* stateInfo);
+static void drawGround(const StateInfo* stateInfo);
 
 static int initFence();
 static void drawFence();
@@ -40,13 +33,11 @@ static GLuint plateDisplayList;
 static MeshObject* planeMesh;
 static GLuint planeDisplayList;
 
-static GroundUnit groundUnit[GROUND_UNIT_COUNT];
-
 int initImmutableWorld(StateInfo* stateInfo)
 {
 	int result;
 
-	result = initGround();
+	result = initGround(stateInfo);
 	if(result != 0) {
 		printf("Initialization of ground failed.");
 		return result;
@@ -69,7 +60,7 @@ int initImmutableWorld(StateInfo* stateInfo)
 
 void drawImmutableWorld(const StateInfo* stateInfo, double alpha)
 {
-	drawGround();
+	drawGround(stateInfo);
 	drawFence();
 	drawPlate();
 
@@ -145,18 +136,19 @@ static void drawFence()
 	}
 }
 
-static void drawGround()
+static void drawGround(const StateInfo* stateInfo)
 {
 	int i;
+	const GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
 	// here we use groundUnit[12].texture for all grass ground pieces.
 	for(i = 0; i < GROUND_UNIT_COUNT; i++) {
 		if(i < 12) {
-			glBindTexture(GL_TEXTURE_2D, groundUnit[i].texture);
+			glBindTexture(GL_TEXTURE_2D, gu[i].texture);
 		} else {
-			glBindTexture(GL_TEXTURE_2D, groundUnit[12].texture);
+			glBindTexture(GL_TEXTURE_2D, gu[12].texture);
 		}
 		glPushMatrix();
-		glTranslatef(GROUND_WIDTH*groundUnit[i].y,0.0f, -GROUND_LENGTH*groundUnit[i].x);
+		glTranslatef(GROUND_WIDTH*gu[i].y,0.0f, -GROUND_LENGTH*gu[i].x);
 		glTranslatef(-GROUND_WIDTH + GROUND_OFFSET_X, 0.0f, GROUND_OFFSET_Z);
 		glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 		glScalef(GROUND_LENGTH/2, 1.0f, GROUND_WIDTH/2);
@@ -188,14 +180,15 @@ static int initPlate()
 	return 0;
 }
 
-static int initGround()
+static int initGround(StateInfo* stateInfo)
 {
 	int i, j, counter;
+	GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
 	// first we create the play area, in order of groundUnit[0] being lowerleft, groundUnit[1] being second in left etc.
 	for(i = 0; i < 3; i++) {
 		for(j = 0; j < 4; j++) {
-			groundUnit[i*4 + j].x = j;
-			groundUnit[i*4 + j].y = i;
+			gu[i*4 + j].x = j;
+			gu[i*4 + j].y = i;
 		}
 	}
 	counter = 12;
@@ -204,26 +197,26 @@ static int initGround()
 		for(j = -1; j < 4; j++) {
 			if(i < 4 && i > -1 && j > -1 && j < 3) continue;
 			else {
-				groundUnit[counter].x = i;
-				groundUnit[counter].y = j;
+				gu[counter].x = i;
+				gu[counter].y = j;
 				counter++;
 			}
 		}
 	}
 	// then just load the textures.
-	if(tryLoadingTextureGL(&(groundUnit[0].texture), "data/textures/kentta/osa1.tga", "part1") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[1].texture), "data/textures/kentta/osa2.tga", "part2") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[2].texture), "data/textures/kentta/osa3.tga", "part3") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[3].texture), "data/textures/kentta/osa4.tga", "part4") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[4].texture), "data/textures/kentta/osa5.tga", "part5") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[5].texture), "data/textures/kentta/osa6.tga", "part6") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[6].texture), "data/textures/kentta/osa7.tga", "part7") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[7].texture), "data/textures/kentta/osa8.tga", "part8") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[8].texture), "data/textures/kentta/osa9.tga", "part9") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[9].texture), "data/textures/kentta/osa10.tga", "part10") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[10].texture), "data/textures/kentta/osa11.tga", "part11") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[11].texture), "data/textures/kentta/osa12.tga", "part12") != 0) return -1;
-	if(tryLoadingTextureGL(&(groundUnit[12].texture), "data/textures/grassTexture.tga", "grassTexture") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[0].texture), "data/textures/kentta/osa1.tga", "part1") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[1].texture), "data/textures/kentta/osa2.tga", "part2") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[2].texture), "data/textures/kentta/osa3.tga", "part3") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[3].texture), "data/textures/kentta/osa4.tga", "part4") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[4].texture), "data/textures/kentta/osa5.tga", "part5") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[5].texture), "data/textures/kentta/osa6.tga", "part6") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[6].texture), "data/textures/kentta/osa7.tga", "part7") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[7].texture), "data/textures/kentta/osa8.tga", "part8") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[8].texture), "data/textures/kentta/osa9.tga", "part9") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[9].texture), "data/textures/kentta/osa10.tga", "part10") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[10].texture), "data/textures/kentta/osa11.tga", "part11") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[11].texture), "data/textures/kentta/osa12.tga", "part12") != 0) return -1;
+	if(tryLoadingTextureGL(&(gu[12].texture), "data/textures/grassTexture.tga", "grassTexture") != 0) return -1;
 	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
 	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
 	return 0;

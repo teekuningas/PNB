@@ -10,15 +10,12 @@
 
 #define DROP_BALL_CONSTANT 0.02f
 
-static float throwDistance;
-static Vector3D throwDirection;
-
-void initThrowingSystem(void)
+void initThrowingSystem(StateInfo* stateInfo)
 {
-	throwDistance = 0;
-	throwDirection.x = 0;
-	throwDirection.y = 0;
-	throwDirection.z = 0;
+	stateInfo->localGameInfo->pendingActionState.throwDistance = 0;
+	stateInfo->localGameInfo->pendingActionState.throwDirection.x = 0;
+	stateInfo->localGameInfo->pendingActionState.throwDirection.y = 0;
+	stateInfo->localGameInfo->pendingActionState.throwDirection.z = 0;
 }
 
 void prepareThrow(StateInfo* stateInfo, int base)
@@ -26,23 +23,23 @@ void prepareThrow(StateInfo* stateInfo, int base)
 	switch(base) {
 	case 0:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 0;
-		throwDirection.x = stateInfo->fieldPositions->pitcher.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
-		throwDirection.z = stateInfo->fieldPositions->pitcher.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->pitcher.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->pitcher.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
 	case 1:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 1;
-		throwDirection.x = stateInfo->fieldPositions->firstBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
-		throwDirection.z = stateInfo->fieldPositions->firstBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->firstBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->firstBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
 	case 2:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 2;
-		throwDirection.x = stateInfo->fieldPositions->secondBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
-		throwDirection.z = stateInfo->fieldPositions->secondBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->secondBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->secondBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
 	case 3:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 3;
-		throwDirection.x = stateInfo->fieldPositions->thirdBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
-		throwDirection.z = stateInfo->fieldPositions->thirdBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->thirdBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->thirdBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
 	}
 }
@@ -65,11 +62,11 @@ void genericThrowRelease(StateInfo* stateInfo)
 		// take power naturally from meterCounter value
 		power = 1.0f*stateInfo->localGameInfo->pendingActionState.meterCounter / stateInfo->localGameInfo->pendingActionState.meterCounterMax;
 		// update these values a bit
-		throwDirection.x = throwDirection.x / throwDistance;
-		throwDirection.z = throwDirection.z / throwDistance;
-		throwDirection.y = 0.06f;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->localGameInfo->pendingActionState.throwDirection.x / stateInfo->localGameInfo->pendingActionState.throwDistance;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->localGameInfo->pendingActionState.throwDirection.z / stateInfo->localGameInfo->pendingActionState.throwDistance;
+		stateInfo->localGameInfo->pendingActionState.throwDirection.y = 0.06f;
 		// ... and then edit them a bit more and send them to genericSlingBall.
-		genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), throwDirection.x*power*THROW_POWER_CONSTANT, throwDirection.y + throwDistance*THROW_DISTANCE_CONSTANT, throwDirection.z*power*THROW_POWER_CONSTANT);
+		genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), stateInfo->localGameInfo->pendingActionState.throwDirection.x*power*THROW_POWER_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.y + stateInfo->localGameInfo->pendingActionState.throwDistance*THROW_DISTANCE_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.z*power*THROW_POWER_CONSTANT);
 		// set lastHadBallIndex, its used for example to prevent this player of catching
 		// the ball right after throwing.
 		stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
@@ -90,9 +87,9 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 {
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		// throw distance is the euclidean distance from the base to player throwing.
-		throwDistance = (float)sqrt(throwDirection.x*throwDirection.x + throwDirection.z*throwDirection.z);
+		stateInfo->localGameInfo->pendingActionState.throwDistance = (float)sqrt(stateInfo->localGameInfo->pendingActionState.throwDirection.x*stateInfo->localGameInfo->pendingActionState.throwDirection.x + stateInfo->localGameInfo->pendingActionState.throwDirection.z*stateInfo->localGameInfo->pendingActionState.throwDirection.z);
 		// if player is already on the base, cant throw.
-		if(throwDistance > THROW_TO_BASE_DISTANCE) {
+		if(stateInfo->localGameInfo->pendingActionState.throwDistance > THROW_TO_BASE_DISTANCE) {
 			// stop player if he is moving, moving won't look good as the animation
 			// doesn't have foot movement
 			if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.moving == 1) {
@@ -113,8 +110,8 @@ void genericThrowLoad(StateInfo* stateInfo, int base)
 			// to avoid twitching when moving key is still pressed and player cant move as hes throwing
 			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
 			// and orient player to look at the base too.
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.x = throwDirection.x;
-			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.z = throwDirection.z;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.x = stateInfo->localGameInfo->pendingActionState.throwDirection.x;
+			stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.orientation.z = stateInfo->localGameInfo->pendingActionState.throwDirection.z;
 		} else {
 			// if too close to base, terminate throwing.
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_IDLE;

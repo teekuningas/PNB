@@ -28,10 +28,8 @@
 #define BALL_BOUNCE_THRESHOLD 0.02f
 #define PLAYER_TOO_CLOSE_TO_CATCH_LIMIT 15.0f
 
-static int closeToGround;
-
 static void updateBallToPlayer(LocalGameInfo* localGameInfo);
-static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions);
+static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, GameFlowState* gameFlowState);
 static void checkIfBallCanBeCatched(StateInfo* stateInfo);
 static void playerLocationOrientationAndTargets(StateInfo* stateInfo);
 static void basemenReplacements(StateInfo* stateInfo);
@@ -53,7 +51,7 @@ void gameManipulation(StateInfo* stateInfo)
 		}
 	}
 
-	updateBallStatus(stateInfo->localGameInfo, stateInfo->fieldPositions); // update ball's location due to velocity, also update ball's velocity due to gravity, and set some flags related to ball
+	updateBallStatus(stateInfo->localGameInfo, stateInfo->fieldPositions, &(stateInfo->localGameInfo->gameFlowState)); // update ball's location due to velocity, also update ball's velocity due to gravity, and set some flags related to ball
 	checkIfBallCanBeCatched(stateInfo); //  if no one has the ball, it could be catched, couldn't it?
 	checkIfNearHomeLocation(stateInfo);
 	baseRunnerMovementsOnBaseArrivals(stateInfo);
@@ -67,11 +65,11 @@ void gameManipulation(StateInfo* stateInfo)
 
 void initGameManipulation(StateInfo* stateInfo)
 {
-	closeToGround = 0;
+	stateInfo->localGameInfo->gameFlowState.closeToGround = 0;
 }
 
 
-static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions)
+static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, GameFlowState* gameFlowState)
 {
 	if(localGameInfo->ballInfo.lastLastLocationUpdate == 1) {
 		setVectorV(&(localGameInfo->ballInfo.lastLocation), &(localGameInfo->ballInfo.location));
@@ -99,8 +97,8 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 					int outOfBounds = 0;
 					// we check out of bounds situation only if we are close to ground to avoid
 					// unnecesaary overhead
-					if(closeToGround == 0) {
-						closeToGround = 1;
+					if(gameFlowState->closeToGround == 0) {
+						gameFlowState->closeToGround = 1;
 						outOfBounds = checkIfBallIsOutOfBounds(&(localGameInfo->ballInfo), fieldPositions);
 					}
 					// it could be its first time
@@ -161,8 +159,8 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 						localGameInfo->ballInfo.velocity.y = 0.0f;
 					}
 				} else {
-					if(closeToGround == 1) {
-						closeToGround = 0;
+					if(gameFlowState->closeToGround == 1) {
+						gameFlowState->closeToGround = 0;
 					}
 				}
 

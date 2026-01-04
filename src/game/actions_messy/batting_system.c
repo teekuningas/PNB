@@ -24,8 +24,6 @@
 
 #define BATTER_ANGLE_FIX (2*PI / 4)
 
-static int pitchFrameTime;
-
 void initBattingSystem(StateInfo* stateInfo)
 {
 	stateInfo->localGameInfo->pendingActionState.batterSelect = 0;
@@ -42,7 +40,7 @@ void initBattingSystem(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pendingActionState.battingStopped = 0;
 	stateInfo->localGameInfo->pendingActionState.batterMoving = 0;
 	stateInfo->localGameInfo->pendingActionState.updateBatterLocationAndOrientation = 0;
-	pitchFrameTime = 0;
+	stateInfo->localGameInfo->pendingActionState.pitchFrameTime = 0;
 }
 
 void startIncreaseBatterAngle(StateInfo* stateInfo)
@@ -290,7 +288,7 @@ void updateBatting(StateInfo* stateInfo)
 				// how many frames will it take for ball to go up and down again so that we can try
 				// to time our batting advancing and animation accordingly. just solve 0 = s + vt + (1/2)at^2
 				// and choose the correct branch and then add a little experience-based tweak.
-				pitchFrameTime = calculate_pitch_frame_time(v, GRAVITY, 0.0f, PITCH_FRAME_TIME_TWEAK);
+				stateInfo->localGameInfo->pendingActionState.pitchFrameTime = calculate_pitch_frame_time(v, GRAVITY, 0.0f, PITCH_FRAME_TIME_TWEAK);
 				// Here initialize meterCounter and meterCounter max in a way similar to how we initialized those in pitching.
 				// relative distance from the end of meter to the indicator is the same.
 				// difference is that these values are scaled a bit, to allow as slow movement of the indicator as possible
@@ -314,7 +312,7 @@ void updateBatting(StateInfo* stateInfo)
 			if(stateInfo->localGameInfo->pendingActionState.batterMoving == 0) {
 				// so at the moment there is just enough frames left that if we start animation and advancing now the
 				// ball will be at right height for the animation look correct.
-				if(stateInfo->localGameInfo->pendingActionState.battingFrameCount > pitchFrameTime - BAT_ANIMATION_FRAME_HIT_COUNT) {
+				if(stateInfo->localGameInfo->pendingActionState.battingFrameCount > stateInfo->localGameInfo->pendingActionState.pitchFrameTime - BAT_ANIMATION_FRAME_HIT_COUNT) {
 					// set batterMoving flag to 1 so that we can better handle starting points of the
 					// animations
 					stateInfo->localGameInfo->pendingActionState.batterMoving = 1;
@@ -367,7 +365,7 @@ void updateBatting(StateInfo* stateInfo)
 		// so here we check if the animation has ended and if battingGoingOn is still on,
 		// so that we dont do this but once. if it is, we set battingGoingOn to zero
 		// and move the player towards ready position agian.
-		if((stateInfo->localGameInfo->pendingActionState.battingFrameCount > pitchFrameTime -
+		if((stateInfo->localGameInfo->pendingActionState.battingFrameCount > stateInfo->localGameInfo->pendingActionState.pitchFrameTime -
 		        BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
 		        stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
 			Vector3D target;
@@ -378,7 +376,7 @@ void updateBatting(StateInfo* stateInfo)
 			moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.batterIndex, &target);
 		}
 		// so here we check if the bat hits. this event happens always the pitch has been in air
-		else if(stateInfo->localGameInfo->pendingActionState.battingFrameCount > pitchFrameTime) {
+		else if(stateInfo->localGameInfo->pendingActionState.battingFrameCount > stateInfo->localGameInfo->pendingActionState.pitchFrameTime) {
 			// so here we continue only if user hasn't decided to not to bat and if we havent bat already.
 			if(stateInfo->localGameInfo->pendingActionState.battingStopped == 0 && stateInfo->localGameInfo->pRAI.batHit == 0 && stateInfo->localGameInfo->pRAI.batMiss == 0) {
 				// if ball doesnt go too far away to left or right

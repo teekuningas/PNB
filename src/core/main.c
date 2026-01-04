@@ -36,6 +36,7 @@ int main ( int argc, char *argv[] )
 	double alpha;
 	int done = 0;
 	int fullscreen = 1;
+	int soundEnabled = 1;
 	int result;
 
 	unsigned int currentTime = 0;
@@ -57,6 +58,9 @@ int main ( int argc, char *argv[] )
 		if(strcmp(argv[i], "--windowed") == 0) {
 			fullscreen = 0;
 		}
+		if(strcmp(argv[i], "--no-sound") == 0) {
+			soundEnabled = 0;
+		}
 	}
 
 	printf("v. 1.5 beta\n");
@@ -68,7 +72,9 @@ int main ( int argc, char *argv[] )
 	stateInfo.keyStates = &keyStates;
 	stateInfo.fieldPositions = &fieldPositions;
 	stateInfo.teamData = NULL;
+	stateInfo.playSoundEffect = 0;
 	stateInfo.stopSoundEffect = 0;
+	stateInfo.soundEnabled = soundEnabled;
 	stateInfo.cup = NULL;
 	stateInfo.currently_played_cup_match_index = -1;
 

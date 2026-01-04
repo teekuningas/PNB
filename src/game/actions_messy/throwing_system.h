@@ -5,7 +5,7 @@
 
 #define THROW_MAX 50
 
-void initThrowingSystem(void);
+void initThrowingSystem(StateInfo* stateInfo);
 
 void prepareThrow(StateInfo* stateInfo, int base);
 

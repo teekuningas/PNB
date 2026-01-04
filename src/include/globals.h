@@ -114,6 +114,14 @@ typedef enum {
 
 #define INIT_LOCALS_COUNT 5
 
+#define GROUND_UNIT_COUNT 30
+
+typedef struct _GroundUnit {
+	GLuint texture;
+	int x;
+	int y;
+} GroundUnit;
+
 #define DISTANCE_FROM_HOME_LOCATION_THRESHOLD 1.75f
 #define TARGET_ACHIEVED_THRESHOLD 0.25f // has to have some room here because we are calculating velocity only at the start of movement and everything approximations anyway
 // counts
@@ -456,7 +464,29 @@ typedef struct _WoundingState {
 typedef struct _CameraState {
 	int homeRunCameraFlag;
 	Vector3D targetPoint; // For camera or AI focus
+	int homeRunCameraCounter;
+
+	// View vectors
+	Vector3D cam, look, up;
+	Vector3D statCam, statLook, statUp;
+	Vector3D skyBoxCam, skyBoxLook;
+
+	// Interpolation
+	Vector3D lastCamTargetLocation;
+	Vector3D lastCamLocation;
+	Vector3D camLocation;
+	Vector3D camTargetLocation;
+
+	// Misc
+	float lightPos[4];
 } CameraState;
+
+typedef struct _UIState {
+	int gameInfoEventTimer;
+	int gameInfoEvent;
+	float lastMeterX;
+	float lastSwingMeterX;
+} UIState;
 
 typedef struct _PlayerCounters {
 	int battingTeamPlayersOnFieldCount;
@@ -486,6 +516,54 @@ typedef enum {
 	BATTING_MODE_STOP = 2
 } BattingMode;
 
+typedef struct _AIState {
+	// Catching AI
+	int moveCounter;
+	int throwStage;
+	int dropStage;
+
+	// Batting AI
+	int battingKeyDown;
+	AILockType actionKeyLock;
+	int changingKeyDown;
+	int increaseKeyDown;
+	int decreaseKeyDown;
+	int angleDecided;
+	float decidedAngle;
+	int baseRunnerKeyDown[BASE_COUNT];
+	int baseRunnerDecisionMade[BASE_COUNT];
+	int lastSafeOnBaseIndex[BASE_COUNT];
+	AILockType baseRunnerLock[BASE_COUNT];
+	int amountOfClicks[BASE_COUNT];
+	int clickBreak[BASE_COUNT];
+	int battingStyle;
+	int runningBatter;
+	int runningBaseRunners;
+	int planCalculated;
+	int firstIndex;
+	int firstIndexSelected;
+	int change;
+	int changeHasHappened;
+
+	// Pitching AI
+	int pitchStage;
+	unsigned int pitchFirstLimit;
+	unsigned int pitchSecondLimit;
+	int pitchTime;
+	int pitchPreviousTime;
+	int batterReadyTimer;
+} AIState;
+
+typedef struct _GameFlowState {
+	int woundingCatchCounter;
+	int outOfBoundsCounter;
+	int closeToGround;
+	int endOfInningCounter;
+	int nextPairCounter;
+	int foulPlayEventFlag;
+	int homeRunCameraCounter;
+} GameFlowState;
+
 typedef struct _PendingActionState {
 	unsigned int meterCounter;
 	unsigned int meterCounterMax;
@@ -513,6 +591,17 @@ typedef struct _PendingActionState {
 	int battingStopped;
 	int batterMoving;
 	int updateBatterLocationAndOrientation;
+	int pitchFrameTime; // from batting_system.c
+
+	// Throwing related
+	float throwDistance; // from throwing_system.c
+	Vector3D throwDirection; // from throwing_system.c
+
+	// Pitching related
+	float pitchPower; // from pitching_system.c
+
+	// Input interpretation
+	int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
 } PendingActionState;
 
 typedef struct _GameModeState {
@@ -574,6 +663,10 @@ typedef struct _LocalGameInfo {
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
 	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state
 	PendingActionState pendingActionState; // Milestone 10 - Action globals
+	AIState aiState; // Milestone 11 - AI globals
+	GameFlowState gameFlowState; // Milestone 11 - Game flow globals
+	UIState uiState; // Milestone 11 - UI state
+	GroundUnit groundUnit[GROUND_UNIT_COUNT];
 	BallInfo ballInfo;
 
 } LocalGameInfo;
@@ -598,6 +691,7 @@ typedef struct _StateInfo {
 	int numTeams;
 	int playSoundEffect;
 	int stopSoundEffect;
+	int soundEnabled;
 	int currently_played_cup_match_index; // Used to pass match context to/from game screen
 	// addresses to important information structures
 	KeyStates *keyStates;

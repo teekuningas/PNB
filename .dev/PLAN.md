@@ -16,14 +16,15 @@ We are preparing the codebase for a major architectural shift towards a **Functi
 - Enum-ify `TeamControlMode`, `TeamSide`, `ReplacementState`, etc.
 - Initial const-correctness sweep.
 
-### 🚧 Milestone 11: The State Consolidation (Logic) (CURRENT)
+### ✅ Milestone 11: The State Consolidation (Logic) (Completed 2026-01-04)
 - **Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`.
-- **Tasks:**
-    - Move AI statics into `AIState`.
-    - Move game flow counters into `GameFlowState`.
-    - Move action system internal variables into `PendingActionState`.
+- **Results:**
+    - Moved AI statics into `AIState`.
+    - Moved game flow counters into `GameFlowState`.
+    - Moved action system internal variables into `PendingActionState`.
+    - `StateInfo` is now the only source of truth for game logic.
 
-### 🔮 Milestone 12: The Rendering Unification
+### 🚧 Milestone 12: The Rendering Unification (CURRENT)
 - **Goal:** Modernize in-game rendering to match the Menu system.
 - **Tasks:** Adopt `ResourceManager`, eliminate orphan `GLuint` globals, and unify GL context setup.
 

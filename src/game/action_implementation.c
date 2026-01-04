@@ -19,8 +19,6 @@
 
 #define CLICK_BREAK_CONSTANT 3
 
-static int doubleClickCounter[BASE_COUNT];
-
 static void changeBatter(StateInfo* stateInfo);
 static void takeFreeWalkDecision(StateInfo* stateInfo);
 static void baseRun(StateInfo* stateInfo, int base);
@@ -35,17 +33,17 @@ void initActionImplementation(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pendingActionState.meterCounter = 0;
 	stateInfo->localGameInfo->pendingActionState.meterCounterMax = 0;
 	for(i = 0; i < BASE_COUNT; i++) {
-		doubleClickCounter[i] = -1;
+		stateInfo->localGameInfo->pendingActionState.doubleClickCounter[i] = -1;
 	}
 
-	resetPitchingSystem();
+	resetPitchingSystem(stateInfo);
 	initBattingSystem(stateInfo);
-	initThrowingSystem();
+	initThrowingSystem(stateInfo);
 	stateInfo->localGameInfo->pendingActionState.runBatFlag = 0;
 
 	//ai uses a few flags..
 
-	initCatchingAI();
+	initCatchingAI(stateInfo);
 	stateInfo->localGameInfo->pendingActionState.aiActionEventLock = -1;
 	stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 0;
 
@@ -68,10 +66,10 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 
 	// double click counter
 	for(i = 0; i < BASE_COUNT; i++) {
-		if(doubleClickCounter[i] >= 0) {
-			doubleClickCounter[i]++;
-			if(doubleClickCounter[i] >= 20) {
-				doubleClickCounter[i] = -1;
+		if(stateInfo->localGameInfo->pendingActionState.doubleClickCounter[i] >= 0) {
+			stateInfo->localGameInfo->pendingActionState.doubleClickCounter[i]++;
+			if(stateInfo->localGameInfo->pendingActionState.doubleClickCounter[i] >= 20) {
+				stateInfo->localGameInfo->pendingActionState.doubleClickCounter[i] = -1;
 			}
 		}
 	}
@@ -419,16 +417,16 @@ static void baseRun(StateInfo* stateInfo, int base)
 					}
 				}
 			}
-			if(doubleClickCounter[base] == -1) {
-				doubleClickCounter[base] = 0;
+			if(stateInfo->localGameInfo->pendingActionState.doubleClickCounter[base] == -1) {
+				stateInfo->localGameInfo->pendingActionState.doubleClickCounter[base] = 0;
 			} else {
-				if(doubleClickCounter[base] >= 0) {
+				if(stateInfo->localGameInfo->pendingActionState.doubleClickCounter[base] >= 0) {
 					if(index != -1) {
 						runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 					}
 
 				}
-				doubleClickCounter[base] = -1;
+				stateInfo->localGameInfo->pendingActionState.doubleClickCounter[base] = -1;
 			}
 		}
 

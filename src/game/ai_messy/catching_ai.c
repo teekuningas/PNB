@@ -8,15 +8,11 @@
 #include "rng.h"
 #include "base_logic.h"
 
-int aiMoveCounter = 0;
-int aiThrowStage = 0;
-int aiDropStage = 0;
-
-void initCatchingAI(void)
+void initCatchingAI(StateInfo* stateInfo)
 {
-	aiDropStage = 0;
-	aiThrowStage = 0;
-	aiMoveCounter = 0;
+	stateInfo->localGameInfo->aiState.dropStage = 0;
+	stateInfo->localGameInfo->aiState.throwStage = 0;
+	stateInfo->localGameInfo->aiState.moveCounter = 0;
 }
 
 // we move towards the target position by simulating key presses.
@@ -30,25 +26,25 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 	float dz = tz - pz;
 
 	if(!isVectorSmallEnoughCircleXZ(dx, dz, 1.0f)) {
-		if(aiMoveCounter >= 10) {
+		if(stateInfo->localGameInfo->aiState.moveCounter >= 10) {
 			flushKeys(stateInfo);
 			MovementKeys keys = calculate_movement_keys(dx, dz);
 			if (keys.up) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
 			if (keys.down) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
 			if (keys.left) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
 			if (keys.right) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-			aiMoveCounter = 0;
+			stateInfo->localGameInfo->aiState.moveCounter = 0;
 		}
 	} else {
 		flushKeys(stateInfo);
-		aiMoveCounter = 0;
+		stateInfo->localGameInfo->aiState.moveCounter = 0;
 	}
-	aiMoveCounter++;
+	stateInfo->localGameInfo->aiState.moveCounter++;
 }
 
 void throwBallToBase(StateInfo* stateInfo, int base)
 {
-	if(aiThrowStage == 0) {
+	if(stateInfo->localGameInfo->aiState.throwStage == 0) {
 		if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 			int catcherIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[base];
 			int catcherNearHome = 0;
@@ -71,7 +67,7 @@ void throwBallToBase(StateInfo* stateInfo, int base)
 			                                  base);
 
 			if(shouldThrow == 1) {
-				aiThrowStage = 1;
+				stateInfo->localGameInfo->aiState.throwStage = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_THROW_LOCK;
 				flushKeys(stateInfo);
@@ -96,27 +92,27 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	updateAIPitching(stateInfo, rng_seed);
 
 	// finish dropping
-	if(aiDropStage == 1) {
+	if(stateInfo->localGameInfo->aiState.dropStage == 1) {
 		flushKeys(stateInfo);
 		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-		aiDropStage = 0;
+		stateInfo->localGameInfo->aiState.dropStage = 0;
 		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 	}
 	// finish throwing
-	if(aiThrowStage == 1) {
+	if(stateInfo->localGameInfo->aiState.throwStage == 1) {
 		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
 		if(stateInfo->localGameInfo->pendingActionState.meterCounter > THROW_MAX*(3.0f/4)) {
 			flushKeys(stateInfo);
-			aiThrowStage = 0;
+			stateInfo->localGameInfo->aiState.throwStage = 0;
 			stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 			stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-				aiThrowStage = 0;
+				stateInfo->localGameInfo->aiState.throwStage = 0;
 				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
@@ -163,7 +159,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		                       r2OriginalBase, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {
 			if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
-				aiDropStage = 1;
+				stateInfo->localGameInfo->aiState.dropStage = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_DROP_LOCK;
 				flushKeys(stateInfo);

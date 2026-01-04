@@ -10,24 +10,15 @@
 #define ANIMATION_FREQUENCY 3
 #define TIMEOUT_CONSTANT 200
 
-// Static variables moved from action_implementation.c
-static float pitchPower;
-static int aiPitchStage;
-static unsigned int aiPitchFirstLimit;
-static unsigned int aiPitchSecondLimit;
-static int aiPitchTime;
-static int aiPitchPreviousTime;
-static int aiBatterReadyTimer;
-
-void resetPitchingSystem(void)
+void resetPitchingSystem(StateInfo* stateInfo)
 {
-	pitchPower = 0;
-	aiPitchStage = 0;
-	aiPitchTime = -1;
-	aiPitchPreviousTime = -1;
-	aiPitchFirstLimit = 0;
-	aiPitchSecondLimit = 0;
-	aiBatterReadyTimer = -1;
+	stateInfo->localGameInfo->pendingActionState.pitchPower = 0;
+	stateInfo->localGameInfo->aiState.pitchStage = 0;
+	stateInfo->localGameInfo->aiState.pitchTime = -1;
+	stateInfo->localGameInfo->aiState.pitchPreviousTime = -1;
+	stateInfo->localGameInfo->aiState.pitchFirstLimit = 0;
+	stateInfo->localGameInfo->aiState.pitchSecondLimit = 0;
+	stateInfo->localGameInfo->aiState.batterReadyTimer = -1;
 }
 
 void startPitch(StateInfo* stateInfo)
@@ -97,7 +88,7 @@ void continuePitch(StateInfo* stateInfo)
 		stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_WAIT;
 		// here we select pitchpower, and as selected it will be in the interval from
 		//	(PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
-		pitchPower = calculate_pitch_power(stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
+		stateInfo->localGameInfo->pendingActionState.pitchPower = calculate_pitch_power(stateInfo->localGameInfo->pendingActionState.meterCounter, stateInfo->localGameInfo->pendingActionState.meterCounterMax);
 		// we select the animation
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_THROW;
 		stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].cPI.animationFrequency = ANIMATION_FREQUENCY;
@@ -143,7 +134,7 @@ void releasePitch(StateInfo* stateInfo)
 	dx = calculate_pitch_dx(pitchAngle);
 	// simple formula, just have base_speed so that there wont any very low pitches and then add some power if wanted.
 	// it will be made so that its more difficult to hit the ball the higher the pitch is.
-	dy = calculate_pitch_dy(pitchPower);
+	dy = calculate_pitch_dy(stateInfo->localGameInfo->pendingActionState.pitchPower);
 	// we prepare to move the pitcher a bit
 	target.x = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;
 	target.z = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
@@ -266,44 +257,44 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 	// here we finish pitching if started.
 	// here i use these weird lock timeouts. im not sure if they are necessary
 	// but they could be. not gonna try anymore.
-	if(aiPitchStage == 1) {
+	if(stateInfo->localGameInfo->aiState.pitchStage == 1) {
 		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
-		if(stateInfo->localGameInfo->pendingActionState.meterCounter > aiPitchFirstLimit) {
-			aiPitchStage = 2;
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter > stateInfo->localGameInfo->aiState.pitchFirstLimit) {
+			stateInfo->localGameInfo->aiState.pitchStage = 2;
 			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-				aiPitchStage = 0;
+				stateInfo->localGameInfo->aiState.pitchStage = 0;
 				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 			}
 		}
-	} else if(aiPitchStage == 2) {
+	} else if(stateInfo->localGameInfo->aiState.pitchStage == 2) {
 		if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter == -1) {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
-		if(stateInfo->localGameInfo->pendingActionState.meterCounter > aiPitchSecondLimit) {
-			aiPitchStage = 3;
+		if(stateInfo->localGameInfo->pendingActionState.meterCounter > stateInfo->localGameInfo->aiState.pitchSecondLimit) {
+			stateInfo->localGameInfo->aiState.pitchStage = 3;
 			stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-				aiPitchStage = 0;
+				stateInfo->localGameInfo->aiState.pitchStage = 0;
 				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 			}
 		}
-	} else if(aiPitchStage == 3) {
-		aiPitchStage = 0;
+	} else if(stateInfo->localGameInfo->aiState.pitchStage == 3) {
+		stateInfo->localGameInfo->aiState.pitchStage = 0;
 		flushKeys(stateInfo);
 		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
@@ -313,15 +304,15 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 	if(stateInfo->localGameInfo->pII.hasBallIndex == pitcherIndex &&
 	        stateInfo->localGameInfo->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1) {
 		// and lets give player some time to prepare
-		if(aiBatterReadyTimer > 70) {
+		if(stateInfo->localGameInfo->aiState.batterReadyTimer > 70) {
 			// try pitching.
-			if(aiPitchStage == 0) {
+			if(stateInfo->localGameInfo->aiState.pitchStage == 0) {
 				int i;
 				int homeLocationFlag = 1;
 				int pitchFlag = 0;
 
-				aiPitchTime++;
-				if(aiPitchTime >= 100) {
+				stateInfo->localGameInfo->aiState.pitchTime++;
+				if(stateInfo->localGameInfo->aiState.pitchTime >= 100) {
 					pitchFlag = 1;
 				}
 				for(i = PLAYERS_IN_TEAM + JOKER_COUNT; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -337,7 +328,7 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 
 						stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_PITCH_LOCK;
 						stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
-						aiPitchStage = 1;
+						stateInfo->localGameInfo->aiState.pitchStage = 1;
 						flushKeys(stateInfo);
 						stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 
@@ -346,8 +337,8 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 						    &(stateInfo->localGameInfo->playerCounters),
 						    &(stateInfo->localGameInfo->gameState),
 						    ANIMATION_FREQUENCY,
-						    &aiPitchFirstLimit,
-						    &aiPitchSecondLimit
+						    &(stateInfo->localGameInfo->aiState.pitchFirstLimit),
+						    &(stateInfo->localGameInfo->aiState.pitchSecondLimit)
 						);
 					} else {
 						// to stop player from unnecessarily moving
@@ -358,19 +349,19 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	}
 
-	if(aiPitchPreviousTime == aiPitchTime) {
-		aiPitchTime = 0;
+	if(stateInfo->localGameInfo->aiState.pitchPreviousTime == stateInfo->localGameInfo->aiState.pitchTime) {
+		stateInfo->localGameInfo->aiState.pitchTime = 0;
 	}
-	aiPitchPreviousTime = aiPitchTime;
+	stateInfo->localGameInfo->aiState.pitchPreviousTime = stateInfo->localGameInfo->aiState.pitchTime;
 	// this batterReadyTimer is used to give human player a bit more time before AI pitches.
 	if(stateInfo->localGameInfo->pRAI.batterReady == 1 &&
 	        stateInfo->localGameInfo->pII.catcherOnBaseIndex[0] == stateInfo->localGameInfo->pII.hasBallIndex &&
-	        aiBatterReadyTimer == -1) {
-		aiBatterReadyTimer = 0;
+	        stateInfo->localGameInfo->aiState.batterReadyTimer == -1) {
+		stateInfo->localGameInfo->aiState.batterReadyTimer = 0;
 	} else if(stateInfo->localGameInfo->pRAI.batterReady == 0) {
-		aiBatterReadyTimer = -1;
+		stateInfo->localGameInfo->aiState.batterReadyTimer = -1;
 	}
-	if(aiBatterReadyTimer != -1) {
-		aiBatterReadyTimer++;
+	if(stateInfo->localGameInfo->aiState.batterReadyTimer != -1) {
+		stateInfo->localGameInfo->aiState.batterReadyTimer++;
 	}
 }

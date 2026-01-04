@@ -10,7 +10,7 @@
 void startPitch(StateInfo* stateInfo);
 void continuePitch(StateInfo* stateInfo);
 void releasePitch(StateInfo* stateInfo);
-void resetPitchingSystem(void);
+void resetPitchingSystem(StateInfo* stateInfo);
 void updatePitchingMeter(StateInfo* stateInfo);
 
 void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed);

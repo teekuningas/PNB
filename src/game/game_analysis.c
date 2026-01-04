@@ -16,13 +16,6 @@
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
-static int woundingCatchCounter;
-static int outOfBoundsCounter;
-static int endOfInningCounter;
-static int nextPairCounter;
-static int foulPlayEventFlag;
-static int homeRunCameraCounter;
-
 static void checkForOuts(StateInfo* stateInfo);
 static void checkIfNextBatterDecision(StateInfo* stateInfo);
 static void strikesAndBalls(StateInfo* stateInfo);
@@ -49,12 +42,12 @@ static void populateGameConclusion(StateInfo* stateInfo, int winner)
 void initGameAnalysis(StateInfo* stateInfo)
 {
 	// init some variables only used here.
-	woundingCatchCounter = -1;
-	outOfBoundsCounter = 0;
-	endOfInningCounter = -1;
-	nextPairCounter = -1;
-	foulPlayEventFlag = 0;
-	homeRunCameraCounter = -1;
+	stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
+	stateInfo->localGameInfo->gameFlowState.outOfBoundsCounter = 0;
+	stateInfo->localGameInfo->gameFlowState.endOfInningCounter = -1;
+	stateInfo->localGameInfo->gameFlowState.nextPairCounter = -1;
+	stateInfo->localGameInfo->gameFlowState.foulPlayEventFlag = 0;
+	stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = -1;
 }
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
@@ -68,11 +61,11 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	}
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
-	if(homeRunCameraCounter >= 0) {
-		homeRunCameraCounter++;
-		if(homeRunCameraCounter > 50) {
+	if(stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter >= 0) {
+		stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter++;
+		if(stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter > 50) {
 			stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
-			homeRunCameraCounter = -1;
+			stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = -1;
 		}
 	}
 
@@ -114,11 +107,11 @@ static void checkForOuts(StateInfo* stateInfo)
 				if(stateInfo->localGameInfo->ballInfo.location.z > HOME_LINE_Z && isVectorSmallEnoughCircleXZ(dx, dz, HOME_RADIUS)) {
 					smallEnough = 1;
 					stateInfo->localGameInfo->gameState.ballHome = 1;
-					if(homeRunCameraCounter == -1 && stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 1 &&
+					if(stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter == -1 && stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 1 &&
 					        (stateInfo->localGameInfo->pII.safeOnBaseIndex[3] == -1 ||
 					         stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[3]].
 					         bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
-						homeRunCameraCounter = 0;
+						stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = 0;
 					}
 				}
 			}
@@ -205,7 +198,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 	if(stateInfo->globalGameInfo->period >= 4) {
 
 	} else if(stateInfo->localGameInfo->pII.batterIndex == -1 && stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 0 &&
-	          endOfInningCounter == -1) {
+	          stateInfo->localGameInfo->gameFlowState.endOfInningCounter == -1) {
 		// there have to be a player available
 		if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft + stateInfo->localGameInfo->playerCounters.jokersLeft > 0) {
 			// have to check that there is only three players in the field too and that it is not a out of bounds situation.
@@ -300,7 +293,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 	// also set hitsGroundToUnWound to 0 so that we can see if that changes in this short time period.
 	if(stateInfo->localGameInfo->woundingState.woundingCatch == 1 && stateInfo->localGameInfo->woundingState.woundingCatchHandled == 0) {
 		int i;
-		woundingCatchCounter = 0;
+		stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = 0;
 		stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound = 0;
 		stateInfo->localGameInfo->woundingState.woundingCatchHandled = 1;
 		printf("DEBUG: Wounding catch started! Counter reset.\n");
@@ -332,9 +325,9 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 
 
 	}
-	if(woundingCatchCounter >= 0) {
+	if(stateInfo->localGameInfo->gameFlowState.woundingCatchCounter >= 0) {
 		int threshold;
-		woundingCatchCounter++;
+		stateInfo->localGameInfo->gameFlowState.woundingCatchCounter++;
 		// and we extend the time a bit if ball is not with the player anymore.
 		if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 			threshold = (int)(2*WOUNDING_CATCH_THRESHOLD);
@@ -343,7 +336,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		if(stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound == 1) {
 			printf("DEBUG: Wounding CANCELLED! Ball hit ground.\n");
 			int i;
-			woundingCatchCounter = -1;
+			stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
 			for(i = 0; i < BASE_COUNT; i++) {
 				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 				if(index != -1) {
@@ -353,7 +346,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		}
 		// otherwise there is a real possibility for wounding
 		// and we check if there are players that are out of base etc at that moment.
-		if(woundingCatchCounter > threshold) {
+		if(stateInfo->localGameInfo->gameFlowState.woundingCatchCounter > threshold) {
 			printf("DEBUG: Wounding catch timer expired. Applying wounds.\n");
 			int i;
 			for(i = 0; i < BASE_COUNT; i++) {
@@ -389,7 +382,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				}
 			}
 			stateInfo->localGameInfo->woundingState.woundingCatch = 0;
-			woundingCatchCounter = -1;
+			stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
 		}
 	}
 }
@@ -400,16 +393,16 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 	// so if outOfBounds == 1 which has been checked and set when ball lands in game_manipulation
 	if(stateInfo->localGameInfo->gameState.outOfBounds == 1) {
 		// we use a counter so that there is some time to realize what happened.
-		outOfBoundsCounter += 1;
+		stateInfo->localGameInfo->gameFlowState.outOfBoundsCounter += 1;
 		// and send some info to screen. and do that only once.
-		if(foulPlayEventFlag == 0) {
+		if(stateInfo->localGameInfo->gameFlowState.foulPlayEventFlag == 0) {
 			stateInfo->localGameInfo->gameState.event = EVENT_OUT_OF_BOUNDS;
-			foulPlayEventFlag = 1;
+			stateInfo->localGameInfo->gameFlowState.foulPlayEventFlag = 1;
 		}
-		if(outOfBoundsCounter > OUT_OF_BOUNDS_THRESHOLD) {
+		if(stateInfo->localGameInfo->gameFlowState.outOfBoundsCounter > OUT_OF_BOUNDS_THRESHOLD) {
 			int j;
-			outOfBoundsCounter = 0;
-			foulPlayEventFlag = 0;
+			stateInfo->localGameInfo->gameFlowState.outOfBoundsCounter = 0;
+			stateInfo->localGameInfo->gameFlowState.foulPlayEventFlag = 0;
 			stateInfo->localGameInfo->gameState.outOfBounds = 0;
 
 			// so now initialize everything like in beginning of the inning except important non-volatile stuff
@@ -529,8 +522,8 @@ static void checkForRuns(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->gameControl.checkForRun == 1) {
 		// check runs only after we know if the runner could have been wounded.
 		if((stateInfo->localGameInfo->gameControl.firstCatchMade == 1 ||
-		        stateInfo->localGameInfo->ballInfo.hasHitGround == 1) && woundingCatchCounter == -1 &&
-		        endOfInningCounter == -1) {
+		        stateInfo->localGameInfo->ballInfo.hasHitGround == 1) && stateInfo->localGameInfo->gameFlowState.woundingCatchCounter == -1 &&
+		        stateInfo->localGameInfo->gameFlowState.endOfInningCounter == -1) {
 			// if its out of bounds, no love
 			if(stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				int j;
@@ -631,23 +624,23 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 	        (stateInfo->globalGameInfo->period >= 4 && stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter >=
 	         stateInfo->globalGameInfo->pairCount)) {
 
-		if(endOfInningCounter == -1) {
-			endOfInningCounter = 0;
+		if(stateInfo->localGameInfo->gameFlowState.endOfInningCounter == -1) {
+			stateInfo->localGameInfo->gameFlowState.endOfInningCounter = 0;
 			// so that user wont be prompted for this after inning has ended but screen hasnt changed yet.
 			stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
 			stateInfo->localGameInfo->gameState.event = EVENT_INNING_ENDING;
 		}
 	}
-	if(endOfInningCounter != -1) {
-		endOfInningCounter++;
+	if(stateInfo->localGameInfo->gameFlowState.endOfInningCounter != -1) {
+		stateInfo->localGameInfo->gameFlowState.endOfInningCounter++;
 	}
 	// basically here we just list the different kind of ending alternatives and figure out if this is one of them.
-	if(endOfInningCounter > 200) {
+	if(stateInfo->localGameInfo->gameFlowState.endOfInningCounter > 200) {
 		int battingTeamIndex = (stateInfo->globalGameInfo->
 		                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 		int catchingTeamIndex = (battingTeamIndex+1)%2;
 
-		endOfInningCounter = -1;
+		stateInfo->localGameInfo->gameFlowState.endOfInningCounter = -1;
 		stateInfo->globalGameInfo->inning++;
 		// if first period ending
 		if(stateInfo->globalGameInfo->inning == stateInfo->globalGameInfo->halfInningsInPeriod ||
@@ -788,20 +781,20 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		        (stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[0] == -1 &&
 		         stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        stateInfo->localGameInfo->gameModeState.forceNextPair == 1) {
-			if(nextPairCounter == -1) {
-				nextPairCounter = 0;
+			if(stateInfo->localGameInfo->gameFlowState.nextPairCounter == -1) {
+				stateInfo->localGameInfo->gameFlowState.nextPairCounter = 0;
 				// send message only if its not end of inning also.
-				if(endOfInningCounter == -1) {
+				if(stateInfo->localGameInfo->gameFlowState.endOfInningCounter == -1) {
 					stateInfo->localGameInfo->gameState.event = EVENT_NEXT_PAIR;
 				}
 			}
 		}
-		if(nextPairCounter != -1) {
-			nextPairCounter++;
+		if(stateInfo->localGameInfo->gameFlowState.nextPairCounter != -1) {
+			stateInfo->localGameInfo->gameFlowState.nextPairCounter++;
 		}
-		if(nextPairCounter > 200) {
+		if(stateInfo->localGameInfo->gameFlowState.nextPairCounter > 200) {
 			// set to -2 so that we avoid this being called twice. it will be set to -1 in the beginning of the next pair
-			nextPairCounter = -2;
+			stateInfo->localGameInfo->gameFlowState.nextPairCounter = -2;
 			stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter++;
 			// if equality holds, ending of inning will load the settings.
 			if(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter != stateInfo->globalGameInfo->pairCount) {

@@ -14,6 +14,10 @@ static ma_engine engine;
 
 int initSound(StateInfo* stateInfo)
 {
+	if(stateInfo->soundEnabled == 0) {
+		working = 0;
+		return 0;
+	}
 
 	result = ma_engine_init(NULL, &engine);
 	if (result != MA_SUCCESS) {
@@ -53,6 +57,12 @@ int initSound(StateInfo* stateInfo)
 }
 void updateSound(StateInfo* stateInfo)
 {
+	if(stateInfo->soundEnabled == 0) {
+		stateInfo->playSoundEffect = 0;
+		stateInfo->stopSoundEffect = 0;
+		return;
+	}
+
 	if(stateInfo->playSoundEffect != 0) {
 		if(working == 1) {
 			switch(stateInfo->playSoundEffect) {
@@ -85,6 +95,9 @@ void updateSound(StateInfo* stateInfo)
 
 int cleanSound(StateInfo* stateInfo)
 {
+	if(stateInfo->soundEnabled == 0) {
+		return 0;
+	}
 	ma_engine_uninit(&engine);
 	return 0;
 }

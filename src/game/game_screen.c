@@ -20,27 +20,11 @@
 #define BASES_X 0.57f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
-static int gameInfoEventTimer;
-static int gameInfoEvent;
-
 static void drawSkyBox(const StateInfo* stateInfo);
 static void drawStatistics(const StateInfo* stateInfo, double alpha);
 static int initLights(StateInfo* stateInfo);
 static void initCamSettings(StateInfo* stateInfo);
 static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed);
-
-static Vector3D cam, look, up;
-static Vector3D statCam, statLook, statUp;
-static Vector3D skyBoxCam, skyBoxLook;
-static float lightPos[4];
-
-static Vector3D lastCamTargetLocation;
-static Vector3D lastCamLocation;
-static Vector3D camLocation;
-static Vector3D camTargetLocation;
-
-static float lastMeterX;
-static float lastSwingMeterX;
 
 static GLuint skyTexture;
 static GLuint meterTexture;
@@ -73,8 +57,8 @@ int initGameScreen(StateInfo* stateInfo)
 
 	initCamSettings(stateInfo);
 
-	lastMeterX = 0;
-	lastSwingMeterX = 0;
+	stateInfo->localGameInfo->uiState.lastMeterX = 0;
+	stateInfo->localGameInfo->uiState.lastSwingMeterX = 0;
 
 	result = initLights(stateInfo);
 	if(result != 0) {
@@ -99,6 +83,7 @@ int initGameScreen(StateInfo* stateInfo)
 void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
+	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
 	// if we just changed here, load basic settings.
 	if(stateInfo->changeScreen == 1) {
 		stateInfo->changeScreen = 0;
@@ -122,44 +107,44 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 		}
 	}
 	// update camera
-	lastCamTargetLocation.x = camTargetLocation.x;
-	lastCamTargetLocation.y = camTargetLocation.y;
-	lastCamTargetLocation.z = camTargetLocation.z;
+	cs->lastCamTargetLocation.x = cs->camTargetLocation.x;
+	cs->lastCamTargetLocation.y = cs->camTargetLocation.y;
+	cs->lastCamTargetLocation.z = cs->camTargetLocation.z;
 
-	lastCamLocation.y = camLocation.y;
-	lastCamLocation.z = camLocation.z;
-	lastCamLocation.x = camLocation.x;
+	cs->lastCamLocation.y = cs->camLocation.y;
+	cs->lastCamLocation.z = cs->camLocation.z;
+	cs->lastCamLocation.x = cs->camLocation.x;
 	// we follow the ball with our camera
-	camTargetLocation.x = ballInfo->location.x;
-	camTargetLocation.y = ballInfo->location.y*0.5f;
-	camTargetLocation.z = ballInfo->location.z;
+	cs->camTargetLocation.x = ballInfo->location.x;
+	cs->camTargetLocation.y = ballInfo->location.y*0.5f;
+	cs->camTargetLocation.z = ballInfo->location.z;
 
 	// and our camera also moves a bit with the ball.
 
-	camLocation.x = 0.1f*camTargetLocation.x;
+	cs->camLocation.x = 0.1f*cs->camTargetLocation.x;
 	// if we are behind the homebase
 	if(stateInfo->localGameInfo->ballInfo.location.z > HOME_RADIUS) {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(camTargetLocation.x)/3;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 15.0f + (float)fabs(camTargetLocation.x)/2;
+		cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(cs->camTargetLocation.x)/3;
+		cs->camLocation.z = cs->camTargetLocation.z - 0.3f*cs->camTargetLocation.z + 12.0f + 15.0f + (float)fabs(cs->camTargetLocation.x)/2;
 	}
 	// if runner coming from third base
 	else if(stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 0 ) {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f;
+		cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f;
+		cs->camLocation.z = cs->camTargetLocation.z - 0.3f*cs->camTargetLocation.z + 12.0f;
 	}
 	// and the normal mode
 	else {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 8.0f;
+		cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
+		cs->camLocation.z = cs->camTargetLocation.z - 0.3f*cs->camTargetLocation.z + 12.0f + 8.0f;
 	}
 	// cant update this at the drawing-function as that doesnt happen synchroniusly.
 	// so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
 	// we hit the threshold.
-	if(gameInfoEventTimer != -1) {
-		gameInfoEventTimer+=1;
+	if(stateInfo->localGameInfo->uiState.gameInfoEventTimer != -1) {
+		stateInfo->localGameInfo->uiState.gameInfoEventTimer+=1;
 
-		if(gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-			gameInfoEventTimer = -1;
+		if(stateInfo->localGameInfo->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
+			stateInfo->localGameInfo->uiState.gameInfoEventTimer = -1;
 		}
 	}
 
@@ -172,13 +157,15 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, const RenderState*
 {
 	// Ensure the 3D rendering state is correctly set up before drawing the game screen.
 	begin_3d_render(rs);
+	CameraState* cs = (CameraState*)&(stateInfo->localGameInfo->cameraState);
+	Vector3D look, cam, skyBoxLook;
 
-	look.x = (float)(alpha*camTargetLocation.x + (1-alpha)*lastCamTargetLocation.x);
-	look.y = (float)(alpha*camTargetLocation.y + (1-alpha)*lastCamTargetLocation.y);
-	look.z = (float)(alpha*camTargetLocation.z + (1-alpha)*lastCamTargetLocation.z);
-	cam.y = (float)(alpha*camLocation.y + (1-alpha)*lastCamLocation.y);
-	cam.z = (float)(alpha*camLocation.z + (1-alpha)*lastCamLocation.z);
-	cam.x = (float)(alpha*camLocation.x + (1-alpha)*lastCamLocation.x);
+	look.x = (float)(alpha*cs->camTargetLocation.x + (1-alpha)*cs->lastCamTargetLocation.x);
+	look.y = (float)(alpha*cs->camTargetLocation.y + (1-alpha)*cs->lastCamTargetLocation.y);
+	look.z = (float)(alpha*cs->camTargetLocation.z + (1-alpha)*cs->lastCamTargetLocation.z);
+	cam.y = (float)(alpha*cs->camLocation.y + (1-alpha)*cs->lastCamLocation.y);
+	cam.z = (float)(alpha*cs->camLocation.z + (1-alpha)*cs->lastCamLocation.z);
+	cam.x = (float)(alpha*cs->camLocation.x + (1-alpha)*cs->lastCamLocation.x);
 	// with skybox we move to origin
 	skyBoxLook.x = look.x - cam.x;
 	skyBoxLook.y = look.y - cam.y;
@@ -187,7 +174,7 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, const RenderState*
 	glDisable(GL_LIGHTING);
 	glDepthMask(GL_FALSE);
 	glLoadIdentity();
-	gluLookAt(skyBoxCam.x, skyBoxCam.y, skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, up.x, up.y, up.z);
+	gluLookAt(cs->skyBoxCam.x, cs->skyBoxCam.y, cs->skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, cs->up.x, cs->up.y, cs->up.z);
 
 	drawSkyBox(stateInfo);
 
@@ -195,9 +182,9 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, const RenderState*
 	glDepthMask(GL_TRUE);
 
 	glLoadIdentity();
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
+	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, cs->up.x, cs->up.y, cs->up.z);
 	glEnable(GL_LIGHTING);
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+	glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
 
 	drawImmutableWorld(stateInfo, alpha);
 	drawMutableWorld(stateInfo, alpha);
@@ -206,7 +193,7 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, const RenderState*
 	glDisable(GL_LIGHTING);
 	glDisable(GL_DEPTH_TEST);
 	glLoadIdentity();
-	gluLookAt(statCam.x, statCam.y, statCam.z, statLook.x, statLook.y, statLook.z, statUp.x, statUp.y, statUp.z);
+	gluLookAt(cs->statCam.x, cs->statCam.y, cs->statCam.z, cs->statLook.x, cs->statLook.y, cs->statLook.z, cs->statUp.x, cs->statUp.y, cs->statUp.z);
 
 	drawStatistics(stateInfo, alpha);
 }
@@ -222,17 +209,19 @@ static int initLights(StateInfo* stateInfo)
 	float diffuse[] = {1.0f,1.0f,1.0f,1.0f};
 	float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
 	float specular[] = {1.0f, 1.0f,1.0f,1.0f};
+	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmb);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	lightPos[0] = LIGHT_SOURCE_POSITION_X;
-	lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-	lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-	lightPos[3] = 1.0f;
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+	cs->lightPos[0] = LIGHT_SOURCE_POSITION_X;
+	cs->lightPos[1] = LIGHT_SOURCE_POSITION_Y;
+	cs->lightPos[2] = LIGHT_SOURCE_POSITION_Z;
+	cs->lightPos[3] = 1.0f;
+	glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
 
 	return 0;
 }
@@ -257,6 +246,8 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 	char str6[4] = "I  ";
 	float swingMeterX;
 	float meterX;
+	UIState* us = &(stateInfo->localGameInfo->uiState);
+
 	// we draw the background for writing text. it will appear at the bottom of screen
 	// because of the camera settings.
 	drawFontBackground();
@@ -314,36 +305,36 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 	// so we have these events thats are triggered in other parts of code by event = <enum>;
 	// we have a counter so that the info will disappear after some time.
 	if(stateInfo->localGameInfo->gameState.event != EVENT_NONE) {
-		gameInfoEventTimer = 0;
-		gameInfoEvent = (int)stateInfo->localGameInfo->gameState.event;
+		us->gameInfoEventTimer = 0;
+		us->gameInfoEvent = (int)stateInfo->localGameInfo->gameState.event;
 		stateInfo->localGameInfo->gameState.event = EVENT_NONE;
 	}
-	if(gameInfoEventTimer != -1) {
-		if(gameInfoEvent == EVENT_OUT) {
+	if(us->gameInfoEventTimer != -1) {
+		if(us->gameInfoEvent == EVENT_OUT) {
 			printText("        OUT", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_WOUNDED) {
+		if(us->gameInfoEvent == EVENT_WOUNDED) {
 			printText("     WOUNDED", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_RUN_SCORED) {
+		if(us->gameInfoEvent == EVENT_RUN_SCORED) {
 			printText("        RUN", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_OUT_OF_BOUNDS) {
+		if(us->gameInfoEvent == EVENT_OUT_OF_BOUNDS) {
 			printText("  OUT OF BOUNDS", 15, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_STRIKE) {
+		if(us->gameInfoEvent == EVENT_STRIKE) {
 			printText("      STRIKE", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_BALL) {
+		if(us->gameInfoEvent == EVENT_BALL) {
 			printText("        BALL", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_INNING_ENDING) {
+		if(us->gameInfoEvent == EVENT_INNING_ENDING) {
 			printText("HALF-INNING ENDS", 16, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_NEXT_PAIR) {
+		if(us->gameInfoEvent == EVENT_NEXT_PAIR) {
 			printText("    NEXT PAIR", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
-		if(gameInfoEvent == EVENT_TWO_RUNS_SCORED) {
+		if(us->gameInfoEvent == EVENT_TWO_RUNS_SCORED) {
 			printText("     TWO RUNS", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
 		}
 	}
@@ -394,7 +385,7 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 	//players in bases
 	glBindTexture(GL_TEXTURE_2D, basesTexture);
 	glPushMatrix();
-	glTranslatef(BASES_X, 1.0f, STATISTICS_TEXT_HEIGHT); // these numeric parameters come from
+	glTranslatef(BASES_X, 1.0f,STATISTICS_TEXT_HEIGHT); // these numeric parameters come from
 	glScalef(0.08f, 0.02f, 0.02f);
 	glCallList(planeDisplayList);
 	glPopMatrix();
@@ -402,27 +393,27 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 	// meter
 	glBindTexture(GL_TEXTURE_2D, meterTexture);
 	glPushMatrix();
-	glTranslatef(METER_X + 0.08f, 1.0f, STATISTICS_TEXT_HEIGHT);
+	glTranslatef(METER_X + 0.08f, 1.0f,STATISTICS_TEXT_HEIGHT);
 	glScalef(0.08f, 0.02f, 0.02f);
 	glCallList(planeDisplayList);
 	glPopMatrix();
 
 	glBindTexture(GL_TEXTURE_2D, selectionTextureFielding);
 	glPushMatrix();
-	glTranslatef(METER_X + (float)(alpha*meterX + (1-alpha)*lastMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
+	glTranslatef(METER_X + (float)(alpha*meterX + (1-alpha)*us->lastMeterX), 1.0f,STATISTICS_TEXT_HEIGHT);
 	glScalef(0.002f, 0.01f, 0.02f);
 	glCallList(planeDisplayList);
 	glPopMatrix();
 
 	glBindTexture(GL_TEXTURE_2D, selectionTextureBatting);
 	glPushMatrix();
-	glTranslatef(METER_X + (float)(alpha*swingMeterX + (1-alpha)*lastSwingMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
+	glTranslatef(METER_X + (float)(alpha*swingMeterX + (1-alpha)*us->lastSwingMeterX), 1.0f,STATISTICS_TEXT_HEIGHT);
 	glScalef(0.002f, 0.01f, 0.02f);
 	glCallList(planeDisplayList);
 	glPopMatrix();
 
-	lastMeterX = meterX;
-	lastSwingMeterX = swingMeterX;
+	us->lastMeterX = meterX;
+	us->lastSwingMeterX = swingMeterX;
 
 
 	// and then draw little disks over basesTexture to indicate where baserunners are.
@@ -469,7 +460,7 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 			glBindTexture(GL_TEXTURE_2D, basesMarkerTexture);
 			glPushMatrix();
 			glTranslatef(left + interval*base + phase*interval,
-			             1.0f, STATISTICS_TEXT_HEIGHT);
+			             1.0f,STATISTICS_TEXT_HEIGHT);
 			glScalef(0.005f, 0.005f, 0.005f);
 			glCallList(planeDisplayList);
 			glPopMatrix();
@@ -479,7 +470,7 @@ static void drawStatistics(const StateInfo* stateInfo, double alpha)
 
 static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-	gameInfoEventTimer = -1;
+	stateInfo->localGameInfo->uiState.gameInfoEventTimer = -1;
 	// initialize cam
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
@@ -488,48 +479,50 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 
 static void initCamSettings(StateInfo* stateInfo)
 {
-	lastCamTargetLocation.x = 0.0f;
-	lastCamTargetLocation.y = 0.0f;
-	lastCamTargetLocation.z = 0.0f;
-	camTargetLocation.x = 0.0f;
-	camTargetLocation.y = 0.0f;
-	camTargetLocation.z = -1.0f;
-	lastCamLocation.x = 0.0f;
-	lastCamLocation.y = 0.0f;
-	lastCamLocation.z = 0.0f;
-	camLocation.x = 0.0f;
-	camLocation.y = 0.0f;
-	camLocation.z = 0.0f;
+	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
 
-	cam.x = camLocation.x;
-	cam.y = 0.0f;
-	cam.z = 0.0f;
-	up.x = 0.0f;
-	up.y = 1.0f;
-	up.z = 0.0f;
-	look.x = 0.0f;
-	look.y = 0.0f;
-	look.z = 0.0f;
+	cs->lastCamTargetLocation.x = 0.0f;
+	cs->lastCamTargetLocation.y = 0.0f;
+	cs->lastCamTargetLocation.z = 0.0f;
+	cs->camTargetLocation.x = 0.0f;
+	cs->camTargetLocation.y = 0.0f;
+	cs->camTargetLocation.z = -1.0f;
+	cs->lastCamLocation.x = 0.0f;
+	cs->lastCamLocation.y = 0.0f;
+	cs->lastCamLocation.z = 0.0f;
+	cs->camLocation.x = 0.0f;
+	cs->camLocation.y = 0.0f;
+	cs->camLocation.z = 0.0f;
 
-	skyBoxCam.x = 0.0f;
-	skyBoxCam.y = 0.0f;
-	skyBoxCam.z = 0.0f;
-	skyBoxLook.x = 0.0f;
-	skyBoxLook.y = 0.0f;
-	skyBoxLook.z = -1.0f;
+	cs->cam.x = cs->camLocation.x;
+	cs->cam.y = 0.0f;
+	cs->cam.z = 0.0f;
+	cs->up.x = 0.0f;
+	cs->up.y = 1.0f;
+	cs->up.z = 0.0f;
+	cs->look.x = 0.0f;
+	cs->look.y = 0.0f;
+	cs->look.z = 0.0f;
+
+	cs->skyBoxCam.x = 0.0f;
+	cs->skyBoxCam.y = 0.0f;
+	cs->skyBoxCam.z = 0.0f;
+	cs->skyBoxLook.x = 0.0f;
+	cs->skyBoxLook.y = 0.0f;
+	cs->skyBoxLook.z = -1.0f;
 	// these values are kinda trial and error values to move the statistics window to right place. i think proper deriving is unnecessary as we use perspective
 	// projection at the same time.
 
 	// to move statistics to safe zone of tv
-	statCam.x = 0.0f;
-	statCam.y = 1.9f;
-	statCam.z = -1.69f;
-	statUp.x = 0.0f;
-	statUp.y = 0.0f;
-	statUp.z = -1.0f;
-	statLook.x = 0.0f;
-	statLook.y = 0.0f;
-	statLook.z = -1.69f;
+	cs->statCam.x = 0.0f;
+	cs->statCam.y = 1.9f;
+	cs->statCam.z = -1.69f;
+	cs->statUp.x = 0.0f;
+	cs->statUp.y = 0.0f;
+	cs->statUp.z = -1.0f;
+	cs->statLook.x = 0.0f;
+	cs->statLook.y = 0.0f;
+	cs->statLook.z = -1.69f;
 
 }
 
