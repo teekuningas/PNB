@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-void initBattingAI(StateInfo* stateInfo);
+void initBattingAI(AIState* aiState);
 void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif

@@ -12,33 +12,33 @@
 
 #define CLICK_BREAK_CONSTANT 3
 
-void initBattingAI(StateInfo* stateInfo)
+void initBattingAI(AIState* aiState)
 {
 	int i;
-	stateInfo->localGameInfo->aiState.battingKeyDown = 0;
-	stateInfo->localGameInfo->aiState.changingKeyDown = 0;
-	stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
-	stateInfo->localGameInfo->aiState.battingStyle = 0;
-	stateInfo->localGameInfo->aiState.runningBatter = 0;
-	stateInfo->localGameInfo->aiState.runningBaseRunners = 0;
+	aiState->battingKeyDown = 0;
+	aiState->changingKeyDown = 0;
+	aiState->actionKeyLock = AI_NO_LOCK;
+	aiState->battingStyle = 0;
+	aiState->runningBatter = 0;
+	aiState->runningBaseRunners = 0;
 
-	stateInfo->localGameInfo->aiState.increaseKeyDown = 0;
-	stateInfo->localGameInfo->aiState.decreaseKeyDown = 0;
-	stateInfo->localGameInfo->aiState.angleDecided = 0;
-	stateInfo->localGameInfo->aiState.decidedAngle = 0.0f;
-	stateInfo->localGameInfo->pendingActionState.aiWrongPitch = 0;
-	stateInfo->localGameInfo->aiState.planCalculated = 0;
-	stateInfo->localGameInfo->aiState.firstIndex = -1;
-	stateInfo->localGameInfo->aiState.firstIndexSelected = 0;
-	stateInfo->localGameInfo->aiState.change = 0;
-	stateInfo->localGameInfo->aiState.changeHasHappened = 0;
+	aiState->increaseKeyDown = 0;
+	aiState->decreaseKeyDown = 0;
+	aiState->angleDecided = 0;
+	aiState->decidedAngle = 0.0f;
+	aiState->aiWrongPitch = 0;
+	aiState->planCalculated = 0;
+	aiState->firstIndex = -1;
+	aiState->firstIndexSelected = 0;
+	aiState->change = 0;
+	aiState->changeHasHappened = 0;
 	for(i = 0; i < BASE_COUNT; i++) {
-		stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 0;
-		stateInfo->localGameInfo->aiState.lastSafeOnBaseIndex[i] = -1;
-		stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 0;
-		stateInfo->localGameInfo->aiState.amountOfClicks[i] = 0;
-		stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-		stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
+		aiState->baseRunnerKeyDown[i] = 0;
+		aiState->lastSafeOnBaseIndex[i] = -1;
+		aiState->baseRunnerDecisionMade[i] = 0;
+		aiState->amountOfClicks[i] = 0;
+		aiState->baseRunnerLock[i] = AI_NO_LOCK;
+		aiState->clickBreak[i] = 0;
 	}
 }
 
@@ -233,15 +233,15 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	else if(stateInfo->localGameInfo->pRAI.pitchState == PITCH_STAGE_AIRBORNE) {
 		int i;
 		// predict if pitch is going to be ball
-		if(stateInfo->localGameInfo->pendingActionState.aiWrongPitch == 0 && is_wrong_pitch(
+		if(stateInfo->localGameInfo->aiState.aiWrongPitch == 0 && is_wrong_pitch(
 		            stateInfo->localGameInfo->ballInfo.velocity.x,
 		            stateInfo->localGameInfo->ballInfo.velocity.y,
 		            GRAVITY,
 		            PLATE_WIDTH
 		        )) {
-			stateInfo->localGameInfo->pendingActionState.aiWrongPitch = 1;
+			stateInfo->localGameInfo->aiState.aiWrongPitch = 1;
 		}
-		if(stateInfo->localGameInfo->pendingActionState.aiWrongPitch == 1) {
+		if(stateInfo->localGameInfo->aiState.aiWrongPitch == 1) {
 			// batter isnt handled here
 			// this code will make baserunners come back if wrong pitch is pitched
 			for(i = 1; i < BASE_COUNT; i++) {
@@ -270,7 +270,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.decidedAngle = calculate_ai_batting_angle(0, -1, seeded_rand(rng_seed, RAND_MAX));
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
-			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 23 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiWrongPitch == 0) {
+			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 23 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
 				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;
@@ -301,7 +301,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.decidedAngle = calculate_ai_batting_angle(1, leadBase, seeded_rand(rng_seed, RAND_MAX));
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
-			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 10 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiWrongPitch == 0) {
+			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 10 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
 				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;
@@ -319,7 +319,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.decidedAngle = calculate_ai_batting_angle(2, -1, seeded_rand(rng_seed, RAND_MAX));
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
-			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 11 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiWrongPitch == 0) {
+			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 11 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
 				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;

@@ -552,6 +552,7 @@ typedef struct _AIState {
 	int pitchTime;
 	int pitchPreviousTime;
 	int batterReadyTimer;
+	int aiWrongPitch;
 } AIState;
 
 typedef struct _GameFlowState {
@@ -570,7 +571,6 @@ typedef struct _PendingActionState {
 
 	int throwGoingOn;
 	int runBatFlag;
-	int aiWrongPitch;
 	int batterSelect;
 
 	AILockType aiActionEventLock;

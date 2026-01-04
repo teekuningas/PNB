@@ -159,7 +159,7 @@ void releasePitch(StateInfo* stateInfo)
 	// batter can advance now
 	stateInfo->localGameInfo->pRAI.batterCanAdvance = 1;
 	// let ai do the calculation for ball again
-	stateInfo->localGameInfo->pendingActionState.aiWrongPitch = 0;
+	stateInfo->localGameInfo->aiState.aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
 	stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
 	// always when pitch reaches the stage of ball going to air, we update baserunners'

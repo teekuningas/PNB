@@ -52,8 +52,7 @@ void setup_runner_at_first_base(StateInfo* state) {
     // Flush initLocals to prevent wiping state later
     loadMutableWorldSettings(state, &seed);
     state->localGameInfo->gameControl.initLocals = 0;
-    initGameAnalysis(state);
-
+    	initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 1;
@@ -77,8 +76,7 @@ void setup_runner_at_third_base(StateInfo* state) {
     // Flush initLocals
     loadMutableWorldSettings(state, &seed);
     state->localGameInfo->gameControl.initLocals = 0;
-    initGameAnalysis(state);
-
+    	initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 3;

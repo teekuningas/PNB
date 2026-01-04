@@ -44,7 +44,7 @@ void gameManipulation(StateInfo* stateInfo)
 {
 	// init?
 	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
-		initGameManipulation(stateInfo);
+		initGameManipulation(&(stateInfo->localGameInfo->gameFlowState));
 		stateInfo->localGameInfo->gameControl.initLocals++;
 		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
 			stateInfo->localGameInfo->gameControl.initLocals = 0;
@@ -63,9 +63,9 @@ void gameManipulation(StateInfo* stateInfo)
 	updateModels(stateInfo);
 }
 
-void initGameManipulation(StateInfo* stateInfo)
+void initGameManipulation(GameFlowState* gameFlowState)
 {
-	stateInfo->localGameInfo->gameFlowState.closeToGround = 0;
+	gameFlowState->closeToGround = 0;
 }
 
 

@@ -5,6 +5,6 @@
 #include "menu_types.h"
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
-void initGameAnalysis(StateInfo* stateInfo);
+void initGameAnalysis(GameFlowState* gameFlowState);
 
 #endif /* GAME_ANALYSIS_H */

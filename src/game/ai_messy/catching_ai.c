@@ -8,11 +8,11 @@
 #include "rng.h"
 #include "base_logic.h"
 
-void initCatchingAI(StateInfo* stateInfo)
+void initCatchingAI(AIState* aiState)
 {
-	stateInfo->localGameInfo->aiState.dropStage = 0;
-	stateInfo->localGameInfo->aiState.throwStage = 0;
-	stateInfo->localGameInfo->aiState.moveCounter = 0;
+	aiState->dropStage = 0;
+	aiState->throwStage = 0;
+	aiState->moveCounter = 0;
 }
 
 // we move towards the target position by simulating key presses.

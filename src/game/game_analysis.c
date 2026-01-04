@@ -39,21 +39,21 @@ static void populateGameConclusion(StateInfo* stateInfo, int winner)
 	stateInfo->gameConclusion->period3Runs[1] = stateInfo->globalGameInfo->teams[1].period3Runs;
 }
 
-void initGameAnalysis(StateInfo* stateInfo)
+void initGameAnalysis(GameFlowState* gameFlowState)
 {
 	// init some variables only used here.
-	stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
-	stateInfo->localGameInfo->gameFlowState.outOfBoundsCounter = 0;
-	stateInfo->localGameInfo->gameFlowState.endOfInningCounter = -1;
-	stateInfo->localGameInfo->gameFlowState.nextPairCounter = -1;
-	stateInfo->localGameInfo->gameFlowState.foulPlayEventFlag = 0;
-	stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = -1;
+	gameFlowState->woundingCatchCounter = -1;
+	gameFlowState->outOfBoundsCounter = 0;
+	gameFlowState->endOfInningCounter = -1;
+	gameFlowState->nextPairCounter = -1;
+	gameFlowState->foulPlayEventFlag = 0;
+	gameFlowState->homeRunCameraCounter = -1;
 }
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
-		initGameAnalysis(stateInfo);
+		initGameAnalysis(&(stateInfo->localGameInfo->gameFlowState));
 		stateInfo->localGameInfo->gameControl.initLocals++;
 		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
 			stateInfo->localGameInfo->gameControl.initLocals = 0;

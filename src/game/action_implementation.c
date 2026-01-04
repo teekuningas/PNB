@@ -43,11 +43,11 @@ void initActionImplementation(StateInfo* stateInfo)
 
 	//ai uses a few flags..
 
-	initCatchingAI(stateInfo);
+	initCatchingAI(&(stateInfo->localGameInfo->aiState));
 	stateInfo->localGameInfo->pendingActionState.aiActionEventLock = -1;
 	stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 0;
 
-	initBattingAI(stateInfo);
+	initBattingAI(&(stateInfo->localGameInfo->aiState));
 
 	flushKeys(stateInfo);
 }
