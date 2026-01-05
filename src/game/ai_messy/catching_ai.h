@@ -8,6 +8,6 @@
 void initCatchingAI(AIState* aiState);
 void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed);
 void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target);
-void throwBallToBase(StateInfo* stateInfo, int base);
+void throwBallToBase(StateInfo* stateInfo, BaseID base);
 
 #endif

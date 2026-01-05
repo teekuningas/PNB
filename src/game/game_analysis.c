@@ -64,9 +64,9 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 
 	checkForOuts(stateInfo);
 	checkIfNextBatterDecision(stateInfo);
-	strikesAndBalls(stateInfo);
 	woundingCatchEffects(stateInfo);
 	foulPlay(stateInfo, rng_seed);
+	strikesAndBalls(stateInfo);
 	checkForRuns(stateInfo);
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
@@ -115,7 +115,6 @@ static void checkForOuts(StateInfo* stateInfo)
 				for(j = 0; j < BASE_COUNT; j++) {
 					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
 					if(index != -1) {
-						int baseIndex;
 						// remove safety from last base?
 						// happens if player is out of base and ball arrives the previous one.
 						// §36 Koppilyönnillä eteneminen: "Mikäli sisäpelaaja on irti pesästä kopinottohetkellä... hänet voidaan polttaa."
@@ -124,7 +123,7 @@ static void checkForOuts(StateInfo* stateInfo)
 							        (stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT)) {
 								// in case player was leading of coming back, we now force him to continue
 								// to next base
-								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[i], i);
+								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[i], (BaseID)i);
 								// put safety to -1, also makes it so that the player cant be controlled until he arrives the
 								// next base
 								stateInfo->localGameInfo->pII.safeOnBaseIndex[i] = -1;
@@ -139,8 +138,9 @@ static void checkForOuts(StateInfo* stateInfo)
 						// here we check for actual outs.
 						// set baseIndex to previous base, because player will have that base
 						// when trying to run to this base we are checking.
-						if(i > 0) baseIndex = i - 1;
-						else baseIndex = 3;
+						BaseID baseIndexId;
+						if(i > 0) baseIndexId = (BaseID)(i - 1);
+						else baseIndexId = BASE_THIRD;
 
 						BaseID player_base_id = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 						int player_base_idx = base_to_int_index(player_base_id);
@@ -151,7 +151,7 @@ static void checkForOuts(StateInfo* stateInfo)
 						if (is_runner_forced_out(
 						            player_base_id,
 						            is_actually_safe,
-						            baseIndex,
+						            baseIndexId,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
 						            &(stateInfo->localGameInfo->gameState))) {
 							// we set player's out flag so that his movement is easy to control
@@ -166,8 +166,8 @@ static void checkForOuts(StateInfo* stateInfo)
 							// and walk him out.
 							movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 							// if we was safe on previous base, now he is not anymore.
-							if(stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] == index) {
-								stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndex] = -1;
+							if(stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndexId] == index) {
+								stateInfo->localGameInfo->pII.safeOnBaseIndex[baseIndexId] = -1;
 							}
 							// if he was a batter, he is not anymore.
 							if(stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
@@ -245,7 +245,7 @@ static void strikesAndBalls(StateInfo* stateInfo)
 		// The batter is now "forced" to run by the rules.
 		if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
 			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[0];
-			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, 0);
+			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);
 			// Remove safety from home base
 			stateInfo->localGameInfo->pII.safeOnBaseIndex[0] = -1;
 		}
@@ -377,7 +377,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// try to avoid out by running if not on next base yet.
 						// rest of the wound handling code will be in the base arrivals in game_manipulation.c
 						if(baseId == (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) {
-							runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, (int)baseId);
+							runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, baseId);
 						}
 						// if already on the next base, apply wound immediately.
 						else {
@@ -545,12 +545,10 @@ static void checkForRuns(StateInfo* stateInfo)
 					if(index != -1) {
 						int runMade = 0;
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
-						int baseInt = base_to_int_index(baseId);
-						if (baseId == BASE_HOME_SCORED) baseInt = 4;
 
 						// Check if a run is scored using the pure function
 						int runScored = calculate_runs(
-						                    baseInt,
+						                    baseId,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase,
 						                    stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED,
 						                    &(stateInfo->localGameInfo->gameModeState),
@@ -569,6 +567,17 @@ static void checkForRuns(StateInfo* stateInfo)
 							// Specific update for Run of Honor
 							if(baseId == BASE_THIRD) {
 								stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase = 1;
+
+								// §42 Overtaking check:
+								// "Jos kunniajuoksun tekijä ohittaa edellään etenevän... kunniajuoksun tehnyt pelaaja... siirtyy kotipuolelle"
+								if (stateInfo->localGameInfo->pII.safeOnBaseIndex[3] != -1 &&
+								        stateInfo->localGameInfo->pII.safeOnBaseIndex[3] != index) {
+									printf("DEBUG: Player %d (Kunniajuoksu) overtook Player %d at 3rd base. Removing hitter.\n", index, stateInfo->localGameInfo->pII.safeOnBaseIndex[3]);
+									stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
+									stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
+									stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
+									movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
+								}
 							}
 
 							// Common run updates

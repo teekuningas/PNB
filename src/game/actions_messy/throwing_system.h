@@ -7,10 +7,10 @@
 
 void initThrowingSystem(StateInfo* stateInfo);
 
-void prepareThrow(StateInfo* stateInfo, int base);
+void prepareThrow(StateInfo* stateInfo, BaseID base);
 
 void genericThrowRelease(StateInfo* stateInfo);
-void genericThrowLoad(StateInfo* stateInfo, int base);
+void genericThrowLoad(StateInfo* stateInfo, BaseID base);
 void genericMove(StateInfo* stateInfo, int direction);
 void genericStopMove(StateInfo* stateInfo, int direction);
 void dropBall(StateInfo* stateInfo);

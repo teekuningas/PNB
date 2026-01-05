@@ -398,7 +398,7 @@ typedef struct _CatchingTeamPlayerInfo {
 	int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
 	int isNearHomeLocation; // used to do base replacing stuff.
 	ReplacementState replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
-	int replacingBase; // in which base is the player replacing
+	BaseID replacingBase; // in which base is the player replacing
 	int busyCatching; // flag set when player is trying to run in hopes of catching the ball
 	int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
 } CatchingTeamPlayerInfo;
@@ -460,7 +460,7 @@ typedef struct _GameControlFlags {
 	int waitingForFreeWalkDecision;
 	int freeWalkCalculationMade;
 	int freeWalkIndex;
-	int freeWalkBase;
+	BaseID freeWalkBase;
 	int checkForRun;
 	int playerArrivedToBase;
 	int firstCatchMade;

@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "action_invocations.h"
 
-static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, int base);
+static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, BaseID base);
 static void checkDrop(StateInfo* stateInfo, int key, TeamControlMode control);
 static void checkMove(StateInfo* stateInfo, int key, TeamControlMode control, int direction);
 static void checkChangePlayer(StateInfo* stateInfo, int key, TeamControlMode control);
@@ -15,7 +15,7 @@ static void checkBatterSelection(StateInfo* stateInfo, int change, int select, T
 static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, TeamControlMode control);
 static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, TeamControlMode control);
 static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control);
-static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, int base);
+static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, BaseID base);
 
 void initActionInvocations(StateInfo* stateInfo)
 {
@@ -29,10 +29,10 @@ void actionInvocations(StateInfo* stateInfo)
 	TeamControlMode battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
 	TeamControlMode catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
 
-	checkThrow(stateInfo, KEY_DOWN, KEY_2, catchingControl, 0);
-	checkThrow(stateInfo, KEY_LEFT, KEY_2, catchingControl, 1);
-	checkThrow(stateInfo, KEY_RIGHT, KEY_2, catchingControl, 2);
-	checkThrow(stateInfo, KEY_UP, KEY_2, catchingControl, 3);
+	checkThrow(stateInfo, KEY_DOWN, KEY_2, catchingControl, BASE_HOME);
+	checkThrow(stateInfo, KEY_LEFT, KEY_2, catchingControl, BASE_FIRST);
+	checkThrow(stateInfo, KEY_RIGHT, KEY_2, catchingControl, BASE_SECOND);
+	checkThrow(stateInfo, KEY_UP, KEY_2, catchingControl, BASE_THIRD);
 
 	if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 		checkChangePlayer(stateInfo, KEY_2, catchingControl);
@@ -58,24 +58,24 @@ void actionInvocations(StateInfo* stateInfo)
 	checkBatterAngle(stateInfo, KEY_PLUS, KEY_MINUS, battingControl);
 	checkSwing(stateInfo, KEY_2, battingControl);
 
-	checkBattingTeamRun(stateInfo, KEY_DOWN, battingControl, 0);
-	checkBattingTeamRun(stateInfo, KEY_LEFT, battingControl, 1);
-	checkBattingTeamRun(stateInfo, KEY_RIGHT, battingControl, 2);
-	checkBattingTeamRun(stateInfo, KEY_UP, battingControl, 3);
+	checkBattingTeamRun(stateInfo, KEY_DOWN, battingControl, BASE_HOME);
+	checkBattingTeamRun(stateInfo, KEY_LEFT, battingControl, BASE_FIRST);
+	checkBattingTeamRun(stateInfo, KEY_RIGHT, battingControl, BASE_SECOND);
+	checkBattingTeamRun(stateInfo, KEY_UP, battingControl, BASE_THIRD);
 
 }
 
-static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, int base)
+static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, BaseID base)
 {
-	if(stateInfo->keyStates->down[control][key] == 1 && stateInfo->keyStates->down[control][actionKey] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_IDLE) {
+	if(control != CONTROL_AI) {
+		if((stateInfo->keyStates)->released[control][key] && (stateInfo->keyStates)->down[control][actionKey]) {
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
-			stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
-		}
-	} else if(stateInfo->keyStates->released[control][actionKey] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_ACTIVE) {
+		} else if((stateInfo->keyStates)->released[control][actionKey] && (stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_ACTIVE ||
+		          stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_TRIGGER_START)) {
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_STOP;
 		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
@@ -206,11 +206,13 @@ static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control)
 	}
 }
 
-static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, int base)
+static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, BaseID base)
 {
-	if(stateInfo->keyStates->released[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_IDLE) {
+	if(control != CONTROL_AI) {
+		if((stateInfo->keyStates)->released[control][key]) {
 			stateInfo->localGameInfo->aF.bTAF.baseRun[base] = ACTION_TRIGGER_START;
 		}
+	} else {
+		// AI sets flags directly
 	}
 }

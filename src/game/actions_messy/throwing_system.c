@@ -18,28 +18,30 @@ void initThrowingSystem(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pendingActionState.throwDirection.z = 0;
 }
 
-void prepareThrow(StateInfo* stateInfo, int base)
+void prepareThrow(StateInfo* stateInfo, BaseID base)
 {
 	switch(base) {
-	case 0:
+	case BASE_HOME:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 0;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->pitcher.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->pitcher.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
-	case 1:
+	case BASE_FIRST:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 1;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->firstBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->firstBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
-	case 2:
+	case BASE_SECOND:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 2;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->secondBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->secondBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
 		break;
-	case 3:
+	case BASE_THIRD:
 		stateInfo->localGameInfo->pRAI.throwGoingToBase = 3;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->fieldPositions->thirdBase.x - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.x;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->fieldPositions->thirdBase.z - stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.hasBallIndex].tPI.location.z;
+		break;
+	default:
 		break;
 	}
 }
@@ -83,7 +85,7 @@ void genericThrowRelease(StateInfo* stateInfo)
 	}
 }
 
-void genericThrowLoad(StateInfo* stateInfo, int base)
+void genericThrowLoad(StateInfo* stateInfo, BaseID base)
 {
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
 		// throw distance is the euclidean distance from the base to player throwing.

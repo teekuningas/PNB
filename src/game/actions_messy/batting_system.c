@@ -440,7 +440,7 @@ void updateBatting(StateInfo* stateInfo)
 							int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[0];
 							stateInfo->localGameInfo->pRAI.willStartRunning[0] = 0;
 							if(index != -1) {
-								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, 0);
+								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);
 								stateInfo->localGameInfo->pendingActionState.runBatFlag = 1;
 							}
 						}

@@ -413,14 +413,27 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								}
 							} else {
 								// if the player wasnt wounded, now he is arriving in a valid way
-								// we take safety from whoever was here before.
-								if(stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != index) {
+								// §42 Kunniajuoksu Overtaking check:
+								// We prevent the arriving hitter from taking safety if 3rd base is occupied.
+								// This allows gameAnalysis to detect the overtaking and remove the hitter.
+								int overtaken = 0;
+								if (j == BASE_THIRD && stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1 &&
+								        stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != index &&
+								        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == BASE_HOME) {
+									overtaken = 1;
+								}
+
+								// normal case: take safety from whoever was here before.
+								if(!overtaken && stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != index) {
 									int prevIndex = stateInfo->localGameInfo->pII.safeOnBaseIndex[j];
 									// they are no longer safe and must run!
-									runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, prevIndex, j);
+									runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, prevIndex, (BaseID)j);
 								}
-								// we are now safe here.
-								stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = index;
+
+								if (!overtaken) {
+									// we are now safe here.
+									stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = index;
+								}
 								// if we were safe on previous base ( no other player arrived there before we arrived here
 								// or our safety was removed from there by a fielder), we set that that -1
 								// to indicate we arent there anymore.
@@ -485,7 +498,7 @@ static void basemenReplacements(StateInfo* stateInfo)
 					             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherOnBaseIndex[i]].tPI.homeLocation));
 
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = REPLACEMENT_ACTIVE;
-					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = i;
+					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = (BaseID)i;
 					// can go replacing even if was busy catching before.
 					stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.busyCatching = 0;
 				}
@@ -496,12 +509,12 @@ static void basemenReplacements(StateInfo* stateInfo)
 			// and there's someone there or going there, move him back ( if player doesnt control )
 			if(stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i] != stateInfo->localGameInfo->pII.controlIndex) {
 				if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage != REPLACEMENT_IDLE) {
-					if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == i) {
+					if(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == (BaseID)i) {
 						moveToTarget(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i],
 						             &(stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].tPI.homeLocation));
 
 						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage = REPLACEMENT_IDLE;
-						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = -1;
+						stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = BASE_NONE;
 					}
 				}
 			}
@@ -798,7 +811,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									// if we are moving forward and have not passed the flag yet, change the direction
 									if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 0) {
 										stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 1;
-										runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, i, 3);
+										runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, i, BASE_THIRD);
 										needToStop = 0;
 									}
 									// if have passed the flag we are at homebase, so set the base to 4
@@ -823,7 +836,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									// if we are coming back and have passed the point, change direction
 									if(stateInfo->localGameInfo->playerRuntime[i].passedPathPoint == 1) {
 										stateInfo->localGameInfo->playerRuntime[i].passedPathPoint = 0;
-										runToPreviousBase(stateInfo->localGameInfo, stateInfo->fieldPositions, i, 3);
+										runToPreviousBase(stateInfo->localGameInfo, stateInfo->fieldPositions, i, BASE_THIRD);
 										needToStop = 0;
 									} else {
 										// otherwise we are at the third base

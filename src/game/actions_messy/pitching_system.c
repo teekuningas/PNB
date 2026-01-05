@@ -200,7 +200,7 @@ void releasePitch(StateInfo* stateInfo)
 			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[i];
 			stateInfo->localGameInfo->pRAI.willStartRunning[i] = 0;
 			if(index != -1) {
-				runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, i);
+				runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, (BaseID)i);
 			}
 		}
 	}

@@ -253,12 +253,12 @@ void moveRankedToCatch(LocalGameInfo* localGameInfo)
 	}
 }
 
-void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base)
+void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base)
 {
 	if(index != -1) {
 		Vector3D target;
 		// first we select the target corresponding to base argument
-		if(base == 0) {
+		if(base == BASE_HOME) {
 			if(localGameInfo->pRAI.batterCanAdvance == 0) return;
 			target.x = fieldPositions->firstBaseRun.x;
 			target.z = fieldPositions->firstBaseRun.z;
@@ -266,13 +266,13 @@ void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 			localGameInfo->pRAI.batterReady = 0;
 			localGameInfo->pRAI.battingGoingOn = 0;
 			localGameInfo->gameControl.batterStartedRunning = 1;
-		} else if(base == 1) {
+		} else if(base == BASE_FIRST) {
 			target.x = fieldPositions->secondBaseRun.x;
 			target.z = fieldPositions->secondBaseRun.z;
-		} else if(base == 2) {
+		} else if(base == BASE_SECOND) {
 			target.x = fieldPositions->thirdBaseRun.x;
 			target.z = fieldPositions->thirdBaseRun.z;
-		} else if(base == 3) {
+		} else if(base == BASE_THIRD) {
 			// if we are running home, there is the "flag" point, and we must change the direction there.
 			// how it matters here is that if we have already passed the flag, we must run towards homebase,
 			// if not, we must run towards flag.
@@ -306,24 +306,24 @@ void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 	}
 }
 
-void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base)
+void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base)
 {
 	if(index != -1) {
 		Vector3D target;
 		// run to previous base works similarly to run to next base.
 		// starting point here is that we arent on any base, and the base variable is telling us
 		// the previous base
-		if(base == 0) {
+		if(base == BASE_HOME) {
 			// so when batter returns, he will go to his ready position again.
 			target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
-		} else if(base == 1) {
+		} else if(base == BASE_FIRST) {
 			target.x = fieldPositions->firstBaseRun.x;
 			target.z = fieldPositions->firstBaseRun.z;
-		} else if(base == 2) {
+		} else if(base == BASE_SECOND) {
 			target.x = fieldPositions->secondBaseRun.x;
 			target.z = fieldPositions->secondBaseRun.z;
-		} else if(base == 3) {
+		} else if(base == BASE_THIRD) {
 			// here we again select the target by our current location relative to flag
 			if(localGameInfo->playerRuntime[index].passedPathPoint == 0) {
 				target.x = fieldPositions->thirdBaseRun.x;
@@ -496,7 +496,7 @@ void prepareBatter(LocalGameInfo* localGameInfo)
 void calculateFreeWalk(LocalGameInfo* localGameInfo)
 {
 	int i;
-	int maxOriginalBase = -1;
+	BaseID maxOriginalBase = BASE_NONE;
 	BaseID maxBaseId = BASE_NONE;
 	int maxIndex = -1;
 	// we go throush every (nonwounded) candidate and check who has the biggest base value
@@ -511,7 +511,7 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 			// Use base_cmp to compare bases semantically (replaces >=)
 			if(base_cmp(currentBaseId, maxBaseId) >= 0) {
 				if(currentBaseId == maxBaseId) {
-					if(localGameInfo->playerInfo[index].bTPI.originalBase > maxOriginalBase) {
+					if(base_cmp(localGameInfo->playerInfo[index].bTPI.originalBase, maxOriginalBase) > 0) {
 						maxBaseId = currentBaseId;
 						maxOriginalBase = localGameInfo->playerInfo[index].bTPI.originalBase;
 						maxIndex = index;
@@ -526,9 +526,8 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 		}
 	}
 	localGameInfo->gameControl.freeWalkIndex = maxIndex;
-	// Convert back to int for legacy API using helper
-	if(maxIndex != -1) localGameInfo->gameControl.freeWalkBase = base_to_int_index(localGameInfo->playerInfo[maxIndex].bTPI.baseId);
-	else localGameInfo->gameControl.freeWalkBase = -1;
+	if(maxIndex != -1) localGameInfo->gameControl.freeWalkBase = localGameInfo->playerInfo[maxIndex].bTPI.baseId;
+	else localGameInfo->gameControl.freeWalkBase = BASE_NONE;
 }
 /*
 	Here we initialize all the locations and velocities so that players will be in their correct
@@ -745,7 +744,7 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 
 			localGameInfo->playerInfo[i].cTPI.isNearHomeLocation = 1;
 			localGameInfo->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
-			localGameInfo->playerInfo[i].cTPI.replacingBase = -1;
+			localGameInfo->playerInfo[i].cTPI.replacingBase = BASE_NONE;
 			localGameInfo->playerInfo[i].cTPI.busyCatching = 0;
 			localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
 			// initialize fielderRankedIndices with the indices of five first

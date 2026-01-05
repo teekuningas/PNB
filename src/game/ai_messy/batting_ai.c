@@ -286,15 +286,14 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		else if(stateInfo->localGameInfo->aiState.battingStyle == 1) {
 			if(stateInfo->localGameInfo->aiState.angleDecided == 0) {
 				int i;
-				int leadBase = -1;
+				BaseID leadBase = BASE_NONE;
 				for(i = 0; i < BASE_COUNT; i++) {
 					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
 						BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
-						int currentBaseInt = base_to_int_index(currentBaseId);
 
-						if(currentBaseInt != -1 && currentBaseInt > leadBase) {
-							leadBase = currentBaseInt;
+						if(base_cmp(currentBaseId, leadBase) > 0) {
+							leadBase = currentBaseId;
 						}
 					}
 				}
@@ -316,7 +315,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// swing that tries to get oneself wounded
 		else if(stateInfo->localGameInfo->aiState.battingStyle == 2) {
 			if(stateInfo->localGameInfo->aiState.angleDecided == 0) {
-				stateInfo->localGameInfo->aiState.decidedAngle = calculate_ai_batting_angle(2, -1, seeded_rand(rng_seed, RAND_MAX));
+				stateInfo->localGameInfo->aiState.decidedAngle = calculate_ai_batting_angle(2, BASE_NONE, seeded_rand(rng_seed, RAND_MAX));
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
 			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 11 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {

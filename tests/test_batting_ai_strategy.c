@@ -3,10 +3,6 @@
 #include <stdio.h>
 #include <math.h>
 
-static int float_eq(float a, float b, float epsilon) {
-    return fabs(a - b) < epsilon;
-}
-
 int test_batting_strategy_decision_tree() {
     printf("Running test: %s\n", __func__);
     
@@ -86,23 +82,21 @@ int test_is_wrong_pitch() {
 }
 
 int test_calculate_ai_batting_angle() {
-    printf("Running test: %s\n", __func__);
+    // Style 1 (Normal), leadBase 3 -> 0.8
+    float angle = calculate_ai_batting_angle(1, BASE_THIRD, 0);
+    ASSERT_TRUE(fabs(angle - 0.8f) < 0.001f, "Normal style, lead base 3 should hit left");
     
-    // Style 0: (random%4 + 2) / 20.0f
-    // Random 0 -> 2/20 = 0.1
-    ASSERT_TRUE(float_eq(0.1f, calculate_ai_batting_angle(0, 0, 0), 0.001f), "Style 0, rand 0");
-    // Random 3 -> 5/20 = 0.25
-    ASSERT_TRUE(float_eq(0.25f, calculate_ai_batting_angle(0, 0, 3), 0.001f), "Style 0, rand 3");
+    // Style 1 (Normal), leadBase 2 -> -0.8
+    angle = calculate_ai_batting_angle(1, BASE_SECOND, 0);
+    ASSERT_TRUE(fabs(angle - (-0.8f)) < 0.001f, "Normal style, lead base 2 should hit right");
     
-    // Style 2: (random%5 - 2) / 20.0f
-    // Random 0 -> -2/20 = -0.1
-    ASSERT_TRUE(float_eq(-0.1f, calculate_ai_batting_angle(2, 0, 0), 0.001f), "Style 2, rand 0");
-    // Random 4 -> 2/20 = 0.1
-    ASSERT_TRUE(float_eq(0.1f, calculate_ai_batting_angle(2, 0, 4), 0.001f), "Style 2, rand 4");
+    // Style 1 (Normal), leadBase 1 -> 0.0
+    angle = calculate_ai_batting_angle(1, BASE_FIRST, 0);
+    ASSERT_TRUE(fabs(angle - 0.0f) < 0.001f, "Normal style, lead base 1 should hit straight");
     
-    // Style 1, LeadBase 2: -(random%16)/45.0f
-    // Random 1 -> -1/45
-    ASSERT_TRUE(float_eq(-1.0f/45.0f, calculate_ai_batting_angle(1, 2, 1), 0.001f), "Style 1, Lead 2");
+    // Style 2 (Wound) -> -1.5
+    angle = calculate_ai_batting_angle(2, BASE_NONE, 0);
+    ASSERT_TRUE(fabs(angle - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
     
     return TEST_PASSED;
 }

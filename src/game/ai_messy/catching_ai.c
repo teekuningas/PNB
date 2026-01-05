@@ -42,7 +42,7 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 	stateInfo->localGameInfo->aiState.moveCounter++;
 }
 
-void throwBallToBase(StateInfo* stateInfo, int base)
+void throwBallToBase(StateInfo* stateInfo, BaseID base)
 {
 	if(stateInfo->localGameInfo->aiState.throwStage == 0) {
 		if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
@@ -169,7 +169,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// otherwise we throw or move towards a base where lead player is going. if lead player is going nowhere
 		// we take ball to home base.
 		else {
-			int leadBase = -1;
+			BaseID leadBase = BASE_NONE;
 			int throwBase = 0;
 
 			CatchingRunnerInfo runners[BASE_COUNT];
@@ -181,10 +181,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 					PlayerUnitState s = stateInfo->localGameInfo->playerInfo[index].bTPI.state;
 					runners[runnerCount].isOnBase = (s == PLAYER_STATE_SAFE_ON_BASE || s == PLAYER_STATE_AT_BAT);
 					runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
-					runners[runnerCount].base = base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId);
-					if (stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
-						runners[runnerCount].base = 4;
-					}
+					runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 					runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
 					runnerCount++;
 				}
@@ -193,7 +190,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int randomVal = seeded_rand(rng_seed, 500);
 			leadBase = determine_lead_base(runners, runnerCount, randomVal);
 
-			if(leadBase > -1 && leadBase < 3) throwBase = leadBase + 1;
+			if(leadBase != BASE_NONE && base_cmp(leadBase, BASE_THIRD) < 0) throwBase = (int)base_get_next(leadBase);
 			else throwBase = 0;
 
 			if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
@@ -204,7 +201,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				           pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.z;
 				moveControlledPlayerToLocation(stateInfo, &target);
 			}
-			throwBallToBase(stateInfo, throwBase);
+			throwBallToBase(stateInfo, (BaseID)throwBase);
 		}
 	}
 	if(stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 1) {

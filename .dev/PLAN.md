@@ -40,7 +40,15 @@ We are preparing the codebase for a major architectural shift towards a **Functi
     - Removed `initLocals` legacy counter.
     - Added comprehensive integration tests for §33 (Chain Reaction) and §36 (Tuplahaava).
 
-### 🚧 Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
+### 🚧 Milestone 13.5: Comprehensive Rule Audit & Final Polish (CURRENT)
+- **Goal:** Ensure 100% alignment with §SAANNOT and perfect type safety.
+- **Tasks:**
+    - Perform a thorough sweep of `rules_pure/` function signatures for `BaseID` consistency.
+    - Deep-dive into `SAANNOT.md` to identify missing edge cases in `game_analysis.c`.
+    - Implement additional integration tests for complex scenarios (Foul play returns, Run of Honor edge cases).
+    - Update architecture documentation to reflect the current state of state-management and purified rules.
+
+### 🔮 Milestone 14: The Great Decoupling (Read vs. Write)
 - **Goal:** Split logic into "Query" and "Apply" halves.
 - **Why:** Essential for phase-based execution.
 

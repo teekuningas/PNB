@@ -5,6 +5,8 @@
 #include "test_scenario_wounded.h"
 #include "test_scenario_chain_reaction.h"
 #include "test_scenario_tuplahaava.h"
+#include "test_scenario_foul_play.h"
+#include "test_scenario_overtaking.h"
 #include <string.h>
 
 int tests_run = 0;
@@ -21,6 +23,8 @@ int main(int argc, char* argv[]) {
 	run_scenario_wounded_tests();
 	run_scenario_chain_reaction_tests();
 	run_scenario_tuplahaava_tests();
+	run_scenario_foul_play_tests();
+	run_scenario_overtaking_tests();
 
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

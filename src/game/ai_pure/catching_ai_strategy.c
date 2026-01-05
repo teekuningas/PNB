@@ -1,4 +1,5 @@
 #include "catching_ai_strategy.h"
+#include "base_logic.h"
 #include <math.h>
 
 #ifndef PI
@@ -86,18 +87,18 @@ int should_ai_drop_ball(const WoundingState* woundingState, const GameControlFla
 	}
 	return 0;
 }
-int determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
+BaseID determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
 {
-	int leadBase = -1;
+	BaseID leadBase = BASE_NONE;
 	int i;
 	for (i = 0; i < runnerCount; i++) {
 		if (runners[i].isOnBase == 0 && runners[i].takingFreeWalk == 0) {
-			if (runners[i].base > leadBase) {
+			if (base_cmp(runners[i].base, leadBase) > 0) {
 				if (runners[i].leading == 0) {
 					leadBase = runners[i].base;
 				} else {
 					if (randomValue == 0) {
-						leadBase = runners[i].base - 1;
+						leadBase = base_get_prev(runners[i].base);
 					}
 				}
 			}

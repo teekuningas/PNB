@@ -17,7 +17,7 @@ typedef struct {
 typedef struct {
 	int isOnBase;
 	int takingFreeWalk;
-	int base;
+	BaseID base;
 	int leading;
 } CatchingRunnerInfo;
 
@@ -32,7 +32,7 @@ int should_ai_drop_ball(const WoundingState* woundingState, const GameControlFla
                         BaseID runner2OriginalBase, int runner2IsOnBase,
                         int catcherHomeIndex, int hasBallIndex);
 
-int determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue);
+BaseID determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue);
 
 #ifdef __cplusplus
 }

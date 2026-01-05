@@ -79,7 +79,8 @@ src/
 │   └── rules_pure/              ✅ Pure Logic (Testable)
 │       ├── rules_outs.c/h         Out determination (§33 Pesäkilpa)
 │       ├── rules_runs.c/h         Run calculation (§41 Juoksu, §42 Kunniajuoksu)
-│       └── rules_strikes.c/h      Strike/Ball logic (§26 Syötön tuomitseminen)
+│       ├── rules_strikes.c/h      Strike/Ball logic (§26 Syötön tuomitseminen)
+│       └── base_logic.c/h         Pure base navigation & safety (§20, §36)
 │
 ├── menu/             [~2.7k lines] ✓ CLEAN
 │   └── [11 menu files] ...
@@ -97,16 +98,18 @@ src/
 **Responsibility**: Window, input, audio, resource loading
 **Quality**: ⭐⭐⭐ Good - Solid foundation
 
-### 🎮 Subsystem 2: Game Logic (Refactoring in Progress)
+### 🎮 Subsystem 2: Game Logic (Highly Organized)
 **Location**: `src/game/`
 **Responsibility**: Rules, AI, Actions, Physics
-**Quality**: ⭐⭐ Improving - "Messy" vs "Pure" separation is visible
+**Quality**: ⭐⭐⭐⭐ Very Good - "Messy" vs "Pure" separation complete.
 **Progress**:
 - **Actions**: Split into `actions_messy` (coordinators) and `actions_pure` (math/physics).
 - **AI**: Split into `ai_messy` (state mutators) and `ai_pure` (decision strategies).
 - **Rules**: Split into `game_analysis.c` (coordinator) and `rules_pure` (pure rule evaluations).
 - **Physics**: Core ball physics extracted to `src/physics/`.
 - **Renderer**: Entity rendering moved to `src/renderer/`.
+- **State**: ALL global/static state consolidated into `StateInfo`.
+- **Initialization**: Legacy `initLocals` replaced by direct sub-system initialization.
 
 ### 🖼️ Subsystem 3: Rendering
 **Location**: `src/renderer/` + `src/core/render.c`

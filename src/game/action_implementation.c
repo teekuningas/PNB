@@ -21,7 +21,7 @@
 
 static void changeBatter(StateInfo* stateInfo);
 static void takeFreeWalkDecision(StateInfo* stateInfo);
-static void baseRun(StateInfo* stateInfo, int base);
+static void baseRun(StateInfo* stateInfo, BaseID base);;
 static void updateMeters(StateInfo* stateInfo);
 static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed);
 
@@ -210,13 +210,9 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 
 static void takeFreeWalkDecision(StateInfo* stateInfo)
 {
-	// so if user selected to take a free walk, this will happen. otherwise we just set freewalk-actionflag
-	// to 0 and dont have any further actions
 	if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_ACCEPT) {
-		// index and base have been selected before. they are the lead runner 's base and index when
-		// to decision opportunity came available
 		int index = stateInfo->localGameInfo->gameControl.freeWalkIndex;
-		int base = stateInfo->localGameInfo->gameControl.freeWalkBase;
+		BaseID base = stateInfo->localGameInfo->gameControl.freeWalkBase;
 		if(index != -1) {
 			// there can be a little gap between the decision and when the possibility to decide came
 			// so player might have run already to the following base, and free walk actually
@@ -251,9 +247,8 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 				stateInfo->localGameInfo->gameModeState.forceNextPair = 1;
 			} else {
 				BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
-				int currentBaseInt = base_to_int_index(currentBaseId);
 
-				if(currentBaseInt == base) {
+				if(currentBaseId == base) {
 					// we start running to the next base
 					runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 
@@ -261,8 +256,8 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					// when he's running
 					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
 					// if he's safe on previous base, set the safeOnBaseIndex for that base to -1
-					if(currentBaseInt != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseInt] == index) {
-						stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseInt] = -1;
+					if(currentBaseId != BASE_NONE && stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseId] == index) {
+						stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseId] = -1;
 					}
 					// if he was batter, set the batterIndex to -1 so that we can have a new batter.
 					if(stateInfo->localGameInfo->pII.batterIndex == index) {
@@ -271,9 +266,9 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 				}
 				// we also set here the originalBase for freewalkers to be the following base, so that
 				// in out of bounds situations these players will be at correct bases in post foul play world
-				if(base != 3) {
+				if(base != BASE_THIRD) {
 					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase =
-					    base + 1;
+					    base_get_next(base);
 				} else {
 					// for a guy who is at the third base, originalBase will be 4
 					int battingTeamIndex = (stateInfo->globalGameInfo->
@@ -381,7 +376,7 @@ void genericSlingBall(BallInfo* ballInfo, PlayerRelatedActionInfo* pRAI, float x
 }
 
 
-static void baseRun(StateInfo* stateInfo, int base)
+static void baseRun(StateInfo* stateInfo, BaseID base)
 {
 	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
@@ -393,7 +388,7 @@ static void baseRun(StateInfo* stateInfo, int base)
 				if(stateInfo->localGameInfo->pRAI.willStartRunning[base] == 0) {
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].cPI.moving == 0) {
 						stateInfo->localGameInfo->pRAI.willStartRunning[base] = 1;
-						if(base == 1 || base == 2) {
+						if(base == BASE_FIRST || base == BASE_SECOND) {
 							lead(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 						}
 					}

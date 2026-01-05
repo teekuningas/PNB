@@ -393,7 +393,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
 		if(index != -1) {
 			float phase = 0.0f;
-			int base = 0;
+			BaseID base = BASE_HOME;
 			float distance;
 			// Logic copied from original
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
@@ -403,28 +403,28 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 					distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
 					phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
 				}
-				base = 0;
+				base = BASE_HOME;
 			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
 				distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) / distance;
-				base = 1;
+				base = BASE_FIRST;
 			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 				distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) / distance;
-				base = 2;
+				base = BASE_SECOND;
 			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD) {
 				distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
 				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) / distance;
-				base = 3;
+				base = BASE_THIRD;
 			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 				phase = 0.0f;
-				base = 4;
+				base = BASE_HOME_SCORED;
 			}
 
 			// Map to screen
 			// width is bases_w
 			float interval_px = bases_w / 4.0f;
-			float runner_x = bases_screen_x + (base * interval_px) + (phase * interval_px);
+			float runner_x = bases_screen_x + ((int)base * interval_px) + (phase * interval_px);
 
 			draw_texture_2d(resource_manager_get_texture(rm, "data/textures/basesMarker.tga"), runner_x, bases_y + 10.0f, 15.0f, 15.0f);
 		}

@@ -15,6 +15,6 @@ int should_change_batter(int fieldStatus, int power, int speed);
 
 int is_wrong_pitch(float vx, float vy, float gravity, float plate_width);
 
-float calculate_ai_batting_angle(int battingStyle, int leadBase, int randomValue);
+float calculate_ai_batting_angle(int battingStyle, BaseID leadBase, int randomValue);
 
 #endif

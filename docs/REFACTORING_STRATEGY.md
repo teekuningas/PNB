@@ -21,23 +21,29 @@ This is pure, deterministic, and beautiful. No "messages" flying around; just da
 
 ## Milestone Roadmap (The Path to Zen)
 
-We are currently at **Milestone 11**. Here is the roadmap to the final architecture.
+We are currently at **Milestone 13.5**. Here is the roadmap to the final architecture.
 
 ### ✅ Milestone 10: Initial Stabilization (Complete)
 **Goal:** The "Clean Slate."
 *   **Results:** `action_state.c` globals eliminated, essential enums implemented, const-correctness sweep started.
 
-### 🚧 Milestone 11: The State Consolidation (Logic) (CURRENT)
+### ✅ Milestone 11: The State Consolidation (Logic) (Complete)
 **Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`.
-*   **Why:** We cannot pass state through a pipeline if it is hidden in static variables.
 *   **Result:** `StateInfo` is the **only** source of truth for game logic.
 
-### 🔮 Milestone 12: The Rendering Unification
+### ✅ Milestone 12: The Rendering Unification (Complete)
 **Goal:** Modernize rendering to match the menu system.
-*   **Tasks:** Adopt `ResourceManager`, eliminate orphan `GLuint` globals, unify GL setup.
-*   **Result:** Rendering is a service that consumes `StateInfo` and assets via a central manager.
+*   **Result:** Rendering is a service that consumes `StateInfo` and assets via a central `ResourceManager`.
 
-### 🔮 Milestone 13: The Great Decoupling (Read vs. Write)
+### ✅ Milestone 13: Stabilization & Rule Decoupling (Complete)
+**Goal:** Purify rule logic and stabilize safety mechanisms.
+*   **Results:** Pure helpers for safety (§20, §36), `BaseID` enum standardization, `PitchResult` enum, and comprehensive integration tests.
+
+### 🚧 Milestone 13.5: Comprehensive Rule Audit & Final Polish (CURRENT)
+**Goal:** Perfect type safety and rulebook alignment.
+*   **Tasks:** Full `BaseID` signature sweep, §SAANNOT edge cases, and additional scenario tests.
+
+### 🔮 Milestone 14: The Great Decoupling (Read vs. Write)
 **Goal:** Split logic into "Query" and "Apply" halves.
 *   **The Fix:**
     *   Split `game_analysis` into `check_rules()` (Read-only) and `apply_rules()` (Write).

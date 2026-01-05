@@ -107,19 +107,19 @@ int test_should_ai_drop_ball_scenario() {
 int test_determine_lead_base_simple() {
     CatchingRunnerInfo runners[2];
     // Runner 1: Base 1, Not leading
-    runners[0].base = 1;
+    runners[0].base = BASE_FIRST;
     runners[0].isOnBase = 0;
     runners[0].takingFreeWalk = 0;
     runners[0].leading = 0;
     
     // Runner 2: Base 2, Not leading
-    runners[1].base = 2;
+    runners[1].base = BASE_SECOND;
     runners[1].isOnBase = 0;
     runners[1].takingFreeWalk = 0;
     runners[1].leading = 0;
     
-    int result = determine_lead_base(runners, 2, 123);
-    ASSERT_EQ(2, result, "Lead base should be 2");
+    BaseID result = determine_lead_base(runners, 2, 123);
+    ASSERT_EQ(BASE_SECOND, result, "Lead base should be BASE_SECOND");
     
     return TEST_PASSED;
 }
@@ -127,18 +127,18 @@ int test_determine_lead_base_simple() {
 int test_determine_lead_base_random() {
     CatchingRunnerInfo runners[1];
     // Runner: Base 2, Leading
-    runners[0].base = 2;
+    runners[0].base = BASE_SECOND;
     runners[0].isOnBase = 0;
     runners[0].takingFreeWalk = 0;
     runners[0].leading = 1;
     
-    // Random = 0 -> base - 1
-    int result = determine_lead_base(runners, 1, 0);
-    ASSERT_EQ(1, result, "Should be base - 1 when random is 0");
+    // Random = 0 -> base - 1 (BASE_FIRST)
+    BaseID result = determine_lead_base(runners, 1, 0);
+    ASSERT_EQ(BASE_FIRST, result, "Should be base - 1 when random is 0");
     
-    // Random != 0 -> base (actually it stays leadBase, which init to -1)
+    // Random != 0 -> base (actually it stays leadBase, which init to BASE_NONE)
     result = determine_lead_base(runners, 1, 1);
-    ASSERT_EQ(-1, result, "Should not update leadBase if leading and random != 0");
+    ASSERT_EQ(BASE_NONE, result, "Should not update leadBase if leading and random != 0");
     
     return TEST_PASSED;
 }

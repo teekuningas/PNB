@@ -19,8 +19,8 @@ void runToTarget(PlayerInfo* playerInfo, int index, Vector3D *target);
 void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D *target);
 void movePlayerOut(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
 void moveRankedToCatch(LocalGameInfo* localGameInfo);
-void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base); // Needs GameControl, PRAI
-void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, int base); // Needs PRAI
+void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base); // Needs GameControl, PRAI
+void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base); // Needs PRAI
 void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
 int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions);
 void changePlayer(LocalGameInfo* localGameInfo);
