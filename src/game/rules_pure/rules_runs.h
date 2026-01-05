@@ -15,9 +15,9 @@
  * @param player_original_base The base the player started from before this play.
  * @param player_is_wounded Whether the player has been wounded (put out) during the play.
  * @param gameModeState Current game mode state containing can_make_run_of_honor.
- * @param has_made_run_on_third_base Flag to prevent double counting a run of honor for the same player.
- * @return 1 if a run is scored, 0 otherwise.
+ * @param has_made_run_on_third_base Whether the runner already scored a run of honor.
+ * @return 1 if a run should be scored, 0 otherwise.
  */
-int calculate_runs(int player_base, int player_original_base, int player_is_wounded, const GameModeState* gameModeState, int has_made_run_on_third_base);
+int calculate_runs(int player_base, BaseID player_original_base, int player_is_wounded, const GameModeState* gameModeState, int has_made_run_on_third_base);
 
 #endif // RULES_RUNS_H

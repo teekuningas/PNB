@@ -31,15 +31,16 @@ We are preparing the codebase for a major architectural shift towards a **Functi
     - Eliminated all logic-related `static` GL variables from `src/game`.
     - Unified rendering architecture between game and menus.
 
-### 🚧 Milestone 13: Stabilization & Rule Decoupling (CURRENT)
+### ✅ Milestone 13: Stabilization & Rule Decoupling (Completed 2026-01-05)
 - **Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
-- **Tasks:**
-    - Purify safety logic into `is_player_protected` helper.
-    - Standardize base indexing (standardize on `BaseID` or `int` consistently).
-    - Implement `PitchResult` enum to replace raw integers.
-    - Add comprehensive Integration Scenario tests (Chain Reaction, Strikeout force).
+- **Results:**
+    - Purified safety logic into `player_is_protected` helpers.
+    - Standardized base indexing (consistent `BaseID` usage).
+    - Implemented `PitchResult` enum.
+    - Removed `initLocals` legacy counter.
+    - Added comprehensive integration tests for §33 (Chain Reaction) and §36 (Tuplahaava).
 
-### 🔮 Milestone 14: The Great Decoupling (Read vs. Write)
+### 🚧 Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
 - **Goal:** Split logic into "Query" and "Apply" halves.
 - **Why:** Essential for phase-based execution.
 

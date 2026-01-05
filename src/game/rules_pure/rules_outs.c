@@ -1,15 +1,15 @@
 #include "rules_outs.h"
 
 /**
- * @brief Checks if a runner is forced out according to §33 Pesäkilpa.
+ * @brief Checks if a runner is forced out according to §33 Pesäkilpa and §36 Koppilyönnillä eteneminen.
  *
  * A runner is burned (forced out) if the ball reaches the target base before the runner,
  * provided the runner is not safe on the base, is not taking a free walk, and the play is valid.
  *
- * Note: player_base represents the base the runner is currently at (running FROM), not the target base.
- * For example, if baseIndex = i-1, the player is at base i-1 and running toward base i.
+ * In the case of a fly ball catch (§36), runners who were off-base (irti) lose their safety
+ * and must reach the next base before the ball to avoid being out.
  */
-int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, const GameState* gameState)
+int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, const GameState* gameState)
 {
 	// If the play is out of bounds (foul), outs are generally not recorded this way
 	// (or the situation is handled by foulPlay logic reset).
@@ -31,7 +31,7 @@ int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_a
 	// The third parameter (ball_at_base_index) represents the player's FROM base.
 	// We check if the player's current base matches the expected FROM base.
 	// Context: When ball is caught at base i, we check if player at base i-1 gets out.
-	if (player_base == ball_at_base_index) {
+	if ((int)player_base == ball_at_base_index) {
 		return 1;
 	}
 

@@ -69,22 +69,23 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
 }
 
 int should_ai_drop_ball(const WoundingState* woundingState, const GameControlFlags* gameControl,
-                        int runner3OriginalBase, int runner3IsOnBase,
-                        int runner2OriginalBase, int runner2IsOnBase,
+                        BaseID runner3OriginalBase, int runner3IsOnBase,
+                        BaseID runner2OriginalBase, int runner2IsOnBase,
                         int catcherHomeIndex, int hasBallIndex)
 {
-	int woundingCatch = woundingState->woundingCatch;
-	int batterStartedRunning = gameControl->batterStartedRunning;
-
-	if (woundingCatch == 1 && batterStartedRunning == 1 &&
-	        runner3OriginalBase == 3 && runner3IsOnBase == 1 &&
-	        runner2OriginalBase == 2 && runner2IsOnBase == 1 &&
-	        catcherHomeIndex != hasBallIndex) {
-		return 1;
+	// Tactical drop for bases loaded (§30 taktinen pudotus):
+	// Dropping the ball in a fly-ball situation can allow for a force play
+	// when we want to get an OUT at home base or create a double play.
+	// We only do this when 2nd and 3rd bases are occupied.
+	if (woundingState->woundingCatch == 1 && gameControl->checkForRun == 0) {
+		if (runner3OriginalBase == BASE_THIRD && runner3IsOnBase == 1 &&
+		        runner2OriginalBase == BASE_SECOND && runner2IsOnBase == 1 &&
+		        catcherHomeIndex == hasBallIndex) {
+			return 1;
+		}
 	}
 	return 0;
 }
-
 int determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
 {
 	int leadBase = -1;

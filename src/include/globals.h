@@ -31,6 +31,17 @@ typedef enum {
 // --------------------------------------------
 
 typedef enum {
+	PITCH_RESULT_NONE = 0,
+	PITCH_RESULT_STRIKE = 1,
+	PITCH_RESULT_BALL = 2,
+	PITCH_RESULT_HIT = 3,
+	PITCH_RESULT_MISS = 4,
+	PITCH_RESULT_FOUL = 5
+} PitchResult;
+
+// --------------------------------------------
+
+typedef enum {
 	PLAYER_STATE_IDLE = 0,
 	PLAYER_STATE_AT_BAT,
 	PLAYER_STATE_SAFE_ON_BASE,      // Replaces isOnBase=1
@@ -300,7 +311,8 @@ typedef struct _TechnicalPlayerInfo {
 // MILESTONE 7.5 - Separating Control State from Domain State
 typedef struct _PlayerRuntimeState {
 	int arrivedToBase;       // Optimization flag
-	int woundedApply;        // Deferred execution
+	int woundedApply;        // Deferred execution (wounding catch confirmed)
+	int pendingWound;        // §36: Player is marked to be wounded upon arrival at next base
 	int passedPathPoint;     // State machine variable
 	int goingForward;        // Direction tracking
 	int hasMadeRunOnThirdBase; // Guard flag
@@ -318,7 +330,7 @@ typedef struct _BattingTeamPlayerInfo {
 	int speed; // used to make some player a bit faster than others
 	int power; // used to make some players bat a bit harder than others
 	int number; // number is shown on screen
-	int originalBase; // base when pitch started
+	BaseID originalBase; // base when pitch started
 	JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
 
 	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
@@ -444,7 +456,6 @@ typedef struct _GameState {
 
 typedef struct _GameControlFlags {
 	int pause;
-	int initLocals;
 	int waitingForBatterDecision;
 	int waitingForFreeWalkDecision;
 	int freeWalkCalculationMade;

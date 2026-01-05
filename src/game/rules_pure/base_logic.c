@@ -68,3 +68,23 @@ int base_to_int_index(BaseID id)
 	}
 	return -1;
 }
+
+bool player_is_protected(PlayerUnitState state)
+{
+	return (state == PLAYER_STATE_SAFE_ON_BASE ||
+	        state == PLAYER_STATE_AT_BAT ||
+	        state == PLAYER_STATE_ADVANCING_FREELY);
+}
+
+bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID original_base)
+{
+	if (state == PLAYER_STATE_ADVANCING_FREELY) {
+		return true;
+	}
+
+	if (state == PLAYER_STATE_SAFE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
+		return (current_base == original_base);
+	}
+
+	return false;
+}

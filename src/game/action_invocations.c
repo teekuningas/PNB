@@ -29,14 +29,6 @@ void actionInvocations(StateInfo* stateInfo)
 	TeamControlMode battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
 	TeamControlMode catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
 
-	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
-		initActionInvocations(stateInfo);
-		stateInfo->localGameInfo->gameControl.initLocals++;
-		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gameControl.initLocals = 0;
-		}
-	}
-
 	checkThrow(stateInfo, KEY_DOWN, KEY_2, catchingControl, 0);
 	checkThrow(stateInfo, KEY_LEFT, KEY_2, catchingControl, 1);
 	checkThrow(stateInfo, KEY_RIGHT, KEY_2, catchingControl, 2);

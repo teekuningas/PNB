@@ -32,16 +32,10 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Ball is caught by a fielder
     state->localGameInfo->pII.hasBallIndex = fielderIndex;
     state->localGameInfo->gameControl.firstCatchMade = 1;
-    state->localGameInfo->gameControl.initLocals = 1;
-
-    // First, let the initialization phase finish to stabilize static counters
-    unsigned int seed = 0;
-    MenuInfo menu = {0}; // Dummy menu
-    while (state->localGameInfo->gameControl.initLocals != 0) {
-        gameAnalysis(state, &menu, &seed);
-    }
 
     // Now trigger the wounding catch
+    unsigned int seed = 0;
+    MenuInfo menu = {0}; // Dummy menu
     state->localGameInfo->woundingState.woundingCatch = 1;
     state->localGameInfo->woundingState.woundingCatchHandled = 0;
 
@@ -68,12 +62,8 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     
     // Initial stabilization
     state->localGameInfo->gameControl.firstCatchMade = 1;
-    state->localGameInfo->gameControl.initLocals = 1;
     unsigned int seed = 0;
     MenuInfo menu = {0};
-    while (state->localGameInfo->gameControl.initLocals != 0) {
-        gameAnalysis(state, &menu, &seed);
-    }
 
     // Trigger wounding catch
     state->localGameInfo->woundingState.woundingCatch = 1;
@@ -119,12 +109,8 @@ static int test_runner_not_wounded_if_starts_running_late() {
     
     // Stabilization
     state->localGameInfo->gameControl.firstCatchMade = 1;
-    state->localGameInfo->gameControl.initLocals = 1;
     unsigned int seed = 0;
     MenuInfo menu = {0};
-    while (state->localGameInfo->gameControl.initLocals != 0) {
-        gameAnalysis(state, &menu, &seed);
-    }
 
     // Trigger wounding catch
     state->localGameInfo->woundingState.woundingCatch = 1;

@@ -12,6 +12,7 @@
 #include "vector_math.h"
 #include "geometry.h"
 #include "base_logic.h"
+#include "rules_strikes.h"
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -42,15 +43,6 @@ static void updateModels(StateInfo* stateInfo);
 
 void gameManipulation(StateInfo* stateInfo)
 {
-	// init?
-	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
-		initGameManipulation(&(stateInfo->localGameInfo->gameFlowState));
-		stateInfo->localGameInfo->gameControl.initLocals++;
-		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gameControl.initLocals = 0;
-		}
-	}
-
 	updateBallStatus(stateInfo->localGameInfo, stateInfo->fieldPositions, &(stateInfo->localGameInfo->gameFlowState)); // update ball's location due to velocity, also update ball's velocity due to gravity, and set some flags related to ball
 	checkIfBallCanBeCatched(stateInfo); //  if no one has the ball, it could be catched, couldn't it?
 	checkIfNearHomeLocation(stateInfo);
@@ -120,23 +112,20 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 					// if pitch is going on, it means that batter didnt bat or missed and
 					// we need to set pitch-flags to 0 and make checks for strikes and balls and trigger corresponding events
 					if(localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
-						// in ball hits the plate, it is a strike, if not its a ball
-						if(localGameInfo->ballInfo.location.x < PLATE_WIDTH/2 && localGameInfo->ballInfo.location.x > -PLATE_WIDTH/2) {
-							if(localGameInfo->pRAI.batMiss != 1) {
-								localGameInfo->gameState.strikes += 1;
-								localGameInfo->gameState.event = EVENT_STRIKE;
-							}
-						} else {
-							if(localGameInfo->pRAI.batMiss != 1) {
-								localGameInfo->gameState.balls += 1;
-								localGameInfo->gameState.event = EVENT_BALL;
+						PitchResult result = determine_pitch_result(localGameInfo->ballInfo.location.x, PLATE_WIDTH, localGameInfo->pRAI.batMiss);
 
-								// here we also set freeWalk flags because it could be possible that batting team now
-								// has right for free walk.
-								localGameInfo->gameControl.freeWalkCalculationMade = 0;
-								localGameInfo->gameControl.freeWalkIndex = -1;
-								localGameInfo->gameControl.freeWalkBase = -1;
-							}
+						if(result == PITCH_RESULT_STRIKE) {
+							localGameInfo->gameState.strikes += 1;
+							localGameInfo->gameState.event = EVENT_STRIKE;
+						} else if(result == PITCH_RESULT_BALL) {
+							localGameInfo->gameState.balls += 1;
+							localGameInfo->gameState.event = EVENT_BALL;
+
+							// here we also set freeWalk flags because it could be possible that batting team now
+							// has right for free walk.
+							localGameInfo->gameControl.freeWalkCalculationMade = 0;
+							localGameInfo->gameControl.freeWalkIndex = -1;
+							localGameInfo->gameControl.freeWalkBase = -1;
 						}
 						localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 					}
@@ -368,6 +357,13 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
 								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
 							}
+
+							// §36 Tuplahaava: If we arrive with a pending wound, we are now wounded.
+							if(stateInfo->localGameInfo->playerRuntime[index].pendingWound == 1) {
+								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
+								stateInfo->localGameInfo->playerRuntime[index].pendingWound = 0;
+							}
+
 							// if we were wounded we must be removed out of the field and
 							// also basemen already on the base must be removed as they get wounded too.
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
@@ -375,27 +371,44 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 								movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
-								// if there was a player on this base before and he isnt safe here
-								// it means he had tried to run to next base and is wounded already so need for this.
-								// if there is a player safe here:
-								if(stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1) {
-									int k;
-									int fieldIndex = -1;
-									// we need to find his index on battingTeamOnFieldIndices as he is going to be removed.
-									for(k = 0; k < BASE_COUNT; k++) {
-										if(stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[k] ==
-										        stateInfo->localGameInfo->pII.safeOnBaseIndex[j]) {
-											fieldIndex = k;
-											break;
+
+								// §36 Tuplahaava: "Tuplahaava... syntyy irti olleen pelaajan saadessa turvan kyseiselle pesälle."
+								// If there is a player who currently holds safety rights to this base:
+								if(stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1 &&
+								        stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != index) {
+									int targetPlayerIndex = stateInfo->localGameInfo->pII.safeOnBaseIndex[j];
+
+									// If they aren't already doomed/out, trigger the double wound (§36)
+									if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_WOUNDED &&
+									        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_OUT) {
+
+										// If they are physically at the base, wound them immediately.
+										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+										        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
+
+											int k;
+											int fieldIndex = -1;
+											for(k = 0; k < BASE_COUNT; k++) {
+												if(stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[k] == targetPlayerIndex) {
+													fieldIndex = k;
+													break;
+												}
+											}
+											if(fieldIndex != -1) {
+												stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
+												stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
+												stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
+												movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
+												stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
+												printf("DEBUG: Player %d double wounded by Player %d arrival at base %d\n", targetPlayerIndex, index, j);
+											}
 										}
-									}
-									// we set the flags and off he goes.
-									if(fieldIndex != -1) {
-										stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
-										stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-										stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.safeOnBaseIndex[j]].bTPI.state = PLAYER_STATE_WOUNDED;
-										movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[j]);
-										stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
+										// If they are in between bases (LEADING or RUNNING), mark them as pending wound.
+										// They will be removed when they reach their destination (§36 race lost).
+										else {
+											stateInfo->localGameInfo->playerRuntime[targetPlayerIndex].pendingWound = 1;
+											printf("DEBUG: Player %d marked for double wound (pending) by Player %d arrival at base %d\n", targetPlayerIndex, index, j);
+										}
 									}
 								}
 							} else {
@@ -416,7 +429,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								}
 								// if we arrived to base 3 and were originally from homebase
 								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD &&
-								        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 0 &&
+								        stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == BASE_HOME &&
 								        stateInfo->localGameInfo->gameState.outs < 3) {
 									// set flag to check if our run is valid. difficult to imagine situation where
 									// it wasnt right away, ball had to be swinged to like heaven and back again
@@ -436,9 +449,9 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[3] == index) {
 							stateInfo->localGameInfo->pII.safeOnBaseIndex[3] = -1;
 						}
-						// if our originalBase was 0, we would have had a run at base 3 already so this wont be run
+						// if our originalBase was BASE_HOME, we would have had a run at base 3 already so this wont be run
 						// unless a new pitch is pitched and then our originalBase changes.
-						if((stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase != 0 ||
+						if((stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase != BASE_HOME ||
 						        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) &&
 						        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 							stateInfo->localGameInfo->gameControl.checkForRun = 1;

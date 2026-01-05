@@ -1,6 +1,6 @@
 #include "rules_runs.h"
 
-int calculate_runs(int player_base, int player_original_base, int player_is_wounded, const GameModeState* gameModeState, int has_made_run_on_third_base)
+int calculate_runs(int player_base, BaseID player_original_base, int player_is_wounded, const GameModeState* gameModeState, int has_made_run_on_third_base)
 {
 	int can_make_run_of_honor = gameModeState->canMakeRunOfHonor;
 
@@ -10,7 +10,7 @@ int calculate_runs(int player_base, int player_original_base, int player_is_woun
 	}
 
 	// §42 Kunniajuoksu (Run of Honor): safe at 3rd base, started as batter, allowed, and not already counted
-	if (player_base == 3 && player_original_base == 0 && can_make_run_of_honor && !has_made_run_on_third_base && player_is_wounded == 0) {
+	if (player_base == 3 && player_original_base == BASE_HOME && can_make_run_of_honor && !has_made_run_on_third_base && player_is_wounded == 0) {
 		return 1;
 	}
 

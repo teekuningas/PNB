@@ -4,6 +4,8 @@
 #include "geometry.h"
 #include "rng.h"
 #include "base_logic.h"
+#include "game_analysis.h"
+#include "game_manipulation.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -727,6 +729,7 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 		// MILESTONE 7.5: Initialize control state
 		localGameInfo->playerRuntime[i].arrivedToBase = 0;
 		localGameInfo->playerRuntime[i].woundedApply = 0;
+		localGameInfo->playerRuntime[i].pendingWound = 0;
 		localGameInfo->playerRuntime[i].passedPathPoint = 0;
 		localGameInfo->playerRuntime[i].goingForward = 0;
 		localGameInfo->playerRuntime[i].hasMadeRunOnThirdBase = 0;
@@ -767,7 +770,7 @@ void initializeCriticalBattingTeamInformation(LocalGameInfo* localGameInfo)
 {
 	int i;
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		localGameInfo->playerInfo[i].bTPI.originalBase = -1;
+		localGameInfo->playerInfo[i].bTPI.originalBase = BASE_NONE;
 	}
 }
 // ball flags
@@ -826,7 +829,10 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->gameControl.playerArrivedToBase = 0;
 	localGameInfo->gameControl.firstCatchMade = 0;
 	localGameInfo->gameControl.pause = 0;
-	localGameInfo->gameControl.initLocals = 1;
+
+	initGameAnalysis(&(localGameInfo->gameFlowState));
+	initGameManipulation(&(localGameInfo->gameFlowState));
+
 	localGameInfo->gameModeState.forceNextPair = 0;
 	localGameInfo->cameraState.homeRunCameraFlag = 0;
 	localGameInfo->gameModeState.canMakeRunOfHonor = 0;
@@ -907,7 +913,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		if(batterIndex != -1) {
 			localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
 			localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-			localGameInfo->playerInfo[batterIndex].bTPI.originalBase = 0;
+			localGameInfo->playerInfo[batterIndex].bTPI.originalBase = BASE_HOME;
 			localGameInfo->playerInfo[batterIndex].bTPI.number = localGameInfo->gameModeState.runnerBatterPairCounter + 1;
 			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
 			// the batting location
@@ -921,7 +927,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		if(runnerIndex != -1) {
 			localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-			localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 3;
+			localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = BASE_THIRD;
 			localGameInfo->pII.safeOnBaseIndex[3] = runnerIndex;
 
 			localGameInfo->playerInfo[runnerIndex].tPI.location.x =

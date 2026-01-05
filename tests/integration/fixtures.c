@@ -28,6 +28,20 @@ StateInfo* setup_test_state() {
     
     state->localGameInfo = malloc(sizeof(LocalGameInfo));
     memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
+    
+    // Initialize indices to -1
+    for(int i=0; i<4; i++) {
+        state->localGameInfo->pII.safeOnBaseIndex[i] = -1;
+        state->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
+        state->localGameInfo->pII.catcherOnBaseIndex[i] = -1;
+        state->localGameInfo->pII.catcherReplacerOnBaseIndex[i] = -1;
+    }
+    state->localGameInfo->pII.hasBallIndex = -1;
+    state->localGameInfo->pII.lastHadBallIndex = -1;
+    state->localGameInfo->pII.controlIndex = -1;
+    state->localGameInfo->pII.batterIndex = -1;
+    state->localGameInfo->gameFlowState.woundingCatchCounter = -1;
+    state->localGameInfo->gameFlowState.endOfInningCounter = -1;
 
     state->globalGameInfo = malloc(sizeof(GlobalGameInfo));
     memset(state->globalGameInfo, 0, sizeof(GlobalGameInfo));
@@ -49,10 +63,7 @@ void setup_runner_at_first_base(StateInfo* state) {
 
     initializeGameFromMenu(state, &setup, &seed);
     
-    // Flush initLocals to prevent wiping state later
-    loadMutableWorldSettings(state, &seed);
-    state->localGameInfo->gameControl.initLocals = 0;
-    	initGameAnalysis(&(state->localGameInfo->gameFlowState));
+    initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 1;
@@ -73,10 +84,7 @@ void setup_runner_at_third_base(StateInfo* state) {
 
     initializeGameFromMenu(state, &setup, &seed);
 
-    // Flush initLocals
-    loadMutableWorldSettings(state, &seed);
-    state->localGameInfo->gameControl.initLocals = 0;
-    	initGameAnalysis(&(state->localGameInfo->gameFlowState));
+    initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->playerInfo[0].bTPI.originalBase = 3;

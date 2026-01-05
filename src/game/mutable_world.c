@@ -37,6 +37,7 @@ int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 	initActionImplementation(stateInfo);
 	initActionInvocations(stateInfo);
 	initGameAnalysis(&(stateInfo->localGameInfo->gameFlowState));
+	initGameManipulation(&(stateInfo->localGameInfo->gameFlowState));
 
 	return 0;
 }

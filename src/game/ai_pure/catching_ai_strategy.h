@@ -28,8 +28,8 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
                     int targetBase);
 
 int should_ai_drop_ball(const WoundingState* woundingState, const GameControlFlags* gameControl,
-                        int runner3OriginalBase, int runner3IsOnBase,
-                        int runner2OriginalBase, int runner2IsOnBase,
+                        BaseID runner3OriginalBase, int runner3IsOnBase,
+                        BaseID runner2OriginalBase, int runner2IsOnBase,
                         int catcherHomeIndex, int hasBallIndex);
 
 int determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue);

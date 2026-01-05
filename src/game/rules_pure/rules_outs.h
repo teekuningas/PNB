@@ -13,6 +13,6 @@
  * @param gameState Current game state containing outOfBounds flag.
  * @return 1 if the runner is forced out, 0 otherwise.
  */
-int is_runner_forced_out(int player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, const GameState* gameState);
+int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, int ball_at_base_index, int taking_free_walk, const GameState* gameState);
 
 #endif // RULES_OUTS_H

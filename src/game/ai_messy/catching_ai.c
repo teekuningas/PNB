@@ -136,14 +136,14 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int index3 = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
 		int index2 = stateInfo->localGameInfo->pII.safeOnBaseIndex[2];
 
-		int r3OriginalBase = -1;
+		BaseID r3OriginalBase = BASE_NONE;
 		int r3IsOnBase = 0;
 		if (index3 != -1) {
 			r3OriginalBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase;
 			r3IsOnBase = (stateInfo->localGameInfo->playerInfo[index3].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
 		}
 
-		int r2OriginalBase = -1;
+		BaseID r2OriginalBase = BASE_NONE;
 		int r2IsOnBase = 0;
 		if (index2 != -1) {
 			r2OriginalBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase;

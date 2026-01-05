@@ -55,14 +55,6 @@ void initActionImplementation(StateInfo* stateInfo)
 void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int i;
-	// init?
-	if(stateInfo->localGameInfo->gameControl.initLocals > 0) {
-		initActionImplementation(stateInfo);
-		stateInfo->localGameInfo->gameControl.initLocals++;
-		if(stateInfo->localGameInfo->gameControl.initLocals == INIT_LOCALS_COUNT) {
-			stateInfo->localGameInfo->gameControl.initLocals = 0;
-		}
-	}
 
 	// double click counter
 	for(i = 0; i < BASE_COUNT; i++) {
@@ -235,7 +227,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 				int battingTeamIndex = (stateInfo->globalGameInfo->
 				                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 				int catchingTeamIndex = (battingTeamIndex+1)%2;
-				stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = 4;
+				stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = BASE_HOME_SCORED;
 
 				// add a run
 				stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
@@ -287,7 +279,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					int battingTeamIndex = (stateInfo->globalGameInfo->
 					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 					int catchingTeamIndex = (battingTeamIndex+1)%2;
-					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = 4;
+					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = BASE_HOME_SCORED;
 
 					// add a run
 					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;

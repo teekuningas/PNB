@@ -24,6 +24,7 @@ static int test_runner_scores_from_third_base_scenario() {
     
     // Runner on 3rd runs home
     state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_HOME_SCORED;
+    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = runnerIndex;
 
     unsigned int seed = 0;
     MenuInfo menu = {0};

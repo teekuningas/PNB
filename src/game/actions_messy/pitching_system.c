@@ -176,21 +176,18 @@ void releasePitch(StateInfo* stateInfo)
 			// free walks set original base to base that follows the base where player was when the
 			// free walk decision came available.
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase < base &&
-			        !(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == 4 && base == 3)) {
-				int done = 0;
+			        !(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == BASE_HOME_SCORED && base == 3)) {
 				// no such thing as safeOnBaseIndex[4] so have to be base < 4
 				// here we just make sure that player is safe on the base that is declared
 				// as his originalBase.
 				// if he's not, he can try gaining now originalBase by running to next one
 				// or he will just get tagged if its foul play.
 				if(base >= 0 && base < 4) {
-					if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] != index) {
-						done = 1;
-						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = -1;
+					if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
+						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = BASE_NONE;
 					}
-				}
-				if(done == 0) {
-					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = (int)baseId;
+				} else {
+					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = baseId;
 				}
 			}
 		}
