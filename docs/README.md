@@ -2,17 +2,17 @@
 
 ## Current Status
 
-**Milestone 7 COMPLETE ✅** (2026-01-01)  
-**Current Focus:** Milestone 7.5 - Data Structure Cleanup
+**Milestone 11 COMPLETE ✅** (2026-01-05)  
+**Current Focus:** Milestone 12 - Rendering Unification & Milestone 13 - Stabilization
 
 ### What We've Achieved
-- Type-safe domain state (PlayerUnitState, BaseID, GameEventType)
-- Eliminated 6 legacy boolean flags
-- 51 unit tests + 5 integration tests passing
-- Clean, compiler-enforced correctness
+- **Logic State Consolidation:** Eliminated all logic-related `static` variables. `StateInfo` is the single source of truth.
+- **Rule-Movement Decoupling:** Decoupled game rules (outs/strikes) from physical movement while maintaining automatic triggers for unambiguous control.
+- **Type-safe domain state:** (PlayerUnitState, BaseID, GameEventType)
+- **Comprehensive Testing:** Passed 53 unit tests covering physics, AI, and rules.
 
 ### What's Next
-**Philosophy:** Data shapes architecture - clean the foundation before building the Referee pattern.
+**Philosophy:** Stabilize the rules and unify the rendering before performing the large-scale architectural decoupling of Read/Write logic.
 
 ---
 
@@ -39,7 +39,7 @@
 
 **Completed Milestones:**
 - `MILESTONE6_COMPLETE.md` - Rules engine extraction complete
-- `MILESTONE7_COMPLETE.md` - *(To be created after Phase 5)*
+- `MILESTONE11_COMPLETE.md` - (To be created) State consolidation complete
 
 **Game Rules:**
 - `SAANNOT.md` - Finnish baseball rules (in Finnish)
@@ -135,23 +135,28 @@
 - Deleted state_adapter.c/h
 - All tests passing
 
+**Milestone 11: State Consolidation** ✅
+- Moved all logic-related statics into `StateInfo`.
+- Centralized AI and Game Flow counters.
+
 ### Current Work
 
-**Milestone 7.5: Data Structure Cleanup** (1-2 weeks)
-- Phase 0: Audit GameAnalysisInfo God object
-- Phase 1: Extract PlayerRuntimeState
-- Phase 2: Split GameAnalysisInfo
-- Phase 3: Stabilize & document
+**Milestone 12: Rendering Unification**
+- Modernize in-game rendering to use `ResourceManager`.
+- Eliminate orphan GLuint globals.
 
-**Goal:** Separate domain state from control state
+**Milestone 13: Stabilization & Rule Decoupling**
+- Purify safety logic.
+- Standardize base indexing.
+- Implement PitchResult enum.
+- Add Integration Scenario tests.
 
 ### Future Work
 
-**Milestone 8: The Referee Architecture** (2-3 weeks)
-- Implement pure Referee layer
-- Analyze game state → abstract state
-- Calculate permissions explicitly
-- Enable snapshotting & replay
+**Milestone 14+: The Functional Pipeline**
+- Decouple Read/Write logic.
+- Implement Referee pattern.
+- Explicit linear game loop.
 
 ---
 
@@ -167,7 +172,7 @@ Extract logic to pure functions before changing architecture. This makes the sys
 Make the smallest possible change. Test. Then make the next small change.
 
 ### 4. Tests Are Safety Nets
-51 unit tests + 5 integration tests give us confidence to refactor boldly.
+53 unit tests give us confidence to refactor boldly.
 
 ### 5. Foundation Before Skyscraper
 Don't build complex architectural patterns on messy foundations. Clean first, build second.
@@ -201,5 +206,5 @@ See `.dev/ARCHITECT_AGENT.md`, `.dev/TASK_AGENT.md`, or `.dev/GENERAL_AGENT.md` 
 
 ---
 
-**Last Updated:** 2026-01-01  
-**Status:** Ready for Milestone 7.5 🚀
+**Last Updated:** 2026-01-05  
+**Status:** Stabilizing rules and unifying rendering 🚀

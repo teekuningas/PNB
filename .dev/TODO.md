@@ -36,7 +36,18 @@
 
 ---
 
-## Milestone 13: The Great Decoupling (Read vs. Write)
+## Milestone 13: Stabilization & Rule Decoupling
+
+**Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
+
+- [ ] **Purify Safety Logic:** Create `is_player_protected` helper in `rules_pure/base_logic.c`.
+- [ ] **Standardize Base Indexing:** Standardize on consistent indexing between `BaseID` and `int`.
+- [ ] **Pitch Result Enum:** Implement `PitchResult` enum to replace magic numbers in analysis.
+- [ ] **Scenario Tests:** Add integration tests for "Chain Reaction" and "Strikeout Force".
+
+---
+
+## Milestone 14: The Great Decoupling (Read vs. Write)
 
 **Goal:** Split logic into "Query" and "Apply" halves.
 
@@ -47,7 +58,7 @@
 
 ## Future Milestones (The Pipeline)
 
-- **Milestone 14:** Implement Intent Phase.
-- **Milestone 15:** Implement Referee Phase.
-- **Milestone 16:** Implement Resolver Phase.
-- **Milestone 17:** Pipeline Integration.
+- **Milestone 15:** Implement Intent Phase.
+- **Milestone 16:** Implement Referee Phase.
+- **Milestone 17:** Implement Resolver Phase.
+- **Milestone 18:** Pipeline Integration.

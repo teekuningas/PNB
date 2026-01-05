@@ -16,7 +16,7 @@ We are preparing the codebase for a major architectural shift towards a **Functi
 - Enum-ify `TeamControlMode`, `TeamSide`, `ReplacementState`, etc.
 - Initial const-correctness sweep.
 
-### ✅ Milestone 11: The State Consolidation (Logic) (Completed 2026-01-04)
+### ✅ Milestone 11: The State Consolidation (Logic) (Completed 2026-01-05)
 - **Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`.
 - **Results:**
     - Moved AI statics into `AIState`.
@@ -28,20 +28,28 @@ We are preparing the codebase for a major architectural shift towards a **Functi
 - **Goal:** Modernize in-game rendering to match the Menu system.
 - **Tasks:** Adopt `ResourceManager`, eliminate orphan `GLuint` globals, and unify GL context setup.
 
-### 🔮 Milestone 13: The Great Decoupling (Read vs. Write)
-- **Goal:** Split `game_analysis` and `action_implementation` into Query/Apply pairs.
+### 🔮 Milestone 13: Stabilization & Rule Decoupling
+- **Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
+- **Tasks:**
+    - Purify safety logic into `is_player_protected` helper.
+    - Standardize base indexing (standardize on `BaseID` or `int` consistently).
+    - Implement `PitchResult` enum to replace raw integers.
+    - Add comprehensive Integration Scenario tests (Chain Reaction, Strikeout force).
+
+### 🔮 Milestone 14: The Great Decoupling (Read vs. Write)
+- **Goal:** Split logic into "Query" and "Apply" halves.
 - **Why:** Essential for phase-based execution.
 
-### 🔮 Milestone 14: The Intent Phase
+### 🔮 Milestone 15: The Intent Phase
 - **Goal:** Explicit `UserIntent` struct decoupled from immediate execution.
 
-### 🔮 Milestone 15: The Referee (Judgment Phase)
+### 🔮 Milestone 16: The Referee (Judgment Phase)
 - **Goal:** Pure function `Referee(State) -> Decisions`.
 
-### 🔮 Milestone 16: The Resolver (Resolution Phase)
+### 🔮 Milestone 17: The Resolver (Resolution Phase)
 - **Goal:** Centralized state mutation `Resolver(Decisions) -> NewState`.
 
-### 🔮 Milestone 17: The Pipeline Integration
+### 🔮 Milestone 18: The Pipeline Integration
 - **Goal:** Explicit linear game loop: `Input -> Sim -> Judge -> Resolve -> Render`.
 
 ---
