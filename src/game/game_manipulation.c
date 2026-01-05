@@ -399,11 +399,12 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 									}
 								}
 							} else {
-								// if the player wasnt wounded, now he is arriving in a valid way and can be arriving to next base
-								// (or the previous one. but if he arrives to previous one, nothing really
-								// needs changing so we dont even set those flags in the target looking.)
-								if(stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1) {
-									runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[j], j);
+								// if the player wasnt wounded, now he is arriving in a valid way
+								// we take safety from whoever was here before.
+								if(stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[j] != index) {
+									int prevIndex = stateInfo->localGameInfo->pII.safeOnBaseIndex[j];
+									// they are no longer safe and must run!
+									runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, prevIndex, j);
 								}
 								// we are now safe here.
 								stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = index;

@@ -126,7 +126,8 @@ static void checkForOuts(StateInfo* stateInfo)
 						// remove safety from last base?
 						// happens if player is out of base and ball arrives the previous one.
 						if(stateInfo->localGameInfo->pII.safeOnBaseIndex[i] == index) {
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE) {
+							if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE) &&
+							        (stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT)) {
 								// in case player was leading of coming back, we now force him to continue
 								// to next base
 								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[i], i);
@@ -147,9 +148,12 @@ static void checkForOuts(StateInfo* stateInfo)
 						if(i > 0) baseIndex = i - 1;
 						else baseIndex = 3;
 
-						if(is_runner_forced_out(
-						            base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId),
-						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE,
+						int player_base_idx = base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId);
+						int is_actually_safe = (player_base_idx != -1 && stateInfo->localGameInfo->pII.safeOnBaseIndex[player_base_idx] == index);
+
+						if (is_runner_forced_out(
+						            player_base_idx,
+						            is_actually_safe,
 						            baseIndex,
 						            stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
 						            &(stateInfo->localGameInfo->gameState))) {
@@ -239,14 +243,18 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 static void strikesAndBalls(StateInfo* stateInfo)
 {
 	// so if there are three strikes
-	if(should_change_batter_on_strikes(&(stateInfo->localGameInfo->gameState), stateInfo->localGameInfo->pII.safeOnBaseIndex[1])) {
-		// we force running of batter
+	if(should_change_batter_on_strikes(&(stateInfo->localGameInfo->gameState))) {
+		// We restore automatic force running to resolve control ambiguity.
+		// The batter is now "forced" to run by the rules.
 		if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
-			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, stateInfo->localGameInfo->pII.safeOnBaseIndex[0], 0);
-			stateInfo->localGameInfo->pII.batterIndex = -1;
-			// and set safeOnBaseIndex to 0 as there is no one safe anymore.
+			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[0];
+			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, 0);
+			// Remove safety from home base
 			stateInfo->localGameInfo->pII.safeOnBaseIndex[0] = -1;
 		}
+
+		// Reset strikes so this doesn't re-trigger every frame
+		stateInfo->localGameInfo->gameState.strikes = 0;
 	}
 	// we calculate the player and the base he has right to go freely only once, and that is when
 	// the ball happens. if player moves to next base and user after that decides to make the free walk
@@ -304,7 +312,8 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 			if(index != -1) {
 				// if player is taking a free walk its always not wound. if not and ball is out of base,
 				// its a wound, its also wound if the player has arrived the next base already.
-				if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE ||
+				if(((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE &&
+				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) ||
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase) &&
 				        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
 					stateInfo->localGameInfo->playerRuntime[index].woundedApply = 1;

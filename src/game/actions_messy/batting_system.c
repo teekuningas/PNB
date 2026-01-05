@@ -119,6 +119,8 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->gameState.balls = 0;
 		// set batterIndex
 		stateInfo->localGameInfo->pII.batterIndex = index;
+		// and they are safe on home base
+		stateInfo->localGameInfo->pII.safeOnBaseIndex[0] = index;
 		// cant advance yet
 		stateInfo->localGameInfo->pRAI.batterCanAdvance = 0;
 		// just set default values so that the player can have a fresh start at
