@@ -2,9 +2,10 @@
 #define BALL_H
 
 #include "globals.h"
+#include "resource_manager.h"
 
-int initBall();
-void drawBall(const BallInfo* ballInfo, double alpha);
+int initBall(ResourceManager* rm);
+void drawBall(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
 int cleanBall();
 
 #endif /* BALL_H */

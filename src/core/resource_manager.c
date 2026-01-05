@@ -112,6 +112,141 @@ int resource_manager_load_all_menu_assets(ResourceManager* rm)
 	return 0;
 }
 
+int resource_manager_load_all_game_assets(ResourceManager* rm)
+{
+	int i;
+	// Game Screen Textures
+	add_texture_resource(rm, "data/textures/skybox.tga");
+	add_texture_resource(rm, "data/textures/meter.tga");
+	add_texture_resource(rm, "data/textures/selectionBall1.tga");
+	add_texture_resource(rm, "data/textures/selectionBall2.tga");
+	add_texture_resource(rm, "data/textures/selectionBall3.tga");
+	add_texture_resource(rm, "data/textures/bases.tga");
+	add_texture_resource(rm, "data/textures/basesMarker.tga");
+
+	// Player Textures
+	add_texture_resource(rm, "data/textures/team1.tga");
+	add_texture_resource(rm, "data/textures/team2.tga");
+	add_texture_resource(rm, "data/textures/team3.tga");
+	add_texture_resource(rm, "data/textures/team4.tga");
+	add_texture_resource(rm, "data/textures/team5.tga");
+	add_texture_resource(rm, "data/textures/team6.tga");
+	add_texture_resource(rm, "data/textures/team7.tga");
+	add_texture_resource(rm, "data/textures/team8.tga");
+	add_texture_resource(rm, "data/textures/team1_joker.tga");
+	add_texture_resource(rm, "data/textures/team2_joker.tga");
+	add_texture_resource(rm, "data/textures/team3_joker.tga");
+	add_texture_resource(rm, "data/textures/team4_joker.tga");
+	add_texture_resource(rm, "data/textures/team5_joker.tga");
+	add_texture_resource(rm, "data/textures/team6_joker.tga");
+	add_texture_resource(rm, "data/textures/team7_joker.tga");
+	add_texture_resource(rm, "data/textures/team8_joker.tga");
+
+	// Ball Texture
+	add_texture_resource(rm, "data/textures/pallo.tga");
+
+	// Immutable World Textures
+	add_texture_resource(rm, "data/textures/fence.tga");
+	add_texture_resource(rm, "data/textures/plate.tga");
+	add_texture_resource(rm, "data/textures/grassTexture.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa1.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa2.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa3.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa4.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa5.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa6.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa7.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa8.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa9.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa10.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa11.tga");
+	add_texture_resource(rm, "data/textures/kentta/osa12.tga");
+
+	// --- Models ---
+	add_model_resource(rm, "data/models/skybox.obj", "Cube");
+	add_model_resource(rm, "data/models/plate.obj", "Cylinder");
+	add_model_resource(rm, "data/models/plane.obj", "Plane");
+	add_model_resource(rm, "data/models/pallo.obj", "Icosphere");
+	add_model_resource(rm, "data/models/shadow.obj", "Circle");
+
+	// Player Standing Models
+	add_model_resource(rm, "data/models/player_bare_hands_standing.obj", "Sphere");
+	add_model_resource(rm, "data/models/player_glove_with_ball_standing.obj", "Cube");
+	add_model_resource(rm, "data/models/player_glove_without_ball_standing.obj", "Cube");
+
+	// Player Animations
+	char path[128];
+
+	// Bare hands walking (16 frames)
+	for(i = 1; i <= 16; i++) {
+		sprintf(path, "data/models/player_bare_hands_walking/player_bare_hands_walking_%06d.obj", i);
+		add_model_resource(rm, path, "Sphere");
+	}
+	// Bare hands running (20 frames)
+	for(i = 1; i <= 20; i++) {
+		sprintf(path, "data/models/player_bare_hands_running/player_bare_hands_running_%06d.obj", i);
+		add_model_resource(rm, path, "Sphere");
+	}
+	// Glove without ball walking (16 frames)
+	for(i = 1; i <= 16; i++) {
+		sprintf(path, "data/models/player_glove_without_ball_walking/player_glove_without_ball_walking_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Glove with ball walking (16 frames)
+	for(i = 1; i <= 16; i++) {
+		sprintf(path, "data/models/player_glove_with_ball_walking/player_glove_with_ball_walking_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Glove without ball running (20 frames)
+	for(i = 1; i <= 20; i++) {
+		sprintf(path, "data/models/player_glove_without_ball_running/player_glove_without_ball_running_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Glove with ball running (20 frames)
+	for(i = 1; i <= 20; i++) {
+		sprintf(path, "data/models/player_glove_with_ball_running/player_glove_with_ball_running_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Pitch down (9 frames)
+	for(i = 1; i <= 9; i++) {
+		sprintf(path, "data/models/pitch/pitch_down_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Pitch up (13 frames)
+	for(i = 1; i <= 13; i++) {
+		sprintf(path, "data/models/pitch/pitch_up_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Throw load (11 frames)
+	for(i = 1; i <= 11; i++) {
+		sprintf(path, "data/models/throw/throw_load_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Throw release (21 frames)
+	for(i = 1; i <= 21; i++) {
+		sprintf(path, "data/models/throw/throw_release_%06d.obj", i);
+		add_model_resource(rm, path, "Cube");
+	}
+	// Swing (34 frames)
+	for(i = 1; i <= 34; i++) {
+		sprintf(path, "data/models/batting/swing_%06d.obj", i);
+		add_model_resource(rm, path, "Sphere");
+	}
+	// Bunt (34 frames)
+	for(i = 1; i <= 34; i++) {
+		sprintf(path, "data/models/batting/bunt_%06d.obj", i);
+		add_model_resource(rm, path, "Sphere");
+	}
+	// Batting stop (34 frames)
+	for(i = 1; i <= 34; i++) {
+		sprintf(path, "data/models/batting/batting_stop_%06d.obj", i);
+		add_model_resource(rm, path, "Sphere");
+	}
+
+	printf("Loaded game assets. Total resources: %d\n", rm->count);
+	return 0;
+}
+
 // --- Internal Functions ---
 
 static Resource* find_resource(ResourceManager* rm, const char* path)

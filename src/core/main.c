@@ -125,7 +125,7 @@ int main ( int argc, char *argv[] )
 	drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
 	draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
-	result = initGameScreen(&stateInfo);
+	result = initGameScreen(&stateInfo, resourceManager);
 	if(result != 0) {
 		printf("Could not init game screen. Exiting.");
 		return -1;
@@ -202,7 +202,7 @@ static void draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, d
 	switch(stateInfo->screen) {
 	case SCREEN_GAME:
 		// Everything within drawGameScreen is currently drawn in 3d context
-		drawGameScreen(stateInfo, alpha, rs);
+		drawGameScreen(stateInfo, alpha, rm, rs);
 		break;
 	case SCREEN_MAIN_MENU:
 		drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);

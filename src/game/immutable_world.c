@@ -13,41 +13,30 @@
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
 
-static int initGround(StateInfo* stateInfo);
-static void drawGround(const StateInfo* stateInfo);
+static int initGround(StateInfo* stateInfo, ResourceManager* rm);
+static void drawGround(const StateInfo* stateInfo, ResourceManager* rm);
 
-static int initFence();
-static void drawFence();
+static int initFence(ResourceManager* rm);
+static void drawFence(ResourceManager* rm);
 
-static int initPlate();
-static void drawPlate();
+static int initPlate(ResourceManager* rm);
+static void drawPlate(ResourceManager* rm);
 
-
-
-static GLuint plateTexture;
-static GLuint fenceTexture;
-
-static MeshObject* plateMesh;
-static GLuint plateDisplayList;
-
-static MeshObject* planeMesh;
-static GLuint planeDisplayList;
-
-int initImmutableWorld(StateInfo* stateInfo)
+int initImmutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 {
 	int result;
 
-	result = initGround(stateInfo);
+	result = initGround(stateInfo, rm);
 	if(result != 0) {
 		printf("Initialization of ground failed.");
 		return result;
 	}
-	result = initFence();
+	result = initFence(rm);
 	if(result != 0) {
 		printf("Initialization of fence failed.");
 		return result;
 	}
-	result = initPlate();
+	result = initPlate(rm);
 	if(result != 0) {
 		printf("Initialization of plate failed.");
 		return result;
@@ -58,30 +47,33 @@ int initImmutableWorld(StateInfo* stateInfo)
 }
 
 
-void drawImmutableWorld(const StateInfo* stateInfo, double alpha)
+void drawImmutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
-	drawGround(stateInfo);
-	drawFence();
-	drawPlate();
+	drawGround(stateInfo, rm);
+	drawFence(rm);
+	drawPlate(rm);
 
 }
 
-static void drawPlate()
+static void drawPlate(ResourceManager* rm)
 {
 	// models' width and length are 2, 2, so thats why we divide by 2.
 	// 0.5f is just so that it wouldnt be so high that shoes and ball will disappear in it.
-	glBindTexture(GL_TEXTURE_2D, plateTexture);
+	glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/plate.tga"));
 	glPushMatrix();
 	glScalef(PLATE_WIDTH/2, 0.5f, PLATE_WIDTH/2);
-	glCallList(plateDisplayList);
+	glCallList(resource_manager_get_model(rm, "data/models/plate.obj"));
 	glPopMatrix();
 }
 
 // Draw fence and ground
 // optimized the inner loops a bit, took out everything i could from loops.
-static void drawFence()
+static void drawFence(ResourceManager* rm)
 {
 	int i;
+	GLuint fenceTexture = resource_manager_get_texture(rm, "data/textures/fence.tga");
+	GLuint planeModel = resource_manager_get_model(rm, "data/models/plane.obj");
+
 	// BACK FENCE
 	glBindTexture(GL_TEXTURE_2D, fenceTexture);
 	for(i = 0; i < (int)(5*GROUND_WIDTH/FENCE_PIECE_WIDTH); i++) {
@@ -90,7 +82,7 @@ static void drawFence()
 		glScalef(FENCE_PIECE_WIDTH/2, FENCE_HEIGHT/2, 1.0f); // again, width and height of the model is 2
 		glTranslatef(0.0f, 1.0f, 0.0f); // moves fence up so that its bottom is at the level of origin ( preparing for scale )
 		glRotatef(90.0f,1.0f, 0.0f, 0.0f);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 	}
 	// FRONT FENCE
@@ -104,10 +96,10 @@ static void drawFence()
 		// as the plane is visible only from the other side, we draw it two times, both rotated differently
 		// so that it can be seen from both sides.
 		glRotatef(90.0f,1.0f, 0.0f, 0.0f);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 		glRotatef(-90.0f,1.0f, 0.0f, 0.0f);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 	}
 	// LEFT FENCE
@@ -119,7 +111,7 @@ static void drawFence()
 		glTranslatef(0.0f, 1.0f, 0.0f);
 		glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 	}
 	// RIGHT FENCE
@@ -131,15 +123,17 @@ static void drawFence()
 		glTranslatef(0.0f, 1.0f, 0.0f);
 		glRotatef(-90.0f, 0.0f, 1.0f, 0.0f);
 		glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 	}
 }
 
-static void drawGround(const StateInfo* stateInfo)
+static void drawGround(const StateInfo* stateInfo, ResourceManager* rm)
 {
 	int i;
 	const GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
+	GLuint planeModel = resource_manager_get_model(rm, "data/models/plane.obj");
+
 	// here we use groundUnit[12].texture for all grass ground pieces.
 	for(i = 0; i < GROUND_UNIT_COUNT; i++) {
 		if(i < 12) {
@@ -152,35 +146,27 @@ static void drawGround(const StateInfo* stateInfo)
 		glTranslatef(-GROUND_WIDTH + GROUND_OFFSET_X, 0.0f, GROUND_OFFSET_Z);
 		glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 		glScalef(GROUND_LENGTH/2, 1.0f, GROUND_WIDTH/2);
-		glCallList(planeDisplayList);
+		glCallList(planeModel);
 		glPopMatrix();
 	}
 }
 // cleaning is good for people.
 int cleanImmutableWorld(StateInfo* stateInfo)
 {
-	cleanMesh(planeMesh);
-	cleanMesh(plateMesh);
-
 	return 0;
 }
 
-static int initFence()
+static int initFence(ResourceManager* rm)
 {
-	if(tryLoadingTextureGL(&fenceTexture, "data/textures/fence.tga", "fence") != 0) return -1;
-
 	return 0;
 }
 
-static int initPlate()
+static int initPlate(ResourceManager* rm)
 {
-	if(tryLoadingTextureGL(&plateTexture, "data/textures/plate.tga", "plate") != 0) return -1;
-	plateMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plate.obj", "Cylinder", plateMesh, &plateDisplayList) != 0) return -1;
 	return 0;
 }
 
-static int initGround(StateInfo* stateInfo)
+static int initGround(StateInfo* stateInfo, ResourceManager* rm)
 {
 	int i, j, counter;
 	GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
@@ -204,20 +190,19 @@ static int initGround(StateInfo* stateInfo)
 		}
 	}
 	// then just load the textures.
-	if(tryLoadingTextureGL(&(gu[0].texture), "data/textures/kentta/osa1.tga", "part1") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[1].texture), "data/textures/kentta/osa2.tga", "part2") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[2].texture), "data/textures/kentta/osa3.tga", "part3") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[3].texture), "data/textures/kentta/osa4.tga", "part4") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[4].texture), "data/textures/kentta/osa5.tga", "part5") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[5].texture), "data/textures/kentta/osa6.tga", "part6") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[6].texture), "data/textures/kentta/osa7.tga", "part7") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[7].texture), "data/textures/kentta/osa8.tga", "part8") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[8].texture), "data/textures/kentta/osa9.tga", "part9") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[9].texture), "data/textures/kentta/osa10.tga", "part10") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[10].texture), "data/textures/kentta/osa11.tga", "part11") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[11].texture), "data/textures/kentta/osa12.tga", "part12") != 0) return -1;
-	if(tryLoadingTextureGL(&(gu[12].texture), "data/textures/grassTexture.tga", "grassTexture") != 0) return -1;
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+	gu[0].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa1.tga");
+	gu[1].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa2.tga");
+	gu[2].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa3.tga");
+	gu[3].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa4.tga");
+	gu[4].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa5.tga");
+	gu[5].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa6.tga");
+	gu[6].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa7.tga");
+	gu[7].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa8.tga");
+	gu[8].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa9.tga");
+	gu[9].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa10.tga");
+	gu[10].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa11.tga");
+	gu[11].texture = resource_manager_get_texture(rm, "data/textures/kentta/osa12.tga");
+	gu[12].texture = resource_manager_get_texture(rm, "data/textures/grassTexture.tga");
+
 	return 0;
 }

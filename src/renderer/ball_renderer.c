@@ -7,37 +7,23 @@
 #define BALL_SCALE BALL_SIZE
 #define SHADOW_CONSTANT 0.2f
 
-static GLuint ballTexture;
-
-static MeshObject* ballMesh;
-static GLuint ballDisplayList;
-
-static MeshObject* shadowMesh;
-static GLuint shadowDisplayList;
-
-int initBallRenderer(void)
+int initBallRenderer(ResourceManager* rm)
 {
-	if(tryLoadingTextureGL(&ballTexture, "data/textures/pallo.tga", "ball") != 0) return -1;
-	ballMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/pallo.obj", "Icosphere", ballMesh, &ballDisplayList) != 0) return -1;
-	shadowMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/shadow.obj", "Circle", shadowMesh, &shadowDisplayList) != 0) return -1;
-
 	return 0;
 }
 
 // Function to draw the ball
-void drawBallRenderer(const BallInfo* ballInfo, double alpha)
+void drawBallRenderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm)
 {
 	if(ballInfo->visible == 1) {
 		// we draw ball and its shadow. shadow's x offset is just proportional to ball's height.
-		glBindTexture(GL_TEXTURE_2D, ballTexture);
+		glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/pallo.tga"));
 		glPushMatrix();
 		glTranslatef((float)(alpha*ballInfo->location.x + (1-alpha)*ballInfo->lastLocation.x),
 		             (float)(alpha*ballInfo->location.y + (1-alpha)*ballInfo->lastLocation.y),
 		             (float)(alpha*ballInfo->location.z + (1-alpha)*ballInfo->lastLocation.z));
 		glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
-		glCallList(ballDisplayList);
+		glCallList(resource_manager_get_model(rm, "data/models/pallo.obj"));
 		glPopMatrix();
 		// and the shadow
 		glEnable(GL_BLEND);
@@ -48,7 +34,7 @@ void drawBallRenderer(const BallInfo* ballInfo, double alpha)
 		             SHADOW_HEIGHT,
 		             (float)(alpha*ballInfo->location.z + (1-alpha)*ballInfo->lastLocation.z));
 		glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
-		glCallList(ballDisplayList);
+		glCallList(resource_manager_get_model(rm, "data/models/shadow.obj"));
 		glPopMatrix();
 		glDisable(GL_BLEND);
 		glEnable(GL_LIGHTING);
@@ -57,7 +43,5 @@ void drawBallRenderer(const BallInfo* ballInfo, double alpha)
 
 int cleanBallRenderer(void)
 {
-	cleanMesh(ballMesh);
-	cleanMesh(shadowMesh);
 	return 0;
 }

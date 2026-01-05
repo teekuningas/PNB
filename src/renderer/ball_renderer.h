@@ -2,12 +2,13 @@
 #define BALL_RENDERER_H
 
 #include "../include/globals.h" // For BallInfo structure
+#include "../core/resource_manager.h"
 
 // Function to initialize ball rendering resources (textures, models)
-int initBallRenderer(void);
+int initBallRenderer(ResourceManager* rm);
 
 // Function to draw the ball
-void drawBallRenderer(const BallInfo* ballInfo, double alpha);
+void drawBallRenderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
 
 // Function to clean up ball rendering resources
 int cleanBallRenderer(void);
