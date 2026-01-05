@@ -1,18 +1,17 @@
 # PNB - Documentation
 
-## Current Status
-
-**Milestone 11 COMPLETE ✅** (2026-01-05)  
-**Current Focus:** Milestone 12 - Rendering Unification & Milestone 13 - Stabilization
+**Milestone 11 & 12 COMPLETE ✅** (2026-01-05)  
+**Current Focus:** Milestone 13 - Stabilization
 
 ### What We've Achieved
 - **Logic State Consolidation:** Eliminated all logic-related `static` variables. `StateInfo` is the single source of truth.
+- **Rendering Unification:** Adopted `ResourceManager` for all in-game assets and eliminated logic-related `static` GL variables.
 - **Rule-Movement Decoupling:** Decoupled game rules (outs/strikes) from physical movement while maintaining automatic triggers for unambiguous control.
 - **Type-safe domain state:** (PlayerUnitState, BaseID, GameEventType)
 - **Comprehensive Testing:** Passed 53 unit tests covering physics, AI, and rules.
 
 ### What's Next
-**Philosophy:** Stabilize the rules and unify the rendering before performing the large-scale architectural decoupling of Read/Write logic.
+**Philosophy:** Stabilize the rules before performing the large-scale architectural decoupling of Read/Write logic.
 
 ---
 
@@ -40,6 +39,7 @@
 **Completed Milestones:**
 - `MILESTONE6_COMPLETE.md` - Rules engine extraction complete
 - `MILESTONE11_COMPLETE.md` - (To be created) State consolidation complete
+- `MILESTONE12_COMPLETE.md` - (To be created) Rendering unification complete
 
 **Game Rules:**
 - `SAANNOT.md` - Finnish baseball rules (in Finnish)
@@ -139,11 +139,11 @@
 - Moved all logic-related statics into `StateInfo`.
 - Centralized AI and Game Flow counters.
 
-### Current Work
-
-**Milestone 12: Rendering Unification**
+**Milestone 12: Rendering Unification** ✅
 - Modernize in-game rendering to use `ResourceManager`.
 - Eliminate orphan GLuint globals.
+
+### Current Work
 
 **Milestone 13: Stabilization & Rule Decoupling**
 - Purify safety logic.

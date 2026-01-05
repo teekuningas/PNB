@@ -26,17 +26,17 @@
 
 ---
 
-## Milestone 12: The Rendering Unification
+## Milestone 12: The Rendering Unification (COMPLETE ✅)
 
 **Goal:** Modernize in-game rendering to match the Menu system's architecture.
 
-- [ ] **Resource Manager:** Adopt `ResourceManager` for `game_screen.c` and `immutable_world.c` textures/meshes.
-- [ ] **State Cleanup:** Eliminate `static` GLuints and MeshObjects from `src/game`.
-- [ ] **Context Setup:** Unify 2D/3D context setup with the menu system.
+- [x] **Resource Manager:** Adopt `ResourceManager` for `game_screen.c` and `immutable_world.c` textures/meshes.
+- [x] **State Cleanup:** Eliminate `static` GLuints and MeshObjects from `src/game`.
+- [x] **Context Setup:** Unify 2D/3D context setup with the menu system.
 
 ---
 
-## Milestone 13: Stabilization & Rule Decoupling
+## Milestone 13: Stabilization & Rule Decoupling (CURRENT)
 
 **Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
 

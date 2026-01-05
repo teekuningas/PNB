@@ -24,11 +24,14 @@ We are preparing the codebase for a major architectural shift towards a **Functi
     - Moved action system internal variables into `PendingActionState`.
     - `StateInfo` is now the only source of truth for game logic.
 
-### 🚧 Milestone 12: The Rendering Unification (CURRENT)
+### ✅ Milestone 12: The Rendering Unification (Completed 2026-01-05)
 - **Goal:** Modernize in-game rendering to match the Menu system.
-- **Tasks:** Adopt `ResourceManager`, eliminate orphan `GLuint` globals, and unify GL context setup.
+- **Results:**
+    - Adopted `ResourceManager` for all in-game textures and models.
+    - Eliminated all logic-related `static` GL variables from `src/game`.
+    - Unified rendering architecture between game and menus.
 
-### 🔮 Milestone 13: Stabilization & Rule Decoupling
+### 🚧 Milestone 13: Stabilization & Rule Decoupling (CURRENT)
 - **Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
 - **Tasks:**
     - Purify safety logic into `is_player_protected` helper.
