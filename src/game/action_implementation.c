@@ -257,9 +257,9 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					// set takingFreeWalk flag so that this player cant get wounded or tagged
 					// when he's running
 					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
-					// if he's safe on previous base, set the safeOnBaseIndex for that base to -1
-					if(currentBaseId != BASE_NONE && stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseId] == index) {
-						stateInfo->localGameInfo->pII.safeOnBaseIndex[currentBaseId] = -1;
+					// if he's safe on previous base, set the baseControlIndex for that base to -1
+					if(currentBaseId != BASE_NONE && stateInfo->localGameInfo->pII.baseControlIndex[currentBaseId] == index) {
+						stateInfo->localGameInfo->pII.baseControlIndex[currentBaseId] = -1;
 					}
 					// if he was batter, set the batterIndex to -1 so that we can have a new batter.
 					if(stateInfo->localGameInfo->pII.batterIndex == index) {
@@ -388,9 +388,9 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
 {
 	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
-	if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] != -1) {
+	if(stateInfo->localGameInfo->pII.baseControlIndex[base] != -1) {
 		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
-			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[base];
+			int index = stateInfo->localGameInfo->pII.baseControlIndex[base];
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 			        stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
 				if(stateInfo->localGameInfo->pRAI.willStartRunning[base] == 0) {

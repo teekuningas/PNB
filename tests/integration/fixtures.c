@@ -31,7 +31,7 @@ StateInfo* setup_test_state() {
     
     // Initialize indices to -1
     for(int i=0; i<4; i++) {
-        state->localGameInfo->pII.safeOnBaseIndex[i] = -1;
+        state->localGameInfo->pII.baseControlIndex[i] = -1;
         state->localGameInfo->pII.catcherOnBaseIndex[i] = -1;
         state->localGameInfo->pII.catcherReplacerOnBaseIndex[i] = -1;
     }
@@ -65,7 +65,7 @@ void setup_runner_at_first_base(StateInfo* state) {
     initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
-    state->localGameInfo->pII.safeOnBaseIndex[1] = 0;
+    state->localGameInfo->pII.baseControlIndex[1] = 0;
     state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
 }
@@ -87,7 +87,7 @@ void setup_runner_at_third_base(StateInfo* state) {
     initGameAnalysis(&(state->localGameInfo->gameFlowState));
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
-    state->localGameInfo->pII.safeOnBaseIndex[3] = 0;
+    state->localGameInfo->pII.baseControlIndex[3] = 0;
     state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;
 }

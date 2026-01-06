@@ -184,6 +184,7 @@ void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D *target)
 			playerInfo[index].cPI.running = 0;
 			// and set moving to 1 so that player's location will be updated.
 			playerInfo[index].cPI.moving = 1;
+
 			// choose different walking animation for fielders and batting team.
 			if(index < PLAYERS_IN_TEAM + JOKER_COUNT) {
 				playerInfo[index].cPI.model = PLAYER_ANIM_WALK_BARE;
@@ -214,6 +215,7 @@ void movePlayerOut(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, Fi
 	}
 	// path point not passed yet.
 	playerRuntime[index].passedPathPoint = 0;
+
 	// and move to target takes care of the rest.
 	moveToTarget(playerInfo, index, &target);
 }
@@ -486,7 +488,7 @@ void prepareBatter(LocalGameInfo* localGameInfo)
 		// waiting for pitch to go in air before starting the batting movement
 		localGameInfo->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
-		localGameInfo->pII.safeOnBaseIndex[0] = localGameInfo->pII.batterIndex;
+		localGameInfo->pII.baseControlIndex[0] = localGameInfo->pII.batterIndex;
 		// and initialize batter so that everything is ready to go.
 		localGameInfo->pRAI.initBatter = 1;
 	}
@@ -739,13 +741,17 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 		localGameInfo->playerInfo[i].cPI.running = 0;
 		localGameInfo->playerInfo[i].cPI.looksForTarget = 0;
 		localGameInfo->playerInfo[i].cPI.lastLastLocationUpdate = 1;
+
+		// Critical: throwRecoil must be 0 for all players so moveToTarget doesn't block
+		localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
+
 		if( i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
 
 			localGameInfo->playerInfo[i].cTPI.isNearHomeLocation = 1;
 			localGameInfo->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
 			localGameInfo->playerInfo[i].cTPI.replacingBase = BASE_NONE;
 			localGameInfo->playerInfo[i].cTPI.busyCatching = 0;
-			localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
+			// throwRecoil already set above
 			// initialize fielderRankedIndices with the indices of five first
 			// players in positional order.
 			if(i-12 < RANKED_FIELDERS_COUNT) {
@@ -858,7 +864,7 @@ void initializeIndexInformation(LocalGameInfo* localGameInfo)
 {
 	int i;
 	for(i = 0; i < BASE_COUNT; i++) {
-		localGameInfo->pII.safeOnBaseIndex[i] = -1;
+		localGameInfo->pII.baseControlIndex[i] = -1;
 	}
 
 	localGameInfo->pII.hasBallIndex = -1;
@@ -919,7 +925,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 			localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 			localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
-			localGameInfo->pII.safeOnBaseIndex[3] = runnerIndex;
+			localGameInfo->pII.baseControlIndex[3] = runnerIndex;
 
 			localGameInfo->playerInfo[runnerIndex].tPI.location.x =
 			    fieldPositions->thirdBaseRun.x;

@@ -15,24 +15,24 @@ During the logic state consolidation (Milestone 11), several bugs were identifie
 **Issue:** New batters were being outed immediately upon selection if the ball was near home. This happened because they were in `PLAYER_STATE_AT_BAT`, which wasn't recognized as a "safe" state by the rule engine.
 **Fix:**
 - Updated `checkForOuts` and `woundingCatchEffects` to recognize `PLAYER_STATE_AT_BAT` as a safe state.
-- Ensured `safeOnBaseIndex[0]` is assigned immediately in `selectBatter`.
+- Ensured `baseControlIndex[0]` is assigned immediately in `selectBatter`.
 
 ## Architectural Changes: Rule-Movement Decoupling
 
 ### Safety-Based Triggers
-We decoupled the *rules* from the *physical movement*, but linked them via `safeOnBaseIndex`. Movement is now triggered by the **loss of safety**:
+We decoupled the *rules* from the *physical movement*, but linked them via `baseControlIndex`. Movement is now triggered by the **loss of safety**:
 
 1.  **Three Strikes (§18):** 
     - Rule: Batter loses safety at Home.
-    - Implementation: `safeOnBaseIndex[0]` set to -1.
+    - Implementation: `baseControlIndex[0]` set to -1.
     - Trigger: `runToNextBase` automatically moves the player to 1st.
 2.  **Chain Reaction (§20):**
     - Rule: Only the most recent arrival is safe on a base.
-    - Implementation: `safeOnBaseIndex[base]` updated to the newcomer.
+    - Implementation: `baseControlIndex[base]` updated to the newcomer.
     - Trigger: The previous occupant (displaced) automatically triggers `runToNextBase`.
 3.  **Fielder Force (§33):**
     - Rule: Leading runner loses safety if ball arrives at previous base.
-    - Implementation: `safeOnBaseIndex[i]` set to -1.
+    - Implementation: `baseControlIndex[i]` set to -1.
     - Trigger: `runToNextBase` forces the runner forward.
 
 ### Unambiguous Control

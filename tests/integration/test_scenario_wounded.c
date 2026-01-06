@@ -6,6 +6,7 @@
 #include "game_analysis.h"
 #include "game_manipulation.h"
 #include "mutable_world.h"
+#include "geometry.h" // Needed for geometry_distance_2d_xz
 
 // Defined in game_analysis.c
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -53,8 +54,22 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     gameManipulation(state);
 
     int isWounded = (state->localGameInfo->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED);
+    
+    // VERIFY MOVEMENT: Wounded player should start walking off-field
+    Vector3D initialLoc = state->localGameInfo->playerInfo[runnerIndex].tPI.location;
+    
+    // Simulate a few frames of movement
+    // Note: gameManipulation updates location based on velocity
+    for (int k = 0; k < 10; ++k) {
+        state->localGameInfo->ballInfo.moving = 0; // Prevent ball logic interference
+        gameManipulation(state);
+    }
+    
+    float dist = geometry_distance_2d_xz(&initialLoc, &state->localGameInfo->playerInfo[runnerIndex].tPI.location);
+
     cleanup_test_state(state);
     ASSERT_EQ(1, isWounded, "Runner should be wounded when off base and ball is caught");
+    ASSERT_TRUE(dist > 0.01f, "Wounded player should move away from base (failed to walk)");
     return TEST_PASSED;
 }
 

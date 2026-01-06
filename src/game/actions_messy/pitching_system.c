@@ -189,7 +189,7 @@ void releasePitch(StateInfo* stateInfo)
 				// Determine safety status for snapshot
 				int hasSafety = 0;
 				if (base >= 0 && base < 4) {
-					if (stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
+					if (stateInfo->localGameInfo->pII.baseControlIndex[base] == index) {
 						hasSafety = 1;
 					}
 				}
@@ -218,7 +218,7 @@ void releasePitch(StateInfo* stateInfo)
 
 	for(i = 1; i < BASE_COUNT; i++) {
 		if(stateInfo->localGameInfo->pRAI.willStartRunning[i] == 1) {
-			int index = stateInfo->localGameInfo->pII.safeOnBaseIndex[i];
+			int index = stateInfo->localGameInfo->pII.baseControlIndex[i];
 			stateInfo->localGameInfo->pRAI.willStartRunning[i] = 0;
 			if(index != -1) {
 				runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, (BaseID)i);

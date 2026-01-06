@@ -168,8 +168,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	// if someone has ball
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
-		int index3 = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
-		int index2 = stateInfo->localGameInfo->pII.safeOnBaseIndex[2];
+		int index3 = stateInfo->localGameInfo->pII.baseControlIndex[3];
+		int index2 = stateInfo->localGameInfo->pII.baseControlIndex[2];
 
 		BaseID r3BaseAtPitchStart = BASE_NONE;
 		int r3IsOnBase = 0;

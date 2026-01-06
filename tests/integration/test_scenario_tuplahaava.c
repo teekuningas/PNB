@@ -20,7 +20,7 @@ static void setup_tuplahaava_scenario(StateInfo* state) {
     int runnerB = 1;
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[runnerB].baseAtPitchStart = BASE_SECOND;
-    state->localGameInfo->pII.safeOnBaseIndex[2] = runnerB;
+    state->localGameInfo->pII.baseControlIndex[2] = runnerB;
     state->localGameInfo->referee.battingPlayers[runnerB].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerB].currentSafetyBase = BASE_SECOND;
     set_test_player_state(state, runnerB, PLAYER_STATE_SAFE_ON_BASE);
@@ -29,7 +29,7 @@ static void setup_tuplahaava_scenario(StateInfo* state) {
     int runnerA = 0;
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_FIRST;
-    state->localGameInfo->pII.safeOnBaseIndex[1] = runnerA;
+    state->localGameInfo->pII.baseControlIndex[1] = runnerA;
     state->localGameInfo->referee.battingPlayers[runnerA].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_FIRST;
     
@@ -109,7 +109,7 @@ static int test_tuplahaava_collision_if_leading_scenario() {
     // Runner B on 2nd (Index 1) - LEADING
     int runnerB = 1;
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_SECOND;
-    state->localGameInfo->pII.safeOnBaseIndex[2] = runnerB;
+    state->localGameInfo->pII.baseControlIndex[2] = runnerB;
     set_test_player_state(state, runnerB, PLAYER_STATE_LEADING);
 
     // Runner A on 1st (Index 0) - Pending Wound
@@ -136,6 +136,7 @@ static int test_tuplahaava_collision_if_leading_scenario() {
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->gameControl.playerArrivedToBase = 1;
     state->localGameInfo->playerRuntime[runnerB].arrivedToBase = 1;
+    set_test_player_state(state, runnerB, PLAYER_STATE_SAFE_ON_BASE); // Simulate physical arrival
     gameManipulation(state);
 
     // Check final results - both should be wounded

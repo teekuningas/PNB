@@ -36,26 +36,26 @@ static int test_ajolahto_force_out_at_second_scenario() {
     // Runner on 3rd
     state->localGameInfo->playerInfo[r3].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[r3].baseAtPitchStart = BASE_THIRD;
-    state->localGameInfo->pII.safeOnBaseIndex[3] = r3;
+    state->localGameInfo->pII.baseControlIndex[3] = r3;
     set_test_player_state(state, r3, PLAYER_STATE_SAFE_ON_BASE);
 
     // Runner on 2nd
     state->localGameInfo->playerInfo[r2].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[r2].baseAtPitchStart = BASE_SECOND;
-    state->localGameInfo->pII.safeOnBaseIndex[2] = r2;
+    state->localGameInfo->pII.baseControlIndex[2] = r2;
     set_test_player_state(state, r2, PLAYER_STATE_SAFE_ON_BASE);
 
     // Runner on 1st
     state->localGameInfo->playerInfo[r1].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[r1].baseAtPitchStart = BASE_FIRST;
-    state->localGameInfo->pII.safeOnBaseIndex[1] = r1;
+    state->localGameInfo->pII.baseControlIndex[1] = r1;
     set_test_player_state(state, r1, PLAYER_STATE_SAFE_ON_BASE);
 
     // Batter
     state->localGameInfo->pII.batterIndex = batter;
     state->localGameInfo->playerInfo[batter].bTPI.baseId = BASE_HOME;
     state->localGameInfo->referee.battingPlayers[batter].baseAtPitchStart = BASE_HOME;
-    state->localGameInfo->pII.safeOnBaseIndex[0] = batter;
+    state->localGameInfo->pII.baseControlIndex[0] = batter;
     
     state->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 4;
 
@@ -96,13 +96,13 @@ static int test_no_force_chain_scenario() {
     // Runner on 2nd
     int r2 = 2;
     state->localGameInfo->playerInfo[r2].bTPI.baseId = BASE_SECOND;
-    state->localGameInfo->pII.safeOnBaseIndex[2] = r2;
+    state->localGameInfo->pII.baseControlIndex[2] = r2;
     
     // Batter at home
     int batter = 0;
     state->localGameInfo->pII.batterIndex = batter;
     state->localGameInfo->playerInfo[batter].bTPI.baseId = BASE_HOME;
-    state->localGameInfo->pII.safeOnBaseIndex[0] = batter;
+    state->localGameInfo->pII.baseControlIndex[0] = batter;
     
     state->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 2;
 

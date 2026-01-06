@@ -118,7 +118,7 @@ int runScored = calculate_runs(
 **Original Logic:**
 ```c
 if(stateInfo->localGameInfo->gAI.strikes == 3) {
-    if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
+    if(stateInfo->localGameInfo->pII.baseControlIndex[0] != -1) {
         // Force batter to run
     }
 }
@@ -128,8 +128,8 @@ if(stateInfo->localGameInfo->gAI.strikes == 3) {
 ```c
 if(should_change_batter_on_strikes(
     stateInfo->localGameInfo->gAI.strikes, 
-    stateInfo->localGameInfo->pII.safeOnBaseIndex[0])) {
-    if(stateInfo->localGameInfo->pII.safeOnBaseIndex[0] != -1) {
+    stateInfo->localGameInfo->pII.baseControlIndex[0])) {
+    if(stateInfo->localGameInfo->pII.baseControlIndex[0] != -1) {
         // Force batter to run
     }
 }
@@ -137,7 +137,7 @@ if(should_change_batter_on_strikes(
 
 **Verification:**
 - Both parameters match original conditions exactly ✓
-- Logic preserved: strikes == 3 AND safeOnBaseIndex[0] != -1 ✓
+- Logic preserved: strikes == 3 AND baseControlIndex[0] != -1 ✓
 
 ---
 

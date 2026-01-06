@@ -43,7 +43,7 @@ if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 
 ### 3. Implicit State Dependencies
 **Location**: `game_analysis.c:115-120, 205-206, 766-767`
-**Issue**: Multiple flags checked together (e.g., `homeRunCameraFlag && safeOnBaseIndex`)
+**Issue**: Multiple flags checked together (e.g., `homeRunCameraFlag && baseControlIndex`)
 **Impact**: Medium (makes state flow hard to reason about)
 **Resolution**: **DEFERRED TO MILESTONE 7** (Will be cleaned by enum-based state machines)
 
