@@ -15,7 +15,7 @@ void initCatchingAI(AIState* aiState)
 	aiState->moveCounter = 0;
 }
 
-// we move towards the target position by simulating key presses.
+// we move towards the target position by simulating movement intent directly.
 void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 {
 	float px = stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.controlIndex].tPI.location.x;
@@ -25,18 +25,51 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
 	float dx = tx - px;
 	float dz = tz - pz;
 
-	if(!isVectorSmallEnoughCircleXZ(dx, dz, 1.0f)) {
+	if(!isVectorSmallEnoughCircleXZ(dx, dz, 1.0f) && stateInfo->localGameInfo->pendingActionState.throwGoingOn == 0) {
 		if(stateInfo->localGameInfo->aiState.moveCounter >= 10) {
-			flushKeys(stateInfo);
 			MovementKeys keys = calculate_movement_keys(dx, dz);
-			if (keys.up) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
-			if (keys.down) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-			if (keys.left) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-			if (keys.right) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
+			// Set triggers only if NOT already moving in that direction to avoid unnecessary resets
+			if (keys.up) {
+				if (stateInfo->localGameInfo->aF.cTAF.move[0] == ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[0] = ACTION_TRIGGER_START;
+			} else {
+				if (stateInfo->localGameInfo->aF.cTAF.move[0] != ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[0] = ACTION_TRIGGER_STOP;
+			}
+
+			if (keys.right) {
+				if (stateInfo->localGameInfo->aF.cTAF.move[1] == ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[1] = ACTION_TRIGGER_START;
+			} else {
+				if (stateInfo->localGameInfo->aF.cTAF.move[1] != ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[1] = ACTION_TRIGGER_STOP;
+			}
+
+			if (keys.down) {
+				if (stateInfo->localGameInfo->aF.cTAF.move[2] == ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[2] = ACTION_TRIGGER_START;
+			} else {
+				if (stateInfo->localGameInfo->aF.cTAF.move[2] != ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[2] = ACTION_TRIGGER_STOP;
+			}
+
+			if (keys.left) {
+				if (stateInfo->localGameInfo->aF.cTAF.move[3] == ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[3] = ACTION_TRIGGER_START;
+			} else {
+				if (stateInfo->localGameInfo->aF.cTAF.move[3] != ACTION_IDLE)
+					stateInfo->localGameInfo->aF.cTAF.move[3] = ACTION_TRIGGER_STOP;
+			}
+
 			stateInfo->localGameInfo->aiState.moveCounter = 0;
 		}
 	} else {
-		flushKeys(stateInfo);
+		int i;
+		for(i=0; i<4; i++) {
+			if(stateInfo->localGameInfo->aF.cTAF.move[i] != ACTION_IDLE) {
+				stateInfo->localGameInfo->aF.cTAF.move[i] = ACTION_TRIGGER_STOP;
+			}
+		}
 		stateInfo->localGameInfo->aiState.moveCounter = 0;
 	}
 	stateInfo->localGameInfo->aiState.moveCounter++;
@@ -70,17 +103,9 @@ void throwBallToBase(StateInfo* stateInfo, BaseID base)
 				stateInfo->localGameInfo->aiState.throwStage = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_THROW_LOCK;
-				flushKeys(stateInfo);
-				if(base == 0) {
-					stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-				} else if(base == 1) {
-					stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-				} else if(base == 2) {
-					stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-				} else if(base == 3) {
-					stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
-				}
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+
+				// AI sets trigger directly
+				stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
 			}
 		}
 	}
@@ -93,7 +118,6 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 
 	// finish dropping
 	if(stateInfo->localGameInfo->aiState.dropStage == 1) {
-		flushKeys(stateInfo);
 		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 		stateInfo->localGameInfo->aiState.dropStage = 0;
 		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
@@ -104,19 +128,30 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = 0;
 		}
 		if(stateInfo->localGameInfo->pendingActionState.meterCounter > THROW_MAX*(3.0f/4)) {
-			flushKeys(stateInfo);
 			stateInfo->localGameInfo->aiState.throwStage = 0;
 			stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 			stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
+
+			// AI sets trigger stop directly
+			int i;
+			for(i=0; i<4; i++) {
+				if(stateInfo->localGameInfo->aF.cTAF.throwToBase[i] != ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = ACTION_TRIGGER_STOP;
+				}
+			}
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				stateInfo->localGameInfo->aiState.throwStage = 0;
-				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
+
+				int i;
+				for(i=0; i<4; i++) {
+					stateInfo->localGameInfo->aF.cTAF.throwToBase[i] = ACTION_IDLE;
+				}
 			}
 		}
 	}
@@ -162,8 +197,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.dropStage = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_DROP_LOCK;
-				flushKeys(stateInfo);
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				stateInfo->localGameInfo->aF.cTAF.dropBall = ACTION_TRIGGER_START;
 			}
 		}
 		// otherwise we throw or move towards a base where lead player is going. if lead player is going nowhere
@@ -172,16 +206,18 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			BaseID leadBase = BASE_NONE;
 			int throwBase = 0;
 
-			CatchingRunnerInfo runners[BASE_COUNT];
+			CatchingRunnerInfo runners[PLAYERS_IN_TEAM + JOKER_COUNT];
 			int runnerCount = 0;
 			int i;
-			for(i = 0; i < BASE_COUNT; i++) {
-				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-				if(index != -1) {
-					PlayerUnitState s = stateInfo->localGameInfo->playerInfo[index].bTPI.state;
+
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				PlayerUnitState s = stateInfo->localGameInfo->playerInfo[i].bTPI.state;
+				BaseID bid = stateInfo->localGameInfo->playerInfo[i].bTPI.baseId;
+
+				if (bid != BASE_NONE) {
 					runners[runnerCount].isOnBase = (s == PLAYER_STATE_SAFE_ON_BASE || s == PLAYER_STATE_AT_BAT);
 					runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
-					runners[runnerCount].base = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+					runners[runnerCount].base = bid;
 					runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
 					runnerCount++;
 				}

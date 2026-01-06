@@ -504,9 +504,9 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 	// the biggest original base value. if both are same for some reason
 	// then the selection will be quite random but shouldn't happen often and shouldn't be a big deal
 	// either.
-	for(i = 0; i < BASE_COUNT; i++) {
-		int index = localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1 && localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
+	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		int index = i;
+		if(localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE && localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
 			BaseID currentBaseId = localGameInfo->playerInfo[index].bTPI.baseId;
 			// Use base_cmp to compare bases semantically (replaces >=)
 			if(base_cmp(currentBaseId, maxBaseId) >= 0) {
@@ -842,7 +842,6 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 // these should be kept when foul play
 void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGameInfo)
 {
-	int i;
 	int battingTeamIndex = (globalGameInfo->
 	                        inning+globalGameInfo->playsFirst+globalGameInfo->period)%2;
 	localGameInfo->gameState.outs = 0;
@@ -854,10 +853,6 @@ void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* gl
 	localGameInfo->gameState.runsInTheInning = 0;
 	localGameInfo->pII.batterSelectionIndex =
 	    globalGameInfo->teams[battingTeamIndex].batterOrder[globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
-	for(i = 0; i < BASE_COUNT; i++) {
-		localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-	}
-
 }
 // index information initialization, can be called when out of bounds
 void initializeIndexInformation(LocalGameInfo* localGameInfo)
@@ -905,8 +900,6 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		                  batterRunnerIndices[1][localGameInfo->gameModeState.runnerBatterPairCounter];
 		int batterIndex = globalGameInfo->teams[battingTeamIndex].
 		                  batterRunnerIndices[0][localGameInfo->gameModeState.runnerBatterPairCounter];
-		localGameInfo->pII.battingTeamOnFieldIndices[0] = runnerIndex;
-		localGameInfo->pII.battingTeamOnFieldIndices[1] = batterIndex;
 		localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 2;
 		// batter
 		if(batterIndex != -1) {

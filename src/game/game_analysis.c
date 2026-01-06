@@ -112,9 +112,9 @@ static void checkForOuts(StateInfo* stateInfo)
 			if(smallEnough == 1) {
 				int j;
 				canMakeRunOfHonor = 0;
-				for(j = 0; j < BASE_COUNT; j++) {
-					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
-					if(index != -1) {
+				for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+					int index = j; // Check every batting team player directly
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 						// remove safety from last base?
 						// happens if player is out of base and ball arrives the previous one.
 						// §36 Koppilyönnillä eteneminen: "Mikäli sisäpelaaja on irti pesästä kopinottohetkellä... hänet voidaan polttaa."
@@ -160,8 +160,8 @@ static void checkForOuts(StateInfo* stateInfo)
 							stateInfo->localGameInfo->gameState.event = EVENT_OUT;
 							// add out
 							stateInfo->localGameInfo->gameState.outs += 1;
-							// remove player from the array
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
+							// remove player from the field
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// and walk him out.
 							movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
@@ -303,10 +303,10 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		stateInfo->localGameInfo->woundingState.woundingCatchHandled = 1;
 		printf("DEBUG: Wounding catch started! Counter reset.\n");
 
-		for(i = 0; i < BASE_COUNT; i++) {
+		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			// so we check every batting team player.
-			int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-			if(index != -1) {
+			int index = i;
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 				// if player is taking a free walk its always not wound. if not and ball is out of base,
 				// its a wound, its also wound if the player has arrived the next base already.
 				if(!player_is_safe_from_fly(stateInfo->localGameInfo->playerInfo[index].bTPI.state,
@@ -342,11 +342,9 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 			printf("DEBUG: Wounding CANCELLED! Ball hit ground.\n");
 			int i;
 			stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
-			for(i = 0; i < BASE_COUNT; i++) {
-				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-				if(index != -1) {
-					stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
-				}
+			stateInfo->localGameInfo->woundingState.woundingCatch = 0;
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				stateInfo->localGameInfo->playerRuntime[i].woundedApply = 0;
 			}
 		}
 		// otherwise there is a real possibility for wounding
@@ -354,10 +352,10 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		if(stateInfo->localGameInfo->gameFlowState.woundingCatchCounter > threshold) {
 			printf("DEBUG: Wounding catch timer expired. Applying pending wounds.\n");
 			int i;
-			for(i = 0; i < BASE_COUNT; i++) {
+			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				// so we check every batting team player.
-				int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-				if(index != -1) {
+				int index = i;
+				if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 					if(stateInfo->localGameInfo->playerRuntime[index].woundedApply == 1) {
 						printf("DEBUG: Marking Player %d for pending wound (§36)\n", index);
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
@@ -382,7 +380,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// if already on the next base, apply wound immediately.
 						else {
 							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 						}
@@ -432,36 +430,20 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 				// when running through homerun-batting contest, we have to
 				// do a bit special initialization as our setup in setRunnerAndBatter()
 				// depends on the field being empty.
-				int i;
-				for(i = 0; i < BASE_COUNT; i++) {
-					stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
-				}
 				initializeCriticalBattingTeamInformation(stateInfo->localGameInfo);
 				setRunnerAndBatter(stateInfo->localGameInfo, stateInfo->globalGameInfo, stateInfo->fieldPositions);
 			} else {
 				// every players' locations etc got initialized just now. so at the moment our batting team players
 				// will all be around home base. But we dont want all players to be there
 				// so we have to do some modifications accoding to originalbases.
-				for(j = 0; j < BASE_COUNT; j++) {
-					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
-					if(index != -1) {
+				for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+					int index = j;
+					// check if this player was active on field (had a valid original base)
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase != BASE_NONE) {
 						// so we set every batting team player 's, who was on the field, bases to originalBases
-						// and set them to be at a base. if his originalBase was -1, it means
-						// that when the pitch was pitched, he had not safety on any base
-						// and he will be out.
-						if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == BASE_NONE) {
-							stateInfo->localGameInfo->gameState.event = EVENT_OUT;
-							stateInfo->localGameInfo->gameState.outs += 1;
-
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
-							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-
-							continue;
-						} else {
-							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
-						}
+						// and set them to be at a base.
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+						stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase;
 
 						// in case that player was taking a free walk from third base when this happened
 						if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
@@ -473,8 +455,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							// and send a message that run was made to screen.
 							stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 							// and remove player from the field.
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// always when two runs is got, we will get a new round of batters.
 							if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
@@ -487,8 +468,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 								// if out of bounds follows his third strike, we well get a out.
 								stateInfo->localGameInfo->gameState.outs += 1;
 								// remove from the field.
-								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
-								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
+								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 								// new batter needed.
 								stateInfo->localGameInfo->pII.batterIndex = -1;
@@ -540,9 +520,9 @@ static void checkForRuns(StateInfo* stateInfo)
 				int battingTeamIndex = (stateInfo->globalGameInfo->
 				                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 				int catchingTeamIndex = (battingTeamIndex+1)%2;
-				for(j = 0; j < BASE_COUNT; j++) {
-					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
-					if(index != -1) {
+				for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+					int index = j;
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 						int runMade = 0;
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 
@@ -558,9 +538,8 @@ static void checkForRuns(StateInfo* stateInfo)
 						// This happens regardless of whether a run is scored (e.g. if wounded)
 						if(baseId == BASE_HOME_SCORED) {
 							// remove player from the field.
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 						}
 
 						if(runScored) {
@@ -573,7 +552,6 @@ static void checkForRuns(StateInfo* stateInfo)
 								if (stateInfo->localGameInfo->pII.safeOnBaseIndex[3] != -1 &&
 								        stateInfo->localGameInfo->pII.safeOnBaseIndex[3] != index) {
 									printf("DEBUG: Player %d (Kunniajuoksu) overtook Player %d at 3rd base. Removing hitter.\n", index, stateInfo->localGameInfo->pII.safeOnBaseIndex[3]);
-									stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j] = -1;
 									stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 									stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 									movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
@@ -795,9 +773,10 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - batterIndex == -1 and ball is at home( and player can make no run of honor ). after three strikes this happens automatically.
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
+		int runnerAtThirdIndex = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
 		if((stateInfo->localGameInfo->gameState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
 		        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
-		        (stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[0] == -1 &&
+		        (runnerAtThirdIndex == -1 &&
 		         stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        stateInfo->localGameInfo->gameModeState.forceNextPair == 1) {
 			if(stateInfo->localGameInfo->gameFlowState.nextPairCounter == -1) {

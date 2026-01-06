@@ -334,11 +334,10 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 	if(stateInfo->localGameInfo->gameControl.playerArrivedToBase == 1) {
 		int i;
 		// we check every player who is a baserunner ( or batter )
-		for(i = 0; i < BASE_COUNT; i++) {
-			int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-			// these indices can be -1 so we have to check for that and also we'll check if this particular player
-			// was one who arrived. there can be many though so we cant break out after this.
-			if(index != -1 && stateInfo->localGameInfo->playerRuntime[index].arrivedToBase == 1) {
+		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			int index = i;
+			// check if this particular player was one who arrived. there can be many though so we cant break out after this.
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE && stateInfo->localGameInfo->playerRuntime[index].arrivedToBase == 1) {
 				// no need to check on this player anymore when next runner arrives and this one has stayed where he was.
 				stateInfo->localGameInfo->playerRuntime[index].arrivedToBase = 0;
 				// if out has been made, player is removed immediately from the game so we wouldnt be here.
@@ -368,8 +367,8 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							// also basemen already on the base must be removed as they get wounded too.
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
 								printf("DEBUG: Processing arrival for Player %d (WOUNDED). Removing from field.\n", index);
-								stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
+								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 								movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
 								// §36 Tuplahaava: "Tuplahaava... syntyy irti olleen pelaajan saadessa turvan kyseiselle pesälle."
@@ -386,22 +385,12 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 										        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
 
-											int k;
-											int fieldIndex = -1;
-											for(k = 0; k < BASE_COUNT; k++) {
-												if(stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[k] == targetPlayerIndex) {
-													fieldIndex = k;
-													break;
-												}
-											}
-											if(fieldIndex != -1) {
-												stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[fieldIndex] = -1;
-												stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-												stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
-												movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
-												stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
-												printf("DEBUG: Player %d double wounded by Player %d arrival at base %d\n", targetPlayerIndex, index, j);
-											}
+											stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
+											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
+											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.baseId = BASE_NONE;
+											movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
+											stateInfo->localGameInfo->pII.safeOnBaseIndex[j] = -1;
+											printf("DEBUG: Player %d double wounded by Player %d arrival at base %d\n", targetPlayerIndex, index, j);
 										}
 										// If they are in between bases (LEADING or RUNNING), mark them as pending wound.
 										// They will be removed when they reach their destination (§36 race lost).
@@ -471,9 +460,8 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						} else {
 							// if was 0, we just remove this player from field.
 							// if it wasnt 0, player will be removed afterwards.
-							stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = -1;
 							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
-							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = (BaseID)-1;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 						}
 
 					}

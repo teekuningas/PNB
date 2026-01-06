@@ -49,19 +49,20 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
 
 	int shouldThrow = 0;
 	if (hasBallIndex != -1 && catcherIndex != -1) {
-		// Check normal catcher
+		// Only consider throwing if I am NOT the baseman for this base
 		if (hasBallIndex != catcherIndex) {
+			// Check normal catcher
 			if (catcherNearHome == 1) {
 				shouldThrow = 1;
 			}
-		}
 
-		// Check replacer
-		if (hasBallIndex != replacerIndex) {
-			if (replacerStage == 1 &&
-			        replacerBase == targetBase &&
-			        replacerMoving == 0) {
-				shouldThrow = 1;
+			// Check replacer
+			if (hasBallIndex != replacerIndex) {
+				if (replacerStage == 1 &&
+				        replacerBase == targetBase &&
+				        replacerMoving == 0) {
+					shouldThrow = 1;
+				}
 			}
 		}
 	}

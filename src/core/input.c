@@ -9,7 +9,6 @@ static int buttonsJustReleased[3][KEY_COUNT];
 
 static void keyCheckL(StateInfo* stateInfo, GLFWwindow* window, const char letter, int keyCode, int index);
 static void keyCheckS(StateInfo* stateInfo, GLFWwindow* window, int special, int keyCode, int index);
-static void checkKeyImitations(StateInfo* stateInfo);
 
 int initInput(StateInfo* stateInfo)
 {
@@ -61,25 +60,6 @@ static void keyCheckS(StateInfo* stateInfo, GLFWwindow* window, int special, int
 	}
 }
 
-static void checkKeyImitations(StateInfo* stateInfo)
-{
-	int i;
-	for(i = 0; i < KEY_COUNT; i++) {
-		if(stateInfo->keyStates->imitateKeyPress[i] == 1) {
-			stateInfo->keyStates->down[2][i] = 1;
-		} else {
-			if(stateInfo->keyStates->down[2][i] == 1) {
-				stateInfo->keyStates->released[2][i] = 1;
-				stateInfo->keyStates->down[2][i] = 0;
-				buttonsJustReleased[2][i] = 1;
-			} else if(buttonsJustReleased[2][i] == 1) {
-				buttonsJustReleased[2][i] = 0;
-				stateInfo->keyStates->released[2][i] = 0;
-			}
-		}
-	}
-}
-
 void updateInput(StateInfo* stateInfo, GLFWwindow* window)
 {
 	// here we just check them all and name the keys to associate with keycodes used in keyStates.
@@ -101,8 +81,6 @@ void updateInput(StateInfo* stateInfo, GLFWwindow* window)
 	keyCheckL(stateInfo, window, 'T', KEY_UP, 1);
 	keyCheckL(stateInfo, window, 'G', KEY_DOWN, 1);
 	keyCheckL(stateInfo, window, 'Q', KEY_HOME, 1);
-
-	checkKeyImitations(stateInfo);
 }
 
 void clearReleasedKeys(KeyStates* keyStates)

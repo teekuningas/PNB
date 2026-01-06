@@ -80,7 +80,6 @@ void stopDecreaseBatterAngle(StateInfo* stateInfo)
 // here is where the accepting selected player happens.
 void selectBatter(StateInfo* stateInfo)
 {
-	int i = 0;
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 	// index cannot be -1 as we couldn't have got this far if it was
@@ -93,21 +92,6 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 0;
 		stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_IDLE;
 
-		// here we look for a free spot in battingTeamOnFieldIndices[]
-		// and put our new guy there. there will be a spot as we cannot get here
-		// if there is more than 3 baserunners already.
-		while(1) {
-			if(stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] == -1) {
-				stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i] = index;
-				break;
-			} else {
-				if(i < 3)
-					i++;
-				else
-					break;
-			}
-
-		}
 		// new batting team player on the field.
 		stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount++;
 		// has base of zero, is on base and original base is zero too.

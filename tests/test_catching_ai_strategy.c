@@ -1,5 +1,6 @@
 #include "test_helpers.h"
 #include "catching_ai_strategy.h"
+#include "base_logic.h"
 #include <math.h>
 
 #ifndef PI
@@ -63,17 +64,14 @@ int test_should_ai_throw_normal() {
 int test_should_ai_throw_replacer() {
     PlayerIndexInfo pii = {0};
     pii.hasBallIndex = 0;
-    pii.catcherOnBaseIndex[2] = 99;
-    // replacer checks
-    // hasBall != replacerIndex, stage=1, base=target, moving=0
+    pii.catcherOnBaseIndex[2] = 1;
+    
     int result = should_ai_throw(&pii, 0, 1, 1, 2, 0, 2);
     ASSERT_EQ(1, result, "Should throw to replacer in position");
     
-    // wrong base
     result = should_ai_throw(&pii, 0, 1, 1, 1, 0, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer on wrong base");
     
-    // moving
     result = should_ai_throw(&pii, 0, 1, 1, 2, 1, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer is moving");
     

@@ -15,8 +15,8 @@
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.12f
 #define METER_X 0.32f
-#define OUTS_X -0.82f
-#define INFO_X -0.68f
+#define OUTS_X -0.69f
+#define INFO_X -0.60f
 #define BASES_X 0.50f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
@@ -389,9 +389,9 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/bases.tga"), bases_screen_x, bases_y, bases_w, bases_h);
 
 	// Base Runners
-	for(int i = 0; i < BASE_COUNT; i++) {
-		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1) {
+	for(int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		int index = i;
+		if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 			float phase = 0.0f;
 			BaseID base = BASE_HOME;
 			float distance;

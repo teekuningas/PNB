@@ -68,141 +68,177 @@ void actionInvocations(StateInfo* stateInfo)
 static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, BaseID base)
 {
 	if(control != CONTROL_AI) {
-		if((stateInfo->keyStates)->released[control][key] && (stateInfo->keyStates)->down[control][actionKey]) {
-			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
+		if(stateInfo->keyStates->down[control][key] && stateInfo->keyStates->down[control][actionKey]) {
+			if(stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_IDLE) {
+				stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
+				// prevent change player event or drop event from happening when we are throwing
+				stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+			}
 		} else if((stateInfo->keyStates)->released[control][actionKey] && (stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_ACTIVE ||
 		          stateInfo->localGameInfo->aF.cTAF.throwToBase[base] == ACTION_TRIGGER_START)) {
 			stateInfo->localGameInfo->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_STOP;
+		}
+	} else {
+		// AI sets flags directly in AI logic files
+	}
+}
+
+static void checkMove(StateInfo* stateInfo, int key, TeamControlMode control, int direction)
+{
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->down[control][key] == 1 && stateInfo->keyStates->down[control][KEY_2] == 0) {
+			if(stateInfo->localGameInfo->aF.cTAF.move[direction] == ACTION_IDLE) {
+				stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_TRIGGER_START;
+
+			}
+		} else if(stateInfo->keyStates->released[control][key] == 1 || (stateInfo->keyStates->down[control][key] == 1 && stateInfo->keyStates->down[control][KEY_2] == 1)) {
+			if(stateInfo->localGameInfo->aF.cTAF.move[direction] != ACTION_IDLE) { // to avoid something weird when this is changed to 1 when ball is catched
+				stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_TRIGGER_STOP;
+			}
 		}
 	} else {
 		// AI sets flags directly
 	}
 }
 
-static void checkMove(StateInfo* stateInfo, int key, TeamControlMode control, int direction)
-{
-	if(stateInfo->keyStates->down[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.move[direction] == ACTION_IDLE) {
-			stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_TRIGGER_START;
-
-		}
-	} else if(stateInfo->keyStates->released[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.move[direction] != ACTION_IDLE) { // to avoid something weird when this is changed to 1 when ball is catched
-			stateInfo->localGameInfo->aF.cTAF.move[direction] = ACTION_TRIGGER_STOP;
-		}
-	}
-}
-
 static void checkChangePlayer(StateInfo* stateInfo, int key, TeamControlMode control)
 {
-	if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
-		if(stateInfo->keyStates->released[control][key] == 1) {
-			if(stateInfo->localGameInfo->aF.cTAF.changePlayer == ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.cTAF.changePlayer = ACTION_TRIGGER_START;
-				stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+	if(control != CONTROL_AI) {
+		if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
+			if(stateInfo->keyStates->released[control][key] == 1) {
+				if(stateInfo->localGameInfo->aF.cTAF.changePlayer == ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.cTAF.changePlayer = ACTION_TRIGGER_START;
+					stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+				}
 			}
 		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkDrop(StateInfo* stateInfo, int key, TeamControlMode control)
 {
-	if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
-		if(stateInfo->keyStates->released[control][key] == 1) {
-			if(stateInfo->localGameInfo->aF.cTAF.dropBall == ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.cTAF.dropBall = ACTION_TRIGGER_START;
-				stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+	if(control != CONTROL_AI) {
+		if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
+			if(stateInfo->keyStates->released[control][key] == 1) {
+				if(stateInfo->localGameInfo->aF.cTAF.dropBall == ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.cTAF.dropBall = ACTION_TRIGGER_START;
+					stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+				}
 			}
 		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkPitch(StateInfo* stateInfo, int key, TeamControlMode control)
 {
-	if(stateInfo->keyStates->down[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_IDLE) {
-			if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
-				stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_START;
-				stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->down[control][key] == 1) {
+			if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_IDLE) {
+				if(stateInfo->localGameInfo->aF.cTAF.actionKeyLock == 0) {
+					stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_START;
+					stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 1;
+				}
+			} else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
+				stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
 			}
-		} else if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
-			stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
+		} else if(stateInfo->keyStates->released[control][key] == 1) {
+			if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
+				stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
+			}
 		}
-	} else if(stateInfo->keyStates->released[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
-			stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
-		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkBatterSelection(StateInfo* stateInfo, int change, int select, TeamControlMode control)
 {
-	if(stateInfo->keyStates->released[control][change] == 1) {
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->released[control][change] == 1) {
 
-		if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_IDLE) {
-			stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_NEXT;
+			if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_IDLE) {
+				stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_NEXT;
+			}
+		} else if(stateInfo->keyStates->released[control][select] == 1) {
+			if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_IDLE) {
+				stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_SELECT;
+			}
 		}
-	} else if(stateInfo->keyStates->released[control][select] == 1) {
-		if(stateInfo->localGameInfo->aF.bTAF.chooseBatter == CHOOSE_BATTER_IDLE) {
-			stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_SELECT;
-		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkFreeWalkDecision(StateInfo* stateInfo, int accept, int reject, TeamControlMode control)
 {
-	if(stateInfo->keyStates->released[control][accept] == 1) {
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->released[control][accept] == 1) {
 
-		if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_IDLE) {
-			stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+			if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_IDLE) {
+				stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+			}
+		} else if(stateInfo->keyStates->released[control][reject] == 1) {
+			if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_IDLE) {
+				stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_REJECT;
+			}
 		}
-	} else if(stateInfo->keyStates->released[control][reject] == 1) {
-		if(stateInfo->localGameInfo->aF.bTAF.takeFreeWalk == FREE_WALK_IDLE) {
-			stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_REJECT;
-		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, TeamControlMode control)
 {
-	if(stateInfo->keyStates->down[control][increase] == 1) {
-		if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
-			if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_START;
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->down[control][increase] == 1) {
+			if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
+				if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle == ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_START;
+				}
+			}
+		} else if(stateInfo->keyStates->released[control][increase] == 1) {
+			if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
+				if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle != ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_STOP;
+				}
 			}
 		}
-	} else if(stateInfo->keyStates->released[control][increase] == 1) {
-		if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
-			if(stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle != ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_STOP;
+		if(stateInfo->keyStates->down[control][decrease] == 1) {
+			if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
+				if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_START;
+				}
+			}
+		} else if(stateInfo->keyStates->released[control][decrease] == 1) {
+			if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
+				if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle != ACTION_IDLE) {
+					stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_STOP;
+				}
 			}
 		}
-	}
-	if(stateInfo->keyStates->down[control][decrease] == 1) {
-		if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
-			if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle == ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_START;
-			}
-		}
-	} else if(stateInfo->keyStates->released[control][decrease] == 1) {
-		if(stateInfo->localGameInfo->pRAI.battingGoingOn == 1) {
-			if(stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle != ACTION_IDLE) {
-				stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_STOP;
-			}
-		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
 static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control)
 {
-	if(stateInfo->keyStates->down[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_WAIT_FOR_BALL) {
-			stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_POWER_SET;
+	if(control != CONTROL_AI) {
+		if(stateInfo->keyStates->down[control][key] == 1) {
+			if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_WAIT_FOR_BALL) {
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_POWER_SET;
+			}
+		} else if(stateInfo->keyStates->released[control][key] == 1) {
+			if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_ANGLE_WAIT) {
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
+			}
 		}
-	} else if(stateInfo->keyStates->released[control][key] == 1) {
-		if(stateInfo->localGameInfo->aF.bTAF.swing == BAT_ACTION_ANGLE_WAIT) {
-			stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-		}
+	} else {
+		// AI sets flags directly
 	}
 }
 
@@ -213,6 +249,6 @@ static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode c
 			stateInfo->localGameInfo->aF.bTAF.baseRun[base] = ACTION_TRIGGER_START;
 		}
 	} else {
-		// AI sets flags directly
+		// AI sets flags directly in AI logic files
 	}
 }

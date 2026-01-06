@@ -150,9 +150,10 @@ int main(int argc, char* argv[]) {
 	// Catching AI Strategy tests
 	RUN_TEST(test_calculate_movement_keys_up_left);
 	RUN_TEST(test_calculate_movement_keys_right);
-	RUN_TEST(test_should_ai_throw_normal);
-	RUN_TEST(test_should_ai_throw_replacer);
-	RUN_TEST(test_should_ai_drop_ball_scenario);
+	    RUN_TEST(test_should_ai_throw_normal);
+	        RUN_TEST(test_should_ai_throw_replacer);
+	        RUN_TEST(test_should_ai_drop_ball_scenario);
+	    
 	RUN_TEST(test_determine_lead_base_simple);
 	RUN_TEST(test_determine_lead_base_random);
 

@@ -165,9 +165,9 @@ void releasePitch(StateInfo* stateInfo)
 	// always when pitch reaches the stage of ball going to air, we update baserunners'
 	// original bases to their current bases, so that we can make decisions about
 	// foul plays and wounds etc.
-	for(i = 0; i < BASE_COUNT; i++) {
-		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1) {
+	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		int index = i;
+		if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 			BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 			int base = base_to_int_index(baseId);
 
@@ -260,13 +260,12 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 		if(stateInfo->localGameInfo->pendingActionState.meterCounter > stateInfo->localGameInfo->aiState.pitchFirstLimit) {
 			stateInfo->localGameInfo->aiState.pitchStage = 2;
-			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
+			stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				stateInfo->localGameInfo->aiState.pitchStage = 0;
-				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
@@ -278,13 +277,12 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 		if(stateInfo->localGameInfo->pendingActionState.meterCounter > stateInfo->localGameInfo->aiState.pitchSecondLimit) {
 			stateInfo->localGameInfo->aiState.pitchStage = 3;
-			stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+			stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
 		} else {
 			stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter++;
 			if(stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
 				stateInfo->localGameInfo->aiState.pitchStage = 0;
-				flushKeys(stateInfo);
 				stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 				stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 				stateInfo->localGameInfo->pendingActionState.aiLockTimeoutCounter = -1;
@@ -292,7 +290,6 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	} else if(stateInfo->localGameInfo->aiState.pitchStage == 3) {
 		stateInfo->localGameInfo->aiState.pitchStage = 0;
-		flushKeys(stateInfo);
 		stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_NO_LOCK;
 		stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 	}
@@ -326,8 +323,7 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 						stateInfo->localGameInfo->pendingActionState.aiActionEventLock = AI_PITCH_LOCK;
 						stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 1;
 						stateInfo->localGameInfo->aiState.pitchStage = 1;
-						flushKeys(stateInfo);
-						stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+						stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_START;
 
 						calculate_ai_pitch_targets(
 						    rand1, rand2, rand3,
@@ -339,7 +335,6 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 						);
 					} else {
 						// to stop player from unnecessarily moving
-						flushKeys(stateInfo);
 					}
 				}
 			}

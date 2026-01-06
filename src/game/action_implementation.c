@@ -48,8 +48,6 @@ void initActionImplementation(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pendingActionState.aiLockUpdate = 0;
 
 	initBattingAI(&(stateInfo->localGameInfo->aiState));
-
-	flushKeys(stateInfo);
 }
 
 void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
@@ -441,6 +439,11 @@ static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 	TeamControlMode battingControl = stateInfo->globalGameInfo->teams[battingTeamIndex].control;
 	TeamControlMode catchingControl = stateInfo->globalGameInfo->teams[(battingTeamIndex+1)%2].control;
+
+	printf("DEBUG: aiLogic - BattingTeam: %d (%s), CatchingTeam: %d (%s)\n",
+	       battingTeamIndex, battingControl == CONTROL_AI ? "AI" : "Human",
+	       (battingTeamIndex+1)%2, catchingControl == CONTROL_AI ? "AI" : "Human");
+
 	// first ai for catching team
 
 	if(catchingControl == CONTROL_AI) {
@@ -448,15 +451,8 @@ static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	// then ai for batting team
 	if(battingControl == CONTROL_AI) {
+		printf("DEBUG: Calling updateBattingAI\n");
 		updateBattingAI(stateInfo, rng_seed);
 	}
 
-}
-
-void flushKeys(StateInfo* stateInfo)
-{
-	int i;
-	for(i = 0; i < KEY_COUNT; i++) {
-		stateInfo->keyStates->imitateKeyPress[i] = 0;
-	}
 }

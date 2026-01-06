@@ -173,7 +173,6 @@ typedef struct _GroundUnit {
 typedef struct _KeyStates {
 	int released[3][KEY_COUNT];
 	int down[3][KEY_COUNT];
-	int imitateKeyPress[KEY_COUNT];
 } KeyStates;
 // simple struct to keep spatial information
 typedef struct _Vector3D {
@@ -426,8 +425,6 @@ typedef struct _TeamInfo {
 
 typedef struct _PlayerIndexInfo {
 	int safeOnBaseIndex[4]; // who is safe on base i
-	int battingTeamOnFieldIndices[4]; // here is a list of batting team players currently on field.
-	// they arent in particular order, and there can be gaps ( - 1 ).
 	int catcherOnBaseIndex[4]; // whos is baseman on base i
 	int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
 	int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between

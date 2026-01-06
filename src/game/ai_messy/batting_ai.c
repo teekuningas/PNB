@@ -46,6 +46,23 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	int i;
 	int isDoubleClickingOk = 0;
+
+	// Cleanup dangling locks if state changed externally
+	if (stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 0) {
+		if (stateInfo->localGameInfo->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK ||
+		        stateInfo->localGameInfo->aiState.actionKeyLock == AI_CHANGE_LOCK) {
+			stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
+			stateInfo->localGameInfo->aiState.battingKeyDown = 0;
+			stateInfo->localGameInfo->aiState.changingKeyDown = 0;
+		}
+	}
+	if (stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 0) {
+		if (stateInfo->localGameInfo->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {
+			stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
+			stateInfo->localGameInfo->aiState.battingKeyDown = 0;
+		}
+	}
+
 	// update some flags
 	for(i = 0; i < BASE_COUNT; i++) {
 		stateInfo->localGameInfo->aiState.clickBreak[i]++;
@@ -67,12 +84,11 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	if(stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 1) {
 		if(stateInfo->localGameInfo->aiState.battingKeyDown == 0) {
 			if(stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK) {
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				stateInfo->localGameInfo->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
 			}
 		} else {
-			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
 			stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 			stateInfo->localGameInfo->aiState.battingKeyDown = 0;
 		}
@@ -111,11 +127,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 
 		// change player
 		if(stateInfo->localGameInfo->aiState.change == 1 && stateInfo->localGameInfo->aiState.changingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK) {
-			stateInfo->keyStates->imitateKeyPress[KEY_1] = 1;
+			stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_NEXT;
 			stateInfo->localGameInfo->aiState.changingKeyDown = 1;
 			stateInfo->localGameInfo->aiState.actionKeyLock = AI_CHANGE_LOCK;
 		} else if(stateInfo->localGameInfo->aiState.changingKeyDown == 1 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_CHANGE_LOCK) {
-			stateInfo->keyStates->imitateKeyPress[KEY_1] = 0;
 			stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 			stateInfo->localGameInfo->aiState.changingKeyDown = 0;
 			stateInfo->localGameInfo->aiState.changeHasHappened = 1;
@@ -123,11 +138,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 		// select best batter.
 		if(stateInfo->localGameInfo->aiState.change == 0 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK) {
-			stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+			stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_SELECT;
 			stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 			stateInfo->localGameInfo->aiState.actionKeyLock = AI_WAITING_BATTER_LOCK;
 		} else if(stateInfo->localGameInfo->aiState.battingKeyDown == 1 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK) {
-			stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
 			stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 			stateInfo->localGameInfo->aiState.battingKeyDown = 0;
 			stateInfo->localGameInfo->aiState.firstIndex = -1;
@@ -171,12 +185,11 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			        stateInfo->localGameInfo->aiState.clickBreak[0] > CLICK_BREAK_CONSTANT) {
 				stateInfo->localGameInfo->aiState.baseRunnerKeyDown[0] = 1;
 				stateInfo->localGameInfo->aiState.baseRunnerLock[0] = AI_CLICK_LOCK;
-				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
+				stateInfo->localGameInfo->aF.bTAF.baseRun[0] = ACTION_TRIGGER_START;
 			} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[0] == 1 && stateInfo->localGameInfo->aiState.baseRunnerLock[0] == AI_CLICK_LOCK) {
 				stateInfo->localGameInfo->aiState.baseRunnerKeyDown[0] = 0;
 				stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[0] = 1;
 				stateInfo->localGameInfo->aiState.clickBreak[0] = 0;
-				stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 0;
 				stateInfo->localGameInfo->aiState.baseRunnerLock[0] = AI_NO_LOCK;
 			}
 		}
@@ -189,17 +202,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				        stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+					stateInfo->localGameInfo->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
 				} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 1 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_CLICK_LOCK) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 0;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_NO_LOCK;
 					stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 1;
 					stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 0;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 0;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 0;
 				}
 			}
 		}
@@ -214,17 +222,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				        stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+					stateInfo->localGameInfo->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
 				} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 1 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_COME_BACK_LOCK) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 0;
 					stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 0;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_NO_LOCK;
 					stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 0;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 0;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 0;
 				}
 			}
 		}
@@ -250,17 +253,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				        stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+					stateInfo->localGameInfo->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
 				} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 1 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_COME_BACK_WRONG_PITCH_LOCK) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 0;
 					stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 0;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_NO_LOCK;
 					stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
-					if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 0;
-					else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 0;
-					else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 0;
 				}
 			}
 		}
@@ -271,12 +269,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
 			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 23 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_POWER_SET;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;
 			} else if(stateInfo->localGameInfo->aiState.battingKeyDown == 1 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_BATTING_LOCK) {
 				if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_LOAD_MAX - 9) {
-					stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
+					stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
 					stateInfo->localGameInfo->aiState.battingKeyDown = 0;
 					stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 				}
@@ -287,10 +285,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			if(stateInfo->localGameInfo->aiState.angleDecided == 0) {
 				int i;
 				BaseID leadBase = BASE_NONE;
-				for(i = 0; i < BASE_COUNT; i++) {
-					int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
-						BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
+
+				for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+					if(stateInfo->localGameInfo->playerInfo[i].bTPI.baseId != BASE_NONE && stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
+						BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[i].bTPI.baseId;
 
 						if(base_cmp(currentBaseId, leadBase) > 0) {
 							leadBase = currentBaseId;
@@ -301,12 +299,12 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
 			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 10 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_POWER_SET;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;
 			} else if(stateInfo->localGameInfo->aiState.battingKeyDown == 1 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_BATTING_LOCK) {
 				if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_LOAD_MAX - 6) {
-					stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
+					stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
 					stateInfo->localGameInfo->aiState.battingKeyDown = 0;
 					stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 				}
@@ -319,30 +317,30 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.angleDecided = 1;
 			}
 			if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_SWING_MAX - 11 && stateInfo->localGameInfo->aiState.battingKeyDown == 0 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->localGameInfo->aiState.aiWrongPitch == 0) {
-				stateInfo->keyStates->imitateKeyPress[KEY_2] = 1;
+				stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_POWER_SET;
 				stateInfo->localGameInfo->aiState.battingKeyDown = 1;
 				stateInfo->localGameInfo->aiState.actionKeyLock = AI_BATTING_LOCK;
 			} else if(stateInfo->localGameInfo->aiState.battingKeyDown == 1 && stateInfo->localGameInfo->aiState.actionKeyLock == AI_BATTING_LOCK) {
 				if(stateInfo->localGameInfo->pendingActionState.meterCounter > BAT_LOAD_MAX - 8) {
-					stateInfo->keyStates->imitateKeyPress[KEY_2] = 0;
+					stateInfo->localGameInfo->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
 					stateInfo->localGameInfo->aiState.battingKeyDown = 0;
 					stateInfo->localGameInfo->aiState.actionKeyLock = AI_NO_LOCK;
 				}
 			}
 		}
 		if(stateInfo->localGameInfo->aiState.decidedAngle >= 0 && stateInfo->localGameInfo->pendingActionState.batterAngle < stateInfo->localGameInfo->aiState.decidedAngle && stateInfo->localGameInfo->aiState.increaseKeyDown == 0) {
-			stateInfo->keyStates->imitateKeyPress[KEY_PLUS] = 1;
+			stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_START;
 			stateInfo->localGameInfo->aiState.increaseKeyDown = 1;
 		} else if(stateInfo->localGameInfo->pendingActionState.batterAngle >= stateInfo->localGameInfo->aiState.decidedAngle && stateInfo->localGameInfo->aiState.increaseKeyDown == 1) {
-			stateInfo->keyStates->imitateKeyPress[KEY_PLUS] = 0;
+			stateInfo->localGameInfo->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_STOP;
 			stateInfo->localGameInfo->aiState.increaseKeyDown = 0;
 		}
 
 		if(stateInfo->localGameInfo->aiState.decidedAngle < 0 && stateInfo->localGameInfo->pendingActionState.batterAngle > stateInfo->localGameInfo->aiState.decidedAngle && stateInfo->localGameInfo->aiState.decreaseKeyDown == 0) {
-			stateInfo->keyStates->imitateKeyPress[KEY_MINUS] = 1;
+			stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_START;
 			stateInfo->localGameInfo->aiState.decreaseKeyDown = 1;
 		} else if(stateInfo->localGameInfo->pendingActionState.batterAngle <= stateInfo->localGameInfo->aiState.decidedAngle && stateInfo->localGameInfo->aiState.decreaseKeyDown == 1) {
-			stateInfo->keyStates->imitateKeyPress[KEY_MINUS] = 0;
+			stateInfo->localGameInfo->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_STOP;
 			stateInfo->localGameInfo->aiState.decreaseKeyDown = 0;
 		}
 
@@ -363,14 +361,13 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int shouldRun = 1;
 		if(i == 0 && stateInfo->localGameInfo->pRAI.batterCanAdvance == 0) continue;
 		// here we check that there is no one running this same base interval.
-		for(j = 0; j < BASE_COUNT; j++) {
-			int runnerIndex = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[j];
-			if(runnerIndex != -1) {
-				BaseID baseId = stateInfo->localGameInfo->playerInfo[runnerIndex].bTPI.baseId;
-				int baseInt = base_to_int_index(baseId);
+		for(j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+			BaseID bid = stateInfo->localGameInfo->playerInfo[j].bTPI.baseId;
+			if(bid != BASE_NONE) {
+				int baseInt = base_to_int_index(bid);
 
 				if(baseInt == i) {
-					if(runnerIndex != index) {
+					if(j != index) {
 						shouldRun = 0;
 					}
 				}
@@ -382,17 +379,11 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		        stateInfo->localGameInfo->aiState.amountOfClicks[i] == 0 && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 			stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 			stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
-			if(i == 0) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-			else if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-			else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-			else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+			stateInfo->localGameInfo->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
 
 		} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 			stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
-			if(i == 0) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 1;
-			else if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 1;
-			else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 1;
-			else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 1;
+			stateInfo->localGameInfo->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
 		} else if(stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 1 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK) {
 			stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 0;
 			if(stateInfo->localGameInfo->aiState.amountOfClicks[i] == 1) {
@@ -402,11 +393,6 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				stateInfo->localGameInfo->aiState.amountOfClicks[i]++;
 			}
 			stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
-
-			if(i == 0) stateInfo->keyStates->imitateKeyPress[KEY_DOWN] = 0;
-			else if(i == 1) stateInfo->keyStates->imitateKeyPress[KEY_LEFT] = 0;
-			else if(i == 2) stateInfo->keyStates->imitateKeyPress[KEY_RIGHT] = 0;
-			else if(i == 3) stateInfo->keyStates->imitateKeyPress[KEY_UP] = 0;
 		}
 
 	}
