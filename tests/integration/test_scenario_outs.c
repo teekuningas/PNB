@@ -12,7 +12,6 @@ static int test_runner_forced_out_at_first_base_scenario() {
     setup_runner_at_first_base(state);
     state->localGameInfo->pII.batterIndex = 1;
     state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_HOME;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = 0;
     
     // Simulate a hit
     state->localGameInfo->pRAI.batHit = 1;

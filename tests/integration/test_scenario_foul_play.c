@@ -7,11 +7,11 @@
 #include "base_logic.h"
 
 /**
- * Scenario: §35 Returning to base after foul play.
- * Runner A is on 1st base (originalBase = 1).
- * Runner A runs to 2nd base.
- * Foul play (out of bounds) occurs.
- * Result: Runner A should be returned to 1st base and state set to SAFE_ON_BASE.
+ * Scenario: Foul play resets player positions.
+ * Runner A is on 1st base (baseAtPitchStart = 1).
+ * Runner A advances to 2nd base and is safe there.
+ * Fly ball hit out of bounds (Foul play).
+ * Result: Runner A should be returned to 1st base.
  */
 static int test_foul_play_returns_runner_to_base() {
     StateInfo* state = setup_test_state();
@@ -24,10 +24,13 @@ static int test_foul_play_returns_runner_to_base() {
     initializeGameFromMenu(state, &setup, &seed);
     loadMutableWorldSettings(state, &seed);
 
+    // Runner A on 1st
     int runnerA = 0;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = runnerA;
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_FIRST;
-    state->localGameInfo->playerInfo[runnerA].bTPI.originalBase = BASE_FIRST;
+    state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_FIRST;
+    state->localGameInfo->referee.battingPlayers[runnerA].hadSafetyAtPitchStart = 1;
+    state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_FIRST;
+    state->localGameInfo->pII.safeOnBaseIndex[1] = runnerA;
     set_test_player_state(state, runnerA, PLAYER_STATE_SAFE_ON_BASE);
 
     // Runner A moves towards 2nd
@@ -50,11 +53,11 @@ static int test_foul_play_returns_runner_to_base() {
 }
 
 /**
- * Scenario: §35 Batter hit foul on 3rd strike -> OUT.
- * Runner A is batter (originalBase = 0).
- * 2 strikes already.
- * Batter hits foul.
- * Result: Batter should be OUT.
+ * Scenario: Foul play third strike out.
+ * Runner A is batter (baseAtPitchStart = 0).
+ * Runner A gets 3rd strike.
+ * Ball hit out of bounds (Foul play).
+ * Result: Runner A should be out.
  */
 static int test_foul_play_third_strike_out() {
     StateInfo* state = setup_test_state();
@@ -67,12 +70,14 @@ static int test_foul_play_third_strike_out() {
     initializeGameFromMenu(state, &setup, &seed);
     loadMutableWorldSettings(state, &seed);
 
+    // Runner A is batter
     int batter = 0;
     state->localGameInfo->pII.batterIndex = batter;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = batter;
     state->localGameInfo->playerInfo[batter].bTPI.baseId = BASE_HOME;
-    state->localGameInfo->playerInfo[batter].bTPI.originalBase = BASE_HOME;
-    set_test_player_state(state, batter, PLAYER_STATE_AT_BAT);
+    state->localGameInfo->referee.battingPlayers[batter].baseAtPitchStart = BASE_HOME;
+    state->localGameInfo->referee.battingPlayers[batter].hadSafetyAtPitchStart = 1;
+    state->localGameInfo->referee.battingPlayers[batter].currentSafetyBase = BASE_HOME;
+    state->localGameInfo->pII.safeOnBaseIndex[0] = batter;
 
     // 3 strikes (logic checks if strikes == 3)
     // Wait, in game_analysis.c: "else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) { if(stateInfo->localGameInfo->gameState.strikes == 3) {"
@@ -86,11 +91,6 @@ static int test_foul_play_third_strike_out() {
     gameAnalysis(state, &menu, &seed); 
 
     ASSERT_EQ(1, state->localGameInfo->gameState.outs, "Batter should be out after 3rd strike foul");
-    
-    // Check if batter removed from field
-    int found = 0;
-    for(int k=0; k<4; k++) if(state->localGameInfo->pII.battingTeamOnFieldIndices[k] == batter) found = 1;
-    ASSERT_EQ(0, found, "Batter should be removed from field after out");
 
     cleanup_test_state(state);
     return TEST_PASSED;

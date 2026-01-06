@@ -496,12 +496,12 @@ void prepareBatter(LocalGameInfo* localGameInfo)
 void calculateFreeWalk(LocalGameInfo* localGameInfo)
 {
 	int i;
-	BaseID maxOriginalBase = BASE_NONE;
+	BaseID maxBaseAtPitchStart = BASE_NONE;
 	BaseID maxBaseId = BASE_NONE;
 	int maxIndex = -1;
 	// we go throush every (nonwounded) candidate and check who has the biggest base value
 	// if there are many of those who have same base value, we will pick the one who has
-	// the biggest original base value. if both are same for some reason
+	// the biggest baseAtPitchStart value. if both are same for some reason
 	// then the selection will be quite random but shouldn't happen often and shouldn't be a big deal
 	// either.
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -511,14 +511,14 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 			// Use base_cmp to compare bases semantically (replaces >=)
 			if(base_cmp(currentBaseId, maxBaseId) >= 0) {
 				if(currentBaseId == maxBaseId) {
-					if(base_cmp(localGameInfo->playerInfo[index].bTPI.originalBase, maxOriginalBase) > 0) {
+					if(base_cmp(localGameInfo->referee.battingPlayers[index].baseAtPitchStart, maxBaseAtPitchStart) > 0) {
 						maxBaseId = currentBaseId;
-						maxOriginalBase = localGameInfo->playerInfo[index].bTPI.originalBase;
+						maxBaseAtPitchStart = localGameInfo->referee.battingPlayers[index].baseAtPitchStart;
 						maxIndex = index;
 					}
 				} else {
 					maxBaseId = currentBaseId;
-					maxOriginalBase = localGameInfo->playerInfo[index].bTPI.originalBase;
+					maxBaseAtPitchStart = localGameInfo->referee.battingPlayers[index].baseAtPitchStart;
 					maxIndex = index;
 				}
 			}
@@ -728,7 +728,6 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 		// MILESTONE 7.5: Initialize control state
 		localGameInfo->playerRuntime[i].arrivedToBase = 0;
 		localGameInfo->playerRuntime[i].woundedApply = 0;
-		localGameInfo->playerRuntime[i].pendingWound = 0;
 		localGameInfo->playerRuntime[i].passedPathPoint = 0;
 		localGameInfo->playerRuntime[i].goingForward = 0;
 		localGameInfo->playerRuntime[i].hasMadeRunOnThirdBase = 0;
@@ -769,7 +768,7 @@ void initializeCriticalBattingTeamInformation(LocalGameInfo* localGameInfo)
 {
 	int i;
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		localGameInfo->playerInfo[i].bTPI.originalBase = BASE_NONE;
+		localGameInfo->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
 	}
 }
 // ball flags
@@ -905,7 +904,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		if(batterIndex != -1) {
 			localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
 			localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-			localGameInfo->playerInfo[batterIndex].bTPI.originalBase = BASE_HOME;
+			localGameInfo->referee.battingPlayers[batterIndex].baseAtPitchStart = BASE_HOME;
 			localGameInfo->playerInfo[batterIndex].bTPI.number = localGameInfo->gameModeState.runnerBatterPairCounter + 1;
 			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
 			// the batting location
@@ -919,7 +918,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		if(runnerIndex != -1) {
 			localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-			localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = BASE_THIRD;
+			localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
 			localGameInfo->pII.safeOnBaseIndex[3] = runnerIndex;
 
 			localGameInfo->playerInfo[runnerIndex].tPI.location.x =
@@ -966,6 +965,23 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 	}
 }
 
+void initializeRefereeState(RefereeState* referee)
+{
+	int i;
+	for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+		referee->battingPlayers[i].hadSafetyAtPitchStart = 0;
+		referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+		referee->battingPlayers[i].hasPendingWound = 0;
+		referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NONE;
+		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
+		referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
+		referee->battingPlayers[i].hadSafetyAtLastEvent = 0;
+	}
+	referee->woundingCatchActive = 0;
+	referee->foulPlayActive = 0;
+}
+
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	/*
@@ -990,8 +1006,10 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initializeSpatialPlayerInformation(stateInfo->localGameInfo, stateInfo->fieldPositions, rng_seed);
 	// information about players than can be flushed.
 	initializeNonCriticalPlayerInformation(stateInfo->localGameInfo);
-	// information that cant be flushed when foul play. like originalBase.
+	// information that cant be flushed when foul play. like baseAtPitchStart.
 	initializeCriticalBattingTeamInformation(stateInfo->localGameInfo);
+	// initialize referee state
+	initializeRefereeState(&stateInfo->localGameInfo->referee);
 
 	if(stateInfo->globalGameInfo->period >= 4) {
 		if(!(stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter > 0 &&

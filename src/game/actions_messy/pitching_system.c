@@ -171,25 +171,46 @@ void releasePitch(StateInfo* stateInfo)
 			BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 			int base = base_to_int_index(baseId);
 
-			// we dont do it though in the case of free walks, as we dont want players to return previous bases
-			// after taking a free walk, even if there is foul play. so thats the reason for conditions.
-			// free walks set original base to base that follows the base where player was when the
-			// free walk decision came available.
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase < base &&
-			        !(stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase == BASE_HOME_SCORED && base == 3)) {
-				// no such thing as safeOnBaseIndex[4] so have to be base < 4
-				// here we just make sure that player is safe on the base that is declared
-				// as his originalBase.
-				// if he's not, he can try gaining now originalBase by running to next one
-				// or he will just get tagged if its foul play.
-				if(base >= 0 && base < 4) {
-					if(stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
-						stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = BASE_NONE;
+			// Referee Snapshot (Milestone 12)
+			// We snapshot the current state as the baseline for this pitch.
+			if (stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+				// Special case: Player is advancing freely.
+				// Their "pitch start" base is effectively the destination they are guaranteed to reach.
+				BaseID destBase;
+				if (baseId == BASE_THIRD) destBase = BASE_HOME_SCORED;
+				else destBase = base_get_next(baseId);
+
+				stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = destBase;
+				stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
+				stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = destBase;
+			} else {
+				stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = baseId;
+
+				// Determine safety status for snapshot
+				int hasSafety = 0;
+				if (base >= 0 && base < 4) {
+					if (stateInfo->localGameInfo->pII.safeOnBaseIndex[base] == index) {
+						hasSafety = 1;
 					}
+				}
+				// Special case: Batter at home is considered to have "safety" in terms of not being irti yet
+				if (stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
+					hasSafety = 1;
+				}
+				stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = hasSafety;
+
+				// Initialize current safety tracking
+				if (hasSafety) {
+					stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = baseId;
 				} else {
-					stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = baseId;
+					stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
 				}
 			}
+
+			// Clear temporary event states
+			stateInfo->localGameInfo->referee.battingPlayers[index].hasPendingWound = 0;
+			stateInfo->localGameInfo->referee.battingPlayers[index].woundingType = WOUNDING_TYPE_NONE;
+			stateInfo->localGameInfo->referee.battingPlayers[index].woundingSourceBase = BASE_NONE;
 		}
 	}
 

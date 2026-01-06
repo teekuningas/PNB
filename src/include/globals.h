@@ -311,11 +311,45 @@ typedef struct _TechnicalPlayerInfo {
 typedef struct _PlayerRuntimeState {
 	int arrivedToBase;       // Optimization flag
 	int woundedApply;        // Deferred execution (wounding catch confirmed)
-	int pendingWound;        // §36: Player is marked to be wounded upon arrival at next base
 	int passedPathPoint;     // State machine variable
 	int goingForward;        // Direction tracking
 	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
+
+typedef enum {
+	WOUNDING_TYPE_NONE = 0,
+	WOUNDING_TYPE_NORMAL = 1,      // Lost safety, must advance
+	WOUNDING_TYPE_TUPLAHAAVA = 2   // Has safety, can retreat
+} WoundingType;
+
+typedef struct _RefereePlayerState {
+	// === PITCH START SNAPSHOT (for foul play) ===
+	BaseID baseAtPitchStart;       // Where was player when pitch started
+	int hadSafetyAtPitchStart;     // Did they have safety?
+
+	// === CURRENT SAFETY STATUS ===
+	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
+
+	// === WOUNDING TRACKING ===
+	int hasPendingWound;           // Marked for wounding
+	WoundingType woundingType;     // Normal or Tuplahaava
+	BaseID woundingSourceBase;     // Base they were at when marked
+
+	// === EVENT SNAPSHOTS (updated at key moments) ===
+	BaseID baseAtLastEvent;        // Where they were at last important event
+	int hadSafetyAtLastEvent;      // Did they have safety at last event
+
+} RefereePlayerState;
+
+typedef struct _RefereeState {
+	// Per-player tracking
+	RefereePlayerState battingPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
+
+	// Global events
+	int woundingCatchActive;       // Fly ball was caught (pending timer)
+	int foulPlayActive;            // Out of bounds situation
+
+} RefereeState;
 
 typedef enum {
 	JOKER_REGULAR = 0,
@@ -329,7 +363,6 @@ typedef struct _BattingTeamPlayerInfo {
 	int speed; // used to make some player a bit faster than others
 	int power; // used to make some players bat a bit harder than others
 	int number; // number is shown on screen
-	BaseID originalBase; // base when pitch started
 	JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
 
 	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
@@ -661,6 +694,7 @@ typedef struct _GlobalGameInfo {
 typedef struct _LocalGameInfo {
 	PlayerInfo playerInfo[2*PLAYERS_IN_TEAM + JOKER_COUNT];
 	PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
+	RefereeState referee; // Milestone 12 - Referee State
 	ActionFlags aF;
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;

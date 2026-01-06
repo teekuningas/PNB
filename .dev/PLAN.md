@@ -40,15 +40,16 @@ We are preparing the codebase for a major architectural shift towards a **Functi
     - Removed `initLocals` legacy counter.
     - Added comprehensive integration tests for §33 (Chain Reaction) and §36 (Tuplahaava).
 
-### 🚧 Milestone 13.5: Comprehensive Rule Audit & Final Polish (CURRENT)
-- **Goal:** Ensure 100% alignment with §SAANNOT and perfect type safety.
-- **Tasks:**
-    - Perform a thorough sweep of `rules_pure/` function signatures for `BaseID` consistency.
-    - Deep-dive into `SAANNOT.md` to identify missing edge cases in `game_analysis.c`.
-    - Implement additional integration tests for complex scenarios (Foul play returns, Run of Honor edge cases).
-    - Update architecture documentation to reflect the current state of state-management and purified rules.
+### ✅ Milestone 13.5: Comprehensive Rule Audit & Referee State (Completed 2026-01-06)
+- **Goal:** Ensure 100% alignment with §SAANNOT and implement central Referee state.
+- **Results:**
+    - **RefereeState:** Created explicit `RefereeState` struct to track rule-specific data (base snapshots, pending wounds).
+    - **Snapshotting:** Implemented pitch-start snapshots for reliable foul play restoration and run validation.
+    - **Explicit Logic:** Enumerated all "Tuplahaava" and "Wounding" cases explicitly in code.
+    - **Legacy Cleanup:** Removed `originalBase`, `pendingWound`, `woundingSourceBase` from player structs.
+    - **Tests:** Added comprehensive integration tests for complex scenarios (Tuplahaava exceptions, overtaking).
 
-### 🔮 Milestone 14: The Great Decoupling (Read vs. Write)
+### 🚧 Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
 - **Goal:** Split logic into "Query" and "Apply" halves.
 - **Why:** Essential for phase-based execution.
 

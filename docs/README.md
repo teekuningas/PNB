@@ -1,17 +1,20 @@
 # PNB - Documentation
 
-**Milestone 11 & 12 COMPLETE ✅** (2026-01-05)  
-**Current Focus:** Milestone 13 - Stabilization
+**Milestone 13.5 COMPLETE ✅** (2026-01-06)  
+**Current Focus:** Milestone 14 - The Great Decoupling
 
 ### What We've Achieved
+- **Referee State Pattern:** Implemented a centralized `RefereeState` to track authoritative rule data (snapshots, pending wounds) separate from physical player state.
+- **Legacy Cleanup:** Completely removed `originalBase` and other legacy flags, ensuring a single source of truth for rule decisions.
+- **Robust Rule Logic:** Explicitly enumerated and implemented complex rules like "Tuplahaava" (Double Wound) and its exceptions.
 - **Logic State Consolidation:** Eliminated all logic-related `static` variables. `StateInfo` is the single source of truth.
 - **Rendering Unification:** Adopted `ResourceManager` for all in-game assets and eliminated logic-related `static` GL variables.
 - **Rule-Movement Decoupling:** Decoupled game rules (outs/strikes) from physical movement while maintaining automatic triggers for unambiguous control.
 - **Type-safe domain state:** (PlayerUnitState, BaseID, GameEventType)
-- **Comprehensive Testing:** Passed 53 unit tests covering physics, AI, and rules.
+- **Comprehensive Testing:** Passed 53 unit tests and 14 complex integration scenario tests covering physics, AI, and rules.
 
 ### What's Next
-**Philosophy:** Stabilize the rules before performing the large-scale architectural decoupling of Read/Write logic.
+**Philosophy:** With the rules stabilized and centralized, we can now safely decouple the "Query" (Read) and "Apply" (Write) phases of the game loop.
 
 ---
 
@@ -145,17 +148,15 @@
 
 ### Current Work
 
-**Milestone 13: Stabilization & Rule Decoupling**
-- Purify safety logic.
-- Standardize base indexing.
-- Implement PitchResult enum.
-- Add Integration Scenario tests.
+**Milestone 14: The Great Decoupling**
+- Decouple Read/Write logic.
+- Split analysis and manipulation into distinct phases.
 
 ### Future Work
 
-**Milestone 14+: The Functional Pipeline**
-- Decouple Read/Write logic.
-- Implement Referee pattern.
+**Milestone 15+: The Functional Pipeline**
+- Implement Intent Phase.
+- Implement Referee Phase (Judgment).
 - Explicit linear game loop.
 
 ---

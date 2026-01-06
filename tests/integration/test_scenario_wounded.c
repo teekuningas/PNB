@@ -4,6 +4,7 @@
 #include "game_setup.h"
 #include "common_logic.h"
 #include "game_analysis.h"
+#include "game_manipulation.h"
 #include "mutable_world.h"
 
 // Defined in game_analysis.c
@@ -20,14 +21,16 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Batter hits
     state->localGameInfo->pII.batterIndex = 1;
     state->localGameInfo->playerInfo[1].bTPI.baseId = BASE_NONE;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[1] = 1;
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
     
     // Runner on 1st starts running towards 2nd
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND;
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_FIRST;
+    state->localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_FIRST;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
+    
+    // Move away from base 1
+    state->localGameInfo->playerInfo[runnerIndex].tPI.location.x += 5.0f;
     
     // Ball is caught by a fielder
     state->localGameInfo->pII.hasBallIndex = fielderIndex;
@@ -43,6 +46,12 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
         gameAnalysis(state, &menu, &seed);
     }
 
+    // Now process arrival logic to apply the wound
+    state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND;
+    state->localGameInfo->gameControl.playerArrivedToBase = 1;
+    state->localGameInfo->playerRuntime[runnerIndex].arrivedToBase = 1;
+    gameManipulation(state);
+
     int isWounded = (state->localGameInfo->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED);
     cleanup_test_state(state);
     ASSERT_EQ(1, isWounded, "Runner should be wounded when off base and ball is caught");
@@ -57,7 +66,7 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     
     // Runner running between bases
     state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_SECOND;
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
+    state->localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_FIRST;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_RUNNING);
     
     // Initial stabilization
@@ -104,7 +113,7 @@ static int test_runner_not_wounded_if_starts_running_late() {
     
     // Runner is SAFE at original base
     state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_FIRST;
-    state->localGameInfo->playerInfo[runnerIndex].bTPI.originalBase = 1;
+    state->localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_FIRST;
     set_test_player_state(state, runnerIndex, PLAYER_STATE_SAFE_ON_BASE);
     
     // Stabilization

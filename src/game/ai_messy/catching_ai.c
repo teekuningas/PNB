@@ -171,17 +171,17 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int index3 = stateInfo->localGameInfo->pII.safeOnBaseIndex[3];
 		int index2 = stateInfo->localGameInfo->pII.safeOnBaseIndex[2];
 
-		BaseID r3OriginalBase = BASE_NONE;
+		BaseID r3BaseAtPitchStart = BASE_NONE;
 		int r3IsOnBase = 0;
 		if (index3 != -1) {
-			r3OriginalBase = stateInfo->localGameInfo->playerInfo[index3].bTPI.originalBase;
+			r3BaseAtPitchStart = stateInfo->localGameInfo->referee.battingPlayers[index3].baseAtPitchStart;
 			r3IsOnBase = (stateInfo->localGameInfo->playerInfo[index3].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
 		}
 
-		BaseID r2OriginalBase = BASE_NONE;
+		BaseID r2BaseAtPitchStart = BASE_NONE;
 		int r2IsOnBase = 0;
 		if (index2 != -1) {
-			r2OriginalBase = stateInfo->localGameInfo->playerInfo[index2].bTPI.originalBase;
+			r2BaseAtPitchStart = stateInfo->localGameInfo->referee.battingPlayers[index2].baseAtPitchStart;
 			r2IsOnBase = (stateInfo->localGameInfo->playerInfo[index2].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
 		}
 
@@ -190,8 +190,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 
 		if(should_ai_drop_ball(&(stateInfo->localGameInfo->woundingState),
 		                       &(stateInfo->localGameInfo->gameControl),
-		                       r3OriginalBase, r3IsOnBase,
-		                       r2OriginalBase, r2IsOnBase,
+		                       r3BaseAtPitchStart, r3IsOnBase,
+		                       r2BaseAtPitchStart, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {
 			if(stateInfo->localGameInfo->pendingActionState.aiActionEventLock == AI_NO_LOCK && stateInfo->localGameInfo->pendingActionState.aiLockUpdate == 0) {
 				stateInfo->localGameInfo->aiState.dropStage = 1;

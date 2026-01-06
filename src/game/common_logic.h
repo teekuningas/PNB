@@ -37,6 +37,7 @@ void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* gl
 void initializeIndexInformation(LocalGameInfo* localGameInfo);
 void initializePRAIInformation(LocalGameInfo* localGameInfo);
 void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGameInfo, FieldPositions* fieldPositions);
+void initializeRefereeState(RefereeState* referee);
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif /* COMMON_LOGIC_H */

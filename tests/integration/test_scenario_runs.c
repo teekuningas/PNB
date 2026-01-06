@@ -15,7 +15,6 @@ static int test_runner_scores_from_third_base_scenario() {
     // Batter hits
     state->localGameInfo->pII.batterIndex = 1;
     state->localGameInfo->playerInfo[1].bTPI.baseId = BASE_NONE;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[1] = 1;
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
     
@@ -24,7 +23,6 @@ static int test_runner_scores_from_third_base_scenario() {
     
     // Runner on 3rd runs home
     state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_HOME_SCORED;
-    state->localGameInfo->pII.battingTeamOnFieldIndices[0] = runnerIndex;
 
     unsigned int seed = 0;
     MenuInfo menu = {0};

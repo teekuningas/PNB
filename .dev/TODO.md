@@ -48,21 +48,25 @@
 
 ---
 
-## Milestone 13.5: Comprehensive Rule Audit & Final Polish (CURRENT)
+## Milestone 13.5: Comprehensive Rule Audit & Referee State (COMPLETE ✅)
 
-**Goal:** Ensure 100% alignment with §SAANNOT and perfect type safety before architectural decoupling.
+**Goal:** Ensure 100% alignment with §SAANNOT and implement central Referee state.
 
-- [ ] **Type Safety Sweep:** Ensure all functions in `rules_pure/` and `src/game/` use `BaseID` instead of `int` for base parameters.
-- [ ] **Rule Audit (§SAANNOT):** Thoroughly compare `game_analysis.c` with the rulebook to find edge cases.
-- [ ] **Edge Case Tests:** Add integration tests for:
-    - [ ] §18: Batter becoming runner on 3rd strike/ball.
-    - [ ] §35: Returning to base after foul play.
-    - [ ] §42: Kunniajuoksu (Run of Honor) specifically when overtaking runners.
-- [ ] **Documentation Update:** Sync `./docs` with the new State machines and purified rule logic.
+- [x] **Referee State Implementation:**
+    - [x] Define `RefereeState` and `RefereePlayerState`.
+    - [x] Implement snapshotting at pitch start (`baseAtPitchStart`, `hadSafety`).
+    - [x] Migrate `woundingCatchEffects`, `foulPlay`, and `checkForOuts` to use `RefereeState`.
+- [x] **Legacy Cleanup:**
+    - [x] Remove `originalBase` from `BattingTeamPlayerInfo`.
+    - [x] Remove `pendingWound` and `woundingSourceBase` from `PlayerRuntimeState`.
+- [x] **Edge Case Tests:**
+    - [x] Tuplahaava collision and exceptions (ball to source/next base).
+    - [x] Foul play restoration.
+    - [x] Kunniajuoksu overtaking logic.
 
 ---
 
-## Milestone 14: The Great Decoupling (Read vs. Write)
+## Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
 
 **Goal:** Split logic into "Query" and "Apply" halves.
 

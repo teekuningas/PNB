@@ -97,7 +97,10 @@ void selectBatter(StateInfo* stateInfo)
 		// has base of zero, is on base and original base is zero too.
 		stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_HOME;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
-		stateInfo->localGameInfo->playerInfo[index].bTPI.originalBase = BASE_HOME;
+		// Milestone 12: Referee Update
+		stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME;
+		stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
+		stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_HOME;
 		// this guy will begin with 0 strikes and 0 balls.
 		stateInfo->localGameInfo->gameState.strikes = 0;
 		stateInfo->localGameInfo->gameState.balls = 0;

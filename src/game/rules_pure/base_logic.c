@@ -78,13 +78,18 @@ bool player_is_protected(PlayerUnitState state)
 
 bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID original_base)
 {
+	// §36: Player is safe from wounding if they are in a protected state
+	// (safe on ANY base, at bat, or taking free walk)
+	// Players who are LEADING or RUNNING are "irti" (off base) and can be wounded
+
 	if (state == PLAYER_STATE_ADVANCING_FREELY) {
 		return true;
 	}
 
 	if (state == PLAYER_STATE_SAFE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
-		return (current_base == original_base);
+		return true;  // Safe on any base = protected from wounding
 	}
 
+	// LEADING or RUNNING = not safe
 	return false;
 }

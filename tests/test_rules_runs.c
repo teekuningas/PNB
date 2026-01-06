@@ -15,7 +15,7 @@ static int test_normal_run_home_base() {
 }
 
 static int test_run_of_honor() {
-    // Run of Honor: Batter (originalBase BASE_HOME) arrives at 3rd base (BASE_THIRD), allowed to make run of honor
+    // Run of Honor: Batter (baseAtPitchStart BASE_HOME) arrives at 3rd base (BASE_THIRD), allowed to make run of honor
     GameModeState gms = {0};
     gms.canMakeRunOfHonor = 1;
     ASSERT_EQ(1, calculate_runs(BASE_THIRD, BASE_HOME, 0, &gms, 0), "Should score run of honor");
@@ -34,7 +34,7 @@ static int test_no_run_wounded() {
 static int test_no_run_of_honor_conditions() {
     GameModeState gms = {0};
     gms.canMakeRunOfHonor = 1;
-    // Not original batter (originalBase != BASE_HOME)
+    // Not original batter (baseAtPitchStart != BASE_HOME)
     ASSERT_EQ(0, calculate_runs(BASE_THIRD, BASE_FIRST, 0, &gms, 0), "Player starting from 1st base cannot score run of honor");
     ASSERT_EQ(0, calculate_runs(BASE_THIRD, BASE_SECOND, 0, &gms, 0), "Player starting from 2nd base cannot score run of honor");
 
