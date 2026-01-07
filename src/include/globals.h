@@ -483,7 +483,6 @@ typedef struct _TeamInfo {
 } TeamInfo;
 
 typedef struct _PlayerIndexInfo {
-	int baseControlIndex[4]; // who is controlled by base key i (was baseControlIndex)
 	int catcherOnBaseIndex[4]; // whos is baseman on base i
 	int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
 	int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between

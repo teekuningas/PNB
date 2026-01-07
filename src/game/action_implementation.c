@@ -14,6 +14,7 @@
 #include "ai_messy/catching_ai.h"
 #include "ai_messy/batting_ai.h"
 #include "base_logic.h"
+#include "base_control.h"
 
 #define ANIMATION_FREQUENCY 3
 
@@ -258,9 +259,6 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					// when he's running
 					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
 					// if he's safe on previous base, set the baseControlIndex for that base to -1
-					if(currentBaseId != BASE_NONE && stateInfo->localGameInfo->pII.baseControlIndex[currentBaseId] == index) {
-						stateInfo->localGameInfo->pII.baseControlIndex[currentBaseId] = -1;
-					}
 					// if he was batter, set the batterIndex to -1 so that we can have a new batter.
 					if(stateInfo->localGameInfo->pII.batterIndex == index) {
 						stateInfo->localGameInfo->pII.batterIndex = -1;
@@ -384,13 +382,15 @@ void genericSlingBall(BallInfo* ballInfo, PlayerRelatedActionInfo* pRAI, float x
 }
 
 
+// so baserunning.
+// idea is just to update willStartRunning in every button press. and in special double click case we just run.
 static void baseRun(StateInfo* stateInfo, BaseID base)
 {
 	// so baserunning.
 	// idea is just to update willStartRunning in every button press. and in special double click case we just run.
-	if(stateInfo->localGameInfo->pII.baseControlIndex[base] != -1) {
+	if(get_base_controller(stateInfo->localGameInfo, base) != -1) {
 		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
-			int index = stateInfo->localGameInfo->pII.baseControlIndex[base];
+			int index = get_base_controller(stateInfo->localGameInfo, base);
 			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 			        stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
 				if(stateInfo->localGameInfo->pRAI.willStartRunning[base] == 0) {

@@ -8,7 +8,12 @@
 #include "actions_messy/batting_system.h"
 #include "game_manipulation.h"
 #include "rng.h"
+#include "actions_messy/batting_system.h"
+#include "batting_ai_strategy.h"
 #include "base_logic.h"
+#include "base_control.h"
+
+// Macros moved from action_implementation.c
 
 #define CLICK_BREAK_CONSTANT 3
 
@@ -68,14 +73,14 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		stateInfo->localGameInfo->aiState.clickBreak[i]++;
 		if(stateInfo->localGameInfo->aiState.clickBreak[i] > 1000) stateInfo->localGameInfo->aiState.clickBreak[i] = 0;
 		if(stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] == 1) {
-			if(stateInfo->localGameInfo->pII.baseControlIndex[i] == -1 ) {
+			if(get_base_controller(stateInfo->localGameInfo, (BaseID)i) == -1 ) {
 				stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 0;
 			}
-			if(stateInfo->localGameInfo->aiState.lastSafeOnBaseIndex[i] != stateInfo->localGameInfo->pII.baseControlIndex[i]) {
+			if(stateInfo->localGameInfo->aiState.lastSafeOnBaseIndex[i] != get_base_controller(stateInfo->localGameInfo, (BaseID)i)) {
 				stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] = 0;
 			}
 		}
-		stateInfo->localGameInfo->aiState.lastSafeOnBaseIndex[i] = stateInfo->localGameInfo->pII.baseControlIndex[i];
+		stateInfo->localGameInfo->aiState.lastSafeOnBaseIndex[i] = get_base_controller(stateInfo->localGameInfo, (BaseID)i);
 	}
 	if(stateInfo->localGameInfo->pRAI.batterReady == 0 && stateInfo->localGameInfo->aiState.planCalculated == 1) {
 		stateInfo->localGameInfo->aiState.planCalculated = 0;
@@ -100,9 +105,9 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// plan is that if there is a man on first base and current batter would not have a great power,
 		// we would try to find a joker that has power instead.
 		// and if field is empty we would change a joker with speed instead.
-		int firstBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[1];
-		int secondBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[2];
-		int thirdBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[3];
+		int firstBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)1);
+		int secondBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)2);
+		int thirdBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)3);
 		int fieldStatus;
 		int index = stateInfo->localGameInfo->pII.batterSelectionIndex;
 
@@ -154,9 +159,9 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		// decision tree.. contents can be read within
 		if(stateInfo->localGameInfo->aiState.planCalculated == 0) {
 			int batterIndex = stateInfo->localGameInfo->pII.batterIndex;
-			int firstBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[1];
-			int secondBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[2];
-			int thirdBaseIndex = stateInfo->localGameInfo->pII.baseControlIndex[3];
+			int firstBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)1);
+			int secondBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)2);
+			int thirdBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)3);
 			int power = stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.power;
 			int speed = stateInfo->localGameInfo->playerInfo[batterIndex].bTPI.speed;
 			int fieldStatus;
@@ -200,8 +205,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				// Prevent suicide runs: Don't run from 3rd base (to home) if ball is held at home
 				if (i == BASE_THIRD && stateInfo->localGameInfo->gameState.ballHome == 1) continue;
 
-				if(stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] == 0 && stateInfo->localGameInfo->pII.baseControlIndex[i] != -1 &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.baseControlIndex[i]].bTPI.state == PLAYER_STATE_SAFE_ON_BASE &&
+				if(stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] == 0 && get_base_controller(stateInfo->localGameInfo, (BaseID)i) != -1 &&
+				        stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, (BaseID)i)].bTPI.state == PLAYER_STATE_SAFE_ON_BASE &&
 				        stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
@@ -220,8 +225,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		if(stateInfo->localGameInfo->aiState.runningBaseRunners == 1) {
 			int i;
 			for(i = 1; i < 3; i++) {
-				if(stateInfo->localGameInfo->pII.baseControlIndex[i] != -1 &&
-				        stateInfo->localGameInfo->playerInfo[stateInfo->localGameInfo->pII.baseControlIndex[i]].bTPI.state == PLAYER_STATE_LEADING &&
+				if(get_base_controller(stateInfo->localGameInfo, (BaseID)i) != -1 &&
+				        stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, (BaseID)i)].bTPI.state == PLAYER_STATE_LEADING &&
 				        stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
@@ -251,7 +256,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			// batter isnt handled here
 			// this code will make baserunners come back if wrong pitch is pitched
 			for(i = 1; i < BASE_COUNT; i++) {
-				int index = stateInfo->localGameInfo->pII.baseControlIndex[i];
+				int index = get_base_controller(stateInfo->localGameInfo, (BaseID)i);
 				if(index != -1 && stateInfo->localGameInfo->playerRuntime[index].goingForward == 1 && stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 &&
 				        stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
@@ -360,7 +365,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	// we will run with everyone so we need to simulate double click here.
 	for(i = 0; i < BASE_COUNT; i++) {
 		int j;
-		int index = stateInfo->localGameInfo->pII.baseControlIndex[i];
+		int index = get_base_controller(stateInfo->localGameInfo, (BaseID)i);
 		int shouldRun = 1;
 		if(i == 0 && stateInfo->localGameInfo->pRAI.batterCanAdvance == 0) continue;
 		// here we check that there is no one running this same base interval.

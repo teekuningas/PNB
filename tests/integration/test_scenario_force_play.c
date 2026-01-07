@@ -26,15 +26,15 @@ void test_force_play_bases_loaded(void)
 	
 game->playerInfo[r3].bTPI.baseId = BASE_THIRD;
 game->playerInfo[r3].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-game->pII.baseControlIndex[3] = r3;
+game->referee.battingPlayers[r3].currentSafetyBase = BASE_THIRD;
 
 	game->playerInfo[r2].bTPI.baseId = BASE_SECOND;
 game->playerInfo[r2].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-game->pII.baseControlIndex[2] = r2;
+game->referee.battingPlayers[r2].currentSafetyBase = BASE_SECOND;
 
 	game->playerInfo[r1].bTPI.baseId = BASE_FIRST;
 game->playerInfo[r1].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-game->pII.baseControlIndex[1] = r1;
+game->referee.battingPlayers[r1].currentSafetyBase = BASE_FIRST;
 
 	// Batter (Player 3) hits a grounder and runs to 1st
 	int batter = 3;
@@ -81,7 +81,7 @@ game->pII.baseControlIndex[1] = r1;
 		// So while running, `baseId` is still the FROM base (BASE_FIRST).
 		game->playerInfo[r1].bTPI.baseId = BASE_FIRST;
 		game->playerInfo[r1].bTPI.state = PLAYER_STATE_RUNNING; 
-		game->pII.baseControlIndex[1] = -1; // He left 1st
+		// He left 1st
 		
 		// Previous base (1st) is now technically "empty" regarding Runner 1, 
 		// BUT the Force rule depends on the "Chain".

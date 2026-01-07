@@ -6,6 +6,7 @@
 #include "base_logic.h"
 #include "game_analysis.h"
 #include "game_manipulation.h"
+#include "base_control.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -488,7 +489,7 @@ void prepareBatter(LocalGameInfo* localGameInfo)
 		// waiting for pitch to go in air before starting the batting movement
 		localGameInfo->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
-		localGameInfo->pII.baseControlIndex[0] = localGameInfo->pII.batterIndex;
+		localGameInfo->referee.battingPlayers[localGameInfo->pII.batterIndex].currentSafetyBase = BASE_HOME;
 		// and initialize batter so that everything is ready to go.
 		localGameInfo->pRAI.initBatter = 1;
 	}
@@ -869,11 +870,6 @@ void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* gl
 // index information initialization, can be called when out of bounds
 void initializeIndexInformation(LocalGameInfo* localGameInfo)
 {
-	int i;
-	for(i = 0; i < BASE_COUNT; i++) {
-		localGameInfo->pII.baseControlIndex[i] = -1;
-	}
-
 	localGameInfo->pII.hasBallIndex = -1;
 	localGameInfo->pII.lastHadBallIndex = -1;
 	localGameInfo->pII.controlIndex = -1;
@@ -932,7 +928,8 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 			localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
 			localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
-			localGameInfo->pII.baseControlIndex[3] = runnerIndex;
+			localGameInfo->referee.battingPlayers[runnerIndex].hadSafetyAtPitchStart = 1; // Correctness
+			localGameInfo->referee.battingPlayers[runnerIndex].currentSafetyBase = BASE_THIRD;
 
 			localGameInfo->playerInfo[runnerIndex].tPI.location.x =
 			    fieldPositions->thirdBaseRun.x;

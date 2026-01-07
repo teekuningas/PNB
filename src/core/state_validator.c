@@ -1,5 +1,9 @@
 #include "state_validator.h"
 #include <stdio.h>
+#include "base_control.h"
+
+// Global flag to prevent recursive/redundant validation loops if we're already handling a crash
+
 #include <stdlib.h>
 
 static char g_dumpPath[256] = {0};
@@ -98,12 +102,7 @@ static void dump_state(StateInfo* state, const char* reason) {
     fprintf(f, "  ],\n");
     
     // Control Indices (The Truth)
-    fprintf(f, "  \"baseControlIndex\": [%d, %d, %d, %d],\n", 
-        game->pII.baseControlIndex[0],
-        game->pII.baseControlIndex[1],
-        game->pII.baseControlIndex[2],
-        game->pII.baseControlIndex[3]);
-
+        fprintf(f, "  \"batterIndex\": %d,\n", game->pII.batterIndex);
     // Referee State (Logic Internals)
     fprintf(f, "  \"referee\": {\n");
     fprintf(f, "    \"woundingCatchActive\": %s,\n", game->referee.woundingCatchActive ? "true" : "false");
@@ -127,28 +126,34 @@ void StateValidator_Check(StateInfo* state) {
     if (!g_isActive) return;
     
     LocalGameInfo* game = state->localGameInfo;
+
+    // Skip validation if the game is already paused (avoid redundant checks/dumps)
+    if (game->gameControl.pause) return;
     
     // Invariant 1: Unique Base Occupancy (Safe players)
     // Check baseControlIndex vs Player state
     for (int b = 0; b < BASE_COUNT; b++) {
-        int idx = game->pII.baseControlIndex[b];
+        int idx = get_base_controller(game, b);
         if (idx != -1) {
             // Player at this index MUST be at this base
             if (game->playerInfo[idx].bTPI.baseId != (BaseID)b) {
                 printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player is at base %d\n", b, idx, game->playerInfo[idx].bTPI.baseId);
                 dump_state(state, "Base Controller Mismatch");
                 game->gameControl.pause = 1; // Pause game
-                g_isActive = 0; // Stop validating to avoid spam
                 return;
             }
             
             // Player MUST be safe or at bat (if base 0)
-            if (game->playerInfo[idx].bTPI.state != PLAYER_STATE_SAFE_ON_BASE && 
-                game->playerInfo[idx].bTPI.state != PLAYER_STATE_AT_BAT) {
-                 printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player state is %d (not SAFE/AT_BAT)\n", b, idx, game->playerInfo[idx].bTPI.state);
+            // UPDATED JAN 2026: Player can also be RUNNING/LEADING/FREE_WALK from this base while still being controlled by it
+            // as long as they haven't arrived at the next base.
+            if (game->playerInfo[idx].bTPI.state == PLAYER_STATE_OUT ||
+                game->playerInfo[idx].bTPI.state == PLAYER_STATE_WOUNDED ||
+                game->playerInfo[idx].bTPI.state == PLAYER_STATE_SCORED || 
+                game->playerInfo[idx].bTPI.state == PLAYER_STATE_IDLE) {
+                 printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player state is %s (Invalid for controller)\n", 
+                    b, idx, state_to_string(game->playerInfo[idx].bTPI.state));
                  dump_state(state, "Base Controller State Invalid");
                  game->gameControl.pause = 1;
-                 g_isActive = 0;
                  return;
             }
         }
@@ -157,13 +162,12 @@ void StateValidator_Check(StateInfo* state) {
     // Invariant 2: Reverse check (Players vs Control Index)
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         if (game->playerInfo[i].bTPI.state == PLAYER_STATE_SAFE_ON_BASE) {
-            BaseID b = game->playerInfo[i].bTPI.baseId;
-            if (b >= 0 && b < BASE_COUNT) {
-                if (game->pII.baseControlIndex[b] != i) {
-                     printf("\n[STATE ERROR] FATAL: Player %d is SAFE at base %d, but base controller is %d\n", i, b, game->pII.baseControlIndex[b]);
+             int b = game->playerInfo[i].bTPI.baseId;
+             if (b >= 0 && b < BASE_COUNT) {
+                 if (get_base_controller(game, b) != i) {
+                     printf("\n[STATE ERROR] FATAL: Player %d is SAFE at base %d, but base controller is %d\n", i, b, get_base_controller(game, b));
                      dump_state(state, "Safe Player Not Controlling Base");
                      game->gameControl.pause = 1;
-                     g_isActive = 0;
                      return;
                 }
             }

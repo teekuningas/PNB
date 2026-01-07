@@ -28,7 +28,7 @@ static int test_run_of_honor_overtaking_scenario() {
     int runnerA = 0;
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_THIRD;
-    state->localGameInfo->pII.baseControlIndex[3] = runnerA;
+    state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_THIRD;
     set_test_player_state(state, runnerA, PLAYER_STATE_SAFE_ON_BASE);
 
     // Batter B
@@ -36,7 +36,7 @@ static int test_run_of_honor_overtaking_scenario() {
     state->localGameInfo->pII.batterIndex = batterB;
     state->localGameInfo->playerInfo[batterB].bTPI.baseId = BASE_HOME;
     state->localGameInfo->referee.battingPlayers[batterB].baseAtPitchStart = BASE_HOME;
-    state->localGameInfo->pII.baseControlIndex[0] = batterB;
+    state->localGameInfo->referee.battingPlayers[batterB].currentSafetyBase = BASE_HOME;
     set_test_player_state(state, batterB, PLAYER_STATE_AT_BAT);
     
     // Batter B arrives at 3rd base

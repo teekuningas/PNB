@@ -5,6 +5,7 @@
 #include "rng.h"
 #include <stdlib.h> // for rand()
 #include "base_logic.h"
+#include "base_control.h"
 
 // Required local constant (was in action_implementation.c)
 #define ANIMATION_FREQUENCY 3
@@ -189,7 +190,7 @@ void releasePitch(StateInfo* stateInfo)
 				// Determine safety status for snapshot
 				int hasSafety = 0;
 				if (base >= 0 && base < 4) {
-					if (stateInfo->localGameInfo->pII.baseControlIndex[base] == index) {
+					if (get_base_controller(stateInfo->localGameInfo, (BaseID)base) == index) {
 						hasSafety = 1;
 					}
 				}
@@ -218,7 +219,7 @@ void releasePitch(StateInfo* stateInfo)
 
 	for(i = 1; i < BASE_COUNT; i++) {
 		if(stateInfo->localGameInfo->pRAI.willStartRunning[i] == 1) {
-			int index = stateInfo->localGameInfo->pII.baseControlIndex[i];
+			int index = get_base_controller(stateInfo->localGameInfo, (BaseID)i);
 			stateInfo->localGameInfo->pRAI.willStartRunning[i] = 0;
 			if(index != -1) {
 				runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, (BaseID)i);

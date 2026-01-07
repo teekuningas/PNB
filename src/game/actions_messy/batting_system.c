@@ -5,6 +5,7 @@
 #include "actions_pure/batting_physics.h"
 #include <math.h>
 #include "base_logic.h"
+#include "base_control.h"
 
 // Macros moved from action_implementation.c
 #define BATTER_ANGLE_SPEED_CONSTANT 0.02f
@@ -107,7 +108,6 @@ void selectBatter(StateInfo* stateInfo)
 		// set batterIndex
 		stateInfo->localGameInfo->pII.batterIndex = index;
 		// and they are safe on home base
-		stateInfo->localGameInfo->pII.baseControlIndex[0] = index;
 		// cant advance yet
 		stateInfo->localGameInfo->pRAI.batterCanAdvance = 0;
 		// just set default values so that the player can have a fresh start at
@@ -424,7 +424,7 @@ void updateBatting(StateInfo* stateInfo)
 						// move the batter if wanted
 
 						if(stateInfo->localGameInfo->pRAI.willStartRunning[0] == 1) {
-							int index = stateInfo->localGameInfo->pII.baseControlIndex[0];
+							int index = get_base_controller(stateInfo->localGameInfo, BASE_HOME);
 							stateInfo->localGameInfo->pRAI.willStartRunning[0] = 0;
 							if(index != -1) {
 								runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);

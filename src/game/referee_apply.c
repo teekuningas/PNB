@@ -3,6 +3,7 @@
 #include "referee.h"
 #include "base_logic.h"
 #include "common_logic.h" // For movePlayerOut, runToNextBase
+#include "base_control.h"
 
 #include "rules_runs.h"
 
@@ -18,8 +19,8 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 		// Camera logic from checkForOuts
 		if (game->gameFlowState.homeRunCameraCounter == -1 &&
 		        game->cameraState.homeRunCameraFlag == 1 &&
-		        (game->pII.baseControlIndex[3] == -1 ||
-		         game->playerInfo[game->pII.baseControlIndex[3]].bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
+		        (get_base_controller(game, BASE_THIRD) == -1 ||
+		         game->playerInfo[get_base_controller(game, BASE_THIRD)].bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
 			game->gameFlowState.homeRunCameraCounter = 0;
 		}
 	}
@@ -60,10 +61,6 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 
 		// B. Remove Safety
 		if (pd->removeSafety) {
-			int baseIdx = base_to_int_index(pd->safetyToRemove);
-			if (baseIdx != -1) {
-				game->pII.baseControlIndex[baseIdx] = -1;
-			}
 			game->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
 
 			// If batter, lose batter status
@@ -85,6 +82,9 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			game->playerCounters.battingTeamPlayersOnFieldCount--;
 
 			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+			
+			// Critical Fix: Clear baseAtPitchStart so this player isn't resurrected by foulPlay
+			game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
 
 			// Ensure safety is removed (redundant but safe)
 			// Referee probably set removeSafety=1 too, but let's be sure.
@@ -97,10 +97,10 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
 				game->playerRuntime[i].hasMadeRunOnThirdBase = 1;
 			}
-
+			
 			stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
 			game->gameState.runsInTheInning += 1;
-
+			
 			if (game->gameState.runsInTheInning % 2 == 0) {
 				game->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 				if (game->playerInfo[i].bTPI.baseId == BASE_NONE) { // If home run (no base)? No wait.
@@ -109,17 +109,20 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 					// Legacy: if(playerInfo[index].bTPI.baseId == BASE_NONE) noMorePlayers = 0;
 				}
 			}
-
+			
 			// Cleanup player if they scored normally (at Home Scored)
 			if (game->playerInfo[i].bTPI.baseId == BASE_HOME_SCORED) {
 				game->playerCounters.battingTeamPlayersOnFieldCount--;
 				game->playerInfo[i].bTPI.baseId = BASE_NONE;
+				
+				// Critical Fix: Clear baseAtPitchStart for scored players too
+				game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
+
 				if (game->gameState.runsInTheInning % 2 == 0) {
 					game->playerCounters.noMorePlayers = 0;
 				}
 				// Remove 3rd base safety (Legacy: if(baseControlIndex[3] == index) ...)
-				if (game->pII.baseControlIndex[3] == i) {
-					game->pII.baseControlIndex[3] = -1;
+				if (get_base_controller(game, BASE_THIRD) == i) {
 				}
 			}
 		}

@@ -5,6 +5,7 @@
 #include "base_logic.h"
 #include "geometry.h"
 #include "vector_math.h"
+#include "base_control.h"
 
 #define BASE_RADIUS 2.0f
 #define HOME_RADIUS 6.0f
@@ -119,7 +120,7 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 
 			int is_actually_safe = 0;
 			int base_idx = base_to_int_index(player->bTPI.baseId);
-			if (base_idx != -1 && game->pII.baseControlIndex[base_idx] == i && player_is_protected(player->bTPI.state)) {
+			if (base_idx != -1 && get_base_controller(game, (BaseID)base_idx) == i && player_is_protected(player->bTPI.state)) {
 				is_actually_safe = 1;
 			}
 
@@ -135,7 +136,7 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 				decisions.eventOut = 1;
 
 				// Side effect: Remove safety from previous base
-				if (base_idx != -1 && game->pII.baseControlIndex[base_idx] == i) {
+				if (base_idx != -1 && get_base_controller(game, (BaseID)base_idx) == i) {
 					decisions.playerDecisions[i].removeSafety = 1;
 					decisions.playerDecisions[i].safetyToRemove = (BaseID)base_idx;
 				}
@@ -148,7 +149,6 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			// "remove safety from last base... happens if player is out of base and ball arrives the previous one."
 			// Wait, let's look at `checkForOuts` again.
 			/*
-				if(stateInfo->localGameInfo->pII.baseControlIndex[i] == index) {
 					if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE) &&
 							(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT)) {
 						// runToNextBase...
@@ -164,7 +164,7 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			int safetyIndex = -1;
 			// Find which base this player holds safety for (if any)
 			for (int b = 0; b < BASE_COUNT; b++) {
-				if (game->pII.baseControlIndex[b] == i) {
+				if (get_base_controller(game, (BaseID)b) == i) {
 					safetyIndex = b;
 					break;
 				}
@@ -244,8 +244,8 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 						// §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
 						// If base is 3rd (Run of Honor) and 3rd is occupied by someone else...
 						if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-							if (game->pII.baseControlIndex[3] != -1 &&
-							        game->pII.baseControlIndex[3] != i) {
+							if (get_base_controller(game, BASE_THIRD) != -1 &&
+							        get_base_controller(game, BASE_THIRD) != i) {
 								// Overtaking! The RUNNER (i) is removed/out?
 								// Logic in legacy: "kunniajuoksun tehnyt pelaaja... siirtyy kotipuolelle"
 								// Legacy code removed player 'i'.

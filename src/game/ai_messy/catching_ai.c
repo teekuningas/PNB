@@ -7,6 +7,7 @@
 #include "catching_ai_strategy.h"
 #include "rng.h"
 #include "base_logic.h"
+#include "base_control.h"
 
 void initCatchingAI(AIState* aiState)
 {
@@ -168,8 +169,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	// if someone has ball
 	if(stateInfo->localGameInfo->pII.hasBallIndex != -1) {
-		int index3 = stateInfo->localGameInfo->pII.baseControlIndex[3];
-		int index2 = stateInfo->localGameInfo->pII.baseControlIndex[2];
+		int index3 = get_base_controller(stateInfo->localGameInfo, (BaseID)3);
+		int index2 = get_base_controller(stateInfo->localGameInfo, (BaseID)2);
 
 		BaseID r3BaseAtPitchStart = BASE_NONE;
 		int r3IsOnBase = 0;

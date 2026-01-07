@@ -20,7 +20,6 @@ static void setup_tuplahaava_scenario(StateInfo* state) {
     int runnerB = 1;
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[runnerB].baseAtPitchStart = BASE_SECOND;
-    state->localGameInfo->pII.baseControlIndex[2] = runnerB;
     state->localGameInfo->referee.battingPlayers[runnerB].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerB].currentSafetyBase = BASE_SECOND;
     set_test_player_state(state, runnerB, PLAYER_STATE_SAFE_ON_BASE);
@@ -29,7 +28,6 @@ static void setup_tuplahaava_scenario(StateInfo* state) {
     int runnerA = 0;
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_FIRST;
-    state->localGameInfo->pII.baseControlIndex[1] = runnerA;
     state->localGameInfo->referee.battingPlayers[runnerA].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_FIRST;
     
@@ -109,7 +107,8 @@ static int test_tuplahaava_collision_if_leading_scenario() {
     // Runner B on 2nd (Index 1) - LEADING
     int runnerB = 1;
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_SECOND;
-    state->localGameInfo->pII.baseControlIndex[2] = runnerB;
+    // CRITICAL: Update Referee State for get_base_controller
+    state->localGameInfo->referee.battingPlayers[runnerB].currentSafetyBase = BASE_SECOND;
     set_test_player_state(state, runnerB, PLAYER_STATE_LEADING);
 
     // Runner A on 1st (Index 0) - Pending Wound

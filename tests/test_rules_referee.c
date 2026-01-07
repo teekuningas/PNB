@@ -81,7 +81,7 @@ void test_referee_safe_runner_not_out(void) {
 	int runnerIdx = 0;
 	state->localGameInfo->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
 	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Protected
-	state->localGameInfo->pII.baseControlIndex[1] = runnerIdx;
+	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 	
 	RefereeDecisions decisions = Referee_Analyze(state);
 	

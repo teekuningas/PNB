@@ -30,7 +30,6 @@ static int test_foul_play_returns_runner_to_base() {
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[runnerA].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_FIRST;
-    state->localGameInfo->pII.baseControlIndex[1] = runnerA;
     set_test_player_state(state, runnerA, PLAYER_STATE_SAFE_ON_BASE);
 
     // Runner A moves towards 2nd
@@ -77,7 +76,6 @@ static int test_foul_play_third_strike_out() {
     state->localGameInfo->referee.battingPlayers[batter].baseAtPitchStart = BASE_HOME;
     state->localGameInfo->referee.battingPlayers[batter].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[batter].currentSafetyBase = BASE_HOME;
-    state->localGameInfo->pII.baseControlIndex[0] = batter;
 
     // 3 strikes (logic checks if strikes == 3)
     // Wait, in game_analysis.c: "else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) { if(stateInfo->localGameInfo->gameState.strikes == 3) {"

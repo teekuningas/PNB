@@ -27,7 +27,7 @@ void test_fielder_out_of_bounds_awards_free_walk(void)
 	int runnerIdx = 0;
 	game->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
 	game->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
-	game->pII.baseControlIndex[1] = runnerIdx;
+	game->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 
 	// Setup: Place a fielder (Catching Team Player) OUT OF BOUNDS
 	// Valid X is [FIELD_LEFT, FIELD_RIGHT]. Let's put them way left.

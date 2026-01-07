@@ -11,6 +11,7 @@
 #include "rules_runs.h"
 #include "rules_strikes.h"
 #include "base_logic.h"
+#include "base_control.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -139,11 +140,10 @@ static void strikesAndBalls(StateInfo* stateInfo)
 	if(should_change_batter_on_strikes(&(stateInfo->localGameInfo->gameState))) {
 		// We restore automatic force running to resolve control ambiguity.
 		// The batter is now "forced" to run by the rules.
-		if(stateInfo->localGameInfo->pII.baseControlIndex[0] != -1) {
-			int index = stateInfo->localGameInfo->pII.baseControlIndex[0];
+		int index = get_base_controller(stateInfo->localGameInfo, BASE_HOME);
+		if(index != -1) {
 			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);
 			// Remove safety from home base
-			stateInfo->localGameInfo->pII.baseControlIndex[0] = -1;
 		}
 
 		// Reset strikes so this doesn't re-trigger every frame
@@ -244,7 +244,6 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
 					if(stateInfo->localGameInfo->playerRuntime[index].woundedApply == 1) {
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
-						int base_idx = base_to_int_index(baseId);
 
 						// info to screen.
 						stateInfo->localGameInfo->gameState.event = EVENT_WOUNDED;
@@ -255,11 +254,6 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// woundingSourceBase was already snapshotted at catch moment
 						stateInfo->localGameInfo->referee.battingPlayers[index].baseAtLastEvent = baseId;
 						stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
-
-						// Remove safety from current base (Sync)
-						if(base_idx != -1 && stateInfo->localGameInfo->pII.baseControlIndex[base_idx] == index) {
-							stateInfo->localGameInfo->pII.baseControlIndex[base_idx] = -1;
-						}
 
 						// Make sure they're running toward next base to try to avoid OUT
 						// If they were LEADING, this forces them to run
@@ -382,19 +376,16 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							    stateInfo->fieldPositions->firstBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->firstBaseRun.z;
-							stateInfo->localGameInfo->pII.baseControlIndex[1] = index;
 						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.x =
 							    stateInfo->fieldPositions->secondBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->secondBaseRun.z;
-							stateInfo->localGameInfo->pII.baseControlIndex[2] = index;
 						} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD) {
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.x =
 							    stateInfo->fieldPositions->thirdBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->thirdBaseRun.z;
-							stateInfo->localGameInfo->pII.baseControlIndex[3] = index;
 						}
 					}
 				}
@@ -572,7 +563,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - batterIndex == -1 and ball is at home( and player can make no run of honor ). after three strikes this happens automatically.
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
-		int runnerAtThirdIndex = stateInfo->localGameInfo->pII.baseControlIndex[3];
+		int runnerAtThirdIndex = get_base_controller(stateInfo->localGameInfo, BASE_THIRD);
 		if((stateInfo->localGameInfo->gameState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
 		        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        (runnerAtThirdIndex == -1 &&

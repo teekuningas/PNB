@@ -4,6 +4,7 @@ main
 test_runner
 integration_runner
 *.orig
+*.json
 
 # Devenv
 .devenv*

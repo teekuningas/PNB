@@ -18,4 +18,10 @@
  */
 RefereeDecisions Referee_Analyze(const StateInfo* stateInfo);
 
+/**
+ * @brief Initializes the RefereeState structure.
+ * Sets all bases to BASE_NONE (-1) instead of 0.
+ */
+void initializeRefereeState(RefereeState* referee);
+
 #endif // REFEREE_H
