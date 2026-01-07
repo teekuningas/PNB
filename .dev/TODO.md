@@ -1,46 +1,55 @@
 # TODO - Pending Tasks
 
+## 🚧 Milestone 15: Action System Decoupling (CURRENT)
+
+**Goal:** Apply the Query/Apply pattern to action system (same as referee)
+
+### Phase 1: Audit actions_messy/ (NEXT)
+- [ ] Audit `batting_system.c` (473 LOC) - identify pure calculations
+- [ ] Audit `pitching_system.c` (385 LOC) - identify pure calculations
+- [ ] Audit `throwing_system.c` (250 LOC) - identify pure calculations
+- [ ] Document: what can be pure? what must mutate state?
+
+### Phase 2: Action Implementation (PENDING)
+- [ ] Create `ActionDecisions` struct (similar to `RefereeDecisions`)
+- [ ] Move pure logic to `actions_pure/` or create new files
+- [ ] Create `Action_Apply()` functions for state mutation
+- [ ] Update coordinators to call Analyze → Apply
+
+### Phase 3: Testing (PENDING)
+- [ ] Create unit tests for pure action logic
+- [ ] Verify integration tests still pass
+- [ ] Run `make test && make integration_test`
+
+---
+
 ## ✅ Milestone 14: The Great Decoupling (COMPLETE)
 
-**Goal:** Split "messy" coordinators into Pure Logic (Query) and State Mutation (Apply).
+### Phase 1: Game Analysis Split ✅
+- [x] Created `rules_pure/referee.c` with pure `Referee_Analyze`
+- [x] Created `referee_apply.c` with `Referee_Apply`
+- [x] Created `RefereeDecisions` struct
 
-### Phase 1: Game Analysis Split (COMPLETE)
-- [x] Create `src/game/rules_pure/referee.h` and `.c` to house the pure `Referee_Analyze` function.
-- [x] Refactor `game_analysis.c` to use `Referee_Analyze` + `Referee_Apply`.
-- [x] Create `RefereeDecisions` struct in `globals.h` to capture the output of analysis (outs, runs, wounds).
+### Phase 2: State Validation ✅
+- [x] Created `state_validator.c` with invariant checks
+- [x] Eliminated `baseControlIndex` → `currentSafetyBase`
+- [x] JSON dump on validation failure
 
-### Phase 2: Action Implementation Split (PENDING)
-- [ ] Audit `action_implementation.c` to identify pure physics calculations.
-- [ ] Move pure physics into `src/game/actions_pure/` or `src/physics/`.
-- [ ] Create `PhysicsParams` struct to pass data between pure calculations and application.
-
-### Phase 3: Rule Logic Implementation (New Findings)
-- [ ] **Implement §31 (Fielder Positioning):**
-    - [ ] Create `rules_pure/positioning_rules.c`.
-    - [ ] Implement `check_fielder_positions(StateInfo)` to verify bounds.
-    - [ ] Hook into `pitching_system.c` to trigger Free Walk if violated.
-    - [ ] Enable `tests/integration/test_scenario_fielder_positioning.c`.
-
-### Phase 4: State Validation (COMPLETE)
-- [x] Create `src/core/state_validator.c` and `.h`.
-- [x] Implement `validate_game_state(StateInfo*)`.
-    - [x] Check unique bases (no two players on same base).
-    - [x] Check `baseControlIndex` consistency.
-- [x] Implement `dump_game_state_to_json(StateInfo*, const char* filename)`.
-- [x] Hook validator into `gameAnalysis` debug/test builds via `--debug-state` flag.
-
-### Phase 5: Verification (COMPLETE)
-- [x] Create `tests/test_rules_referee.c` to unit test the new `Referee_Analyze` function with mock states.
-- [x] Verify that `make test` and `make main` still pass.
+### Phase 3: Verification ✅
+- [x] Created `test_rules_referee.c`
+- [x] 67 tests passing (53 unit + 14 integration)
 
 ---
 
 ## 📅 Upcoming Milestones
 
-### Milestone 15: The "User Intent" Phase
-- **Goal:** Decouple Input from Action.
-- **Concept:** Input generates an `Intent` (e.g., `INTENT_SWING_BAT`). The Engine consumes `Intent`.
+### Milestone 16: User Intent Phase
+- Decouple input from execution
+- Create Intent structs
 
-### Milestone 16: Comprehensive Rule Verification
-- **Goal:** 100% Audit of `docs/SAANNOT.md`.
-- **Method:** Create `test_scenario_*.c` for every major rule section.
+### Milestone 17: Comprehensive Rule Verification
+- 100% audit of SAANNOT.md
+- Implement §31 (Fielder Positioning)
+
+### Milestone 18: Full Functional Pipeline
+- Linear game loop: Input → Intent → Physics → Referee → Apply → Render
