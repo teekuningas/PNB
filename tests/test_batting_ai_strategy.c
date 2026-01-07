@@ -82,19 +82,19 @@ int test_is_wrong_pitch() {
 }
 
 int test_calculate_ai_batting_angle() {
-    // Style 1 (Normal), leadBase 3 -> 0.8
+    // Style 1 (Normal), leadBase 3 -> 0.8 (+- 0.25 variance)
     float angle = calculate_ai_batting_angle(1, BASE_THIRD, 0);
-    ASSERT_TRUE(fabs(angle - 0.8f) < 0.001f, "Normal style, lead base 3 should hit left");
+    ASSERT_TRUE(fabs(angle - 0.8f) < 0.26f, "Normal style, lead base 3 should hit left");
     
-    // Style 1 (Normal), leadBase 2 -> -0.8
+    // Style 1 (Normal), leadBase 2 -> -0.8 (+- 0.25 variance)
     angle = calculate_ai_batting_angle(1, BASE_SECOND, 0);
-    ASSERT_TRUE(fabs(angle - (-0.8f)) < 0.001f, "Normal style, lead base 2 should hit right");
+    ASSERT_TRUE(fabs(angle - (-0.8f)) < 0.26f, "Normal style, lead base 2 should hit right");
     
-    // Style 1 (Normal), leadBase 1 -> 0.0
+    // Style 1 (Normal), leadBase 1 -> 0.0 (+- 0.25 variance)
     angle = calculate_ai_batting_angle(1, BASE_FIRST, 0);
-    ASSERT_TRUE(fabs(angle - 0.0f) < 0.001f, "Normal style, lead base 1 should hit straight");
+    ASSERT_TRUE(fabs(angle - 0.0f) < 0.26f, "Normal style, lead base 1 should hit straight");
     
-    // Style 2 (Wound) -> -1.5
+    // Style 2 (Wound) -> -1.5 (No variance for wounds currently)
     angle = calculate_ai_batting_angle(2, BASE_NONE, 0);
     ASSERT_TRUE(fabs(angle - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
     

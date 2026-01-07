@@ -434,8 +434,10 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					for(j = 1; j < BASE_COUNT; j++) {
 						if(base_to_int_index(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId) == j) {
 							// arrived to base
-							// if we were taking a free walk, we stop it now
-							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+							// if we were taking a free walk, we stop it now, BUT only if we aren't wounded/out
+							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY &&
+							        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
+							        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
 								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
 							}
 

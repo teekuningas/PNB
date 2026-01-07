@@ -510,6 +510,13 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 		int index = i;
 		if(localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE && localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
 			BaseID currentBaseId = localGameInfo->playerInfo[index].bTPI.baseId;
+
+			// SANITY CHECK: If player is at HOME base, they MUST be the active batter.
+			if (currentBaseId == BASE_HOME && index != localGameInfo->pII.batterIndex) {
+				printf("[CRITICAL LOGIC ERROR] Ghost Runner detected! Player %d is at BASE_HOME but batterIndex is %d. Ignoring.\n", index, localGameInfo->pII.batterIndex);
+				continue;
+			}
+
 			// Use base_cmp to compare bases semantically (replaces >=)
 			if(base_cmp(currentBaseId, maxBaseId) >= 0) {
 				if(currentBaseId == maxBaseId) {
