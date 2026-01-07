@@ -79,10 +79,9 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
 			game->gameState.outs += 1;
 			game->playerInfo[i].bTPI.baseId = BASE_NONE;
-			game->playerCounters.battingTeamPlayersOnFieldCount--;
 
 			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
-			
+
 			// Critical Fix: Clear baseAtPitchStart so this player isn't resurrected by foulPlay
 			game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
 
@@ -97,10 +96,10 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
 				game->playerRuntime[i].hasMadeRunOnThirdBase = 1;
 			}
-			
+
 			stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
 			game->gameState.runsInTheInning += 1;
-			
+
 			if (game->gameState.runsInTheInning % 2 == 0) {
 				game->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 				if (game->playerInfo[i].bTPI.baseId == BASE_NONE) { // If home run (no base)? No wait.
@@ -109,13 +108,18 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 					// Legacy: if(playerInfo[index].bTPI.baseId == BASE_NONE) noMorePlayers = 0;
 				}
 			}
-			
+
 			// Cleanup player if they scored normally (at Home Scored)
+
 			if (game->playerInfo[i].bTPI.baseId == BASE_HOME_SCORED) {
-				game->playerCounters.battingTeamPlayersOnFieldCount--;
+
 				game->playerInfo[i].bTPI.baseId = BASE_NONE;
-				
+
+
+
 				// Critical Fix: Clear baseAtPitchStart for scored players too
+
+
 				game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
 
 				if (game->gameState.runsInTheInning % 2 == 0) {

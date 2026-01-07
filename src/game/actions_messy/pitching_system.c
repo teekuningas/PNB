@@ -163,6 +163,10 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->localGameInfo->aiState.aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
 	stateInfo->localGameInfo->cameraState.homeRunCameraFlag = 0;
+	// Store the strikes count at the moment the pitch is released.
+	// This is critical for foul play logic to know if the batter had 2 strikes (and thus is out on foul).
+	stateInfo->localGameInfo->referee.strikesAtPitchStart = stateInfo->localGameInfo->gameState.strikes;
+
 	// always when pitch reaches the stage of ball going to air, we update baserunners'
 	// original bases to their current bases, so that we can make decisions about
 	// foul plays and wounds etc.
@@ -347,9 +351,10 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 						stateInfo->localGameInfo->aiState.pitchStage = 1;
 						stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_START;
 
+						int onFieldCount = count_active_batting_players(stateInfo->localGameInfo->playerInfo);
 						calculate_ai_pitch_targets(
 						    rand1, rand2, rand3,
-						    &(stateInfo->localGameInfo->playerCounters),
+						    onFieldCount,
 						    &(stateInfo->localGameInfo->gameState),
 						    ANIMATION_FREQUENCY,
 						    &(stateInfo->localGameInfo->aiState.pitchFirstLimit),

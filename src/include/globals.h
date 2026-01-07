@@ -348,6 +348,7 @@ typedef struct _RefereeState {
 	// Global events
 	int woundingCatchActive;       // Fly ball was caught (pending timer)
 	int foulPlayActive;            // Out of bounds situation
+	int strikesAtPitchStart;       // Snapshot of strikes when pitch started
 
 } RefereeState;
 
@@ -555,7 +556,6 @@ typedef struct _UIState {
 } UIState;
 
 typedef struct _PlayerCounters {
-	int battingTeamPlayersOnFieldCount;
 	int nonJokerPlayersLeft;
 	int jokersLeft;
 	int noMorePlayers;

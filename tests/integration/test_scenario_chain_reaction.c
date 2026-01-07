@@ -57,8 +57,6 @@ static int test_ajolahto_force_out_at_second_scenario() {
     state->localGameInfo->referee.battingPlayers[batter].baseAtPitchStart = BASE_HOME;
     state->localGameInfo->referee.battingPlayers[batter].currentSafetyBase = BASE_HOME;
     
-    state->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 4;
-
     // Simulate a hit
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
@@ -104,8 +102,6 @@ static int test_no_force_chain_scenario() {
     state->localGameInfo->playerInfo[batter].bTPI.baseId = BASE_HOME;
     state->localGameInfo->referee.battingPlayers[batter].currentSafetyBase = BASE_HOME;
     
-    state->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 2;
-
     // Simulate a hit
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;

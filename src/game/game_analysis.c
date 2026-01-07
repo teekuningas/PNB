@@ -100,7 +100,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 		// there have to be a player available
 		if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft + stateInfo->localGameInfo->playerCounters.jokersLeft > 0) {
 			// have to check that there is only three players in the field too and that it is not a out of bounds situation.
-			if(stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount < BASE_COUNT && stateInfo->localGameInfo->gameState.outOfBounds == 0) {
+			if(count_active_batting_players(stateInfo->localGameInfo->playerInfo) < BASE_COUNT && stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
 				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameControl.firstCatchMade == 1) {
@@ -153,7 +153,7 @@ static void strikesAndBalls(StateInfo* stateInfo)
 	// the ball happens. if player moves to next base and user after that decides to make the free walk
 	// that wont have any effect.
 	if(stateInfo->localGameInfo->gameControl.freeWalkCalculationMade == 0) {
-		if(stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount == 1) {
+		if(count_active_batting_players(stateInfo->localGameInfo->playerInfo) == 1) {
 			// if only one player on the field, thats the batter, and then free walks can be made after one pitch.
 			if(stateInfo->localGameInfo->gameState.balls >= 1) {
 				// calculate the index and the base.
@@ -347,7 +347,6 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
 							// and remove player from the field.
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
-							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							// always when two runs is got, we will get a new round of batters.
 							if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
 								stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
@@ -355,16 +354,26 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 						}
 						// if this player is a batter
 						else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
-							if(stateInfo->localGameInfo->gameState.strikes == 3) {
-								// if out of bounds follows his third strike, we well get a out.
+							// Check if this foul results in a 3rd strike using the snapshot from pitch start.
+							// This avoids the race condition where strikesAndBalls might have already reset the counter.
+							if(stateInfo->localGameInfo->referee.strikesAtPitchStart == 2) {
+								// It was 2 strikes, this foul is the 3rd -> OUT.
+								stateInfo->localGameInfo->gameState.strikes = 3; // Ensure it's visually 3 (though about to be reset by out)
 								stateInfo->localGameInfo->gameState.outs += 1;
 								// remove from the field.
 								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
-								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
+								// Player is OUT, so they lose safety rights to the base.
+								stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
+								// Clear pitch start snapshot so they aren't resurrected by future foul plays
+								stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_NONE;
+
 								// new batter needed.
 								stateInfo->localGameInfo->pII.batterIndex = -1;
 							} else {
 								// otherwise, this player will continue batting.
+								// Restore strikes to (start + 1) because this foul counts as a strike.
+								stateInfo->localGameInfo->gameState.strikes = stateInfo->localGameInfo->referee.strikesAtPitchStart + 1;
+
 								stateInfo->localGameInfo->pII.batterIndex = index;
 								// preparing left to function that will do it just fine.
 								prepareBatter(stateInfo->localGameInfo);

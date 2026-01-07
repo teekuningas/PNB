@@ -94,7 +94,6 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->localGameInfo->aF.bTAF.chooseBatter = CHOOSE_BATTER_IDLE;
 
 		// new batting team player on the field.
-		stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount++;
 		// has base of zero, is on base and original base is zero too.
 		stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_HOME;
 		stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;

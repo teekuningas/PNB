@@ -1,6 +1,7 @@
 #include "base_control.h"
 
-int get_base_controller(const LocalGameInfo* game, BaseID base) {
+int get_base_controller(const LocalGameInfo* game, BaseID base)
+{
 	if (base < 0 || base >= BASE_COUNT) return -1;
 
 	// Iterate through all players to find who claims safety at this base.

@@ -80,4 +80,11 @@ bool player_is_protected(PlayerUnitState state);
  */
 bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID original_base);
 
+/**
+ * Counts the number of batting team players currently active on the field.
+ * Active means having a base assignment (baseId != BASE_NONE).
+ * This replaces the legacy tracking variable 'battingTeamPlayersOnFieldCount'.
+ */
+int count_active_batting_players(const PlayerInfo* players);
+
 #endif

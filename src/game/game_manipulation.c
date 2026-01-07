@@ -371,7 +371,6 @@ static void processPendingWounds(StateInfo* stateInfo)
 					stateInfo->localGameInfo->referee.battingPlayers[index].hasPendingWound = 0;
 
 					// Apply consequences immediately
-					stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 					stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 					movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
@@ -379,10 +378,10 @@ static void processPendingWounds(StateInfo* stateInfo)
 					int j = base_to_int_index(currentBase);
 					if (j >= 1 && j < BASE_COUNT) {
 						int targetPlayerIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)j);
-						
+
 						// If there is a player who currently holds safety rights to this base:
 						if(targetPlayerIndex != -1 && targetPlayerIndex != index) {
-							
+
 							// Apply double wound to the occupant
 							if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_WOUNDED &&
 							        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_OUT) {
@@ -396,7 +395,6 @@ static void processPendingWounds(StateInfo* stateInfo)
 								if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 								        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
 
-									stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 									stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
 									stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.baseId = BASE_NONE;
 									movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
@@ -451,7 +449,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							// if we were wounded we must be removed out of the field and
 							// also basemen already on the base must be removed as they get wounded too.
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
-								stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 								movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
@@ -476,7 +473,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
 										        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
 
-											stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
 											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.baseId = BASE_NONE;
 											movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
@@ -554,7 +550,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						} else {
 							// if was 0, we just remove this player from field.
 							// if it wasnt 0, player will be removed afterwards.
-							stateInfo->localGameInfo->playerCounters.battingTeamPlayersOnFieldCount--;
 							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 						}
 

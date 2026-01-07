@@ -5,7 +5,7 @@
 
 /**
  * @brief Determines which player currently "controls" (is safe at) a given base.
- * 
+ *
  * This is the SINGLE SOURCE OF TRUTH for base ownership.
  * It derives ownership from the RefereeState (currentSafetyBase).
  *

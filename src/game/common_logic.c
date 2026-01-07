@@ -862,7 +862,6 @@ void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* gl
 	localGameInfo->gameState.strikes = 0;
 	localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 	localGameInfo->playerCounters.jokersLeft = 3;
-	localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 0;
 	localGameInfo->gameState.runsInTheInning = 0;
 	localGameInfo->pII.batterSelectionIndex =
 	    globalGameInfo->teams[battingTeamIndex].batterOrder[globalGameInfo->teams[battingTeamIndex].batterOrderIndex];
@@ -908,7 +907,6 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		                  batterRunnerIndices[1][localGameInfo->gameModeState.runnerBatterPairCounter];
 		int batterIndex = globalGameInfo->teams[battingTeamIndex].
 		                  batterRunnerIndices[0][localGameInfo->gameModeState.runnerBatterPairCounter];
-		localGameInfo->playerCounters.battingTeamPlayersOnFieldCount = 2;
 		// batter
 		if(batterIndex != -1) {
 			localGameInfo->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
@@ -990,6 +988,7 @@ void initializeRefereeState(RefereeState* referee)
 	}
 	referee->woundingCatchActive = 0;
 	referee->foulPlayActive = 0;
+	referee->strikesAtPitchStart = 0;
 }
 
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)

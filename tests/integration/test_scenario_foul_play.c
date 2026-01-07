@@ -80,6 +80,8 @@ static int test_foul_play_third_strike_out() {
     // 3 strikes (logic checks if strikes == 3)
     // Wait, in game_analysis.c: "else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) { if(stateInfo->localGameInfo->gameState.strikes == 3) {"
     state->localGameInfo->gameState.strikes = 3;
+    // Set snapshot to 2, simulating that we started with 2 strikes and this foul made it 3.
+    state->localGameInfo->referee.strikesAtPitchStart = 2;
 
     // Trigger Foul Play
     state->localGameInfo->gameState.outOfBounds = 1;
