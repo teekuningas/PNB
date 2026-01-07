@@ -9,6 +9,7 @@
 #include "test_rules_runs.h"
 #include "test_rules_strikes.h"
 #include "test_collision.h"
+#include "test_rules_referee.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -168,6 +169,9 @@ int main(int argc, char* argv[]) {
 
 	// Rules Strikes tests
 	run_rules_strikes_tests();
+
+	// Referee tests (Milestone 14)
+	run_referee_tests();
 	
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

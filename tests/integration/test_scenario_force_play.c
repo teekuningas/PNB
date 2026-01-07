@@ -38,15 +38,12 @@ game->pII.baseControlIndex[1] = r1;
 
 	// Batter (Player 3) hits a grounder and runs to 1st
 	int batter = 3;
-game->playerInfo[batter].bTPI.state = PLAYER_STATE_RUNNING;
+	game->playerInfo[batter].bTPI.state = PLAYER_STATE_RUNNING; 
 	// Batter is "forcing" the others because they are essentially displacing them.
 	// In the code, `is_runner_forced_out` checks if the previous base is occupied/claimed.
 
-	printf("Testing Force Out at 2nd Base...\n");
-
 	/* 
-	 * Scenario 1: Ball arrives at 2nd Base BEFORE Runner 1 gets there.
-	 * Runner 1 is forced to run because Batter is coming to 1st (implicitly).
+	 * Scenario 1: Ball arrives at 2nd Base BEFORE Runner 1 gets there.	 * Runner 1 is forced to run because Batter is coming to 1st (implicitly).
 	 * Actually, the logic usually checks: "Is the player safe? No. Is the previous base occupied? Yes."
 	 */
 
@@ -102,15 +99,12 @@ game->playerInfo[batter].bTPI.state = PLAYER_STATE_RUNNING;
 		
 		// In a normal force play, if the ball beats the runner to the base, they are OUT.
 		// `is_runner_forced_out` logic:
-		// If player_base == ball_at_base_index -> TRUE.
-		
-		assert(is_out == 1);
-		
-		printf("Force Out confirmed: Runner heading to 2nd (baseId=1) is OUT if ball arrives at 2nd (checking against base 1).\n");
-	
-		/*
-		 * Scenario 2: Runner 1 is Safe at 2nd (arrived before ball).
-		 * Then Ball arrives at 1st Base (behind him).
+			// If player_base == ball_at_base_index -> TRUE.
+			
+			assert(is_out == 1);
+			
+			/*
+			 * Scenario 2: Runner 1 is Safe at 2nd (arrived before ball).		 * Then Ball arrives at 1st Base (behind him).
 		 * Is he safe? Yes.
 		 */
 		game->playerInfo[r1].bTPI.baseId = BASE_SECOND; // Arrived!
@@ -121,11 +115,17 @@ game->playerInfo[batter].bTPI.state = PLAYER_STATE_RUNNING;
 		// ball_at_base_index = i - 1 = BASE_HOME.
 		// Call: is_runner_forced_out(BASE_SECOND, 1, BASE_HOME, 0, gs);
 		
-		is_out = is_runner_forced_out(BASE_SECOND, 1, BASE_HOME, 0, gs);
-		assert(is_out == 0);
-		printf("Safety confirmed: Runner safe at 2nd is NOT OUT if ball arrives at 1st.\n");
-	/*
-	 * Scenario 3: The "Push" (Force from behind).
+			
+		
+			is_out = is_runner_forced_out(BASE_SECOND, 1, BASE_HOME, 0, gs);
+		
+			assert(is_out == 0);
+		
+		
+		
+			/*
+		
+			 * Scenario 3: The "Push" (Force from behind).
 	 * If Runner 1 is at 1st Base (Safe).
 	 * Batter hits grounder.
 	 * Ball goes to 2nd Base.

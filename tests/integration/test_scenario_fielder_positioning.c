@@ -51,8 +51,6 @@ void test_fielder_out_of_bounds_awards_free_walk(void)
 	// 1. A flag like 'illegalPosition' to be detected.
 	// 2. A free walk to be awarded (runner advances to 2).
 	
-	printf("Running Fielder Positioning Check...\n");
-	
 	// Since we know the code is MISSING, we can't really "call" it.
 	// Instead, we will simulate what SHOULD happen if we implemented a checker function.
 	

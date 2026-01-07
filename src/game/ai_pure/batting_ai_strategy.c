@@ -160,7 +160,7 @@ float calculate_ai_batting_angle(int battingStyle, BaseID leadBase, int randomVa
 
 	if (battingStyle == 0) { // Bunt
 		angle = (randomValue % 100 < 50) ? 0.5f : -0.5f;
-		angle += variance; 
+		angle += variance;
 	} else if (battingStyle == 1) { // Normal
 		if (leadBase == BASE_THIRD) {
 			angle = 0.8f; // Hit to left field

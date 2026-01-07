@@ -110,8 +110,8 @@ static int test_no_force_chain_scenario() {
     state->localGameInfo->pRAI.batHit = 1;
     state->localGameInfo->ballInfo.moving = 1;
     
-    // Runner 2 leads
-    set_test_player_state(state, r2, PLAYER_STATE_RUNNING);
+    // Runner 2 stays safe (not forced to run)
+    set_test_player_state(state, r2, PLAYER_STATE_SAFE_ON_BASE);
     set_test_player_state(state, batter, PLAYER_STATE_RUNNING);
 
     // Ball reaches Third Base (i=3)
