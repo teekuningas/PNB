@@ -11,6 +11,7 @@
 #include "font.h"
 #include "game_screen.h"
 #include "common_logic.h"
+#include "state_validator.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f  // Midpoint between original -0.12 and current 0.08
@@ -127,6 +128,9 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 
 	// and here will a lot of logic code.
 	updateMutableWorld(stateInfo, menuInfo, rng_seed);
+
+	// Validate state consistency (Debug only)
+	StateValidator_Check(stateInfo);
 
 }
 

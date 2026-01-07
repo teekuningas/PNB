@@ -12,6 +12,7 @@
 #include "fixtures.h"
 #include "common_logic.h"
 #include "cup.h"
+#include "state_validator.h"
 
 static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
 static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
@@ -60,6 +61,11 @@ int main ( int argc, char *argv[] )
 		}
 		if(strcmp(argv[i], "--no-sound") == 0) {
 			soundEnabled = 0;
+		}
+		if(strcmp(argv[i], "--debug-state") == 0 && i + 1 < argc) {
+			StateValidator_Init(argv[i+1]);
+			printf("State Validation ENABLED. Output: %s\n", argv[i+1]);
+			i++;
 		}
 	}
 
