@@ -1,69 +1,43 @@
 # PNB Development Plan
 
-## Current Phase: Stabilization & Cleanup
+## Current Phase: The Great Decoupling & Verification
 
-We are preparing the codebase for a major architectural shift towards a **Functional Pipeline**.
+We are in the midst of transforming the game logic from a set of coordinated "Managers" into a strict **Functional Pipeline**. We have successfully consolidated state; now we must separate **Logic (Read)** from **Mutation (Write)**.
+
+**Reference:** See `docs/CURRENT_STATUS_JAN2026.md` for a detailed architectural snapshot.
 
 ---
 
 ## 📅 Roadmap
 
-### ✅ Milestone 9: Type Safety & State Machines (Completed 2026-01-04)
-- Strong enums for Animations, Pitching, and Actions.
+### ✅ Milestone 10-13: State Consolidation (Completed Jan 2026)
+- **Result:** `StateInfo` is the single source of truth. `RefereeState` and `AIState` exist.
+- **Key Win:** Integration tests for §33 (Outs) and §36 (Tuplahaava) are passing.
 
-### ✅ Milestone 10: Initial Stabilization (Completed 2026-01-04)
-- Centralize `action_state.c` globals into `LocalGameInfo`.
-- Enum-ify `TeamControlMode`, `TeamSide`, `ReplacementState`, etc.
-- Initial const-correctness sweep.
+### 🚧 Milestone 14: The Great Decoupling (Current Focus)
+- **Goal:** Split "Messy" coordinators into "Pure Logic" + "State Applicators".
+- **Target Files:**
+    - `src/game/game_analysis.c` → `Referee_Analyze` (Pure) + `Referee_Apply` (Impure).
+    - `src/game/action_implementation.c` → `Physics_Solve` (Pure) + `Physics_Apply` (Impure).
+- **Deliverable:** Unit tests that run `Referee_Analyze` without a full game loop.
 
-### ✅ Milestone 11: The State Consolidation (Logic) (Completed 2026-01-05)
-- **Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`.
-- **Results:**
-    - Moved AI statics into `AIState`.
-    - Moved game flow counters into `GameFlowState`.
-    - Moved action system internal variables into `PendingActionState`.
-    - `StateInfo` is now the only source of truth for game logic.
+### 🔮 Milestone 15: The "User Intent" Phase
+- **Goal:** Decouple Input from Action.
+- **Concept:** Input generates an `Intent` (e.g., `INTENT_SWING_BAT`). The Engine consumes `Intent`.
+- **Why:** Enables Replays, AI-vs-AI testing, and potential Multiplayer.
 
-### ✅ Milestone 12: The Rendering Unification (Completed 2026-01-05)
-- **Goal:** Modernize in-game rendering to match the Menu system.
-- **Results:**
-    - Adopted `ResourceManager` for all in-game textures and models.
-    - Eliminated all logic-related `static` GL variables from `src/game`.
-    - Unified rendering architecture between game and menus.
+### 🔮 Milestone 16: Comprehensive Rule Verification
+- **Goal:** 100% Audit of `docs/SAANNOT.md`.
+- **Method:** Create `test_scenario_*.c` for every major rule section (Interference, Fielder Positioning, Wrong Turn).
 
-### ✅ Milestone 13: Stabilization & Rule Decoupling (Completed 2026-01-05)
-- **Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
-- **Results:**
-    - Purified safety logic into `player_is_protected` helpers.
-    - Standardized base indexing (consistent `BaseID` usage).
-    - Implemented `PitchResult` enum.
-    - Removed `initLocals` legacy counter.
-    - Added comprehensive integration tests for §33 (Chain Reaction) and §36 (Tuplahaava).
+### 🔮 Milestone 17: The Functional Pipeline
+- **Goal:** `main.c` loop becomes: `Input -> Intent -> Referee(Query) -> Resolver(Write) -> Render`.
 
-### ✅ Milestone 13.5: Comprehensive Rule Audit & Referee State (Completed 2026-01-06)
-- **Goal:** Ensure 100% alignment with §SAANNOT and implement central Referee state.
-- **Results:**
-    - **RefereeState:** Created explicit `RefereeState` struct to track rule-specific data (base snapshots, pending wounds).
-    - **Snapshotting:** Implemented pitch-start snapshots for reliable foul play restoration and run validation.
-    - **Explicit Logic:** Enumerated all "Tuplahaava" and "Wounding" cases explicitly in code.
-    - **Legacy Cleanup:** Removed `originalBase`, `pendingWound`, `woundingSourceBase` from player structs.
-    - **Tests:** Added comprehensive integration tests for complex scenarios (Tuplahaava exceptions, overtaking).
+---
 
-### 🚧 Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
-- **Goal:** Split logic into "Query" and "Apply" halves.
-- **Why:** Essential for phase-based execution.
-
-### 🔮 Milestone 15: The Intent Phase
-- **Goal:** Explicit `UserIntent` struct decoupled from immediate execution.
-
-### 🔮 Milestone 16: The Referee (Judgment Phase)
-- **Goal:** Pure function `Referee(State) -> Decisions`.
-
-### 🔮 Milestone 17: The Resolver (Resolution Phase)
-- **Goal:** Centralized state mutation `Resolver(Decisions) -> NewState`.
-
-### 🔮 Milestone 18: The Pipeline Integration
-- **Goal:** Explicit linear game loop: `Input -> Sim -> Judge -> Resolve -> Render`.
+## Technical Debt / Cleanup
+- **Messy Folders:** `src/game/ai_messy/` and `actions_messy/` need to be emptied into `_pure` counterparts or centralized "Systems".
+- **Globals:** `src/include/globals.h` is becoming too large. Consider splitting (carefully) into `domain_types.h` vs `engine_types.h`.
 
 ---
 

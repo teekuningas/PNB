@@ -12,7 +12,7 @@ _OBJ_COMMON += cup/cup.o
 
 # Build-specific object paths
 OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
-OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/test_scenario_outs.o tests/integration/test_scenario_runs.o tests/integration/test_scenario_wounded.o tests/integration/test_scenario_chain_reaction.o tests/integration/test_scenario_tuplahaava.o tests/integration/test_scenario_foul_play.o tests/integration/test_scenario_overtaking.o)
+OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/test_scenario_outs.o tests/integration/test_scenario_runs.o tests/integration/test_scenario_wounded.o tests/integration/test_scenario_chain_reaction.o tests/integration/test_scenario_tuplahaava.o tests/integration/test_scenario_foul_play.o tests/integration/test_scenario_overtaking.o tests/integration/test_scenario_fielder_positioning.o tests/integration/test_scenario_force_play.o)
 
 # Unit test objects (No OpenGL)
 _TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o tests/test_cup_logic.o tests/test_batting_physics.o tests/test_pitching_physics.o tests/test_batting_ai_strategy.o tests/test_catching_ai_strategy.o tests/test_pitching_ai_strategy.o tests/test_rules_outs.o tests/test_rules_runs.o tests/test_rules_strikes.o tests/test_base_logic.o tests/test_collision.o

@@ -1,83 +1,35 @@
-# TODO - Current Tasks
+# TODO - Pending Tasks
 
-## Milestone 11: The State Consolidation (Logic) (COMPLETE ✅)
+## 🚧 Milestone 14: The Great Decoupling
 
-**Goal:** Eliminate ALL logic-related `static` and global variables from `src/game`, moving them into `StateInfo`.
+**Goal:** Split "messy" coordinators into Pure Logic (Query) and State Mutation (Apply).
 
-### Phase 1: Struct Definitions (COMPLETE ✅)
-- [x] Define `AIState` struct in `src/include/globals.h` (to house AI statics).
-- [x] Define `GameFlowState` struct in `src/include/globals.h` (to house analysis counters).
-- [x] Add `AIState aiState;` and `GameFlowState gameFlowState;` to `LocalGameInfo` struct in `src/include/globals.h`.
-- [x] Update `PendingActionState` in `src/include/globals.h` to include remaining action system statics.
+### Phase 1: Game Analysis Split
+- [ ] Create `src/game/rules_pure/referee.h` and `.c` to house the pure `Referee_Analyze` function.
+- [ ] Refactor `game_analysis.c` to use `Referee_Analyze`.
+- [ ] Create `RefereeDecisions` struct in `globals.h` to capture the output of analysis (outs, runs, wounds).
 
-### Phase 2: AI State Migration (COMPLETE ✅)
-- [x] Move `aiMoveCounter`, `aiThrowStage`, `aiDropStage` from `src/game/ai_messy/catching_ai.c` to `stateInfo->localGameInfo->aiState`.
-- [x] Move `aiBattingKeyDown`, `aiActionKeyLock` and other statics from `src/game/ai_messy/batting_ai.c` to `stateInfo->localGameInfo->aiState`.
+### Phase 2: Action Implementation Split
+- [ ] Audit `action_implementation.c` to identify pure physics calculations.
+- [ ] Move pure physics into `src/game/actions_pure/` or `src/physics/`.
+- [ ] Create `PhysicsParams` struct to pass data between pure calculations and application.
 
-### Phase 3: Action System Migration (COMPLETE ✅)
-- [x] Move `pitchPower`, `aiPitchStage` from `src/game/actions_messy/pitching_system.c` to `AIState`.
-- [x] Move `throwDistance`, `throwDirection` from `src/game/actions_messy/throwing_system.c` to `PendingActionState`.
-- [x] Move `pitchFrameTime` from `src/game/actions_messy/batting_system.c` to `PendingActionState`.
-- [x] Move `doubleClickCounter` from `src/game/action_implementation.c` to `PendingActionState`.
+### Phase 3: Rule Logic Implementation (New Findings)
+- [ ] **Implement §31 (Fielder Positioning):**
+    - [ ] Create `rules_pure/positioning_rules.c`.
+    - [ ] Implement `check_fielder_positions(StateInfo)` to verify bounds.
+    - [ ] Hook into `pitching_system.c` to trigger Free Walk if violated.
+    - [ ] Enable `tests/integration/test_scenario_fielder_positioning.c`.
 
-### Phase 4: Game Logic Migration (COMPLETE ✅)
-- [x] Move `woundingCatchCounter`, `outOfBoundsCounter` from `src/game/game_analysis.c` to `GameFlowState`.
-- [x] Move `closeToGround` from `src/game/game_manipulation.c` to `GameFlowState`.
+### Phase 4: State Validation (New)
+- [ ] Create `src/core/state_validator.c` and `.h`.
+- [ ] Implement `validate_game_state(StateInfo*)`.
+    - [ ] Check unique bases (no two players on same base).
+    - [ ] Check `playerCounters` vs actual player count.
+    - [ ] Check `baseControlIndex` consistency.
+- [ ] Implement `dump_game_state_to_json(StateInfo*, const char* filename)`.
+- [ ] Hook validator into `gameAnalysis` debug/test builds.
 
----
-
-## Milestone 12: The Rendering Unification (COMPLETE ✅)
-
-**Goal:** Modernize in-game rendering to match the Menu system's architecture.
-
-- [x] **Resource Manager:** Adopt `ResourceManager` for `game_screen.c` and `immutable_world.c` textures/meshes.
-- [x] **State Cleanup:** Eliminate `static` GLuints and MeshObjects from `src/game`.
-- [x] **Context Setup:** Unify 2D/3D context setup with the menu system.
-
----
-
-## Milestone 13: Stabilization & Rule Decoupling (COMPLETE ✅)
-
-**Goal:** Purify rule logic and stabilize safety mechanisms before large-scale decoupling.
-
-- [x] **Purify Safety Logic:** Created `player_is_protected` and `player_is_safe_from_fly` helpers in `rules_pure/base_logic.c`.
-- [x] **Standardize Base Indexing:** Standardized on `BaseID` enum consistently across logic.
-- [x] **Pitch Result Enum:** Implemented `PitchResult` enum to replace magic numbers in analysis.
-- [x] **Legacy Cleanup:** Removed `initLocals` 5-frame counter mechanism.
-- [x] **Scenario Tests:** Added integration tests for "Chain Reaction" (§33), "Tuplahaava" (§36), and "Foul Play Resets".
-
----
-
-## Milestone 13.5: Comprehensive Rule Audit & Referee State (COMPLETE ✅)
-
-**Goal:** Ensure 100% alignment with §SAANNOT and implement central Referee state.
-
-- [x] **Referee State Implementation:**
-    - [x] Define `RefereeState` and `RefereePlayerState`.
-    - [x] Implement snapshotting at pitch start (`baseAtPitchStart`, `hadSafety`).
-    - [x] Migrate `woundingCatchEffects`, `foulPlay`, and `checkForOuts` to use `RefereeState`.
-- [x] **Legacy Cleanup:**
-    - [x] Remove `originalBase` from `BattingTeamPlayerInfo`.
-    - [x] Remove `pendingWound` and `woundingSourceBase` from `PlayerRuntimeState`.
-- [x] **Edge Case Tests:**
-    - [x] Tuplahaava collision and exceptions (ball to source/next base).
-    - [x] Foul play restoration.
-    - [x] Kunniajuoksu overtaking logic.
-
----
-
-## Milestone 14: The Great Decoupling (Read vs. Write) (CURRENT)
-
-**Goal:** Split logic into "Query" and "Apply" halves.
-
-- [ ] Split `game_analysis` into `check_rules()` (Read-only) and `apply_rules()` (Write).
-- [ ] Split `action_implementation` into `calculate_physics()` (Read-only) and `apply_physics()` (Write).
-
----
-
-## Future Milestones (The Pipeline)
-
-- **Milestone 15:** Implement Intent Phase.
-- **Milestone 16:** Implement Referee Phase.
-- **Milestone 17:** Implement Resolver Phase.
-- **Milestone 18:** Pipeline Integration.
+### Phase 5: Verification
+- [ ] Create `tests/test_referee.c` to unit test the new `Referee_Analyze` function with mock states.
+- [ ] Verify that `make test` and `make main` still pass.

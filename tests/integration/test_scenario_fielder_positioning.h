@@ -1,0 +1,6 @@
+#ifndef TEST_SCENARIO_FIELDER_POSITIONING_H
+#define TEST_SCENARIO_FIELDER_POSITIONING_H
+
+void run_scenario_fielder_positioning_tests(void);
+
+#endif

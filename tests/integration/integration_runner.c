@@ -7,6 +7,8 @@
 #include "test_scenario_tuplahaava.h"
 #include "test_scenario_foul_play.h"
 #include "test_scenario_overtaking.h"
+#include "test_scenario_fielder_positioning.h"
+#include "test_scenario_force_play.h"
 #include <string.h>
 
 int tests_run = 0;
@@ -25,6 +27,10 @@ int main(int argc, char* argv[]) {
 	run_scenario_tuplahaava_tests();
 	run_scenario_foul_play_tests();
 	run_scenario_overtaking_tests();
+	
+	printf("\n--- New Tests (Jan 2026) ---\n");
+	run_scenario_fielder_positioning_tests();
+	run_scenario_force_play_tests();
 
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);
