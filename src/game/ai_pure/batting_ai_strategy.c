@@ -155,8 +155,13 @@ int is_wrong_pitch(float vx, float vy, float gravity, float plate_width)
 float calculate_ai_batting_angle(int battingStyle, BaseID leadBase, int randomValue)
 {
 	float angle = 0.0f;
+	// Generate variance between -0.1f and +0.1f
+	float variance = ((randomValue % 200) - 100) / 1000.0f;
+
 	if (battingStyle == 0) { // Bunt
 		angle = (randomValue % 100 < 50) ? 0.5f : -0.5f;
+		// Bunts can have slight variance too
+		angle += variance * 0.5f;
 	} else if (battingStyle == 1) { // Normal
 		if (leadBase == BASE_THIRD) {
 			angle = 0.8f; // Hit to left field
@@ -165,6 +170,7 @@ float calculate_ai_batting_angle(int battingStyle, BaseID leadBase, int randomVa
 		} else {
 			angle = 0.0f;
 		}
+		angle += variance;
 	} else if (battingStyle == 2) { // Wound
 		angle = -1.5f; // Bad angle
 	}

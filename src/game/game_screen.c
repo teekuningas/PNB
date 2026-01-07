@@ -13,10 +13,10 @@
 #include "common_logic.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
-#define OTHER_STATS_X -0.12f
+#define OTHER_STATS_X -0.02f  // Midpoint between original -0.12 and current 0.08
 #define METER_X 0.32f
-#define OUTS_X -0.69f
-#define INFO_X -0.60f
+#define OUTS_X -0.69f        // Reverted to original
+#define INFO_X -0.60f        // Reverted to original
 #define BASES_X 0.50f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
@@ -217,10 +217,16 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	UIState* us = &(stateInfo->localGameInfo->uiState);
 
 	// Layout Constants
-	const float BASE_Y = VIRTUAL_HEIGHT - 100.0f; // Lowered bar
-	const float TEXT_Y = BASE_Y + 20.0f; // Shifted 10px down relative to old (Old was BASE_Y(-120)+30 = -90)
+	const float BASE_Y = VIRTUAL_HEIGHT - 80.0f;
+	const float TEXT_Y = BASE_Y + 20.0f;
 	const float CENTER_X = VIRTUAL_WIDTH / 2.0f;
-	const float SCALE_FACTOR = 1350.0f; // Increased for more spread
+	// Direct pixel offsets from center (derived from previous SCALE_FACTOR 1350.0f)
+	const float OUTS_OFFSET_X = -931.5f;   // -0.69 * 1350
+	const float INFO_OFFSET_X = -810.0f;   // -0.60 * 1350
+	const float STATS_OFFSET_X = -27.0f;   // -0.02 * 1350
+	const float METER_OFFSET_X = 432.0f;   //  0.32 * 1350
+	const float BASES_OFFSET_X = 675.0f;   //  0.50 * 1350
+
 	const float FONT_SIZE = 40.0f;
 
 	// Background
@@ -231,7 +237,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/empty_background.tga"), 0, BASE_Y, VIRTUAL_WIDTH, 80.0f); // Height 80 (was 120)
 
 	// OUTS (Far Left)
-	float outs_x = CENTER_X + (OUTS_X * SCALE_FACTOR);
+	float outs_x = CENTER_X + OUTS_OFFSET_X;
 	if(stateInfo->globalGameInfo->period < 4) {
 		switch(stateInfo->localGameInfo->gameState.outs) {
 		case 3:
@@ -250,7 +256,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	}
 
 	// INFO AREA (Left-Center)
-	float info_x = CENTER_X + (INFO_X * SCALE_FACTOR);
+	float info_x = CENTER_X + INFO_OFFSET_X;
 
 	if(stateInfo->localGameInfo->gameState.event != EVENT_NONE) {
 		us->gameInfoEventTimer = 0;
@@ -327,7 +333,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	}
 
 	// STATS (Center)
-	float stats_x = CENTER_X + (OTHER_STATS_X * SCALE_FACTOR);
+	float stats_x = CENTER_X + STATS_OFFSET_X;
 
 	// Inning
 	char inn_str[16] = "I  ";
@@ -359,7 +365,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 
 	// METER (Right-Center)
-	float meter_screen_x = CENTER_X + (METER_X * SCALE_FACTOR);
+	float meter_screen_x = CENTER_X + METER_OFFSET_X;
 	float meter_y = BASE_Y + 17.0f; // Shifted 12px down relative to old (Old was BASE_Y(-120)+25 = -95)
 	float meter_w = 200.0f;
 	float meter_h = 40.0f;
@@ -381,7 +387,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 
 	// BASES (Far Right)
-	float bases_screen_x = CENTER_X + (BASES_X * SCALE_FACTOR);
+	float bases_screen_x = CENTER_X + BASES_OFFSET_X;
 	float bases_y = BASE_Y + 17.0f; // Shifted 12px down relative to old (Old was BASE_Y(-120)+25 = -95)
 	float bases_w = 200.0f;
 	float bases_h = 40.0f;
@@ -424,7 +430,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 			// Map to screen
 			// width is bases_w
 			float interval_px = bases_w / 4.0f;
-			float runner_x = bases_screen_x + ((int)base * interval_px) + (phase * interval_px);
+			float runner_x = bases_screen_x + ((int)base * interval_px) + (phase * interval_px) - 6.0f; // -6.0f offset to center on image spots
 
 			draw_texture_2d(resource_manager_get_texture(rm, "data/textures/basesMarker.tga"), runner_x, bases_y + 10.0f, 15.0f, 15.0f);
 		}
