@@ -6,48 +6,11 @@
 #include "geometry.h"
 #include "vector_math.h"
 #include "base_control.h"
+#include "common_logic.h"
 
 #define BASE_RADIUS 2.0f
 #define HOME_RADIUS 6.0f
 #define HOME_LINE_Z -0.65f
-
-// Helper to analyze ball position
-static int get_ball_at_base_index(const StateInfo* stateInfo)
-{
-	if (stateInfo->localGameInfo->pII.hasBallIndex == -1) {
-		return -1; // No one has ball
-	}
-
-	// Use catcher position directly or ball position?
-	// Legacy logic uses ballInfo.location, assuming ball is with player.
-	Vector3D ballLoc = stateInfo->localGameInfo->ballInfo.location;
-
-	// Check Home Base (Index 0)
-	// Special check: inside homeline-middlepoint centered disk and at homebase side
-	float dx = ballLoc.x - stateInfo->fieldPositions->pitchPlate.x;
-	float dz = ballLoc.z - HOME_LINE_Z;
-	if (ballLoc.z > HOME_LINE_Z && vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS)) {
-		return 0; // Home Base
-	}
-
-	// Check Bases 1-3
-	for (int i = 1; i < BASE_COUNT; i++) {
-		Vector3D baseLoc;
-		if (i == 1) baseLoc = stateInfo->fieldPositions->firstBase;
-		else if (i == 2) baseLoc = stateInfo->fieldPositions->secondBase;
-		else if (i == 3) baseLoc = stateInfo->fieldPositions->thirdBase;
-		else continue;
-
-		dx = ballLoc.x - baseLoc.x;
-		dz = ballLoc.z - baseLoc.z;
-
-		if (vec3_is_small_enough_circle_xz(dx, dz, BASE_RADIUS)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
 
 RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 {
@@ -59,11 +22,6 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);
-
-	// 2. Ball Home Logic (affects camera/game flow)
-	if (ballAtBase == 0) {
-		decisions.ballHome = 1;
-	}
 
 	// 2.5 Safety Acquisition & Displacement (Milestone: Decoupled Safety Logic)
 	// Detect if a player has physically acquired a base but Referee hasn't updated safety yet.

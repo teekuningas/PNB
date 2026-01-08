@@ -54,4 +54,16 @@ int get_wounding_timer(const RefereeState* ref);
  */
 int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
 
+/**
+ * @brief Updates the referee state and game state based on the current world state.
+ *
+ * This function replaces the Analyze/Apply pattern. It sequentially checks rules
+ * and updates the state immediately.
+ *
+ * @param stateInfo Read-only access to the full game state.
+ * @param refereeState Mutable pointer to the referee state.
+ * @param gameState Mutable pointer to the game state (for outs/runs).
+ */
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState);
+
 #endif // REFEREE_H

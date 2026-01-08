@@ -828,7 +828,7 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
 	localGameInfo->gameState.outOfBounds = 0;
 	localGameInfo->playerCounters.noMorePlayers = 0;
-	localGameInfo->gameState.ballHome = 0;
+	localGameInfo->gameFlowState.ballHome = 0;
 	localGameInfo->gameState.endPeriod = 0;
 	localGameInfo->referee.woundingCatchPending = 0;
 	localGameInfo->referee.woundingCatchHandled = 0;

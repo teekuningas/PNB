@@ -52,7 +52,7 @@ void initGameAnalysis(GameFlowState* gameFlowState)
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	// Reset per-frame flags
-	stateInfo->localGameInfo->gameState.ballHome = 0;
+	stateInfo->localGameInfo->gameFlowState.ballHome = 0;
 
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
@@ -401,7 +401,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 	// no more players to bat. set flag on the player selection to indicate that no more players left.
 	// then if ball comes to pitcher, then we can quit this inning.
 	if(stateInfo->localGameInfo->gameState.outs >= 3 || (stateInfo->localGameInfo->playerCounters.noMorePlayers == 1 &&
-	        stateInfo->localGameInfo->gameState.ballHome == 1) || stateInfo->localGameInfo->gameState.endPeriod == 1 ||
+	        stateInfo->localGameInfo->gameFlowState.ballHome == 1) || stateInfo->localGameInfo->gameState.endPeriod == 1 ||
 	        (stateInfo->globalGameInfo->period >= 4 && stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter >=
 	         stateInfo->globalGameInfo->pairCount)) {
 
@@ -558,7 +558,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
 		int runnerAtThirdIndex = get_base_controller(stateInfo->localGameInfo, BASE_THIRD);
-		if((stateInfo->localGameInfo->gameState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
+		if((stateInfo->localGameInfo->gameFlowState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
 		        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        (runnerAtThirdIndex == -1 &&
 		         stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||

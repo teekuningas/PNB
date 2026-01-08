@@ -13,18 +13,6 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 	LocalGameInfo* game = stateInfo->localGameInfo;
 
 	// 1. Apply Global Flags
-	if (decisions->ballHome) {
-		game->gameState.ballHome = 1;
-
-		// Camera logic from checkForOuts
-		if (game->gameFlowState.homeRunCameraCounter == -1 &&
-		        game->cameraState.homeRunCameraFlag == 1 &&
-		        (get_base_controller(game, BASE_THIRD) == -1 ||
-		         game->playerInfo[get_base_controller(game, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
-			game->gameFlowState.homeRunCameraCounter = 0;
-		}
-	}
-
 	if (decisions->eventOut) {
 		game->gameState.event = EVENT_OUT;
 	}

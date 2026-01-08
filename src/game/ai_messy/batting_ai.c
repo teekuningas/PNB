@@ -100,7 +100,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	// we decide batter only after ball is at home so that in normal situation ai will have more information
 	// to make its strategy decisions
-	if(stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 1 && stateInfo->localGameInfo->gameState.ballHome == 1) {
+	if(stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 1 && stateInfo->localGameInfo->gameFlowState.ballHome == 1) {
 		// we do this by brute force, we change player until we find a fit one or we are back to non joker.
 		// plan is that if there is a man on first base and current batter would not have a great power,
 		// we would try to find a joker that has power instead.
@@ -155,7 +155,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 
 		}
 
-	} else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameState.ballHome == 1) {
+	} else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameFlowState.ballHome == 1) {
 		// decision tree.. contents can be read within
 		if(stateInfo->localGameInfo->aiState.planCalculated == 0) {
 			int batterIndex = stateInfo->localGameInfo->pII.batterIndex;
@@ -203,7 +203,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			int i;
 			for(i = 1; i < BASE_COUNT; i++) {
 				// Prevent suicide runs: Don't run from 3rd base (to home) if ball is held at home
-				if (i == BASE_THIRD && stateInfo->localGameInfo->gameState.ballHome == 1) continue;
+				if (i == BASE_THIRD && stateInfo->localGameInfo->gameFlowState.ballHome == 1) continue;
 
 				if(stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] == 0 && get_base_controller(stateInfo->localGameInfo, (BaseID)i) != -1 &&
 				        stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, (BaseID)i)].bTPI.state == PLAYER_STATE_ON_BASE &&
@@ -221,7 +221,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	}
 	// if ball is not home, we return players from first and second base to their bases
-	else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameState.ballHome == 0) {
+	else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameFlowState.ballHome == 0) {
 		if(stateInfo->localGameInfo->aiState.runningBaseRunners == 1) {
 			int i;
 			for(i = 1; i < 3; i++) {

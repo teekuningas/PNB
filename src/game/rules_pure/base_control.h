@@ -15,4 +15,13 @@
  */
 int get_base_controller(const LocalGameInfo* game, BaseID base);
 
-#endif
+/**
+ * @brief Determines which base the ball is currently at/near.
+ *
+ * @param stateInfo The full game state (needed for ball and field positions).
+ * @return The BaseID (as int 0-3) or -1 if not at any base.
+ */
+int get_ball_at_base_index(const StateInfo* stateInfo);
+
+#endif // BASE_CONTROL_H
+

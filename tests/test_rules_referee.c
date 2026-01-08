@@ -33,22 +33,6 @@ void destroy_mock_state(StateInfo* state) {
 	free(state);
 }
 
-void test_referee_ball_at_home(void) {
-	StateInfo* state = create_mock_state();
-	
-	// Setup: Ball at Home Plate
-	state->localGameInfo->pII.hasBallIndex = 0; // Player 0 has ball
-	state->localGameInfo->ballInfo.location.x = 0.0f;
-	state->localGameInfo->ballInfo.location.z = 1.0f; // > HOME_LINE_Z (-0.65)
-	
-	RefereeDecisions decisions = Referee_Analyze(state);
-	
-	assert(decisions.ballHome == 1);
-	
-	destroy_mock_state(state);
-	printf("test_referee_ball_at_home PASSED\n");
-}
-
 void test_referee_force_out_at_second(void) {
 	StateInfo* state = create_mock_state();
 	
@@ -97,7 +81,6 @@ void test_referee_safe_runner_not_out(void) {
 
 void run_referee_tests(void) {
 	printf("Running Referee Unit Tests...\n");
-	test_referee_ball_at_home();
 	test_referee_force_out_at_second();
 	test_referee_safe_runner_not_out();
 }

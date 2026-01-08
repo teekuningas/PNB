@@ -1,55 +1,27 @@
-# TODO - Pending Tasks
+# TODO
 
-## 🚧 Milestone 15: Action System Decoupling (CURRENT)
+## Milestone 15: Referee Architecture V2 (Sequential Update)
 
-**Goal:** Apply the Query/Apply pattern to action system (same as referee)
+- [ ] Design `updateReferee` signature and internal flow (create header prototype)
+- [ ] Migrate "Force Out" logic from `Referee_Analyze` to a standalone pure function called by `updateReferee`
+- [ ] Migrate "Run" logic from `Referee_Analyze` to a standalone pure function
+- [ ] Migrate "Wounding" logic
+- [ ] Remove `RefereeDecisions` struct and `Referee_Analyze`/`Referee_Apply` functions
+- [ ] Verify 100% test coverage with `make test` and `integration_runner`
 
-### Phase 1: Audit actions_messy/ (NEXT)
-- [ ] Audit `batting_system.c` (473 LOC) - identify pure calculations
-- [ ] Audit `pitching_system.c` (385 LOC) - identify pure calculations
-- [ ] Audit `throwing_system.c` (250 LOC) - identify pure calculations
-- [ ] Document: what can be pure? what must mutate state?
+## Test Infrastructure (Ongoing)
 
-### Phase 2: Action Implementation (PENDING)
-- [ ] Create `ActionDecisions` struct (similar to `RefereeDecisions`)
-- [ ] Move pure logic to `actions_pure/` or create new files
-- [ ] Create `Action_Apply()` functions for state mutation
-- [ ] Update coordinators to call Analyze → Apply
+- [ ] Migrate `test_scenario_runs.c` to full-scenario test
+- [ ] Migrate `test_scenario_wounded.c` to full-scenario test
+- [ ] Migrate `test_scenario_chain_reaction.c` to full-scenario test
+- [ ] Migrate `test_scenario_tuplahaava.c` to full-scenario test
+- [ ] Migrate `test_scenario_foul_play.c` to full-scenario test
+- [ ] Migrate `test_scenario_overtaking.c` to full-scenario test
+- [ ] Migrate `test_scenario_fielder_positioning.c` to full-scenario test
+- [ ] Migrate `test_scenario_force_play.c` to full-scenario test
 
-### Phase 3: Testing (PENDING)
-- [ ] Create unit tests for pure action logic
-- [ ] Verify integration tests still pass
-- [ ] Run `make test && make integration_test`
-
----
-
-## ✅ Milestone 14: The Great Decoupling (COMPLETE)
-
-### Phase 1: Game Analysis Split ✅
-- [x] Created `rules_pure/referee.c` with pure `Referee_Analyze`
-- [x] Created `referee_apply.c` with `Referee_Apply`
-- [x] Created `RefereeDecisions` struct
-
-### Phase 2: State Validation ✅
-- [x] Created `state_validator.c` with invariant checks
-- [x] Eliminated `baseControlIndex` → `currentSafetyBase`
-- [x] JSON dump on validation failure
-
-### Phase 3: Verification ✅
-- [x] Created `test_rules_referee.c`
-- [x] 67 tests passing (53 unit + 14 integration)
-
----
-
-## 📅 Upcoming Milestones
-
-### Milestone 16: User Intent Phase
-- Decouple input from execution
-- Create Intent structs
-
-### Milestone 17: Comprehensive Rule Verification
-- 100% audit of SAANNOT.md
-- Implement §31 (Fielder Positioning)
-
-### Milestone 18: Full Functional Pipeline
-- Linear game loop: Input → Intent → Physics → Referee → Apply → Render
+## Completed
+- [x] Fix referee system integration: Add `reconcile` logic to `mutable_world.c` after `Referee_Execute`
+- [x] Eliminate `baseControlIndex` array (Milestone 14)
+- [x] Create `Referee_Analyze` (pure) and `Referee_Apply` (impure) (Milestone 14)
+- [x] Fix "frame-off" bug where player runs automatically due to delayed safety grant

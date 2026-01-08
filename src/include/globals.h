@@ -109,6 +109,7 @@ typedef enum {
 #define FENCE_OFFSET 0.5f
 
 #define HOME_RADIUS 6.0f
+#define BASE_RADIUS 2.0f
 #define HOME_LINE_Z -0.65f
 #define BATTING_RADIUS 3.5f
 
@@ -379,7 +380,6 @@ typedef struct {
 
 typedef struct {
 	PlayerDecision playerDecisions[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int ballHome;                // Ball is at home base (affects camera/logic)
 	int eventOut;                // Global event flags detected this frame
 	int eventRun;
 	int eventWounded;
@@ -515,7 +515,6 @@ typedef struct _GameState {
 	int runsInTheInning;
 	GameEventType event;
 	int outOfBounds; // Rule state: ball is out of bounds
-	int ballHome;    // Rule state: ball is at home base
 	int endPeriod;   // Rule state: period should end
 } GameState;
 
@@ -632,6 +631,7 @@ typedef struct _GameFlowState {
 	int nextPairCounter;
 	int foulPlayEventFlag;
 	int homeRunCameraCounter;
+	int ballHome;    // Moved from GameState (Logic state: ball is at home base)
 } GameFlowState;
 
 typedef struct _PendingActionState {
