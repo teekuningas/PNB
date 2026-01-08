@@ -4,6 +4,7 @@
 #include "game_analysis.h"
 #include "game_manipulation.h"
 #include "common_logic.h"
+#include "referee.h"
 #include "action_implementation.h"
 #include "action_implementation.h"
 #include "vector_math.h"
@@ -52,30 +53,25 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 	
 	// Determine physical start and end positions
 	Vector3D startPos, endPos;
-	BaseID nextBase;
 	
 	switch (base) {
 		case BASE_HOME:
 			startPos = field->pitchPlate;
 			startPos.z = 1.0f; // Slightly in front of plate
 			endPos = field->firstBase;
-			nextBase = BASE_FIRST;
 			break;
 		case BASE_FIRST:
 			startPos = field->firstBase;
 			endPos = field->secondBase;
-			nextBase = BASE_SECOND;
 			break;
 		case BASE_SECOND:
 			startPos = field->secondBase;
 			endPos = field->thirdBase;
-			nextBase = BASE_THIRD;
 			break;
 		case BASE_THIRD:
 			startPos = field->thirdBase;
 			endPos = field->pitchPlate;
 			endPos.z = 1.0f; // Home scoring position
-			nextBase = BASE_HOME_SCORED;
 			break;
 		default:
 			return;

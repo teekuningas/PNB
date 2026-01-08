@@ -96,6 +96,9 @@ extern int test_base_sequence();
 extern int test_base_properties();
 extern int test_base_comparisons();
 
+// Declare debug logging test
+extern int test_debug_logging_cycle();
+
 int main(int argc, char* argv[]) {
 	printf("========================================\n");
 	printf("PNB Test Suite (No Graphics)\n");
@@ -105,6 +108,9 @@ int main(int argc, char* argv[]) {
 	RUN_TEST(test_base_sequence);
 	RUN_TEST(test_base_properties);
 	RUN_TEST(test_base_comparisons);
+	
+	// Debug logging tests
+	RUN_TEST(test_debug_logging_cycle);
 
 	// Fixture tests
 	RUN_TEST(test_fixture_super_inning_setup);

@@ -6,6 +6,7 @@
 #include <stdlib.h> // for rand()
 #include "base_logic.h"
 #include "base_control.h"
+#include "state_validator.h"
 
 // Required local constant (was in action_implementation.c)
 #define ANIMATION_FREQUENCY 3
@@ -235,6 +236,8 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 	stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 
+	// DEBUG: Capture snapshot for history log
+	StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
 }
 
 void updatePitchingMeter(StateInfo* stateInfo)

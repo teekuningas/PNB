@@ -1,22 +1,40 @@
 #include "state_validator.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "base_control.h"
 
-// Global flag to prevent recursive/redundant validation loops if we're already handling a crash
+// History Buffer Settings
+#define HISTORY_SIZE 100
+#define SNAPSHOT_LABEL_LEN 32
 
-#include <stdlib.h>
+typedef struct {
+    char label[SNAPSHOT_LABEL_LEN];
+    int frameCount; // Assuming we can get this, or just sequence ID
+    LocalGameInfo snapshot;
+} GameSnapshot;
 
+// Global State
 static char g_dumpPath[256] = {0};
 static int g_isActive = 0;
+
+static GameSnapshot g_history[HISTORY_SIZE];
+static int g_historyHead = 0;
+static int g_historyCount = 0;
+static int g_sequenceId = 0;
 
 void StateValidator_Init(const char* jsonPath)
 {
 	if (jsonPath) {
 		snprintf(g_dumpPath, sizeof(g_dumpPath), "%s", jsonPath);
 		g_isActive = 1;
+		printf("[StateValidator] Debug logging enabled. Dump path: %s\n", g_dumpPath);
 	} else {
 		g_isActive = 0;
 	}
+	g_historyHead = 0;
+	g_historyCount = 0;
+	g_sequenceId = 0;
 }
 
 void StateValidator_SetActive(int active)
@@ -24,50 +42,98 @@ void StateValidator_SetActive(int active)
 	g_isActive = active;
 }
 
+void StateValidator_CaptureSnapshot(StateInfo* state, const char* label)
+{
+	if (!g_isActive) return;
+
+	// Copy current state to history buffer
+	int idx = g_historyHead;
+	snprintf(g_history[idx].label, SNAPSHOT_LABEL_LEN, "%s", label);
+	g_history[idx].frameCount = g_sequenceId++;
+	
+	// Deep copy the local game info
+	// Note: Strings (names) are pointers, but they usually point to static data or managed resources.
+	// As long as we don't free them, copying the pointer is fine for a snapshot.
+	memcpy(&g_history[idx].snapshot, state->localGameInfo, sizeof(LocalGameInfo));
+
+	// Advance head
+	g_historyHead = (g_historyHead + 1) % HISTORY_SIZE;
+	if (g_historyCount < HISTORY_SIZE) {
+		g_historyCount++;
+	}
+}
+
 static const char* base_to_string(BaseID id)
 {
 	switch(id) {
-	case BASE_HOME:
-		return "HOME";
-	case BASE_FIRST:
-		return "1ST";
-	case BASE_SECOND:
-		return "2ND";
-	case BASE_THIRD:
-		return "3RD";
-	case BASE_HOME_SCORED:
-		return "SCORED";
-	case BASE_NONE:
-		return "NONE";
-	default:
-		return "UNKNOWN";
+	case BASE_HOME: return "HOME";
+	case BASE_FIRST: return "1ST";
+	case BASE_SECOND: return "2ND";
+	case BASE_THIRD: return "3RD";
+	case BASE_HOME_SCORED: return "SCORED";
+	case BASE_NONE: return "NONE";
+	default: return "UNKNOWN";
 	}
 }
 
 static const char* state_to_string(PlayerUnitState s)
 {
 	switch(s) {
-	case PLAYER_STATE_IDLE:
-		return "IDLE";
-	case PLAYER_STATE_AT_BAT:
-		return "AT_BAT";
-	case PLAYER_STATE_SAFE_ON_BASE:
-		return "SAFE";
-	case PLAYER_STATE_RUNNING:
-		return "RUNNING";
-	case PLAYER_STATE_ADVANCING_FREELY:
-		return "FREE_WALK";
-	case PLAYER_STATE_LEADING:
-		return "LEADING";
-	case PLAYER_STATE_OUT:
-		return "OUT";
-	case PLAYER_STATE_WOUNDED:
-		return "WOUNDED";
-	case PLAYER_STATE_SCORED:
-		return "SCORED_STATE";
-	default:
-		return "UNKNOWN";
+	case PLAYER_STATE_IDLE: return "IDLE";
+	case PLAYER_STATE_AT_BAT: return "AT_BAT";
+	case PLAYER_STATE_SAFE_ON_BASE: return "SAFE";
+	case PLAYER_STATE_RUNNING: return "RUNNING";
+	case PLAYER_STATE_ADVANCING_FREELY: return "FREE_WALK";
+	case PLAYER_STATE_LEADING: return "LEADING";
+	case PLAYER_STATE_OUT: return "OUT";
+	case PLAYER_STATE_WOUNDED: return "WOUNDED";
+	case PLAYER_STATE_SCORED: return "SCORED_STATE";
+	default: return "UNKNOWN";
 	}
+}
+
+static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
+{
+	// Helper for indentation
+	char sp[16];
+	int i;
+	for(i=0; i<indent && i<15; i++) sp[i] = ' ';
+	sp[i] = 0;
+
+	fprintf(f, "%s\"gameState\": {\n", sp);
+	fprintf(f, "%s  \"outs\": %d,\n", sp, game->gameState.outs);
+	fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, game->gameState.runsInTheInning);
+	fprintf(f, "%s  \"strikes\": %d,\n", sp, game->gameState.strikes);
+	fprintf(f, "%s  \"balls\": %d\n", sp, game->gameState.balls);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"batterIndex\": %d,\n", sp, game->pII.batterIndex);
+	
+	fprintf(f, "%s\"players\": [\n", sp);
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		PlayerInfo* p = &game->playerInfo[i];
+		// Only print relevant players (on base, active, or pending wound)
+		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE || 
+		                  game->referee.battingPlayers[i].hasPendingWound);
+		
+		if (isRelevant) {
+			fprintf(f, "%s  {\n", sp);
+			fprintf(f, "%s    \"id\": %d,\n", sp, i);
+			fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
+			fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
+			fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
+			
+			// Referee State
+			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
+			fprintf(f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp, base_to_string(game->referee.battingPlayers[i].currentSafetyBase));
+			fprintf(f, "%s    \"ref_pendingWound\": %d\n", sp, game->referee.battingPlayers[i].hasPendingWound);
+			
+			fprintf(f, "%s  },\n", sp);
+		}
+	}
+	// Hack to close array validly
+	fprintf(f, "%s  {\"id\": -1}\n", sp);
+	fprintf(f, "%s]", sp);
 }
 
 static void dump_state(StateInfo* state, const char* reason)
@@ -84,61 +150,34 @@ static void dump_state(StateInfo* state, const char* reason)
 
 	fprintf(f, "{\n");
 	fprintf(f, "  \"failure_reason\": \"%s\",\n", reason);
+	fprintf(f, "  \"timestamp\": %d,\n", g_sequenceId);
 
-	// Game Global State
-	fprintf(f, "  \"gameState\": {\n");
-	fprintf(f, "    \"outs\": %d,\n", game->gameState.outs);
-	fprintf(f, "    \"balls\": %d,\n", game->gameState.balls);
-	fprintf(f, "    \"strikes\": %d,\n", game->gameState.strikes);
-	fprintf(f, "    \"runsInTheInning\": %d,\n", game->gameState.runsInTheInning);
-	fprintf(f, "    \"ballHome\": %s,\n", game->gameState.ballHome ? "true" : "false");
-	fprintf(f, "    \"outOfBounds\": %s\n", game->gameState.outOfBounds ? "true" : "false");
-	fprintf(f, "  },\n");
+	// Current State
+	fprintf(f, "  \"currentState\": {\n");
+	print_game_json(f, game, 4);
+	fprintf(f, "\n  },\n");
 
-	// Ball Info
-	fprintf(f, "  \"ball\": {\n");
-	fprintf(f, "    \"x\": %.2f, \"y\": %.2f, \"z\": %.2f,\n", game->ballInfo.location.x, game->ballInfo.location.y, game->ballInfo.location.z);
-	fprintf(f, "    \"hasHitGround\": %s,\n", game->ballInfo.hasHitGround ? "true" : "false");
-	fprintf(f, "    \"carrierIndex\": %d\n", game->pII.hasBallIndex);
-	fprintf(f, "  },\n");
-
-	// Players
-	fprintf(f, "  \"players\": [\n");
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		PlayerInfo* p = &game->playerInfo[i];
-		// Only print relevant players
-		if (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE) {
-			fprintf(f, "    {\n");
-			fprintf(f, "      \"id\": %d,\n", i);
-			fprintf(f, "      \"name\": \"%s\",\n", p->bTPI.name ? p->bTPI.name : "Unknown");
-			fprintf(f, "      \"baseId\": %d,\n", p->bTPI.baseId);
-			fprintf(f, "      \"baseStr\": \"%s\",\n", base_to_string(p->bTPI.baseId));
-			fprintf(f, "      \"state\": %d,\n", p->bTPI.state);
-			fprintf(f, "      \"stateStr\": \"%s\",\n", state_to_string(p->bTPI.state));
-			fprintf(f, "      \"x\": %.2f, \"z\": %.2f\n", p->tPI.location.x, p->tPI.location.z);
-			fprintf(f, "    },\n");
-		}
+	// History
+	fprintf(f, "  \"history\": [\n");
+	
+	// Iterate from oldest to newest
+	// Oldest is at head (if full) or 0 (if not full)?
+	// Ring buffer: head points to NEXT write slot. So oldest is at head (if full).
+	// But it's easier to just iterate sequentially and handle wrap.
+	
+	int startIdx = (g_historyCount < HISTORY_SIZE) ? 0 : g_historyHead;
+	for (int i = 0; i < g_historyCount; i++) {
+		int idx = (startIdx + i) % HISTORY_SIZE;
+		fprintf(f, "    {\n");
+		fprintf(f, "      \"seq\": %d,\n", g_history[idx].frameCount);
+		fprintf(f, "      \"label\": \"%s\",\n", g_history[idx].label);
+		fprintf(f, "      \"snapshot\": {\n");
+		print_game_json(f, &g_history[idx].snapshot, 8);
+		fprintf(f, "\n      }\n");
+		fprintf(f, "    }%s\n", (i < g_historyCount - 1) ? "," : "");
 	}
-	// Remove last comma hack
-	fprintf(f, "    {\"id\": -1}\n");
-	fprintf(f, "  ],\n");
-
-	// Control Indices (The Truth)
-	fprintf(f, "  \"batterIndex\": %d,\n", game->pII.batterIndex);
-	// Referee State (Logic Internals)
-	fprintf(f, "  \"referee\": {\n");
-	fprintf(f, "    \"woundingCatchActive\": %s,\n", game->referee.woundingCatchActive ? "true" : "false");
-	fprintf(f, "    \"pendingWounds\": [\n");
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		if (game->referee.battingPlayers[i].hasPendingWound) {
-			fprintf(f, "      {\"id\": %d, \"type\": %d, \"sourceBase\": %d},\n",
-			        i, game->referee.battingPlayers[i].woundingType, game->referee.battingPlayers[i].woundingSourceBase);
-		}
-	}
-	fprintf(f, "      {}\n");
-	fprintf(f, "    ]\n");
-	fprintf(f, "  }\n");
-
+	
+	fprintf(f, "  ]\n");
 	fprintf(f, "}\n");
 	fclose(f);
 	printf("State dumped to %s\n", g_dumpPath);

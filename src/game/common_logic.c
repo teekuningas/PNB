@@ -7,6 +7,7 @@
 #include "game_analysis.h"
 #include "game_manipulation.h"
 #include "base_control.h"
+#include "referee.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -970,32 +971,6 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 			}
 		}
 	}
-}
-
-void initializeRefereeState(RefereeState* referee)
-{
-	int i;
-	for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-		referee->battingPlayers[i].hadSafetyAtPitchStart = 0;
-		referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-		referee->battingPlayers[i].hasPendingWound = 0;
-		referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NONE;
-		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
-		referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
-		referee->battingPlayers[i].hadSafetyAtLastEvent = 0;
-
-		// Initialize wounding markers
-		referee->woundingPlayersMarked[i] = 0;
-	}
-	referee->woundingCatchActive = 0;
-	referee->foulPlayActive = 0;
-	referee->strikesAtPitchStart = 0;
-
-	// Initialize wounding system state
-	referee->woundingCatchPending = 0;
-	referee->woundingCatchHandled = 0;
-	referee->woundingCatchTimer = -1;
 }
 
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
