@@ -5,14 +5,14 @@
 Transform from coordinated managers to a strict functional pipeline:
 
 ```
-State_Next = Apply(Referee(Physics(Intent(State, Input))))
+State_Next = Pipeline(Physics(Input(State)))
 ```
 
 **Target loop:**
 1. Input → Intent (e.g., INTENT_SWING_BAT)
-2. Physics(State, Intent) → PhysicsResult
-3. Referee(PhysicsResult) → Decisions (outs, runs, wounds)
-4. Apply(Decisions) → NewState
+2. Physics(State, Intent) → NewPhysicalState
+3. Referee_Update(NewPhysicalState) → NewLegalState (Outs, Runs)
+4. Reconcile(NewLegalState) → PhysicalReactions (Panic Runs)
 5. Render(NewState)
 
 ## Milestone Progress
@@ -20,43 +20,48 @@ State_Next = Apply(Referee(Physics(Intent(State, Input))))
 | # | Milestone | Status | Achievement |
 |---|-----------|--------|-------------|
 | 10-13 | State Consolidation | ✅ | StateInfo is single source of truth |
-| 14 | The Great Decoupling | ✅ | **Referee_Analyze (pure) + Referee_Apply (impure)** |
-| 15 | Action Decoupling | 🚧 | Split actions_messy/ into pure + apply |
-| 16 | Intent Phase | 🔮 | Decouple input from execution |
-| 17 | Full Pipeline | 🔮 | Linear game loop |
+| 14 | The Great Decoupling V1 | ✅ | **Referee_Analyze (pure) + Referee_Apply (impure)** |
+| 15 | Referee Architecture V2 | ✅ | **Referee_Update (Sequential Pipeline)** - Decisions struct eliminated |
+| 16 | Centralized Mutation | 🚧 | Move all rule writes to Referee |
+| 17 | Manipulation Decomposition | 🔮 | Break game_manipulation into subsystems |
+| 18 | Action Decoupling | 🔮 | Split actions_messy/ into pure + apply |
 
-## Current State (M14 Complete)
+## Current State (M15 Complete)
 
-### What Changed in M14
+### What Changed in M15
 
-**Before:** `game_analysis.c` mixed rule logic with state mutation (~923 LOC)
+**Before:** `Referee_Analyze` -> `RefereeDecisions` -> `Referee_Apply` pattern. Middleware struct overhead.
 
 **After:**
-- `rules_pure/referee.c` (310 LOC) - Pure analysis, returns `RefereeDecisions`
-- `referee_apply.c` (149 LOC) - Applies decisions to state
-- `game_analysis.c` (613 LOC) - Coordinator calling analyze → apply
+- `rules_pure/referee.c` (350 LOC) - **Referee_Update** pipeline calling sequential helpers.
+- **Removed:** `referee_apply.c`, `RefereeDecisions`, `Referee_Analyze`.
+- **Ball Home:** Logic moved to `game_manipulation.c` (physical state, not rule).
+- **Reconciliation:** `reconcileLegalAndPhysicalState` runs after Referee to sync physics with new rules.
 
 ### Key Data Structures
 
 ```c
-// Per-player rule tracking
+// Per-player rule tracking (in RefereeState)
 typedef struct {
     BaseID currentSafetyBase;      // Replaces old baseControlIndex
     int hasPendingWound;
     WoundingType woundingType;
     BaseID baseAtPitchStart;       // Foul play snapshot
+    int isOut;                     // Logical out
+    int hasScored;                 // Logical score
     // ...
 } RefereePlayerState;
 
-// Referee analysis output
-typedef struct {
-    PlayerDecision playerDecisions[24];  // Per-player: isOut, isWounded, etc
-    int ballHome;
-    int eventOut, eventRun;
-    int canMakeRunOfHonor;
-    int isPeriodEnd;
-} RefereeDecisions;
+// Note: RefereeDecisions struct is GONE.
 ```
+
+### Referee Pipeline
+
+The `Referee_Update` function runs a sequence of logic updates directly on the state:
+1. `get_ball_at_base_index` (Query)
+2. `update_safety_status` (Grants/Removes safety based on location)
+3. `update_force_outs_and_tuplahaava` (Applies Outs, Events)
+4. `update_runs` (Calculates runs, updates scores)
 
 ### State Validator
 
@@ -69,156 +74,68 @@ typedef struct {
 
 **Usage:** `./main --debug-state crash.json` → dumps JSON on violation
 
-### Eliminated: baseControlIndex
-
-**Old:** `int baseControlIndex[4]` - cached array  
-**New:** `referee.battingPlayers[i].currentSafetyBase`  
-**Query:** `get_base_controller(game, BASE_X)` iterates
-
 ## Codebase Map
 
-### Directory Structure (15k LOC)
+### Directory Structure
 
 ```
 src/
 ├── core/ (~3.5k LOC)
 │   ├── main.c                 Entry point
 │   ├── state_validator.c      Runtime checks ⭐
-│   ├── render.c               OpenGL
-│   ├── input.c, sound.c, resource_manager.c
-│   └── [vector_math, geometry, field_layout]
+│   └── ...
 │
 ├── game/ (~8.5k LOC)
-│   ├── game_screen.c (519)    Main game loop
-│   ├── game_analysis.c (613)  Rule coordinator
-│   ├── game_manipulation.c (1010)  Player movement
-│   ├── common_logic.c (1032)  Shared helpers
+│   ├── game_screen.c          Main game loop
+│   ├── game_analysis.c        Legacy coordinator (slimmed down)
+│   ├── game_manipulation.c    Player movement + ballHome logic
+│   ├── common_logic.c         Shared helpers
+│   ├── mutable_world.c        Main Update Loop (calls Referee_Update)
 │   │
-│   ├── rules_pure/ ⭐ PURE (Query)
-│   │   ├── referee.c (310)       Analysis engine
-│   │   ├── base_logic.c          Safety helpers
-│   │   ├── base_control.c        get_base_controller()
-│   │   ├── rules_outs.c          Out detection
-│   │   ├── rules_runs.c          Run scoring
-│   │   └── rules_strikes.c       Strike/ball logic
+│   ├── rules_pure/ ⭐ REF CORE
+│   │   ├── referee.c          Referee_Update pipeline
+│   │   ├── base_logic.c       Safety helpers
+│   │   ├── base_control.c     get_base_controller(), get_ball_at_base()
+│   │   ├── rules_outs.c       Out detection
+│   │   ├── rules_runs.c       Run scoring
+│   │   └── rules_strikes.c    Strike/ball logic
 │   │
-│   ├── referee_apply.c (149) ⭐ IMPURE (Apply)
-│   │
-│   ├── actions_pure/
-│   │   ├── batting_physics.c
-│   │   └── pitching_physics.c
-│   │
-│   ├── actions_messy/ ⚠️ TO REFACTOR
-│   │   ├── batting_system.c (473)
-│   │   ├── pitching_system.c (385)
-│   │   └── throwing_system.c (250)
-│   │
-│   ├── ai_pure/
-│   │   ├── batting_ai_strategy.c
-│   │   ├── catching_ai_strategy.c
-│   │   └── pitching_ai_strategy.c
-│   │
-│   └── ai_messy/ ⚠️ TO REFACTOR
-│       ├── batting_ai.c (407)
-│       └── catching_ai.c (247)
+│   ├── actions_pure/ ...
+│   ├── actions_messy/ ...
+│   └── ai_messy/ ...
 │
-├── menu/ (~2.8k LOC)
-├── cup/ (~450 LOC)
-├── renderer/ (~600 LOC)
-└── physics/ (~400 LOC)
+├── menu/ ...
+├── cup/ ...
+├── renderer/ ...
+└── physics/ ...
 
 include/
-└── globals.h (773 LOC) - All types, 38 structs
+└── globals.h - All types
 ```
 
-### Next Refactoring Targets (M15)
+### Next Refactoring Targets (M16)
 
-**actions_messy/** (~1,108 LOC)
-- Split into `Action_Analyze()` + `Action_Apply()`
-- Pattern: Same as referee (pure analysis → mutation)
+**Centralized Mutation**
+- Move `foulPlay` restoration logic to Referee.
+- Move `EVENT_STRIKE/BALL` logic to Referee.
+- Ensure `game_manipulation` only handles physics, not rules.
 
-**ai_messy/** (~654 LOC)
-- Move pure logic to ai_pure/
-- Leave only state mutation
-
-**common_logic.c** (1,032 LOC)
-- Audit: separate queries from mutators
+**Game Manipulation**
+- Break down into `updatePhysics`, `updateAI`, `updateReactions`.
 
 ## Test Coverage
 
 **67 tests passing**
 
 ### Unit Tests (53)
-- `test_rules_referee.c` - Pure referee
+- `test_rules_referee.c` - Verified with Referee_Update
 - `test_rules_outs.c`, `test_rules_runs.c`, `test_rules_strikes.c`
 - `test_base_logic.c`
-- `test_batting_physics.c`, `test_pitching_physics.c`
-- `test_*_ai_strategy.c` - AI decision logic
-- `test_cup_logic.c`
+- ...
 
 ### Integration Tests (14)
-- Force outs, runs, wounding
-- Tuplahaava (§36 collision rules)
-- Foul play, overtaking (§42 Run of Honor)
-- Chain reactions, force play
-- Fielder positioning (§31 placeholder)
-
-## Implementation Patterns
-
-### The Query/Apply Split
-
-**Goal:** Separate "What should happen?" from "Make it happen"
-
-```c
-// QUERY (Pure function)
-RefereeDecisions Referee_Analyze(const StateInfo* state) {
-    RefereeDecisions decisions = {0};
-    // Read state, detect outs/runs/wounds
-    // NO STATE MUTATION
-    return decisions;
-}
-
-// APPLY (Impure function)
-void Referee_Apply(StateInfo* state, const RefereeDecisions* decisions) {
-    // Mutate state based on decisions
-    // Remove players, update scores, etc
-}
-
-// COORDINATOR
-void gameAnalysis(StateInfo* state) {
-    RefereeDecisions decisions = Referee_Analyze(state);
-    Referee_Apply(state, &decisions);
-}
-```
-
-**Why?**
-- Pure functions are testable without game loop
-- Clear separation of concerns
-- Enables future replay/undo systems
-
-### State Validation Pattern
-
-```c
-// After critical mutations
-if (debugMode) {
-    if (!validate_game_state(state)) {
-        dump_game_state_to_json(state, "crash.json");
-        exit(1);
-    }
-}
-```
-
-**Catches:**
-- Ghost runners (player claims base but isn't there)
-- Duplicate safety (two players on same base)
-- Control inconsistency
-
-## Technical Debt
-
-1. **actions_messy/** - Mix of input, timing, physics, mutation (M15 target)
-2. **ai_messy/** - Mix of decisions and mutation
-3. **common_logic.c** - 1k LOC of mixed concerns
-4. **globals.h** - 773 LOC "God header" (consider splitting later)
+- **Full Scenario:** `test_full_scenarios.c` (Force Out, Scoring)
+- **Legacy Scenarios:** Chain reactions, Tuplahaava, Foul Play, etc.
 
 ## Build & Run
 
@@ -231,14 +148,7 @@ devenv shell make test             # 53 unit tests
 devenv shell make integration_test # 14 scenario tests
 ```
 
-## Key Principles
-
-1. **Data shapes architecture** - Clean data → obvious design
-2. **Pure functions first** - Extract logic before refactoring
-3. **Small safe steps** - Test each change
-4. **Foundation before skyscraper** - Clean data before complex patterns
-
 ---
 
-**Last updated:** 2026-01-07  
-**Current:** Milestone 14 complete, starting M15
+**Last updated:** 2026-01-08
+**Current:** Milestone 15 complete, starting M16

@@ -143,6 +143,23 @@ if (game->referee.battingPlayers[playerIndex].currentSafetyBase == BASE_THIRD)
 
 ---
 
+### 7. **The "Frame-Off" Synchronization Bug**
+
+**Problem:** A player arrives at a base in Physics loop (Frame X).
+- `gameManipulation` updates position.
+- Logic immediately checks safety. Referee hasn't run yet!
+- Logic sees "At Base" + "No Safety" -> **PANIC RUN!**
+- Player runs past the base instantly.
+
+**Solution:** Explicit Pipeline Ordering:
+1. `gameManipulation` (Physics/Movement)
+2. `Referee_Update` (Rules/Safety Granting)
+3. `reconcile` (Reaction to Rule Changes)
+
+**Insight:** Physics must NOT react to rules *within the same pass* if the rules haven't updated yet. Separate the phases.
+
+---
+
 ## Recommended Game Architecture Improvements
 
 ### Priority 1: State Initialization Bundles
