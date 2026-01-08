@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include "../../src/include/globals.h"
-#include "../../src/game/rules_pure/referee.h"
+#include "../src/game/referee.h"
 #include "fixtures.h"
 #include "test_rules_referee.h"
 
