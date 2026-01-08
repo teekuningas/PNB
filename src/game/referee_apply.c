@@ -20,7 +20,7 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 		if (game->gameFlowState.homeRunCameraCounter == -1 &&
 		        game->cameraState.homeRunCameraFlag == 1 &&
 		        (get_base_controller(game, BASE_THIRD) == -1 ||
-		         game->playerInfo[get_base_controller(game, BASE_THIRD)].bTPI.state == PLAYER_STATE_SAFE_ON_BASE)) {
+		         game->playerInfo[get_base_controller(game, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
 			game->gameFlowState.homeRunCameraCounter = 0;
 		}
 	}
@@ -52,11 +52,8 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 
 		// A. Forced Advance ("Panic Run")
 		if (pd->shouldAdvance) {
-			// In checkForOuts: "runToNextBase(..., index, (BaseID)i)" where i was the loop index of bases.
-			// Referee logic: safetyToRemove = ballAtBase.
-			// So we use safetyToRemove as the base we are running FROM (or associated with).
-			// runToNextBase takes the player index and the base they are advancing FROM.
-			runToNextBase(game, stateInfo->fieldPositions, i, pd->advanceTarget);
+			// Referee no longer forces movement.
+			// gameManipulation will detect lack of safety and trigger run.
 		}
 
 		// B. Remove Safety
@@ -69,6 +66,11 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			}
 		}
 
+		// B1. Grant Safety
+		if (pd->grantSafety) {
+			game->referee.battingPlayers[i].currentSafetyBase = pd->safetyToGrant;
+		}
+
 		// B2. Change Wounding Type
 		if (pd->changeWoundingType) {
 			game->referee.battingPlayers[i].woundingType = pd->newWoundingType;
@@ -76,55 +78,23 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 
 		// C. Apply OUT
 		if (pd->isOut) {
-			game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
+			game->referee.battingPlayers[i].isOut = 1;
 			game->gameState.outs += 1;
-			game->playerInfo[i].bTPI.baseId = BASE_NONE;
-
-			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
 
 			// Critical Fix: Clear baseAtPitchStart so this player isn't resurrected by foulPlay
 			game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
-
-			// Ensure safety is removed (redundant but safe)
-			// Referee probably set removeSafety=1 too, but let's be sure.
-			// Actually Referee_Analyze sets removeSafety if Out.
 		}
 
 		// D. Apply RUN
 		if (pd->isRun) {
-			// Update flags
-			if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-				game->playerRuntime[i].hasMadeRunOnThirdBase = 1;
-			}
-
 			stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
 			game->gameState.runsInTheInning += 1;
 
+			game->referee.battingPlayers[i].hasScored = 1;
+			game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
+
 			if (game->gameState.runsInTheInning % 2 == 0) {
 				game->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-				if (game->playerInfo[i].bTPI.baseId == BASE_NONE) { // If home run (no base)? No wait.
-					// If baseId became NONE (removed), then noMorePlayers = 0.
-					// If baseId is still BASE_THIRD (Run of Honor), we don't reset noMorePlayers?
-					// Legacy: if(playerInfo[index].bTPI.baseId == BASE_NONE) noMorePlayers = 0;
-				}
-			}
-
-			// Cleanup player if they scored normally (at Home Scored)
-
-			if (game->playerInfo[i].bTPI.baseId == BASE_HOME_SCORED) {
-
-				game->playerInfo[i].bTPI.baseId = BASE_NONE;
-
-
-
-				// Critical Fix: Clear baseAtPitchStart for scored players too
-
-
-				game->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
-
-				if (game->gameState.runsInTheInning % 2 == 0) {
-					game->playerCounters.noMorePlayers = 0;
-				}
 			}
 		}
 	}
@@ -143,4 +113,13 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 			game->gameControl.checkForRun = 0;
 		}
 	}
+}
+
+void Referee_Execute(StateInfo* stateInfo)
+{
+	// Phase 1: Pure Analysis (Read-Only)
+	RefereeDecisions decisions = Referee_Analyze(stateInfo);
+
+	// Phase 2: State Mutation (Write)
+	Referee_Apply(stateInfo, &decisions);
 }

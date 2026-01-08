@@ -385,7 +385,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
 	if(get_base_controller(stateInfo->localGameInfo, base) != -1) {
 		if(stateInfo->localGameInfo->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
 			int index = get_base_controller(stateInfo->localGameInfo, base);
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+			if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
 			        stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
 				if(stateInfo->localGameInfo->pRAI.willStartRunning[base] == 0) {
 					if(index != -1 && stateInfo->localGameInfo->playerInfo[index].cPI.moving == 0) {
@@ -400,7 +400,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
 			} else {
 				stateInfo->localGameInfo->pRAI.willStartRunning[base] = 0;
 				if(index != -1) {
-					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE &&
+					if(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_ON_BASE &&
 					        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
 						runToPreviousBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, base);
 					}

@@ -236,7 +236,6 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->localGameInfo->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 	stateInfo->localGameInfo->aF.cTAF.actionKeyLock = 0;
 
-	// DEBUG: Capture snapshot for history log
 	StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
 }
 

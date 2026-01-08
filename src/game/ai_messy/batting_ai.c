@@ -206,7 +206,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				if (i == BASE_THIRD && stateInfo->localGameInfo->gameState.ballHome == 1) continue;
 
 				if(stateInfo->localGameInfo->aiState.baseRunnerDecisionMade[i] == 0 && get_base_controller(stateInfo->localGameInfo, (BaseID)i) != -1 &&
-				        stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, (BaseID)i)].bTPI.state == PLAYER_STATE_SAFE_ON_BASE &&
+				        stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, (BaseID)i)].bTPI.state == PLAYER_STATE_ON_BASE &&
 				        stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] == 0 && stateInfo->localGameInfo->aiState.baseRunnerLock[i] == AI_NO_LOCK && stateInfo->localGameInfo->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
 					stateInfo->localGameInfo->aiState.baseRunnerKeyDown[i] = 1;
 					stateInfo->localGameInfo->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;

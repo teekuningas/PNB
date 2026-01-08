@@ -7,6 +7,7 @@
 
 int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm);
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
+void reconcileLegalAndPhysicalState(StateInfo* stateInfo);
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm);
 int cleanMutableWorld(StateInfo* stateInfo);
 

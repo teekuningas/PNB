@@ -130,7 +130,7 @@ static int test_runner_not_wounded_if_starts_running_late() {
     // Runner is SAFE at original base
     state->localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_FIRST;
-    set_test_player_state(state, runnerIndex, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, runnerIndex, PLAYER_STATE_ON_BASE);
     
     // Stabilization
     state->localGameInfo->gameControl.firstCatchMade = 1;

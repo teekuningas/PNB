@@ -35,7 +35,7 @@ int test_debug_logging_cycle() {
     // Base 1 controlled by Player 0, but Player 0 is physically at Base 2
     game.referee.battingPlayers[0].currentSafetyBase = BASE_FIRST; // Player 0 owns Base 1
     game.playerInfo[0].bTPI.baseId = BASE_SECOND; // But is physically at Base 2
-    game.playerInfo[0].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+    game.playerInfo[0].bTPI.state = PLAYER_STATE_ON_BASE;
 
     // 4. Run Check (should trigger dump and pause)
     StateValidator_Check(&state);

@@ -176,14 +176,14 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int r3IsOnBase = 0;
 		if (index3 != -1) {
 			r3BaseAtPitchStart = stateInfo->localGameInfo->referee.battingPlayers[index3].baseAtPitchStart;
-			r3IsOnBase = (stateInfo->localGameInfo->playerInfo[index3].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
+			r3IsOnBase = (stateInfo->localGameInfo->playerInfo[index3].bTPI.state == PLAYER_STATE_ON_BASE);
 		}
 
 		BaseID r2BaseAtPitchStart = BASE_NONE;
 		int r2IsOnBase = 0;
 		if (index2 != -1) {
 			r2BaseAtPitchStart = stateInfo->localGameInfo->referee.battingPlayers[index2].baseAtPitchStart;
-			r2IsOnBase = (stateInfo->localGameInfo->playerInfo[index2].bTPI.state == PLAYER_STATE_SAFE_ON_BASE);
+			r2IsOnBase = (stateInfo->localGameInfo->playerInfo[index2].bTPI.state == PLAYER_STATE_ON_BASE);
 		}
 
 		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
@@ -216,7 +216,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 				BaseID bid = stateInfo->localGameInfo->playerInfo[i].bTPI.baseId;
 
 				if (bid != BASE_NONE) {
-					runners[runnerCount].isOnBase = (s == PLAYER_STATE_SAFE_ON_BASE || s == PLAYER_STATE_AT_BAT);
+					runners[runnerCount].isOnBase = (s == PLAYER_STATE_ON_BASE || s == PLAYER_STATE_AT_BAT);
 					runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
 					runners[runnerCount].base = bid;
 					runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);

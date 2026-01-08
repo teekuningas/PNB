@@ -22,7 +22,7 @@ static void setup_tuplahaava_scenario(StateInfo* state) {
     state->localGameInfo->referee.battingPlayers[runnerB].baseAtPitchStart = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[runnerB].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerB].currentSafetyBase = BASE_SECOND;
-    set_test_player_state(state, runnerB, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, runnerB, PLAYER_STATE_ON_BASE);
 
     // Runner A on 1st (Index 0)
     int runnerA = 0;
@@ -135,7 +135,7 @@ static int test_tuplahaava_collision_if_leading_scenario() {
     state->localGameInfo->playerInfo[runnerB].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->gameControl.playerArrivedToBase = 1;
     state->localGameInfo->playerRuntime[runnerB].arrivedToBase = 1;
-    set_test_player_state(state, runnerB, PLAYER_STATE_SAFE_ON_BASE); // Simulate physical arrival
+    set_test_player_state(state, runnerB, PLAYER_STATE_ON_BASE); // Simulate physical arrival
     gameManipulation(state);
 
     // Check final results - both should be wounded

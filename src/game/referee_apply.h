@@ -16,4 +16,10 @@
  */
 void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions);
 
+/**
+ * @brief Executes the full Referee phase: Analysis followed by Application.
+ * This should be called once per frame after physical updates.
+ */
+void Referee_Execute(StateInfo* stateInfo);
+
 #endif // REFEREE_APPLY_H

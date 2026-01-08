@@ -9,9 +9,9 @@
 #define SNAPSHOT_LABEL_LEN 32
 
 typedef struct {
-    char label[SNAPSHOT_LABEL_LEN];
-    int frameCount; // Assuming we can get this, or just sequence ID
-    LocalGameInfo snapshot;
+	char label[SNAPSHOT_LABEL_LEN];
+	int frameCount; // Assuming we can get this, or just sequence ID
+	LocalGameInfo snapshot;
 } GameSnapshot;
 
 // Global State
@@ -50,7 +50,7 @@ void StateValidator_CaptureSnapshot(StateInfo* state, const char* label)
 	int idx = g_historyHead;
 	snprintf(g_history[idx].label, SNAPSHOT_LABEL_LEN, "%s", label);
 	g_history[idx].frameCount = g_sequenceId++;
-	
+
 	// Deep copy the local game info
 	// Note: Strings (names) are pointers, but they usually point to static data or managed resources.
 	// As long as we don't free them, copying the pointer is fine for a snapshot.
@@ -66,29 +66,46 @@ void StateValidator_CaptureSnapshot(StateInfo* state, const char* label)
 static const char* base_to_string(BaseID id)
 {
 	switch(id) {
-	case BASE_HOME: return "HOME";
-	case BASE_FIRST: return "1ST";
-	case BASE_SECOND: return "2ND";
-	case BASE_THIRD: return "3RD";
-	case BASE_HOME_SCORED: return "SCORED";
-	case BASE_NONE: return "NONE";
-	default: return "UNKNOWN";
+	case BASE_HOME:
+		return "HOME";
+	case BASE_FIRST:
+		return "1ST";
+	case BASE_SECOND:
+		return "2ND";
+	case BASE_THIRD:
+		return "3RD";
+	case BASE_HOME_SCORED:
+		return "SCORED";
+	case BASE_NONE:
+		return "NONE";
+	default:
+		return "UNKNOWN";
 	}
 }
 
 static const char* state_to_string(PlayerUnitState s)
 {
 	switch(s) {
-	case PLAYER_STATE_IDLE: return "IDLE";
-	case PLAYER_STATE_AT_BAT: return "AT_BAT";
-	case PLAYER_STATE_SAFE_ON_BASE: return "SAFE";
-	case PLAYER_STATE_RUNNING: return "RUNNING";
-	case PLAYER_STATE_ADVANCING_FREELY: return "FREE_WALK";
-	case PLAYER_STATE_LEADING: return "LEADING";
-	case PLAYER_STATE_OUT: return "OUT";
-	case PLAYER_STATE_WOUNDED: return "WOUNDED";
-	case PLAYER_STATE_SCORED: return "SCORED_STATE";
-	default: return "UNKNOWN";
+	case PLAYER_STATE_IDLE:
+		return "IDLE";
+	case PLAYER_STATE_AT_BAT:
+		return "AT_BAT";
+	case PLAYER_STATE_ON_BASE:
+		return "ON_BASE";
+	case PLAYER_STATE_RUNNING:
+		return "RUNNING";
+	case PLAYER_STATE_ADVANCING_FREELY:
+		return "FREE_WALK";
+	case PLAYER_STATE_LEADING:
+		return "LEADING";
+	case PLAYER_STATE_OUT:
+		return "OUT";
+	case PLAYER_STATE_WOUNDED:
+		return "WOUNDED";
+	case PLAYER_STATE_SCORED:
+		return "SCORED_STATE";
+	default:
+		return "UNKNOWN";
 	}
 }
 
@@ -108,26 +125,26 @@ static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"batterIndex\": %d,\n", sp, game->pII.batterIndex);
-	
+
 	fprintf(f, "%s\"players\": [\n", sp);
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		PlayerInfo* p = &game->playerInfo[i];
 		// Only print relevant players (on base, active, or pending wound)
-		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE || 
+		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE ||
 		                  game->referee.battingPlayers[i].hasPendingWound);
-		
+
 		if (isRelevant) {
 			fprintf(f, "%s  {\n", sp);
 			fprintf(f, "%s    \"id\": %d,\n", sp, i);
 			fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
 			fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
 			fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
-			
+
 			// Referee State
 			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
 			fprintf(f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp, base_to_string(game->referee.battingPlayers[i].currentSafetyBase));
 			fprintf(f, "%s    \"ref_pendingWound\": %d\n", sp, game->referee.battingPlayers[i].hasPendingWound);
-			
+
 			fprintf(f, "%s  },\n", sp);
 		}
 	}
@@ -159,12 +176,12 @@ static void dump_state(StateInfo* state, const char* reason)
 
 	// History
 	fprintf(f, "  \"history\": [\n");
-	
+
 	// Iterate from oldest to newest
 	// Oldest is at head (if full) or 0 (if not full)?
 	// Ring buffer: head points to NEXT write slot. So oldest is at head (if full).
 	// But it's easier to just iterate sequentially and handle wrap.
-	
+
 	int startIdx = (g_historyCount < HISTORY_SIZE) ? 0 : g_historyHead;
 	for (int i = 0; i < g_historyCount; i++) {
 		int idx = (startIdx + i) % HISTORY_SIZE;
@@ -176,7 +193,7 @@ static void dump_state(StateInfo* state, const char* reason)
 		fprintf(f, "\n      }\n");
 		fprintf(f, "    }%s\n", (i < g_historyCount - 1) ? "," : "");
 	}
-	
+
 	fprintf(f, "  ]\n");
 	fprintf(f, "}\n");
 	fclose(f);
@@ -217,21 +234,6 @@ void StateValidator_Check(StateInfo* state)
 				dump_state(state, "Base Controller State Invalid");
 				game->gameControl.pause = 1;
 				return;
-			}
-		}
-	}
-
-	// Invariant 2: Reverse check (Players vs Control Index)
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_SAFE_ON_BASE) {
-			int b = game->playerInfo[i].bTPI.baseId;
-			if (b >= 0 && b < BASE_COUNT) {
-				if (get_base_controller(game, b) != i) {
-					printf("\n[STATE ERROR] FATAL: Player %d is SAFE at base %d, but base controller is %d\n", i, b, get_base_controller(game, b));
-					dump_state(state, "Safe Player Not Controlling Base");
-					game->gameControl.pause = 1;
-					return;
-				}
 			}
 		}
 	}

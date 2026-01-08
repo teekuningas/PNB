@@ -25,15 +25,15 @@ void test_force_play_bases_loaded(void)
 	int r3 = 0, r2 = 1, r1 = 2;
 	
 game->playerInfo[r3].bTPI.baseId = BASE_THIRD;
-game->playerInfo[r3].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+game->playerInfo[r3].bTPI.state = PLAYER_STATE_ON_BASE;
 game->referee.battingPlayers[r3].currentSafetyBase = BASE_THIRD;
 
 	game->playerInfo[r2].bTPI.baseId = BASE_SECOND;
-game->playerInfo[r2].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+game->playerInfo[r2].bTPI.state = PLAYER_STATE_ON_BASE;
 game->referee.battingPlayers[r2].currentSafetyBase = BASE_SECOND;
 
 	game->playerInfo[r1].bTPI.baseId = BASE_FIRST;
-game->playerInfo[r1].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+game->playerInfo[r1].bTPI.state = PLAYER_STATE_ON_BASE;
 game->referee.battingPlayers[r1].currentSafetyBase = BASE_FIRST;
 
 	// Batter (Player 3) hits a grounder and runs to 1st
@@ -108,7 +108,7 @@ game->referee.battingPlayers[r1].currentSafetyBase = BASE_FIRST;
 		 * Is he safe? Yes.
 		 */
 		game->playerInfo[r1].bTPI.baseId = BASE_SECOND; // Arrived!
-		game->playerInfo[r1].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Safe!
+		game->playerInfo[r1].bTPI.state = PLAYER_STATE_ON_BASE; // Safe!
 		
 		// Ball is at 1st base (behind him).
 		// `game_analysis.c` loop for i=1 (1st base):

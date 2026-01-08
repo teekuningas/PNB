@@ -44,7 +44,7 @@ typedef enum {
 typedef enum {
 	PLAYER_STATE_IDLE = 0,
 	PLAYER_STATE_AT_BAT,
-	PLAYER_STATE_SAFE_ON_BASE,      // Replaces isOnBase=1
+	PLAYER_STATE_ON_BASE,      // Replaces isOnBase=1
 	PLAYER_STATE_RUNNING,           // Replaces isOnBase=0, out=0, wounded=0
 	PLAYER_STATE_ADVANCING_FREELY,  // Replaces takingFreeWalk=1
 	PLAYER_STATE_LEADING,           // Replaces leading=1
@@ -328,6 +328,8 @@ typedef struct _RefereePlayerState {
 
 	// === CURRENT SAFETY STATUS ===
 	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
+	int isOut;                     // Logical out status (decided by Referee)
+	int hasScored;                 // Logical scored status (decided by Referee)
 
 	// === WOUNDING TRACKING ===
 	int hasPendingWound;           // Marked for wounding
@@ -369,6 +371,8 @@ typedef struct {
 	BaseID advanceTarget;
 	int removeSafety;            // Clear safety from a base?
 	BaseID safetyToRemove;
+	int grantSafety;             // Grant safety at a base?
+	BaseID safetyToGrant;
 	int changeWoundingType;      // Change wounding type (e.g. Tuplahaava -> Normal)
 	WoundingType newWoundingType;
 } PlayerDecision;

@@ -347,7 +347,7 @@ static void processPendingWounds(StateInfo* stateInfo)
 			if (currentBase != BASE_NONE) {
 				int shouldWound = 0;
 				// Check if player is physically touching the base (Safe or At Bat)
-				int is_physically_on_base = (stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+				int is_physically_on_base = (stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
 				                             stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT);
 
 				if (type == WOUNDING_TYPE_NORMAL) {
@@ -392,7 +392,7 @@ static void processPendingWounds(StateInfo* stateInfo)
 								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].currentSafetyBase = (BaseID)j;
 								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].baseAtLastEvent = (BaseID)j;
 
-								if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+								if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_ON_BASE ||
 								        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
 
 									stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
@@ -439,7 +439,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 							if(stateInfo->localGameInfo->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY &&
 							        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
 							        stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
-								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE; // Transition out of ADVANCING_FREELY
+								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ON_BASE; // Transition out of ADVANCING_FREELY
 							}
 
 							// NOTE: Wounding logic is now handled by processPendingWounds()
@@ -470,7 +470,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].baseAtLastEvent = (BaseID)j;
 
 										// If they are physically at the base, wound them immediately.
-										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_SAFE_ON_BASE ||
+										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_ON_BASE ||
 										        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
 
 											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
@@ -492,34 +492,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								// §42 Kunniajuoksu Overtaking check:
 								// We prevent the arriving hitter from taking safety if 3rd base is occupied.
 								// This allows gameAnalysis to detect the overtaking and remove the hitter.
-								int overtaken = 0;
-								if (j == BASE_THIRD && get_base_controller(stateInfo->localGameInfo, (BaseID)j) != -1 &&
-								        get_base_controller(stateInfo->localGameInfo, (BaseID)j) != index &&
-								        stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart == BASE_HOME) {
-									overtaken = 1;
-								}
-
-								// normal case: take safety from whoever was here before.
-								if(!overtaken && get_base_controller(stateInfo->localGameInfo, (BaseID)j) != -1 && get_base_controller(stateInfo->localGameInfo, (BaseID)j) != index) {
-									int prevIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)j);
-									// they are no longer safe and must run!
-									runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, prevIndex, (BaseID)j);
-								}
-
-								if (!overtaken) {
-									// we are now safe here.
-									// Referee Update (Milestone 12)
-									stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = (BaseID)j;
-								}
-								// if we were safe on previous base ( no other player arrived there before we arrived here
-								// or our safety was removed from there by a fielder), we set that that -1
-								// to indicate we arent there anymore.
-								if(get_base_controller(stateInfo->localGameInfo, (BaseID)(j-1)) == index) {
-									// Referee Update: Already handled by the new safety set above, but if it was the only safety:
-									// logic is complex here, but setting new safety above should supersede old one in referee too.
-									// If we want to be strict, we could check if currentSafetyBase matches j-1, but strictly speaking
-									// we just gained safety at j.
-								}
 								// if we arrived to base 3 and were originally from homebase
 								if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD &&
 								        stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart == BASE_HOME &&
@@ -872,7 +844,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 									} else {
 									}
 									// also these are needed to do continued calculations only when needed.
@@ -882,7 +854,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 								} else {
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 									}
 								}
 							}
@@ -903,7 +875,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 
 										stateInfo->localGameInfo->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
 										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 										}
 										stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
 										stateInfo->localGameInfo->gameControl.playerArrivedToBase = 1;
@@ -924,7 +896,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 
 										if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
 										        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 										}
 										stopTargetLookingPlayer(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, i);
 										needToStop = 0;
@@ -1008,3 +980,4 @@ static void updateModels(StateInfo* stateInfo)
 		}
 	}
 }
+

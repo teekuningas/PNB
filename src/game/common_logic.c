@@ -924,7 +924,7 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 		// runner
 		if(runnerIndex != -1) {
 			localGameInfo->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
-			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+			localGameInfo->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
 			localGameInfo->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
 			localGameInfo->referee.battingPlayers[runnerIndex].hadSafetyAtPitchStart = 1; // Correctness
 			localGameInfo->referee.battingPlayers[runnerIndex].currentSafetyBase = BASE_THIRD;

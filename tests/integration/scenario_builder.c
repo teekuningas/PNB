@@ -3,8 +3,10 @@
 #include "game_setup.h"
 #include "game_analysis.h"
 #include "game_manipulation.h"
+#include "mutable_world.h"
 #include "common_logic.h"
 #include "referee.h"
+#include "referee_apply.h"
 #include "action_implementation.h"
 #include "action_implementation.h"
 #include "vector_math.h"
@@ -92,7 +94,7 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 	if (progressToNext < 0.1f) {
 		// At the base - has safety
 		game->playerInfo[playerIndex].bTPI.baseId = base;
-		game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+		game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
 		game->referee.battingPlayers[playerIndex].currentSafetyBase = base;
 	} else {
 		// Between bases - running, no safety
@@ -182,6 +184,8 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 	for (int i = 0; i < maxFrames; i++) {
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
 		gameManipulation(ctx->state);
+		Referee_Execute(ctx->state);
+		reconcileLegalAndPhysicalState(ctx->state);
 		ctx->currentFrame++;
 		
 		if (condition(ctx)) {
@@ -206,6 +210,10 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 		// Run game progression
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
 		gameManipulation(ctx->state);
+		
+		// Milestone 14: Rules engine must run after physics to reconcile state
+		Referee_Execute(ctx->state);
+		reconcileLegalAndPhysicalState(ctx->state);
 		
 		ctx->currentFrame++;
 	}

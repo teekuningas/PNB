@@ -17,7 +17,6 @@
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
-static void checkForOuts(StateInfo* stateInfo);
 static void checkIfNextBatterDecision(StateInfo* stateInfo);
 static void strikesAndBalls(StateInfo* stateInfo);
 static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
@@ -52,6 +51,9 @@ void initGameAnalysis(GameFlowState* gameFlowState)
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
+	// Reset per-frame flags
+	stateInfo->localGameInfo->gameState.ballHome = 0;
+
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
 	if(stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter >= 0) {
@@ -62,7 +64,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 		}
 	}
 
-	checkForOuts(stateInfo);
 	checkIfNextBatterDecision(stateInfo);
 	woundingCatchEffects(stateInfo);
 	foulPlay(stateInfo, rng_seed);
@@ -71,21 +72,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
 
-}
-
-#include "referee.h"
-#include "referee_apply.h"
-
-static void checkForOuts(StateInfo* stateInfo)
-{
-	// Reset per-frame flags
-	stateInfo->localGameInfo->gameState.ballHome = 0;
-
-	// Phase 1: Pure Analysis (Read-Only)
-	RefereeDecisions decisions = Referee_Analyze(stateInfo);
-
-	// Phase 2: State Mutation (Write)
-	Referee_Apply(stateInfo, &decisions);
 }
 
 static void checkIfNextBatterDecision(StateInfo* stateInfo)
@@ -320,7 +306,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 					if(stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart != BASE_NONE) {
 						// so we set every batting team player 's, who was on the field, bases to baseAtPitchStart
 						// and set them to be at a base.
-						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ON_BASE;
 						BaseID restoreBase = stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart;
 						stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = restoreBase;
 

@@ -37,19 +37,19 @@ static int test_ajolahto_force_out_at_second_scenario() {
     state->localGameInfo->playerInfo[r3].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[r3].baseAtPitchStart = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[r3].currentSafetyBase = BASE_THIRD;
-    set_test_player_state(state, r3, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, r3, PLAYER_STATE_ON_BASE);
 
     // Runner on 2nd
     state->localGameInfo->playerInfo[r2].bTPI.baseId = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[r2].baseAtPitchStart = BASE_SECOND;
     state->localGameInfo->referee.battingPlayers[r2].currentSafetyBase = BASE_SECOND;
-    set_test_player_state(state, r2, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, r2, PLAYER_STATE_ON_BASE);
 
     // Runner on 1st
     state->localGameInfo->playerInfo[r1].bTPI.baseId = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[r1].baseAtPitchStart = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[r1].currentSafetyBase = BASE_FIRST;
-    set_test_player_state(state, r1, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, r1, PLAYER_STATE_ON_BASE);
 
     // Batter
     state->localGameInfo->pII.batterIndex = batter;
@@ -107,7 +107,7 @@ static int test_no_force_chain_scenario() {
     state->localGameInfo->ballInfo.moving = 1;
     
     // Runner 2 stays safe (not forced to run)
-    set_test_player_state(state, r2, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, r2, PLAYER_STATE_ON_BASE);
     set_test_player_state(state, batter, PLAYER_STATE_RUNNING);
 
     // Ball reaches Third Base (i=3)

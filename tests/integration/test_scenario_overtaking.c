@@ -29,7 +29,7 @@ static int test_run_of_honor_overtaking_scenario() {
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_THIRD;
     state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_THIRD;
-    set_test_player_state(state, runnerA, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, runnerA, PLAYER_STATE_ON_BASE);
 
     // Batter B
     int batterB = 1;

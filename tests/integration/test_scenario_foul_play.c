@@ -30,7 +30,7 @@ static int test_foul_play_returns_runner_to_base() {
     state->localGameInfo->referee.battingPlayers[runnerA].baseAtPitchStart = BASE_FIRST;
     state->localGameInfo->referee.battingPlayers[runnerA].hadSafetyAtPitchStart = 1;
     state->localGameInfo->referee.battingPlayers[runnerA].currentSafetyBase = BASE_FIRST;
-    set_test_player_state(state, runnerA, PLAYER_STATE_SAFE_ON_BASE);
+    set_test_player_state(state, runnerA, PLAYER_STATE_ON_BASE);
 
     // Runner A moves towards 2nd
     state->localGameInfo->playerInfo[runnerA].bTPI.baseId = BASE_SECOND;
@@ -45,7 +45,7 @@ static int test_foul_play_returns_runner_to_base() {
 
     // Verify runner is back at 1st base
     ASSERT_EQ(BASE_FIRST, state->localGameInfo->playerInfo[runnerA].bTPI.baseId, "Runner should be back at 1st base after foul play");
-    ASSERT_EQ(PLAYER_STATE_SAFE_ON_BASE, state->localGameInfo->playerInfo[runnerA].bTPI.state, "Runner should be SAFE_ON_BASE after foul play");
+    ASSERT_EQ(PLAYER_STATE_ON_BASE, state->localGameInfo->playerInfo[runnerA].bTPI.state, "Runner should be SAFE_ON_BASE after foul play");
 
     cleanup_test_state(state);
     return TEST_PASSED;

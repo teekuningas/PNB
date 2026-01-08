@@ -14,6 +14,8 @@
 #include "mutable_world.h"
 #include "common_logic.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
+#include "referee_apply.h"
+#include "state_validator.h"
 
 int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 {
@@ -42,6 +44,39 @@ int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 	return 0;
 }
 
+void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
+{
+	LocalGameInfo* game = stateInfo->localGameInfo;
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		// 1. React to OUT
+		if (game->referee.battingPlayers[i].isOut) {
+			if (game->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+				game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
+				game->playerInfo[i].bTPI.baseId = BASE_NONE;
+				movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+			} else {
+			}
+		}
+
+		// 2. React to SCORE
+		if (game->referee.battingPlayers[i].hasScored && game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
+			game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
+			game->playerInfo[i].bTPI.baseId = BASE_NONE;
+			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+		}
+
+		// 3. React to displacement (Panic Run)
+		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE || game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
+			BaseID physBase = game->playerInfo[i].bTPI.baseId;
+			if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
+				// Player is physically at base but legally has no safety there.
+				// They must run forward.
+				runToNextBase(game, stateInfo->fieldPositions, i, physBase);
+			}
+		}
+	}
+}
+
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->localGameInfo->gameControl.pause == 0) {
@@ -49,6 +84,14 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);
+		// Referee logic now runs AFTER physics/manipulation to ensure legal state matches physical state
+		Referee_Execute(stateInfo);
+
+		// React to the new legal state (e.g. panic run if safety lost)
+		reconcileLegalAndPhysicalState(stateInfo);
+
+		// Validate state consistency (Debug only)
+		StateValidator_Check(stateInfo);
 	}
 }
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)

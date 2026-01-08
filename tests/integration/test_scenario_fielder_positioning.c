@@ -26,7 +26,7 @@ void test_fielder_out_of_bounds_awards_free_walk(void)
 	game->gameState.outs = 1;
 	int runnerIdx = 0;
 	game->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
-	game->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_SAFE_ON_BASE;
+	game->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_ON_BASE;
 	game->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 
 	// Setup: Place a fielder (Catching Team Player) OUT OF BOUNDS

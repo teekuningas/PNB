@@ -57,14 +57,14 @@ int base_to_int_index(BaseID id)
 
 bool player_is_protected(PlayerUnitState state)
 {
-	// Legacy: state == PLAYER_STATE_SAFE_ON_BASE || state == PLAYER_STATE_AT_BAT
+	// Legacy: state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT
 	// Also including ADVANCING_FREELY (Safe Walk) as protected?
 	// In legacy `is_actually_safe` check, it included SAFE_ON_BASE and AT_BAT.
 	// ADVANCING_FREELY protects from Wounds/Tags but does it protect from Force Outs?
 	// Rule 40 says force play happens. A free walker is forced to advance?
 	// Actually, `is_runner_forced_out` takes `is_advancing_freely` as separate param.
 	// So "protected" here strictly means "Safe at current base".
-	return (state == PLAYER_STATE_SAFE_ON_BASE || state == PLAYER_STATE_AT_BAT);
+	return (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
 }
 
 bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID original_base)
@@ -86,7 +86,7 @@ bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID 
 	if (current_base != original_base) return false;
 
 	// If they are physically safe on the original base, they are safe.
-	if (state == PLAYER_STATE_SAFE_ON_BASE || state == PLAYER_STATE_AT_BAT) return true;
+	if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) return true;
 
 	return false; // Off base
 }
