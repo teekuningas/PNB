@@ -189,7 +189,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int catcherHomeIndex = stateInfo->localGameInfo->pII.catcherOnBaseIndex[0];
 		int hasBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 
-		if(should_ai_drop_ball(&(stateInfo->localGameInfo->woundingState),
+		if(should_ai_drop_ball(&(stateInfo->localGameInfo->referee),
 		                       &(stateInfo->localGameInfo->gameControl),
 		                       r3BaseAtPitchStart, r3IsOnBase,
 		                       r2BaseAtPitchStart, r2IsOnBase,

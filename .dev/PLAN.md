@@ -30,6 +30,12 @@ We have successfully completed Milestone 14 (Referee decoupling). Now targeting 
     - `actions_messy/throwing_system.c` (250 LOC)
 - **Pattern:** Split into `Action_Analyze` + `Action_Apply`
 
+**Before Next Milestone - Test Infrastructure:**
+- **Migrate Legacy Integration Tests:** Convert all snapshot-style tests in `tests/integration/test_scenario_*.c` to full-scenario tests
+- **Pattern:** Tests should setup realistic initial state → run game loop naturally → verify outcome
+- **See:** `tests/integration/README.md` and `TESTING_INSIGHTS.md` for patterns and helpers
+- **Current Status:** 2 full-scenario tests passing (runner scoring, force out), ~10 legacy tests to migrate
+
 ### 🔮 Milestone 16: The "User Intent" Phase
 - **Goal:** Decouple Input from Action.
 - **Concept:** Input generates an `Intent` (e.g., `INTENT_SWING_BAT`). The Engine consumes `Intent`.

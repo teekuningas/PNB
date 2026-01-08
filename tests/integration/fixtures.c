@@ -41,7 +41,7 @@ StateInfo* setup_test_state() {
     state->localGameInfo->pII.lastHadBallIndex = -1;
     state->localGameInfo->pII.controlIndex = -1;
     state->localGameInfo->pII.batterIndex = -1;
-    state->localGameInfo->gameFlowState.woundingCatchCounter = -1;
+    state->localGameInfo->referee.woundingCatchTimer = -1;
     state->localGameInfo->gameFlowState.endOfInningCounter = -1;
 
     state->globalGameInfo = malloc(sizeof(GlobalGameInfo));

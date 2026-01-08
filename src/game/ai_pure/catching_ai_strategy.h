@@ -27,7 +27,7 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
                     int replacerIndex, int replacerStage, int replacerBase, int replacerMoving,
                     int targetBase);
 
-int should_ai_drop_ball(const WoundingState* woundingState,
+int should_ai_drop_ball(const RefereeState* ref,
 
                         const GameControlFlags* gameControl,
 

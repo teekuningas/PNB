@@ -112,7 +112,6 @@ void selectBatter(StateInfo* stateInfo)
 		// just set default values so that the player can have a fresh start at
 		// the field.
 		stateInfo->localGameInfo->playerRuntime[index].goingForward = 0;
-		stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
 		stateInfo->localGameInfo->playerRuntime[index].passedPathPoint = 0;
 		stateInfo->localGameInfo->playerRuntime[index].hasMadeRunOnThirdBase = 0;
 		// if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
@@ -401,7 +400,10 @@ void updateBatting(StateInfo* stateInfo)
 
 
 						// make the ball fly in the air with new velocity
-						genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), velocity.x, velocity.y, velocity.z);
+						genericSlingBall(&(stateInfo->localGameInfo->ballInfo), velocity.x, velocity.y, velocity.z);
+						// Trigger fielder selection update after ball is hit
+						stateInfo->localGameInfo->pRAI.refreshCatchAndChange = 1;
+						stateInfo->localGameInfo->pRAI.initPlayerSelection = 1;
 						// and the sound
 						stateInfo->playSoundEffect = SOUND_SWING;
 						// bat hits
@@ -416,8 +418,8 @@ void updateBatting(StateInfo* stateInfo)
 						// no throw going on now
 						stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
 						// prepare for wounds
-						stateInfo->localGameInfo->woundingState.woundingCatch = 0;
-						stateInfo->localGameInfo->woundingState.woundingCatchHandled = 0;
+						stateInfo->localGameInfo->referee.woundingCatchPending = 0;
+						stateInfo->localGameInfo->referee.woundingCatchHandled = 0;
 						stateInfo->localGameInfo->gameControl.batterStartedRunning = 0;
 
 						// move the batter if wanted

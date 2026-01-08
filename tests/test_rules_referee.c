@@ -15,6 +15,9 @@ StateInfo* create_mock_state() {
 	memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
 	memset(state->fieldPositions, 0, sizeof(FieldPositions));
 	
+	// Initialize referee state properly (wounding timer must be -1, not 0)
+	state->localGameInfo->referee.woundingCatchTimer = -1;
+	
 	// Setup standard field positions for distance checks
 	state->fieldPositions->pitchPlate.x = 0.0f; state->fieldPositions->pitchPlate.z = 0.0f;
 	state->fieldPositions->firstBase.x = 30.0f; state->fieldPositions->firstBase.z = -30.0f;
@@ -50,19 +53,20 @@ void test_referee_force_out_at_second(void) {
 	StateInfo* state = create_mock_state();
 	
 	// Setup: Ball at 2nd Base
-	state->localGameInfo->pII.hasBallIndex = 15; // Fielder
-	state->localGameInfo->ballInfo.location = state->fieldPositions->secondBase; // Exact match
+	state->localGameInfo->pII.hasBallIndex = 15; // Fielder has ball
+	state->localGameInfo->ballInfo.location = state->fieldPositions->secondBase;
 	
-	// Runner at 1st Base (forced to run)
+	// Runner physically at 1st Base
 	int runnerIdx = 0;
-	state->localGameInfo->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST; 
-	// Not safe -> forcing "force out" condition if ball beats them to 2nd
-	// Wait, is_runner_forced_out logic:
-	// ball at 2 (index 2). checkBaseId = 1.
-	// player at 1. MATCH.
+	state->localGameInfo->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
+	
+	// KEY for §33 Pesäkilpa: Runner has pesäturva (safety) at Base 1 but is RUNNING ("irti")
+	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
+	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_RUNNING;
 	
 	RefereeDecisions decisions = Referee_Analyze(state);
 	
+	// Should be OUT: has safety at Base 1, is running (irti), ball at Base 2
 	assert(decisions.playerDecisions[runnerIdx].isOut == 1);
 	assert(decisions.eventOut == 1);
 	

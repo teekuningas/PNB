@@ -101,7 +101,7 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 					if(localGameInfo->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
 						// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
 						localGameInfo->ballInfo.hasHitGround = 1;
-						localGameInfo->woundingState.woundingCatch = 0;
+						localGameInfo->referee.woundingCatchPending = 0;
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						localGameInfo->ballInfo.hitsGroundToUnWound = 1;
 						// if no catch made and bat hit and we hit the ground and ball is out of bounds,
@@ -272,7 +272,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						// wounding catchs are the catchs that come directly from the bat.
 						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameControl.firstCatchMade == 0 &&
 						        stateInfo->localGameInfo->pRAI.batHit == 1) {
-							stateInfo->localGameInfo->woundingState.woundingCatch = 1;
+							stateInfo->localGameInfo->referee.woundingCatchPending = 1;
 						}
 						// make sound
 						stateInfo->playSoundEffect = SOUND_CATCH;

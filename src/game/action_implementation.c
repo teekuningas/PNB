@@ -365,20 +365,14 @@ static void changeBatter(StateInfo* stateInfo)
 	stateInfo->localGameInfo->pII.batterSelectionIndex = index;
 }
 
-void genericSlingBall(BallInfo* ballInfo, PlayerRelatedActionInfo* pRAI, float x, float y, float z)
+void genericSlingBall(BallInfo* ballInfo, float x, float y, float z)
 {
-	// this is called for example when throwing and batting
-	// in these cases we want the change player arrays to update and to have new selected player from
-	// those arrays
-	pRAI->refreshCatchAndChange = 1;
-	pRAI->initPlayerSelection = 1;
-	// make ball visible and updatable
+// Make ball visible and moving
 	ballInfo->visible = 1;
 	ballInfo->moving = 1;
 
-	// and set the new velocity
+// Set the velocity
 	setVectorXYZ(&(ballInfo->velocity), x, y, z);
-
 }
 
 

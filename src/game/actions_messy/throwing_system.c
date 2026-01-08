@@ -67,8 +67,11 @@ void genericThrowRelease(StateInfo* stateInfo)
 		stateInfo->localGameInfo->pendingActionState.throwDirection.x = stateInfo->localGameInfo->pendingActionState.throwDirection.x / stateInfo->localGameInfo->pendingActionState.throwDistance;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.z = stateInfo->localGameInfo->pendingActionState.throwDirection.z / stateInfo->localGameInfo->pendingActionState.throwDistance;
 		stateInfo->localGameInfo->pendingActionState.throwDirection.y = 0.06f;
-		// ... and then edit them a bit more and send them to genericSlingBall.
-		genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), stateInfo->localGameInfo->pendingActionState.throwDirection.x*power*THROW_POWER_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.y + stateInfo->localGameInfo->pendingActionState.throwDistance*THROW_DISTANCE_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.z*power*THROW_POWER_CONSTANT);
+		// ... and then launch the ball
+		genericSlingBall(&(stateInfo->localGameInfo->ballInfo), stateInfo->localGameInfo->pendingActionState.throwDirection.x*power*THROW_POWER_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.y + stateInfo->localGameInfo->pendingActionState.throwDistance*THROW_DISTANCE_CONSTANT, stateInfo->localGameInfo->pendingActionState.throwDirection.z*power*THROW_POWER_CONSTANT);
+		// Trigger fielder selection update after throw
+		stateInfo->localGameInfo->pRAI.refreshCatchAndChange = 1;
+		stateInfo->localGameInfo->pRAI.initPlayerSelection = 1;
 		// set lastHadBallIndex, its used for example to prevent this player of catching
 		// the ball right after throwing.
 		stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
@@ -182,7 +185,10 @@ void dropBall(StateInfo* stateInfo)
 			dx = dx / norm;
 			dz = dz / norm;
 			// and use genericSlingBall again to get the ball to the world.
-			genericSlingBall(&(stateInfo->localGameInfo->ballInfo), &(stateInfo->localGameInfo->pRAI), dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
+			genericSlingBall(&(stateInfo->localGameInfo->ballInfo), dx*DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz*DROP_BALL_CONSTANT);
+			// Trigger fielder selection update after drop
+			stateInfo->localGameInfo->pRAI.refreshCatchAndChange = 1;
+			stateInfo->localGameInfo->pRAI.initPlayerSelection = 1;
 			// and set the lastHadBallIndex so that this player cannot catch it before it hits ground
 			stateInfo->localGameInfo->pII.lastHadBallIndex = stateInfo->localGameInfo->pII.hasBallIndex;
 			// and no player has the ball anymore.

@@ -310,7 +310,6 @@ typedef struct _TechnicalPlayerInfo {
 // MILESTONE 7.5 - Separating Control State from Domain State
 typedef struct _PlayerRuntimeState {
 	int arrivedToBase;       // Optimization flag
-	int woundedApply;        // Deferred execution (wounding catch confirmed)
 	int passedPathPoint;     // State machine variable
 	int goingForward;        // Direction tracking
 	int hasMadeRunOnThirdBase; // Guard flag
@@ -349,6 +348,12 @@ typedef struct _RefereeState {
 	int woundingCatchActive;       // Fly ball was caught (pending timer)
 	int foulPlayActive;            // Out of bounds situation
 	int strikesAtPitchStart;       // Snapshot of strikes when pitch started
+
+	// Wounding system state (consolidated from WoundingState, GameFlowState, PlayerRuntimeState)
+	int woundingCatchPending;      // Pending wounding opportunity (replaces WoundingState.woundingCatch)
+	int woundingCatchHandled;      // Has been processed (replaces WoundingState.woundingCatchHandled)
+	int woundingCatchTimer;        // Timer for wounding confirmation (replaces GameFlowState.woundingCatchCounter)
+	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Which players marked for wound (replaces PlayerRuntimeState.woundedApply)
 
 } RefereeState;
 
@@ -523,11 +528,6 @@ typedef struct _GameControlFlags {
 	int batterStartedRunning;
 } GameControlFlags;
 
-typedef struct _WoundingState {
-	int woundingCatch;        // Pending wounding opportunity
-	int woundingCatchHandled; // Has been processed
-} WoundingState;
-
 typedef struct _CameraState {
 	int homeRunCameraFlag;
 	Vector3D targetPoint; // For camera or AI focus
@@ -622,7 +622,6 @@ typedef struct _AIState {
 } AIState;
 
 typedef struct _GameFlowState {
-	int woundingCatchCounter;
 	int outOfBoundsCounter;
 	int closeToGround;
 	int endOfInningCounter;
@@ -725,7 +724,6 @@ typedef struct _LocalGameInfo {
 	PlayerRelatedActionInfo pRAI;
 	GameState gameState; // MILESTONE 7.5 - New core state
 	GameControlFlags gameControl; // MILESTONE 7.5 - Implementation flags
-	WoundingState woundingState; // MILESTONE 7.5 - Wounding system state
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
 	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state

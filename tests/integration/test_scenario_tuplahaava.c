@@ -54,15 +54,15 @@ static int test_tuplahaava_collision_scenario() {
     int runnerB = 1;
 
     // 1. Trigger Wounding Catch
-    state->localGameInfo->woundingState.woundingCatch = 1;
+    state->localGameInfo->referee.woundingCatchPending = 1;
     state->localGameInfo->pRAI.batHit = 1;
     
     MenuInfo menu = {0};
-    gameAnalysis(state, &menu, NULL); // Marks runnerA as woundedApply=1
+    gameAnalysis(state, &menu, NULL); // Marks runnerA as woundingPlayersMarked[runnerA]=1
 
     // 2. Simulate timer expiry in gameAnalysis
     // Threshold is about 1 second. We'll set counter to be sure.
-    state->localGameInfo->gameFlowState.woundingCatchCounter = 1000; 
+    state->localGameInfo->referee.woundingCatchTimer = 1000; 
     gameAnalysis(state, &menu, NULL); // Marks runnerA as pendingWound=1 in referee
 
     ASSERT_EQ(1, state->localGameInfo->referee.battingPlayers[runnerA].hasPendingWound, "Runner A should have pending wound in referee");

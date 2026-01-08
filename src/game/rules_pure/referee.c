@@ -115,18 +115,21 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			}
 
 			// A. Force Out / Burning (§33)
-			// Check if player is currently at `checkBaseId`
-			// Note: `base_to_int_index` might be needed if baseId is not just int
+			// §33: Runner is OUT if they have pesäturva (safety) at a base,
+			// are "irti" (not protected), and ball reaches the next base.
 
-			int is_actually_safe = 0;
-			int base_idx = base_to_int_index(player->bTPI.baseId);
-			if (base_idx != -1 && get_base_controller(game, (BaseID)base_idx) == i && player_is_protected(player->bTPI.state)) {
-				is_actually_safe = 1;
-			}
+			// Does this player have safety at their current physical base?
+			int has_safety_at_current = (game->referee.battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
+
+			// Is player protected (physically safe on base)?
+			int is_protected = player_is_protected(player->bTPI.state);
+
+			// §33 Pesäkilpa: Protected from force out if they have safety AND are physically safe
+			int is_safe_from_force_out = has_safety_at_current && is_protected;
 
 			if (is_runner_forced_out(
 			            player->bTPI.baseId,
-			            is_actually_safe,
+			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
 			            &game->gameState
@@ -135,54 +138,28 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 				decisions.playerDecisions[i].isOut = 1;
 				decisions.eventOut = 1;
 
-				// Side effect: Remove safety from previous base
-				if (base_idx != -1 && get_base_controller(game, (BaseID)base_idx) == i) {
+				// Remove safety if they had it at this base
+				if (has_safety_at_current) {
 					decisions.playerDecisions[i].removeSafety = 1;
-					decisions.playerDecisions[i].safetyToRemove = (BaseID)base_idx;
+					decisions.playerDecisions[i].safetyToRemove = player->bTPI.baseId;
 				}
 			}
 
-			// B. Safety Removal (Koppilyönti §36 logic inside checkForOuts)
-			// "Mikäli sisäpelaaja on irti pesästä kopinottohetkellä... hänet voidaan polttaa."
-			// If ball arrives at NEXT base (ballAtBase) while player is running to it?
-			// `checkForOuts` has logic:
-			// "remove safety from last base... happens if player is out of base and ball arrives the previous one."
-			// Wait, let's look at `checkForOuts` again.
-			/*
-					if((stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_SAFE_ON_BASE) &&
-							(stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT)) {
-						// runToNextBase...
-						// remove safety
-					}
-				}
-			*/
-			// Loop `i` there is the base index. `pII.baseControlIndex[i] == index`.
-			// So if ball is at Base `i`, and Player `index` holds safety for Base `i`,
-			// BUT player is NOT physically safe (LEADING/RUNNING)...
-			// Then player loses safety at Base `i` and is forced to run to `i+1`.
+			// B. Safety Removal (§36 Koppilyönti logic)
+			// If ball arrives at a base where player has safety, but player is "irti",
+			// they lose their pesäturva and must advance.
 
-			int safetyIndex = -1;
-			// Find which base this player holds safety for (if any)
-			for (int b = 0; b < BASE_COUNT; b++) {
-				if (get_base_controller(game, (BaseID)b) == i) {
-					safetyIndex = b;
-					break;
-				}
-			}
+			BaseID player_safety_base = game->referee.battingPlayers[i].currentSafetyBase;
 
-			// If ball is at the base the player holds safety for
-			if (safetyIndex == ballAtBase) {
-				if (!player_is_protected(player->bTPI.state)) {
-					// Player is "irti" (Leading/Running) from this base, and ball arrived there.
-					// They lose safety and must advance.
+			if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
+				if (!is_protected) {
+					// Player has safety here but is "irti" - lose safety and must run
 					decisions.playerDecisions[i].removeSafety = 1;
 					decisions.playerDecisions[i].safetyToRemove = (BaseID)ballAtBase;
 
 					// Force advance
 					decisions.playerDecisions[i].shouldAdvance = 1;
-					decisions.playerDecisions[i].advanceTarget = (BaseID)ballAtBase; // logic uses 'i' in checkForOuts, assuming it advances FROM i?
-					// `runToNextBase(..., index, (BaseID)i)`
-					// This sets target to `i+1`.
+					decisions.playerDecisions[i].advanceTarget = (BaseID)ballAtBase;
 				}
 			}
 
@@ -222,7 +199,7 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 	// Logic copied from legacy checkForRuns.
 	if (game->gameControl.checkForRun == 1) {
 		if ((game->gameControl.firstCatchMade == 1 || game->ballInfo.hasHitGround == 1) &&
-		        game->gameFlowState.woundingCatchCounter == -1 &&
+		        game->referee.woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
 		        game->gameState.outOfBounds == 0) {
 
@@ -242,16 +219,20 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 						decisions.eventRun = 1;
 
 						// §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
-						// If base is 3rd (Run of Honor) and 3rd is occupied by someone else...
+						// Check if another player has safety at BASE_THIRD
 						if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-							if (get_base_controller(game, BASE_THIRD) != -1 &&
-							        get_base_controller(game, BASE_THIRD) != i) {
-								// Overtaking! The RUNNER (i) is removed/out?
-								// Logic in legacy: "kunniajuoksun tehnyt pelaaja... siirtyy kotipuolelle"
-								// Legacy code removed player 'i'.
-								decisions.playerDecisions[i].isOut = 1; // Mark as "Out" to remove from field?
-								// Or effectively just remove. Legacy used movePlayerOut.
-								// isOut triggers removal and movePlayerOut.
+							// Look through all players to see if someone else has safety there
+							int someone_else_has_third_safety = 0;
+							for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+								if (j != i && game->referee.battingPlayers[j].currentSafetyBase == BASE_THIRD) {
+									someone_else_has_third_safety = 1;
+									break;
+								}
+							}
+
+							if (someone_else_has_third_safety) {
+								// Overtaking! The runner (i) is OUT
+								decisions.playerDecisions[i].isOut = 1;
 							}
 						}
 					}
@@ -308,4 +289,29 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 	}
 
 	return decisions;
+}
+
+// Query functions for wounding system (Milestone 15 consolidation)
+
+int is_wounding_catch_pending(const RefereeState* ref)
+{
+	return ref->woundingCatchPending;
+}
+
+int is_wounding_catch_handled(const RefereeState* ref)
+{
+	return ref->woundingCatchHandled;
+}
+
+int get_wounding_timer(const RefereeState* ref)
+{
+	return ref->woundingCatchTimer;
+}
+
+int is_player_marked_for_wound(const RefereeState* ref, int playerIndex)
+{
+	if (playerIndex < 0 || playerIndex >= PLAYERS_IN_TEAM + JOKER_COUNT) {
+		return 0;
+	}
+	return ref->woundingPlayersMarked[playerIndex];
 }

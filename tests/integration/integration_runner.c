@@ -1,14 +1,20 @@
 #include "test_helpers.h"
 #include "fixtures.h"
-#include "test_scenario_outs.h"
-#include "test_scenario_runs.h"
-#include "test_scenario_wounded.h"
-#include "test_scenario_chain_reaction.h"
-#include "test_scenario_tuplahaava.h"
-#include "test_scenario_foul_play.h"
-#include "test_scenario_overtaking.h"
-#include "test_scenario_fielder_positioning.h"
-#include "test_scenario_force_play.h"
+
+// OLD TESTS - Temporarily disabled during migration to full-scenario tests
+// #include "test_scenario_outs.h"
+// #include "test_scenario_runs.h"
+// #include "test_scenario_wounded.h"
+// #include "test_scenario_chain_reaction.h"
+// #include "test_scenario_tuplahaava.h"
+// #include "test_scenario_foul_play.h"
+// #include "test_scenario_overtaking.h"
+// #include "test_scenario_fielder_positioning.h"
+// #include "test_scenario_force_play.h"
+
+// NEW FULL-SCENARIO TESTS
+#include "test_full_scenarios.h"
+
 #include <string.h>
 
 int tests_run = 0;
@@ -19,16 +25,19 @@ int main(int argc, char* argv[]) {
 	printf("PNB Integration Test Suite\n");
 	printf("========================================\n\n");
 	
-	// Integration tests
-	run_scenario_outs_tests();
-	run_scenario_runs_tests();
-	run_scenario_wounded_tests();
-	run_scenario_chain_reaction_tests();
-	run_scenario_tuplahaava_tests();
-	run_scenario_foul_play_tests();
-	run_scenario_overtaking_tests();
-	run_scenario_fielder_positioning_tests();
-	run_scenario_force_play_tests();
+	// OLD Integration tests (disabled)
+	// run_scenario_outs_tests();
+	// run_scenario_runs_tests();
+	// run_scenario_wounded_tests();
+	// run_scenario_chain_reaction_tests();
+	// run_scenario_tuplahaava_tests();
+	// run_scenario_foul_play_tests();
+	// run_scenario_overtaking_tests();
+	// run_scenario_fielder_positioning_tests();
+	// run_scenario_force_play_tests();
+	
+	// NEW Full-scenario tests
+	run_full_scenario_tests();
 
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);

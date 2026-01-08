@@ -7,6 +7,7 @@
 #include "game_manipulation.h"
 #include "mutable_world.h"
 #include "geometry.h" // Needed for geometry_distance_2d_xz
+#include "referee.h" // For is_player_marked_for_wound
 
 // Defined in game_analysis.c
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -40,8 +41,8 @@ static int test_runner_wounded_if_off_base_when_ball_caught() {
     // Now trigger the wounding catch
     unsigned int seed = 0;
     MenuInfo menu = {0}; // Dummy menu
-    state->localGameInfo->woundingState.woundingCatch = 1;
-    state->localGameInfo->woundingState.woundingCatchHandled = 0;
+    state->localGameInfo->referee.woundingCatchPending = 1;
+    state->localGameInfo->referee.woundingCatchHandled = 0;
 
     for (int i = 0; i < 65; ++i) {
         gameAnalysis(state, &menu, &seed);
@@ -90,13 +91,13 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
     MenuInfo menu = {0};
 
     // Trigger wounding catch
-    state->localGameInfo->woundingState.woundingCatch = 1;
-    state->localGameInfo->woundingState.woundingCatchHandled = 0;
+    state->localGameInfo->referee.woundingCatchPending = 1;
+    state->localGameInfo->referee.woundingCatchHandled = 0;
     
-    // Run 1 frame to set woundedApply = 1
+    // Run 1 frame to set woundingPlayersMarked = 1
     gameAnalysis(state, &menu, &seed);
     
-    if (state->localGameInfo->playerRuntime[runnerIndex].woundedApply != 1) {
+    if (is_player_marked_for_wound(&state->localGameInfo->referee, runnerIndex) != 1) {
          cleanup_test_state(state);
          ASSERT_EQ(1, 0, "Runner should have been marked for wound initially");
     }
@@ -112,11 +113,11 @@ static int test_runner_not_wounded_if_ball_hits_ground() {
 
     // Verify NOT wounded
     int isWounded = (state->localGameInfo->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED);
-    int isWoundedApply = state->localGameInfo->playerRuntime[runnerIndex].woundedApply;
+    int isMarked = is_player_marked_for_wound(&state->localGameInfo->referee, runnerIndex);
     
     cleanup_test_state(state);
     ASSERT_EQ(0, isWounded, "Runner should NOT be wounded if ball hits ground");
-    ASSERT_EQ(0, isWoundedApply, "Wound application flag should be cleared");
+    ASSERT_EQ(0, isMarked, "Wound marker should be cleared");
     return TEST_PASSED;
 }
 
@@ -137,13 +138,13 @@ static int test_runner_not_wounded_if_starts_running_late() {
     MenuInfo menu = {0};
 
     // Trigger wounding catch
-    state->localGameInfo->woundingState.woundingCatch = 1;
-    state->localGameInfo->woundingState.woundingCatchHandled = 0;
+    state->localGameInfo->referee.woundingCatchPending = 1;
+    state->localGameInfo->referee.woundingCatchHandled = 0;
     
-    // Run 1 frame. woundedApply should be 0 because runner is safe.
+    // Run 1 frame. woundingPlayersMarked should be 0 because runner is safe.
     gameAnalysis(state, &menu, &seed);
     
-    if (state->localGameInfo->playerRuntime[runnerIndex].woundedApply != 0) {
+    if (is_player_marked_for_wound(&state->localGameInfo->referee, runnerIndex) != 0) {
          cleanup_test_state(state);
          ASSERT_EQ(0, 1, "Runner should NOT be marked for wound while safe");
     }

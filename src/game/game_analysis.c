@@ -43,7 +43,6 @@ static void populateGameConclusion(StateInfo* stateInfo, int winner)
 void initGameAnalysis(GameFlowState* gameFlowState)
 {
 	// init some variables only used here.
-	gameFlowState->woundingCatchCounter = -1;
 	gameFlowState->outOfBoundsCounter = 0;
 	gameFlowState->endOfInningCounter = -1;
 	gameFlowState->nextPairCounter = -1;
@@ -192,11 +191,11 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 {
 	// so we check the flag, if its true and then set counter to zero to start counting and
 	// also set hitsGroundToUnWound to 0 so that we can see if that changes in this short time period.
-	if(stateInfo->localGameInfo->woundingState.woundingCatch == 1 && stateInfo->localGameInfo->woundingState.woundingCatchHandled == 0) {
+	if(stateInfo->localGameInfo->referee.woundingCatchPending == 1 && stateInfo->localGameInfo->referee.woundingCatchHandled == 0) {
 		int i;
-		stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = 0;
+		stateInfo->localGameInfo->referee.woundingCatchTimer = 0;
 		stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound = 0;
-		stateInfo->localGameInfo->woundingState.woundingCatchHandled = 1;
+		stateInfo->localGameInfo->referee.woundingCatchHandled = 1;
 
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			// so we check every batting team player.
@@ -207,7 +206,7 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 				if(!player_is_safe_from_fly(stateInfo->localGameInfo->playerInfo[index].bTPI.state,
 				                            stateInfo->localGameInfo->playerInfo[index].bTPI.baseId,
 				                            stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart)) {
-					stateInfo->localGameInfo->playerRuntime[index].woundedApply = 1;
+					stateInfo->localGameInfo->referee.woundingPlayersMarked[index] = 1;
 					// Milestone 12: Snapshot base at catch moment
 					stateInfo->localGameInfo->referee.battingPlayers[index].woundingSourceBase = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 
@@ -218,9 +217,9 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 
 
 	}
-	if(stateInfo->localGameInfo->gameFlowState.woundingCatchCounter >= 0) {
+	if(stateInfo->localGameInfo->referee.woundingCatchTimer >= 0) {
 		int threshold;
-		stateInfo->localGameInfo->gameFlowState.woundingCatchCounter++;
+		stateInfo->localGameInfo->referee.woundingCatchTimer++;
 		// and we extend the time a bit if ball is not with the player anymore.
 		if(stateInfo->localGameInfo->pII.hasBallIndex == -1) {
 			threshold = (int)(2*WOUNDING_CATCH_THRESHOLD);
@@ -228,21 +227,21 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 		// if unWounding happens, then stop the counter and continue the game normally.
 		if(stateInfo->localGameInfo->ballInfo.hitsGroundToUnWound == 1) {
 			int i;
-			stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
-			stateInfo->localGameInfo->woundingState.woundingCatch = 0;
+			stateInfo->localGameInfo->referee.woundingCatchTimer = -1;
+			stateInfo->localGameInfo->referee.woundingCatchPending = 0;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				stateInfo->localGameInfo->playerRuntime[i].woundedApply = 0;
+				stateInfo->localGameInfo->referee.woundingPlayersMarked[i] = 0;
 			}
 		}
 		// otherwise there is a real possibility for wounding
 		// and we check if there are players that are out of base etc at that moment.
-		if(stateInfo->localGameInfo->gameFlowState.woundingCatchCounter > threshold) {
+		if(stateInfo->localGameInfo->referee.woundingCatchTimer > threshold) {
 			int i;
 			for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				// so we check every batting team player.
 				int index = i;
 				if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
-					if(stateInfo->localGameInfo->playerRuntime[index].woundedApply == 1) {
+					if(stateInfo->localGameInfo->referee.woundingPlayersMarked[index] == 1) {
 						BaseID baseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 
 						// info to screen.
@@ -262,13 +261,13 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 						// User: Referee don't need to force the player to run at wound.
 						// The player/AI layer should handle this "Panic Run".
 
-						stateInfo->localGameInfo->playerRuntime[index].woundedApply = 0;
+						stateInfo->localGameInfo->referee.woundingPlayersMarked[index] = 0;
 
 					}
 				}
 			}
-			stateInfo->localGameInfo->woundingState.woundingCatch = 0;
-			stateInfo->localGameInfo->gameFlowState.woundingCatchCounter = -1;
+			stateInfo->localGameInfo->referee.woundingCatchPending = 0;
+			stateInfo->localGameInfo->referee.woundingCatchTimer = -1;
 		}
 	}
 }

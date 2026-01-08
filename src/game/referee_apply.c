@@ -125,9 +125,6 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 				if (game->gameState.runsInTheInning % 2 == 0) {
 					game->playerCounters.noMorePlayers = 0;
 				}
-				// Remove 3rd base safety (Legacy: if(baseControlIndex[3] == index) ...)
-				if (get_base_controller(game, BASE_THIRD) == i) {
-				}
 			}
 		}
 	}
@@ -139,7 +136,7 @@ void Referee_Apply(StateInfo* stateInfo, const RefereeDecisions* decisions)
 	// We should replicate the condition:
 	if (game->gameControl.checkForRun == 1) {
 		if ((game->gameControl.firstCatchMade == 1 || game->ballInfo.hasHitGround == 1) &&
-		        game->gameFlowState.woundingCatchCounter == -1 &&
+		        game->referee.woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
 		        game->gameState.outOfBounds == 0) {
 			// The conditions for run checking were met, so we assume it was checked.

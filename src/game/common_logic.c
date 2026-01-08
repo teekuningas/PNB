@@ -737,7 +737,6 @@ void initializeNonCriticalPlayerInformation(LocalGameInfo* localGameInfo)
 	for( i = 0; i < 2*PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		// MILESTONE 7.5: Initialize control state
 		localGameInfo->playerRuntime[i].arrivedToBase = 0;
-		localGameInfo->playerRuntime[i].woundedApply = 0;
 		localGameInfo->playerRuntime[i].passedPathPoint = 0;
 		localGameInfo->playerRuntime[i].goingForward = 0;
 		localGameInfo->playerRuntime[i].hasMadeRunOnThirdBase = 0;
@@ -830,8 +829,8 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->playerCounters.noMorePlayers = 0;
 	localGameInfo->gameState.ballHome = 0;
 	localGameInfo->gameState.endPeriod = 0;
-	localGameInfo->woundingState.woundingCatch = 0;
-	localGameInfo->woundingState.woundingCatchHandled = 0;
+	localGameInfo->referee.woundingCatchPending = 0;
+	localGameInfo->referee.woundingCatchHandled = 0;
 	localGameInfo->gameControl.batterStartedRunning = 0;
 
 	localGameInfo->gameState.event = EVENT_NONE;
@@ -985,10 +984,18 @@ void initializeRefereeState(RefereeState* referee)
 		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
 		referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
 		referee->battingPlayers[i].hadSafetyAtLastEvent = 0;
+
+		// Initialize wounding markers
+		referee->woundingPlayersMarked[i] = 0;
 	}
 	referee->woundingCatchActive = 0;
 	referee->foulPlayActive = 0;
 	referee->strikesAtPitchStart = 0;
+
+	// Initialize wounding system state
+	referee->woundingCatchPending = 0;
+	referee->woundingCatchHandled = 0;
+	referee->woundingCatchTimer = -1;
 }
 
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
