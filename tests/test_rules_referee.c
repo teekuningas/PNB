@@ -11,9 +11,11 @@ StateInfo* create_mock_state() {
 	StateInfo* state = (StateInfo*)malloc(sizeof(StateInfo));
 	state->localGameInfo = (LocalGameInfo*)malloc(sizeof(LocalGameInfo));
 	state->fieldPositions = (FieldPositions*)malloc(sizeof(FieldPositions));
+	state->globalGameInfo = (GlobalGameInfo*)malloc(sizeof(GlobalGameInfo));
 	
 	memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
 	memset(state->fieldPositions, 0, sizeof(FieldPositions));
+	memset(state->globalGameInfo, 0, sizeof(GlobalGameInfo));
 	
 	// Initialize referee state properly (wounding timer must be -1, not 0)
 	state->localGameInfo->referee.woundingCatchTimer = -1;
@@ -30,6 +32,7 @@ StateInfo* create_mock_state() {
 void destroy_mock_state(StateInfo* state) {
 	free(state->localGameInfo);
 	free(state->fieldPositions);
+	free(state->globalGameInfo);
 	free(state);
 }
 
@@ -48,11 +51,19 @@ void test_referee_force_out_at_second(void) {
 	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_RUNNING;
 	
-	RefereeDecisions decisions = Referee_Analyze(state);
+	Referee_Update(
+	    state,
+	    &state->localGameInfo->referee,
+	    &state->localGameInfo->gameState,
+	    &state->localGameInfo->gameModeState,
+	    &state->localGameInfo->gameControl,
+	    &state->localGameInfo->playerCounters,
+	    state->globalGameInfo
+	);
 	
 	// Should be OUT: has safety at Base 1, is running (irti), ball at Base 2
-	assert(decisions.playerDecisions[runnerIdx].isOut == 1);
-	assert(decisions.eventOut == 1);
+	assert(state->localGameInfo->referee.battingPlayers[runnerIdx].isOut == 1);
+	assert(state->localGameInfo->gameState.event == EVENT_OUT);
 	
 	destroy_mock_state(state);
 	printf("test_referee_force_out_at_second PASSED\n");
@@ -71,9 +82,17 @@ void test_referee_safe_runner_not_out(void) {
 	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_ON_BASE; // Protected
 	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 	
-	RefereeDecisions decisions = Referee_Analyze(state);
+	Referee_Update(
+	    state,
+	    &state->localGameInfo->referee,
+	    &state->localGameInfo->gameState,
+	    &state->localGameInfo->gameModeState,
+	    &state->localGameInfo->gameControl,
+	    &state->localGameInfo->playerCounters,
+	    state->globalGameInfo
+	);
 	
-	assert(decisions.playerDecisions[runnerIdx].isOut == 0);
+	assert(state->localGameInfo->referee.battingPlayers[runnerIdx].isOut == 0);
 	
 	destroy_mock_state(state);
 	printf("test_referee_safe_runner_not_out PASSED\n");

@@ -22,7 +22,6 @@ static void strikesAndBalls(StateInfo* stateInfo);
 static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 static void woundingCatchEffects(StateInfo* stateInfo);
 static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed);
-static void checkForRuns(StateInfo* stateInfo);
 static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed);
 
 static void populateGameConclusion(StateInfo* stateInfo, int winner)
@@ -68,7 +67,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	woundingCatchEffects(stateInfo);
 	foulPlay(stateInfo, rng_seed);
 	strikesAndBalls(stateInfo);
-	checkForRuns(stateInfo);
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
 
@@ -387,13 +385,6 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 		}
 	}
 }
-// runs are checked in a delayed way. We wait that ball lands by being catched or by hitting the ground before
-// we decide if player has made a run by arriving homebase or arriving third base.
-static void checkForRuns(StateInfo* stateInfo)
-{
-	// Logic moved to Referee_Analyze / Referee_Apply
-}
-
 
 static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {

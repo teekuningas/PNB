@@ -12,19 +12,15 @@
 #define HOME_RADIUS 6.0f
 #define HOME_LINE_Z -0.65f
 
-RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
-{
-	RefereeDecisions decisions;
-	memset(&decisions, 0, sizeof(RefereeDecisions));
-	decisions.canMakeRunOfHonor = 1; // Default to true (don't revoke)
+// ============================================================================
+// Referee Update Pipeline (Milestone 15)
+// ============================================================================
 
+static void update_safety_status(const StateInfo* stateInfo, RefereeState* referee)
+{
 	const LocalGameInfo* game = stateInfo->localGameInfo;
 
-	// 1. Where is the ball?
-	int ballAtBase = get_ball_at_base_index(stateInfo);
-
 	// 2.5 Safety Acquisition & Displacement (Milestone: Decoupled Safety Logic)
-	// Detect if a player has physically acquired a base but Referee hasn't updated safety yet.
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		const PlayerInfo* player = &game->playerInfo[i];
 		BaseID physicalBase = player->bTPI.baseId;
@@ -34,40 +30,35 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 		        (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT)) {
 
 			// But Referee doesn't recognize them as the controller yet
-			if (game->referee.battingPlayers[i].currentSafetyBase != physicalBase) {
+			if (referee->battingPlayers[i].currentSafetyBase != physicalBase) {
 
-				// Decision: Grant Safety
-				decisions.playerDecisions[i].grantSafety = 1;
-				decisions.playerDecisions[i].safetyToGrant = physicalBase;
+				// Grant Safety
+				referee->battingPlayers[i].currentSafetyBase = physicalBase;
 
-				// Decision: Displace old owner (if any)
-				// We iterate to find who currently owns this base legalistically
+				// Displace old owner (if any)
 				for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
 					if (i == j) continue;
 
-					// If someone else holds this base
-					if (game->referee.battingPlayers[j].currentSafetyBase == physicalBase) {
-						decisions.playerDecisions[j].removeSafety = 1;
-						decisions.playerDecisions[j].safetyToRemove = physicalBase;
-
-						// If they are not OUT/WOUNDED, they must run
-						if (game->playerInfo[j].bTPI.state != PLAYER_STATE_OUT &&
-						        game->playerInfo[j].bTPI.state != PLAYER_STATE_WOUNDED) {
-							decisions.playerDecisions[j].shouldAdvance = 1;
-							decisions.playerDecisions[j].advanceTarget = physicalBase;
-						}
+					if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
+						referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
 					}
 				}
 			}
 		}
 	}
+}
+
+static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, int ballAtBase)
+{
+	const LocalGameInfo* game = stateInfo->localGameInfo;
 
 	// 3. Check for Outs (§33) and Tuplahaava Exceptions (§36)
 	if (ballAtBase != -1) {
 		// Default assumption: If ball is at a base, Run of Honor possibility is threatened.
-		// We set it to 0 here, and if we find a valid candidate below, we set it back to 1.
-		// If ballAtBase == -1, this logic doesn't run, preserving the flag.
-		decisions.canMakeRunOfHonor = 0;
+		// decisions.canMakeRunOfHonor = 0; // We need to update GameModeState? Or pass it?
+		// Referee_Apply handled this: if (decisions.canMakeRunOfHonor == 0) gameModeState.canMakeRunOfHonor = 0;
+		// We should pass GameModeState too or handle it here if we had access.
+		// For now, let's focus on Outs.
 
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			const PlayerInfo* player = &game->playerInfo[i];
@@ -75,13 +66,7 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			// Only check active players
 			if (player->bTPI.baseId == BASE_NONE) continue;
 
-			// Check Run of Honor preservation
-			// "if the batter manages to get over second base he still has chance... with exception of third base"
-			if (base_is_at_least(player->bTPI.baseId, BASE_SECOND) &&
-			        game->referee.battingPlayers[i].baseAtPitchStart == BASE_HOME &&
-			        ballAtBase != 3) { // i != 3 in legacy loop means Base 3
-				decisions.canMakeRunOfHonor = 1;
-			}
+			// Check Run of Honor (Moved to GameModeState update later?)
 
 			BaseID ballBaseId = (BaseID)ballAtBase;
 			BaseID checkBaseId;
@@ -93,16 +78,8 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			}
 
 			// A. Force Out / Burning (§33)
-			// §33: Runner is OUT if they have pesäturva (safety) at a base,
-			// are "irti" (not protected), and ball reaches the next base.
-
-			// Does this player have safety at their current physical base?
-			int has_safety_at_current = (game->referee.battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
-
-			// Is player protected (physically safe on base)?
+			int has_safety_at_current = (referee->battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
 			int is_protected = player_is_protected(player->bTPI.state);
-
-			// §33 Pesäkilpa: Protected from force out if they have safety AND are physically safe
 			int is_safe_from_force_out = has_safety_at_current && is_protected;
 
 			if (is_runner_forced_out(
@@ -110,143 +87,177 @@ RefereeDecisions Referee_Analyze(const StateInfo* stateInfo)
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            &game->gameState
+			            gameState
 			        )) {
 
-				decisions.playerDecisions[i].isOut = 1;
-				decisions.eventOut = 1;
+				referee->battingPlayers[i].isOut = 1;
+				gameState->outs += 1;
+				gameState->event = EVENT_OUT; // Global event
 
 				// Remove safety if they had it at this base
 				if (has_safety_at_current) {
-					decisions.playerDecisions[i].removeSafety = 1;
-					decisions.playerDecisions[i].safetyToRemove = player->bTPI.baseId;
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 				}
+
+				// Critical Fix: Clear baseAtPitchStart so this player isn't resurrected by foulPlay
+				referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 			}
 
 			// B. Safety Removal (§36 Koppilyönti logic)
-			// If ball arrives at a base where player has safety, but player is "irti",
-			// they lose their pesäturva and must advance.
-
-			BaseID player_safety_base = game->referee.battingPlayers[i].currentSafetyBase;
+			BaseID player_safety_base = referee->battingPlayers[i].currentSafetyBase;
 
 			if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
 				if (!is_protected) {
 					// Player has safety here but is "irti" - lose safety and must run
-					decisions.playerDecisions[i].removeSafety = 1;
-					decisions.playerDecisions[i].safetyToRemove = (BaseID)ballAtBase;
-
-					// Force advance
-					decisions.playerDecisions[i].shouldAdvance = 1;
-					decisions.playerDecisions[i].advanceTarget = (BaseID)ballAtBase;
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					// Force advance logic handled by Reconcile
 				}
 			}
 
 			// C. Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
-			if (game->referee.battingPlayers[i].hasPendingWound &&
-			        game->referee.battingPlayers[i].woundingType == WOUNDING_TYPE_TUPLAHAAVA &&
-			        !decisions.playerDecisions[i].isOut) { // Don't check if already out
+			if (referee->battingPlayers[i].hasPendingWound &&
+			        referee->battingPlayers[i].woundingType == WOUNDING_TYPE_TUPLAHAAVA &&
+			        !referee->battingPlayers[i].isOut) {
 
-				BaseID source = game->referee.battingPlayers[i].woundingSourceBase;
+				BaseID source = referee->battingPlayers[i].woundingSourceBase;
 				BaseID next = base_get_next(source);
 				int is_in_between = (player->bTPI.state != PLAYER_STATE_ON_BASE);
 
 				if (is_in_between) {
 					// Exception 2: Ball at NEXT base -> OUT
 					if (base_to_int_index(next) == ballAtBase) {
-						decisions.playerDecisions[i].isOut = 1;
-						decisions.eventOut = 1;
-						// Clear pending logic
-						decisions.playerDecisions[i].removeSafety = 1; // Clear source safety
-						decisions.playerDecisions[i].safetyToRemove = source;
+						referee->battingPlayers[i].isOut = 1;
+						gameState->outs += 1;
+						gameState->event = EVENT_OUT;
+						referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
+						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 					}
 					// Exception 1: Ball at SOURCE base -> Lose Safety
 					else if (base_to_int_index(source) == ballAtBase) {
-						decisions.playerDecisions[i].removeSafety = 1;
-						decisions.playerDecisions[i].safetyToRemove = source;
+						referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 						// "Transition to NORMAL wounding type"
-						decisions.playerDecisions[i].changeWoundingType = 1;
-						decisions.playerDecisions[i].newWoundingType = WOUNDING_TYPE_NORMAL;
+						referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NORMAL;
 					}
 				}
 			}
 		}
 	}
+}
+
+static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+{
+	const LocalGameInfo* game = stateInfo->localGameInfo;
 
 	// 4. Check for Runs (§41/42)
-	if (game->gameControl.checkForRun == 1) {
-		if ((game->gameControl.firstCatchMade == 1 || game->ballInfo.hasHitGround == 1) &&
-		        game->referee.woundingCatchTimer == -1 &&
+	if (gameControl->checkForRun == 1) {
+		if ((gameControl->firstCatchMade == 1 || game->ballInfo.hasHitGround == 1) &&
+		        referee->woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
-		        game->gameState.outOfBounds == 0) {
+		        gameState->outOfBounds == 0) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
 					int runScored = calculate_runs(
 					                    game->playerInfo[i].bTPI.baseId,
-					                    game->referee.battingPlayers[i].baseAtPitchStart,
+					                    referee->battingPlayers[i].baseAtPitchStart,
 					                    game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
-					                    &game->gameModeState,
+					                    gameModeState,
 					                    game->playerRuntime[i].hasMadeRunOnThirdBase
 					                );
 
 					if (runScored) {
-						decisions.playerDecisions[i].isRun = 1;
-						decisions.eventRun = 1;
+						gameState->event = EVENT_RUN_SCORED;
+						int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
+						globalGameInfo->teams[battingTeamIndex].runs += 1;
+						gameState->runsInTheInning += 1;
+
+						referee->battingPlayers[i].hasScored = 1;
+						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+
+						if (gameState->runsInTheInning % 2 == 0) {
+							playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+						}
 
 						// §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
 						if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
 							int someone_else_has_third_safety = 0;
 							for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-								if (j != i && game->referee.battingPlayers[j].currentSafetyBase == BASE_THIRD) {
+								if (j != i && referee->battingPlayers[j].currentSafetyBase == BASE_THIRD) {
 									someone_else_has_third_safety = 1;
 									break;
 								}
 							}
 
 							if (someone_else_has_third_safety) {
-								decisions.playerDecisions[i].isOut = 1;
+								referee->battingPlayers[i].isOut = 1;
+								gameState->outs += 1;
 							}
 						}
 					}
 				}
 			}
 
-			int runsScoredCount = 0;
-			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				if (decisions.playerDecisions[i].isRun) runsScoredCount++;
-			}
+			// Period End Check
+			int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
+			int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+			int currentRuns = globalGameInfo->teams[battingTeamIndex].runs;
+			int opponentRuns = globalGameInfo->teams[catchingTeamIndex].runs;
 
-			if (runsScoredCount > 0) {
-				int battingTeamIndex = (stateInfo->globalGameInfo->inning + stateInfo->globalGameInfo->playsFirst + stateInfo->globalGameInfo->period) % 2;
-				int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-				int currentRuns = stateInfo->globalGameInfo->teams[battingTeamIndex].runs + runsScoredCount;
-				int opponentRuns = stateInfo->globalGameInfo->teams[catchingTeamIndex].runs;
-
-				if (stateInfo->globalGameInfo->period < 4) {
-					if ((stateInfo->globalGameInfo->inning + 1) % stateInfo->globalGameInfo->halfInningsInPeriod == 0 ||
-					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod * 2 + 2) {
-						if (currentRuns > opponentRuns) {
-							decisions.isPeriodEnd = 1;
-						}
-						if (stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod * 2 &&
-						        stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs > stateInfo->globalGameInfo->teams[catchingTeamIndex].period0Runs &&
-						        opponentRuns == currentRuns) {
-							decisions.isPeriodEnd = 1;
-						}
+			if (globalGameInfo->period < 4) {
+				if ((globalGameInfo->inning + 1) % globalGameInfo->halfInningsInPeriod == 0 ||
+				        globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 + 2) {
+					if (currentRuns > opponentRuns) {
+						gameState->endPeriod = 1;
 					}
-				} else {
-					if ((stateInfo->globalGameInfo->inning + 1) % 2 == 0) {
-						if (currentRuns > opponentRuns) {
-							decisions.isPeriodEnd = 1;
-						}
+					if (globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 &&
+					        globalGameInfo->teams[battingTeamIndex].period0Runs > globalGameInfo->teams[catchingTeamIndex].period0Runs &&
+					        opponentRuns == currentRuns) {
+						gameState->endPeriod = 1;
+					}
+				}
+			} else {
+				if ((globalGameInfo->inning + 1) % 2 == 0) {
+					if (currentRuns > opponentRuns) {
+						gameState->endPeriod = 1;
 					}
 				}
 			}
+
+			// Mark check as done
+			gameControl->checkForRun = 0;
 		}
 	}
+}
 
-	return decisions;
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+{
+	// 1. Where is the ball?
+	int ballAtBase = get_ball_at_base_index(stateInfo);
+
+	// 2. Run of Honor (Update directly if needed? Legacy did it in Analyze but applied in Apply)
+	// Here we update it if ballAtBase is valid.
+	if (ballAtBase != -1) {
+		// Logic from Analyze: "Default assumption: If ball is at a base, Run of Honor possibility is threatened."
+		int canMake = 0;
+		const LocalGameInfo* game = stateInfo->localGameInfo;
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			const PlayerInfo* player = &game->playerInfo[i];
+			if (player->bTPI.baseId == BASE_NONE) continue;
+
+			if (base_is_at_least(player->bTPI.baseId, BASE_SECOND) &&
+			        refereeState->battingPlayers[i].baseAtPitchStart == BASE_HOME &&
+			        ballAtBase != 3) {
+				canMake = 1;
+			}
+		}
+		gameModeState->canMakeRunOfHonor = canMake;
+	}
+
+	// 3. Safety Pipeline
+	update_safety_status(stateInfo, refereeState);
+	update_force_outs_and_tuplahaava(stateInfo, refereeState, gameState, ballAtBase);
+	update_runs(stateInfo, refereeState, gameState, gameModeState, gameControl, playerCounters, globalGameInfo);
 }
 
 int is_wounding_catch_pending(const RefereeState* ref)

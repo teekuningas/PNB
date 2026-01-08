@@ -360,33 +360,6 @@ typedef struct _RefereeState {
 
 } RefereeState;
 
-// Milestone 14: The Great Decoupling - Analysis Results
-typedef struct {
-	int isOut;
-	int isWounded;
-	WoundingType woundType;      // If wounded, what type?
-	BaseID woundingSourceBase;   // If wounded, where from?
-	int isRun;
-	int isHomeRun;
-	int shouldAdvance;           // Force "Panic Run" to next base
-	BaseID advanceTarget;
-	int removeSafety;            // Clear safety from a base?
-	BaseID safetyToRemove;
-	int grantSafety;             // Grant safety at a base?
-	BaseID safetyToGrant;
-	int changeWoundingType;      // Change wounding type (e.g. Tuplahaava -> Normal)
-	WoundingType newWoundingType;
-} PlayerDecision;
-
-typedef struct {
-	PlayerDecision playerDecisions[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int eventOut;                // Global event flags detected this frame
-	int eventRun;
-	int eventWounded;
-	int canMakeRunOfHonor;       // If 0 and ball at base, revoke right
-	int isPeriodEnd;             // Mercy rule / winning run triggered end of period
-} RefereeDecisions;
-
 typedef enum {
 	JOKER_REGULAR = 0,
 	JOKER_AVAILABLE = 1,

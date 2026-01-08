@@ -929,74 +929,74 @@ static void updateModels(StateInfo* stateInfo)
 {
 	int i;
 	// every player has some animations.
-		for (i = 0; i < PLAYERS_IN_TEAM*2 + JOKER_COUNT; i++) {
-			switch(stateInfo->localGameInfo->playerInfo[i].cPI.model) {
-			case PLAYER_ANIM_WALK_NO_BALL:
-			case PLAYER_ANIM_WALK_WITH_BALL:
-			case PLAYER_ANIM_RUN_NO_BALL:
-			case PLAYER_ANIM_RUN_WITH_BALL:
-				// so first animations for walking and running. they are loops, the stage will be in range of 0 to count*freq.
-				// reason this seemingly complicated way of doing this is just to provide possibility to have animations
-				// with same meshcounts to have animations of different speeds.
-				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
-				    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
-				break;
-			case PLAYER_ANIM_PITCH_WINDUP:
-			case PLAYER_ANIM_PITCH_THROW:
-			case PLAYER_ANIM_THROW_WINDUP:
-				// throwing animations are not loops and they must end when the last stage is encountered.
-				if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
-					stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
-				}
-				break;
-			case PLAYER_ANIM_THROW_RELEASE:
-				// here we do the same thing but set recoil to 0 after animation so that player can start moving and stuff again.
-				if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
-					stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
-				} else {
-					stateInfo->localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
-					stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
-				}
-				break;
-			case PLAYER_ANIM_WALK_BARE:
-			case PLAYER_ANIM_RUN_BARE:
-				// running and walking animations for batting team
-				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
-				    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
-				break;
-			case PLAYER_ANIM_BAT_SWING_1:
-			case PLAYER_ANIM_BAT_SWING_2:
-			case PLAYER_ANIM_BAT_SWING_3:
-				// batting animations are not loops, so theyll end after finishing. swinging, bunting, and spreading hands.
-				if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
-					stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
-				}
-				break;
-			case PLAYER_ANIM_STAND_NO_BALL:
-			case PLAYER_ANIM_STAND_WITH_BALL:
-			case PLAYER_ANIM_STAND_BARE:
-			case PLAYER_ANIM_BATTER_READY:
-			default:
-				break;
-	
+	for (i = 0; i < PLAYERS_IN_TEAM*2 + JOKER_COUNT; i++) {
+		switch(stateInfo->localGameInfo->playerInfo[i].cPI.model) {
+		case PLAYER_ANIM_WALK_NO_BALL:
+		case PLAYER_ANIM_WALK_WITH_BALL:
+		case PLAYER_ANIM_RUN_NO_BALL:
+		case PLAYER_ANIM_RUN_WITH_BALL:
+			// so first animations for walking and running. they are loops, the stage will be in range of 0 to count*freq.
+			// reason this seemingly complicated way of doing this is just to provide possibility to have animations
+			// with same meshcounts to have animations of different speeds.
+			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
+			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
+			break;
+		case PLAYER_ANIM_PITCH_WINDUP:
+		case PLAYER_ANIM_PITCH_THROW:
+		case PLAYER_ANIM_THROW_WINDUP:
+			// throwing animations are not loops and they must end when the last stage is encountered.
+			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
+				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
 			}
+			break;
+		case PLAYER_ANIM_THROW_RELEASE:
+			// here we do the same thing but set recoil to 0 after animation so that player can start moving and stuff again.
+			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
+				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
+			} else {
+				stateInfo->localGameInfo->playerInfo[i].cTPI.throwRecoil = 0;
+				stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+			}
+			break;
+		case PLAYER_ANIM_WALK_BARE:
+		case PLAYER_ANIM_RUN_BARE:
+			// running and walking animations for batting team
+			stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1) %
+			    (stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency*stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount);
+			break;
+		case PLAYER_ANIM_BAT_SWING_1:
+		case PLAYER_ANIM_BAT_SWING_2:
+		case PLAYER_ANIM_BAT_SWING_3:
+			// batting animations are not loops, so theyll end after finishing. swinging, bunting, and spreading hands.
+			if(stateInfo->localGameInfo->playerInfo[i].cPI.animationStage != stateInfo->localGameInfo->playerInfo[i].cPI.animationStageCount*stateInfo->localGameInfo->playerInfo[i].cPI.animationFrequency - 1) {
+				stateInfo->localGameInfo->playerInfo[i].cPI.animationStage = (stateInfo->localGameInfo->playerInfo[i].cPI.animationStage + 1);
+			}
+			break;
+		case PLAYER_ANIM_STAND_NO_BALL:
+		case PLAYER_ANIM_STAND_WITH_BALL:
+		case PLAYER_ANIM_STAND_BARE:
+		case PLAYER_ANIM_BATTER_READY:
+		default:
+			break;
+
 		}
 	}
-	
-	static void updateBallHomeStatus(StateInfo* stateInfo)
-	{
-		int ballAtBase = get_ball_at_base_index(stateInfo);
-		if (ballAtBase == 0) {
-			stateInfo->localGameInfo->gameFlowState.ballHome = 1;
-	
-			// Camera logic from checkForOuts
-			if (stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter == -1 &&
-			        stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 1 &&
-			        (get_base_controller(stateInfo->localGameInfo, BASE_THIRD) == -1 ||
-			         stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
-				stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = 0;
-			}
+}
+
+static void updateBallHomeStatus(StateInfo* stateInfo)
+{
+	int ballAtBase = get_ball_at_base_index(stateInfo);
+	if (ballAtBase == 0) {
+		stateInfo->localGameInfo->gameFlowState.ballHome = 1;
+
+		// Camera logic from checkForOuts
+		if (stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter == -1 &&
+		        stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 1 &&
+		        (get_base_controller(stateInfo->localGameInfo, BASE_THIRD) == -1 ||
+		         stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
+			stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = 0;
 		}
 	}
-	
+}
+
 

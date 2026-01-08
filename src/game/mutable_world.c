@@ -14,8 +14,8 @@
 #include "mutable_world.h"
 #include "common_logic.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
-#include "referee_apply.h"
 #include "state_validator.h"
+#include "referee.h"
 
 int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 {
@@ -85,11 +85,19 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);
 		// Referee logic now runs AFTER physics/manipulation to ensure legal state matches physical state
-		Referee_Execute(stateInfo);
+		LocalGameInfo* game = stateInfo->localGameInfo;
+		Referee_Update(
+		    stateInfo,
+		    &game->referee,
+		    &game->gameState,
+		    &game->gameModeState,
+		    &game->gameControl,
+		    &game->playerCounters,
+		    stateInfo->globalGameInfo
+		);
 
 		// React to the new legal state (e.g. panic run if safety lost)
 		reconcileLegalAndPhysicalState(stateInfo);
-
 		// Validate state consistency (Debug only)
 		StateValidator_Check(stateInfo);
 	}

@@ -6,7 +6,6 @@
 #include "mutable_world.h"
 #include "common_logic.h"
 #include "referee.h"
-#include "referee_apply.h"
 #include "action_implementation.h"
 #include "action_implementation.h"
 #include "vector_math.h"
@@ -184,7 +183,8 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 	for (int i = 0; i < maxFrames; i++) {
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
 		gameManipulation(ctx->state);
-		Referee_Execute(ctx->state);
+		LocalGameInfo* game = ctx->state->localGameInfo;
+		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
 		reconcileLegalAndPhysicalState(ctx->state);
 		ctx->currentFrame++;
 		
@@ -212,7 +212,8 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 		gameManipulation(ctx->state);
 		
 		// Milestone 14: Rules engine must run after physics to reconcile state
-		Referee_Execute(ctx->state);
+		LocalGameInfo* game = ctx->state->localGameInfo;
+		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
 		reconcileLegalAndPhysicalState(ctx->state);
 		
 		ctx->currentFrame++;

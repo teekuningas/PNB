@@ -4,21 +4,6 @@
 #include "globals.h"
 
 /**
- * @brief Pure analysis of the game state to determine rule outcomes.
- *
- * This function examines the current state (ball position, player positions,
- * game phase) and determines if any rule-based events should occur
- * (Outs, Runs, Wounds, Forced Advances).
- *
- * It does NOT modify the state. It returns a RefereeDecisions struct
- * containing all pending changes.
- *
- * @param stateInfo Pointer to the full game state (treated as Read-Only)
- * @return RefereeDecisions Struct containing all decisions for this frame
- */
-RefereeDecisions Referee_Analyze(const StateInfo* stateInfo);
-
-/**
  * @brief Initializes the RefereeState structure.
  * Sets all bases to BASE_NONE (-1) instead of 0.
  */
@@ -63,7 +48,11 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  * @param stateInfo Read-only access to the full game state.
  * @param refereeState Mutable pointer to the referee state.
  * @param gameState Mutable pointer to the game state (for outs/runs).
+ * @param gameModeState Mutable pointer to game mode state.
+ * @param gameControl Mutable pointer to game control flags.
+ * @param playerCounters Mutable pointer to player counters.
+ * @param globalGameInfo Mutable pointer to global game info (teams/runs).
  */
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState);
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo);
 
 #endif // REFEREE_H
