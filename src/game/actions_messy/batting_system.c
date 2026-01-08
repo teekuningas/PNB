@@ -81,6 +81,15 @@ void stopDecreaseBatterAngle(StateInfo* stateInfo)
 // here is where the accepting selected player happens.
 void selectBatter(StateInfo* stateInfo)
 {
+	// ARCHITECTURE ENFORCEMENT:
+	// We cannot select a new batter if someone else still holds safety at Home Base.
+	// The Referee is the single source of truth. If it says Home is occupied, we must wait.
+	if (get_base_controller(stateInfo->localGameInfo, BASE_HOME) != -1) {
+		// Optional: We could log this or provide feedback, but for now we just prevent the illegal action.
+		// This prevents the "Player 3 SAFE vs Controller 2" crash.
+		return;
+	}
+
 	int battingTeamIndex = (stateInfo->globalGameInfo->
 	                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 	// index cannot be -1 as we couldn't have got this far if it was
