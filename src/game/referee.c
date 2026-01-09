@@ -65,12 +65,41 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 			// Grant Safety
 			referee->battingPlayers[i].currentSafetyBase = physicalBase;
 
-			// Displace old owner (if any)
-			for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-				if (i == j) continue;
+			// Check if this arriving player is marked for a wound
+			int isWoundPending = referee->battingPlayers[i].hasPendingWound || referee->woundingPlayersMarked[i];
 
-				if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
-					referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
+			if (isWoundPending) {
+				// TUPLAHAAVA LOGIC: Do not displace. Mark existing occupants for Tuplahaava.
+				for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+					if (i == j) continue;
+
+					if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
+						// Found an existing occupant. Mark them for Tuplahaava.
+
+						// If the timer has already expired (arriving player is pending),
+						// we must immediately set the occupant to pending as well.
+						if (referee->battingPlayers[i].hasPendingWound) {
+							referee->battingPlayers[j].hasPendingWound = 1;
+						} else {
+							// Otherwise, mark them for the timer to pick up.
+							referee->woundingPlayersMarked[j] = 1;
+						}
+
+						referee->battingPlayers[j].woundingType = WOUNDING_TYPE_TUPLAHAAVA;
+						referee->battingPlayers[j].woundingSourceBase = physicalBase;
+						// Crucial: They KEEP safety for now.
+					}
+				}
+				// Ensure arriving player is marked correctly
+				referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NORMAL;
+			} else {
+				// STANDARD LOGIC: Displace old owner (if any)
+				for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+					if (i == j) continue;
+
+					if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
+						referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
+					}
 				}
 			}
 		}

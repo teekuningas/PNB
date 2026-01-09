@@ -73,6 +73,15 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames);
 void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, BaseID fromBase);
 
 /**
+ * @brief Trigger a player to start running to the previous base (return)
+ * 
+ * @param ctx The scenario context
+ * @param playerIndex Player to make run
+ * @param toBase The base they're returning to
+ */
+void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase);
+
+/**
  * @brief Setup a batter at home ready to run
  * 
  * Common pattern: fresh batter with no safety, ready to advance to first.

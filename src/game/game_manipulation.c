@@ -373,36 +373,7 @@ static void processPendingWounds(StateInfo* stateInfo)
 					stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 					movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
-					// Handle Tuplahaava Double Wound (removing safety from base)
-					int j = base_to_int_index(currentBase);
-					if (j >= 1 && j < BASE_COUNT) {
-						int targetPlayerIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)j);
-
-						// If there is a player who currently holds safety rights to this base:
-						if(targetPlayerIndex != -1 && targetPlayerIndex != index) {
-
-							// Apply double wound to the occupant
-							if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_WOUNDED &&
-							        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_OUT) {
-
-								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].hasPendingWound = 1;
-								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].woundingType = WOUNDING_TYPE_TUPLAHAAVA;
-								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].woundingSourceBase = (BaseID)j;
-								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].currentSafetyBase = (BaseID)j;
-								stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].baseAtLastEvent = (BaseID)j;
-
-								if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_ON_BASE ||
-								        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
-
-									stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
-									stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.baseId = BASE_NONE;
-									movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
-									stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].currentSafetyBase = BASE_NONE;
-									stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].hasPendingWound = 0;
-								}
-							}
-						}
-					}
+					// Legacy Tuplahaava logic removed (handled by Referee_Update)
 				}
 			}
 		}
@@ -451,41 +422,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 								movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
-								// §36 Tuplahaava: "Tuplahaava... syntyy irti olleen pelaajan saadessa turvan kyseiselle pesälle."
-								// If there is a player who currently holds safety rights to this base:
-								if(get_base_controller(stateInfo->localGameInfo, (BaseID)j) != -1 &&
-								        get_base_controller(stateInfo->localGameInfo, (BaseID)j) != index) {
-									int targetPlayerIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)j);
-
-									// If they aren't already doomed/out, trigger the double wound (§36)
-									if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_WOUNDED &&
-									        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state != PLAYER_STATE_OUT) {
-
-										// Referee Update for Tuplahaava (Milestone 12)
-										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].hasPendingWound = 1;
-										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].woundingType = WOUNDING_TYPE_TUPLAHAAVA;
-										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].woundingSourceBase = (BaseID)j;
-										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].currentSafetyBase = (BaseID)j; // KEEP SAFETY!
-										stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].baseAtLastEvent = (BaseID)j;
-
-										// If they are physically at the base, wound them immediately.
-										if (stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_ON_BASE ||
-										        stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state == PLAYER_STATE_AT_BAT) {
-
-											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.state = PLAYER_STATE_WOUNDED;
-											stateInfo->localGameInfo->playerInfo[targetPlayerIndex].bTPI.baseId = BASE_NONE;
-											movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, targetPlayerIndex);
-											stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].currentSafetyBase = BASE_NONE; // Lost safety
-											stateInfo->localGameInfo->referee.battingPlayers[targetPlayerIndex].hasPendingWound = 0; // Handled
-
-										}
-										// If they are in between bases (LEADING or RUNNING), mark them as pending wound.
-										// They will be removed when they reach their destination (§36 race lost).
-										else {
-											// They keep safety index (baseControlIndex[j]) so they can retreat if implemented later
-										}
-									}
-								}
+								// Legacy Tuplahaava logic removed (handled by Referee_Update)
 							} else {
 								// if the player wasnt wounded, now he is arriving in a valid way
 								// §42 Kunniajuoksu Overtaking check:

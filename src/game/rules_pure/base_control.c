@@ -6,14 +6,20 @@ int get_base_controller(const LocalGameInfo* game, BaseID base)
 	if (base < 0 || base >= BASE_COUNT) return -1;
 
 	// Iterate through all players to find who claims safety at this base.
-	// This replaces the cached baseControlIndex array.
+	// If multiple players have safety (e.g. Tuplahaava pending), prioritize the lead runner.
+	int bestCandidate = -1;
+	int highestBaseAtPitch = -2;
+
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		// We trust the Referee State as the single source of truth for safety.
 		if (game->referee.battingPlayers[i].currentSafetyBase == base) {
-			return i;
+			int baseAtPitch = (int)game->referee.battingPlayers[i].baseAtPitchStart;
+			if (baseAtPitch > highestBaseAtPitch) {
+				highestBaseAtPitch = baseAtPitch;
+				bestCandidate = i;
+			}
 		}
 	}
-	return -1;
+	return bestCandidate;
 }
 
 int get_ball_at_base_index(const StateInfo* stateInfo)

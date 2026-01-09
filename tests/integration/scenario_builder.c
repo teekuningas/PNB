@@ -151,6 +151,22 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
 	runToNextBase(ctx->state->localGameInfo, ctx->state->fieldPositions, playerIndex, fromBase);
 }
 
+void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase)
+{
+	if (!ctx || !ctx->state) return;
+	
+	// Call the game's base-running machinery
+	// Note: runToPreviousBase treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base 3).
+	// But the game logic's `runToPreviousBase` actually takes `BaseID base` as the "current base" or "base we are retreating FROM"?
+	// Let's check common_logic.c:
+	// void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base)
+	// if(base == BASE_HOME) ... target = ready pos
+	// if(base == BASE_FIRST) ... target = firstBaseRun
+	// So `base` is the destination base.
+	
+	runToPreviousBase(ctx->state->localGameInfo, ctx->state->fieldPositions, playerIndex, toBase);
+}
+
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
 {
 	if (!ctx || !ctx->state) return;

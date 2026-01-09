@@ -233,10 +233,18 @@ static void woundingCatchEffects(StateInfo* stateInfo)
 
 						// Referee Update (Milestone 12)
 						stateInfo->localGameInfo->referee.battingPlayers[index].hasPendingWound = 1;
-						stateInfo->localGameInfo->referee.battingPlayers[index].woundingType = WOUNDING_TYPE_NORMAL;
+						// Don't overwrite if Referee already marked it as TUPLAHAAVA (during shared safety phase)
+						if (stateInfo->localGameInfo->referee.battingPlayers[index].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
+							stateInfo->localGameInfo->referee.battingPlayers[index].woundingType = WOUNDING_TYPE_NORMAL;
+						}
 						// woundingSourceBase was already snapshotted at catch moment
 						stateInfo->localGameInfo->referee.battingPlayers[index].baseAtLastEvent = baseId;
-						stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
+
+						// Only remove safety if it's NOT a Tuplahaava (double wound).
+						// Tuplahaava allows the rear runner to retain safety at the previous base until they reach safety.
+						if (stateInfo->localGameInfo->referee.battingPlayers[index].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
+							stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
+						}
 
 						// Make sure they're running toward next base to try to avoid OUT
 						// If they were LEADING, this forces them to run
