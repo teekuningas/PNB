@@ -930,6 +930,8 @@ static void updateBallHomeStatus(StateInfo* stateInfo)
 		         stateInfo->localGameInfo->playerInfo[get_base_controller(stateInfo->localGameInfo, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
 			stateInfo->localGameInfo->gameFlowState.homeRunCameraCounter = 0;
 		}
+	} else {
+		stateInfo->localGameInfo->gameFlowState.ballHome = 0;
 	}
 }
 

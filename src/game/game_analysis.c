@@ -50,8 +50,7 @@ void initGameAnalysis(GameFlowState* gameFlowState)
 
 void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	// Reset per-frame flags
-	stateInfo->localGameInfo->gameFlowState.ballHome = 0;
+	// Reset per-frame flags removed (ballHome handled in game_manipulation.c)
 
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera

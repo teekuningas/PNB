@@ -11,6 +11,7 @@
 #include "font.h"
 #include "game_screen.h"
 #include "common_logic.h"
+#include "state_validator.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f  // Midpoint between original -0.12 and current 0.08
@@ -71,6 +72,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
 		if(stateInfo->localGameInfo->gameControl.pause == 0) {
 			stateInfo->localGameInfo->gameControl.pause = 1;
+			StateValidator_Dump(stateInfo, "Manual Pause");
 		} else if(stateInfo->localGameInfo->gameControl.pause == 1) {
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;

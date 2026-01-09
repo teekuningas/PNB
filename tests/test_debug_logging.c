@@ -37,18 +37,24 @@ int test_debug_logging_cycle() {
     game.playerInfo[0].bTPI.baseId = BASE_SECOND; // But is physically at Base 2
     game.playerInfo[0].bTPI.state = PLAYER_STATE_ON_BASE;
 
-    // 4. Run Check (should trigger dump and pause)
-    StateValidator_Check(&state);
+    // 4. Run Check (should return 0)
+    int isValid = StateValidator_Check(&state);
+    ASSERT_EQ(0, isValid, "State should be invalid");
+
+    if (!isValid) {
+        StateValidator_Dump(&state, "Base Controller Mismatch");
+        game.gameControl.pause = 1;
+    }
 
     // 5. Verify Pause
-    ASSERT_EQ(1, game.gameControl.pause, "Game should be paused by validator");
+    ASSERT_EQ(1, game.gameControl.pause, "Game should be paused manually after check");
 
     // 6. Verify File Exists
     FILE* f = fopen(dumpPath, "r");
     ASSERT_TRUE(f != NULL, "Dump file should exist");
     if (f) {
         // Simple content check
-        char buffer[8192]; // Snapshots make it larger
+        char buffer[65536]; // Snapshots make it larger
         size_t n = fread(buffer, 1, sizeof(buffer)-1, f);
         buffer[n] = 0;
         fclose(f);

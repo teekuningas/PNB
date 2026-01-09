@@ -99,7 +99,10 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// React to the new legal state (e.g. panic run if safety lost)
 		reconcileLegalAndPhysicalState(stateInfo);
 		// Validate state consistency (Debug only)
-		StateValidator_Check(stateInfo);
+		if (!StateValidator_Check(stateInfo)) {
+			StateValidator_Dump(stateInfo, "State Consistency Check Failed");
+			stateInfo->localGameInfo->gameControl.pause = 1;
+		}
 	}
 }
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)

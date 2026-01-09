@@ -109,7 +109,7 @@ static const char* state_to_string(PlayerUnitState s)
 	}
 }
 
-static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
+static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global, int indent)
 {
 	// Helper for indentation
 	char sp[16];
@@ -117,21 +117,72 @@ static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
 	for(i=0; i<indent && i<15; i++) sp[i] = ' ';
 	sp[i] = 0;
 
+	if (global) {
+		fprintf(f, "%s\"global\": {\n", sp);
+		fprintf(f, "%s  \"inning\": %d,\n", sp, global->inning);
+		fprintf(f, "%s  \"period\": %d,\n", sp, global->period);
+		fprintf(f, "%s  \"team0_runs\": %d,\n", sp, global->teams[0].runs);
+		fprintf(f, "%s  \"team1_runs\": %d\n", sp, global->teams[1].runs);
+		fprintf(f, "%s},\n", sp);
+	}
+
 	fprintf(f, "%s\"gameState\": {\n", sp);
 	fprintf(f, "%s  \"outs\": %d,\n", sp, game->gameState.outs);
 	fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, game->gameState.runsInTheInning);
 	fprintf(f, "%s  \"strikes\": %d,\n", sp, game->gameState.strikes);
-	fprintf(f, "%s  \"balls\": %d\n", sp, game->gameState.balls);
+	fprintf(f, "%s  \"balls\": %d,\n", sp, game->gameState.balls);
+	fprintf(f, "%s  \"event\": %d\n", sp, game->gameState.event);
 	fprintf(f, "%s},\n", sp);
 
-	fprintf(f, "%s\"batterIndex\": %d,\n", sp, game->pII.batterIndex);
+	fprintf(f, "%s\"gameControl\": {\n", sp);
+	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->gameControl.waitingForBatterDecision);
+	fprintf(f, "%s  \"firstCatchMade\": %d,\n", sp, game->gameControl.firstCatchMade);
+	fprintf(f, "%s  \"checkForRun\": %d,\n", sp, game->gameControl.checkForRun);
+	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->gameControl.waitingForFreeWalkDecision);
+	fprintf(f, "%s  \"batterStartedRunning\": %d\n", sp, game->gameControl.batterStartedRunning);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"gameFlowState\": {\n", sp);
+	fprintf(f, "%s  \"ballHome\": %d,\n", sp, game->gameFlowState.ballHome);
+	fprintf(f, "%s  \"endOfInningCounter\": %d\n", sp, game->gameFlowState.endOfInningCounter);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"pII\": {\n", sp);
+	fprintf(f, "%s  \"batterIndex\": %d,\n", sp, game->pII.batterIndex);
+	fprintf(f, "%s  \"batterSelectionIndex\": %d,\n", sp, game->pII.batterSelectionIndex);
+	fprintf(f, "%s  \"hasBallIndex\": %d,\n", sp, game->pII.hasBallIndex);
+	fprintf(f, "%s  \"controlIndex\": %d\n", sp, game->pII.controlIndex);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"pRAI\": {\n", sp);
+	fprintf(f, "%s  \"pitchState\": %d,\n", sp, game->pRAI.pitchState);
+	fprintf(f, "%s  \"batterReady\": %d,\n", sp, game->pRAI.batterReady);
+	fprintf(f, "%s  \"battingGoingOn\": %d,\n", sp, game->pRAI.battingGoingOn);
+	fprintf(f, "%s  \"batHit\": %d,\n", sp, game->pRAI.batHit);
+	fprintf(f, "%s  \"initBatter\": %d\n", sp, game->pRAI.initBatter);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"ballInfo\": {\n", sp);
+	fprintf(f, "%s  \"location\": { \"x\": %.2f, \"y\": %.2f, \"z\": %.2f },\n", sp, game->ballInfo.location.x, game->ballInfo.location.y, game->ballInfo.location.z);
+	fprintf(f, "%s  \"moving\": %d,\n", sp, game->ballInfo.moving);
+	fprintf(f, "%s  \"hasHitGround\": %d,\n", sp, game->ballInfo.hasHitGround);
+	fprintf(f, "%s  \"onGround\": %d\n", sp, game->ballInfo.onGround);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"aiState\": {\n", sp);
+	fprintf(f, "%s  \"actionKeyLock\": %d,\n", sp, game->aiState.actionKeyLock);
+	fprintf(f, "%s  \"battingKeyDown\": %d,\n", sp, game->aiState.battingKeyDown);
+	fprintf(f, "%s  \"planCalculated\": %d,\n", sp, game->aiState.planCalculated);
+	fprintf(f, "%s  \"pitchStage\": %d\n", sp, game->aiState.pitchStage);
+	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"players\": [\n", sp);
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		PlayerInfo* p = &game->playerInfo[i];
-		// Only print relevant players (on base, active, or pending wound)
+		// Only print relevant players (on base, active, pending wound, OR holding safety)
 		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE ||
-		                  game->referee.battingPlayers[i].hasPendingWound);
+		                  game->referee.battingPlayers[i].hasPendingWound || i == game->pII.batterIndex ||
+		                  game->referee.battingPlayers[i].currentSafetyBase != BASE_NONE);
 
 		if (isRelevant) {
 			fprintf(f, "%s  {\n", sp);
@@ -139,6 +190,10 @@ static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
 			fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
 			fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
 			fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
+			fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->tPI.location.x, p->tPI.location.z);
+
+			// Runtime state
+			fprintf(f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d },\n", sp, game->playerRuntime[i].goingForward, game->playerRuntime[i].arrivedToBase);
 
 			// Referee State
 			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
@@ -153,7 +208,7 @@ static void print_game_json(FILE* f, LocalGameInfo* game, int indent)
 	fprintf(f, "%s]", sp);
 }
 
-static void dump_state(StateInfo* state, const char* reason)
+void StateValidator_Dump(StateInfo* state, const char* reason)
 {
 	if (!g_dumpPath[0]) return;
 
@@ -171,16 +226,11 @@ static void dump_state(StateInfo* state, const char* reason)
 
 	// Current State
 	fprintf(f, "  \"currentState\": {\n");
-	print_game_json(f, game, 4);
+	print_game_json(f, game, state->globalGameInfo, 4);
 	fprintf(f, "\n  },\n");
 
 	// History
 	fprintf(f, "  \"history\": [\n");
-
-	// Iterate from oldest to newest
-	// Oldest is at head (if full) or 0 (if not full)?
-	// Ring buffer: head points to NEXT write slot. So oldest is at head (if full).
-	// But it's easier to just iterate sequentially and handle wrap.
 
 	int startIdx = (g_historyCount < HISTORY_SIZE) ? 0 : g_historyHead;
 	for (int i = 0; i < g_historyCount; i++) {
@@ -189,7 +239,7 @@ static void dump_state(StateInfo* state, const char* reason)
 		fprintf(f, "      \"seq\": %d,\n", g_history[idx].frameCount);
 		fprintf(f, "      \"label\": \"%s\",\n", g_history[idx].label);
 		fprintf(f, "      \"snapshot\": {\n");
-		print_game_json(f, &g_history[idx].snapshot, 8);
+		print_game_json(f, &g_history[idx].snapshot, NULL, 8); // No global info for snapshots
 		fprintf(f, "\n      }\n");
 		fprintf(f, "    }%s\n", (i < g_historyCount - 1) ? "," : "");
 	}
@@ -200,14 +250,14 @@ static void dump_state(StateInfo* state, const char* reason)
 	printf("State dumped to %s\n", g_dumpPath);
 }
 
-void StateValidator_Check(StateInfo* state)
+int StateValidator_Check(StateInfo* state)
 {
-	if (!g_isActive) return;
+	if (!g_isActive) return 1;
 
 	LocalGameInfo* game = state->localGameInfo;
 
 	// Skip validation if the game is already paused (avoid redundant checks/dumps)
-	if (game->gameControl.pause) return;
+	if (game->gameControl.pause) return 1;
 
 	// Invariant 1: Unique Base Occupancy (Safe players)
 	// Check baseControlIndex vs Player state
@@ -217,9 +267,7 @@ void StateValidator_Check(StateInfo* state)
 			// Player at this index MUST be at this base
 			if (game->playerInfo[idx].bTPI.baseId != (BaseID)b) {
 				printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player is at base %d\n", b, idx, game->playerInfo[idx].bTPI.baseId);
-				dump_state(state, "Base Controller Mismatch");
-				game->gameControl.pause = 1; // Pause game
-				return;
+				return 0; // Invalid
 			}
 
 			// Player MUST be safe or at bat (if base 0)
@@ -231,10 +279,9 @@ void StateValidator_Check(StateInfo* state)
 			        game->playerInfo[idx].bTPI.state == PLAYER_STATE_IDLE) {
 				printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player state is %s (Invalid for controller)\n",
 				       b, idx, state_to_string(game->playerInfo[idx].bTPI.state));
-				dump_state(state, "Base Controller State Invalid");
-				game->gameControl.pause = 1;
-				return;
+				return 0; // Invalid
 			}
 		}
 	}
+	return 1; // Valid
 }
