@@ -355,9 +355,6 @@ static void processPendingWounds(StateInfo* stateInfo)
 				if (type == WOUNDING_TYPE_NORMAL) {
 					if (currentBase != sourceBase) {
 						shouldWound = 1;
-					} else {
-						// Returned to source (unlikely but possible)
-						stateInfo->localGameInfo->referee.battingPlayers[index].hasPendingWound = 0;
 					}
 				} else if (type == WOUNDING_TYPE_TUPLAHAAVA) {
 					BaseID nextBase = base_get_next(sourceBase);

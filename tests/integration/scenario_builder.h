@@ -49,6 +49,13 @@ void give_ball_to_fielder(ScenarioContext* ctx, int fielderIndex);
 void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase);
 
 /**
+ * @brief Hit a fly ball (high arc) to a specific location
+ * 
+ * Sets the ball state to look like it came from a bat hit (woundingCatchPending=1).
+ */
+void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation);
+
+/**
  * @brief Simulate game progression for N frames
  */
 int simulate_frames(ScenarioContext* ctx, int maxFrames);

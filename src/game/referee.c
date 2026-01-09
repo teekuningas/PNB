@@ -20,28 +20,57 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 {
 	const LocalGameInfo* game = stateInfo->localGameInfo;
 
-	// 2.5 Safety Acquisition & Displacement (Milestone: Decoupled Safety Logic)
+	// Process players in base order (HOME -> FIRST -> SECOND -> THIRD)
+	// This ensures deterministic safety resolution when two players are at the same base.
+	// Lead runners (higher bases at pitch start) are processed first and lose safety.
+	// Rear runners (lower bases at pitch start) are processed last and win safety.
+
+	// Build sorted list of active players by their baseAtPitchStart
+	int sortedPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
+	int playerCount = 0;
+
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		const PlayerInfo* player = &game->playerInfo[i];
+		if (player->bTPI.baseId != BASE_NONE &&
+		        (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT)) {
+			sortedPlayers[playerCount++] = i;
+		}
+	}
+
+	// Sort by baseAtPitchStart (HIGHER bases first: THIRD=3, SECOND=2, FIRST=1, HOME=0)
+	// So lead runners (higher bases) processed first, rear runners processed last and win conflicts
+	for (int i = 0; i < playerCount - 1; i++) {
+		for (int j = i + 1; j < playerCount; j++) {
+			BaseID baseI = referee->battingPlayers[sortedPlayers[i]].baseAtPitchStart;
+			BaseID baseJ = referee->battingPlayers[sortedPlayers[j]].baseAtPitchStart;
+			if (baseI < baseJ) {  // REVERSED: higher bases first
+				int temp = sortedPlayers[i];
+				sortedPlayers[i] = sortedPlayers[j];
+				sortedPlayers[j] = temp;
+			}
+		}
+	}
+
+	// 2.5 Safety Acquisition & Displacement
+	// Process in field order (rear runners processed last, win safety conflicts)
+	for (int idx = 0; idx < playerCount; idx++) {
+		int i = sortedPlayers[idx];
 		const PlayerInfo* player = &game->playerInfo[i];
 		BaseID physicalBase = player->bTPI.baseId;
 
-		// If player is physically at a base (SAFE or AT_BAT)
-		if (physicalBase != BASE_NONE &&
-		        (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT)) {
+		// Player is physically at a base (we already filtered for ON_BASE/AT_BAT)
+		// But Referee doesn't recognize them as the controller yet
+		if (referee->battingPlayers[i].currentSafetyBase != physicalBase) {
 
-			// But Referee doesn't recognize them as the controller yet
-			if (referee->battingPlayers[i].currentSafetyBase != physicalBase) {
+			// Grant Safety
+			referee->battingPlayers[i].currentSafetyBase = physicalBase;
 
-				// Grant Safety
-				referee->battingPlayers[i].currentSafetyBase = physicalBase;
+			// Displace old owner (if any)
+			for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+				if (i == j) continue;
 
-				// Displace old owner (if any)
-				for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-					if (i == j) continue;
-
-					if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
-						referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
-					}
+				if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
+					referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
 				}
 			}
 		}

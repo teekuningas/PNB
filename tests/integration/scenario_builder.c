@@ -284,10 +284,56 @@ game->pII.hasBallIndex = -1;
 
 // Use the game's actual sling function (sets velocity + flags)
 	// Trigger fielder selection update (same as game does after throws)
-	game->pRAI.refreshCatchAndChange = 1;
-	game->pRAI.initPlayerSelection = 1;
-genericSlingBall(&game->ballInfo,
-                 dx * power * THROW_POWER_CONSTANT,
-                 dy,
-                 dz * power * THROW_POWER_CONSTANT);
-}
+		game->pRAI.refreshCatchAndChange = 1;
+		game->pRAI.initPlayerSelection = 1;
+		genericSlingBall(&game->ballInfo,
+		                 dx * power * THROW_POWER_CONSTANT,
+		                 dy,
+		                 dz * power * THROW_POWER_CONSTANT);
+	}
+	
+	void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation)
+	{
+		if (!ctx || !ctx->state) return;
+	
+		LocalGameInfo* game = ctx->state->localGameInfo;
+	
+		// Calculate direction
+		float dx = targetLocation.x - fromLocation.x;
+		float dz = targetLocation.z - fromLocation.z;
+		float dist = sqrtf(dx*dx + dz*dz);
+		
+		if (dist < 0.1f) return;
+	
+		// Flight parameters
+		// We want a high arc (Koppi)
+		// Flight time T roughly 150 frames (approx 3 seconds at 50fps logic?)
+		// Actually UPDATE_INTERVAL is 20ms, so 50 updates per second.
+		// 150 frames = 3 seconds.
+		
+		float frames = 150.0f;
+		float gravity = GRAVITY; // 0.003f
+		
+		// v_x = dx / frames
+		// v_z = dz / frames
+		// v_y needed to land at same height after T frames:
+		// 0 = v_y * T - 0.5 * g * T^2
+		// v_y = 0.5 * g * T
+		
+		float vy = 0.5f * gravity * frames;
+			float vx = dx / frames;
+			float vz = dz / frames;
+		
+			// Set starting location
+			game->ballInfo.location = fromLocation;
+			game->ballInfo.lastLocation = fromLocation;
+			game->pII.hasBallIndex = -1;
+			
+			// Launch
+			genericSlingBall(&game->ballInfo, vx, vy, vz);
+			
+				// Ensure ball is in "fly ball" state so a catch triggers wounding
+				game->ballInfo.hasHitGround = 0;
+				game->gameControl.firstCatchMade = 0;
+				game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
+			}
