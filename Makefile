@@ -11,8 +11,15 @@ _OBJ_COMMON += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.
 _OBJ_COMMON += cup/cup.o
 
 # Build-specific object paths
+_OBJ_INT_SCENARIOS = tests/integration/scenarios/test_runner_scores_from_third.o \
+                     tests/integration/scenarios/test_batter_forced_out_at_first.o \
+                     tests/integration/scenarios/test_fly_ball_runner_wounded.o \
+                     tests/integration/scenarios/test_runner_chain_reaction.o \
+                     tests/integration/scenarios/test_tuplahaava_double_wound.o \
+                     tests/integration/scenarios/test_tuplahaava_late_arrival.o
+
 OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
-OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o tests/integration/test_full_scenarios.o)
+OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o $(_OBJ_INT_SCENARIOS))
 
 # Unit test objects (No OpenGL)
 _TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o core/state_validator.o tests/test_cup_logic.o tests/test_batting_physics.o tests/test_pitching_physics.o tests/test_batting_ai_strategy.o tests/test_catching_ai_strategy.o tests/test_pitching_ai_strategy.o tests/test_rules_outs.o tests/test_rules_runs.o tests/test_rules_strikes.o tests/test_base_logic.o tests/test_collision.o tests/test_rules_referee.o tests/test_debug_logging.o
