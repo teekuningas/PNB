@@ -7,7 +7,9 @@
  * @brief Determines which player currently "controls" (is safe at) a given base.
  *
  * This is the SINGLE SOURCE OF TRUTH for base ownership.
- * It derives ownership from the RefereeState (currentSafetyBase).
+ * A player controls a base if they BOTH have safety at the base (currentSafetyBase)
+ * AND are physically at the base (baseId). This distinction matters for vapaataival
+ * (free walk) where safety is granted immediately but control comes upon arrival.
  *
  * @param game Pointer to LocalGameInfo containing player and referee state.
  * @param base The BaseID to check (BASE_HOME, BASE_FIRST, etc.)

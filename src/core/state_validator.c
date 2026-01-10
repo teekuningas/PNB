@@ -264,15 +264,13 @@ int StateValidator_Check(StateInfo* state)
 	for (int b = 0; b < BASE_COUNT; b++) {
 		int idx = get_base_controller(game, b);
 		if (idx != -1) {
-			// Player at this index MUST be at this base
+			// Player at this index MUST be at this base (enforced by get_base_controller definition)
 			if (game->playerInfo[idx].bTPI.baseId != (BaseID)b) {
 				printf("\n[STATE ERROR] FATAL: Base %d controlled by %d, but player is at base %d\n", b, idx, game->playerInfo[idx].bTPI.baseId);
 				return 0; // Invalid
 			}
 
-			// Player MUST be safe or at bat (if base 0)
-			// UPDATED JAN 2026: Player can also be RUNNING/LEADING/FREE_WALK from this base while still being controlled by it
-			// as long as they haven't arrived at the next base.
+			// Player MUST not be in invalid states for controlling a base
 			if (game->playerInfo[idx].bTPI.state == PLAYER_STATE_OUT ||
 			        game->playerInfo[idx].bTPI.state == PLAYER_STATE_WOUNDED ||
 			        game->playerInfo[idx].bTPI.state == PLAYER_STATE_SCORED ||
