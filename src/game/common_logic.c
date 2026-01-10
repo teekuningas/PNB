@@ -1,3 +1,4 @@
+#include <string.h>
 #include "globals.h"
 #include "common_logic.h"
 #include "vector_math.h"
@@ -269,7 +270,6 @@ void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 			// here as it is the batter, we'll also stop any batting to be able to run freely.
 			localGameInfo->pRAI.batterReady = 0;
 			localGameInfo->pRAI.battingGoingOn = 0;
-			localGameInfo->gameEvents.batterStartedRunning = 1;
 		} else if(base == BASE_FIRST) {
 			target.x = fieldPositions->secondBaseRun.x;
 			target.z = fieldPositions->secondBaseRun.z;
@@ -401,38 +401,6 @@ void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositi
 
 	}
 }
-// so a little function to check if ball's x and z coordinates indicate that ball is out of the
-// playing field.
-int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions)
-{
-	int value = 1;
-	// first, is ball behind the line at the back, or too much at right or too much at left
-	// or in front of the homeline
-	// if not, continue
-	if(ballInfo->location.z > fieldPositions->backLeftPoint.z &&
-	        ballInfo->location.x < fieldPositions->backRightPoint.x &&
-	        ballInfo->location.x > fieldPositions->backLeftPoint.x &&
-	        ballInfo->location.z < HOME_LINE_Z) {
-		float z0 = 1.0f;
-		float x = fieldPositions->rightPoint.x;
-		float z = fieldPositions->rightPoint.z - z0;
-		float slope1 = z/x;
-		float slope2;
-		x = -fieldPositions->leftPoint.x;
-		z = -(fieldPositions->leftPoint.z - z0);
-		slope2 = z/x;
-		// then here we just have basic line equations to check if the ball is
-		// out or inside the lines from pitchPlate to rightPoint and leftPoint.
-		if(ballInfo->location.z - slope1*ballInfo->location.x - z0 < 0 &&
-		        ballInfo->location.z - slope2*ballInfo->location.x - z0 < 0) {
-			value = 0;
-		}
-	}
-	if(value == 1) {
-		ballInfo->hasHitGroundOutOfBounds = 1;
-	}
-	return value;
-}
 
 void changePlayer(LocalGameInfo* localGameInfo)
 {
@@ -444,7 +412,7 @@ void changePlayer(LocalGameInfo* localGameInfo)
 			stopMovement(localGameInfo->playerInfo, localGameInfo->pII.controlIndex);
 		}
 
-		if(localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex] != -1) {			// set control to new index from the array
+		if(localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex] != -1) { // set control to new index from the array
 			localGameInfo->pII.controlIndex = localGameInfo->pII.fielderRankedIndices[localGameInfo->pII.changePlayerArrayIndex];
 			// and set him to run
 			localGameInfo->playerInfo[localGameInfo->pII.controlIndex].cPI.running = 1;
@@ -832,31 +800,18 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->gameState.endPeriod = 0;
 	localGameInfo->referee.woundingCatchPending = 0;
 	localGameInfo->referee.woundingCatchHandled = 0;
-	localGameInfo->gameEvents.batterStartedRunning = 0;
 
 	localGameInfo->gameState.event = EVENT_NONE;
 	localGameInfo->gameControl.checkForRun = 0;
 	localGameInfo->gameControl.freeWalkIndex = -1;
 	localGameInfo->gameControl.freeWalkBase = -1;
 	localGameInfo->gameEvents.playerArrivedAtBase = 0;
-	localGameInfo->gameEvents.catchMade = 0;
 	localGameInfo->gameControl.pause = 0;
 
 	// MILESTONE 16: Initialize new structures (Phase 1)
 	// GameEvents (transient, will be cleared each frame)
-	localGameInfo->gameEvents.catchMade = 0;
-	localGameInfo->gameEvents.playerArrivedAtBase = 0;
-	localGameInfo->gameEvents.batterStartedRunning = 0;
-	localGameInfo->gameEvents.pitchStarted = 0;
-	localGameInfo->gameEvents.pitchReleased = 0;
-	localGameInfo->gameEvents.ballHitByBat = 0;
-	localGameInfo->gameEvents.ballMissedByBat = 0;
-	localGameInfo->gameEvents.freeWalkAccepted = 0;
-	localGameInfo->gameEvents.freeWalkRejected = 0;
-	localGameInfo->gameEvents.outOfBoundsOccurred = 0;
-	localGameInfo->gameEvents.eventPlayerIndex = -1;
-	localGameInfo->gameEvents.eventBase = BASE_NONE;
-	
+	clearFrameEvents(&localGameInfo->gameEvents);
+
 	// GameControl (stateful)
 	localGameInfo->gameControl.pause = 0;
 	localGameInfo->gameControl.waitingForBatterDecision = 0;
@@ -865,6 +820,7 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->gameControl.freeWalkIndex = -1;
 	localGameInfo->gameControl.freeWalkBase = BASE_NONE;
 	localGameInfo->gameControl.checkForRun = 0;
+	localGameInfo->gameControl.catchHasBeenMade = 0;
 
 	initGameAnalysis(&(localGameInfo->gameFlowState));
 	initGameManipulation(&(localGameInfo->gameFlowState));
@@ -876,6 +832,23 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->cameraState.targetPoint.y = 0.0f;
 	localGameInfo->cameraState.targetPoint.z = 0.0f;
 }
+
+void clearFrameEvents(GameEvents* events)
+{
+	events->catchMade = 0;
+	events->playerArrivedAtBase = 0;
+	events->pitchStarted = 0;
+	events->pitchReleased = 0;
+	events->ballHitByBat = 0;
+	events->ballMissedByBat = 0;
+	events->ballHitGround = 0;
+	events->freeWalkAccepted = 0;
+	events->freeWalkRejected = 0;
+	events->outOfBoundsOccurred = 0;
+	events->eventPlayerIndex = -1;
+	events->eventBase = BASE_NONE;
+}
+
 // these should be kept when foul play
 void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGameInfo)
 {
@@ -1035,4 +1008,3 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 		setRunnerAndBatter(stateInfo->localGameInfo, stateInfo->globalGameInfo, stateInfo->fieldPositions);
 	}
 }
-

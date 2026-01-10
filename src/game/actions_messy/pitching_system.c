@@ -168,6 +168,9 @@ void releasePitch(StateInfo* stateInfo)
 	// This is critical for foul play logic to know if the batter had 2 strikes (and thus is out on foul).
 	stateInfo->localGameInfo->referee.strikesAtPitchStart = stateInfo->localGameInfo->gameState.strikes;
 
+	// Trigger pitch released event
+	stateInfo->localGameInfo->gameEvents.pitchReleased = 1;
+
 	// always when pitch reaches the stage of ball going to air, we update baserunners'
 	// original bases to their current bases, so that we can make decisions about
 	// foul plays and wounds etc.

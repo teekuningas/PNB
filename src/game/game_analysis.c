@@ -85,10 +85,9 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 			if(count_active_batting_players(stateInfo->localGameInfo->playerInfo) < BASE_COUNT && stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
-				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameEvents.catchMade == 1) {
+				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameControl.catchHasBeenMade == 1) {
 					// if that happens we can now start.
-					int battingTeamIndex = (stateInfo->globalGameInfo->
-					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
+					int battingTeamIndex = (stateInfo->globalGameInfo->					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
 					// this will give work to action_invocatin.c and action_implementation.c
 					stateInfo->localGameInfo->gameControl.waitingForBatterDecision = 1;
 					// we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
@@ -123,13 +122,16 @@ static void strikesAndBalls(StateInfo* stateInfo)
 		// We restore automatic force running to resolve control ambiguity.
 		// The batter is now "forced" to run by the rules.
 		int index = get_base_controller(stateInfo->localGameInfo, BASE_HOME);
-		if(index != -1) {
-			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);
-			// Remove safety from home base
-		}
 
-		// Reset strikes so this doesn't re-trigger every frame
-		stateInfo->localGameInfo->gameState.strikes = 0;
+		// Only force run if player is still there and NOT already running.
+		// This prevents re-triggering every frame while preserving the 3 strikes state
+		// until the next batter resets it.
+		if(index != -1 && stateInfo->localGameInfo->playerInfo[index].bTPI.state != PLAYER_STATE_RUNNING) {
+			runToNextBase(stateInfo->localGameInfo, stateInfo->fieldPositions, index, BASE_HOME);
+			// Remove safety from home base handled by Referee update_safety_status eventually
+			// or explicitly here if needed, but runToNextBase sets state to RUNNING which
+			// allows reconciliation logic to work.
+		}
 	}
 	// we calculate the player and the base he has right to go freely only once, and that is when
 	// the ball happens. if player moves to next base and user after that decides to make the free walk

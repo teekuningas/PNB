@@ -499,17 +499,17 @@ typedef struct _GameEvents {
 	// Event flags (cleared each frame)
 	int catchMade;               // Fly ball was caught
 	int playerArrivedAtBase;     // Runner arrived at base
-	int batterStartedRunning;    // Batter left home plate
-	
+
 	// Future events (not yet used)
 	int pitchStarted;            // Pitch began
 	int pitchReleased;           // Ball left pitcher's hand
 	int ballHitByBat;            // Bat made contact
 	int ballMissedByBat;         // Bat swung and missed
+	int ballHitGround;           // Ball touched the ground this frame
 	int freeWalkAccepted;        // Player accepted free walk
 	int freeWalkRejected;        // Player rejected free walk
 	int outOfBoundsOccurred;     // Ball went out of bounds
-	
+
 	// Context (who/where these events happened)
 	int eventPlayerIndex;
 	BaseID eventBase;
@@ -525,11 +525,11 @@ typedef struct _GameControl {
 	int waitingForBatterDecision;
 	int waitingForFreeWalkDecision;
 	int freeWalkCalculationMade;
-	
+	int catchHasBeenMade; // Persistent flag: catch occurred during this play
+
 	// Context data
 	int freeWalkIndex;
 	BaseID freeWalkBase;
-	
 	// Referee coordination
 	int checkForRun;
 } GameControl;

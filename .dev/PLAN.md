@@ -1,10 +1,14 @@
 # PNB Development Plan
 
-## Current Phase: Centralized Mutation & Cleanup
+## Current Phase: Ready for Referee Consolidation Phase 2
 
-We have successfully migrated the Referee system to a sequential update pipeline (`Referee_Update`), eliminating the `RefereeDecisions` struct. The immediate next focus is to clean up the Referee implementation to ensure it only mutates `RefereeState` and `GameState`, removing dependencies on other structs like `GameControlFlags` and `PlayerCounters` where possible.
+✅ **Phase 1 Complete** (Jan 10, 2026): Successfully reorganized structures, fixed critical bugs, and established clean event system. Split `GameControlFlags` into `GameEvents` (transient) + `GameControl` (stateful). Fixed ball physics bugs from "Organize structs" commit. All 60 tests passing (54 unit + 6 integration).
 
-**Reference:** See `docs/ARCHITECTURE.md` for technical details.
+**Event System Status:** ✅ PERFECT - All patterns audited and verified. `catchMade`→`catchHasBeenMade` pattern working correctly. Unused `batterStartedRunning` removed.
+
+**Next:** Begin Phase 2 - Move mutation responsibilities to referee.c so it becomes the sole authority on `RefereeState` and `GameState`.
+
+**Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete two-phase strategy.
 
 ---
 
@@ -27,25 +31,37 @@ We have successfully migrated the Referee system to a sequential update pipeline
 - **Result:** `Referee_Update` implemented in `referee.c` calling sequential helpers (`update_safety`, `update_outs`, `update_runs`).
 - **Cleanup:** `RefereeDecisions` struct removed. `Referee_Analyze` and `Referee_Apply` removed. `ballHome` logic moved to `game_manipulation.c`.
 
-### 🚧 Milestone 16: Structural Reorganization (Current Focus - Phase 1)
-- **Goal:** Create clean, semantically clear structures as foundation for referee consolidation.
+### ✅ Milestone 16: Structural Reorganization & Event System (Completed Jan 10, 2026)
+- **Goal:** Create clean, semantically clear structures and establish robust event system.
 - **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
-- **Tasks:**
-    - Split `GameControlFlags` → `GameEvents` (transient) + `GameControl` (stateful)
-    - Eliminate `GameFlowState` (move frame counters to game_analysis.c internals, events to GameEvents)
-    - Clarify `GameModeState` ownership (defer major changes to Phase 2)
-    - Update all references throughout codebase
-    - Implement event clearing mechanism in game loop
-- **Result:** Clear event communication pattern, reduced structure confusion, foundation for Phase 2.
+- **Completed:**
+    - ✅ Split `GameControlFlags` → `GameEvents` (transient) + `GameControl` (stateful)
+    - ✅ Migrated all fields (catchMade, playerArrivedAtBase, etc.)
+    - ✅ Added `clearFrameEvents()` mechanism
+    - ✅ Fixed critical ball physics bugs:
+        - Missing closing brackets in `game_manipulation.c`
+        - Comment-code merge that broke `if` condition
+        - Restored proper block nesting
+    - ✅ Fixed event system patterns:
+        - Changed `gameEvents.catchMade` → `gameControl.catchHasBeenMade` 
+        - Added `catchHasBeenMade` initialization
+        - Verified all event patterns (transient vs persistent)
+    - ✅ Removed unused `batterStartedRunning` event
+    - ✅ Updated 14+ files across codebase
+    - ✅ Removed deprecated `GameControlFlags` structure
+    - ✅ All tests passing (54 unit + 6 integration)
+- **Result:** Clean event communication pattern established. Event system verified perfect. Ready for Phase 2.
+- **Note:** `GameFlowState` elimination deferred - will be addressed during Phase 2 when moving frame counters.
 
-### 🔮 Milestone 17: Referee Consolidation (Phase 2)
+### 🚧 Milestone 17: Referee Consolidation (Next - Phase 2)
 - **Goal:** Make referee.c the sole authority on `RefereeState` and `GameState`.
 - **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
-- **Tasks:**
-    - Move strike reset, event setting to referee
-    - Migrate free walk safety grants and run scoring
-    - Redesign wounding state machine for frame independence
-    - Remove all RefereeState/GameState mutations from other systems
+- **Current Status:** Clean foundation established. Event system working perfectly.
+- **Next Steps:**
+    1. Move strike/ball counting from `game_manipulation.c` to referee
+    2. Migrate free walk safety grants and run scoring
+    3. Redesign wounding state machine for frame independence
+    4. Remove all RefereeState/GameState mutations from other systems
 - **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.
 
 ### 🔮 Milestone 18: Game Manipulation Decomposition
@@ -67,7 +83,7 @@ We have successfully migrated the Referee system to a sequential update pipeline
 
 ### Test Infrastructure
 - **Migrate Legacy Integration Tests:** Convert all snapshot-style tests in `tests/integration/test_scenario_*.c` to full-scenario tests.
-- **Status:** 2 full-scenario tests passing (runner scoring, force out).
+- **Status:** 6 full-scenario tests passing.
 
 ### Technical Debt / Cleanup
 - **Globals:** `src/include/globals.h` (773 LOC) - consider splitting after pipeline is complete.

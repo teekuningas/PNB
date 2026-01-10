@@ -417,9 +417,6 @@ void updateBatting(StateInfo* stateInfo)
 						stateInfo->playSoundEffect = SOUND_SWING;
 						// bat hits
 						stateInfo->localGameInfo->pRAI.batHit = 1;
-						// catchMade set to zero. its used for example to condition checking for runs
-						// or out of bounds events.
-						stateInfo->localGameInfo->gameEvents.catchMade = 0;
 						// not a pitch anymore
 						stateInfo->localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
 						// this batter has chance to make run now by running to third base.
@@ -429,7 +426,6 @@ void updateBatting(StateInfo* stateInfo)
 						// prepare for wounds
 						stateInfo->localGameInfo->referee.woundingCatchPending = 0;
 						stateInfo->localGameInfo->referee.woundingCatchHandled = 0;
-						stateInfo->localGameInfo->gameEvents.batterStartedRunning = 0;
 
 						// move the batter if wanted
 
@@ -443,15 +439,16 @@ void updateBatting(StateInfo* stateInfo)
 						}
 					}
 					// always when batting,
-					// we get a strike
-					stateInfo->localGameInfo->gameState.strikes += 1;
+					// we get a strike - now handled by Referee via event
+					stateInfo->localGameInfo->gameEvents.ballHitByBat = 1;
 				}
 				// if the ball went to far away and we still continued our batting
 				// we just miss. set the flags, trigger the event and
 				// add a strike.
 				else {
 					stateInfo->localGameInfo->pRAI.batMiss = 1;
-					stateInfo->localGameInfo->gameState.strikes += 1;
+					// Strike handled by Referee via event
+					stateInfo->localGameInfo->gameEvents.ballMissedByBat = 1;
 				}
 			}
 		}

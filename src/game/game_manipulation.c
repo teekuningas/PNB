@@ -92,31 +92,23 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 				physics_apply_gravity(&(localGameInfo->ballInfo.velocity), 1.0f);
 				// if ball now comes close to the ground
 				if(physics_check_ground_collision(localGameInfo->ballInfo.location.y, BALL_SIZE / 2)) {
-					int outOfBounds = 0;
 					// we check out of bounds situation only if we are close to ground to avoid
 					// unnecesaary overhead
 					if(gameFlowState->closeToGround == 0) {
 						gameFlowState->closeToGround = 1;
-						outOfBounds = checkIfBallIsOutOfBounds(&(localGameInfo->ballInfo), fieldPositions);
+						// outOfBounds calculation moved to Referee (via checkIfBallIsOutOfBounds in base_logic)
+						checkIfBallIsOutOfBounds(&(localGameInfo->ballInfo), fieldPositions);
 					}
 					// it could be its first time
 					if(localGameInfo->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
 						// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
 						localGameInfo->ballInfo.hasHitGround = 1;
+						localGameInfo->gameEvents.ballHitGround = 1;
 						localGameInfo->referee.woundingCatchPending = 0;
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						localGameInfo->ballInfo.hitsGroundToUnWound = 1;
-						// if no catch made and bat hit and we hit the ground and ball is out of bounds,
-						// we are going to have a foul play.
-						if(localGameInfo->pRAI.batHit == 1 &&
-						        localGameInfo->gameEvents.catchMade == 0) {
-							if(outOfBounds == 1) {
-								localGameInfo->gameState.outOfBounds = 1;
-							}
-						}
 					}
-					// if pitch is going on, it means that batter didnt bat or missed and
-					// we need to set pitch-flags to 0 and make checks for strikes and balls and trigger corresponding events
+					// if pitch is going on, it means that batter didnt bat or missed and					// we need to set pitch-flags to 0 and make checks for strikes and balls and trigger corresponding events
 					if(localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
 						PitchResult result = determine_pitch_result(localGameInfo->ballInfo.location.x, PLATE_WIDTH, localGameInfo->pRAI.batMiss);
 
@@ -272,7 +264,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						// set the has ball model.
 						stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 						// wounding catchs are the catchs that come directly from the bat.
-						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameEvents.catchMade == 0 &&
+						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameControl.catchHasBeenMade == 0 &&
 						        stateInfo->localGameInfo->pRAI.batHit == 1) {
 							stateInfo->localGameInfo->referee.woundingCatchPending = 1;
 						}

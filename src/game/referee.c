@@ -208,7 +208,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 
 	// 4. Check for Runs (§41/42)
 	if (gameControl->checkForRun == 1) {
-		if ((game->gameEvents.catchMade == 1 || game->ballInfo.hasHitGround == 1) &&
+		if ((game->gameControl.catchHasBeenMade == 1 || game->ballInfo.hasHitGround == 1) &&
 		        referee->woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
 		        gameState->outOfBounds == 0) {
@@ -288,6 +288,48 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 	}
 }
 
+static void update_strikes(RefereeState* referee, GameState* gameState, const GameEvents* events)
+{
+	// 5. Strike Management
+	// The referee is the sole authority on counting strikes based on physical events.
+	if (events->ballHitByBat || events->ballMissedByBat) {
+		gameState->strikes += 1;
+	}
+}
+
+static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, GameState* gameState, const GameEvents* events, GameControl* gameControl)
+{
+	// 6. Game State Flags
+
+	// Persistent Catch State Management
+	// When a catch is made, we lock it in.
+	if (events->catchMade) {
+		gameControl->catchHasBeenMade = 1;
+	}
+	// When a new pitch is released, we reset the catch state for the new play.
+	if (events->pitchReleased) {
+		gameControl->catchHasBeenMade = 0;
+	}
+
+	// Out of Bounds Logic
+	// If ball hit ground this frame, checks if it counts as foul play.
+	// Must have been hit by bat, not caught, and landed outside boundaries.
+	if (events->ballHitGround) {
+		const LocalGameInfo* game = stateInfo->localGameInfo;
+		// If ball hit bat AND wasn't caught, it's a potential foul if it lands out of bounds.
+		// game->pRAI.batHit stays 1 until next pitch, so it reliably tells us if this sequence started with a hit.
+		if (game->pRAI.batHit == 1 && gameControl->catchHasBeenMade == 0) {
+			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
+				gameState->outOfBounds = 1;
+			}
+		}
+	}
+
+	if (events->outOfBoundsOccurred) {
+		gameState->outOfBounds = 1;
+	}
+}
+
 void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
 {
 	// 1. Where is the ball?
@@ -316,8 +358,13 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Game
 	update_safety_status(stateInfo, refereeState);
 	update_force_outs_and_tuplahaava(stateInfo, refereeState, gameState, ballAtBase);
 	update_runs(stateInfo, refereeState, gameState, gameModeState, gameControl, playerCounters, globalGameInfo);
-}
 
+	// 4. Strikes
+	update_strikes(refereeState, gameState, &stateInfo->localGameInfo->gameEvents);
+
+	// 5. Game State Flags
+	update_game_state_flags((StateInfo*)stateInfo, refereeState, gameState, &stateInfo->localGameInfo->gameEvents, gameControl);
+}
 int is_wounding_catch_pending(const RefereeState* ref)
 {
 	return ref->woundingCatchPending;

@@ -22,7 +22,6 @@ void moveRankedToCatch(LocalGameInfo* localGameInfo);
 void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base); // Needs GameControl, PRAI
 void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base); // Needs PRAI
 void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
-int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions);
 void changePlayer(LocalGameInfo* localGameInfo);
 void prepareBatter(LocalGameInfo* localGameInfo);
 void calculateFreeWalk(LocalGameInfo* localGameInfo);
@@ -37,6 +36,7 @@ void initializeCriticalGameInfo(LocalGameInfo* localGameInfo, GlobalGameInfo* gl
 void initializeIndexInformation(LocalGameInfo* localGameInfo);
 void initializePRAIInformation(LocalGameInfo* localGameInfo);
 void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGameInfo, FieldPositions* fieldPositions);
+void clearFrameEvents(GameEvents* events);
 void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif /* COMMON_LOGIC_H */

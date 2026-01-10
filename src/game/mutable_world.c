@@ -103,6 +103,9 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 			StateValidator_Dump(stateInfo, "State Consistency Check Failed");
 			stateInfo->localGameInfo->gameControl.pause = 1;
 		}
+
+		// Clear transient events for the next frame
+		clearFrameEvents(&stateInfo->localGameInfo->gameEvents);
 	}
 }
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)

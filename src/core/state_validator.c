@@ -143,8 +143,7 @@ static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global
 
 	fprintf(f, "%s\"gameEvents\": {\n", sp);
 	fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);
-	fprintf(f, "%s  \"playerArrivedAtBase\": %d,\n", sp, game->gameEvents.playerArrivedAtBase);
-	fprintf(f, "%s  \"batterStartedRunning\": %d\n", sp, game->gameEvents.batterStartedRunning);
+	fprintf(f, "%s  \"playerArrivedAtBase\": %d\n", sp, game->gameEvents.playerArrivedAtBase);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameFlowState\": {\n", sp);
