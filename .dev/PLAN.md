@@ -27,24 +27,37 @@ We have successfully migrated the Referee system to a sequential update pipeline
 - **Result:** `Referee_Update` implemented in `referee.c` calling sequential helpers (`update_safety`, `update_outs`, `update_runs`).
 - **Cleanup:** `RefereeDecisions` struct removed. `Referee_Analyze` and `Referee_Apply` removed. `ballHome` logic moved to `game_manipulation.c`.
 
-### 🚧 Milestone 16: Centralized Mutation & Referee Cleanup (Current Focus)
-- **Goal:** Purify `Referee_Update` to strictly mutate `RefereeState` and `GameState`.
+### 🚧 Milestone 16: Structural Reorganization (Current Focus - Phase 1)
+- **Goal:** Create clean, semantically clear structures as foundation for referee consolidation.
+- **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
 - **Tasks:**
-    - Refactor `update_runs` to avoid mutating `GameControlFlags`, `PlayerCounters`, and `GlobalGameInfo` directly.
-    - Move all rule/state mutations out of `game_manipulation.c` and `action_implementation.c` into the Referee.
-    - Potential Merge: Consider merging `RefereeState` and `GameState` if distinction becomes redundant.
-- **Result:** Referee becomes the sole authority on game rules and state transitions.
+    - Split `GameControlFlags` → `GameEvents` (transient) + `GameControl` (stateful)
+    - Eliminate `GameFlowState` (move frame counters to game_analysis.c internals, events to GameEvents)
+    - Clarify `GameModeState` ownership (defer major changes to Phase 2)
+    - Update all references throughout codebase
+    - Implement event clearing mechanism in game loop
+- **Result:** Clear event communication pattern, reduced structure confusion, foundation for Phase 2.
 
-### 🔮 Milestone 17: Game Manipulation Decomposition
+### 🔮 Milestone 17: Referee Consolidation (Phase 2)
+- **Goal:** Make referee.c the sole authority on `RefereeState` and `GameState`.
+- **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
+- **Tasks:**
+    - Move strike reset, event setting to referee
+    - Migrate free walk safety grants and run scoring
+    - Redesign wounding state machine for frame independence
+    - Remove all RefereeState/GameState mutations from other systems
+- **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.
+
+### 🔮 Milestone 18: Game Manipulation Decomposition
 - **Goal:** Break the massive `gameManipulation` function into smaller, focused subsystems.
 - **Concept:** Functions should only take the data they need (e.g., `updateBallPhysics(BallInfo*)` instead of `updateBall(StateInfo*)`).
 - **Why:** Trivial unit testing, zero side effects.
 
-### 🔮 Milestone 18: Action System Decoupling
+### 🔮 Milestone 19: Action System Decoupling
 - **Goal:** Apply pure/impure separation to the action system (`actions_messy/`).
 - **Target Files:** `batting_system.c`, `pitching_system.c`, `throwing_system.c`.
 
-### 🔮 Milestone 19: The "User Intent" Phase
+### 🔮 Milestone 20: The "User Intent" Phase
 - **Goal:** Decouple Input from Action.
 - **Concept:** Input generates an `Intent` (e.g., `INTENT_SWING_BAT`). The Engine consumes `Intent`.
 

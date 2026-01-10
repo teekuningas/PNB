@@ -202,13 +202,13 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 	}
 }
 
-static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
 {
 	const LocalGameInfo* game = stateInfo->localGameInfo;
 
 	// 4. Check for Runs (§41/42)
 	if (gameControl->checkForRun == 1) {
-		if ((gameControl->firstCatchMade == 1 || game->ballInfo.hasHitGround == 1) &&
+		if ((game->gameEvents.catchMade == 1 || game->ballInfo.hasHitGround == 1) &&
 		        referee->woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
 		        gameState->outOfBounds == 0) {
@@ -288,7 +288,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 	}
 }
 
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
 {
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);

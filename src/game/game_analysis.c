@@ -85,7 +85,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 			if(count_active_batting_players(stateInfo->localGameInfo->playerInfo) < BASE_COUNT && stateInfo->localGameInfo->gameState.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
-				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameControl.firstCatchMade == 1) {
+				if(stateInfo->localGameInfo->ballInfo.hasHitGround == 1 || stateInfo->localGameInfo->gameEvents.catchMade == 1) {
 					// if that happens we can now start.
 					int battingTeamIndex = (stateInfo->globalGameInfo->
 					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;

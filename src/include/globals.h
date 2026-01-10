@@ -491,18 +491,48 @@ typedef struct _GameState {
 	int endPeriod;   // Rule state: period should end
 } GameState;
 
-typedef struct _GameControlFlags {
+// MILESTONE 16 (Phase 1): Transient event notifications
+// Events are set this frame, cleared next frame
+// Written by: action_implementation.c, game_manipulation.c
+// Read by: referee.c, others
+typedef struct _GameEvents {
+	// Event flags (cleared each frame)
+	int catchMade;               // Fly ball was caught
+	int playerArrivedAtBase;     // Runner arrived at base
+	int batterStartedRunning;    // Batter left home plate
+	
+	// Future events (not yet used)
+	int pitchStarted;            // Pitch began
+	int pitchReleased;           // Ball left pitcher's hand
+	int ballHitByBat;            // Bat made contact
+	int ballMissedByBat;         // Bat swung and missed
+	int freeWalkAccepted;        // Player accepted free walk
+	int freeWalkRejected;        // Player rejected free walk
+	int outOfBoundsOccurred;     // Ball went out of bounds
+	
+	// Context (who/where these events happened)
+	int eventPlayerIndex;
+	BaseID eventBase;
+} GameEvents;
+
+// MILESTONE 16 (Phase 1): Stateful coordination flags
+// Control flags remain until explicitly changed
+// Written by: various game systems
+// Read by: various game systems
+typedef struct _GameControl {
+	// Flow control
 	int pause;
 	int waitingForBatterDecision;
 	int waitingForFreeWalkDecision;
 	int freeWalkCalculationMade;
+	
+	// Context data
 	int freeWalkIndex;
 	BaseID freeWalkBase;
+	
+	// Referee coordination
 	int checkForRun;
-	int playerArrivedToBase;
-	int firstCatchMade;
-	int batterStartedRunning;
-} GameControlFlags;
+} GameControl;
 
 typedef struct _CameraState {
 	int homeRunCameraFlag;
@@ -700,7 +730,8 @@ typedef struct _LocalGameInfo {
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;
 	GameState gameState; // MILESTONE 7.5 - New core state
-	GameControlFlags gameControl; // MILESTONE 7.5 - Implementation flags
+	GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
+	GameControl gameControl; // MILESTONE 16 - Control flags (Phase 1)
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
 	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state

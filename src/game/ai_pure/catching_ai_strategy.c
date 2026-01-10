@@ -70,7 +70,7 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
 	return shouldThrow;
 }
 
-int should_ai_drop_ball(const RefereeState* ref, const GameControlFlags* gameControl,
+int should_ai_drop_ball(const RefereeState* ref, const GameControl* gameControl,
                         BaseID runner3BaseAtPitchStart, int runner3IsOnBase,
                         BaseID runner2BaseAtPitchStart, int runner2IsOnBase,
                         int catcherHomeIndex, int hasBallIndex)

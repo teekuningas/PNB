@@ -269,7 +269,7 @@ void runToNextBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions,
 			// here as it is the batter, we'll also stop any batting to be able to run freely.
 			localGameInfo->pRAI.batterReady = 0;
 			localGameInfo->pRAI.battingGoingOn = 0;
-			localGameInfo->gameControl.batterStartedRunning = 1;
+			localGameInfo->gameEvents.batterStartedRunning = 1;
 		} else if(base == BASE_FIRST) {
 			target.x = fieldPositions->secondBaseRun.x;
 			target.z = fieldPositions->secondBaseRun.z;
@@ -832,15 +832,39 @@ void initializeTemporaryGameAnalysisInfo(LocalGameInfo* localGameInfo)
 	localGameInfo->gameState.endPeriod = 0;
 	localGameInfo->referee.woundingCatchPending = 0;
 	localGameInfo->referee.woundingCatchHandled = 0;
-	localGameInfo->gameControl.batterStartedRunning = 0;
+	localGameInfo->gameEvents.batterStartedRunning = 0;
 
 	localGameInfo->gameState.event = EVENT_NONE;
 	localGameInfo->gameControl.checkForRun = 0;
 	localGameInfo->gameControl.freeWalkIndex = -1;
 	localGameInfo->gameControl.freeWalkBase = -1;
-	localGameInfo->gameControl.playerArrivedToBase = 0;
-	localGameInfo->gameControl.firstCatchMade = 0;
+	localGameInfo->gameEvents.playerArrivedAtBase = 0;
+	localGameInfo->gameEvents.catchMade = 0;
 	localGameInfo->gameControl.pause = 0;
+
+	// MILESTONE 16: Initialize new structures (Phase 1)
+	// GameEvents (transient, will be cleared each frame)
+	localGameInfo->gameEvents.catchMade = 0;
+	localGameInfo->gameEvents.playerArrivedAtBase = 0;
+	localGameInfo->gameEvents.batterStartedRunning = 0;
+	localGameInfo->gameEvents.pitchStarted = 0;
+	localGameInfo->gameEvents.pitchReleased = 0;
+	localGameInfo->gameEvents.ballHitByBat = 0;
+	localGameInfo->gameEvents.ballMissedByBat = 0;
+	localGameInfo->gameEvents.freeWalkAccepted = 0;
+	localGameInfo->gameEvents.freeWalkRejected = 0;
+	localGameInfo->gameEvents.outOfBoundsOccurred = 0;
+	localGameInfo->gameEvents.eventPlayerIndex = -1;
+	localGameInfo->gameEvents.eventBase = BASE_NONE;
+	
+	// GameControl (stateful)
+	localGameInfo->gameControl.pause = 0;
+	localGameInfo->gameControl.waitingForBatterDecision = 0;
+	localGameInfo->gameControl.waitingForFreeWalkDecision = 0;
+	localGameInfo->gameControl.freeWalkCalculationMade = 1;
+	localGameInfo->gameControl.freeWalkIndex = -1;
+	localGameInfo->gameControl.freeWalkBase = BASE_NONE;
+	localGameInfo->gameControl.checkForRun = 0;
 
 	initGameAnalysis(&(localGameInfo->gameFlowState));
 	initGameManipulation(&(localGameInfo->gameFlowState));

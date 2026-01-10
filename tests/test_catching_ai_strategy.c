@@ -80,7 +80,7 @@ int test_should_ai_throw_replacer() {
 
 int test_should_ai_drop_ball_scenario() {
     RefereeState ref = {0};
-    GameControlFlags gc = {0};
+    GameControl gc = {0};
     ref.woundingCatchPending = 1;
     gc.checkForRun = 0;
     

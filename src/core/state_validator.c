@@ -135,11 +135,16 @@ static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameControl\": {\n", sp);
+	fprintf(f, "%s  \"pause\": %d,\n", sp, game->gameControl.pause);
 	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->gameControl.waitingForBatterDecision);
-	fprintf(f, "%s  \"firstCatchMade\": %d,\n", sp, game->gameControl.firstCatchMade);
-	fprintf(f, "%s  \"checkForRun\": %d,\n", sp, game->gameControl.checkForRun);
 	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->gameControl.waitingForFreeWalkDecision);
-	fprintf(f, "%s  \"batterStartedRunning\": %d\n", sp, game->gameControl.batterStartedRunning);
+	fprintf(f, "%s  \"checkForRun\": %d\n", sp, game->gameControl.checkForRun);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"gameEvents\": {\n", sp);
+	fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);
+	fprintf(f, "%s  \"playerArrivedAtBase\": %d,\n", sp, game->gameEvents.playerArrivedAtBase);
+	fprintf(f, "%s  \"batterStartedRunning\": %d\n", sp, game->gameEvents.batterStartedRunning);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameFlowState\": {\n", sp);

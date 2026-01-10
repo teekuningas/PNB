@@ -53,6 +53,6 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  * @param playerCounters Mutable pointer to player counters.
  * @param globalGameInfo Mutable pointer to global game info (teams/runs).
  */
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControlFlags* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo);
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo);
 
 #endif // REFEREE_H

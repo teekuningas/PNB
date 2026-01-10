@@ -29,7 +29,7 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
 
 int should_ai_drop_ball(const RefereeState* ref,
 
-                        const GameControlFlags* gameControl,
+                        const GameControl* gameControl,
 
                         BaseID runner3BaseAtPitchStart, int runner3IsOnBase,
 

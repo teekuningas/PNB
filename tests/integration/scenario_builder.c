@@ -350,6 +350,6 @@ game->pII.hasBallIndex = -1;
 			
 				// Ensure ball is in "fly ball" state so a catch triggers wounding
 				game->ballInfo.hasHitGround = 0;
-				game->gameControl.firstCatchMade = 0;
+				game->gameEvents.catchMade = 0;
 				game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
 			}

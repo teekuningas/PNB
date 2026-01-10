@@ -109,7 +109,7 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 						// if no catch made and bat hit and we hit the ground and ball is out of bounds,
 						// we are going to have a foul play.
 						if(localGameInfo->pRAI.batHit == 1 &&
-						        localGameInfo->gameControl.firstCatchMade == 0) {
+						        localGameInfo->gameEvents.catchMade == 0) {
 							if(outOfBounds == 1) {
 								localGameInfo->gameState.outOfBounds = 1;
 							}
@@ -272,14 +272,14 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						// set the has ball model.
 						stateInfo->localGameInfo->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 						// wounding catchs are the catchs that come directly from the bat.
-						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameControl.firstCatchMade == 0 &&
+						if(stateInfo->localGameInfo->ballInfo.hasHitGround == 0 && stateInfo->localGameInfo->gameEvents.catchMade == 0 &&
 						        stateInfo->localGameInfo->pRAI.batHit == 1) {
 							stateInfo->localGameInfo->referee.woundingCatchPending = 1;
 						}
 						// make sound
 						stateInfo->playSoundEffect = SOUND_CATCH;
 						// this could be the fifth but the first is still made.
-						stateInfo->localGameInfo->gameControl.firstCatchMade = 1;
+						stateInfo->localGameInfo->gameEvents.catchMade = 1;
 						stateInfo->localGameInfo->pRAI.throwGoingToBase = -1;
 						stateInfo->localGameInfo->pII.controlIndex = i;
 						stateInfo->localGameInfo->pII.hasBallIndex = i;
@@ -383,7 +383,7 @@ static void processPendingWounds(StateInfo* stateInfo)
 static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 {
 	// so everything starts with some player arriving base, this flag is set on target checking function.
-	if(stateInfo->localGameInfo->gameControl.playerArrivedToBase == 1) {
+	if(stateInfo->localGameInfo->gameEvents.playerArrivedAtBase == 1) {
 		int i;
 		// we check every player who is a baserunner ( or batter )
 		for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -466,7 +466,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 			}
 		}
 		// set the flag off as now everything has been handled.
-		stateInfo->localGameInfo->gameControl.playerArrivedToBase = 0;
+		stateInfo->localGameInfo->gameEvents.playerArrivedAtBase = 0;
 	}
 }
 
@@ -784,7 +784,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 									} else {
 									}
 									// also these are needed to do continued calculations only when needed.
-									stateInfo->localGameInfo->gameControl.playerArrivedToBase = 1;
+									stateInfo->localGameInfo->gameEvents.playerArrivedAtBase = 1;
 									stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 
 								} else {
@@ -814,7 +814,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 											stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 										}
 										stateInfo->localGameInfo->playerRuntime[i].goingForward = 0;
-										stateInfo->localGameInfo->gameControl.playerArrivedToBase = 1;
+										stateInfo->localGameInfo->gameEvents.playerArrivedAtBase = 1;
 										stateInfo->localGameInfo->playerRuntime[i].arrivedToBase = 1;
 										target.x = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.x;
 										target.z = stateInfo->localGameInfo->playerInfo[i].tPI.homeLocation.z;
