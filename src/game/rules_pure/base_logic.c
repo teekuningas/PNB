@@ -21,18 +21,18 @@ BaseID base_get_prev(BaseID id)
 
 bool base_is_safe_haven(BaseID id)
 {
-	return (id >= BASE_HOME && id <= BASE_THIRD);
+	return (id >= BASE_HOME &&id <= BASE_THIRD);
 }
 
 bool base_is_index(BaseID id)
 {
-	return (id >= BASE_HOME && id <= BASE_THIRD);
+	return (id >= BASE_HOME &&id <= BASE_THIRD);
 }
 
 bool base_can_advance(BaseID id)
 {
-	// Logic from legacy code: "base >= 0 && base < 3" -> HOME, 1st, 2nd.
-	return (id >= BASE_HOME && id <= BASE_SECOND);
+	// Logic from legacy code: "base >= 0 &&base < 3" -> HOME, 1st, 2nd.
+	return (id >= BASE_HOME &&id <= BASE_SECOND);
 }
 
 bool base_is_at_least(BaseID id, BaseID threshold)

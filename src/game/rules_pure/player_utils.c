@@ -1,6 +1,6 @@
 #include "player_utils.h"
 
-int get_active_batter_index(const LocalGameInfo* game)
+int get_active_batter_index(const MatchSession* game)
 {
 	if (!game) return -1;
 

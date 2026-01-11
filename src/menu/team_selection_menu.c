@@ -180,7 +180,7 @@ void drawTeamSelectionMenu(const TeamSelectionState *state, const TeamData* team
 	draw_text_2d("Game Setup", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
 
 	// --- Team 1 Column ---
-	if (state->state >= TEAM_SELECTION_STAGE_TEAM_1 && state->state < TEAM_SELECTION_STAGE_CONTROL_1) {
+	if (state->state >= TEAM_SELECTION_STAGE_TEAM_1 &&state->state < TEAM_SELECTION_STAGE_CONTROL_1) {
 		draw_text_2d("Team 1", column_1_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 		for (int i = 0; i < state->numTeams; i++) {
 			const char* team_name = teamData[i].name;
@@ -189,7 +189,7 @@ void drawTeamSelectionMenu(const TeamSelectionState *state, const TeamData* team
 	}
 
 	// --- Team 1 Controller Column ---
-	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_1 && state->state < TEAM_SELECTION_STAGE_TEAM_2) {
+	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_1 &&state->state < TEAM_SELECTION_STAGE_TEAM_2) {
 		draw_text_2d("Controlled by", column_1_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Pad 1", column_1_x, options_start_y, text_size, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Pad 2", column_1_x, options_start_y + option_spacing, text_size, TEXT_ALIGN_CENTER, rs);
@@ -197,7 +197,7 @@ void drawTeamSelectionMenu(const TeamSelectionState *state, const TeamData* team
 	}
 
 	// --- Team 2 Column ---
-	if (state->state >= TEAM_SELECTION_STAGE_TEAM_2 && state->state < TEAM_SELECTION_STAGE_CONTROL_2) {
+	if (state->state >= TEAM_SELECTION_STAGE_TEAM_2 &&state->state < TEAM_SELECTION_STAGE_CONTROL_2) {
 		draw_text_2d("Team 2", column_2_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 		for (int i = 0; i < state->numTeams; i++) {
 			const char* team_name = teamData[i].name;
@@ -206,7 +206,7 @@ void drawTeamSelectionMenu(const TeamSelectionState *state, const TeamData* team
 	}
 
 	// --- Team 2 Controller Column ---
-	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_2 && state->state < TEAM_SELECTION_STAGE_INNINGS) {
+	if (state->state >= TEAM_SELECTION_STAGE_CONTROL_2 &&state->state < TEAM_SELECTION_STAGE_INNINGS) {
 		draw_text_2d("Controlled by", column_2_x, team_name_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Pad 1", column_2_x, options_start_y, text_size, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Pad 2", column_2_x, options_start_y + option_spacing, text_size, TEXT_ALIGN_CENTER, rs);

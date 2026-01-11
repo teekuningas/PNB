@@ -10,16 +10,14 @@
 StateInfo* create_mock_state()
 {
 	StateInfo* state = (StateInfo*)malloc(sizeof(StateInfo));
-	state->localGameInfo = (LocalGameInfo*)malloc(sizeof(LocalGameInfo));
+	state->match = (MatchSession*)malloc(sizeof(MatchSession));
 	state->fieldPositions = (FieldPositions*)malloc(sizeof(FieldPositions));
-	state->globalGameInfo = (GlobalGameInfo*)malloc(sizeof(GlobalGameInfo));
 
-	memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
+	memset(state->match, 0, sizeof(MatchSession));
 	memset(state->fieldPositions, 0, sizeof(FieldPositions));
-	memset(state->globalGameInfo, 0, sizeof(GlobalGameInfo));
 
 	// Initialize referee state properly (wounding timer must be -1, not 0)
-	state->localGameInfo->referee.woundingCatchTimer = -1;
+	state->match->referee.woundingCatchTimer = -1;
 
 	// Setup standard field positions for distance checks
 	state->fieldPositions->pitchPlate.x = 0.0f;
@@ -36,9 +34,8 @@ StateInfo* create_mock_state()
 
 void destroy_mock_state(StateInfo* state)
 {
-	free(state->localGameInfo);
+	free(state->match);
 	free(state->fieldPositions);
-	free(state->globalGameInfo);
 	free(state);
 }
 
@@ -47,30 +44,30 @@ void test_referee_force_out_at_second(void)
 	StateInfo* state = create_mock_state();
 
 	// Setup: Ball at 2nd Base
-	state->localGameInfo->pII.hasBallIndex = 15; // Fielder has ball
-	state->localGameInfo->ballInfo.location = state->fieldPositions->secondBase;
+	state->match->pII.hasBallIndex = 15; // Fielder has ball
+	state->match->ballInfo.location = state->fieldPositions->secondBase;
 
 	// Runner physically at 1st Base
 	int runnerIdx = 0;
-	state->localGameInfo->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
+	state->match->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
 
 	// KEY for §33 Pesäkilpa: Runner has pesäturva (safety) at Base 1 but is RUNNING ("irti")
-	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
-	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_RUNNING;
+	state->match->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
+	state->match->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_RUNNING;
 
 	Referee_Update(
 	    state,
-	    &state->localGameInfo->referee,
-	    &state->localGameInfo->gameState,
-	    &state->localGameInfo->gameModeState,
-	    &state->localGameInfo->gameControl,
-	    &state->localGameInfo->playerCounters,
-	    state->globalGameInfo
+	    &state->match->referee,
+	    &state->match->halfInningState,
+	    &state->match->gameModeState,
+	    &state->match->gameControl,
+	    &state->match->playerCounters,
+	    &state->match->scoreboard
 	);
 
 	// Should be OUT: has safety at Base 1, is running (irti), ball at Base 2
-	assert(state->localGameInfo->referee.battingPlayers[runnerIdx].isOut == 1);
-	assert(state->localGameInfo->gameState.event == EVENT_OUT);
+	assert(state->match->referee.battingPlayers[runnerIdx].isOut == 1);
+	assert(state->match->halfInningState.event == EVENT_OUT);
 
 	destroy_mock_state(state);
 	printf("test_referee_force_out_at_second PASSED\n");
@@ -81,26 +78,26 @@ void test_referee_safe_runner_not_out(void)
 	StateInfo* state = create_mock_state();
 
 	// Setup: Ball at 2nd Base
-	state->localGameInfo->pII.hasBallIndex = 15;
-	state->localGameInfo->ballInfo.location = state->fieldPositions->secondBase;
+	state->match->pII.hasBallIndex = 15;
+	state->match->ballInfo.location = state->fieldPositions->secondBase;
 
 	// Runner AT 1st Base, but SAFE
 	int runnerIdx = 0;
-	state->localGameInfo->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
-	state->localGameInfo->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_ON_BASE; // Protected
-	state->localGameInfo->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
+	state->match->playerInfo[runnerIdx].bTPI.baseId = BASE_FIRST;
+	state->match->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_ON_BASE; // Protected
+	state->match->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
 
 	Referee_Update(
 	    state,
-	    &state->localGameInfo->referee,
-	    &state->localGameInfo->gameState,
-	    &state->localGameInfo->gameModeState,
-	    &state->localGameInfo->gameControl,
-	    &state->localGameInfo->playerCounters,
-	    state->globalGameInfo
+	    &state->match->referee,
+	    &state->match->halfInningState,
+	    &state->match->gameModeState,
+	    &state->match->gameControl,
+	    &state->match->playerCounters,
+	    &state->match->scoreboard
 	);
 
-	assert(state->localGameInfo->referee.battingPlayers[runnerIdx].isOut == 0);
+	assert(state->match->referee.battingPlayers[runnerIdx].isOut == 0);
 
 	destroy_mock_state(state);
 	printf("test_referee_safe_runner_not_out PASSED\n");

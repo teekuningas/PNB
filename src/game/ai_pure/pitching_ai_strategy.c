@@ -6,19 +6,19 @@ void calculate_ai_pitch_targets(
     int rand2,
     int rand3,
     int batting_team_players_on_field_count,
-    const GameState* gameState,
+    const HalfInningState* halfInningState,
     int animation_frequency,
     unsigned int* out_first_limit,
     unsigned int* out_second_limit
 )
 {
-	int strikes = gameState->strikes;
-	int balls = gameState->balls;
+	int strikes = halfInningState->strikes;
+	int balls = halfInningState->balls;
 	int var = 0;
 
 	if (batting_team_players_on_field_count == 1) {
 		rand1 = 0;
-	} else if (strikes != 0 && balls == 0) {
+	} else if (strikes != 0 &&balls == 0) {
 		if (rand3 == 9) {
 			var = 10;
 		} else if (rand3 == 8) {

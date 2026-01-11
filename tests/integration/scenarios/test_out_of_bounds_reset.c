@@ -25,20 +25,20 @@ int test_full_out_of_bounds_reset(void)
 	place_runner_at_base(ctx, 0, BASE_FIRST, 0.7f);
 
 	// Ensure runner has safety at 1st initially
-	ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
-	ctx->state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
+	ctx->state->match->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
+	ctx->state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
 
 	// Setup batter just so game state is valid
 	setup_batter_at_home(ctx, 1);
 
 	// Move defenders (Lukkari/Catcher) away so they don't catch the ball instantly
 	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->localGameInfo->playerInfo[12].tPI.location = away;
-	ctx->state->localGameInfo->playerInfo[13].tPI.location = away;
+	ctx->state->match->playerInfo[12].tPI.location = away;
+	ctx->state->match->playerInfo[13].tPI.location = away;
 
 	printf("[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
-	       ctx->state->localGameInfo->playerInfo[0].bTPI.baseId,
-	       ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase);
+	       ctx->state->match->playerInfo[0].bTPI.baseId,
+	       ctx->state->match->referee.battingPlayers[0].currentSafetyBase);
 
 	// 2. Hit ball far out of bounds
 	// Target: (200, 0, 200) is likely out of bounds
@@ -62,11 +62,11 @@ int test_full_out_of_bounds_reset(void)
 	for (int frame = 0; frame < 1500; frame++) {
 		simulate_frames(ctx, 1);
 
-		PlayerInfo* runner = &ctx->state->localGameInfo->playerInfo[0];
+		PlayerInfo* runner = &ctx->state->match->playerInfo[0];
 
 		// Check if runner reached 2nd base
-		if (!reachedSecond && runner->bTPI.baseId == BASE_SECOND) {
-			int currentSafety = ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase;
+		if (!reachedSecond &&runner->bTPI.baseId == BASE_SECOND) {
+			int currentSafety = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 			if (currentSafety == BASE_SECOND) {
 				reachedSecond = 1;
 				printf("[TEST] Frame %d: Runner 0 reached 2nd Base. baseId=%d, currentSafety=%d (SAFE)\n",
@@ -83,7 +83,7 @@ int test_full_out_of_bounds_reset(void)
 		}
 
 		// Check for Out of Bounds Event
-		if (!outOfBoundsDetected && ctx->state->localGameInfo->gameState.outOfBounds) {
+		if (!outOfBoundsDetected &&ctx->state->match->halfInningState.outOfBounds) {
 			outOfBoundsDetected = 1;
 			printf("[TEST] Frame %d: Out of Bounds declared! Ball has landed.\n", frame);
 		}
@@ -91,8 +91,8 @@ int test_full_out_of_bounds_reset(void)
 		// Check for Reset (Runner returned to 1st base)
 		// Reset happens when outOfBounds flag is cleared? Or just players moved?
 		// "Foul Play" usually resets players to baseAtPitchStart.
-		if (outOfBoundsDetected && runner->bTPI.baseId == BASE_FIRST) {
-			int currentSafety = ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase;
+		if (outOfBoundsDetected &&runner->bTPI.baseId == BASE_FIRST) {
+			int currentSafety = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 			// Ensure it's not just a glitch, but he is SAFE there
 			if (currentSafety == BASE_FIRST) {
 				resetDetected = 1;

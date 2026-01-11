@@ -83,7 +83,7 @@ void fixture_create_period2_start(GameSetup* setup, int team1, int team2,
 
 	setup->homerun_choice_count = 0;
 
-	// Note: Period 1 scores would need to be set in globalGameInfo after initialization
+	// Note: Period 1 scores would need to be set in scoreboard after initialization
 	// This is handled by the caller
 }
 
@@ -97,20 +97,20 @@ int fixture_parse_args(int argc, char* argv[], FixtureRequest* request)
 	request->team2_control = DEFAULT_FIXTURE_CONTROL2;
 
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "--fixture") == 0 && i + 1 < argc) {
+		if (strcmp(argv[i], "--fixture") == 0 &&i + 1 < argc) {
 			request->enabled = 1;
 			strncpy(request->name, argv[i + 1], sizeof(request->name) - 1);
 			i++; // Skip next arg (the fixture name)
-		} else if (strcmp(argv[i], "--team1") == 0 && i + 1 < argc) {
+		} else if (strcmp(argv[i], "--team1") == 0 &&i + 1 < argc) {
 			request->team1 = atoi(argv[i + 1]);
 			i++;
-		} else if (strcmp(argv[i], "--team2") == 0 && i + 1 < argc) {
+		} else if (strcmp(argv[i], "--team2") == 0 &&i + 1 < argc) {
 			request->team2 = atoi(argv[i + 1]);
 			i++;
-		} else if (strcmp(argv[i], "--control1") == 0 && i + 1 < argc) {
+		} else if (strcmp(argv[i], "--control1") == 0 &&i + 1 < argc) {
 			request->team1_control = atoi(argv[i + 1]);
 			i++;
-		} else if (strcmp(argv[i], "--control2") == 0 && i + 1 < argc) {
+		} else if (strcmp(argv[i], "--control2") == 0 &&i + 1 < argc) {
 			request->team2_control = atoi(argv[i + 1]);
 			i++;
 		}

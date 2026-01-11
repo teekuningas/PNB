@@ -11,7 +11,7 @@ int test_calculate_ai_pitch_targets(void)
 
 	int animation_freq = 3;
 
-	GameState gs = {0};
+	HalfInningState gs = {0};
 
 
 

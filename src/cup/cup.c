@@ -18,7 +18,7 @@ static int mxmlElementGetAttrAsInteger(mxml_node_t *node, const char *name, int 
 // Helper to check if a value is a power of two
 static int is_power_of_two(int n)
 {
-	return (n > 0) && ((n & (n - 1)) == 0);
+	return (n > 0) &&((n &(n - 1)) == 0);
 }
 
 Cup* cup_create(int num_teams, int wins_to_advance, TeamID user_team_id, int innings_per_period, const TeamID* initial_team_ids)
@@ -210,7 +210,7 @@ Cup* cup_load(const char* filename)
 	        match_node != NULL;
 	        match_node = mxmlFindElement(match_node, matches_node, "match", NULL, NULL, MXML_NO_DESCEND)) {
 		int index = mxmlElementGetAttrAsInteger(match_node, "index", -1);
-		if (index >= 0 && index < cup->num_matches) {
+		if (index >= 0 &&index < cup->num_matches) {
 			CupMatch* match = &cup->matches[index];
 			match->team_a_id = mxmlElementGetAttrAsInteger(match_node, "team_a_id", -1);
 			match->team_b_id = mxmlElementGetAttrAsInteger(match_node, "team_b_id", -1);
@@ -334,7 +334,7 @@ static int get_match_round(const Cup* cup, int match_index)
 	for (int round = 0; round < cup->num_rounds; round++) {
 		int round_start = (1 << round) - 1;
 		int round_end = (1 << (round + 1)) - 2;
-		if (match_index >= round_start && match_index <= round_end) {
+		if (match_index >= round_start &&match_index <= round_end) {
 			return round;
 		}
 	}
@@ -413,7 +413,7 @@ void cup_get_matches_for_day(const Cup* cup, int day, int* out_match_indices, in
 		int match_end_day = match_start_day + days_per_match - 1;
 
 		// Check if current day is in this match's scheduled range
-		if (day >= match_start_day && day <= match_end_day) {
+		if (day >= match_start_day &&day <= match_end_day) {
 			// Also check if we haven't exceeded wins needed
 			int games_played = match->wins_a + match->wins_b;
 			int day_offset = day - match_start_day;

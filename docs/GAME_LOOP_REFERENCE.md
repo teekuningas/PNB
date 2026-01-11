@@ -34,7 +34,7 @@ RefereeState {
     int strikesAtPitchStart;
 }
 
-GameState {
+HalfInningState {
     int outs, balls, strikes;
     int runsInTheInning;
     GameEventType event;
@@ -112,7 +112,7 @@ GameControl {
 | Structure | Writers | Readers |
 |-----------|---------|---------|
 | RefereeState | referee.c, game_analysis.c, action_implementation.c | Everyone |
-| GameState | referee.c, game_analysis.c, action_implementation.c | Everyone |
+| HalfInningState | referee.c, game_analysis.c, action_implementation.c | Everyone |
 | GameEvents | action_impl.c, game_manip.c | referee.c, others |
 | GameControl | Various | Various |
 
@@ -120,7 +120,7 @@ GameControl {
 | Structure | Writers | Readers |
 |-----------|---------|---------|
 | RefereeState | **referee.c ONLY** | Everyone |
-| GameState | **referee.c ONLY** | Everyone |
+| HalfInningState | **referee.c ONLY** | Everyone |
 | GameEvents | action_impl.c, game_manip.c | **referee.c reads, never writes** |
 | GameControl | Various | Various |
 
@@ -133,7 +133,7 @@ GameControl {
 - **common_logic.c**: Initialization, setup (lines 493, 785, 833-834, 914, 928-930)
 - **game_analysis.c**: Wounding timer, wound marking (lines 177-261)
 
-### GameState mutations OUTSIDE referee.c:
+### HalfInningState mutations OUTSIDE referee.c:
 - **action_implementation.c**: Run scoring, events (lines 233-241)
 - **common_logic.c**: Initialization (lines 493-500)
 - **game_analysis.c**: Strike resets, events, out of bounds (lines 158-334)
@@ -150,7 +150,7 @@ gameEvents.eventPlayerIndex = batterIndex;
 
 // Referee reacts
 if (gameEvents.ballHitByBat) {
-    gameState->strikes = 0;
+    halfInningState->strikes = 0;
 }
 
 // Game loop clears

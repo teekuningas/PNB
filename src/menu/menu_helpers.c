@@ -22,22 +22,22 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
 		initializeGameFromMenu(stateInfo, gameSetup, rng_seed);
 		break;
 	case GAME_LAUNCH_RETURN_INTER_PERIOD:
-		memcpy(stateInfo->globalGameInfo->teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
-		memcpy(stateInfo->globalGameInfo->teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
-		stateInfo->globalGameInfo->teams[0].batterOrderIndex = 0;
-		stateInfo->globalGameInfo->teams[1].batterOrderIndex = 0;
+		memcpy(stateInfo->match->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
+		memcpy(stateInfo->match->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
+		stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
+		stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;
 		returnToGame(stateInfo, rng_seed);
 		break;
 	case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
 		int pairCount = gameSetup->homerun_choice_count;
 		for (int i = 0; i < 2; i++) {
 			for (int j = 0; j < pairCount; j++) {
-				stateInfo->globalGameInfo->teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
-				stateInfo->globalGameInfo->teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
+				stateInfo->match->scoreboard.teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
+				stateInfo->match->scoreboard.teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
 			}
 		}
-		stateInfo->globalGameInfo->pairCount = pairCount;
-		stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter = 0;
+		stateInfo->match->scoreboard.pairCount = pairCount;
+		stateInfo->match->gameModeState.runnerBatterPairCounter = 0;
 		returnToGame(stateInfo, rng_seed);
 	}
 	break;
@@ -54,7 +54,7 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
 		menuData->pendingGameSetup.team2_batting_order[i] = i;
 	}
 
-	if (stateInfo->globalGameInfo->isCupGame != 1) {
+	if (stateInfo->match->scoreboard.isCupGame != 1) {
 		initFrontMenuState(&menuData->front_menu);
 		menuData->stage = MENU_STAGE_FRONT;
 	} else {
@@ -122,7 +122,7 @@ void draw_text_block_2d(const char* text, float x, float y, float width, float s
 				char_count++;
 			}
 			line_end = start + char_count;
-		} else if (last_space && line_end < end) {
+		} else if (last_space &&line_end < end) {
 			// Prefer to break at the last space to keep words whole
 			line_end = last_space;
 		}

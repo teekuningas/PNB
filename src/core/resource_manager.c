@@ -68,7 +68,7 @@ void resource_manager_shutdown(ResourceManager* rm)
 GLuint resource_manager_get_texture(ResourceManager* rm, const char* path)
 {
 	Resource* res = find_resource(rm, path);
-	if (res != NULL && res->type == RESOURCE_TYPE_TEXTURE) {
+	if (res != NULL &&res->type == RESOURCE_TYPE_TEXTURE) {
 		return res->handle.texture_id;
 	}
 	printf("Texture not found: %s\n", path);
@@ -78,7 +78,7 @@ GLuint resource_manager_get_texture(ResourceManager* rm, const char* path)
 GLuint resource_manager_get_model(ResourceManager* rm, const char* path)
 {
 	Resource* res = find_resource(rm, path);
-	if (res != NULL && res->type == RESOURCE_TYPE_MODEL) {
+	if (res != NULL &&res->type == RESOURCE_TYPE_MODEL) {
 		return res->handle.display_list;
 	}
 	printf("Model not found: %s\n", path);

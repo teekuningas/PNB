@@ -1,178 +1,104 @@
 # Referee Consolidation Plan
-**Date:** January 2026  
-**Goal:** Decouple referee logic into a frame-independent monitoring system that is the sole authority on RefereeState and GameState.
+
+**Goal:** Decouple referee logic into a frame-independent monitoring system that is the sole authority on RefereeState and HalfInningState.
+
+**Current Problem:**
+*   Referee logic is split between `referee.c` (analysis) and `game_analysis.c` (state updates).
+*   Referee relies on frame-perfect synchronization (e.g., `catchTimer`).
+*   Physical and legal state are mixed.
+
+**The Solution:**
+1.  **Observes** transient physical events (`GameEvents`)
+2.  **Updates** RefereeState and HalfInningState based on observations
+3.  **Signals** persistent control flags (`GameControl`) for other systems to react
+
+**The Golden Rule:**
+4.  **One Way Flow:** Physics -> Events -> Referee -> Legal State -> Reconciliation -> Physics
+5.  **Limited Scope** - Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`, `AIState`). Its output is strictly the Legal State (`RefereeState`, `HalfInningState`, `GameControl`). Physical enforcement is the job of `reconcile`.
 
 ---
 
-## The Vision
+## Phase 1: Structural Reorganization & Event System (Done)
 
-The Referee should be an **independent, decoupled entity** that:
-1. **Monitors** physical and logical reality
-2. **Updates** RefereeState and GameState based on observations
-3. **Never gets written to** by other systems (read-only from outside)
-4. **Frame-independent** - doesn't assume timing, just reacts to state
-5. **Limited Scope** - Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`, `AIState`). Its output is strictly the Legal State (`RefereeState`, `GameState`, `GameControl`). Physical enforcement is the job of `reconcile`.
+**Goal:** Create clean, semantically clear structures and establish robust event system.
 
-Other systems:
-- **Write to**: GameEvents (temporal event notifications)
-- **Read from**: RefereeState, GameState (to react to legal decisions)
-- **Never write to**: RefereeState, GameState
+### 1. Structure Cleanup (Before Logic Changes)
+- [x] Rename `GameControlFlags` -> `GameEvents` (transient, cleared every frame).
+- [x] Create `GameControl` struct (stateful, persisted flags).
+- [x] Migrate fields to appropriate struct:
+    - **GameEvents:** `catchMade`, `playerArrivedAtBase`
+    - **GameControl:** `pause`, `catchHasBeenMade` (new persistent flag)
+- [x] Create `HalfInningState` (formerly GameState)
+    - Keep: `outs`, `strikes`, `balls`, `runsInTheInning`
+    - Move `ballHome` -> `GameFlowState` (it's logic state, not score)
 
----
-
-## Current Status (January 11, 2026)
-
-✅ **Phase 1 Complete:** Structural Reorganization
-- GameEvents and GameControl structures established.
-- GameControlFlags deprecated and removed.
-- Event system working (transient events cleared per frame).
-
-✅ **Phase 2 In Progress:** Referee Consolidation
-- **Strike/Ball Counting:** Migrated from `game_manipulation.c` to `referee.c` (Milestone 17).
-- **Pitch Resolution:** Referee adjudicates Strike/Ball based on `ballHitGround` event. `reconcile` cleans up `pitchState` via `pitchResolutionProcessed` flag.
-- **Free Walk:** Migrated safety grants and run scoring to `referee.c` (using `gameEvents.freeWalkAccepted`).
-- **Next:** Wounding logic redesign.
+### 2. Event System Pattern
+- **Producer (Physics/Actions):** Sets `gameEvents.eventX = 1`
+- **Consumer (Referee):** Reads `gameEvents.eventX`, updates legal state.
+- **Consumer (Reconcile):** Reads legal state, updates physics if needed.
+- **Cleanup:** `clearFrameEvents()` called at end of frame.
 
 ---
 
-## Architecture: The Reconcile Bridge
+## Phase 2: Referee Consolidation (In Progress)
 
-We have established a robust pattern for synchronizing the Legal State (Referee) with the Physical/Action State (Physics/Action System):
+**Goal:** Make referee.c the sole authority on `RefereeState` and `HalfInningState`.
 
-1.  **Physics/Action:** Detects physical events (e.g., "Ball Hit Ground", "Batter Arrived"). Sets **GameEvents** (transient).
-2.  **Referee (`Referee_Update`):** Reads **GameEvents** + Current State. Makes legal decisions (Out, Run, Strike, Ball). Updates **GameState** and **RefereeState**. Sets **GameControl** flags if cleanup is needed (`pitchResolutionProcessed`).
+### The Loop
+1.  **Physics (`gameManipulation`, `actionImplementation`):** Updates positions, collisions. Writes to **GameEvents** (e.g., `catchMade`).
+2.  **Referee (`Referee_Update`):** Reads **GameEvents** + Current State. Makes legal decisions (Out, Run, Strike, Ball). Updates **HalfInningState** and **RefereeState**. Sets **GameControl** flags if cleanup is needed (`pitchResolutionProcessed`).
 3.  **Reconcile (`reconcileLegalAndPhysicalState`):** Reads **RefereeState** and **GameControl**. Updates Physical State to match Legal State (moves player if Out, resets `pitchState` if resolution processed).
 
-This ensures:
-- Referee is the **authority** on rules.
-- Physics doesn't need to know rules.
-- State cleanup happens safely after adjudication.
+### Step 1: Move Simple Logic
+- [ ] Move strike/ball counting from `game_manipulation.c` to referee.
+- [ ] Move `outOfBounds` flag management to referee.
+- [ ] Move `endPeriod` flag setting to referee.
+- [ ] Consolidate all `HalfInningState.event` setting in referee.
+
+### Step 2: Event-Driven Wounding
+- [ ] Replace frame counters in `game_analysis.c` with `RefereeState.woundingCatchActive` + timer.
+- [ ] Referee observes `gameEvents.catchMade` -> starts timer.
+- [ ] Referee observes timer expiry -> marks players wounded.
+
+### Step 3: Delete game_analysis.c
+- [ ] Move remaining initialization logic to `game_setup.c`.
+- [ ] Delete `game_analysis.c`.
 
 ---
 
-## Two-Phase Strategy
+## Final State Architecture
 
-### Phase 1: Structural Reorganization ✅ COMPLETE
-**Goal:** Create clean, semantically clear structures
+### Ownership Map
 
-*(Archived Phase 1 details removed for brevity - see git history)*
+| Structure | Owner (Writer) | Readers |
+| :--- | :--- | :--- |
+| GameEvents | Physics/Actions | Referee |
+| RefereeState | **referee.c ONLY** | Reconcile, UI, AI |
+| HalfInningState | **referee.c ONLY** | Everyone |
+| GameControl | Referee (mostly) | Physics, AI |
+| PlayerInfo | Physics/Actions | Referee (Read-only) |
 
-### Phase 2: Referee Consolidation (In Progress)
-**Goal:** Only referee.c writes to RefereeState/GameState
+### Key Migrations
 
-#### 2.1 Simple Migrations (Low Risk)
-**Target:** Event flag consumption, basic state updates
+**HalfInningState mutations OUTSIDE referee.c:**
+- `game_manipulation.c`: Strikes, Balls (Must move)
+- `game_analysis.c`: Outs (Must move)
+- `action_implementation.c`: Runs (Must move)
 
-**Tasks:**
-- ✅ Move strike/ball counting from `game_manipulation.c` to referee.
-- ✅ Move pitch resolution logic to referee (detect `ballHitGround` + `pitchState`).
-- Move strike reset to referee (detect `gameEvents.ballHitByBat`).
-- Move `outOfBounds` flag management to referee.
-- Move `endPeriod` flag setting to referee.
-- Consolidate all `GameState.event` setting in referee.
-
-#### 2.2 Medium Difficulty: Free Walk Refactor ✅ DONE
-**Problem:** `action_implementation.c` immediately:
-- Grants safety: `referee.battingPlayers[i].currentSafetyBase = base_get_next(base)`
-- Scores runs: `gameState->runsInTheInning += 1`
-
-**Solution:**
-1. Action system sets event: `gameEvents.freeWalkAccepted = 1` with context
-2. Referee detects and processes:
-```c
-if (events->freeWalkAccepted && events->eventPlayerIndex != -1) {
-    int i = events->eventPlayerIndex;
-    BaseID targetBase = base_get_next(events->eventBase);
-    
-    // Grant safety
-    referee->battingPlayers[i].currentSafetyBase = targetBase;
-    referee->battingPlayers[i].baseAtPitchStart = targetBase;
-    
-    // Score runs if applicable
-    if (targetBase == BASE_HOME_SCORED) {
-        // Run scoring logic...
-    }
-}
-```
-
-#### 2.3 Hard: Wounding State Machine Redesign
-**Problem:** Frame-dependent timer in `game_analysis.c`
-
-**Solution Options:**
-
-**Option A: State-based (preferred)**
-```c
-typedef enum {
-    WOUNDING_STAGE_NONE,
-    WOUNDING_STAGE_CATCH_MADE,
-    WOUNDING_STAGE_TIMER_ACTIVE,
-    WOUNDING_STAGE_CONFIRMED
-} WoundingStage;
-
-// Referee tracks stages, not frame counts
-// Timer becomes: "has enough time passed?" check
-```
-
-#### 2.4 Eliminate Redundant State (batterIndex)
-**Problem:** `batterIndex` can go out of sync with `PLAYER_STATE_AT_BAT`, causing bugs where the game thinks an OUT player is still batting.
-
-**Solution:**
-1. Remove `batterIndex`.
-2. Use `get_active_batter_index()` which scans for `PLAYER_STATE_AT_BAT`.
-3. Enforce invariant: `baseId == BASE_HOME` <=> `state == PLAYER_STATE_AT_BAT`.
+**Goal:** Only referee.c writes to RefereeState/HalfInningState
+**Goal:** Only game_analysis.c writes to Scoreboard (GlobalGameInfo) - *Wait, Scoreboard should be updated by Referee for runs? Yes.*
+**Correction:** Referee updates `Scoreboard.teams[].runs`. `game_analysis.c` (or new flow controller) updates `Scoreboard.inning/period`.
 
 ---
 
-## Game Loop Structure (Current)
+## Verification Plan
 
-```c
-void updateMutableWorld(StateInfo* state, MenuInfo* menu, unsigned int* rng) {
-    if (!state->localGameInfo->gameControl.pause) {
-        // 1. High-level monitoring (camera, flow)
-        gameAnalysis(state, menu, rng);
-        
-        // 2. Convert input to action flags
-        actionInvocations(state);
-        
-        // 3. Execute actions (pitch, bat, run)
-        actionImplementation(state, rng);
-        
-        // 4. Physics updates (ball, catching)
-        //    → Sets GameEvents (ballHitGround, catchMade, etc.)
-        gameManipulation(state);
-        
-        // 5. Referee monitors and updates legal state
-        //    → Reads GameEvents
-        //    → Writes RefereeState, GameState, GameControl flags
-        Referee_Update(state, &gameEvents, ...);
-        
-        // 6. React to referee decisions (The Bridge)
-        //    → Reads RefereeState, GameControl
-        //    → Updates physical world (pitchState reset, panic runs, outs)
-        reconcileLegalAndPhysicalState(state);
-        
-        // 7. Clear transient events for next frame
-        clearFrameEvents(&state->localGameInfo->gameEvents);
-        
-        // 8. Validate consistency (debug)
-        StateValidator_Check(state);
-    }
-}
-```
+### Tests
+1.  **Unit Tests:** Test `Referee_Update` in isolation with mocked `GameEvents`.
+2.  **Integration Tests:** Verify `catchMade` -> `catchHasBeenMade` -> `wounding` pipeline.
 
----
-
-## Success Criteria
-
-### Phase 2 Complete When:
-- ✅ Only referee.c writes to RefereeState
-- ✅ Only referee.c writes to GameState
-- ✅ Referee reads GameEvents (never writes)
-- ✅ Other systems write GameEvents (never write Referee/GameState)
-- ✅ All tests pass
-- ✅ Integration tests for wounding, free walk, outs pass
-
----
-
-**Last Updated:** January 11, 2026  
-**Status:** Phase 2 Active - Strike/Ball Counting Logic Consolidated
+### Success Criteria
+- ✅ `game_analysis.c` is deleted or empty.
+- ✅ Only referee.c writes to HalfInningState
+- ✅ Referee does not depend on `frame % x` logic directly (uses internal timers).
+- ✅ Other systems write GameEvents (never write Referee/HalfInningState)

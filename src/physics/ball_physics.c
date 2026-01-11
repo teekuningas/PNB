@@ -10,7 +10,7 @@ void physics_apply_gravity(Vector3D* velocity, float dt)
 
 void physics_apply_velocity(Vector3D* position, const Vector3D* velocity)
 {
-	if (position && velocity) {
+	if (position &&velocity) {
 		position->x += velocity->x;
 		position->y += velocity->y;
 		position->z += velocity->z;

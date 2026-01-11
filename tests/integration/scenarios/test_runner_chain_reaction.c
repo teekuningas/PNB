@@ -21,39 +21,39 @@ int test_full_runner_chain_reaction_no_catch(void)
 
 	// Move fielders away
 	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->localGameInfo->playerInfo[12].tPI.location = away;
-	ctx->state->localGameInfo->playerInfo[13].tPI.location = away;
-	ctx->state->localGameInfo->playerInfo[16].tPI.location = away;
+	ctx->state->match->playerInfo[12].tPI.location = away;
+	ctx->state->match->playerInfo[13].tPI.location = away;
+	ctx->state->match->playerInfo[16].tPI.location = away;
 
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
 
 	// Hit ball to ground (no catch) - far away
-	ctx->state->localGameInfo->ballInfo.location = ctx->state->fieldPositions->pitchPlate;
-	ctx->state->localGameInfo->ballInfo.velocity.x = -0.5f;
-	ctx->state->localGameInfo->ballInfo.velocity.y = 0.3f;
-	ctx->state->localGameInfo->ballInfo.velocity.z = -0.5f;
-	ctx->state->localGameInfo->ballInfo.moving = 1;
-	ctx->state->localGameInfo->ballInfo.onGround = 0;
-	ctx->state->localGameInfo->pRAI.batHit = 1;
+	ctx->state->match->ballInfo.location = ctx->state->fieldPositions->pitchPlate;
+	ctx->state->match->ballInfo.velocity.x = -0.5f;
+	ctx->state->match->ballInfo.velocity.y = 0.3f;
+	ctx->state->match->ballInfo.velocity.z = -0.5f;
+	ctx->state->match->ballInfo.moving = 1;
+	ctx->state->match->ballInfo.onGround = 0;
+	ctx->state->match->pRAI.batHit = 1;
 
 	printf("  Chain reaction test (no catch)\n");
 
 	int arrivalFrame = -1;
 	int leadStartedRunning = -1;
-	Vector3D startB = ctx->state->localGameInfo->playerInfo[1].tPI.location;
+	Vector3D startB = ctx->state->match->playerInfo[1].tPI.location;
 
 	for (int frame = 0; frame <= 400; frame++) {
 		simulate_frames(ctx, 1);
 
-		int stateB = ctx->state->localGameInfo->playerInfo[1].bTPI.state;
-		int baseA = ctx->state->localGameInfo->playerInfo[0].bTPI.baseId;
-		Vector3D posB = ctx->state->localGameInfo->playerInfo[1].tPI.location;
+		int stateB = ctx->state->match->playerInfo[1].bTPI.state;
+		int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
+		Vector3D posB = ctx->state->match->playerInfo[1].tPI.location;
 
-		if (baseA == BASE_SECOND && arrivalFrame == -1) {
+		if (baseA == BASE_SECOND &&arrivalFrame == -1) {
 			arrivalFrame = frame;
 		}
 
-		if (leadStartedRunning == -1 && stateB == PLAYER_STATE_RUNNING) {
+		if (leadStartedRunning == -1 &&stateB == PLAYER_STATE_RUNNING) {
 			leadStartedRunning = frame;
 		}
 

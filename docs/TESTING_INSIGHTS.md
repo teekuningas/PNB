@@ -75,7 +75,7 @@ playerRuntime[i].passedPathPoint = 1;
 ```c
 // Single source of truth function
 void initialize_runner_at_base(
-    GameState* game,
+    HalfInningState* game,
     int playerIndex,
     BaseID base,
     float progressToNext,
@@ -169,7 +169,7 @@ Create high-level functions for common state transitions:
 ```c
 // Instead of manually setting 10 flags
 void start_player_running_to_next_base(
-    LocalGameInfo* game,
+    MatchSession* game,
     FieldPositions* field,
     int playerIndex,
     BaseID fromBase
@@ -238,7 +238,7 @@ trigger_player_run_to_next_base(ctx, playerIndex, BASE_THIRD);
 ### Pattern 2: Explicit Special Cases
 ```c
 // Document WHY we need this
-ctx->state->localGameInfo->playerRuntime[0].passedPathPoint = 1;
+ctx->state->match->playerRuntime[0].passedPathPoint = 1;
 // ^ Required for third→home: 0=to flag, 1=to home
 ```
 

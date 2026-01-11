@@ -19,7 +19,7 @@
 
 static void update_safety_status(const StateInfo* stateInfo, RefereeState* referee)
 {
-	const LocalGameInfo* game = stateInfo->localGameInfo;
+	const MatchSession* game = stateInfo->match;
 
 	// Process players in base order (HOME -> FIRST -> SECOND -> THIRD)
 	// This ensures deterministic safety resolution when two players are at the same base.
@@ -52,7 +52,7 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 		}
 	}
 
-	// 2.5 Safety Acquisition & Displacement
+	// 2.5 Safety Acquisition &Displacement
 	// Process in field order (rear runners processed last, win safety conflicts)
 	for (int idx = 0; idx < playerCount; idx++) {
 		int i = sortedPlayers[idx];
@@ -107,9 +107,9 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 	}
 }
 
-static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, int ballAtBase)
+static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase)
 {
-	const LocalGameInfo* game = stateInfo->localGameInfo;
+	const MatchSession* game = stateInfo->match;
 
 	// 3. Check for Outs (§33) and Tuplahaava Exceptions (§36)
 	if (ballAtBase != -1) {
@@ -139,19 +139,19 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 			// A. Force Out / Burning (§33)
 			int has_safety_at_current = (referee->battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
 			int is_protected = player_is_protected(player->bTPI.state);
-			int is_safe_from_force_out = has_safety_at_current && is_protected;
+			int is_safe_from_force_out = has_safety_at_current &&is_protected;
 
 			if (is_runner_forced_out(
 			            player->bTPI.baseId,
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            gameState
+			            halfInningState
 			        )) {
 
 				referee->battingPlayers[i].isOut = 1;
-				gameState->outs += 1;
-				gameState->event = EVENT_OUT; // Global event
+				halfInningState->outs += 1;
+				halfInningState->event = EVENT_OUT; // Global event
 
 				// Remove safety if they had it at this base
 				if (has_safety_at_current) {
@@ -165,7 +165,7 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 			// B. Safety Removal (§36 Koppilyönti logic)
 			BaseID player_safety_base = referee->battingPlayers[i].currentSafetyBase;
 
-			if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
+			if (player_safety_base != BASE_NONE &&player_safety_base == (BaseID)ballAtBase) {
 				if (!is_protected) {
 					// Player has safety here but is "irti" - lose safety and must run
 					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
@@ -186,8 +186,8 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 					// Exception 2: Ball at NEXT base -> OUT
 					if (base_to_int_index(next) == ballAtBase) {
 						referee->battingPlayers[i].isOut = 1;
-						gameState->outs += 1;
-						gameState->event = EVENT_OUT;
+						halfInningState->outs += 1;
+						halfInningState->event = EVENT_OUT;
 						referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
 						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 					}
@@ -203,16 +203,16 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 	}
 }
 
-static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
-	const LocalGameInfo* game = stateInfo->localGameInfo;
+	const MatchSession* game = stateInfo->match;
 
 	// 4. Check for Runs (§41/42)
 	if (gameControl->checkForRun == 1) {
 		if ((game->gameControl.catchHasBeenMade == 1 || game->ballInfo.hasHitGround == 1) &&
 		        referee->woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
-		        gameState->outOfBounds == 0) {
+		        halfInningState->outOfBounds == 0) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -226,15 +226,15 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 					                );
 
 					if (runScored) {
-						gameState->event = EVENT_RUN_SCORED;
-						int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
-						globalGameInfo->teams[battingTeamIndex].runs += 1;
-						gameState->runsInTheInning += 1;
+						halfInningState->event = EVENT_RUN_SCORED;
+						int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+						scoreboard->teams[battingTeamIndex].runs += 1;
+						halfInningState->runsInTheInning += 1;
 
 						referee->battingPlayers[i].hasScored = 1;
 						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 
-						if (gameState->runsInTheInning % 2 == 0) {
+						if (halfInningState->runsInTheInning % 2 == 0) {
 							playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 						}
 
@@ -242,7 +242,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 						if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
 							int someone_else_has_third_safety = 0;
 							for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-								if (j != i && referee->battingPlayers[j].currentSafetyBase == BASE_THIRD) {
+								if (j != i &&referee->battingPlayers[j].currentSafetyBase == BASE_THIRD) {
 									someone_else_has_third_safety = 1;
 									break;
 								}
@@ -250,7 +250,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 
 							if (someone_else_has_third_safety) {
 								referee->battingPlayers[i].isOut = 1;
-								gameState->outs += 1;
+								halfInningState->outs += 1;
 							}
 						}
 					}
@@ -258,27 +258,27 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 			}
 
 			// Period End Check
-			int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
+			int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
 			int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-			int currentRuns = globalGameInfo->teams[battingTeamIndex].runs;
-			int opponentRuns = globalGameInfo->teams[catchingTeamIndex].runs;
+			int currentRuns = scoreboard->teams[battingTeamIndex].runs;
+			int opponentRuns = scoreboard->teams[catchingTeamIndex].runs;
 
-			if (globalGameInfo->period < 4) {
-				if ((globalGameInfo->inning + 1) % globalGameInfo->halfInningsInPeriod == 0 ||
-				        globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 + 2) {
+			if (scoreboard->period < 4) {
+				if ((scoreboard->inning + 1) % scoreboard->halfInningsInPeriod == 0 ||
+				        scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 + 2) {
 					if (currentRuns > opponentRuns) {
-						gameState->endPeriod = 1;
+						halfInningState->endPeriod = 1;
 					}
-					if (globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 &&
-					        globalGameInfo->teams[battingTeamIndex].period0Runs > globalGameInfo->teams[catchingTeamIndex].period0Runs &&
+					if (scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 &&
+					        scoreboard->teams[battingTeamIndex].period0Runs > scoreboard->teams[catchingTeamIndex].period0Runs &&
 					        opponentRuns == currentRuns) {
-						gameState->endPeriod = 1;
+						halfInningState->endPeriod = 1;
 					}
 				}
 			} else {
-				if ((globalGameInfo->inning + 1) % 2 == 0) {
+				if ((scoreboard->inning + 1) % 2 == 0) {
 					if (currentRuns > opponentRuns) {
-						gameState->endPeriod = 1;
+						halfInningState->endPeriod = 1;
 					}
 				}
 			}
@@ -289,32 +289,32 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, GameS
 	}
 }
 
-static void update_strikes(RefereeState* referee, GameState* gameState, const GameEvents* events)
+static void update_strikes(RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events)
 {
 	// 5. Strike Management
 	// The referee is the sole authority on counting strikes based on physical events.
 	if (events->ballHitByBat || events->ballMissedByBat) {
-		gameState->strikes += 1;
+		halfInningState->strikes += 1;
 	}
 }
 
-static void update_pitch_resolution(const StateInfo* stateInfo, GameState* gameState, GameControl* gameControl, const GameEvents* events)
+static void update_pitch_resolution(const StateInfo* stateInfo, HalfInningState* halfInningState, GameControl* gameControl, const GameEvents* events)
 {
 	// Check if a pitch has physically concluded (hit ground) while still logically active
-	if (events->ballHitGround && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
+	if (events->ballHitGround &&stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
 
 		PitchResult result = determine_pitch_result(
-		                         stateInfo->localGameInfo->ballInfo.location.x,
+		                         stateInfo->match->ballInfo.location.x,
 		                         PLATE_WIDTH,
-		                         stateInfo->localGameInfo->pRAI.batMiss
+		                         stateInfo->match->pRAI.batMiss
 		                     );
 
 		if (result == PITCH_RESULT_STRIKE) {
-			gameState->strikes += 1;
-			gameState->event = EVENT_STRIKE;
+			halfInningState->strikes += 1;
+			halfInningState->event = EVENT_STRIKE;
 		} else if (result == PITCH_RESULT_BALL) {
-			gameState->balls += 1;
-			gameState->event = EVENT_BALL;
+			halfInningState->balls += 1;
+			halfInningState->event = EVENT_BALL;
 
 			// Reset free walk calculation flags so they are re-evaluated
 			gameControl->freeWalkCalculationMade = 0;
@@ -327,37 +327,37 @@ static void update_pitch_resolution(const StateInfo* stateInfo, GameState* gameS
 	}
 }
 
-static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo, GameControl* gameControl, const GameEvents* events)
+static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameModeState* gameModeState, PlayerCounters* playerCounters, Scoreboard* scoreboard, GameControl* gameControl, const GameEvents* events)
 {
 	// 6. Free Walk Resolution
-	if (events->freeWalkAccepted && gameControl->freeWalkIndex != -1) {
+	if (events->freeWalkAccepted &&gameControl->freeWalkIndex != -1) {
 		int i = gameControl->freeWalkIndex;
 		BaseID sourceBase = gameControl->freeWalkBase;
-		int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
+		int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
 		int catchingTeamIndex = (battingTeamIndex + 1) % 2;
 
-		if (globalGameInfo->period >= 4) {
+		if (scoreboard->period >= 4) {
 			// Homerun Contest / Super Inning Logic
 			referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
 			referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
 			referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
 
 			// Add run
-			globalGameInfo->teams[battingTeamIndex].runs += 1;
-			gameState->runsInTheInning += 1;
+			scoreboard->teams[battingTeamIndex].runs += 1;
+			halfInningState->runsInTheInning += 1;
 
-			if (gameState->balls >= 3) {
-				globalGameInfo->teams[battingTeamIndex].runs += 1;
-				gameState->runsInTheInning += 1;
-				gameState->event = EVENT_TWO_RUNS_SCORED;
+			if (halfInningState->balls >= 3) {
+				scoreboard->teams[battingTeamIndex].runs += 1;
+				halfInningState->runsInTheInning += 1;
+				halfInningState->event = EVENT_TWO_RUNS_SCORED;
 			} else {
-				gameState->event = EVENT_RUN_SCORED;
+				halfInningState->event = EVENT_RUN_SCORED;
 			}
 
 			// Period End Check
-			if ((globalGameInfo->inning + 1) % 2 == 0) {
-				if (globalGameInfo->teams[battingTeamIndex].runs > globalGameInfo->teams[catchingTeamIndex].runs) {
-					gameState->endPeriod = 1;
+			if ((scoreboard->inning + 1) % 2 == 0) {
+				if (scoreboard->teams[battingTeamIndex].runs > scoreboard->teams[catchingTeamIndex].runs) {
+					halfInningState->endPeriod = 1;
 				}
 			}
 			gameModeState->forceNextPair = 1;
@@ -377,25 +377,25 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 				referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
 
 				// Add run
-				globalGameInfo->teams[battingTeamIndex].runs += 1;
-				gameState->runsInTheInning += 1;
+				scoreboard->teams[battingTeamIndex].runs += 1;
+				halfInningState->runsInTheInning += 1;
 
-				if (gameState->runsInTheInning % 2 == 0) {
+				if (halfInningState->runsInTheInning % 2 == 0) {
 					playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 					playerCounters->noMorePlayers = 0;
 				}
-				gameState->event = EVENT_RUN_SCORED;
+				halfInningState->event = EVENT_RUN_SCORED;
 
 				// Period End Check
-				if ((globalGameInfo->inning + 1) % globalGameInfo->halfInningsInPeriod == 0 ||
-				        globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 + 2) {
-					if (globalGameInfo->teams[battingTeamIndex].runs > globalGameInfo->teams[catchingTeamIndex].runs) {
-						gameState->endPeriod = 1;
+				if ((scoreboard->inning + 1) % scoreboard->halfInningsInPeriod == 0 ||
+				        scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 + 2) {
+					if (scoreboard->teams[battingTeamIndex].runs > scoreboard->teams[catchingTeamIndex].runs) {
+						halfInningState->endPeriod = 1;
 					}
-					if (globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 &&
-					        globalGameInfo->teams[battingTeamIndex].period0Runs > globalGameInfo->teams[catchingTeamIndex].period0Runs &&
-					        globalGameInfo->teams[catchingTeamIndex].runs == globalGameInfo->teams[battingTeamIndex].runs) {
-						gameState->endPeriod = 1;
+					if (scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 &&
+					        scoreboard->teams[battingTeamIndex].period0Runs > scoreboard->teams[catchingTeamIndex].period0Runs &&
+					        scoreboard->teams[catchingTeamIndex].runs == scoreboard->teams[battingTeamIndex].runs) {
+						halfInningState->endPeriod = 1;
 					}
 				}
 			}
@@ -403,7 +403,7 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 	}
 }
 
-static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, GameState* gameState, const GameEvents* events, GameControl* gameControl)
+static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, GameControl* gameControl)
 {
 	// 6. Game State Flags
 
@@ -421,22 +421,22 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	// If ball hit ground this frame, checks if it counts as foul play.
 	// Must have been hit by bat, not caught, and landed outside boundaries.
 	if (events->ballHitGround) {
-		const LocalGameInfo* game = stateInfo->localGameInfo;
+		const MatchSession* game = stateInfo->match;
 		// If ball hit bat AND wasn't caught, it's a potential foul if it lands out of bounds.
 		// game->pRAI.batHit stays 1 until next pitch, so it reliably tells us if this sequence started with a hit.
-		if (game->pRAI.batHit == 1 && gameControl->catchHasBeenMade == 0) {
+		if (game->pRAI.batHit == 1 &&gameControl->catchHasBeenMade == 0) {
 			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
-				gameState->outOfBounds = 1;
+				halfInningState->outOfBounds = 1;
 			}
 		}
 	}
 
 	if (events->outOfBoundsOccurred) {
-		gameState->outOfBounds = 1;
+		halfInningState->outOfBounds = 1;
 	}
 }
 
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo)
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);
@@ -446,7 +446,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Game
 	if (ballAtBase != -1) {
 		// Logic from Analyze: "Default assumption: If ball is at a base, Run of Honor possibility is threatened."
 		int canMake = 0;
-		const LocalGameInfo* game = stateInfo->localGameInfo;
+		const MatchSession* game = stateInfo->match;
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			const PlayerInfo* player = &game->playerInfo[i];
 			if (player->bTPI.baseId == BASE_NONE) continue;
@@ -462,16 +462,16 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Game
 
 	// 3. Safety Pipeline
 	update_safety_status(stateInfo, refereeState);
-	update_force_outs_and_tuplahaava(stateInfo, refereeState, gameState, ballAtBase);
-	update_runs(stateInfo, refereeState, gameState, gameModeState, gameControl, playerCounters, globalGameInfo);
+	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase);
+	update_runs(stateInfo, refereeState, halfInningState, gameModeState, gameControl, playerCounters, scoreboard);
 
 	// 4. Strikes
-	update_strikes(refereeState, gameState, &stateInfo->localGameInfo->gameEvents);
-	update_pitch_resolution(stateInfo, gameState, gameControl, &stateInfo->localGameInfo->gameEvents);
-	update_free_walk_resolution(stateInfo, refereeState, gameState, gameModeState, playerCounters, globalGameInfo, gameControl, &stateInfo->localGameInfo->gameEvents);
+	update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
+	update_pitch_resolution(stateInfo, halfInningState, gameControl, &stateInfo->match->gameEvents);
+	update_free_walk_resolution(stateInfo, refereeState, halfInningState, gameModeState, playerCounters, scoreboard, gameControl, &stateInfo->match->gameEvents);
 
 	// 5. Game State Flags
-	update_game_state_flags((StateInfo*)stateInfo, refereeState, gameState, &stateInfo->localGameInfo->gameEvents, gameControl);
+	update_game_state_flags((StateInfo*)stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, gameControl);
 }
 int is_wounding_catch_pending(const RefereeState* ref)
 {

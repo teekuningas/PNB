@@ -7,7 +7,7 @@
 // Helper to check if a value is a power of two
 static int is_power_of_two(int n)
 {
-	return (n > 0) && ((n & (n - 1)) == 0);
+	return (n > 0) &&((n &(n - 1)) == 0);
 }
 
 // Test the creation and initial state of a cup
@@ -238,7 +238,7 @@ int test_cup_day_progression()
 	// Now simulate AI matches explicitly (like after user's game)
 	for (int i = 0; i < match_count; i++) {
 		const CupMatch* match = &cup->matches[match_indices[i]];
-		if (match->team_a_id != user_team_id && match->team_b_id != user_team_id) {
+		if (match->team_a_id != user_team_id &&match->team_b_id != user_team_id) {
 			// For deterministic test, explicitly choose winner
 			// Let's say team_a wins (team 2 in match 2)
 			cup_update_match_result(cup, match_indices[i], match->team_a_id);

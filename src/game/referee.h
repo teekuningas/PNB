@@ -47,12 +47,12 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  *
  * @param stateInfo Read-only access to the full game state.
  * @param refereeState Mutable pointer to the referee state.
- * @param gameState Mutable pointer to the game state (for outs/runs).
+ * @param halfInningState Mutable pointer to the game state (for outs/runs).
  * @param gameModeState Mutable pointer to game mode state.
  * @param gameControl Mutable pointer to game control flags.
  * @param playerCounters Mutable pointer to player counters.
- * @param globalGameInfo Mutable pointer to global game info (teams/runs).
+ * @param scoreboard Mutable pointer to global game info (teams/runs).
  */
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, GameState* gameState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo);
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard);
 
 #endif // REFEREE_H

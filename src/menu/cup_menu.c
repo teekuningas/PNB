@@ -60,7 +60,7 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
 	if(keyStates->released[0][KEY_2]) {
 		int menu_offset = (stateInfo->cup != NULL) ? 1 : 0;  // Add "Resume" option if cup exists
 
-		if(cupMenuState->initial.pointer == 0 && stateInfo->cup != NULL) {
+		if(cupMenuState->initial.pointer == 0 &&stateInfo->cup != NULL) {
 			// Resume existing cup
 			cupMenuState->screen = CUP_MENU_SCREEN_ONGOING;
 			cupMenuState->ongoing.pointer = 0;
@@ -362,7 +362,7 @@ static void drawScreen_Ongoing(const CupOngoingState* ongoingState, const StateI
 
 	draw_text_2d("Cup Menu", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
+	if (stateInfo->cup != NULL &&stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER) {
 		// Cup is over, show finished cup menu
 		draw_text_2d("Schedule", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 		draw_text_2d("Cup tree", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
@@ -461,10 +461,10 @@ static void drawScreen_ViewTree(const CupViewTreeState* viewTreeState, const Sta
 		if (i == 0) { // Final match -> top bracket slots
 			slot_a_idx = 12;
 			slot_b_idx = 13;
-		} else if (i >= 1 && i <= 2) { // Semi-finals -> middle bracket slots
+		} else if (i >= 1 &&i <= 2) { // Semi-finals -> middle bracket slots
 			slot_a_idx = 8 + (i-1)*2;
 			slot_b_idx = 9 + (i-1)*2;
-		} else if (i >= 3 && i <= 6) { // Quarter-finals -> bottom bracket slots
+		} else if (i >= 3 &&i <= 6) { // Quarter-finals -> bottom bracket slots
 			slot_a_idx = (i-3)*2;
 			slot_b_idx = (i-3)*2 + 1;
 		} else {
@@ -521,7 +521,7 @@ static void drawScreen_ViewSchedule(const CupMenuState* cupMenuState, const Stat
 
 	for(int i = 0; i < count; i++) {
 		const CupMatch* match = &stateInfo->cup->matches[match_indices[i]];
-		if(match->team_a_id != -1 && match->team_b_id != -1) {
+		if(match->team_a_id != -1 &&match->team_b_id != -1) {
 			float current_y = list_start_y + i * list_spacing;
 			draw_text_2d(stateInfo->teamData[match->team_a_id].name, center_x - team_name_offset, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
 			draw_text_2d("-", center_x, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);

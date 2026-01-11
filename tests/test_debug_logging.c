@@ -6,13 +6,13 @@
 #include <string.h>
 
 static StateInfo state;
-static LocalGameInfo game;
+static MatchSession game;
 
 int test_debug_logging_cycle()
 {
 	// Setup
-	memset(&game, 0, sizeof(LocalGameInfo));
-	state.localGameInfo = &game;
+	memset(&game, 0, sizeof(MatchSession));
+	state.match = &game;
 
 	// Properly initialize referee state (bases to BASE_NONE)
 	initializeRefereeState(&game.referee);
@@ -25,11 +25,11 @@ int test_debug_logging_cycle()
 	StateValidator_Init(dumpPath);
 
 	// 1. Capture a clean snapshot
-	game.gameState.outs = 1;
+	game.halfInningState.outs = 1;
 	StateValidator_CaptureSnapshot(&state, "SNAPSHOT_1");
 
 	// 2. Advance state
-	game.gameState.outs = 2;
+	game.halfInningState.outs = 2;
 	StateValidator_CaptureSnapshot(&state, "SNAPSHOT_2");
 
 	// 3. Force a dump manually (don't try to enumerate specific invalid states)

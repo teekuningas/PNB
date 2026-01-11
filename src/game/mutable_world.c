@@ -39,15 +39,15 @@ int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 
 	initActionImplementation(stateInfo);
 	initActionInvocations(stateInfo);
-	initGameAnalysis(&(stateInfo->localGameInfo->gameFlowState));
-	initGameManipulation(&(stateInfo->localGameInfo->gameFlowState));
+	initGameAnalysis(&(stateInfo->match->gameFlowState));
+	initGameManipulation(&(stateInfo->match->gameFlowState));
 
 	return 0;
 }
 
 void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 {
-	LocalGameInfo* game = stateInfo->localGameInfo;
+	MatchSession* game = stateInfo->match;
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		// 1. React to OUT
 		if (game->referee.battingPlayers[i].isOut) {
@@ -60,7 +60,7 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 		}
 
 		// 2. React to SCORE
-		if (game->referee.battingPlayers[i].hasScored && game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
+		if (game->referee.battingPlayers[i].hasScored &&game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
 			game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
 			game->playerInfo[i].bTPI.baseId = BASE_NONE;
 			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
@@ -88,21 +88,21 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	if(stateInfo->localGameInfo->gameControl.pause == 0) {
+	if(stateInfo->match->gameControl.pause == 0) {
 		gameAnalysis(stateInfo, menuInfo, rng_seed);
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);
 		// Referee logic now runs AFTER physics/manipulation to ensure legal state matches physical state
-		LocalGameInfo* game = stateInfo->localGameInfo;
+		MatchSession* game = stateInfo->match;
 		Referee_Update(
 		    stateInfo,
 		    &game->referee,
-		    &game->gameState,
+		    &game->halfInningState,
 		    &game->gameModeState,
 		    &game->gameControl,
 		    &game->playerCounters,
-		    stateInfo->globalGameInfo
+		    &stateInfo->match->scoreboard
 		);
 
 		// React to the new legal state (e.g. panic run if safety lost)
@@ -110,20 +110,20 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// Validate state consistency (Debug only)
 		if (!StateValidator_Check(stateInfo)) {
 			StateValidator_Dump(stateInfo, "State Consistency Check Failed");
-			stateInfo->localGameInfo->gameControl.pause = 1;
+			stateInfo->match->gameControl.pause = 1;
 		}
 
 		// Clear transient events for the next frame
-		clearFrameEvents(&stateInfo->localGameInfo->gameEvents);
+		clearFrameEvents(&stateInfo->match->gameEvents);
 	}
 }
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
 	// players and ball are the building blocks of all the action on the screen.
-	if(stateInfo->localGameInfo->gameControl.pause == 0) {
+	if(stateInfo->match->gameControl.pause == 0) {
 #ifndef NO_RENDER
-		drawPlayerRenderer(stateInfo, stateInfo->localGameInfo->playerInfo, alpha, rm);
-		drawBall(&(stateInfo->localGameInfo->ballInfo), alpha, rm);
+		drawPlayerRenderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
+		drawBall(&(stateInfo->match->ballInfo), alpha, rm);
 #endif
 	}
 }

@@ -76,7 +76,7 @@ int test_batting_vertical_angle()
 	// Just ensure it returns a valid number (not NaN)
 	// The value can be large (e.g. 175.0) as it is scaled later
 	ASSERT_TRUE(!isnan(angle), "Angle should not be NaN");
-	ASSERT_TRUE(angle > -1000.0f && angle < 1000.0f, "Angle should be within sanity bounds");
+	ASSERT_TRUE(angle > -1000.0f &&angle < 1000.0f, "Angle should be within sanity bounds");
 
 	return TEST_PASSED;
 }

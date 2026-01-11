@@ -1,7 +1,7 @@
 #include "base_control.h"
 #include "vector_math.h"
 
-int get_base_controller(const LocalGameInfo* game, BaseID base)
+int get_base_controller(const MatchSession* game, BaseID base)
 {
 	if (base < 0 || base >= BASE_COUNT) return -1;
 
@@ -28,19 +28,19 @@ int get_base_controller(const LocalGameInfo* game, BaseID base)
 
 int get_ball_at_base_index(const StateInfo* stateInfo)
 {
-	if (stateInfo->localGameInfo->pII.hasBallIndex == -1) {
+	if (stateInfo->match->pII.hasBallIndex == -1) {
 		return -1; // No one has ball
 	}
 
 	// Use catcher position directly or ball position?
 	// Legacy logic uses ballInfo.location, assuming ball is with player.
-	Vector3D ballLoc = stateInfo->localGameInfo->ballInfo.location;
+	Vector3D ballLoc = stateInfo->match->ballInfo.location;
 
 	// Check Home Base (Index 0)
 	// Special check: inside homeline-middlepoint centered disk and at homebase side
 	float dx = ballLoc.x - stateInfo->fieldPositions->pitchPlate.x;
 	float dz = ballLoc.z - HOME_LINE_Z;
-	if (ballLoc.z > HOME_LINE_Z && vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS)) {
+	if (ballLoc.z > HOME_LINE_Z &&vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS)) {
 		return 0; // Home Base
 	}
 

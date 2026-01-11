@@ -10,9 +10,9 @@
  * @param player_is_on_base_flag Flag indicating if the player is currently on a base (1 for true, 0 for false).
  * @param ball_at_base_index The ID of the base where the ball is currently located/caught.
  * @param taking_free_walk Flag indicating if the player is taking a free walk (vapaataival).
- * @param gameState Current game state containing outOfBounds flag.
+ * @param halfInningState Current game state containing outOfBounds flag.
  * @return 1 if the runner is forced out, 0 otherwise.
  */
-int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk, const GameState* gameState);
+int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk, const HalfInningState* halfInningState);
 
 #endif // RULES_OUTS_H

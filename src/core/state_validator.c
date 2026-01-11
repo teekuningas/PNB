@@ -12,7 +12,7 @@
 typedef struct {
 	char label[SNAPSHOT_LABEL_LEN];
 	int frameCount; // Assuming we can get this, or just sequence ID
-	LocalGameInfo snapshot;
+	MatchSession snapshot;
 } GameSnapshot;
 
 // Global State
@@ -55,7 +55,7 @@ void StateValidator_CaptureSnapshot(StateInfo* state, const char* label)
 	// Deep copy the local game info
 	// Note: Strings (names) are pointers, but they usually point to static data or managed resources.
 	// As long as we don't free them, copying the pointer is fine for a snapshot.
-	memcpy(&g_history[idx].snapshot, state->localGameInfo, sizeof(LocalGameInfo));
+	memcpy(&g_history[idx].snapshot, state->match, sizeof(MatchSession));
 
 	// Advance head
 	g_historyHead = (g_historyHead + 1) % HISTORY_SIZE;
@@ -110,12 +110,12 @@ static const char* state_to_string(PlayerUnitState s)
 	}
 }
 
-static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global, int indent)
+static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int indent)
 {
 	// Helper for indentation
 	char sp[16];
 	int i;
-	for(i=0; i<indent && i<15; i++) sp[i] = ' ';
+	for(i=0; i<indent &&i<15; i++) sp[i] = ' ';
 	sp[i] = 0;
 
 	if (global) {
@@ -127,12 +127,12 @@ static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global
 		fprintf(f, "%s},\n", sp);
 	}
 
-	fprintf(f, "%s\"gameState\": {\n", sp);
-	fprintf(f, "%s  \"outs\": %d,\n", sp, game->gameState.outs);
-	fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, game->gameState.runsInTheInning);
-	fprintf(f, "%s  \"strikes\": %d,\n", sp, game->gameState.strikes);
-	fprintf(f, "%s  \"balls\": %d,\n", sp, game->gameState.balls);
-	fprintf(f, "%s  \"event\": %d\n", sp, game->gameState.event);
+	fprintf(f, "%s\"halfInningState\": {\n", sp);
+	fprintf(f, "%s  \"outs\": %d,\n", sp, game->halfInningState.outs);
+	fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, game->halfInningState.runsInTheInning);
+	fprintf(f, "%s  \"strikes\": %d,\n", sp, game->halfInningState.strikes);
+	fprintf(f, "%s  \"balls\": %d,\n", sp, game->halfInningState.balls);
+	fprintf(f, "%s  \"event\": %d\n", sp, game->halfInningState.event);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameControl\": {\n", sp);
@@ -224,7 +224,7 @@ void StateValidator_Dump(StateInfo* state, const char* reason)
 		return;
 	}
 
-	LocalGameInfo* game = state->localGameInfo;
+	MatchSession* game = state->match;
 
 	fprintf(f, "{\n");
 	fprintf(f, "  \"failure_reason\": \"%s\",\n", reason);
@@ -232,7 +232,7 @@ void StateValidator_Dump(StateInfo* state, const char* reason)
 
 	// Current State
 	fprintf(f, "  \"currentState\": {\n");
-	print_game_json(f, game, state->globalGameInfo, 4);
+	print_game_json(f, game, &state->match->scoreboard, 4);
 	fprintf(f, "\n  },\n");
 
 	// History
@@ -260,7 +260,7 @@ int StateValidator_Check(StateInfo* state)
 {
 	if (!g_isActive) return 1;
 
-	LocalGameInfo* game = state->localGameInfo;
+	MatchSession* game = state->match;
 
 	// Skip validation if the game is already paused (avoid redundant checks/dumps)
 	if (game->gameControl.pause) return 1;

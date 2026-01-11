@@ -131,7 +131,7 @@ static void drawFence(ResourceManager* rm)
 static void drawGround(const StateInfo* stateInfo, ResourceManager* rm)
 {
 	int i;
-	const GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
+	const GroundUnit* gu = stateInfo->match->groundUnit;
 	GLuint planeModel = resource_manager_get_model(rm, "data/models/plane.obj");
 
 	// here we use groundUnit[12].texture for all grass ground pieces.
@@ -169,7 +169,7 @@ static int initPlate(ResourceManager* rm)
 static int initGround(StateInfo* stateInfo, ResourceManager* rm)
 {
 	int i, j, counter;
-	GroundUnit* gu = stateInfo->localGameInfo->groundUnit;
+	GroundUnit* gu = stateInfo->match->groundUnit;
 	// first we create the play area, in order of groundUnit[0] being lowerleft, groundUnit[1] being second in left etc.
 	for(i = 0; i < 3; i++) {
 		for(j = 0; j < 4; j++) {
@@ -181,7 +181,7 @@ static int initGround(StateInfo* stateInfo, ResourceManager* rm)
 	// and then we continue and add the grass pieces on every side.
 	for(i = -1; i < 5; i++) {
 		for(j = -1; j < 4; j++) {
-			if(i < 4 && i > -1 && j > -1 && j < 3) continue;
+			if(i < 4 &&i > -1 &&j > -1 &&j < 3) continue;
 			else {
 				gu[counter].x = i;
 				gu[counter].y = j;

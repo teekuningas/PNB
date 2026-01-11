@@ -17,22 +17,22 @@ MovementKeys calculate_movement_keys(float dx, float dz)
 
 	if (angle > 7 * PI / 8 || angle <= -7 * PI / 8) {
 		keys.left = 1;
-	} else if (angle <= 7 * PI / 8 && angle > 5 * PI / 8) {
+	} else if (angle <= 7 * PI / 8 &&angle > 5 * PI / 8) {
 		keys.left = 1;
 		keys.up = 1;
-	} else if (angle <= 5 * PI / 8 && angle > 3 * PI / 8) {
+	} else if (angle <= 5 * PI / 8 &&angle > 3 * PI / 8) {
 		keys.up = 1;
-	} else if (angle <= 3 * PI / 8 && angle > PI / 8) {
+	} else if (angle <= 3 * PI / 8 &&angle > PI / 8) {
 		keys.up = 1;
 		keys.right = 1;
-	} else if (angle <= PI / 8 && angle > -PI / 8) {
+	} else if (angle <= PI / 8 &&angle > -PI / 8) {
 		keys.right = 1;
-	} else if (angle <= -PI / 8 && angle > -3 * PI / 8) {
+	} else if (angle <= -PI / 8 &&angle > -3 * PI / 8) {
 		keys.right = 1;
 		keys.down = 1;
-	} else if (angle <= -3 * PI / 8 && angle > -5 * PI / 8) {
+	} else if (angle <= -3 * PI / 8 &&angle > -5 * PI / 8) {
 		keys.down = 1;
-	} else if (angle <= -5 * PI / 8 && angle > -7 * PI / 8) {
+	} else if (angle <= -5 * PI / 8 &&angle > -7 * PI / 8) {
 		keys.down = 1;
 		keys.left = 1;
 	}
@@ -48,7 +48,7 @@ int should_ai_throw(const PlayerIndexInfo* playerIndices, int catcherNearHome,
 	int catcherIndex = playerIndices->catcherOnBaseIndex[targetBase];
 
 	int shouldThrow = 0;
-	if (hasBallIndex != -1 && catcherIndex != -1) {
+	if (hasBallIndex != -1 &&catcherIndex != -1) {
 		// Only consider throwing if I am NOT the baseman for this base
 		if (hasBallIndex != catcherIndex) {
 			// Check normal catcher
@@ -79,9 +79,9 @@ int should_ai_drop_ball(const RefereeState* ref, const GameControl* gameControl,
 	// Dropping the ball in a fly-ball situation can allow for a force play
 	// when we want to get an OUT at home base or create a double play.
 	// We only do this when 2nd and 3rd bases are occupied.
-	if (ref->woundingCatchPending == 1 && gameControl->checkForRun == 0) {
-		if (runner3BaseAtPitchStart == BASE_THIRD && runner3IsOnBase == 1 &&
-		        runner2BaseAtPitchStart == BASE_SECOND && runner2IsOnBase == 1 &&
+	if (ref->woundingCatchPending == 1 &&gameControl->checkForRun == 0) {
+		if (runner3BaseAtPitchStart == BASE_THIRD &&runner3IsOnBase == 1 &&
+		        runner2BaseAtPitchStart == BASE_SECOND &&runner2IsOnBase == 1 &&
 		        catcherHomeIndex == hasBallIndex) {
 			return 1;
 		}
@@ -93,7 +93,7 @@ BaseID determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, i
 	BaseID leadBase = BASE_NONE;
 	int i;
 	for (i = 0; i < runnerCount; i++) {
-		if (runners[i].isOnBase == 0 && runners[i].takingFreeWalk == 0) {
+		if (runners[i].isOnBase == 0 &&runners[i].takingFreeWalk == 0) {
 			if (base_cmp(runners[i].base, leadBase) > 0) {
 				if (runners[i].leading == 0) {
 					leadBase = runners[i].base;

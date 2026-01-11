@@ -36,7 +36,7 @@ bool base_is_safe_haven(BaseID id);
 /**
  * Checks if the ID is a valid base index (0-3).
  * Useful for array indexing (like baseRun[4]).
- * Equivalent to: id >= BASE_HOME && id <= BASE_THIRD
+ * Equivalent to: id >= BASE_HOME &&id <= BASE_THIRD
  */
 bool base_is_index(BaseID id);
 
@@ -44,7 +44,7 @@ bool base_is_index(BaseID id);
  * Checks if a base allows advancement (running forward).
  * True for HOME, FIRST, SECOND.
  * False for THIRD (can't advance to 4th base, you score instead), HOME_SCORED, NONE.
- * Replaces logic like: base >= 0 && base < 3
+ * Replaces logic like: base >= 0 &&base < 3
  */
 bool base_can_advance(BaseID id);
 

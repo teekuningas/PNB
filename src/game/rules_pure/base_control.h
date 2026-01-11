@@ -11,11 +11,11 @@
  * AND are physically at the base (baseId). This distinction matters for vapaataival
  * (free walk) where safety is granted immediately but control comes upon arrival.
  *
- * @param game Pointer to LocalGameInfo containing player and referee state.
+ * @param game Pointer to MatchSession containing player and referee state.
  * @param base The BaseID to check (BASE_HOME, BASE_FIRST, etc.)
  * @return The index of the player controlling the base, or -1 if none.
  */
-int get_base_controller(const LocalGameInfo* game, BaseID base);
+int get_base_controller(const MatchSession* game, BaseID base);
 
 /**
  * @brief Determines which base the ball is currently at/near.

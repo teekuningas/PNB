@@ -54,7 +54,7 @@ void drawPlayerRenderer(const StateInfo* stateInfo, const PlayerInfo *playerInfo
 		glDisable(GL_BLEND);
 		glEnable(GL_LIGHTING);
 		// and then there is the marker at the top of player who is controlled
-		if(i == stateInfo->localGameInfo->pII.controlIndex) {
+		if(i == stateInfo->match->pII.controlIndex) {
 			textureSelection(stateInfo, playerInfo[i].cPI.team, 0, 1, rm);
 			glPushMatrix();
 			glTranslatef((float)(alpha*playerInfo[i].tPI.location.x + (1-alpha)*playerInfo[i].tPI.lastLocation.x),
@@ -70,15 +70,15 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
 {
 	// Calculate who is currently batting to map "team" (role) to actual team index
 	// team 0 = batting team, team 1 = catching team
-	int battingTeamIndex = (stateInfo->globalGameInfo->inning +
-	                        stateInfo->globalGameInfo->playsFirst +
-	                        stateInfo->globalGameInfo->period) % 2;
+	int battingTeamIndex = (stateInfo->match->scoreboard.inning +
+	                        stateInfo->match->scoreboard.playsFirst +
+	                        stateInfo->match->scoreboard.period) % 2;
 	int actualTeamIndex = (team + battingTeamIndex) % 2;
 
 	// theres two types of texture selections, texture selection for player and texture selection for marker.
 	if(type == 0) {
 		char path[128];
-		int team_val = (stateInfo->globalGameInfo)->teams[actualTeamIndex].value;
+		int team_val = (&stateInfo->match->scoreboard)->teams[actualTeamIndex].value;
 		if(joker == 0) {
 			sprintf(path, "data/textures/team%d.tga", team_val);
 		} else {
@@ -89,7 +89,7 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
 	// and here, should we use green, blue or red ball on top of a player.
 	// depends on who controls.
 	else if(type == 1) {
-		int control = (stateInfo->globalGameInfo)->teams[actualTeamIndex].control;
+		int control = (&stateInfo->match->scoreboard)->teams[actualTeamIndex].control;
 		if(control == 0) {
 			glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"));
 		} else if(control == 1) {
@@ -105,9 +105,9 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
 	// and then we must select which mesh we use and call the corresponding display list.
 	// for animations we just use the animationStage, that is being updated in game_manipulation, as index
 	// in mesh arrays.
-	int animIndex = stateInfo->localGameInfo->playerInfo[index].cPI.animationStage / stateInfo->localGameInfo->playerInfo[index].cPI.animationFrequency;
+	int animIndex = stateInfo->match->playerInfo[index].cPI.animationStage / stateInfo->match->playerInfo[index].cPI.animationFrequency;
 	char path[128];
-	switch(stateInfo->localGameInfo->playerInfo[index].cPI.model) {
+	switch(stateInfo->match->playerInfo[index].cPI.model) {
 	case PLAYER_ANIM_STAND_NO_BALL:
 		glCallList(resource_manager_get_model(rm, "data/models/player_glove_without_ball_standing.obj"));
 		break;

@@ -6,7 +6,7 @@
 
 **Event System Status:** ✅ PERFECT - All patterns audited and verified. `catchMade`→`catchHasBeenMade` pattern working correctly. Unused `batterStartedRunning` removed.
 
-**Next:** Begin Phase 2 - Move mutation responsibilities to referee.c so it becomes the sole authority on `RefereeState` and `GameState`.
+**Next:** Begin Phase 2 - Move mutation responsibilities to referee.c so it becomes the sole authority on `RefereeState` and `HalfInningState`.
 
 **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete two-phase strategy.
 
@@ -54,8 +54,8 @@
 - **Note:** `GameFlowState` elimination deferred - will be addressed during Phase 2 when moving frame counters.
 
 ### 🚧 Milestone 17: Referee Consolidation (Next - Phase 2)
-- **Goal:** Make referee.c the sole authority on `RefereeState` and `GameState`.
-- **Principle:** **Limited Scope** - Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`). It only writes to `RefereeState`, `GameState`, and `GameControl`.
+- **Goal:** Make referee.c the sole authority on `RefereeState` and `HalfInningState`.
+- **Principle:** **Limited Scope** - Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`). It only writes to `RefereeState`, `HalfInningState`, and `GameControl`.
 - **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
 - **Current Status:** In Progress (Jan 11, 2026).
 - **Completed:**
@@ -63,9 +63,10 @@
     - ✅ Implemented `pitchResolutionProcessed` flag in `GameControl` for state cleanup synchronization.
     - ✅ Migrated free walk safety grants and run scoring to `referee.c`.
     - ✅ Added full-scenario integration tests for pitching and free walk resolution.
+    - ✅ **RENAMED STRUCTS:** `LocalGameInfo` -> `MatchSession`, `GameState` -> `HalfInningState`, `GlobalGameInfo` -> `Scoreboard` (embedded in MatchSession).
 - **Next Steps:**
     1. Redesign wounding state machine for frame independence.
-    2. Remove all RefereeState/GameState mutations from other systems.
+    2. Remove all RefereeState/HalfInningState mutations from other systems.
     3. **Eliminate Redundant State:** Remove `batterIndex` and rely on `PLAYER_STATE_AT_BAT`.
     4. **Enforce Consistency:** Update `StateValidator` to verify `BASE_HOME` implies `PLAYER_STATE_AT_BAT`.
 - **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.

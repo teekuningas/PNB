@@ -8,7 +8,7 @@ int test_batting_strategy_decision_tree()
 	printf("Running test: %s\n", __func__);
 
 	BattingStrategy s;
-	GameState gs = {0};
+	HalfInningState gs = {0};
 
 	// Period < 4, Strikes 0 -> Style 1, No run
 	gs.strikes = 0;

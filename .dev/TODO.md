@@ -19,7 +19,7 @@
 
 ## 🚧 Milestone 17: Referee Consolidation - Phase 2 (Next Steps)
 
-**Goal:** Make referee.c the sole authority on `RefereeState` and `GameState`.
+**Goal:** Make referee.c the sole authority on `RefereeState` and `HalfInningState`.
 
 **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` section "Phase 2: Referee Consolidation"
 
@@ -27,7 +27,7 @@
 - [ ] Move strike/ball counting from `game_manipulation.c` to referee (lines 116-120)
 - [ ] Move `outOfBounds` flag management to referee  
 - [ ] Move `endPeriod` flag setting to referee
-- [ ] Consolidate all `GameState.event` setting in referee
+- [ ] Consolidate all `HalfInningState.event` setting in referee
 
 ### Step 2: Event System Expansion (Medium Risk)
 - [x] Add event clearing mechanism ✅ DONE (`clearFrameEvents` in mutable_world.c)
@@ -74,6 +74,7 @@
 - [x] Eliminate `baseControlIndex` array
 - [x] Create `Referee_Analyze` (pure) and `Referee_Apply` (impure)
 - [x] Fix "frame-off" bug where player runs automatically due to delayed safety grant
+- [x] **Renaming Structs (Jan 11, 2026):** `LocalGameInfo` -> `MatchSession`, `GameState` -> `HalfInningState`, `GlobalGameInfo` -> `Scoreboard` (embedded in `MatchSession`).
 
 ## Test Infrastructure (Ongoing)
 

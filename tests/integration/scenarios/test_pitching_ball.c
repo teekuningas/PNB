@@ -14,7 +14,7 @@ int test_full_pitching_ball(void)
 	setup_batter_at_home(ctx, 0);
 
 	// Move Lukkari away
-	ctx->state->localGameInfo->playerInfo[12].tPI.location.x = 100.0f;
+	ctx->state->match->playerInfo[12].tPI.location.x = 100.0f;
 
 	printf("[TEST] Pitching BALL (Target X=1.0, PlateWidth=0.75)\n");
 	perform_pitch(ctx, 1.0f); // Wide right
@@ -23,10 +23,10 @@ int test_full_pitching_ball(void)
 	for (int i = 0; i < 200; i++) {
 		simulate_frames(ctx, 1);
 
-		if (ctx->state->localGameInfo->gameState.balls == 1) {
+		if (ctx->state->match->halfInningState.balls == 1) {
 			ballDetected = 1;
 			printf("[TEST] Frame %d: Ball detected! Count: %d-%d\n",
-			       i, ctx->state->localGameInfo->gameState.balls, ctx->state->localGameInfo->gameState.strikes);
+			       i, ctx->state->match->halfInningState.balls, ctx->state->match->halfInningState.strikes);
 			break;
 		}
 	}

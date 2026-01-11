@@ -223,7 +223,7 @@ void drawHomerunContestMenu(const HomerunContestState *state,
 		}
 	}
 
-	// --- Instructions & Continue ---
+	// --- Instructions &Continue ---
 	draw_text_2d("Continue", center_x, continue_y, subtitle_size, TEXT_ALIGN_CENTER, rs);
 
 	// --- Arrow ---

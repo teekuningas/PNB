@@ -9,7 +9,7 @@ typedef struct {
 	int runBatter;          // 0 or 1
 } BattingStrategy;
 
-BattingStrategy calculate_batting_strategy(const GameState* gameState, int fieldStatus, int power, int speed, int period);
+BattingStrategy calculate_batting_strategy(const HalfInningState* halfInningState, int fieldStatus, int power, int speed, int period);
 
 int should_change_batter(int fieldStatus, int power, int speed);
 

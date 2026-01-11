@@ -102,7 +102,7 @@ MenuStage updateHutunkeittoMenu(HutunkeittoState *state, const KeyStates *keySta
 		} else {
 			state->rightReady = 1;
 		}
-		if(state->leftReady == 1 && state->rightReady == 1) {
+		if(state->leftReady == 1 &&state->rightReady == 1) {
 			state->state = 4;
 		}
 	} else if(state->state == 4) {

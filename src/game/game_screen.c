@@ -35,8 +35,8 @@ int initGameScreen(StateInfo* stateInfo, ResourceManager* rm)
 
 	initCamSettings(stateInfo);
 
-	stateInfo->localGameInfo->uiState.lastMeterX = 0;
-	stateInfo->localGameInfo->uiState.lastSwingMeterX = 0;
+	stateInfo->match->uiState.lastMeterX = 0;
+	stateInfo->match->uiState.lastSwingMeterX = 0;
 
 	result = initLights(stateInfo);
 	if(result != 0) {
@@ -60,8 +60,8 @@ int initGameScreen(StateInfo* stateInfo, ResourceManager* rm)
 
 void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
-	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
+	BallInfo* ballInfo = &(stateInfo->match->ballInfo);
+	CameraState* cs = &(stateInfo->match->cameraState);
 	// if we just changed here, load basic settings.
 	if(stateInfo->changeScreen == 1) {
 		stateInfo->changeScreen = 0;
@@ -70,19 +70,19 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	}
 	// with home-key, one can return to main menu.
 	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-		if(stateInfo->localGameInfo->gameControl.pause == 0) {
-			stateInfo->localGameInfo->gameControl.pause = 1;
+		if(stateInfo->match->gameControl.pause == 0) {
+			stateInfo->match->gameControl.pause = 1;
 			StateValidator_Dump(stateInfo, "Manual Pause");
-		} else if(stateInfo->localGameInfo->gameControl.pause == 1) {
+		} else if(stateInfo->match->gameControl.pause == 1) {
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 			stateInfo->screen = SCREEN_MAIN_MENU;
 			menuInfo->mode = MENU_ENTRY_NORMAL;
 		}
 	}
-	if(stateInfo->localGameInfo->gameControl.pause == 1) {
+	if(stateInfo->match->gameControl.pause == 1) {
 		if(((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-			stateInfo->localGameInfo->gameControl.pause = 0;
+			stateInfo->match->gameControl.pause = 0;
 		}
 	}
 	// update camera
@@ -102,12 +102,12 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 
 	cs->camLocation.x = 0.1f*cs->camTargetLocation.x;
 	// if we are behind the homebase
-	if(stateInfo->localGameInfo->ballInfo.location.z > HOME_RADIUS) {
+	if(stateInfo->match->ballInfo.location.z > HOME_RADIUS) {
 		cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(cs->camTargetLocation.x)/3;
 		cs->camLocation.z = cs->camTargetLocation.z - 0.3f*cs->camTargetLocation.z + 12.0f + 15.0f + (float)fabs(cs->camTargetLocation.x)/2;
 	}
 	// if runner coming from third base
-	else if(stateInfo->localGameInfo->cameraState.homeRunCameraFlag == 0 ) {
+	else if(stateInfo->match->cameraState.homeRunCameraFlag == 0 ) {
 		cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f;
 		cs->camLocation.z = cs->camTargetLocation.z - 0.3f*cs->camTargetLocation.z + 12.0f;
 	}
@@ -119,11 +119,11 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	// cant update this at the drawing-function as that doesnt happen synchroniusly.
 	// so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
 	// we hit the threshold.
-	if(stateInfo->localGameInfo->uiState.gameInfoEventTimer != -1) {
-		stateInfo->localGameInfo->uiState.gameInfoEventTimer+=1;
+	if(stateInfo->match->uiState.gameInfoEventTimer != -1) {
+		stateInfo->match->uiState.gameInfoEventTimer+=1;
 
-		if(stateInfo->localGameInfo->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-			stateInfo->localGameInfo->uiState.gameInfoEventTimer = -1;
+		if(stateInfo->match->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
+			stateInfo->match->uiState.gameInfoEventTimer = -1;
 		}
 	}
 
@@ -136,7 +136,7 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* r
 {
 	// Ensure the 3D rendering state is correctly set up before drawing the game screen.
 	begin_3d_render(rs);
-	CameraState* cs = (CameraState*)&(stateInfo->localGameInfo->cameraState);
+	CameraState* cs = (CameraState*)&(stateInfo->match->cameraState);
 	Vector3D look, cam, skyBoxLook;
 
 	look.x = (float)(alpha*cs->camTargetLocation.x + (1-alpha)*cs->lastCamTargetLocation.x);
@@ -184,7 +184,7 @@ static int initLights(StateInfo* stateInfo)
 	float diffuse[] = {1.0f,1.0f,1.0f,1.0f};
 	float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
 	float specular[] = {1.0f, 1.0f,1.0f,1.0f};
-	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
+	CameraState* cs = &(stateInfo->match->cameraState);
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
@@ -216,7 +216,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	char str5[2] = "x";
 	float swingMeterX;
 	float meterX;
-	UIState* us = &(stateInfo->localGameInfo->uiState);
+	UIState* us = &(stateInfo->match->uiState);
 
 	// Layout Constants
 	const float BASE_Y = VIRTUAL_HEIGHT - 80.0f;
@@ -240,8 +240,8 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 	// OUTS (Far Left)
 	float outs_x = CENTER_X + OUTS_OFFSET_X;
-	if(stateInfo->globalGameInfo->period < 4) {
-		switch(stateInfo->localGameInfo->gameState.outs) {
+	if(stateInfo->match->scoreboard.period < 4) {
+		switch(stateInfo->match->halfInningState.outs) {
 		case 3:
 			printText2D("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
 			break;
@@ -260,10 +260,10 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	// INFO AREA (Left-Center)
 	float info_x = CENTER_X + INFO_OFFSET_X;
 
-	if(stateInfo->localGameInfo->gameState.event != EVENT_NONE) {
+	if(stateInfo->match->halfInningState.event != EVENT_NONE) {
 		us->gameInfoEventTimer = 0;
-		us->gameInfoEvent = (int)stateInfo->localGameInfo->gameState.event;
-		stateInfo->localGameInfo->gameState.event = EVENT_NONE;
+		us->gameInfoEvent = (int)stateInfo->match->halfInningState.event;
+		stateInfo->match->halfInningState.event = EVENT_NONE;
 	}
 
 	if(us->gameInfoEventTimer != -1) {
@@ -298,38 +298,38 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 			break;
 		}
 		printText2D(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
-	} else if(stateInfo->localGameInfo->gameControl.waitingForFreeWalkDecision == 1) {
+	} else if(stateInfo->match->gameControl.waitingForFreeWalkDecision == 1) {
 		printText2D("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
 	} else {
 		// Player selection info
 		int index;
 		int shouldContinue = 1;
-		if(stateInfo->globalGameInfo->period < 4) {
-			if(stateInfo->localGameInfo->pII.batterSelectionIndex == -1) shouldContinue = 0;
-			else index = stateInfo->localGameInfo->pII.batterSelectionIndex;
+		if(stateInfo->match->scoreboard.period < 4) {
+			if(stateInfo->match->pII.batterSelectionIndex == -1) shouldContinue = 0;
+			else index = stateInfo->match->pII.batterSelectionIndex;
 		} else {
-			int battingTeamIndex = (stateInfo->globalGameInfo->
-			                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-			index = stateInfo->globalGameInfo->teams[battingTeamIndex].
-			        batterRunnerIndices[0][stateInfo->localGameInfo->gameModeState.runnerBatterPairCounter];
+			int battingTeamIndex = (stateInfo->match->scoreboard.
+			                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
+			index = stateInfo->match->scoreboard.teams[battingTeamIndex].
+			        batterRunnerIndices[0][stateInfo->match->gameModeState.runnerBatterPairCounter];
 			if(index == -1) shouldContinue = 0;
 		}
 		if(shouldContinue == 1) {
-			int speed = stateInfo->localGameInfo->playerInfo[index].bTPI.speed;
-			int power = stateInfo->localGameInfo->playerInfo[index].bTPI.power;
+			int speed = stateInfo->match->playerInfo[index].bTPI.speed;
+			int power = stateInfo->match->playerInfo[index].bTPI.power;
 			char p_str[32];
 			sprintf(p_str, "S%d P%d", speed, power);
 			printText2D(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker != JOKER_REGULAR && stateInfo->globalGameInfo->period < 4) {
+			if(stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&stateInfo->match->scoreboard.period < 4) {
 				str5[0] = 'J';
 			} else {
-				str5[0] = (char)(((int)'0')+stateInfo->localGameInfo->playerInfo[index].bTPI.number);
+				str5[0] = (char)(((int)'0')+stateInfo->match->playerInfo[index].bTPI.number);
 			}
 			// Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
 			printText2D(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
-			str4 = stateInfo->localGameInfo->playerInfo[index].bTPI.name;
+			str4 = stateInfo->match->playerInfo[index].bTPI.name;
 			printText2D(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
 		}
 	}
@@ -339,8 +339,8 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 	// Inning
 	char inn_str[16] = "I  ";
-	if(stateInfo->globalGameInfo->period < 4) {
-		inn_str[2] = (char)(((int)'0')+ stateInfo->globalGameInfo->inning/2 + 1);
+	if(stateInfo->match->scoreboard.period < 4) {
+		inn_str[2] = (char)(((int)'0')+ stateInfo->match->scoreboard.inning/2 + 1);
 	} else {
 		inn_str[2] = '0';
 	}
@@ -348,21 +348,21 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 	// Balls
 	char ball_str[16] = "B  ";
-	if(stateInfo->localGameInfo->gameState.balls < 10) {
-		ball_str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gameState.balls);
+	if(stateInfo->match->halfInningState.balls < 10) {
+		ball_str[2] = (char)(((int)'0')+stateInfo->match->halfInningState.balls);
 	} else {
-		sprintf(ball_str, "B%d", stateInfo->localGameInfo->gameState.balls);
+		sprintf(ball_str, "B%d", stateInfo->match->halfInningState.balls);
 	}
 	printText2D(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
 	// Strikes
 	char strike_str[16] = "S  ";
-	strike_str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gameState.strikes);
+	strike_str[2] = (char)(((int)'0')+stateInfo->match->halfInningState.strikes);
 	printText2D(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
 	// Runs
 	char runs_str[32];
-	sprintf(runs_str, "R %d - %d", stateInfo->globalGameInfo->teams[0].runs, stateInfo->globalGameInfo->teams[1].runs);
+	sprintf(runs_str, "R %d - %d", stateInfo->match->scoreboard.teams[0].runs, stateInfo->match->scoreboard.teams[1].runs);
 	printText2D(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
 
 
@@ -375,8 +375,8 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/meter.tga"), meter_screen_x, meter_y, meter_w, meter_h);
 
 	// Meter Markers
-	meterX = 0.16f*stateInfo->localGameInfo->pRAI.meterValue;
-	swingMeterX = 0.16f*stateInfo->localGameInfo->pRAI.swingMeterValue;
+	meterX = 0.16f*stateInfo->match->pRAI.meterValue;
+	swingMeterX = 0.16f*stateInfo->match->pRAI.swingMeterValue;
 
 	float field_marker_x = meter_screen_x + (alpha*meterX + (1-alpha)*us->lastMeterX) / 0.16f * meter_w;
 	float swing_marker_x = meter_screen_x + (alpha*swingMeterX + (1-alpha)*us->lastSwingMeterX) / 0.16f * meter_w;
@@ -399,32 +399,32 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 	// Base Runners
 	for(int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		int index = i;
-		if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId != BASE_NONE) {
+		if(stateInfo->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
 			float phase = 0.0f;
 			BaseID base = BASE_HOME;
 			float distance;
 			// Logic copied from original
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME) {
-				if(stateInfo->localGameInfo->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
+			if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
+				if(stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
 					phase = 0.0f;
 				} else {
 					distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
-					phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
+					phase = (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
 				}
 				base = BASE_HOME;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_FIRST) {
+			} else if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
 				distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) / distance;
+				phase = (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) / distance;
 				base = BASE_FIRST;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_SECOND) {
+			} else if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
 				distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) / distance;
+				phase = (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) / distance;
 				base = BASE_SECOND;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_THIRD) {
+			} else if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
 				distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) / distance;
+				phase = (stateInfo->match->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) / distance;
 				base = BASE_THIRD;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+			} else if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 				phase = 0.0f;
 				base = BASE_HOME_SCORED;
 			}
@@ -442,7 +442,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 
 static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-	stateInfo->localGameInfo->uiState.gameInfoEventTimer = -1;
+	stateInfo->match->uiState.gameInfoEventTimer = -1;
 	// initialize cam
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
@@ -451,7 +451,7 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 
 static void initCamSettings(StateInfo* stateInfo)
 {
-	CameraState* cs = &(stateInfo->localGameInfo->cameraState);
+	CameraState* cs = &(stateInfo->match->cameraState);
 
 	cs->lastCamTargetLocation.x = 0.0f;
 	cs->lastCamTargetLocation.y = 0.0f;

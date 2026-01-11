@@ -480,7 +480,7 @@ typedef struct _PlayerIndexInfo {
 } PlayerIndexInfo;
 
 // MILESTONE 7.5 - Focused Structs
-typedef struct _GameState {
+typedef struct _HalfInningState {
 	int outs;
 	int balls;
 	int strikes;
@@ -488,7 +488,7 @@ typedef struct _GameState {
 	GameEventType event;
 	int outOfBounds; // Rule state: ball is out of bounds
 	int endPeriod;   // Rule state: period should end
-} GameState;
+} HalfInningState;
 
 // MILESTONE 16 (Phase 1): Transient event notifications
 // Events are set this frame, cleared next frame
@@ -630,7 +630,7 @@ typedef struct _GameFlowState {
 	int nextPairCounter;
 	int foulPlayEventFlag;
 	int homeRunCameraCounter;
-	int ballHome;    // Moved from GameState (Logic state: ball is at home base)
+	int ballHome;    // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
 
 typedef struct _PendingActionState {
@@ -707,7 +707,7 @@ typedef struct _PlayerRelatedActionInfo {
 
 } PlayerRelatedActionInfo;
 
-typedef struct _GlobalGameInfo {
+typedef struct _Scoreboard {
 	TeamInfo teams[2];
 	int halfInningsInPeriod;
 	int inning;
@@ -716,16 +716,16 @@ typedef struct _GlobalGameInfo {
 	int pairCount;
 	int playsFirst;
 	int isCupGame;
-} GlobalGameInfo;
+} Scoreboard;
 
-typedef struct _LocalGameInfo {
+typedef struct _MatchSession {
 	PlayerInfo playerInfo[2*PLAYERS_IN_TEAM + JOKER_COUNT];
 	PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
 	RefereeState referee; // Milestone 12 - Referee State
 	ActionFlags aF;
 	PlayerIndexInfo pII;
 	PlayerRelatedActionInfo pRAI;
-	GameState gameState; // MILESTONE 7.5 - New core state
+	HalfInningState halfInningState; // MILESTONE 7.5 - New core state
 	GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
 	GameControl gameControl; // MILESTONE 16 - Control flags (Phase 1)
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
@@ -737,8 +737,9 @@ typedef struct _LocalGameInfo {
 	UIState uiState; // Milestone 11 - UI state
 	GroundUnit groundUnit[GROUND_UNIT_COUNT];
 	BallInfo ballInfo;
+	Scoreboard scoreboard;
 
-} LocalGameInfo;
+} MatchSession;
 
 typedef struct _GameConclusion {
 	int winner;
@@ -766,8 +767,7 @@ typedef struct _StateInfo {
 	KeyStates *keyStates;
 	TeamData *teamData;
 	FieldPositions *fieldPositions;
-	LocalGameInfo* localGameInfo;
-	GlobalGameInfo* globalGameInfo;
+	MatchSession* match;
 	Cup* cup;                  // New dynamic tournament state
 	GameConclusion* gameConclusion;
 } StateInfo;

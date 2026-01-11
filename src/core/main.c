@@ -22,8 +22,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 
 static MenuData menuData;
 static StateInfo stateInfo;
-static LocalGameInfo localGameInfo;
-static GlobalGameInfo globalGameInfo;
+static MatchSession match;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
 static KeyStates keyStates;
@@ -62,7 +61,7 @@ int main ( int argc, char *argv[] )
 		if(strcmp(argv[i], "--no-sound") == 0) {
 			soundEnabled = 0;
 		}
-		if(strcmp(argv[i], "--debug-state") == 0 && i + 1 < argc) {
+		if(strcmp(argv[i], "--debug-state") == 0 &&i + 1 < argc) {
 			StateValidator_Init(argv[i+1]);
 			printf("State Validation ENABLED. Output: %s\n", argv[i+1]);
 			i++;
@@ -72,8 +71,7 @@ int main ( int argc, char *argv[] )
 	printf("v. 1.5 beta\n");
 
 	// Initialize stateInfo structure
-	stateInfo.localGameInfo = &localGameInfo;
-	stateInfo.globalGameInfo = &globalGameInfo;
+	stateInfo.match = &match;
 	stateInfo.gameConclusion = &gameConclusion;
 	stateInfo.keyStates = &keyStates;
 	stateInfo.fieldPositions = &fieldPositions;
@@ -356,22 +354,22 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set period state (super inning = period 2)
-		stateInfo->globalGameInfo->isCupGame = 0;
-		stateInfo->globalGameInfo->period = 2;
+		stateInfo->match->scoreboard.isCupGame = 0;
+		stateInfo->match->scoreboard.period = 2;
 		// Inning counter: period 2 starts after period 0 and 1 complete
 		// Each period uses halfInningsInPeriod half-innings
 		// So period 2 starts at: 2 * halfInningsInPeriod
-		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2;
+		stateInfo->match->scoreboard.inning = stateInfo->match->scoreboard.halfInningsInPeriod * 2;
 
 		// Set prior period scores (for realistic display in game over screen)
-		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[0].runs = 0;
-		stateInfo->globalGameInfo->teams[1].runs = 0;
+		stateInfo->match->scoreboard.teams[0].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[0].runs = 0;
+		stateInfo->match->scoreboard.teams[1].runs = 0;
 
 	} else if (strcmp(request->name, "homerun-contest") == 0) {
 		// Create homerun contest game setup
@@ -383,24 +381,24 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set period state (homerun = period 4)
-		stateInfo->globalGameInfo->isCupGame = 0;
-		stateInfo->globalGameInfo->period = 4;
+		stateInfo->match->scoreboard.isCupGame = 0;
+		stateInfo->match->scoreboard.period = 4;
 		// Inning counter: when super-inning ends, inning is at halfInningsInPeriod*2 + 2
 		// For 8 half-innings: inning = 10 (even)
 		// This makes team 0 bat first: (10 + 0 + 4) % 2 = 0
-		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2 + 2;
+		stateInfo->match->scoreboard.inning = stateInfo->match->scoreboard.halfInningsInPeriod * 2 + 2;
 
 		// Set prior period scores (for realistic display in game over screen)
-		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period3Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period3Runs = 0;
-		stateInfo->globalGameInfo->teams[0].runs = 0;
-		stateInfo->globalGameInfo->teams[1].runs = 0;
+		stateInfo->match->scoreboard.teams[0].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period3Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period3Runs = 0;
+		stateInfo->match->scoreboard.teams[0].runs = 0;
+		stateInfo->match->scoreboard.teams[1].runs = 0;
 
 	} else if (strcmp(request->name, "cup-final-super-inning") == 0) {
 		// This fixture starts a playable super-inning in the final match of a cup.
@@ -412,7 +410,7 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
 
 		// Set up the tournament context with a full, plausible history using the new API
-		stateInfo->globalGameInfo->isCupGame = 1;
+		stateInfo->match->scoreboard.isCupGame = 1;
 
 		// Specific seeding for this test fixture: alternates top and bottom bracket
 		// Creates matchups: (0v2), (4v6), (1v3), (5v7) in quarter-finals
@@ -440,18 +438,18 @@ static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, Me
 		stateInfo->currently_played_cup_match_index = 0;
 
 		// Set game state to a super-inning
-		stateInfo->globalGameInfo->period = 2;
-		stateInfo->globalGameInfo->inning = stateInfo->globalGameInfo->halfInningsInPeriod * 2;
+		stateInfo->match->scoreboard.period = 2;
+		stateInfo->match->scoreboard.inning = stateInfo->match->scoreboard.halfInningsInPeriod * 2;
 
 		// Set prior period scores to 0 for a clean super-inning
-		stateInfo->globalGameInfo->teams[0].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period0Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period1Runs = 0;
-		stateInfo->globalGameInfo->teams[0].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[1].period2Runs = 0;
-		stateInfo->globalGameInfo->teams[0].runs = 0;
-		stateInfo->globalGameInfo->teams[1].runs = 0;
+		stateInfo->match->scoreboard.teams[0].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period0Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period1Runs = 0;
+		stateInfo->match->scoreboard.teams[0].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[1].period2Runs = 0;
+		stateInfo->match->scoreboard.teams[0].runs = 0;
+		stateInfo->match->scoreboard.teams[1].runs = 0;
 
 		// Jump directly to game screen
 		stateInfo->screen = SCREEN_GAME;

@@ -14,7 +14,7 @@
 int test_full_free_walk_resolution(void)
 {
 	ScenarioContext* ctx = create_scenario();
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 
 	// 1. Setup: Runner at 1st base
 	int runnerIdx = 0;

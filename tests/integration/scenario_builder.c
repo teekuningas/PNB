@@ -33,10 +33,10 @@ ScenarioContext* create_scenario(void)
 	setup.playsFirst = 0;
 
 	initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
-	initGameAnalysis(&(ctx->state->localGameInfo->gameFlowState));
+	initGameAnalysis(&(ctx->state->match->gameFlowState));
 
 	// Initialize referee state properly
-	initializeRefereeState(&ctx->state->localGameInfo->referee);
+	initializeRefereeState(&ctx->state->match->referee);
 
 	ctx->currentFrame = 0;
 
@@ -49,7 +49,7 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 		return;
 	}
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 	FieldPositions* field = ctx->state->fieldPositions;
 
 	// Determine physical start and end positions
@@ -118,7 +118,7 @@ void place_ball_at_location(ScenarioContext* ctx, Vector3D location)
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 
 	game->ballInfo.location = location;
 	game->ballInfo.lastLocation = location;
@@ -133,7 +133,7 @@ void give_ball_to_fielder(ScenarioContext* ctx, int fielderIndex)
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 
 	// Put ball at fielder's location
 	game->ballInfo.location = game->playerInfo[fielderIndex].tPI.location;
@@ -148,7 +148,7 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
 	if (!ctx || !ctx->state) return;
 
 	// Call the game's base-running machinery
-	runToNextBase(ctx->state->localGameInfo, ctx->state->fieldPositions, playerIndex, fromBase);
+	runToNextBase(ctx->state->match, ctx->state->fieldPositions, playerIndex, fromBase);
 }
 
 void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase)
@@ -159,19 +159,19 @@ void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, 
 	// Note: runToPreviousBase treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base 3).
 	// But the game logic's `runToPreviousBase` actually takes `BaseID base` as the "current base" or "base we are retreating FROM"?
 	// Let's check common_logic.c:
-	// void runToPreviousBase(LocalGameInfo* localGameInfo, FieldPositions* fieldPositions, int index, BaseID base)
+	// void runToPreviousBase(MatchSession* match, FieldPositions* fieldPositions, int index, BaseID base)
 	// if(base == BASE_HOME) ... target = ready pos
 	// if(base == BASE_FIRST) ... target = firstBaseRun
 	// So `base` is the destination base.
 
-	runToPreviousBase(ctx->state->localGameInfo, ctx->state->fieldPositions, playerIndex, toBase);
+	runToPreviousBase(ctx->state->match, ctx->state->fieldPositions, playerIndex, toBase);
 }
 
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 
 	// Physical state: at home plate
 	game->playerInfo[playerIndex].tPI.location = ctx->state->fieldPositions->pitchPlate;
@@ -200,8 +200,8 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
-		LocalGameInfo* game = ctx->state->localGameInfo;
-		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
+		MatchSession* game = ctx->state->match;
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameModeState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		if (condition(ctx)) {
@@ -233,8 +233,8 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 		gameManipulation(ctx->state);
 
 		// Milestone 14: Rules engine must run after physics to reconcile state
-		LocalGameInfo* game = ctx->state->localGameInfo;
-		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
+		MatchSession* game = ctx->state->match;
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameModeState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		// Clear transient events for next frame (Critical for correct event loop)
@@ -261,7 +261,7 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 	FieldPositions* field = ctx->state->fieldPositions;
 
 // Get target position based on base
@@ -320,7 +320,7 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 
 	// Calculate direction
 	float dx = targetLocation.x - fromLocation.x;
@@ -366,7 +366,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 {
 	if (!ctx || !ctx->state) return;
 
-	LocalGameInfo* game = ctx->state->localGameInfo;
+	MatchSession* game = ctx->state->match;
 	FieldPositions* field = ctx->state->fieldPositions;
 
 	// 1. Locate Pitcher
@@ -406,7 +406,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 	game->gameEvents.pitchReleased = 1; // Signal event
 
 	// 5. Referee Snapshots (Minimal implementation)
-	game->referee.strikesAtPitchStart = game->gameState.strikes;
+	game->referee.strikesAtPitchStart = game->halfInningState.strikes;
 
 	// Snapshot active runners
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {

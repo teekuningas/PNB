@@ -5,7 +5,7 @@
 // Test: Batter should change when strikes >= 3
 static int test_three_strikes()
 {
-	GameState gs = {0};
+	HalfInningState gs = {0};
 	gs.strikes = 3;
 	int result = should_change_batter_on_strikes(&gs);
 	ASSERT_EQ(1, result, "Batter should change with 3 strikes");
@@ -20,7 +20,7 @@ static int test_three_strikes()
 // Test: Batter should not change when strikes < 3
 static int test_fewer_than_three_strikes()
 {
-	GameState gs = {0};
+	HalfInningState gs = {0};
 	gs.strikes = 0;
 	ASSERT_EQ(0, should_change_batter_on_strikes(&gs), "Should not change with 0 strikes");
 	gs.strikes = 1;
