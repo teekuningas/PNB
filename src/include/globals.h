@@ -509,10 +509,6 @@ typedef struct _GameEvents {
 	int freeWalkAccepted;        // Player accepted free walk
 	int freeWalkRejected;        // Player rejected free walk
 	int outOfBoundsOccurred;     // Ball went out of bounds
-
-	// Context (who/where these events happened)
-	int eventPlayerIndex;
-	BaseID eventBase;
 } GameEvents;
 
 // MILESTONE 16 (Phase 1): Stateful coordination flags

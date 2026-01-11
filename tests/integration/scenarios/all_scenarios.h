@@ -10,6 +10,7 @@ int test_full_tuplahaava_late_arrival_between_bases(void);
 int test_full_out_of_bounds_reset(void);
 int test_full_pitching_strike(void);
 int test_full_pitching_ball(void);
+int test_full_free_walk_resolution(void);
 
 #endif // ALL_SCENARIOS_H
 

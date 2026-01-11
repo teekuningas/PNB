@@ -36,9 +36,9 @@
 - [ ] Add more events as needed (e.g., `batterOut`, `runnerOut`)
 
 ### Step 3: Free Walk Refactor (Medium Risk)
-- [ ] Use `freeWalkAccepted/Rejected` events (already defined!)
-- [ ] Move safety grants from `action_implementation.c:227-283` to referee
-- [ ] Move run scoring from `action_implementation.c:233-241` to referee
+- [x] Use `freeWalkAccepted/Rejected` events (already defined!)
+- [x] Move safety grants from `action_implementation.c:227-283` to referee
+- [x] Move run scoring from `action_implementation.c:233-241` to referee
 
 ### Step 4: Wounding Redesign (HIGH RISK - Last)
 - [ ] Design state machine (or time-based approach) to replace frame counter

@@ -218,36 +218,10 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 			// gave him the right to go to just that base.
 			// so if he still has the same base as before we can go on
 			if(stateInfo->globalGameInfo->period >= 4) {
-				// for a guy who is at the third base, baseAtPitchStart will be 4
-				int battingTeamIndex = (stateInfo->globalGameInfo->
-				                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-				int catchingTeamIndex = (battingTeamIndex+1)%2;
+				// REFEREE MIGRATION: Logic moved to referee.c
+				// We just signal the event here.
+				stateInfo->localGameInfo->gameEvents.freeWalkAccepted = 1;
 
-				// Referee Update (Milestone 12)
-				stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME_SCORED;
-				stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
-				stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_HOME_SCORED;
-
-				// add a run
-				stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-				stateInfo->localGameInfo->gameState.runsInTheInning += 1;
-
-				if(stateInfo->localGameInfo->gameState.balls >= 3) {
-					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-					stateInfo->localGameInfo->gameState.runsInTheInning += 1;
-					stateInfo->localGameInfo->gameState.event = EVENT_TWO_RUNS_SCORED;
-				} else {
-					// set info to screen
-					stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
-				}
-
-				if((stateInfo->globalGameInfo->inning + 1)%2 == 0) {
-					if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
-					        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-						stateInfo->localGameInfo->gameState.endPeriod = 1;
-					}
-				}
-				stateInfo->localGameInfo->gameModeState.forceNextPair = 1;
 			} else {
 				BaseID currentBaseId = stateInfo->localGameInfo->playerInfo[index].bTPI.baseId;
 
@@ -264,49 +238,9 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 						stateInfo->localGameInfo->pII.batterIndex = -1;
 					}
 				}
-				// we also set here the baseAtPitchStart for freewalkers to be the following base, so that
-				// in out of bounds situations these players will be at correct bases in post foul play world
-				if(base != BASE_THIRD) {
-					// Referee Update (Milestone 12)
-					stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = base_get_next(base);
-					stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
-					stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = base_get_next(base);
-				} else {
-					// for a guy who is at the third base, baseAtPitchStart will be 4
-					int battingTeamIndex = (stateInfo->globalGameInfo->
-					                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-					int catchingTeamIndex = (battingTeamIndex+1)%2;
-
-					// Referee Update (Milestone 12)
-					stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME_SCORED;
-					stateInfo->localGameInfo->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
-					stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_HOME_SCORED;
-
-					// add a run
-					stateInfo->globalGameInfo->teams[battingTeamIndex].runs += 1;
-					stateInfo->localGameInfo->gameState.runsInTheInning += 1;
-					if(stateInfo->localGameInfo->gameState.runsInTheInning%2 == 0) {
-						stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-						stateInfo->localGameInfo->playerCounters.noMorePlayers = 0;
-					}
-					// set info to screen
-					stateInfo->localGameInfo->gameState.event = EVENT_RUN_SCORED;
-
-					if((stateInfo->globalGameInfo->inning + 1)%stateInfo->globalGameInfo->halfInningsInPeriod == 0 ||
-					        stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 + 2) {
-						if(stateInfo->globalGameInfo->teams[battingTeamIndex].runs >
-						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs) {
-							stateInfo->localGameInfo->gameState.endPeriod = 1;
-						}
-						if(stateInfo->globalGameInfo->inning + 1 == stateInfo->globalGameInfo->halfInningsInPeriod*2 &&
-						        stateInfo->globalGameInfo->teams[battingTeamIndex].period0Runs >
-						        stateInfo->globalGameInfo->teams[catchingTeamIndex].period0Runs &&
-						        stateInfo->globalGameInfo->teams[catchingTeamIndex].runs ==
-						        stateInfo->globalGameInfo->teams[battingTeamIndex].runs ) {
-							stateInfo->localGameInfo->gameState.endPeriod = 1;
-						}
-					}
-				}
+				// REFEREE MIGRATION: Logic moved to referee.c
+				// We just signal the event here.
+				stateInfo->localGameInfo->gameEvents.freeWalkAccepted = 1;
 			}
 		}
 	}

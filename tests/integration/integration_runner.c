@@ -21,6 +21,7 @@ void run_full_scenario_tests(void)
 	RUN_TEST(test_full_out_of_bounds_reset);
 	RUN_TEST(test_full_pitching_strike);
 	RUN_TEST(test_full_pitching_ball);
+	RUN_TEST(test_full_free_walk_resolution);
 }
 
 int main(int argc, char* argv[])

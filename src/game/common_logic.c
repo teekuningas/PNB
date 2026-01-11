@@ -845,8 +845,6 @@ void clearFrameEvents(GameEvents* events)
 	events->freeWalkAccepted = 0;
 	events->freeWalkRejected = 0;
 	events->outOfBoundsOccurred = 0;
-	events->eventPlayerIndex = -1;
-	events->eventBase = BASE_NONE;
 }
 
 // these should be kept when foul play

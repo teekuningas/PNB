@@ -30,7 +30,8 @@ Other systems:
 ✅ **Phase 2 In Progress:** Referee Consolidation
 - **Strike/Ball Counting:** Migrated from `game_manipulation.c` to `referee.c` (Milestone 17).
 - **Pitch Resolution:** Referee adjudicates Strike/Ball based on `ballHitGround` event. `reconcile` cleans up `pitchState` via `pitchResolutionProcessed` flag.
-- **Next:** Free Walk migration and Wounding logic redesign.
+- **Free Walk:** Migrated safety grants and run scoring to `referee.c` (using `gameEvents.freeWalkAccepted`).
+- **Next:** Wounding logic redesign.
 
 ---
 
@@ -70,7 +71,7 @@ This ensures:
 - Move `endPeriod` flag setting to referee.
 - Consolidate all `GameState.event` setting in referee.
 
-#### 2.2 Medium Difficulty: Free Walk Refactor
+#### 2.2 Medium Difficulty: Free Walk Refactor ✅ DONE
 **Problem:** `action_implementation.c` immediately:
 - Grants safety: `referee.battingPlayers[i].currentSafetyBase = base_get_next(base)`
 - Scores runs: `gameState->runsInTheInning += 1`

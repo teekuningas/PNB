@@ -61,11 +61,11 @@
 - **Completed:**
     - ✅ Moved strike/ball counting from `game_manipulation.c` to `referee.c`.
     - ✅ Implemented `pitchResolutionProcessed` flag in `GameControl` for state cleanup synchronization.
-    - ✅ Added full-scenario integration tests for pitching (Strike/Ball) and out-of-bounds reset.
+    - ✅ Migrated free walk safety grants and run scoring to `referee.c`.
+    - ✅ Added full-scenario integration tests for pitching and free walk resolution.
 - **Next Steps:**
-    1. Migrate free walk safety grants and run scoring.
-    2. Redesign wounding state machine for frame independence.
-    3. Remove all RefereeState/GameState mutations from other systems.
+    1. Redesign wounding state machine for frame independence.
+    2. Remove all RefereeState/GameState mutations from other systems.
 - **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.
 
 ### 🔮 Milestone 18: Game Manipulation Decomposition

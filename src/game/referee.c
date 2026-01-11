@@ -327,6 +327,82 @@ static void update_pitch_resolution(const StateInfo* stateInfo, GameState* gameS
 	}
 }
 
+static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, GameState* gameState, GameModeState* gameModeState, PlayerCounters* playerCounters, GlobalGameInfo* globalGameInfo, GameControl* gameControl, const GameEvents* events)
+{
+	// 6. Free Walk Resolution
+	if (events->freeWalkAccepted && gameControl->freeWalkIndex != -1) {
+		int i = gameControl->freeWalkIndex;
+		BaseID sourceBase = gameControl->freeWalkBase;
+		int battingTeamIndex = (globalGameInfo->inning + globalGameInfo->playsFirst + globalGameInfo->period) % 2;
+		int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+
+		if (globalGameInfo->period >= 4) {
+			// Homerun Contest / Super Inning Logic
+			referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
+			referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
+			referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
+
+			// Add run
+			globalGameInfo->teams[battingTeamIndex].runs += 1;
+			gameState->runsInTheInning += 1;
+
+			if (gameState->balls >= 3) {
+				globalGameInfo->teams[battingTeamIndex].runs += 1;
+				gameState->runsInTheInning += 1;
+				gameState->event = EVENT_TWO_RUNS_SCORED;
+			} else {
+				gameState->event = EVENT_RUN_SCORED;
+			}
+
+			// Period End Check
+			if ((globalGameInfo->inning + 1) % 2 == 0) {
+				if (globalGameInfo->teams[battingTeamIndex].runs > globalGameInfo->teams[catchingTeamIndex].runs) {
+					gameState->endPeriod = 1;
+				}
+			}
+			gameModeState->forceNextPair = 1;
+
+		} else {
+			// Normal Game Logic
+			if (sourceBase != BASE_THIRD) {
+				// Advance to next base
+				BaseID targetBase = base_get_next(sourceBase);
+				referee->battingPlayers[i].baseAtPitchStart = targetBase;
+				referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
+				referee->battingPlayers[i].currentSafetyBase = targetBase;
+			} else {
+				// Score from 3rd base
+				referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
+				referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
+				referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
+
+				// Add run
+				globalGameInfo->teams[battingTeamIndex].runs += 1;
+				gameState->runsInTheInning += 1;
+
+				if (gameState->runsInTheInning % 2 == 0) {
+					playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+					playerCounters->noMorePlayers = 0;
+				}
+				gameState->event = EVENT_RUN_SCORED;
+
+				// Period End Check
+				if ((globalGameInfo->inning + 1) % globalGameInfo->halfInningsInPeriod == 0 ||
+				        globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 + 2) {
+					if (globalGameInfo->teams[battingTeamIndex].runs > globalGameInfo->teams[catchingTeamIndex].runs) {
+						gameState->endPeriod = 1;
+					}
+					if (globalGameInfo->inning + 1 == globalGameInfo->halfInningsInPeriod * 2 &&
+					        globalGameInfo->teams[battingTeamIndex].period0Runs > globalGameInfo->teams[catchingTeamIndex].period0Runs &&
+					        globalGameInfo->teams[catchingTeamIndex].runs == globalGameInfo->teams[battingTeamIndex].runs) {
+						gameState->endPeriod = 1;
+					}
+				}
+			}
+		}
+	}
+}
+
 static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, GameState* gameState, const GameEvents* events, GameControl* gameControl)
 {
 	// 6. Game State Flags
@@ -392,6 +468,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Game
 	// 4. Strikes
 	update_strikes(refereeState, gameState, &stateInfo->localGameInfo->gameEvents);
 	update_pitch_resolution(stateInfo, gameState, gameControl, &stateInfo->localGameInfo->gameEvents);
+	update_free_walk_resolution(stateInfo, refereeState, gameState, gameModeState, playerCounters, globalGameInfo, gameControl, &stateInfo->localGameInfo->gameEvents);
 
 	// 5. Game State Flags
 	update_game_state_flags((StateInfo*)stateInfo, refereeState, gameState, &stateInfo->localGameInfo->gameEvents, gameControl);

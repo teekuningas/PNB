@@ -7,7 +7,7 @@
 #include "common_logic.h"
 #include "referee.h"
 #include "action_implementation.h"
-#include "action_implementation.h"
+#include "action_invocations.h"
 #include "vector_math.h"
 #include <stdlib.h>
 #include <string.h>
@@ -198,15 +198,19 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 
 	for (int i = 0; i < maxFrames; i++) {
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
+		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 		LocalGameInfo* game = ctx->state->localGameInfo;
 		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
 		reconcileLegalAndPhysicalState(ctx->state);
-		ctx->currentFrame++;
 
 		if (condition(ctx)) {
-			return i + 1;  // Return frames taken
+			clearFrameEvents(&game->gameEvents); // Clear events before returning
+			return i + 1;
 		}
+
+		clearFrameEvents(&game->gameEvents);
+		ctx->currentFrame++;
 	}
 
 	return maxFrames;  // Timed out
@@ -225,12 +229,16 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 	for (int i = 0; i < maxFrames; i++) {
 		// Run game progression
 		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
+		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 
 		// Milestone 14: Rules engine must run after physics to reconcile state
 		LocalGameInfo* game = ctx->state->localGameInfo;
 		Referee_Update(ctx->state, &game->referee, &game->gameState, &game->gameModeState, &game->gameControl, &game->playerCounters, ctx->state->globalGameInfo);
 		reconcileLegalAndPhysicalState(ctx->state);
+
+		// Clear transient events for next frame (Critical for correct event loop)
+		clearFrameEvents(&game->gameEvents);
 
 		ctx->currentFrame++;
 	}
