@@ -12,6 +12,7 @@
 #include "rules_strikes.h"
 #include "base_logic.h"
 #include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 #define BASE_RADIUS 2.0f
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
@@ -77,7 +78,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 	// so this will be called only once when possible.
 	if(stateInfo->globalGameInfo->period >= 4) {
 
-	} else if(stateInfo->localGameInfo->pII.batterIndex == -1 && stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 0 &&
+	} else if(get_active_batter_index(stateInfo->localGameInfo) == -1 && stateInfo->localGameInfo->gameControl.waitingForBatterDecision == 0 &&
 	          stateInfo->localGameInfo->gameFlowState.endOfInningCounter == -1) {
 		// there have to be a player available
 		if(stateInfo->localGameInfo->playerCounters.nonJokerPlayersLeft + stateInfo->localGameInfo->playerCounters.jokersLeft > 0) {
@@ -360,13 +361,11 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 								stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_NONE;
 
 								// new batter needed.
-								stateInfo->localGameInfo->pII.batterIndex = -1;
 							} else {
 								// otherwise, this player will continue batting.
 								// Restore strikes to (start + 1) because this foul counts as a strike.
 								stateInfo->localGameInfo->gameState.strikes = stateInfo->localGameInfo->referee.strikesAtPitchStart + 1;
 
-								stateInfo->localGameInfo->pII.batterIndex = index;
 								// preparing left to function that will do it just fine.
 								prepareBatter(stateInfo->localGameInfo);
 							}
@@ -558,7 +557,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
 		int runnerAtThirdIndex = get_base_controller(stateInfo->localGameInfo, BASE_THIRD);
-		if((stateInfo->localGameInfo->gameFlowState.ballHome == 1 && stateInfo->localGameInfo->pII.batterIndex == -1 &&
+		if((stateInfo->localGameInfo->gameFlowState.ballHome == 1 && get_active_batter_index(stateInfo->localGameInfo) == -1 &&
 		        stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||
 		        (runnerAtThirdIndex == -1 &&
 		         stateInfo->localGameInfo->gameModeState.canMakeRunOfHonor == 0) ||

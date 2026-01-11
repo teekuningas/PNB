@@ -15,6 +15,7 @@
 #include "ai_messy/batting_ai.h"
 #include "base_logic.h"
 #include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 #define ANIMATION_FREQUENCY 3
 
@@ -233,10 +234,6 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 					// when he's running
 					stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
 					// if he's safe on previous base, set the baseControlIndex for that base to -1
-					// if he was batter, set the batterIndex to -1 so that we can have a new batter.
-					if(stateInfo->localGameInfo->pII.batterIndex == index) {
-						stateInfo->localGameInfo->pII.batterIndex = -1;
-					}
 				}
 				// REFEREE MIGRATION: Logic moved to referee.c
 				// We just signal the event here.

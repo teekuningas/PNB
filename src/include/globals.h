@@ -476,7 +476,6 @@ typedef struct _PlayerIndexInfo {
 	int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
 	// set to -1 when someone catches.
 	int controlIndex; // index of the controlled catching team player
-	int batterIndex; // index of batter.
 	int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
 } PlayerIndexInfo;
 

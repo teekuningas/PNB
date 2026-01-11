@@ -12,6 +12,7 @@
 #include "batting_ai_strategy.h"
 #include "base_logic.h"
 #include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 // Macros moved from action_implementation.c
 
@@ -158,7 +159,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	} else if(stateInfo->localGameInfo->pRAI.batterReady == 1 && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->localGameInfo->gameFlowState.ballHome == 1) {
 		// decision tree.. contents can be read within
 		if(stateInfo->localGameInfo->aiState.planCalculated == 0) {
-			int batterIndex = stateInfo->localGameInfo->pII.batterIndex;
+			int batterIndex = get_active_batter_index(stateInfo->localGameInfo);
 			int firstBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)1);
 			int secondBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)2);
 			int thirdBaseIndex = get_base_controller(stateInfo->localGameInfo, (BaseID)3);

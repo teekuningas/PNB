@@ -9,6 +9,7 @@
 #include "game_manipulation.h"
 #include "base_control.h"
 #include "referee.h"
+#include "rules_pure/player_utils.h"
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
@@ -450,15 +451,16 @@ void changePlayer(LocalGameInfo* localGameInfo)
 
 void prepareBatter(LocalGameInfo* localGameInfo)
 {
-	if(localGameInfo->pII.batterIndex != -1) {
+	int batterIndex = get_active_batter_index(localGameInfo);
+	if(batterIndex != -1) {
 		// batter ready model
-		localGameInfo->playerInfo[localGameInfo->pII.batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
+		localGameInfo->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
 		// can pitch now
 		localGameInfo->pRAI.batterReady = 1;
 		// waiting for pitch to go in air before starting the batting movement
 		localGameInfo->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
-		localGameInfo->referee.battingPlayers[localGameInfo->pII.batterIndex].currentSafetyBase = BASE_HOME;
+		localGameInfo->referee.battingPlayers[batterIndex].currentSafetyBase = BASE_HOME;
 		// and initialize batter so that everything is ready to go.
 		localGameInfo->pRAI.initBatter = 1;
 	}
@@ -482,8 +484,9 @@ void calculateFreeWalk(LocalGameInfo* localGameInfo)
 			BaseID currentBaseId = localGameInfo->playerInfo[index].bTPI.baseId;
 
 			// SANITY CHECK: If player is at HOME base, they MUST be the active batter.
-			if (currentBaseId == BASE_HOME && index != localGameInfo->pII.batterIndex) {
-				printf("[CRITICAL LOGIC ERROR] Ghost Runner detected! Player %d is at BASE_HOME but batterIndex is %d. Ignoring.\n", index, localGameInfo->pII.batterIndex);
+			int batterIndex = get_active_batter_index(localGameInfo);
+			if (currentBaseId == BASE_HOME && index != batterIndex) {
+				printf("[CRITICAL LOGIC ERROR] Ghost Runner detected! Player %d is at BASE_HOME but batterIndex is %d. Ignoring.\n", index, batterIndex);
 				continue;
 			}
 
@@ -867,7 +870,6 @@ void initializeIndexInformation(LocalGameInfo* localGameInfo)
 	localGameInfo->pII.hasBallIndex = -1;
 	localGameInfo->pII.lastHadBallIndex = -1;
 	localGameInfo->pII.controlIndex = -1;
-	localGameInfo->pII.batterIndex = -1;
 	localGameInfo->pII.changePlayerArrayIndex = -1;
 }
 // player-related action information initialization, can be called when foul play.
@@ -908,9 +910,6 @@ void setRunnerAndBatter(LocalGameInfo* localGameInfo, GlobalGameInfo* globalGame
 			localGameInfo->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
 			localGameInfo->referee.battingPlayers[batterIndex].baseAtPitchStart = BASE_HOME;
 			localGameInfo->playerInfo[batterIndex].bTPI.number = localGameInfo->gameModeState.runnerBatterPairCounter + 1;
-			// set batterIndex, this will make it so that the player is recognized as a batter when he arrives
-			// the batting location
-			localGameInfo->pII.batterIndex = batterIndex;
 			// move player to default batter ready position
 			target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);

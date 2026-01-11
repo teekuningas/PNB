@@ -14,6 +14,7 @@
 #include "base_logic.h"
 #include "rules_strikes.h"
 #include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -349,10 +350,6 @@ static void processPendingWounds(StateInfo* stateInfo)
 					stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 					movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
-					if (stateInfo->localGameInfo->pII.batterIndex == index) {
-						stateInfo->localGameInfo->pII.batterIndex = -1;
-					}
-
 					// Legacy Tuplahaava logic removed (handled by Referee_Update)
 				}
 			}
@@ -423,7 +420,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 					}
 					// whether we got safely to first base or were wounded, we have to set batterIndex to -1
 					// so that next player can go batting.
-					if(stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
+					// if (stateInfo->localGameInfo->pII.batterIndex == index) stateInfo->localGameInfo->pII.batterIndex = -1;
 					// if the player arrived to a base and had it marked as 4, it means that it possibly a run.
 					if(stateInfo->localGameInfo->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
 						// if we were safe at base 3, we are not anymore.
@@ -652,6 +649,7 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 {
 	int i;
+	int activeBatterIndex = get_active_batter_index(stateInfo->localGameInfo);
 
 	for(i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
 		// orientation updated only if ball or player moving
@@ -659,7 +657,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 		        stateInfo->localGameInfo->playerInfo[i].cPI.moving == 1) {
 			if(i != stateInfo->localGameInfo->pII.hasBallIndex) {
 				if(stateInfo->localGameInfo->playerInfo[i].cPI.running == 0) {
-					if(i != stateInfo->localGameInfo->pII.batterIndex) {
+					if(i != activeBatterIndex) {
 						setOrientation(stateInfo->localGameInfo->playerInfo, &(stateInfo->localGameInfo->ballInfo), i);
 					}
 				}
@@ -707,7 +705,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 				float dz = stateInfo->localGameInfo->playerInfo[i].tPI.location.z - stateInfo->localGameInfo->playerInfo[i].tPI.targetLocation.z;
 				if(isVectorSmallEnoughCircleXZ(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
 					int needToStop = 1;
-					if(	i == stateInfo->localGameInfo->pII.batterIndex &&
+					if(	i == activeBatterIndex &&
 					        stateInfo->localGameInfo->playerRuntime[i].goingForward == 0) {
 						prepareBatter(stateInfo->localGameInfo);
 					} else {
@@ -770,7 +768,8 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 
 								} else {
 									if(stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_OUT &&
+									        stateInfo->localGameInfo->playerInfo[i].bTPI.state != PLAYER_STATE_AT_BAT) {
 										stateInfo->localGameInfo->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
 									}
 								}

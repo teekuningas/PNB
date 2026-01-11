@@ -3,6 +3,7 @@
 #include "all_scenarios.h"
 #include <stdio.h>
 #include <math.h>
+#include "rules_pure/player_utils.h"
 
 /**
  * TEST 2: Batter forced out at first base
@@ -31,7 +32,7 @@ int test_full_batter_forced_out_at_first(void)
 	}
 
 	ASSERT_EQ(1, outs, "Batter should be forced out at first base");
-	ASSERT_EQ(-1, ctx->state->localGameInfo->pII.batterIndex, "batterIndex should be reset to -1 after out");
+	ASSERT_EQ(-1, get_active_batter_index(ctx->state->localGameInfo), "batterIndex (deduced) should be reset to -1 after out");
 
 	cleanup_scenario(ctx);
 	return TEST_PASSED;

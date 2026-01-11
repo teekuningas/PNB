@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 // History Buffer Settings
 #define HISTORY_SIZE 100
@@ -152,7 +153,7 @@ static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"pII\": {\n", sp);
-	fprintf(f, "%s  \"batterIndex\": %d,\n", sp, game->pII.batterIndex);
+	fprintf(f, "%s  \"batterIndex\": %d,\n", sp, get_active_batter_index(game));
 	fprintf(f, "%s  \"batterSelectionIndex\": %d,\n", sp, game->pII.batterSelectionIndex);
 	fprintf(f, "%s  \"hasBallIndex\": %d,\n", sp, game->pII.hasBallIndex);
 	fprintf(f, "%s  \"controlIndex\": %d\n", sp, game->pII.controlIndex);
@@ -181,11 +182,12 @@ static void print_game_json(FILE* f, LocalGameInfo* game, GlobalGameInfo* global
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"players\": [\n", sp);
+	int activeBatterIndex = get_active_batter_index(game);
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		PlayerInfo* p = &game->playerInfo[i];
 		// Only print relevant players (on base, active, pending wound, OR holding safety)
 		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE ||
-		                  game->referee.battingPlayers[i].hasPendingWound || i == game->pII.batterIndex ||
+		                  game->referee.battingPlayers[i].hasPendingWound || i == activeBatterIndex ||
 		                  game->referee.battingPlayers[i].currentSafetyBase != BASE_NONE);
 
 		if (isRelevant) {
@@ -285,5 +287,25 @@ int StateValidator_Check(StateInfo* state)
 			}
 		}
 	}
+
+	// Invariant 2: Batter Consistency
+	int activeBatterCount = 0;
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+			activeBatterCount++;
+
+			// Must be at home
+			if (game->playerInfo[i].bTPI.baseId != BASE_HOME) {
+				printf("\n[STATE ERROR] FATAL: Player %d is AT_BAT but at base %d (Must be BASE_HOME)\n", i, game->playerInfo[i].bTPI.baseId);
+				return 0;
+			}
+		}
+	}
+
+	if (activeBatterCount > 1) {
+		printf("\n[STATE ERROR] FATAL: Multiple active batters found (%d)\n", activeBatterCount);
+		return 0;
+	}
+
 	return 1; // Valid
 }
