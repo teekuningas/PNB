@@ -2,6 +2,7 @@
 #include "referee.h"
 #include "rules_outs.h"
 #include "rules_runs.h"
+#include "rules_strikes.h"
 #include "base_logic.h"
 #include "geometry.h"
 #include "vector_math.h"
@@ -297,6 +298,35 @@ static void update_strikes(RefereeState* referee, GameState* gameState, const Ga
 	}
 }
 
+static void update_pitch_resolution(const StateInfo* stateInfo, GameState* gameState, GameControl* gameControl, const GameEvents* events)
+{
+	// Check if a pitch has physically concluded (hit ground) while still logically active
+	if (events->ballHitGround && stateInfo->localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
+
+		PitchResult result = determine_pitch_result(
+		                         stateInfo->localGameInfo->ballInfo.location.x,
+		                         PLATE_WIDTH,
+		                         stateInfo->localGameInfo->pRAI.batMiss
+		                     );
+
+		if (result == PITCH_RESULT_STRIKE) {
+			gameState->strikes += 1;
+			gameState->event = EVENT_STRIKE;
+		} else if (result == PITCH_RESULT_BALL) {
+			gameState->balls += 1;
+			gameState->event = EVENT_BALL;
+
+			// Reset free walk calculation flags so they are re-evaluated
+			gameControl->freeWalkCalculationMade = 0;
+			gameControl->freeWalkIndex = -1;
+			gameControl->freeWalkBase = BASE_NONE;
+		}
+
+		// Signal to reconcile/cleanup that we have adjudicated this pitch
+		gameControl->pitchResolutionProcessed = 1;
+	}
+}
+
 static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, GameState* gameState, const GameEvents* events, GameControl* gameControl)
 {
 	// 6. Game State Flags
@@ -361,6 +391,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Game
 
 	// 4. Strikes
 	update_strikes(refereeState, gameState, &stateInfo->localGameInfo->gameEvents);
+	update_pitch_resolution(stateInfo, gameState, gameControl, &stateInfo->localGameInfo->gameEvents);
 
 	// 5. Game State Flags
 	update_game_state_flags((StateInfo*)stateInfo, refereeState, gameState, &stateInfo->localGameInfo->gameEvents, gameControl);

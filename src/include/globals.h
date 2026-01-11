@@ -532,6 +532,7 @@ typedef struct _GameControl {
 	BaseID freeWalkBase;
 	// Referee coordination
 	int checkForRun;
+	int pitchResolutionProcessed; // Flag to signal that pitch result has been adjudicated and state should be reset
 } GameControl;
 
 typedef struct _CameraState {

@@ -19,6 +19,8 @@ void run_full_scenario_tests(void)
 	RUN_TEST(test_full_tuplahaava_double_wound);
 	RUN_TEST(test_full_tuplahaava_late_arrival_between_bases);
 	RUN_TEST(test_full_out_of_bounds_reset);
+	RUN_TEST(test_full_pitching_strike);
+	RUN_TEST(test_full_pitching_ball);
 }
 
 int main(int argc, char* argv[])

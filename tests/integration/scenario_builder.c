@@ -353,3 +353,60 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 	game->gameEvents.catchMade = 0;
 	game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
 }
+
+void perform_pitch(ScenarioContext* ctx, float targetX)
+{
+	if (!ctx || !ctx->state) return;
+
+	LocalGameInfo* game = ctx->state->localGameInfo;
+	FieldPositions* field = ctx->state->fieldPositions;
+
+	// 1. Locate Pitcher
+	Vector3D startPos = field->pitcher;
+
+	// 2. Calculate Velocity
+	// Pitch is mostly vertical (Y) + horizontal error (X). Z is usually negligible.
+	float frames = 100.0f; // Flight time
+	float gravity = GRAVITY;
+
+	// Target Y is plate height (0). Start Y is slightly elevated?
+	// Actually pitcher holds ball at some height. Let's assume start Y=1.5.
+	startPos.y = 1.5f;
+
+	// v_y to land at 0 after T frames:
+	// 0 = y0 + v_y * T - 0.5 * g * T^2
+	// v_y * T = 0.5 * g * T^2 - y0
+	// v_y = 0.5 * g * T - y0 / T
+	float vy = 0.5f * gravity * frames - startPos.y / frames;
+
+	// v_x to reach targetX from startPos.x
+	float vx = (targetX - startPos.x) / frames;
+
+	// v_z (keep at plate Z)
+	float vz = (field->pitchPlate.z - startPos.z) / frames;
+
+	// 3. Set Ball State
+	game->ballInfo.location = startPos;
+	game->ballInfo.lastLocation = startPos;
+	game->pII.hasBallIndex = -1;
+	genericSlingBall(&game->ballInfo, vx, vy, vz);
+	game->ballInfo.hasHitGround = 0;
+
+	// 4. Set Pitch State
+	game->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
+	game->pRAI.batterCanAdvance = 1;
+	game->gameEvents.pitchReleased = 1; // Signal event
+
+	// 5. Referee Snapshots (Minimal implementation)
+	game->referee.strikesAtPitchStart = game->gameState.strikes;
+
+	// Snapshot active runners
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+			game->referee.battingPlayers[i].baseAtPitchStart = game->playerInfo[i].bTPI.baseId;
+			game->referee.battingPlayers[i].hadSafetyAtPitchStart = 1; // Simplify for test
+			game->referee.battingPlayers[i].currentSafetyBase = game->playerInfo[i].bTPI.baseId;
+		}
+	}
+}
+

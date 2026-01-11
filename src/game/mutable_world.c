@@ -75,6 +75,14 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 			}
 		}
 	}
+
+	// 4. React to Pitch Resolution (Milestone 17)
+	// If the Referee has adjudicated the pitch (Strike/Ball), we must close the pitch state
+	// to prevent double-counting and to signal the action system that the pitch is over.
+	if (game->gameControl.pitchResolutionProcessed) {
+		game->pRAI.pitchState = PITCH_STAGE_NONE;
+		game->gameControl.pitchResolutionProcessed = 0; // Consume the flag
+	}
 }
 
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)

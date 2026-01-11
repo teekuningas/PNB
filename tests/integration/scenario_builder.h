@@ -82,19 +82,56 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
 void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase);
 
 /**
+
  * @brief Setup a batter at home ready to run
+
  *
+
  * Common pattern: fresh batter with no safety, ready to advance to first.
+
  *
+
  * @param ctx The scenario context
+
  * @param playerIndex Player index to set as batter
+
  */
+
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 
+
+
 /**
- * @brief Simulate frames until a condition is met or timeout
+
+ * @brief Simulate a pitch thrown to a specific X coordinate relative to plate center
+
  *
+
+ * Sets up all necessary state (pitchState, ball velocity, referee snapshots) to mimic
+
+ * a real pitch release.
+
+ *
+
  * @param ctx The scenario context
+
+ * @param targetX The target X coordinate (0.0 = center/strike, >0.75 = ball)
+
+ */
+
+void perform_pitch(ScenarioContext* ctx, float targetX);
+
+
+
+/**
+
+ * @brief Simulate frames until a condition is met or timeout
+
+ *
+
+ * @param ctx The scenario context
+
+
  * @param condition Function returning 1 when goal is reached
  * @param maxFrames Maximum frames before giving up
  * @return Number of frames simulated

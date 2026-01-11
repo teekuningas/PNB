@@ -55,13 +55,17 @@
 
 ### 🚧 Milestone 17: Referee Consolidation (Next - Phase 2)
 - **Goal:** Make referee.c the sole authority on `RefereeState` and `GameState`.
+- **Principle:** **Limited Scope** - Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`). It only writes to `RefereeState`, `GameState`, and `GameControl`.
 - **Reference:** See `docs/REFEREE_CONSOLIDATION_PLAN.md` for complete strategy.
-- **Current Status:** Clean foundation established. Event system working perfectly.
+- **Current Status:** In Progress (Jan 11, 2026).
+- **Completed:**
+    - ✅ Moved strike/ball counting from `game_manipulation.c` to `referee.c`.
+    - ✅ Implemented `pitchResolutionProcessed` flag in `GameControl` for state cleanup synchronization.
+    - ✅ Added full-scenario integration tests for pitching (Strike/Ball) and out-of-bounds reset.
 - **Next Steps:**
-    1. Move strike/ball counting from `game_manipulation.c` to referee
-    2. Migrate free walk safety grants and run scoring
-    3. Redesign wounding state machine for frame independence
-    4. Remove all RefereeState/GameState mutations from other systems
+    1. Migrate free walk safety grants and run scoring.
+    2. Redesign wounding state machine for frame independence.
+    3. Remove all RefereeState/GameState mutations from other systems.
 - **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.
 
 ### 🔮 Milestone 18: Game Manipulation Decomposition

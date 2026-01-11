@@ -108,25 +108,9 @@ static void updateBallStatus(LocalGameInfo* localGameInfo, FieldPositions* field
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						localGameInfo->ballInfo.hitsGroundToUnWound = 1;
 					}
-					// if pitch is going on, it means that batter didnt bat or missed and					// we need to set pitch-flags to 0 and make checks for strikes and balls and trigger corresponding events
-					if(localGameInfo->pRAI.pitchState != PITCH_STAGE_NONE) {
-						PitchResult result = determine_pitch_result(localGameInfo->ballInfo.location.x, PLATE_WIDTH, localGameInfo->pRAI.batMiss);
+					// Strike/Ball counting logic moved to Referee_Update (referee.c)
+					// Pitch state reset moved to reconcileLegalAndPhysicalState (mutable_world.c)
 
-						if(result == PITCH_RESULT_STRIKE) {
-							localGameInfo->gameState.strikes += 1;
-							localGameInfo->gameState.event = EVENT_STRIKE;
-						} else if(result == PITCH_RESULT_BALL) {
-							localGameInfo->gameState.balls += 1;
-							localGameInfo->gameState.event = EVENT_BALL;
-
-							// here we also set freeWalk flags because it could be possible that batting team now
-							// has right for free walk.
-							localGameInfo->gameControl.freeWalkCalculationMade = 0;
-							localGameInfo->gameControl.freeWalkIndex = -1;
-							localGameInfo->gameControl.freeWalkBase = -1;
-						}
-						localGameInfo->pRAI.pitchState = PITCH_STAGE_NONE;
-					}
 					// if ball has enough y-velocity it will bounce
 					if(localGameInfo->ballInfo.velocity.y < -BALL_BOUNCE_THRESHOLD) {
 						// so try to update ranks of fielders
