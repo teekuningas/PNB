@@ -220,6 +220,9 @@ void releasePitch(StateInfo* stateInfo)
 			stateInfo->localGameInfo->referee.battingPlayers[index].hasPendingWound = 0;
 			stateInfo->localGameInfo->referee.battingPlayers[index].woundingType = WOUNDING_TYPE_NONE;
 			stateInfo->localGameInfo->referee.battingPlayers[index].woundingSourceBase = BASE_NONE;
+		} else {
+			// CRITICAL FIX: Clear baseAtPitchStart for inactive players to prevent ghost runners
+			stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart = BASE_NONE;
 		}
 	}
 

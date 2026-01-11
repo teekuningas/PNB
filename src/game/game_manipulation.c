@@ -349,6 +349,10 @@ static void processPendingWounds(StateInfo* stateInfo)
 					stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 					movePlayerOut(stateInfo->localGameInfo->playerInfo, stateInfo->localGameInfo->playerRuntime, stateInfo->fieldPositions, index);
 
+					if (stateInfo->localGameInfo->pII.batterIndex == index) {
+						stateInfo->localGameInfo->pII.batterIndex = -1;
+					}
+
 					// Legacy Tuplahaava logic removed (handled by Referee_Update)
 				}
 			}
@@ -722,6 +726,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
 						// check for running because otherwise we players who were wounded before arriving a base
 						// would be stuck there standing.
 						if((stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
+						        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_SCORED) ||
 						        (stateInfo->localGameInfo->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
 						         stateInfo->localGameInfo->playerInfo[i].cPI.running == 0)) {
 							Vector3D target;

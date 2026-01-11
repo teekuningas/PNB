@@ -30,7 +30,9 @@ int test_full_batter_forced_out_at_first(void)
 		if (outs > 0) break;
 	}
 
-	cleanup_scenario(ctx);
 	ASSERT_EQ(1, outs, "Batter should be forced out at first base");
+	ASSERT_EQ(-1, ctx->state->localGameInfo->pII.batterIndex, "batterIndex should be reset to -1 after out");
+
+	cleanup_scenario(ctx);
 	return TEST_PASSED;
 }

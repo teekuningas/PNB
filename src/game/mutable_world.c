@@ -54,6 +54,9 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 				game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
 				game->playerInfo[i].bTPI.baseId = BASE_NONE;
 				movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+				if (game->pII.batterIndex == i) {
+					game->pII.batterIndex = -1;
+				}
 			} else {
 			}
 		}
@@ -63,6 +66,9 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 			game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
 			game->playerInfo[i].bTPI.baseId = BASE_NONE;
 			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+			if (game->pII.batterIndex == i) {
+				game->pII.batterIndex = -1;
+			}
 		}
 
 		// 3. React to displacement (Panic Run)
