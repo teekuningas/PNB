@@ -7,5 +7,7 @@ int test_full_fly_ball_runner_wounded(void);
 int test_full_runner_chain_reaction_no_catch(void);
 int test_full_tuplahaava_double_wound(void);
 int test_full_tuplahaava_late_arrival_between_bases(void);
+int test_full_out_of_bounds_reset(void);
 
-#endif
+#endif // ALL_SCENARIOS_H
+

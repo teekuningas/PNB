@@ -16,7 +16,8 @@ _OBJ_INT_SCENARIOS = tests/integration/scenarios/test_runner_scores_from_third.o
                      tests/integration/scenarios/test_fly_ball_runner_wounded.o \
                      tests/integration/scenarios/test_runner_chain_reaction.o \
                      tests/integration/scenarios/test_tuplahaava_double_wound.o \
-                     tests/integration/scenarios/test_tuplahaava_late_arrival.o
+                     tests/integration/scenarios/test_tuplahaava_late_arrival.o \
+                     tests/integration/scenarios/test_out_of_bounds_reset.o
 
 OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o $(_OBJ_INT_SCENARIOS))
@@ -101,4 +102,4 @@ shell:
 
 .PHONY: format
 format:
-	@for k in $(shell find src -name "*.c" -o -name "*.h"); do astyle --style=kr --indent=tab=4 $$k ; done
+	@for k in $(shell find src tests -name "*.c" -o -name "*.h"); do astyle --style=kr --indent=tab=4 $$k ; done

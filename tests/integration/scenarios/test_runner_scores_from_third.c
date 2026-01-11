@@ -13,7 +13,9 @@ int test_full_runner_scores_from_third(void)
 
 	place_runner_at_base(ctx, 0, BASE_THIRD, 0.0f);
 	ctx->state->localGameInfo->playerRuntime[0].passedPathPoint = 1;
-	place_ball_at_location(ctx, (Vector3D){10.0f, 0.0f, -10.0f});
+	place_ball_at_location(ctx, (Vector3D) {
+		10.0f, 0.0f, -10.0f
+	});
 	ctx->state->localGameInfo->gameControl.checkForRun = 1;
 	trigger_player_run_to_next_base(ctx, 0, BASE_THIRD);
 

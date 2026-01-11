@@ -6,7 +6,7 @@
 
 /**
  * @brief Full-scenario integration test helpers
- * 
+ *
  * These helpers create physically and logically consistent game states
  * and run full game progression loops, avoiding fragile manual state manipulation.
  */
@@ -25,7 +25,7 @@ ScenarioContext* create_scenario(void);
 
 /**
  * @brief Place a runner at or between bases with consistent state
- * 
+ *
  * @param ctx The scenario context
  * @param playerIndex Player index (0-23)
  * @param base The base they're associated with (have safety at)
@@ -50,7 +50,7 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
 
 /**
  * @brief Hit a fly ball (high arc) to a specific location
- * 
+ *
  * Sets the ball state to look like it came from a bat hit (woundingCatchPending=1).
  */
 void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation);
@@ -62,10 +62,10 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames);
 
 /**
  * @brief Trigger a player to start running to the next base
- * 
+ *
  * This taps into the game's base-running machinery (runToNextBase)
  * which sets the target location and initiates movement.
- * 
+ *
  * @param ctx The scenario context
  * @param playerIndex Player to make run
  * @param fromBase The base they're running from
@@ -74,7 +74,7 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
 
 /**
  * @brief Trigger a player to start running to the previous base (return)
- * 
+ *
  * @param ctx The scenario context
  * @param playerIndex Player to make run
  * @param toBase The base they're returning to
@@ -83,9 +83,9 @@ void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, 
 
 /**
  * @brief Setup a batter at home ready to run
- * 
+ *
  * Common pattern: fresh batter with no safety, ready to advance to first.
- * 
+ *
  * @param ctx The scenario context
  * @param playerIndex Player index to set as batter
  */
@@ -93,7 +93,7 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 
 /**
  * @brief Simulate frames until a condition is met or timeout
- * 
+ *
  * @param ctx The scenario context
  * @param condition Function returning 1 when goal is reached
  * @param maxFrames Maximum frames before giving up

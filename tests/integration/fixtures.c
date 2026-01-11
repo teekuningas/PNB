@@ -8,108 +8,113 @@
 #include <stdlib.h>
 #include <string.h>
 
-StateInfo* setup_test_state() {
-    StateInfo* state = malloc(sizeof(StateInfo));
-    memset(state, 0, sizeof(StateInfo));
+StateInfo* setup_test_state()
+{
+	StateInfo* state = malloc(sizeof(StateInfo));
+	memset(state, 0, sizeof(StateInfo));
 
-    state->teamData = malloc(sizeof(TeamData) * 2);
-    memset(state->teamData, 0, sizeof(TeamData) * 2);
+	state->teamData = malloc(sizeof(TeamData) * 2);
+	memset(state->teamData, 0, sizeof(TeamData) * 2);
 
-    for (int i = 0; i < 2; ++i) {
-        state->teamData[i].players = malloc(sizeof(PlayerData) * 12);
-        for (int j = 0; j < 12; ++j) {
-            state->teamData[i].players[j].name = malloc(sizeof(char) * 10);
-            sprintf(state->teamData[i].players[j].name, "Player %d", j + 1);
-        }
-    }
+	for (int i = 0; i < 2; ++i) {
+		state->teamData[i].players = malloc(sizeof(PlayerData) * 12);
+		for (int j = 0; j < 12; ++j) {
+			state->teamData[i].players[j].name = malloc(sizeof(char) * 10);
+			sprintf(state->teamData[i].players[j].name, "Player %d", j + 1);
+		}
+	}
 
-    state->fieldPositions = malloc(sizeof(FieldPositions));
-    field_init_positions(state->fieldPositions);
-    
-    state->localGameInfo = malloc(sizeof(LocalGameInfo));
-    memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
-    
-    // Initialize indices to -1
-    for(int i=0; i<4; i++) {
-        state->localGameInfo->pII.catcherOnBaseIndex[i] = -1;
-        state->localGameInfo->pII.catcherReplacerOnBaseIndex[i] = -1;
-    }
-    for(int i=0; i<PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        state->localGameInfo->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
-    }
-    state->localGameInfo->pII.hasBallIndex = -1;
-    state->localGameInfo->pII.lastHadBallIndex = -1;
-    state->localGameInfo->pII.controlIndex = -1;
-    state->localGameInfo->pII.batterIndex = -1;
-    state->localGameInfo->referee.woundingCatchTimer = -1;
-    state->localGameInfo->gameFlowState.endOfInningCounter = -1;
+	state->fieldPositions = malloc(sizeof(FieldPositions));
+	field_init_positions(state->fieldPositions);
 
-    state->globalGameInfo = malloc(sizeof(GlobalGameInfo));
-    memset(state->globalGameInfo, 0, sizeof(GlobalGameInfo));
+	state->localGameInfo = malloc(sizeof(LocalGameInfo));
+	memset(state->localGameInfo, 0, sizeof(LocalGameInfo));
 
-    return state;
+	// Initialize indices to -1
+	for(int i=0; i<4; i++) {
+		state->localGameInfo->pII.catcherOnBaseIndex[i] = -1;
+		state->localGameInfo->pII.catcherReplacerOnBaseIndex[i] = -1;
+	}
+	for(int i=0; i<PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		state->localGameInfo->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+	}
+	state->localGameInfo->pII.hasBallIndex = -1;
+	state->localGameInfo->pII.lastHadBallIndex = -1;
+	state->localGameInfo->pII.controlIndex = -1;
+	state->localGameInfo->pII.batterIndex = -1;
+	state->localGameInfo->referee.woundingCatchTimer = -1;
+	state->localGameInfo->gameFlowState.endOfInningCounter = -1;
+
+	state->globalGameInfo = malloc(sizeof(GlobalGameInfo));
+	memset(state->globalGameInfo, 0, sizeof(GlobalGameInfo));
+
+	return state;
 }
 
-void setup_runner_at_first_base(StateInfo* state) {
-    unsigned int seed = 0;
-    GameSetup setup = {0};
-    setup.launchType = GAME_LAUNCH_NEW;
-    setup.gameMode = GAME_MODE_NORMAL;
-    setup.team1 = 0;
-    setup.team2 = 1;
-    setup.team1_control = 0;
-    setup.team2_control = 2;
-    setup.halfInningsInPeriod = 4;
-    setup.playsFirst = 0;
+void setup_runner_at_first_base(StateInfo* state)
+{
+	unsigned int seed = 0;
+	GameSetup setup = {0};
+	setup.launchType = GAME_LAUNCH_NEW;
+	setup.gameMode = GAME_MODE_NORMAL;
+	setup.team1 = 0;
+	setup.team2 = 1;
+	setup.team1_control = 0;
+	setup.team2_control = 2;
+	setup.halfInningsInPeriod = 4;
+	setup.playsFirst = 0;
 
-    initializeGameFromMenu(state, &setup, &seed);
-    
-    initGameAnalysis(&(state->localGameInfo->gameFlowState));
-    state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
-    state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
-    state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
-    state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
+	initializeGameFromMenu(state, &setup, &seed);
+
+	initGameAnalysis(&(state->localGameInfo->gameFlowState));
+	state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_FIRST;
+	state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
+	state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
+	state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
 }
 
-void setup_runner_at_third_base(StateInfo* state) {
-    unsigned int seed = 0;
-    GameSetup setup = {0};
-    setup.launchType = GAME_LAUNCH_NEW;
-    setup.gameMode = GAME_MODE_NORMAL;
-    setup.team1 = 0;
-    setup.team2 = 1;
-    setup.team1_control = 0;
-    setup.team2_control = 2;
-    setup.halfInningsInPeriod = 4;
-    setup.playsFirst = 0;
+void setup_runner_at_third_base(StateInfo* state)
+{
+	unsigned int seed = 0;
+	GameSetup setup = {0};
+	setup.launchType = GAME_LAUNCH_NEW;
+	setup.gameMode = GAME_MODE_NORMAL;
+	setup.team1 = 0;
+	setup.team2 = 1;
+	setup.team1_control = 0;
+	setup.team2_control = 2;
+	setup.halfInningsInPeriod = 4;
+	setup.playsFirst = 0;
 
-    initializeGameFromMenu(state, &setup, &seed);
+	initializeGameFromMenu(state, &setup, &seed);
 
-    initGameAnalysis(&(state->localGameInfo->gameFlowState));
-    state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
-    state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
-    state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
-    state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;
+	initGameAnalysis(&(state->localGameInfo->gameFlowState));
+	state->localGameInfo->playerInfo[0].bTPI.baseId = BASE_THIRD;
+	state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
+	state->localGameInfo->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
+	state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;
 }
 
-void cleanup_test_state(StateInfo* state) {
-    for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 12; ++j) {
-            free(state->teamData[i].players[j].name);
-        }
-        free(state->teamData[i].players);
-    }
-    free(state->globalGameInfo);
-    free(state->localGameInfo);
-    free(state->fieldPositions);
-    free(state->teamData);
-    free(state);
+void cleanup_test_state(StateInfo* state)
+{
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 12; ++j) {
+			free(state->teamData[i].players[j].name);
+		}
+		free(state->teamData[i].players);
+	}
+	free(state->globalGameInfo);
+	free(state->localGameInfo);
+	free(state->fieldPositions);
+	free(state->teamData);
+	free(state);
 }
 
-void set_test_player_state(StateInfo* state, int playerIndex, PlayerUnitState newState) {
-    BattingTeamPlayerInfo* b = &state->localGameInfo->playerInfo[playerIndex].bTPI;
-    
-    // Simply set the new state enum - no legacy flags needed
-    b->state = newState;
+void set_test_player_state(StateInfo* state, int playerIndex, PlayerUnitState newState)
+{
+	BattingTeamPlayerInfo* b = &state->localGameInfo->playerInfo[playerIndex].bTPI;
+
+	// Simply set the new state enum - no legacy flags needed
+	b->state = newState;
 }
 

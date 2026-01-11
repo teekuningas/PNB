@@ -1,0 +1,113 @@
+#include "../scenario_builder.h"
+#include "test_helpers.h"
+#include "all_scenarios.h"
+#include <stdio.h>
+#include <math.h>
+
+/**
+ * TEST: Out of Bounds Reset
+ *
+ * Scenario:
+ * 1. Runner at 1st Base.
+ * 2. Batter hits a ball very far out of bounds (foul area).
+ * 3. Runner advances to 2nd Base and gains safety while ball is in air.
+ * 4. Ball lands out of bounds.
+ * 5. Game detects Out of Bounds.
+ * 6. Game resets positions (Foul Play).
+ * 7. Runner should be returned to 1st Base (original base at pitch start).
+ */
+int test_full_out_of_bounds_reset(void)
+{
+	ScenarioContext* ctx = create_scenario();
+
+	// 1. Place Runner at 1st Base (safe), but advanced to 70% of the way to 2nd
+	// This ensures they reach 2nd base before the ball (150 frames flight) lands.
+	place_runner_at_base(ctx, 0, BASE_FIRST, 0.7f);
+
+	// Ensure runner has safety at 1st initially
+	ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
+	ctx->state->localGameInfo->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
+
+	// Setup batter just so game state is valid
+	setup_batter_at_home(ctx, 1);
+
+	// Move defenders (Lukkari/Catcher) away so they don't catch the ball instantly
+	Vector3D away = {100.0f, 0.0f, 100.0f};
+	ctx->state->localGameInfo->playerInfo[12].tPI.location = away;
+	ctx->state->localGameInfo->playerInfo[13].tPI.location = away;
+
+	printf("[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
+	       ctx->state->localGameInfo->playerInfo[0].bTPI.baseId,
+	       ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase);
+
+	// 2. Hit ball far out of bounds
+	// Target: (200, 0, 200) is likely out of bounds
+	Vector3D home = ctx->state->fieldPositions->pitchPlate;
+	Vector3D foulTarget = { 200.0f, 0.0f, 200.0f };
+
+	// We use hit_fly_ball to put it in the air with a high arc (long flight time)
+	hit_fly_ball_to_location(ctx, home, foulTarget);
+
+	printf("[TEST] Ball hit towards (%.1f, %.1f, %.1f).\n", foulTarget.x, foulTarget.y, foulTarget.z);
+
+	// 3. Runner runs to 2nd Base
+	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
+	printf("[TEST] Runner 0 triggered to run to 2nd Base.\n");
+
+	int reachedSecond = 0;
+	int outOfBoundsDetected = 0;
+	int resetDetected = 0;
+
+	// Simulate loop
+	for (int frame = 0; frame < 1500; frame++) {
+		simulate_frames(ctx, 1);
+
+		PlayerInfo* runner = &ctx->state->localGameInfo->playerInfo[0];
+
+		// Check if runner reached 2nd base
+		if (!reachedSecond && runner->bTPI.baseId == BASE_SECOND) {
+			int currentSafety = ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase;
+			if (currentSafety == BASE_SECOND) {
+				reachedSecond = 1;
+				printf("[TEST] Frame %d: Runner 0 reached 2nd Base. baseId=%d, currentSafety=%d (SAFE)\n",
+				       frame, runner->bTPI.baseId, currentSafety);
+			} else {
+				// Log even if safety not yet granted
+				static int lastLogFrame = -1;
+				if (frame != lastLogFrame) {
+					printf("[TEST] Frame %d: Runner 0 at 2nd Base. baseId=%d, currentSafety=%d (Waiting for safety...)\n",
+					       frame, runner->bTPI.baseId, currentSafety);
+					lastLogFrame = frame;
+				}
+			}
+		}
+
+		// Check for Out of Bounds Event
+		if (!outOfBoundsDetected && ctx->state->localGameInfo->gameState.outOfBounds) {
+			outOfBoundsDetected = 1;
+			printf("[TEST] Frame %d: Out of Bounds declared! Ball has landed.\n", frame);
+		}
+
+		// Check for Reset (Runner returned to 1st base)
+		// Reset happens when outOfBounds flag is cleared? Or just players moved?
+		// "Foul Play" usually resets players to baseAtPitchStart.
+		if (outOfBoundsDetected && runner->bTPI.baseId == BASE_FIRST) {
+			int currentSafety = ctx->state->localGameInfo->referee.battingPlayers[0].currentSafetyBase;
+			// Ensure it's not just a glitch, but he is SAFE there
+			if (currentSafety == BASE_FIRST) {
+				resetDetected = 1;
+				printf("[TEST] Frame %d: Runner 0 returned to 1st Base. baseId=%d, currentSafety=%d (Reset successful)\n",
+				       frame, runner->bTPI.baseId, currentSafety);
+				break;
+			}
+		}
+	}
+
+	cleanup_scenario(ctx);
+
+	ASSERT_EQ(1, reachedSecond, "Runner should have reached 2nd Base before ball landed");
+	ASSERT_EQ(1, outOfBoundsDetected, "Game should have declared Out of Bounds");
+	ASSERT_EQ(1, resetDetected, "Runner should be returned to 1st Base after reset");
+
+	return TEST_PASSED;
+}

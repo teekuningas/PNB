@@ -26,7 +26,7 @@ int test_full_runner_chain_reaction_no_catch(void)
 	ctx->state->localGameInfo->playerInfo[16].tPI.location = away;
 
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
-	
+
 	// Hit ball to ground (no catch) - far away
 	ctx->state->localGameInfo->ballInfo.location = ctx->state->fieldPositions->pitchPlate;
 	ctx->state->localGameInfo->ballInfo.velocity.x = -0.5f;
@@ -52,7 +52,7 @@ int test_full_runner_chain_reaction_no_catch(void)
 		if (baseA == BASE_SECOND && arrivalFrame == -1) {
 			arrivalFrame = frame;
 		}
-		
+
 		if (leadStartedRunning == -1 && stateB == PLAYER_STATE_RUNNING) {
 			leadStartedRunning = frame;
 		}
@@ -66,6 +66,6 @@ int test_full_runner_chain_reaction_no_catch(void)
 
 	ASSERT_EQ(1, (arrivalFrame != -1), "Runner A should arrive at 2nd");
 	ASSERT_EQ(1, (leadStartedRunning != -1), "Runner B should start running after A arrives");
-	
+
 	return TEST_PASSED;
 }

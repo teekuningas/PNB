@@ -3,7 +3,8 @@
 #include "../src/game/rules_pure/rules_strikes.h"
 
 // Test: Batter should change when strikes >= 3
-static int test_three_strikes() {
+static int test_three_strikes()
+{
 	GameState gs = {0};
 	gs.strikes = 3;
 	int result = should_change_batter_on_strikes(&gs);
@@ -17,7 +18,8 @@ static int test_three_strikes() {
 }
 
 // Test: Batter should not change when strikes < 3
-static int test_fewer_than_three_strikes() {
+static int test_fewer_than_three_strikes()
+{
 	GameState gs = {0};
 	gs.strikes = 0;
 	ASSERT_EQ(0, should_change_batter_on_strikes(&gs), "Should not change with 0 strikes");
@@ -28,7 +30,8 @@ static int test_fewer_than_three_strikes() {
 	return TEST_PASSED;
 }
 
-void run_rules_strikes_tests() {
+void run_rules_strikes_tests()
+{
 	RUN_TEST(test_three_strikes);
 	RUN_TEST(test_fewer_than_three_strikes);
 }

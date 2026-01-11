@@ -18,13 +18,15 @@ void run_full_scenario_tests(void)
 	RUN_TEST(test_full_runner_chain_reaction_no_catch);
 	RUN_TEST(test_full_tuplahaava_double_wound);
 	RUN_TEST(test_full_tuplahaava_late_arrival_between_bases);
+	RUN_TEST(test_full_out_of_bounds_reset);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	printf("========================================\n");
 	printf("PNB Integration Test Suite\n");
 	printf("========================================\n\n");
-	
+
 	// NEW Full-scenario tests
 	run_full_scenario_tests();
 
@@ -32,6 +34,6 @@ int main(int argc, char* argv[]) {
 	printf("Tests run: %d\n", tests_run);
 	printf("Tests failed: %d\n", tests_failed);
 	printf("========================================\n");
-	
+
 	return tests_failed;
 }

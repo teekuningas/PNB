@@ -23,7 +23,8 @@ int test_full_tuplahaava_double_wound(void)
 
 	int fielderIdx = 16;
 	Vector3D fielderLoc = ctx->state->fieldPositions->backLeftPoint;
-	fielderLoc.x += 5.0f; fielderLoc.z += 5.0f;
+	fielderLoc.x += 5.0f;
+	fielderLoc.z += 5.0f;
 	ctx->state->localGameInfo->playerInfo[fielderIdx].tPI.location = fielderLoc;
 	ctx->state->localGameInfo->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
 
@@ -58,27 +59,27 @@ int test_full_tuplahaava_double_wound(void)
 
 		// Verbose logging for transition frames
 		if (frame % 10 == 0 || (hasBall != -1 && catchFrame == -1) || baseA == BASE_SECOND || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED || arrivalFrame != -1 || (arrivalFrame != -1 && frame < arrivalFrame + 50)) {
-			printf("  F%3d: A[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d Fwd=%d] B[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d] Ball=%d Tmr=%d\n", 
-			       frame, stateA, baseA, safeA, pendingWoundA, woundTypeA, markedA, goingFwdA, 
+			printf("  F%3d: A[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d Fwd=%d] B[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d] Ball=%d Tmr=%d\n",
+			       frame, stateA, baseA, safeA, pendingWoundA, woundTypeA, markedA, goingFwdA,
 			       stateB, baseB, safeB, pendingWoundB, woundTypeB, markedB, hasBall, timer);
 		}
 
 		if (hasBall != -1 && catchFrame == -1) {
-            catchFrame = frame;
-            printf("  !!! CATCH at frame %d\n", frame);
-        }
+			catchFrame = frame;
+			printf("  !!! CATCH at frame %d\n", frame);
+		}
 		if (baseA == BASE_SECOND && arrivalFrame == -1) {
-            arrivalFrame = frame;
-            printf("  !!! ARRIVAL of A at 2nd at frame %d\n", frame);
-        }
+			arrivalFrame = frame;
+			printf("  !!! ARRIVAL of A at 2nd at frame %d\n", frame);
+		}
 		if (stateA == PLAYER_STATE_WOUNDED && woundFrame == -1) {
-            woundFrame = frame;
-            printf("  !!! WOUND of A at frame %d\n", frame);
-        }
+			woundFrame = frame;
+			printf("  !!! WOUND of A at frame %d\n", frame);
+		}
 		if (stateB == PLAYER_STATE_WOUNDED && woundFrameB == -1) {
-            woundFrameB = frame;
-            printf("  !!! WOUND of B at frame %d\n", frame);
-        }
+			woundFrameB = frame;
+			printf("  !!! WOUND of B at frame %d\n", frame);
+		}
 
 		float dist = sqrtf(powf(posB.x - startB.x, 2) + powf(posB.z - startB.z, 2));
 		if (dist > 2.0f && stateB == PLAYER_STATE_RUNNING) leadRanAway = 1;
@@ -86,7 +87,7 @@ int test_full_tuplahaava_double_wound(void)
 		if (stateA == PLAYER_STATE_WOUNDED && stateB == PLAYER_STATE_WOUNDED) break;
 	}
 
-	printf("  TUPLAHAAVA TRACE END: Catch=%d, Arrival=%d, WoundA=%d, WoundB=%d, LeadRan=%d\n", 
+	printf("  TUPLAHAAVA TRACE END: Catch=%d, Arrival=%d, WoundA=%d, WoundB=%d, LeadRan=%d\n",
 	       catchFrame, arrivalFrame, woundFrame, woundFrameB, leadRanAway);
 
 	cleanup_scenario(ctx);
@@ -96,6 +97,6 @@ int test_full_tuplahaava_double_wound(void)
 	ASSERT_EQ(0, leadRanAway, "Lead runner B should NOT have run away");
 	ASSERT_EQ(1, (woundFrame != -1), "Wound should be applied to A");
 	ASSERT_EQ(1, (woundFrameB != -1), "Wound should be applied to B");
-	
+
 	return TEST_PASSED;
 }
