@@ -314,8 +314,12 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 					if(stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart != BASE_NONE) {
 						// so we set every batting team player 's, who was on the field, bases to baseAtPitchStart
 						// and set them to be at a base.
-						stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ON_BASE;
 						BaseID restoreBase = stateInfo->localGameInfo->referee.battingPlayers[index].baseAtPitchStart;
+						if (restoreBase == BASE_HOME) {
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
+						} else {
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_ON_BASE;
+						}
 						stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = restoreBase;
 
 						// Restore Safety Status from Referee
@@ -355,6 +359,7 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 								stateInfo->localGameInfo->gameState.outs += 1;
 								// remove from the field.
 								stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
+								stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_OUT;
 								// Player is OUT, so they lose safety rights to the base.
 								stateInfo->localGameInfo->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
 								// Clear pitch start snapshot so they aren't resurrected by future foul plays
@@ -386,6 +391,16 @@ static void foulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
 							    stateInfo->fieldPositions->thirdBaseRun.x;
 							stateInfo->localGameInfo->playerInfo[index].tPI.location.z =
 							    stateInfo->fieldPositions->thirdBaseRun.z;
+						}
+					} else {
+						// If player was OUT or SCORED before pitch (or became so during play but lost baseAtPitchStart?),
+						// restore their state so reconcile doesn't trigger "newly out" animations.
+						if (stateInfo->localGameInfo->referee.battingPlayers[index].isOut) {
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_OUT;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
+						} else if (stateInfo->localGameInfo->referee.battingPlayers[index].hasScored) {
+							stateInfo->localGameInfo->playerInfo[index].bTPI.state = PLAYER_STATE_SCORED;
+							stateInfo->localGameInfo->playerInfo[index].bTPI.baseId = BASE_NONE;
 						}
 					}
 				}
