@@ -45,7 +45,13 @@
 - [ ] Move all wounding logic from `game_analysis.c:177-261` to referee
 - [ ] Ensure frame independence
 
-### Step 5: GameFlowState Elimination (After wounding redesign)
+### Step 5: Eliminate Redundant State (batterIndex)
+- [ ] Implement `get_active_batter_index()` helper function
+- [ ] Update `StateValidator` to enforce `BASE_HOME` <-> `PLAYER_STATE_AT_BAT` consistency
+- [ ] Replace `pII.batterIndex` reads with helper function
+- [ ] Remove `pII.batterIndex` from struct and write locations
+
+### Step 6: GameFlowState Elimination (After wounding redesign)
 - [ ] Move frame counters to static variables in game_analysis.c
 - [ ] Move `ballHome` to pure function or BallInfo
 - [ ] Remove GameFlowState structure

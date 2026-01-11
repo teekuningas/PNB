@@ -66,6 +66,8 @@
 - **Next Steps:**
     1. Redesign wounding state machine for frame independence.
     2. Remove all RefereeState/GameState mutations from other systems.
+    3. **Eliminate Redundant State:** Remove `batterIndex` and rely on `PLAYER_STATE_AT_BAT`.
+    4. **Enforce Consistency:** Update `StateValidator` to verify `BASE_HOME` implies `PLAYER_STATE_AT_BAT`.
 - **Result:** Decoupled, frame-independent referee that only reads events and only writes legal state.
 
 ### 🔮 Milestone 18: Game Manipulation Decomposition

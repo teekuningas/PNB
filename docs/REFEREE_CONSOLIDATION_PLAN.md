@@ -113,6 +113,14 @@ typedef enum {
 // Timer becomes: "has enough time passed?" check
 ```
 
+#### 2.4 Eliminate Redundant State (batterIndex)
+**Problem:** `batterIndex` can go out of sync with `PLAYER_STATE_AT_BAT`, causing bugs where the game thinks an OUT player is still batting.
+
+**Solution:**
+1. Remove `batterIndex`.
+2. Use `get_active_batter_index()` which scans for `PLAYER_STATE_AT_BAT`.
+3. Enforce invariant: `baseId == BASE_HOME` <=> `state == PLAYER_STATE_AT_BAT`.
+
 ---
 
 ## Game Loop Structure (Current)
