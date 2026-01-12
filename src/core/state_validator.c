@@ -138,8 +138,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s\"gameControl\": {\n", sp);
 	fprintf(f, "%s  \"pause\": %d,\n", sp, game->gameControl.pause);
 	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->gameControl.waitingForBatterDecision);
-	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->gameControl.waitingForFreeWalkDecision);
-	fprintf(f, "%s  \"checkForRun\": %d\n", sp, game->gameControl.checkForRun);
+	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d\n", sp, game->gameControl.waitingForFreeWalkDecision);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameEvents\": {\n", sp);

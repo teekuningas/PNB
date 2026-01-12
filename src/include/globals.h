@@ -331,6 +331,7 @@ typedef struct _RefereePlayerState {
 	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
 	int isOut;                     // Logical out status (decided by Referee)
 	int hasScored;                 // Logical scored status (decided by Referee)
+	int runOfHonorScored;          // Logical run of honor scored status (decided by Referee)
 
 	// === WOUNDING TRACKING ===
 	int hasPendingWound;           // Marked for wounding
@@ -357,6 +358,9 @@ typedef struct _RefereeState {
 	int woundingCatchHandled;      // Has been processed (replaces WoundingState.woundingCatchHandled)
 	int woundingCatchTimer;        // Timer for wounding confirmation (replaces GameFlowState.woundingCatchCounter)
 	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Which players marked for wound (replaces PlayerRuntimeState.woundedApply)
+
+	// Run of Honor tracking (Homerun Contest)
+	int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
 
 } RefereeState;
 
@@ -526,7 +530,6 @@ typedef struct _GameControl {
 	int freeWalkIndex;
 	BaseID freeWalkBase;
 	// Referee coordination
-	int checkForRun;
 	int pitchResolutionProcessed; // Flag to signal that pitch result has been adjudicated and state should be reset
 } GameControl;
 
@@ -672,11 +675,10 @@ typedef struct _PendingActionState {
 	int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
 } PendingActionState;
 
-typedef struct _GameModeState {
+typedef struct _HomeRunContestState {
 	int runnerBatterPairCounter;
-	int canMakeRunOfHonor;
 	int forceNextPair;
-} GameModeState;
+} HomeRunContestState;
 
 typedef enum {
 	PITCH_STAGE_NONE = 0,
@@ -730,7 +732,7 @@ typedef struct _MatchSession {
 	GameControl gameControl; // MILESTONE 16 - Control flags (Phase 1)
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
-	GameModeState gameModeState; // MILESTONE 7.5 - Game mode specific state
+	HomeRunContestState homeRunContestState; // MILESTONE 7.5 - Game mode specific state
 	PendingActionState pendingActionState; // Milestone 10 - Action globals
 	AIState aiState; // Milestone 11 - AI globals
 	GameFlowState gameFlowState; // Milestone 11 - Game flow globals

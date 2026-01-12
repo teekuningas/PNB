@@ -48,7 +48,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 			}
 		}
 		stateInfo->match->scoreboard.pairCount = half;
-		stateInfo->match->gameModeState.runnerBatterPairCounter = 0;
+		stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
 	} else {
 		stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
 		stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;

@@ -99,7 +99,6 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		    stateInfo,
 		    &game->referee,
 		    &game->halfInningState,
-		    &game->gameModeState,
 		    &game->gameControl,
 		    &game->playerCounters,
 		    &stateInfo->match->scoreboard

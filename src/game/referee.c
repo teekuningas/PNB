@@ -203,12 +203,13 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 	}
 }
 
-static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
 	const MatchSession* game = stateInfo->match;
 
 	// 4. Check for Runs (§41/42)
-	if (gameControl->checkForRun == 1) {
+	// We trigger this check if ANY player arrived at a base this frame.
+	if (game->gameEvents.playerArrivedAtBase) {
 		if ((game->gameControl.catchHasBeenMade == 1 || game->ballInfo.hasHitGround == 1) &&
 		        referee->woundingCatchTimer == -1 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
@@ -217,15 +218,20 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-					int runScored = calculate_runs(
-					                    game->playerInfo[i].bTPI.baseId,
-					                    referee->battingPlayers[i].baseAtPitchStart,
-					                    game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
-					                    gameModeState,
-					                    game->playerRuntime[i].hasMadeRunOnThirdBase
-					                );
+					int regularRun = is_regular_run(
+					                     game->playerInfo[i].bTPI.baseId,
+					                     referee->battingPlayers[i].baseAtPitchStart,
+					                     game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED
+					                 );
 
-					if (runScored) {
+					int runOfHonor = is_run_of_honor(
+					                     game->playerInfo[i].bTPI.baseId,
+					                     referee->battingPlayers[i].baseAtPitchStart,
+					                     game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
+					                     referee->battingPlayers[i].runOfHonorScored
+					                 );
+
+					if (regularRun) {
 						halfInningState->event = EVENT_RUN_SCORED;
 						int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
 						scoreboard->teams[battingTeamIndex].runs += 1;
@@ -237,6 +243,14 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 						if (halfInningState->runsInTheInning % 2 == 0) {
 							playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
 						}
+					} else if (runOfHonor) {
+						halfInningState->event = EVENT_RUN_SCORED;
+						int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+						scoreboard->teams[battingTeamIndex].runs += 1;
+						halfInningState->runsInTheInning += 1;
+
+						referee->battingPlayers[i].runOfHonorScored = 1;
+						// Do NOT set hasScored=1, as that removes the player. Run of Honor players stay at 3rd.
 
 						// §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
 						if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
@@ -282,9 +296,6 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 					}
 				}
 			}
-
-			// Mark check as done
-			gameControl->checkForRun = 0;
 		}
 	}
 }
@@ -327,7 +338,7 @@ static void update_pitch_resolution(const StateInfo* stateInfo, HalfInningState*
 	}
 }
 
-static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameModeState* gameModeState, PlayerCounters* playerCounters, Scoreboard* scoreboard, GameControl* gameControl, const GameEvents* events)
+static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard, GameControl* gameControl, const GameEvents* events)
 {
 	// 6. Free Walk Resolution
 	if (events->freeWalkAccepted &&gameControl->freeWalkIndex != -1) {
@@ -360,7 +371,6 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 					halfInningState->endPeriod = 1;
 				}
 			}
-			gameModeState->forceNextPair = 1;
 
 		} else {
 			// Normal Game Logic
@@ -436,42 +446,53 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	}
 }
 
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameModeState* gameModeState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
+	const MatchSession* game = stateInfo->match;
+
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);
 
-	// 2. Run of Honor (Update directly if needed? Legacy did it in Analyze but applied in Apply)
-	// Here we update it if ballAtBase is valid.
-	if (ballAtBase != -1) {
-		// Logic from Analyze: "Default assumption: If ball is at a base, Run of Honor possibility is threatened."
-		int canMake = 0;
-		const MatchSession* game = stateInfo->match;
-		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			const PlayerInfo* player = &game->playerInfo[i];
-			if (player->bTPI.baseId == BASE_NONE) continue;
-
-			if (base_is_at_least(player->bTPI.baseId, BASE_SECOND) &&
-			        refereeState->battingPlayers[i].baseAtPitchStart == BASE_HOME &&
-			        ballAtBase != 3) {
-				canMake = 1;
-			}
-		}
-		gameModeState->canMakeRunOfHonor = canMake;
+	// 2. Track if ball has been at 3rd base since pitch started (for run of honor logic)
+	if (ballAtBase == 3) {
+		refereeState->ballInThirdBaseSincePitch = 1;
 	}
 
 	// 3. Safety Pipeline
 	update_safety_status(stateInfo, refereeState);
 	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase);
-	update_runs(stateInfo, refereeState, halfInningState, gameModeState, gameControl, playerCounters, scoreboard);
+	update_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
 
 	// 4. Strikes
 	update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
 	update_pitch_resolution(stateInfo, halfInningState, gameControl, &stateInfo->match->gameEvents);
-	update_free_walk_resolution(stateInfo, refereeState, halfInningState, gameModeState, playerCounters, scoreboard, gameControl, &stateInfo->match->gameEvents);
+	update_free_walk_resolution(stateInfo, refereeState, halfInningState, playerCounters, scoreboard, gameControl, &stateInfo->match->gameEvents);
 
 	// 5. Game State Flags
 	update_game_state_flags((StateInfo*)stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, gameControl);
+
+	// 6. Homerun Contest: Check if current pair is complete
+	if (scoreboard->period >= 4) {
+		// Pair is complete when:
+		// - No runner at 3rd base (either scored or out)
+		// - AND no run of honor is possible (batter can't reach 3rd anymore)
+		int runnerAtThird = 0;
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_THIRD &&
+			        game->playerInfo[i].bTPI.baseId != BASE_NONE &&
+			        !refereeState->battingPlayers[i].isOut &&
+			        !refereeState->battingPlayers[i].hasScored) {
+				runnerAtThird = 1;
+				break;
+			}
+		}
+
+		int runOfHonorStillPossible = is_run_of_honor_possible(game);
+
+		if (!runnerAtThird && !runOfHonorStillPossible) {
+			((MatchSession*)game)->homeRunContestState.forceNextPair = 1;
+		}
+	}
 }
 int is_wounding_catch_pending(const RefereeState* ref)
 {
@@ -505,6 +526,7 @@ void initializeRefereeState(RefereeState* referee)
 		referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 		referee->battingPlayers[i].isOut = 0;
 		referee->battingPlayers[i].hasScored = 0;
+		referee->battingPlayers[i].runOfHonorScored = 0;
 		referee->battingPlayers[i].hasPendingWound = 0;
 		referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NONE;
 		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
@@ -519,4 +541,5 @@ void initializeRefereeState(RefereeState* referee)
 	referee->woundingCatchPending = 0;
 	referee->woundingCatchHandled = 0;
 	referee->woundingCatchTimer = -1;
+	referee->ballInThirdBaseSincePitch = 0;
 }

@@ -416,7 +416,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 	// then if ball comes to pitcher, then we can quit this inning.
 	if(stateInfo->match->halfInningState.outs >= 3 || (stateInfo->match->playerCounters.noMorePlayers == 1 &&
 	        stateInfo->match->gameFlowState.ballHome == 1) || stateInfo->match->halfInningState.endPeriod == 1 ||
-	        (stateInfo->match->scoreboard.period >= 4 &&stateInfo->match->gameModeState.runnerBatterPairCounter >=
+	        (stateInfo->match->scoreboard.period >= 4 &&stateInfo->match->homeRunContestState.runnerBatterPairCounter >=
 	         stateInfo->match->scoreboard.pairCount)) {
 
 		if(stateInfo->match->gameFlowState.endOfInningCounter == -1) {
@@ -572,11 +572,14 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// - or if free walks have been used
 		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
 		int runnerAtThirdIndex = get_base_controller(stateInfo->match, BASE_THIRD);
+
+		int runOfHonorPossible = is_run_of_honor_possible(stateInfo->match);
+
 		if((stateInfo->match->gameFlowState.ballHome == 1 &&get_active_batter_index(stateInfo->match) == -1 &&
-		        stateInfo->match->gameModeState.canMakeRunOfHonor == 0) ||
+		        runOfHonorPossible == 0) ||
 		        (runnerAtThirdIndex == -1 &&
-		         stateInfo->match->gameModeState.canMakeRunOfHonor == 0) ||
-		        stateInfo->match->gameModeState.forceNextPair == 1) {
+		         runOfHonorPossible == 0) ||
+		        stateInfo->match->homeRunContestState.forceNextPair == 1) {
 			if(stateInfo->match->gameFlowState.nextPairCounter == -1) {
 				stateInfo->match->gameFlowState.nextPairCounter = 0;
 				// send message only if its not end of inning also.
@@ -591,10 +594,10 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		if(stateInfo->match->gameFlowState.nextPairCounter > 200) {
 			// set to -2 so that we avoid this being called twice. it will be set to -1 in the beginning of the next pair
 			stateInfo->match->gameFlowState.nextPairCounter = -2;
-			stateInfo->match->gameModeState.runnerBatterPairCounter++;
+			stateInfo->match->homeRunContestState.runnerBatterPairCounter++;
 			// if equality holds, ending of inning will load the settings.
-			if(stateInfo->match->gameModeState.runnerBatterPairCounter != stateInfo->match->scoreboard.pairCount) {
-				int pairsLeft = stateInfo->match->scoreboard.pairCount - stateInfo->match->gameModeState.runnerBatterPairCounter;
+			if(stateInfo->match->homeRunContestState.runnerBatterPairCounter != stateInfo->match->scoreboard.pairCount) {
+				int pairsLeft = stateInfo->match->scoreboard.pairCount - stateInfo->match->homeRunContestState.runnerBatterPairCounter;
 				int battingTeamIndex = (stateInfo->match->scoreboard.
 				                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
 				int catchingTeamIndex = (battingTeamIndex+1)%2;

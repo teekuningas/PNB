@@ -805,7 +805,6 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->referee.woundingCatchHandled = 0;
 
 	match->halfInningState.event = EVENT_NONE;
-	match->gameControl.checkForRun = 0;
 	match->gameControl.freeWalkIndex = -1;
 	match->gameControl.freeWalkBase = -1;
 	match->gameEvents.playerArrivedAtBase = 0;
@@ -822,15 +821,13 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->gameControl.freeWalkCalculationMade = 1;
 	match->gameControl.freeWalkIndex = -1;
 	match->gameControl.freeWalkBase = BASE_NONE;
-	match->gameControl.checkForRun = 0;
 	match->gameControl.catchHasBeenMade = 0;
 
 	initGameAnalysis(&(match->gameFlowState));
 	initGameManipulation(&(match->gameFlowState));
 
-	match->gameModeState.forceNextPair = 0;
+	match->homeRunContestState.forceNextPair = 0;
 	match->cameraState.homeRunCameraFlag = 0;
-	match->gameModeState.canMakeRunOfHonor = 0;
 	match->cameraState.targetPoint.x = 0.0f;
 	match->cameraState.targetPoint.y = 0.0f;
 	match->cameraState.targetPoint.z = 0.0f;
@@ -899,17 +896,17 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 	                        inning+scoreboard->playsFirst+scoreboard->period)%2;
 	Vector3D target;
 	int i;
-	if(match->gameModeState.runnerBatterPairCounter < scoreboard->pairCount) {
+	if(match->homeRunContestState.runnerBatterPairCounter < scoreboard->pairCount) {
 		int runnerIndex = scoreboard->teams[battingTeamIndex].
-		                  batterRunnerIndices[1][match->gameModeState.runnerBatterPairCounter];
+		                  batterRunnerIndices[1][match->homeRunContestState.runnerBatterPairCounter];
 		int batterIndex = scoreboard->teams[battingTeamIndex].
-		                  batterRunnerIndices[0][match->gameModeState.runnerBatterPairCounter];
+		                  batterRunnerIndices[0][match->homeRunContestState.runnerBatterPairCounter];
 		// batter
 		if(batterIndex != -1) {
 			match->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
 			match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
 			match->referee.battingPlayers[batterIndex].baseAtPitchStart = BASE_HOME;
-			match->playerInfo[batterIndex].bTPI.number = match->gameModeState.runnerBatterPairCounter + 1;
+			match->playerInfo[batterIndex].bTPI.number = match->homeRunContestState.runnerBatterPairCounter + 1;
 			// move player to default batter ready position
 			target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
 			target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
@@ -942,11 +939,11 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 			    -match->playerInfo[runnerIndex].tPI.location.x;
 		}
 		// set other runners next to the third base.
-		for(i = match->gameModeState.runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
+		for(i = match->homeRunContestState.runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
 			int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
 			if(index != -1) {
 				match->playerInfo[index].tPI.location.x = fieldPositions->thirdBaseRun.x -
-				    2.0f - (i-(match->gameModeState.runnerBatterPairCounter + 1))*1.5f;
+				    2.0f - (i-(match->homeRunContestState.runnerBatterPairCounter + 1))*1.5f;
 				match->playerInfo[index].tPI.location.y =
 				    fieldPositions->thirdBaseRun.y;
 				match->playerInfo[index].tPI.location.z =
@@ -997,10 +994,10 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initializeRefereeState(&stateInfo->match->referee);
 
 	if(stateInfo->match->scoreboard.period >= 4) {
-		if(!(stateInfo->match->gameModeState.runnerBatterPairCounter > 0 &&
-		        stateInfo->match->gameModeState.runnerBatterPairCounter <
+		if(!(stateInfo->match->homeRunContestState.runnerBatterPairCounter > 0 &&
+		        stateInfo->match->homeRunContestState.runnerBatterPairCounter <
 		        stateInfo->match->scoreboard.pairCount)) {
-			stateInfo->match->gameModeState.runnerBatterPairCounter = 0;
+			stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
 		}
 		setRunnerAndBatter(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
 	}

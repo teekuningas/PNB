@@ -201,7 +201,7 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 		MatchSession* game = ctx->state->match;
-		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameModeState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		if (condition(ctx)) {
@@ -234,7 +234,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 
 		// Milestone 14: Rules engine must run after physics to reconcile state
 		MatchSession* game = ctx->state->match;
-		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameModeState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		// Clear transient events for next frame (Critical for correct event loop)

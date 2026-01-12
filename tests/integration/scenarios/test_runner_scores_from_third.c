@@ -16,7 +16,7 @@ int test_full_runner_scores_from_third(void)
 	place_ball_at_location(ctx, (Vector3D) {
 		10.0f, 0.0f, -10.0f
 	});
-	ctx->state->match->gameControl.checkForRun = 1;
+	// checkForRun removed - referee uses playerArrivedAtBase event now
 	trigger_player_run_to_next_base(ctx, 0, BASE_THIRD);
 
 	simulate_frames(ctx, 450);

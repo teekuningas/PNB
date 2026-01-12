@@ -62,9 +62,9 @@ GameFlowState {  // ← BEING ELIMINATED
     // ...
 }
 
-GameModeState {  // ← Keeping for now
+HomeRunContestState {  // ← Renamed from GameModeState (Jan 12, 2026)
     int runnerBatterPairCounter;
-    int canMakeRunOfHonor;       // Referee decision
+    // canMakeRunOfHonor removed - now computed via is_run_of_honor_possible()
     int forceNextPair;
 }
 ```

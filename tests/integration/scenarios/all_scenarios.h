@@ -11,6 +11,7 @@ int test_full_out_of_bounds_reset(void);
 int test_full_pitching_strike(void);
 int test_full_pitching_ball(void);
 int test_full_free_walk_resolution(void);
+int test_full_run_of_honor(void); // §42 Kunniajuoksu (Run of Honor)
 
 #endif // ALL_SCENARIOS_H
 

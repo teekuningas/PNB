@@ -84,4 +84,11 @@ int count_active_batting_players(const PlayerInfo* players);
 
 int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions);
 
+/**
+ * Checks if any player can potentially score a Run of Honor.
+ * A Run of Honor is possible if a player started the play at HOME
+ * and is currently at SECOND base or higher (but not yet scored/out).
+ */
+int is_run_of_honor_possible(const MatchSession* match);
+
 #endif // BASE_LOGIC_H

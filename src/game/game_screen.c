@@ -311,7 +311,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 			int battingTeamIndex = (stateInfo->match->scoreboard.
 			                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
 			index = stateInfo->match->scoreboard.teams[battingTeamIndex].
-			        batterRunnerIndices[0][stateInfo->match->gameModeState.runnerBatterPairCounter];
+			        batterRunnerIndices[0][stateInfo->match->homeRunContestState.runnerBatterPairCounter];
 			if(index == -1) shouldContinue = 0;
 		}
 		if(shouldContinue == 1) {

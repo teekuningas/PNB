@@ -87,10 +87,10 @@ int test_should_ai_drop_ball_scenario()
 	RefereeState ref = {0};
 	GameControl gc = {0};
 	ref.woundingCatchPending = 1;
-	gc.checkForRun = 0;
+	// checkForRun removed - no longer used
 
 	// Scenario: Runners on 2nd and 3rd, catcher has ball at home base.
-	// woundingCatchPending=1, checkForRun=0, r3=3, r3On=1, r2=2, r2On=1, home==hasBall
+	// woundingCatchPending=1, r3=3, r3On=1, r2=2, r2On=1, home==hasBall
 	int result = should_ai_drop_ball(&ref, &gc, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
 	ASSERT_EQ(1, result, "Should drop ball in ajolähtö tactical drop scenario");
 

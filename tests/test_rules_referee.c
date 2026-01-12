@@ -53,13 +53,10 @@ void test_referee_force_out_at_second(void)
 
 	// KEY for §33 Pesäkilpa: Runner has pesäturva (safety) at Base 1 but is RUNNING ("irti")
 	state->match->referee.battingPlayers[runnerIdx].currentSafetyBase = BASE_FIRST;
-	state->match->playerInfo[runnerIdx].bTPI.state = PLAYER_STATE_RUNNING;
-
 	Referee_Update(
 	    state,
 	    &state->match->referee,
 	    &state->match->halfInningState,
-	    &state->match->gameModeState,
 	    &state->match->gameControl,
 	    &state->match->playerCounters,
 	    &state->match->scoreboard
@@ -91,7 +88,6 @@ void test_referee_safe_runner_not_out(void)
 	    state,
 	    &state->match->referee,
 	    &state->match->halfInningState,
-	    &state->match->gameModeState,
 	    &state->match->gameControl,
 	    &state->match->playerCounters,
 	    &state->match->scoreboard

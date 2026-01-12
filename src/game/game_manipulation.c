@@ -409,11 +409,8 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD &&
 								        stateInfo->match->referee.battingPlayers[index].baseAtPitchStart == BASE_HOME &&
 								        stateInfo->match->halfInningState.outs < 3) {
-									// set flag to check if our run is valid. difficult to imagine situation where
-									// it wasnt right away, ball had to be swinged to like heaven and back again
-									// so that it could be caught or be determined to be foul play after
-									// player has run all the way from base 0 to 3. but anyway.
-									stateInfo->match->gameControl.checkForRun = 1;
+									// This arrival will be handled by Referee via playerArrivedAtBase event
+									// No need to set any flags here - referee will check is_run_of_honor()
 								}
 							}
 						}
@@ -426,24 +423,14 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 						// if we were safe at base 3, we are not anymore.
 						if(get_base_controller(stateInfo->match, BASE_THIRD) == index) {
 						}
-						// if our baseAtPitchStart was BASE_HOME, we would have had a run at base 3 already so this wont be run
-						// unless a new pitch is pitched and then our baseAtPitchStart changes.
-						if((stateInfo->match->referee.battingPlayers[index].baseAtPitchStart != BASE_HOME ||
-						        stateInfo->match->gameModeState.canMakeRunOfHonor == 0) &&
-						        stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
-							stateInfo->match->gameControl.checkForRun = 1;
-						} else {
-							// if was 0, we just remove this player from field.
-							// if it wasnt 0, player will be removed afterwards.
-							stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
-						}
-
+						// We rely on Referee to adjudicate the run via is_regular_run.
+						// No need for pre-checks or manual removal here; reconcile will handle it.
 					}
 				}
 			}
 		}
 		// set the flag off as now everything has been handled.
-		stateInfo->match->gameEvents.playerArrivedAtBase = 0;
+		// stateInfo->match->gameEvents.playerArrivedAtBase = 0; // Handled by clearFrameEvents
 	}
 }
 

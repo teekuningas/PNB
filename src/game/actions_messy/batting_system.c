@@ -431,8 +431,6 @@ void updateBatting(StateInfo* stateInfo)
 							stateInfo->match->pRAI.batHit = 1;
 							// not a pitch anymore
 							stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
-							// this batter has chance to make run now by running to third base.
-							stateInfo->match->gameModeState.canMakeRunOfHonor = 1;
 							// no throw going on now
 							stateInfo->match->pRAI.throwGoingToBase = -1;
 							// prepare for wounds

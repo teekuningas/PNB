@@ -109,31 +109,39 @@ int count_active_batting_players(const PlayerInfo* players)
 // playing field.
 int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions)
 {
-	int value = 1;
-	// first, is ball behind the line at the back, or too much at right or too much at left
-	// or in front of the homeline
-	// if not, continue
-	if(ballInfo->location.z > fieldPositions->backLeftPoint.z &&
-	        ballInfo->location.x < fieldPositions->backRightPoint.x &&
-	        ballInfo->location.x > fieldPositions->backLeftPoint.x &&
-	        ballInfo->location.z < HOME_LINE_Z) {
-		float z0 = 1.0f;
-		float x = fieldPositions->rightPoint.x;
-		float z = fieldPositions->rightPoint.z - z0;
-		float slope1 = z/x;
-		float slope2;
-		x = -fieldPositions->leftPoint.x;
-		z = -(fieldPositions->leftPoint.z - z0);
-		slope2 = z/x;
-		// then here we just have basic line equations to check if the ball is
-		// out or inside the lines from pitchPlate to rightPoint and leftPoint.
-		if(ballInfo->location.z - slope1*ballInfo->location.x - z0 < 0 &&
-		        ballInfo->location.z - slope2*ballInfo->location.x - z0 < 0) {
-			value = 0;
+	if(ballInfo->location.x < fieldPositions->leftPoint.x &&ballInfo->location.z > fieldPositions->leftPoint.z) {
+		return 1;
+	} else if(ballInfo->location.x > fieldPositions->rightPoint.x &&ballInfo->location.z > fieldPositions->rightPoint.z) {
+		return 1;
+	} else if(ballInfo->location.z < fieldPositions->leftPoint.z) {
+		return 1;
+	}
+	return 0;
+}
+
+int is_run_of_honor_possible(const MatchSession* match)
+{
+	// Simplified version: Check if ball has been at 3rd base since pitch started
+	// If ball reached 3rd base, run of honor is no longer possible
+	if (match->referee.ballInThirdBaseSincePitch) {
+		return 0;
+	}
+
+	// Check if any batter (player who started at HOME) is still advancing
+	// and hasn't already scored run of honor
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		const PlayerInfo* player = &match->playerInfo[i];
+		if (player->bTPI.baseId == BASE_NONE) continue;
+
+		// Check if player is a batter who could still make run of honor
+		// 1. At least at 2nd base (so 2nd or 3rd)
+		// 2. Started at Home (Batter)
+		// 3. Hasn't already scored run of honor
+		if (base_is_at_least(player->bTPI.baseId, BASE_SECOND) &&
+		        match->referee.battingPlayers[i].baseAtPitchStart == BASE_HOME &&
+		        !match->referee.battingPlayers[i].runOfHonorScored) {
+			return 1;
 		}
 	}
-	if(value == 1) {
-		ballInfo->hasHitGroundOutOfBounds = 1;
-	}
-	return value;
+	return 0;
 }
