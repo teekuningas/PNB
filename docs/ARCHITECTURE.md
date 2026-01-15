@@ -22,21 +22,25 @@ State_Next = Pipeline(Physics(Input(State)))
 | 10-13 | State Consolidation | ✅ | StateInfo is single source of truth |
 | 14 | The Great Decoupling V1 | ✅ | **Referee_Analyze (pure) + Referee_Apply (impure)** |
 | 15 | Referee Architecture V2 | ✅ | **Referee_Update (Sequential Pipeline)** - Decisions struct eliminated |
-| 16 | Centralized Mutation | 🚧 | Move all rule writes to Referee |
-| 17 | Manipulation Decomposition | 🔮 | Break game_manipulation into subsystems |
-| 18 | Action Decoupling | 🔮 | Split actions_messy/ into pure + apply |
+| 16 | Centralized Mutation | ✅ | Initial move of rule writes to Referee |
+| 17 | Kill The Analyst | 🚧 | **Delete game_analysis.c**; Complete Referee Authority |
+| 18 | Physics/State Split | 🔮 | **The Big One:** Deconstruct game_manipulation into Physics + Rules |
+| 19 | Action Decoupling | 🔮 | Split actions_messy/ into pure + apply |
+| 20 | User Intent Layer | 🔮 | Input -> Intent -> Engine |
 
-## Current State (M15 Complete)
+## Current State (Post-M16)
 
-### What Changed in M15
+### Key Achievements
+- `Referee_Update` is a functional pipeline.
+- `GameEvents` structure exists for communication.
 
-**Before:** `Referee_Analyze` -> `RefereeDecisions` -> `Referee_Apply` pattern. Middleware struct overhead.
+### The Hybrid Problem
+We currently have a "Hybrid" architecture:
+1.  **Pure Core (`rules_pure/`):** Nice, clean, testable.
+2.  **Legacy Managers (`game_analysis.c`, `game_manipulation.c`):** Old-style "Manager" classes that do too much (Physics + Rules + UI).
 
-**After:**
-- `rules_pure/referee.c` (350 LOC) - **Referee_Update** pipeline calling sequential helpers.
-- **Removed:** `referee_apply.c`, `RefereeDecisions`, `Referee_Analyze`.
-- **Ball Home:** Logic moved to `game_manipulation.c` (physical state, not rule).
-- **Reconciliation:** `reconcileLegalAndPhysicalState` runs after Referee to sync physics with new rules.
+**Immediate Goal:** Eliminate `game_analysis.c`. It competes with `referee.c` for authority.
+**Next Major Goal:** Tackle `game_manipulation.c`. This is the "God Object" of the system.
 
 ### Key Data Structures
 

@@ -121,8 +121,8 @@ GameControl {
 |-----------|---------|---------|
 | RefereeState | **referee.c ONLY** | Everyone |
 | HalfInningState | **referee.c ONLY** | Everyone |
-| GameEvents | action_impl.c, game_manip.c | **referee.c reads, never writes** |
-| GameControl | Various | Various |
+| GameEvents | Physics, Actions | **referee.c reads, never writes** |
+| GameControl | Referee (mostly) | Physics, AI |
 
 ---
 
