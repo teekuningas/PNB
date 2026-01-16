@@ -13,6 +13,7 @@
 
 #include "mutable_world.h"
 #include "common_logic.h"
+#include "game_setup.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
 #include "state_validator.h"
 #include "referee.h"
@@ -93,6 +94,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);
+
 		// Referee logic now runs AFTER physics/manipulation to ensure legal state matches physical state
 		MatchSession* game = stateInfo->match;
 		Referee_Update(
@@ -104,8 +106,26 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		    &stateInfo->match->scoreboard
 		);
 
+		// Handle Foul Play Reset (Milestone 17)
+		// Timer logic: Count frames when outOfBounds is active
+		static int outOfBoundsTimer = 0;
+		if (game->gameControl.outOfBounds) {
+			outOfBoundsTimer++;
+
+			// After ~2 seconds (OUT_OF_BOUNDS_THRESHOLD frames), trigger reset
+			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
+				applyFoulPlayReset(stateInfo, rng_seed);
+				// Clear state to prevent loop
+				game->gameControl.outOfBounds = 0;
+				outOfBoundsTimer = 0;
+			}
+		} else {
+			outOfBoundsTimer = 0;
+		}
+
 		// React to the new legal state (e.g. panic run if safety lost)
 		reconcileLegalAndPhysicalState(stateInfo);
+
 		// Validate state consistency (Debug only)
 		if (!StateValidator_Check(stateInfo)) {
 			StateValidator_Dump(stateInfo, "State Consistency Check Failed");

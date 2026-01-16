@@ -104,7 +104,6 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 
 	// Set referee tracking
 	game->referee.battingPlayers[playerIndex].baseAtPitchStart = base;
-	game->referee.battingPlayers[playerIndex].hadSafetyAtPitchStart = 1;
 	game->referee.battingPlayers[playerIndex].hasPendingWound = 0;
 	game->referee.battingPlayers[playerIndex].woundingType = WOUNDING_TYPE_NONE;
 
@@ -185,7 +184,6 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
 	// Referee state: fresh batter
 	game->referee.battingPlayers[playerIndex].currentSafetyBase = BASE_NONE;
 	game->referee.battingPlayers[playerIndex].baseAtPitchStart = BASE_HOME;
-	game->referee.battingPlayers[playerIndex].hadSafetyAtPitchStart = 0;
 
 	// Runtime state
 	game->playerRuntime[playerIndex].goingForward = 0;
@@ -236,6 +234,20 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 		MatchSession* game = ctx->state->match;
 		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
+
+		// Manually handle Foul Play Reset (simulating mutable_world.c logic)
+		static int outOfBoundsTimer = 0;
+		if (game->gameControl.outOfBounds) {
+			outOfBoundsTimer++;
+
+			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
+				applyFoulPlayReset(ctx->state, &ctx->seed);
+				game->gameControl.outOfBounds = 0;
+				outOfBoundsTimer = 0;
+			}
+		} else {
+			outOfBoundsTimer = 0;
+		}
 
 		// Clear transient events for next frame (Critical for correct event loop)
 		clearFrameEvents(&game->gameEvents);
@@ -412,7 +424,6 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
 			game->referee.battingPlayers[i].baseAtPitchStart = game->playerInfo[i].bTPI.baseId;
-			game->referee.battingPlayers[i].hadSafetyAtPitchStart = 1; // Simplify for test
 			game->referee.battingPlayers[i].currentSafetyBase = game->playerInfo[i].bTPI.baseId;
 		}
 	}

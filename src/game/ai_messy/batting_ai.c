@@ -357,10 +357,14 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	if(stateInfo->match->pRAI.pitchState != PITCH_STAGE_AIRBORNE &&stateInfo->match->aiState.angleDecided == 1) {
 		stateInfo->match->aiState.angleDecided = 0;
 	}
-	//here we check if ball is going somewhere out of bounds so that players can try to run towards next bases.
-	if(stateInfo->match->ballInfo.hasHitGroundOutOfBounds == 1 &&stateInfo->match->pRAI.batHit == 1 &&
-	        stateInfo->match->pRAI.throwGoingToBase == -1 &&stateInfo->match->pII.hasBallIndex == -1 &&
-	        stateInfo->match->ballInfo.moving == 1) {
+	// AI: Check if it's safe to advance runners
+	// Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
+	if(stateInfo->match->pRAI.batHit == 1 &&
+	        stateInfo->match->gameControl.catchHasBeenMade == 0 &&
+	        stateInfo->match->pRAI.throwGoingToBase == -1 &&
+	        stateInfo->match->pII.hasBallIndex == -1 &&
+	        stateInfo->match->ballInfo.moving == 1 &&
+	        checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
 		isDoubleClickingOk = 1;
 	}
 	// we will run with everyone so we need to simulate double click here.

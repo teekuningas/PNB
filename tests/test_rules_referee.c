@@ -17,7 +17,7 @@ StateInfo* create_mock_state()
 	memset(state->fieldPositions, 0, sizeof(FieldPositions));
 
 	// Initialize referee state properly (wounding timer must be -1, not 0)
-	state->match->referee.woundingCatchTimer = -1;
+	state->match->referee.woundingEvaluationTimer = -1;
 
 	// Setup standard field positions for distance checks
 	state->fieldPositions->pitchPlate.x = 0.0f;

@@ -98,14 +98,12 @@ static void updateBallStatus(MatchSession* match, FieldPositions* fieldPositions
 					if(gameFlowState->closeToGround == 0) {
 						gameFlowState->closeToGround = 1;
 						// outOfBounds calculation moved to Referee (via checkIfBallIsOutOfBounds in base_logic)
-						checkIfBallIsOutOfBounds(&(match->ballInfo), fieldPositions);
 					}
 					// it could be its first time
 					if(match->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
 						// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
 						match->ballInfo.hasHitGround = 1;
 						match->gameEvents.ballHitGround = 1;
-						match->referee.woundingCatchPending = 0;
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						match->ballInfo.hitsGroundToUnWound = 1;
 					}
@@ -248,21 +246,15 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						smoothOutMovement(stateInfo->match);
 						// set the has ball model.
 						stateInfo->match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
-						// wounding catchs are the catchs that come directly from the bat.
-						if(stateInfo->match->ballInfo.hasHitGround == 0 &&stateInfo->match->gameControl.catchHasBeenMade == 0 &&
-						        stateInfo->match->pRAI.batHit == 1) {
-							stateInfo->match->referee.woundingCatchPending = 1;
-						}
+
+						// Emit catch event (referee will evaluate if it's a wounding catch)
+						stateInfo->match->gameEvents.catchMade = 1;
+
 						// make sound
 						stateInfo->playSoundEffect = SOUND_CATCH;
-						// this could be the fifth but the first is still made.
-						stateInfo->match->gameEvents.catchMade = 1;
 						stateInfo->match->pRAI.throwGoingToBase = -1;
 						stateInfo->match->pII.controlIndex = i;
 						stateInfo->match->pII.hasBallIndex = i;
-
-						// some information for AI to make decisions
-						stateInfo->match->ballInfo.hasHitGroundOutOfBounds = 0;
 
 						// and set running flag
 						stateInfo->match->playerInfo[stateInfo->match->pII.controlIndex].cPI.running = 1;

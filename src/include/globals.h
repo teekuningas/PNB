@@ -213,7 +213,6 @@ typedef struct _BallInfo {
 	int moving; // is ball moving, only update player orientations and ball's position if ball is moving
 	int hasHitGround; // has the ball hit ground
 	int onGround; // is ball rolling on ground
-	int hasHitGroundOutOfBounds; // is set to 1 when ball hits ground out of bounds, back to 0 when ball is catched
 	int hitsGroundToUnWound; // if ball hits ground after being catched as wounding catch, is set to 1. checked only after wounding catch so, it is set to 0 when the catch is made.
 	int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
 	int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
@@ -325,7 +324,6 @@ typedef enum {
 typedef struct _RefereePlayerState {
 	// === PITCH START SNAPSHOT (for foul play) ===
 	BaseID baseAtPitchStart;       // Where was player when pitch started
-	int hadSafetyAtPitchStart;     // Did they have safety?
 
 	// === CURRENT SAFETY STATUS ===
 	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
@@ -349,15 +347,16 @@ typedef struct _RefereeState {
 	RefereePlayerState battingPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
 
 	// Global events
-	int woundingCatchActive;       // Fly ball was caught (pending timer)
-	int foulPlayActive;            // Out of bounds situation
 	int strikesAtPitchStart;       // Snapshot of strikes when pitch started
 
-	// Wounding system state (consolidated from WoundingState, GameFlowState, PlayerRuntimeState)
-	int woundingCatchPending;      // Pending wounding opportunity (replaces WoundingState.woundingCatch)
-	int woundingCatchHandled;      // Has been processed (replaces WoundingState.woundingCatchHandled)
-	int woundingCatchTimer;        // Timer for wounding confirmation (replaces GameFlowState.woundingCatchCounter)
-	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Which players marked for wound (replaces PlayerRuntimeState.woundedApply)
+	// Wounding evaluation state (Referee monitors and decides)
+	int woundingEvaluationActive;  // Referee is evaluating a potential wounding catch
+	int woundingEvaluationTimer;   // Timer counting up during evaluation period
+	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Players vulnerable at catch moment
+
+	// Flow Control Timers (Milestone 17 consolidation)
+	int endInningTimer;            // Replaces gameFlowState.endOfInningCounter
+	int nextPairTimer;             // Replaces gameFlowState.nextPairCounter
 
 	// Run of Honor tracking (Homerun Contest)
 	int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
@@ -511,7 +510,6 @@ typedef struct _GameEvents {
 	int ballHitGround;           // Ball touched the ground this frame
 	int freeWalkAccepted;        // Player accepted free walk
 	int freeWalkRejected;        // Player rejected free walk
-	int outOfBoundsOccurred;     // Ball went out of bounds
 } GameEvents;
 
 // MILESTONE 16 (Phase 1): Stateful coordination flags
@@ -524,7 +522,11 @@ typedef struct _GameControl {
 	int waitingForBatterDecision;
 	int waitingForFreeWalkDecision;
 	int freeWalkCalculationMade;
+
+	// Referee Decisions (Sticky State)
 	int catchHasBeenMade; // Persistent flag: catch occurred during this play
+	int hasBallHitGround; // Persistent flag: ball has hit ground during this play (for first bounce detection)
+	int outOfBounds; // Persistent flag: foul play detected (first bounce was out of bounds)
 
 	// Context data
 	int freeWalkIndex;

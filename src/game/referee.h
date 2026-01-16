@@ -17,19 +17,14 @@ void initializeRefereeState(RefereeState* referee);
  */
 
 /**
- * @brief Check if a wounding catch is currently pending
+ * @brief Check if wounding evaluation is currently active
  */
-int is_wounding_catch_pending(const RefereeState* ref);
+int is_wounding_evaluation_active(const RefereeState* ref);
 
 /**
- * @brief Check if the wounding catch has been handled (started processing)
+ * @brief Get the current wounding evaluation timer value (-1 if inactive)
  */
-int is_wounding_catch_handled(const RefereeState* ref);
-
-/**
- * @brief Get the current wounding catch timer value (-1 if inactive)
- */
-int get_wounding_timer(const RefereeState* ref);
+int get_wounding_evaluation_timer(const RefereeState* ref);
 
 /**
  * @brief Check if a specific player is marked for wounding

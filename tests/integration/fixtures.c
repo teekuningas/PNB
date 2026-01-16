@@ -41,7 +41,7 @@ StateInfo* setup_test_state()
 	state->match->pII.hasBallIndex = -1;
 	state->match->pII.lastHadBallIndex = -1;
 	state->match->pII.controlIndex = -1;
-	state->match->referee.woundingCatchTimer = -1;
+	state->match->referee.woundingEvaluationTimer = -1;
 	state->match->gameFlowState.endOfInningCounter = -1;
 
 
@@ -66,7 +66,6 @@ void setup_runner_at_first_base(StateInfo* state)
 	initGameAnalysis(&(state->match->gameFlowState));
 	state->match->playerInfo[0].bTPI.baseId = BASE_FIRST;
 	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
-	state->match->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
 	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
 }
 
@@ -88,7 +87,6 @@ void setup_runner_at_third_base(StateInfo* state)
 	initGameAnalysis(&(state->match->gameFlowState));
 	state->match->playerInfo[0].bTPI.baseId = BASE_THIRD;
 	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
-	state->match->referee.battingPlayers[0].hadSafetyAtPitchStart = 1;
 	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;
 }
 

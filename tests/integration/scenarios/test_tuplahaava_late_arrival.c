@@ -44,7 +44,7 @@ int test_full_tuplahaava_late_arrival_between_bases(void)
 		int stateA = ctx->state->match->playerInfo[0].bTPI.state;
 		int stateB = ctx->state->match->playerInfo[1].bTPI.state;
 		int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
-		int timer = ctx->state->match->referee.woundingCatchTimer;
+		int timer = ctx->state->match->referee.woundingEvaluationTimer;
 		int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
 		int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 		int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;

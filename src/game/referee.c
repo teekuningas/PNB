@@ -12,10 +12,130 @@
 #define BASE_RADIUS 2.0f
 #define HOME_RADIUS 6.0f
 #define HOME_LINE_Z -0.65f
+#define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
+#define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))
 
 // ============================================================================
 // Referee Update Pipeline (Milestone 15)
 // ============================================================================
+
+static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* halfInningState, const GameEvents* events, GameControl* gameControl)
+{
+	const MatchSession* game = stateInfo->match;
+
+	// Out of Bounds Logic: Check ONLY on first bounce
+	if (events->ballHitGround && gameControl->hasBallHitGround == 0) {
+		// Check if this first bounce qualifies as foul play:
+		// - Ball was hit by bat
+		// - Ball was not caught
+		// - Ball landed out of bounds
+		if (game->pRAI.batHit == 1 && gameControl->catchHasBeenMade == 0) {
+			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
+				// Set sticky flag in GameControl (Referee decision)
+				gameControl->outOfBounds = 1;
+
+				// Trigger global event once
+				if (halfInningState->event == EVENT_NONE) {
+					halfInningState->event = EVENT_OUT_OF_BOUNDS;
+				}
+			}
+		}
+	}
+}
+
+static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, const GameControl* gameControl)
+{
+	const MatchSession* game = stateInfo->match;
+
+	// A. Start Wounding Evaluation (on catch event)
+	// Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
+	if (events->catchMade &&
+	        game->pRAI.batHit == 1 &&
+	        gameControl->hasBallHitGround == 0 &&
+	        gameControl->catchHasBeenMade == 0) {
+
+		// Start evaluation period
+		referee->woundingEvaluationActive = 1;
+		referee->woundingEvaluationTimer = 0;
+
+		// Mark vulnerable players at this moment
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			referee->woundingPlayersMarked[i] = 0; // Clear first
+
+			if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+				// Check if player is vulnerable (not safe from fly ball)
+				if (!player_is_safe_from_fly(game->playerInfo[i].bTPI.state,
+				                             game->playerInfo[i].bTPI.baseId,
+				                             referee->battingPlayers[i].baseAtPitchStart)) {
+					// Mark this player as vulnerable
+					referee->woundingPlayersMarked[i] = 1;
+					// Snapshot their current base
+					referee->battingPlayers[i].woundingSourceBase = game->playerInfo[i].bTPI.baseId;
+				}
+			}
+		}
+	}
+
+	// B. Monitor Wounding Evaluation Period
+	if (referee->woundingEvaluationActive) {
+		referee->woundingEvaluationTimer++;
+
+		// Calculate threshold (extend if ball was thrown)
+		int threshold;
+		if (game->pII.hasBallIndex == -1) {
+			threshold = (int)(2 * WOUNDING_CATCH_THRESHOLD);
+		} else {
+			threshold = (int)WOUNDING_CATCH_THRESHOLD;
+		}
+
+		// Check for UN-WOUNDING: Ball hit ground before timer expired
+		if (game->ballInfo.hitsGroundToUnWound == 1) {
+			// Clear evaluation - players are safe!
+			referee->woundingEvaluationActive = 0;
+			referee->woundingEvaluationTimer = -1;
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				referee->woundingPlayersMarked[i] = 0;
+			}
+		}
+		// Timer expired - CONFIRM WOUNDING
+		else if (referee->woundingEvaluationTimer > threshold) {
+			// Apply wounding to marked players
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				if (referee->woundingPlayersMarked[i] == 1 &&
+				        game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+
+					BaseID baseId = game->playerInfo[i].bTPI.baseId;
+
+					// Trigger global event
+					halfInningState->event = EVENT_WOUNDED;
+
+					// Apply wounding state
+					referee->battingPlayers[i].hasPendingWound = 1;
+
+					// Determine wounding type (don't overwrite TUPLAHAAVA)
+					if (referee->battingPlayers[i].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
+						referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NORMAL;
+					}
+
+					// Snapshot current base for event tracking
+					referee->battingPlayers[i].baseAtLastEvent = baseId;
+
+					// Remove safety (unless TUPLAHAAVA)
+					if (referee->battingPlayers[i].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
+						referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					}
+
+					// Clear marking
+					referee->woundingPlayersMarked[i] = 0;
+				}
+			}
+
+			// End evaluation period
+			referee->woundingEvaluationActive = 0;
+			referee->woundingEvaluationTimer = -1;
+		}
+	}
+}
 
 static void update_safety_status(const StateInfo* stateInfo, RefereeState* referee)
 {
@@ -107,7 +227,7 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 	}
 }
 
-static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase)
+static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase, GameControl* gameControl)
 {
 	const MatchSession* game = stateInfo->match;
 
@@ -146,7 +266,7 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            halfInningState
+			            gameControl->outOfBounds
 			        )) {
 
 				referee->battingPlayers[i].isOut = 1;
@@ -157,9 +277,6 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 				if (has_safety_at_current) {
 					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 				}
-
-				// Critical Fix: Clear baseAtPitchStart so this player isn't resurrected by foulPlay
-				referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 			}
 
 			// B. Safety Removal (§36 Koppilyönti logic)
@@ -189,7 +306,6 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 						halfInningState->outs += 1;
 						halfInningState->event = EVENT_OUT;
 						referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
-						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 					}
 					// Exception 1: Ball at SOURCE base -> Lose Safety
 					else if (base_to_int_index(source) == ballAtBase) {
@@ -211,9 +327,9 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 	// We trigger this check if ANY player arrived at a base this frame.
 	if (game->gameEvents.playerArrivedAtBase) {
 		if ((game->gameControl.catchHasBeenMade == 1 || game->ballInfo.hasHitGround == 1) &&
-		        referee->woundingCatchTimer == -1 &&
+		        referee->woundingEvaluationActive == 0 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
-		        halfInningState->outOfBounds == 0) {
+		        gameControl->outOfBounds == 0) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -238,7 +354,6 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 						halfInningState->runsInTheInning += 1;
 
 						referee->battingPlayers[i].hasScored = 1;
-						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
 
 						if (halfInningState->runsInTheInning % 2 == 0) {
 							playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
@@ -350,7 +465,6 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 		if (scoreboard->period >= 4) {
 			// Homerun Contest / Super Inning Logic
 			referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
-			referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
 			referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
 
 			// Add run
@@ -378,12 +492,10 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 				// Advance to next base
 				BaseID targetBase = base_get_next(sourceBase);
 				referee->battingPlayers[i].baseAtPitchStart = targetBase;
-				referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
 				referee->battingPlayers[i].currentSafetyBase = targetBase;
 			} else {
 				// Score from 3rd base
 				referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
-				referee->battingPlayers[i].hadSafetyAtPitchStart = 1;
 				referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
 
 				// Add run
@@ -426,24 +538,6 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	if (events->pitchReleased) {
 		gameControl->catchHasBeenMade = 0;
 	}
-
-	// Out of Bounds Logic
-	// If ball hit ground this frame, checks if it counts as foul play.
-	// Must have been hit by bat, not caught, and landed outside boundaries.
-	if (events->ballHitGround) {
-		const MatchSession* game = stateInfo->match;
-		// If ball hit bat AND wasn't caught, it's a potential foul if it lands out of bounds.
-		// game->pRAI.batHit stays 1 until next pitch, so it reliably tells us if this sequence started with a hit.
-		if (game->pRAI.batHit == 1 &&gameControl->catchHasBeenMade == 0) {
-			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
-				halfInningState->outOfBounds = 1;
-			}
-		}
-	}
-
-	if (events->outOfBoundsOccurred) {
-		halfInningState->outOfBounds = 1;
-	}
 }
 
 void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
@@ -458,9 +552,19 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 		refereeState->ballInThirdBaseSincePitch = 1;
 	}
 
+	// 2.5 Foul Play & Wounding Logic (Milestone 17)
+	update_foul_play_logic(stateInfo, halfInningState, &stateInfo->match->gameEvents, gameControl);
+
+	// Mark that ball hit ground (after foul play check, so it can detect first bounce)
+	if (stateInfo->match->gameEvents.ballHitGround) {
+		gameControl->hasBallHitGround = 1;
+	}
+
+	update_wounding_logic(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, gameControl);
+
 	// 3. Safety Pipeline
 	update_safety_status(stateInfo, refereeState);
-	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase);
+	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase, gameControl);
 	update_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
 
 	// 4. Strikes
@@ -494,19 +598,14 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 		}
 	}
 }
-int is_wounding_catch_pending(const RefereeState* ref)
+int is_wounding_evaluation_active(const RefereeState* ref)
 {
-	return ref->woundingCatchPending;
+	return ref->woundingEvaluationActive;
 }
 
-int is_wounding_catch_handled(const RefereeState* ref)
+int get_wounding_evaluation_timer(const RefereeState* ref)
 {
-	return ref->woundingCatchHandled;
-}
-
-int get_wounding_timer(const RefereeState* ref)
-{
-	return ref->woundingCatchTimer;
+	return ref->woundingEvaluationTimer;
 }
 
 int is_player_marked_for_wound(const RefereeState* ref, int playerIndex)
@@ -522,7 +621,6 @@ void initializeRefereeState(RefereeState* referee)
 	int i;
 	for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-		referee->battingPlayers[i].hadSafetyAtPitchStart = 0;
 		referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 		referee->battingPlayers[i].isOut = 0;
 		referee->battingPlayers[i].hasScored = 0;
@@ -535,11 +633,11 @@ void initializeRefereeState(RefereeState* referee)
 
 		referee->woundingPlayersMarked[i] = 0;
 	}
-	referee->woundingCatchActive = 0;
-	referee->foulPlayActive = 0;
 	referee->strikesAtPitchStart = 0;
-	referee->woundingCatchPending = 0;
-	referee->woundingCatchHandled = 0;
-	referee->woundingCatchTimer = -1;
+	referee->woundingEvaluationActive = 0;
+	referee->woundingEvaluationTimer = -1;
 	referee->ballInThirdBaseSincePitch = 0;
+
+	referee->endInningTimer = -1;
+	referee->nextPairTimer = -1;
 }

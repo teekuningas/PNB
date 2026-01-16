@@ -115,7 +115,6 @@ void selectBatter(StateInfo* stateInfo)
 		stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
 		// Milestone 12: Referee Update
 		stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME;
-		stateInfo->match->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
 		stateInfo->match->referee.battingPlayers[index].currentSafetyBase = BASE_HOME;
 		// this guy will begin with 0 strikes and 0 balls.
 		stateInfo->match->halfInningState.strikes = 0;
@@ -434,8 +433,8 @@ void updateBatting(StateInfo* stateInfo)
 							// no throw going on now
 							stateInfo->match->pRAI.throwGoingToBase = -1;
 							// prepare for wounds
-							stateInfo->match->referee.woundingCatchPending = 0;
-							stateInfo->match->referee.woundingCatchHandled = 0;
+							stateInfo->match->referee.woundingEvaluationActive = 0;
+							stateInfo->match->referee.woundingEvaluationTimer = -1;
 
 							// move the batter if wanted
 

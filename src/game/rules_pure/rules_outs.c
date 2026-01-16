@@ -9,11 +9,11 @@
  * In the case of a fly ball catch (§36), runners who were off-base (irti) lose their safety
  * and must reach the next base before the ball to avoid being out.
  */
-int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk, const HalfInningState* halfInningState)
+int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk, int out_of_bounds_active)
 {
 	// If the play is out of bounds (foul), outs are generally not recorded this way
 	// (or the situation is handled by foulPlay logic reset).
-	if (halfInningState->outOfBounds) {
+	if (out_of_bounds_active) {
 		return 0;
 	}
 

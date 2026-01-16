@@ -1,5 +1,6 @@
 #include "game_setup.h"
 #include "common_logic.h"
+#include "rules_pure/player_utils.h"
 #include <string.h>
 
 void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
@@ -66,4 +67,95 @@ void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 	loadMutableWorldSettings(stateInfo, rng_seed);
+}
+
+void applyFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
+{
+	MatchSession* game = stateInfo->match;
+
+	// Reset standard game state
+	initializeBallInfo(game);
+	initializeActionInfo(game);
+	initializeTemporaryGameAnalysisInfo(game);
+	initializeIndexInformation(game);
+	initializePRAIInformation(game);
+	initializeSpatialPlayerInformation(game, stateInfo->fieldPositions, rng_seed);
+	initializeNonCriticalPlayerInformation(game);
+
+	if (game->scoreboard.period >= 4) {
+		// Homerun Contest special initialization
+		initializeCriticalBattingTeamInformation(game);
+		setRunnerAndBatter(game, &game->scoreboard, stateInfo->fieldPositions);
+	} else {
+		// Restore players to their bases at the start of the pitch
+		for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+			if (game->referee.battingPlayers[j].baseAtPitchStart != BASE_NONE) {
+				BaseID restoreBase = game->referee.battingPlayers[j].baseAtPitchStart;
+
+				// 1. Restore Player State and ID
+				if (restoreBase == BASE_HOME) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_AT_BAT;
+				} else {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_ON_BASE;
+				}
+				game->playerInfo[j].bTPI.baseId = restoreBase;
+
+				// 2. Restore Safety Status (Always safe at original base after foul)
+				game->referee.battingPlayers[j].currentSafetyBase = restoreBase;
+
+				// 3. Clear transient rule states
+				game->referee.battingPlayers[j].hasPendingWound = 0;
+				game->referee.battingPlayers[j].woundingType = WOUNDING_TYPE_NONE;
+
+				// 4. Handle scoring from 3rd base (foul fly walk case)
+				if (game->playerInfo[j].bTPI.baseId == BASE_HOME_SCORED) {
+					int battingTeamIndex = (game->scoreboard.inning + game->scoreboard.playsFirst + game->scoreboard.period) % 2;
+					game->scoreboard.teams[battingTeamIndex].runs += 1;
+					game->halfInningState.runsInTheInning += 1;
+					game->halfInningState.event = EVENT_RUN_SCORED;
+					game->playerInfo[j].bTPI.baseId = BASE_NONE;
+
+					if (game->halfInningState.runsInTheInning % 2 == 0) {
+						game->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+					}
+				}
+				// 5. Handle the Batter
+				else if (game->playerInfo[j].bTPI.baseId == BASE_HOME) {
+					if (game->referee.strikesAtPitchStart == 2) {
+						// 3rd Strike OUT (§33)
+						game->halfInningState.strikes = 3;
+						game->halfInningState.outs += 1;
+						game->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
+						game->playerInfo[j].bTPI.baseId = BASE_NONE;
+						game->referee.battingPlayers[j].currentSafetyBase = BASE_NONE;
+						game->referee.battingPlayers[j].baseAtPitchStart = BASE_NONE;
+					} else {
+						// Continue batting with incremented strikes
+						game->halfInningState.strikes = game->referee.strikesAtPitchStart + 1;
+						prepareBatter(game);
+					}
+				}
+				// 6. Restore Physical Locations for field runners
+				else if (game->playerInfo[j].bTPI.baseId == BASE_FIRST) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->firstBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->firstBaseRun.z;
+				} else if (game->playerInfo[j].bTPI.baseId == BASE_SECOND) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->secondBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->secondBaseRun.z;
+				} else if (game->playerInfo[j].bTPI.baseId == BASE_THIRD) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->thirdBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->thirdBaseRun.z;
+				}
+			} else {
+				// Restore OUT/SCORED states to avoid re-triggering animations
+				if (game->referee.battingPlayers[j].isOut) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
+					game->playerInfo[j].bTPI.baseId = BASE_NONE;
+				} else if (game->referee.battingPlayers[j].hasScored) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_SCORED;
+					game->playerInfo[j].bTPI.baseId = BASE_NONE;
+				}
+			}
+		}
+	}
 }

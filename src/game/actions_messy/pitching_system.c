@@ -190,7 +190,6 @@ void releasePitch(StateInfo* stateInfo)
 				else destBase = base_get_next(baseId);
 
 				stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = destBase;
-				stateInfo->match->referee.battingPlayers[index].hadSafetyAtPitchStart = 1;
 				stateInfo->match->referee.battingPlayers[index].currentSafetyBase = destBase;
 			} else {
 				stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = baseId;
@@ -206,7 +205,6 @@ void releasePitch(StateInfo* stateInfo)
 				if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
 					hasSafety = 1;
 				}
-				stateInfo->match->referee.battingPlayers[index].hadSafetyAtPitchStart = hasSafety;
 
 				// Initialize current safety tracking
 				if (hasSafety) {

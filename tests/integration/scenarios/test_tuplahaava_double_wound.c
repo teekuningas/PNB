@@ -55,7 +55,7 @@ int test_full_tuplahaava_double_wound(void)
 		int markedA = ctx->state->match->referee.woundingPlayersMarked[0];
 		int markedB = ctx->state->match->referee.woundingPlayersMarked[1];
 		int goingFwdA = ctx->state->match->playerRuntime[0].goingForward;
-		int timer = ctx->state->match->referee.woundingCatchTimer;
+		int timer = ctx->state->match->referee.woundingEvaluationTimer;
 
 		// Verbose logging for transition frames
 		if (frame % 10 == 0 || (hasBall != -1 &&catchFrame == -1) || baseA == BASE_SECOND || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED || arrivalFrame != -1 || (arrivalFrame != -1 &&frame < arrivalFrame + 50)) {

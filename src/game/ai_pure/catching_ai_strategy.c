@@ -79,7 +79,7 @@ int should_ai_drop_ball(const RefereeState* ref, const GameControl* gameControl,
 	// Dropping the ball in a fly-ball situation can allow for a force play
 	// when we want to get an OUT at home base or create a double play.
 	// We only do this when 2nd and 3rd bases are occupied.
-	if (ref->woundingCatchPending == 1) {
+	if (ref->woundingEvaluationActive == 1) {
 		if (runner3BaseAtPitchStart == BASE_THIRD &&runner3IsOnBase == 1 &&
 		        runner2BaseAtPitchStart == BASE_SECOND &&runner2IsOnBase == 1 &&
 		        catcherHomeIndex == hasBallIndex) {

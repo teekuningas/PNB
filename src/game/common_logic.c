@@ -764,7 +764,6 @@ void initializeBallInfo(MatchSession* match)
 	match->ballInfo.hasHitGround = 0;
 	match->ballInfo.onGround = 0;
 	match->ballInfo.hitsGroundToUnWound = 0;
-	match->ballInfo.hasHitGroundOutOfBounds = 0;
 	match->ballInfo.needsMoveUpdate = 0;
 	match->ballInfo.lastLastLocationUpdate = 0;
 }
@@ -797,12 +796,10 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->gameControl.freeWalkCalculationMade = 1;
 	match->gameControl.waitingForBatterDecision = 0;
 	match->gameControl.waitingForFreeWalkDecision = 0;
-	match->halfInningState.outOfBounds = 0;
+	match->gameControl.outOfBounds = 0;
 	match->playerCounters.noMorePlayers = 0;
 	match->gameFlowState.ballHome = 0;
 	match->halfInningState.endPeriod = 0;
-	match->referee.woundingCatchPending = 0;
-	match->referee.woundingCatchHandled = 0;
 
 	match->halfInningState.event = EVENT_NONE;
 	match->gameControl.freeWalkIndex = -1;
@@ -814,14 +811,19 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	// GameEvents (transient, will be cleared each frame)
 	clearFrameEvents(&match->gameEvents);
 
-	// GameControl (stateful)
+	// GameControl (stateful) - Reset for new pitch
 	match->gameControl.pause = 0;
 	match->gameControl.waitingForBatterDecision = 0;
 	match->gameControl.waitingForFreeWalkDecision = 0;
 	match->gameControl.freeWalkCalculationMade = 1;
 	match->gameControl.freeWalkIndex = -1;
 	match->gameControl.freeWalkBase = BASE_NONE;
+
+	// Reset referee sticky flags for new pitch (Milestone 17)
 	match->gameControl.catchHasBeenMade = 0;
+	match->gameControl.hasBallHitGround = 0;
+	match->gameControl.outOfBounds = 0;
+	match->gameControl.pitchResolutionProcessed = 0;
 
 	initGameAnalysis(&(match->gameFlowState));
 	initGameManipulation(&(match->gameFlowState));
@@ -844,7 +846,6 @@ void clearFrameEvents(GameEvents* events)
 	events->ballHitGround = 0;
 	events->freeWalkAccepted = 0;
 	events->freeWalkRejected = 0;
-	events->outOfBoundsOccurred = 0;
 }
 
 // these should be kept when foul play
@@ -917,7 +918,6 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 			match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
 			match->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
-			match->referee.battingPlayers[runnerIndex].hadSafetyAtPitchStart = 1; // Correctness
 			match->referee.battingPlayers[runnerIndex].currentSafetyBase = BASE_THIRD;
 
 			match->playerInfo[runnerIndex].tPI.location.x =
