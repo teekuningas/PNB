@@ -71,7 +71,7 @@ int base_to_int_index(BaseID id);
  * Checks if a player is in a protected state (safe on base, at bat, or walking freely).
  * This represents general immunity from being forced out while occupying a base.
  */
-bool player_is_protected(PlayerUnitState state);
+
 
 /**
  * Checks if a player is safe from being wounded by a fly ball catch (koppi).

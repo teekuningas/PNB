@@ -1,20 +1,5 @@
 #include "rules_strikes.h"
 
-// §26 Syötön tuomitseminen
-/**
- * Determines if the batter should change due to strikes.
- *
- * @param halfInningState Current game state containing strikes.
- * @param safe_on_first_base_index Index of the player safe on first base (-1 if none).
- * @return 1 if the batter should change, 0 otherwise.
- */
-int should_change_batter_on_strikes(const HalfInningState* halfInningState)
-{
-	if(halfInningState->strikes >= 3) {
-		return 1;
-	}
-	return 0;
-}
 
 PitchResult determine_pitch_result(float ball_x, float plate_width, int bat_miss)
 {

@@ -113,7 +113,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 static void strikesAndBalls(StateInfo* stateInfo)
 {
 	// so if there are three strikes
-	if(should_change_batter_on_strikes(&(stateInfo->match->halfInningState))) {
+	if(stateInfo->match->halfInningState.strikes >= 3) {
 		// We restore automatic force running to resolve control ambiguity.
 		// The batter is now "forced" to run by the rules.
 		int index = get_base_controller(stateInfo->match, BASE_HOME);

@@ -3,13 +3,6 @@
 
 #include "globals.h"
 
-/**
- * Determines if the batter should change due to strikes.
- *
- * @param halfInningState Current game state containing strikes.
- * @return 1 if the batter should change, 0 otherwise.
- */
-int should_change_batter_on_strikes(const HalfInningState* halfInningState);
 
 /**
  * Pure function to determine the outcome of a pitch.

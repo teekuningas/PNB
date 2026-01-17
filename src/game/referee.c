@@ -258,7 +258,7 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 
 			// A. Force Out / Burning (§33)
 			int has_safety_at_current = (referee->battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
-			int is_protected = player_is_protected(player->bTPI.state);
+			int is_protected = (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT);
 			int is_safe_from_force_out = has_safety_at_current &&is_protected;
 
 			if (is_runner_forced_out(

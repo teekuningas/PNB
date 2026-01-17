@@ -400,36 +400,20 @@ Just write explicit tests for each field without X-Macros. Less elegant but easi
 
 ---
 
-### **Priority 3: Consolidate Timers in Referee** ⏱️ 45 minutes
+### **Priority 3: Clarify Timer Ownership (Documentation Only)** ⏱️ 15 minutes
 
-**Problem:** Referee still references `gameFlowState.endOfInningCounter`
-**Solution:** Use existing `referee.endInningTimer` and `referee.nextPairTimer`
+**Correction:** Earlier plan proposed moving ALL timers to Referee. This was incorrect.
+- **Referee Timers:** Timers that determine a *rule decision* (e.g., `woundingEvaluationTimer` - "did he hold it long enough?").
+- **Flow/UX Timers:** Timers that handle *transitions* after a decision (e.g., `endOfInningCounter` - "wait 2 seconds before showing menu").
 
-**Files to Modify:**
-
-1. **`src/game/referee.c:331`**
-   ```c
-   // Change:
-   game->gameFlowState.endOfInningCounter == -1
-   // To:
-   referee->endInningTimer == -1
-   ```
-
-2. **`src/game/game_analysis.c`** - Update `checkIfEndOfInning()` and `checkIfNextPair()`
-   - Read `referee->endInningTimer` instead of `gameFlowState.endOfInningCounter`
-   - Read `referee->nextPairTimer` instead of `gameFlowState.nextPairCounter`
-   - These timers should be READ ONLY by game_analysis (not set)
-
-**Decision Needed:** Should end-of-inning/next-pair **detection** move to referee?
-- **Current:** game_analysis detects conditions, sets timer
-- **Proposed:** Referee detects, sets timer; game_analysis reads and executes transitions
-- **Defer to:** Next session discussion (not blocking)
+**Action:**
+- Do NOT move `endOfInningCounter` or `nextPairCounter` to Referee.
+- Update `docs/REFEREE_PATTERN.md` (when created) to explicitly state this distinction.
+- Ensure `PitchState` split respects this (UX state -> FlowControl, Rule state -> PitchState).
 
 **Checklist:**
-- [ ] Update referee.c to use referee->endInningTimer
-- [ ] Update game_analysis.c to read from referee timers
-- [ ] Run integration tests (especially end-of-inning scenarios)
-- [ ] Commit: "Consolidate flow timers in referee state"
+- [ ] Update mental model: Referee = Rules, GameAnalysis = Flow/UX
+- [ ] This priority is now effectively merged into "Document Referee Structure"
 
 ---
 

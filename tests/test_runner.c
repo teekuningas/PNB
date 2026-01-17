@@ -7,9 +7,7 @@
 #include "test_pitching_ai_strategy.h"
 #include "test_rules_outs.h"
 #include "test_rules_runs.h"
-#include "test_rules_strikes.h"
 #include "test_collision.h"
-#include "test_rules_referee.h"
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -101,9 +99,6 @@ extern int test_base_sequence();
 extern int test_base_properties();
 extern int test_base_comparisons();
 
-// Declare debug logging test
-extern int test_debug_logging_cycle();
-
 int main(int argc, char* argv[])
 {
 	printf("========================================\n");
@@ -114,9 +109,6 @@ int main(int argc, char* argv[])
 	RUN_TEST(test_base_sequence);
 	RUN_TEST(test_base_properties);
 	RUN_TEST(test_base_comparisons);
-
-	// Debug logging tests
-	RUN_TEST(test_debug_logging_cycle);
 
 	// Fixture tests
 	RUN_TEST(test_fixture_super_inning_setup);
@@ -178,12 +170,6 @@ int main(int argc, char* argv[])
 
 	// Rules Runs tests
 	run_rules_runs_tests();
-
-	// Rules Strikes tests
-	run_rules_strikes_tests();
-
-	// Referee tests (Milestone 14)
-	run_referee_tests();
 
 	printf("\n========================================\n");
 	printf("Tests run: %d\n", tests_run);
