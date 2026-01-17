@@ -69,8 +69,9 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 				                             referee->battingPlayers[i].baseAtPitchStart)) {
 					// Mark this player as vulnerable
 					referee->woundingPlayersMarked[i] = 1;
-					// Snapshot their current base
-					referee->battingPlayers[i].woundingSourceBase = game->playerInfo[i].bTPI.baseId;
+					// Snapshot their base at pitch start (not current base!)
+					// This is the base they were running FROM, used to determine if they've advanced
+					referee->battingPlayers[i].woundingSourceBase = referee->battingPlayers[i].baseAtPitchStart;
 				}
 			}
 		}
@@ -132,6 +133,7 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 
 			// End evaluation period
 			referee->woundingEvaluationActive = 0;
+			referee->woundingEvaluationFinished = 1;
 			referee->woundingEvaluationTimer = -1;
 		}
 	}
@@ -326,10 +328,42 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 	// 4. Check for Runs (§41/42)
 	// We trigger this check if ANY player arrived at a base this frame.
 	if (game->gameEvents.playerArrivedAtBase) {
-		if ((game->gameControl.catchHasBeenMade == 1 || game->gameControl.hasBallHitGround == 1) &&
-		        referee->woundingEvaluationActive == 0 &&
-		        game->gameFlowState.endOfInningCounter == -1 &&
-		        gameControl->outOfBounds == 0) {
+
+		int isBallInAir = (gameControl->catchHasBeenMade == 0 && gameControl->hasBallHitGround == 0);
+		int isCatchPending = (gameControl->catchHasBeenMade == 1 && referee->woundingEvaluationFinished == 0);
+
+		// Case A: Pending Run (Ball in Air OR Catch Evaluation Active)
+		if (isBallInAir || isCatchPending) {
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+					// Check for potential run
+					int regularRun = is_regular_run(
+					                     game->playerInfo[i].bTPI.baseId,
+					                     referee->battingPlayers[i].baseAtPitchStart,
+					                     game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED
+					                 );
+
+					int runOfHonor = is_run_of_honor(
+					                     game->playerInfo[i].bTPI.baseId,
+					                     referee->battingPlayers[i].baseAtPitchStart,
+					                     game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
+					                     referee->battingPlayers[i].runOfHonorScored
+					                 );
+
+					if (regularRun) {
+						referee->battingPlayers[i].hasPendingRun = 1;
+					}
+					if (runOfHonor) {
+						referee->battingPlayers[i].hasPendingRunOfHonor = 1;
+					}
+				}
+			}
+		}
+		// Case B: Ball Grounded or Catch Confirmed (Immediate Run)
+		else if ((game->gameControl.catchHasBeenMade == 1 || game->gameControl.hasBallHitGround == 1) &&
+		         referee->woundingEvaluationActive == 0 &&
+		         game->gameFlowState.endOfInningCounter == -1 &&
+		         gameControl->outOfBounds == 0) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -525,6 +559,88 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 	}
 }
 
+static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+{
+	const MatchSession* game = stateInfo->match;
+
+	// Trigger 1: Ball Hit Ground (Final Verdict)
+	if (gameControl->hasBallHitGround) {
+		if (gameControl->outOfBounds) {
+			// FOUL: Void all pending runs
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				referee->battingPlayers[i].hasPendingRun = 0;
+				referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+			}
+		} else {
+			// SAFE HIT: Cash In all pending runs
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				if (referee->battingPlayers[i].hasPendingRun) {
+					// Award Regular Run
+					halfInningState->event = EVENT_RUN_SCORED;
+					int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+					scoreboard->teams[battingTeamIndex].runs += 1;
+					halfInningState->runsInTheInning += 1;
+
+					referee->battingPlayers[i].hasScored = 1;
+					referee->battingPlayers[i].hasPendingRun = 0;
+
+					if (halfInningState->runsInTheInning % 2 == 0) {
+						playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+					}
+				}
+				if (referee->battingPlayers[i].hasPendingRunOfHonor) {
+					// Award Run of Honor
+					halfInningState->event = EVENT_RUN_SCORED;
+					int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+					scoreboard->teams[battingTeamIndex].runs += 1;
+					halfInningState->runsInTheInning += 1;
+
+					referee->battingPlayers[i].runOfHonorScored = 1;
+					referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+
+					// Overtaking logic already handled at arrival time if needed,
+					// but usually overtaking happens physically.
+					// Referee check in update_runs handles logical overtaking for HR.
+				}
+			}
+		}
+	}
+	// Trigger 2: Catch Confirmed (Wounding Evaluation Finished)
+	else if (referee->woundingEvaluationFinished) {
+		// CATCH:
+		// 1. Regular Pending Runs are VALID IF NOT WOUNDED (Runner beat the catch)
+		// 2. Pending HRs are VOID (Batter is burnt/wounded by the catch)
+
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			if (referee->battingPlayers[i].hasPendingRun) {
+				// Only award run if player was NOT wounded by the catch
+				if (referee->battingPlayers[i].hasPendingWound == 0) {
+					// Award Regular Run
+					halfInningState->event = EVENT_RUN_SCORED;
+					int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+					scoreboard->teams[battingTeamIndex].runs += 1;
+					halfInningState->runsInTheInning += 1;
+
+					referee->battingPlayers[i].hasScored = 1;
+				} else {
+					// Player was wounded despite arriving (e.g. didn't escape in time logically?)
+					// Run voided.
+				}
+				referee->battingPlayers[i].hasPendingRun = 0;
+
+				if (halfInningState->runsInTheInning % 2 == 0) {
+					playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
+				}
+			}
+
+			if (referee->battingPlayers[i].hasPendingRunOfHonor) {
+				// Void Run of Honor (Batter burnt)
+				referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+			}
+		}
+	}
+}
+
 static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, GameControl* gameControl)
 {
 	// 6. Game State Flags
@@ -536,7 +652,21 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	}
 	// When a new pitch is released, we reset the catch state for the new play.
 	if (events->pitchReleased) {
+		// 1. Reset Sticky Flags (Moved from pitching_system.c)
 		gameControl->catchHasBeenMade = 0;
+		gameControl->hasBallHitGround = 0;
+		gameControl->outOfBounds = 0;
+		gameControl->pitchResolutionProcessed = 0;
+		referee->woundingEvaluationFinished = 0;
+
+		// 2. Snapshot Strike Count
+		referee->strikesAtPitchStart = halfInningState->strikes;
+
+		// 3. Reset pending run flags for all players
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			referee->battingPlayers[i].hasPendingRun = 0;
+			referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+		}
 	}
 }
 
@@ -566,6 +696,9 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	update_safety_status(stateInfo, refereeState);
 	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase, gameControl);
 	update_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
+
+	// 3.5 Resolve Pending Runs (Milestone 17)
+	resolve_pending_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
 
 	// 4. Strikes
 	update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
@@ -630,11 +763,14 @@ void initializeRefereeState(RefereeState* referee)
 		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
 		referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
 		referee->battingPlayers[i].hadSafetyAtLastEvent = 0;
+		referee->battingPlayers[i].hasPendingRun = 0;
+		referee->battingPlayers[i].hasPendingRunOfHonor = 0;
 
 		referee->woundingPlayersMarked[i] = 0;
 	}
 	referee->strikesAtPitchStart = 0;
 	referee->woundingEvaluationActive = 0;
+	referee->woundingEvaluationFinished = 0;
 	referee->woundingEvaluationTimer = -1;
 	referee->ballInThirdBaseSincePitch = 0;
 

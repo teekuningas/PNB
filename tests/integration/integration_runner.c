@@ -24,6 +24,7 @@ void run_full_scenario_tests(void)
 	RUN_TEST(test_full_free_walk_resolution);
 	RUN_TEST(test_full_run_of_honor);
 	RUN_TEST(test_run_arrival_before_ball_lands);
+	RUN_TEST(test_run_arrival_before_catch);
 }
 
 int main(int argc, char* argv[])

@@ -166,15 +166,6 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->match->aiState.aiWrongPitch = 0;
 	// set camera back to normal if there was homerun camera
 	stateInfo->match->cameraState.homeRunCameraFlag = 0;
-	// Store the strikes count at the moment the pitch is released.
-	// This is critical for foul play logic to know if the batter had 2 strikes (and thus is out on foul).
-	stateInfo->match->referee.strikesAtPitchStart = stateInfo->match->halfInningState.strikes;
-
-	// Reset referee sticky flags for the new play (Milestone 17)
-	stateInfo->match->gameControl.catchHasBeenMade = 0;
-	stateInfo->match->gameControl.hasBallHitGround = 0;
-	stateInfo->match->gameControl.outOfBounds = 0;
-	stateInfo->match->gameControl.pitchResolutionProcessed = 0;
 
 	// Trigger pitch released event
 	stateInfo->match->gameEvents.pitchReleased = 1;

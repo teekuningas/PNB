@@ -340,6 +340,10 @@ typedef struct _RefereePlayerState {
 	BaseID baseAtLastEvent;        // Where they were at last important event
 	int hadSafetyAtLastEvent;      // Did they have safety at last event
 
+	// === PENDING RUNS (Milestone 17) ===
+	int hasPendingRun;             // Arrived at home while ball in air
+	int hasPendingRunOfHonor;      // Arrived at 3rd (homerun) while ball in air
+
 } RefereePlayerState;
 
 typedef struct _RefereeState {
@@ -351,6 +355,7 @@ typedef struct _RefereeState {
 
 	// Wounding evaluation state (Referee monitors and decides)
 	int woundingEvaluationActive;  // Referee is evaluating a potential wounding catch
+	int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
 	int woundingEvaluationTimer;   // Timer counting up during evaluation period
 	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Players vulnerable at catch moment
 
