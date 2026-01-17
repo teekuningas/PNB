@@ -42,13 +42,13 @@ int test_full_run_of_honor(void)
 	// Critical: Mark that ball was hit and has hit ground (not a fly ball!)
 	ctx->state->match->pRAI.batHit = 1;
 	ctx->state->match->pRAI.batterCanAdvance = 1;
-	ctx->state->match->ballInfo.hasHitGround = 1;
+	ctx->state->match->ballInfo.currentFlightHasHitGround = 1;
 	ctx->state->match->gameControl.catchHasBeenMade = 0;
 	ctx->state->match->referee.woundingEvaluationActive = 0;
 
 	printf("Ball at (%.1f, %.1f, %.1f), hasHitGround=%d\n",
 	       ballLocation.x, ballLocation.y, ballLocation.z,
-	       ctx->state->match->ballInfo.hasHitGround);
+	       ctx->state->match->ballInfo.currentFlightHasHitGround);
 
 	int runsAtStart = ctx->state->match->halfInningState.runsInTheInning;
 	printf("Runs at start: %d\n\n", runsAtStart);

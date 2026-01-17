@@ -175,7 +175,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s\"ballInfo\": {\n", sp);
 	fprintf(f, "%s  \"location\": { \"x\": %.2f, \"y\": %.2f, \"z\": %.2f },\n", sp, game->ballInfo.location.x, game->ballInfo.location.y, game->ballInfo.location.z);
 	fprintf(f, "%s  \"moving\": %d,\n", sp, game->ballInfo.moving);
-	fprintf(f, "%s  \"hasHitGround\": %d,\n", sp, game->ballInfo.hasHitGround);
+	fprintf(f, "%s  \"hasHitGround\": %d,\n", sp, game->ballInfo.currentFlightHasHitGround);
 	fprintf(f, "%s  \"onGround\": %d\n", sp, game->ballInfo.onGround);
 	fprintf(f, "%s},\n", sp);
 

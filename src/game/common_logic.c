@@ -761,7 +761,7 @@ void initializeBallInfo(MatchSession* match)
 {
 	match->ballInfo.visible = 1;
 	match->ballInfo.moving = 1;
-	match->ballInfo.hasHitGround = 0;
+	match->ballInfo.currentFlightHasHitGround = 0;
 	match->ballInfo.onGround = 0;
 	match->ballInfo.hitsGroundToUnWound = 0;
 	match->ballInfo.needsMoveUpdate = 0;

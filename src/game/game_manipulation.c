@@ -100,9 +100,9 @@ static void updateBallStatus(MatchSession* match, FieldPositions* fieldPositions
 						// outOfBounds calculation moved to Referee (via checkIfBallIsOutOfBounds in base_logic)
 					}
 					// it could be its first time
-					if(match->ballInfo.hasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
+					if(match->ballInfo.currentFlightHasHitGround == 0) { // to avoid situation where it feels like player changing key doesnt work
 						// because if this wasnt here, rankedindicesarrayindex would be always initialized to 0 with every change.
-						match->ballInfo.hasHitGround = 1;
+						match->ballInfo.currentFlightHasHitGround = 1;
 						match->gameEvents.ballHitGround = 1;
 						// this is used to track if ball has been dropped after a catch to avoid wounding
 						match->ballInfo.hitsGroundToUnWound = 1;
@@ -187,7 +187,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 			// its purpose is to deny players catching balls right after throwing them.
 			// but if ball has hit ground, we dont care about lastHadBallIndex anymore.
 			// allow players to drop balls and catch if thrown close to them by themselves.
-			if ((i != stateInfo->match->pII.lastHadBallIndex || stateInfo->match->ballInfo.hasHitGround == 1)) {
+			if ((i != stateInfo->match->pII.lastHadBallIndex || stateInfo->match->ballInfo.currentFlightHasHitGround == 1)) {
 				Vector3D distance;
 				float limit = CATCH_DISTANCE;
 				distance.x = stateInfo->match->playerInfo[i].tPI.location.x -
@@ -217,7 +217,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 
 					}
 					// to avoid annyoing twitching we need to check that catching player is far enough
-					if(stateInfo->match->pII.lastHadBallIndex == -1 || stateInfo->match->ballInfo.hasHitGround == 1 ||
+					if(stateInfo->match->pII.lastHadBallIndex == -1 || stateInfo->match->ballInfo.currentFlightHasHitGround == 1 ||
 					        baseCatcherFlag == 1 ||
 					        !isVectorSmallEnoughCircleXZ(p1x-p2x, p1z-p2z, PLAYER_TOO_CLOSE_TO_CATCH_LIMIT)) {
 						// ensure that player that previously was controlled doesnt continue his key-controlled movement when key is still down when control changes.
@@ -263,7 +263,7 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						stateInfo->match->ballInfo.visible = 0;
 						stateInfo->match->ballInfo.moving = 0;
 						stateInfo->match->ballInfo.onGround = 0;
-						stateInfo->match->ballInfo.hasHitGround = 0;
+						stateInfo->match->ballInfo.currentFlightHasHitGround = 0;
 						// and set ball's location to player's location.
 						setVectorV(&(stateInfo->match->ballInfo.location), &(stateInfo->match->playerInfo[i].tPI.location));
 					}
@@ -507,7 +507,7 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 		float speed;
 		float distance;
 		float evaluation;
-		if(stateInfo->match->ballInfo.hasHitGround == 0) {
+		if(stateInfo->match->ballInfo.currentFlightHasHitGround == 0) {
 			if(stateInfo->match->pRAI.throwGoingToBase == -1) {
 				s = 1.1f; // when batting the height is something like this
 			} else {
@@ -536,7 +536,7 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 
 		// here some approximations for situations when ball is still in air and when ball has hit the ground.
 		// targetpoint is the place where we will move the catchers and what we will use for ranking the fielders.
-		if(stateInfo->match->ballInfo.hasHitGround == 0) {
+		if(stateInfo->match->ballInfo.currentFlightHasHitGround == 0) {
 			float finalPointXApprox = ballDropX + stateInfo->match->ballInfo.velocity.x*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
 			float finalPointZApprox = ballDropZ + stateInfo->match->ballInfo.velocity.z*BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
 			float multiplier = speed/(time*0.01f);
@@ -549,7 +549,7 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 
 			evalBallX = ballDropX + stateInfo->match->ballInfo.velocity.x*BALL_DROP_EVAL_CONSTANT*0.25f/(time*0.01f);
 			evalBallZ = ballDropZ + stateInfo->match->ballInfo.velocity.z*BALL_DROP_EVAL_CONSTANT*0.25f/(time*0.01f);
-		} else if(stateInfo->match->ballInfo.hasHitGround == 1 &&stateInfo->match->ballInfo.onGround == 0) {
+		} else if(stateInfo->match->ballInfo.currentFlightHasHitGround == 1 &&stateInfo->match->ballInfo.onGround == 0) {
 			stateInfo->match->cameraState.targetPoint.x = ballDropX + stateInfo->match->ballInfo.velocity.x*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
 			stateInfo->match->cameraState.targetPoint.z = ballDropZ + stateInfo->match->ballInfo.velocity.z*BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
 
@@ -579,9 +579,9 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo)
 			dx = dx / distance2;
 			dz = dz / distance2;
 			dot = (dx*dirX + dz*dirZ)*(dx*dirX + dz*dirZ);
-			if(stateInfo->match->ballInfo.hasHitGround == 0) {
+			if(stateInfo->match->ballInfo.currentFlightHasHitGround == 0) {
 				evaluation = distance - dot*EVALUATION_CONSTANT_IN_AIR*speed*speed;
-			} else if(stateInfo->match->ballInfo.hasHitGround == 1 &&stateInfo->match->ballInfo.onGround == 0) {
+			} else if(stateInfo->match->ballInfo.currentFlightHasHitGround == 1 &&stateInfo->match->ballInfo.onGround == 0) {
 				evaluation = distance - dot*EVALUATION_CONSTANT_AFTER_HIT_ONCE;
 			} else {
 				evaluation = distance;

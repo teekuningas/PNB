@@ -144,7 +144,7 @@ void releasePitch(StateInfo* stateInfo)
 	// will be updated.
 	stateInfo->match->ballInfo.visible = 1;
 	stateInfo->match->ballInfo.moving = 1;
-	stateInfo->match->ballInfo.hasHitGround = 0;
+	stateInfo->match->ballInfo.currentFlightHasHitGround = 0;
 	stateInfo->match->ballInfo.onGround = 0;
 	// set the velocity by our dx and dy
 	setVectorXYZ(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);

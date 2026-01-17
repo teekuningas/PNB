@@ -326,7 +326,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 	// 4. Check for Runs (§41/42)
 	// We trigger this check if ANY player arrived at a base this frame.
 	if (game->gameEvents.playerArrivedAtBase) {
-		if ((game->gameControl.catchHasBeenMade == 1 || game->ballInfo.hasHitGround == 1) &&
+		if ((game->gameControl.catchHasBeenMade == 1 || game->gameControl.hasBallHitGround == 1) &&
 		        referee->woundingEvaluationActive == 0 &&
 		        game->gameFlowState.endOfInningCounter == -1 &&
 		        gameControl->outOfBounds == 0) {

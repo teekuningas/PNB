@@ -80,7 +80,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 			if(count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT &&stateInfo->match->gameControl.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
-				if(stateInfo->match->ballInfo.hasHitGround == 1 || stateInfo->match->gameControl.catchHasBeenMade == 1) {
+				if(stateInfo->match->gameControl.hasBallHitGround == 1 || stateInfo->match->gameControl.catchHasBeenMade == 1) {
 					// if that happens we can now start.
 					int battingTeamIndex = (stateInfo->match->scoreboard.					                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
 					// this will give work to action_invocatin.c and action_implementation.c

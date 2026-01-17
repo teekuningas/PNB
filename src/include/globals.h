@@ -211,7 +211,7 @@ typedef struct _BallInfo {
 	Vector3D lastLocation;
 	int visible; // is ball visible. ball is not visible when some player has it
 	int moving; // is ball moving, only update player orientations and ball's position if ball is moving
-	int hasHitGround; // has the ball hit ground
+	int currentFlightHasHitGround; // has the ball hit ground
 	int onGround; // is ball rolling on ground
 	int hitsGroundToUnWound; // if ball hits ground after being catched as wounding catch, is set to 1. checked only after wounding catch so, it is set to 0 when the catch is made.
 	int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too

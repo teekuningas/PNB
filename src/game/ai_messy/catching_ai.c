@@ -161,7 +161,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	if(stateInfo->match->pII.hasBallIndex == -1 &&stateInfo->match->pII.controlIndex != -1) {
 		if(stateInfo->match->pendingActionState.aiActionEventLock == AI_NO_LOCK &&stateInfo->match->pendingActionState.aiLockUpdate == 0) {
 			if(stateInfo->match->pRAI.throwGoingToBase == -1 || stateInfo->match->
-			        ballInfo.hasHitGround == 1) {
+			        ballInfo.currentFlightHasHitGround == 1) {
 				moveControlledPlayerToLocation(stateInfo, &(stateInfo->match->cameraState.targetPoint));
 			}
 		}

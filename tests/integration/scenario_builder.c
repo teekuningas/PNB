@@ -123,8 +123,10 @@ void place_ball_at_location(ScenarioContext* ctx, Vector3D location)
 	game->ballInfo.lastLocation = location;
 	game->ballInfo.visible = 1;
 	game->ballInfo.moving = 0;
-	game->ballInfo.hasHitGround = 1;  // Ball on ground
+	game->ballInfo.currentFlightHasHitGround = 1;  // Ball on ground
 	game->ballInfo.onGround = 1;
+	// Consistency: If ball is placed on ground, it means the pitch has resolved and ball is live.
+	game->gameControl.hasBallHitGround = 1;
 	game->pII.hasBallIndex = -1;  // No one has it
 }
 
@@ -369,7 +371,7 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 	genericSlingBall(&game->ballInfo, vx, vy, vz);
 
 	// Ensure ball is in "fly ball" state so a catch triggers wounding
-	game->ballInfo.hasHitGround = 0;
+	game->ballInfo.currentFlightHasHitGround = 0;
 	game->gameEvents.catchMade = 0;
 	game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
 }
@@ -410,7 +412,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 	game->ballInfo.lastLocation = startPos;
 	game->pII.hasBallIndex = -1;
 	genericSlingBall(&game->ballInfo, vx, vy, vz);
-	game->ballInfo.hasHitGround = 0;
+	game->ballInfo.currentFlightHasHitGround = 0;
 
 	// 4. Set Pitch State
 	game->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
