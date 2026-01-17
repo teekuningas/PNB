@@ -144,6 +144,8 @@ void releasePitch(StateInfo* stateInfo)
 	// will be updated.
 	stateInfo->match->ballInfo.visible = 1;
 	stateInfo->match->ballInfo.moving = 1;
+	stateInfo->match->ballInfo.hasHitGround = 0;
+	stateInfo->match->ballInfo.onGround = 0;
 	// set the velocity by our dx and dy
 	setVectorXYZ(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);
 	// .. and move the pitcher
@@ -167,6 +169,12 @@ void releasePitch(StateInfo* stateInfo)
 	// Store the strikes count at the moment the pitch is released.
 	// This is critical for foul play logic to know if the batter had 2 strikes (and thus is out on foul).
 	stateInfo->match->referee.strikesAtPitchStart = stateInfo->match->halfInningState.strikes;
+
+	// Reset referee sticky flags for the new play (Milestone 17)
+	stateInfo->match->gameControl.catchHasBeenMade = 0;
+	stateInfo->match->gameControl.hasBallHitGround = 0;
+	stateInfo->match->gameControl.outOfBounds = 0;
+	stateInfo->match->gameControl.pitchResolutionProcessed = 0;
 
 	// Trigger pitch released event
 	stateInfo->match->gameEvents.pitchReleased = 1;

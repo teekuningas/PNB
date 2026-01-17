@@ -138,12 +138,18 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s\"gameControl\": {\n", sp);
 	fprintf(f, "%s  \"pause\": %d,\n", sp, game->gameControl.pause);
 	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->gameControl.waitingForBatterDecision);
-	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d\n", sp, game->gameControl.waitingForFreeWalkDecision);
+	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->gameControl.waitingForFreeWalkDecision);
+	fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->gameControl.catchHasBeenMade);
+	fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->gameControl.hasBallHitGround);
+	fprintf(f, "%s  \"outOfBounds\": %d\n", sp, game->gameControl.outOfBounds);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameEvents\": {\n", sp);
 	fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);
-	fprintf(f, "%s  \"playerArrivedAtBase\": %d\n", sp, game->gameEvents.playerArrivedAtBase);
+	fprintf(f, "%s  \"playerArrivedAtBase\": %d,\n", sp, game->gameEvents.playerArrivedAtBase);
+	fprintf(f, "%s  \"ballHitGround\": %d,\n", sp, game->gameEvents.ballHitGround);
+	fprintf(f, "%s  \"ballHitByBat\": %d,\n", sp, game->gameEvents.ballHitByBat);
+	fprintf(f, "%s  \"pitchReleased\": %d\n", sp, game->gameEvents.pitchReleased);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameFlowState\": {\n", sp);
@@ -203,6 +209,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 			// Referee State
 			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
 			fprintf(f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp, base_to_string(game->referee.battingPlayers[i].currentSafetyBase));
+			fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, game->referee.battingPlayers[i].baseAtPitchStart);
 			fprintf(f, "%s    \"ref_pendingWound\": %d\n", sp, game->referee.battingPlayers[i].hasPendingWound);
 
 			fprintf(f, "%s  },\n", sp);
