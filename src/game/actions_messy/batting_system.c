@@ -432,9 +432,6 @@ void updateBatting(StateInfo* stateInfo)
 							stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
 							// no throw going on now
 							stateInfo->match->pRAI.throwGoingToBase = -1;
-							// prepare for wounds
-							stateInfo->match->referee.woundingEvaluationActive = 0;
-							stateInfo->match->referee.woundingEvaluationTimer = -1;
 
 							// move the batter if wanted
 

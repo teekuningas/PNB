@@ -658,6 +658,13 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 		gameControl->outOfBounds = 0;
 		gameControl->pitchResolutionProcessed = 0;
 		referee->woundingEvaluationFinished = 0;
+		referee->woundingEvaluationActive = 0;
+		referee->woundingEvaluationTimer = -1;
+
+		// Clear all wounding marks
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			referee->woundingPlayersMarked[i] = 0;
+		}
 
 		// 2. Snapshot Strike Count
 		referee->strikesAtPitchStart = halfInningState->strikes;
