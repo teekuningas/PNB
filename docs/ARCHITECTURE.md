@@ -87,6 +87,8 @@ typedef struct {
 
 **Exception:** Initialization functions may write during setup (marked with `// REFEREE INIT`)
 
+**Note:** This exception is temporary - next session will replace all init writes with events for true referee supremacy.
+
 ### Referee Pipeline
 
 **File:** `src/game/referee.c` (~750 LOC)
@@ -193,17 +195,26 @@ src/
 
 ## Next Steps
 
-### Short-term (Current Session Completion)
-- ✅ GameControl split complete
-- ✅ Documentation consolidated (16 → 5 files)
-- 🎯 Ready to commit and move forward
+### Immediate (Next Session - ~4.5 hours)
+**Goal:** Reach The Plateau - Referee Supremacy (sole writer, no exceptions)
+
+**See:** `.dev/REFEREE_CONSOLIDATION_TODO.md` for detailed execution plan
+
+**Key Tasks:**
+1. Event-driven initialization (replace all direct writes with events)
+2. Merge game_analysis → gameConsolidation
+3. Clean 5-phase main loop: Inputs → Physics → Referee → Consolidation → Reset
+4. All 61 tests still passing
+
+**Result:** Perfect foundation - zero violations, zero exceptions, zero compromises
 
 ### Mid-term (Milestone 18 - Next 7-8 sessions)
 **Physics/State Split:**
 1. Extract pure physics from `game_manipulation.c`
-2. Create `PhysicsObserver` for event emission
-3. Separate physical queries from legal state
-4. Clear boundary: "what happened" vs "what it means"
+2. Separate physical queries from legal state
+3. Clear boundary: "what happened" vs "what it means"
+
+*Note: PhysicsObserver not needed - physics setting GameEvents is the right pattern*
 
 ### Long-term (Milestones 19-20)
 - M19: Decouple action systems (pure logic vs execution)

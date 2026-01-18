@@ -1,8 +1,20 @@
 # PNB Development Plan
 
-## Current Phase: Referee Consolidation Complete! ✅ → Ready for Milestone 18 🎯
+## 🎯 NEXT SESSION START HERE → `.dev/REFEREE_CONSOLIDATION_TODO.md`
 
-**Status:** Milestone 17 Phase 2B COMPLETE ✅ | All 61 tests passing | Documentation consolidated
+**Current Phase:** Milestone 17 Complete ✅ → **Reaching The Plateau** 🏔️
+
+**What to do:** Execute the consolidation plan in `REFEREE_CONSOLIDATION_TODO.md`
+- ~4.5 hours to achieve Referee Supremacy (sole writer, no exceptions)
+- Event-driven initialization (replace all direct writes with events)
+- Merge game_analysis → gameConsolidation
+- Clean 5-phase main loop
+
+**After this:** THE PLATEAU - Ready for Milestone 18 (Physics/State Split)
+
+---
+
+## Current Status Summary
 
 **Latest Achievement (2026-01-18):**
 - ✅ Split GameControl → BetweenPitchState + FlowControl (22 files, ~200 references)
@@ -11,14 +23,19 @@
 - ✅ Clean ownership boundaries established
 - ✅ Documentation consolidated (16 files → 5 core files)
 
-**Next Major Goal:** Milestone 18 - Extract pure physics from game_manipulation.c
+**Remaining Work (Next Session):**
+- ⚠️ 2 violations to fix (wounding execution, foul reset)
+- ⚠️ Replace init writes with events (batterEntered, pitchStarted, foulResetCompleted)
+- ⚠️ Merge game_analysis into gameConsolidation
+- ⚠️ Reorder main loop (gameConsolidation AFTER referee)
 
 ---
 
 ## The Golden Rule
 
-1. **One Way Flow:** Physics → Events → Referee → Legal State → Reconciliation → Physics
-2. **Limited Scope:** Referee MUST NOT mutate other structures (e.g., `PlayerInfo`, `BallInfo`, `pRAI`, `AIState`). Its output is strictly the Legal State (`RefereeState`, `HalfInningState`, `BetweenPitchState`).
+1. **One Way Flow:** Physics → Events → Referee → Legal State → Consolidation → Reset
+2. **Referee Supremacy:** Referee_Update is the SOLE writer to RefereeState, BetweenPitchState, HalfInningState
+3. **No Exceptions:** All initialization via events, no special cases
 
 ---
 
@@ -187,33 +204,25 @@ Currently `game_manipulation.c` mixes:
 
 ---
 
-## 🧹 Remaining Minor Tasks (Optional)
+## 🎯 Immediate Next Steps (Tomorrow's Session)
 
-These are nice-to-have improvements that don't block M18:
+**READ FIRST:** `.dev/REFEREE_CONSOLIDATION_TODO.md` - Complete step-by-step plan
 
-### 1. Add Section Markers to referee.c (15 min)
-Add clear section comments to organize the ~750 LOC:
-```c
-// ============================================================================
-// Foul Play & Wounding Logic
-// ============================================================================
+**Goal:** Reach The Plateau - Referee as SOLE writer (no exceptions)
 
-// ============================================================================  
-// Safety Management
-// ============================================================================
+**Timeline:** ~4.5 hours
+1. Event-driven initialization (2 hours)
+2. Merge game_analysis → gameConsolidation (1 hour)
+3. Testing (1 hour)
+4. Documentation (30 min)
 
-// ... etc
-```
+**Success Criteria:**
+- Zero writes to RefereeState outside referee.c (all via events)
+- Clean 5-phase main loop: Inputs → Physics → Referee → Consolidation → Reset
+- All 61 tests passing
+- Documentation updated
 
-### 2. Document Initialization Pattern (15 min)
-Add to ARCHITECTURE.md:
-- Explain which functions can write to RefereeState during setup
-- Mark as temporary until event-driven approach in post-M18
-
-### 3. Free Walk Refactor (Future)
-Move free walk flag reset from referee to game_analysis when it detects balls count changed.
-
-**Decision:** These can be done anytime. Not blocking M18.
+**Then:** Ready for Milestone 18 with perfect foundation!
 
 ---
 
@@ -224,31 +233,13 @@ Move free walk flag reset from referee to game_analysis when it detects balls co
 2. **docs/SAANNOT.md** - Pesäpallo rules reference (Finnish)
 3. **docs/README.md** - Contributor quick start guide
 4. **.dev/PLAN.md** - This file (development roadmap)
-5. **Agent protocols** (.dev/ARCHITECT_AGENT.md, TASK_AGENT.md, GENERAL_AGENT.md)
+5. **.dev/REFEREE_CONSOLIDATION_TODO.md** - Tomorrow's detailed execution plan
+6. **Agent protocols** (.dev/ARCHITECT_AGENT.md, TASK_AGENT.md, GENERAL_AGENT.md)
 
 ### Archived Documents
 - Session summaries (docs/archive/)
 - One-time audits (docs/archive/)
 - Old reference docs (docs/archive/)
-
----
-
-## 🎯 Quick Start for Next Session
-
-**Goal:** Begin Milestone 18 (Physics/State Split)
-
-**Preparation:**
-1. Read `src/game/game_manipulation.c` to understand current structure
-2. Review physics code in `src/physics/` directory
-3. Identify pure physics functions vs state mutations
-
-**First Steps:**
-1. Create `src/physics/physics_engine.h` with pure function signatures
-2. Extract ball physics into pure functions
-3. Write unit tests for extracted physics
-4. Gradually migrate game_manipulation.c
-
-**Timeline:** 7-8 sessions, ~10-12 hours total
 
 ---
 
@@ -272,4 +263,4 @@ devenv shell make integration_test
 ---
 
 **Last Updated:** 2026-01-18  
-**Current Status:** Milestone 17 Complete ✅ | Ready for Milestone 18 🎯
+**Current Status:** M17 Complete ✅ | Consolidation Next 🏔️ | Then M18 🎯
