@@ -91,11 +91,11 @@ int test_run_arrival_before_ball_lands(void)
 			arrived = 1;
 			arrivalFrame = i;
 			printf("Frame %d: Runner arrived at HOME. (Ball Height: %.2f, Rules Live: %d)\n",
-			       i, ctx->state->match->ballInfo.location.y, ctx->state->match->gameControl.hasBallHitGround);
+			       i, ctx->state->match->ballInfo.location.y, ctx->state->match->betweenPitchState.hasBallHitGround);
 		}
 
 		// Check Ball Landing (Rule State)
-		if (ctx->state->match->gameControl.hasBallHitGround && !ballLanded) {
+		if (ctx->state->match->betweenPitchState.hasBallHitGround && !ballLanded) {
 			ballLanded = 1;
 			landingFrame = i;
 			printf("Frame %d: Ball hit ground. Game is now LIVE.\n", i);

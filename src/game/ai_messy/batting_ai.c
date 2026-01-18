@@ -54,7 +54,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	int isDoubleClickingOk = 0;
 
 	// Cleanup dangling locks if state changed externally
-	if (stateInfo->match->gameControl.waitingForBatterDecision == 0) {
+	if (stateInfo->match->flowControl.waitingForBatterDecision == 0) {
 		if (stateInfo->match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK ||
 		        stateInfo->match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
 			stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
@@ -62,7 +62,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 			stateInfo->match->aiState.changingKeyDown = 0;
 		}
 	}
-	if (stateInfo->match->gameControl.waitingForFreeWalkDecision == 0) {
+	if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 0) {
 		if (stateInfo->match->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {
 			stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
 			stateInfo->match->aiState.battingKeyDown = 0;
@@ -87,7 +87,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		stateInfo->match->aiState.planCalculated = 0;
 	}
 	// make free walk decision == accept
-	if(stateInfo->match->gameControl.waitingForFreeWalkDecision == 1) {
+	if(stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
 		if(stateInfo->match->aiState.battingKeyDown == 0) {
 			if(stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
 				stateInfo->match->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
@@ -101,7 +101,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	}
 	// we decide batter only after ball is at home so that in normal situation ai will have more information
 	// to make its strategy decisions
-	if(stateInfo->match->gameControl.waitingForBatterDecision == 1 &&stateInfo->match->gameFlowState.ballHome == 1) {
+	if(stateInfo->match->flowControl.waitingForBatterDecision == 1 &&stateInfo->match->gameFlowState.ballHome == 1) {
 		// we do this by brute force, we change player until we find a fit one or we are back to non joker.
 		// plan is that if there is a man on first base and current batter would not have a great power,
 		// we would try to find a joker that has power instead.
@@ -360,7 +360,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 	// AI: Check if it's safe to advance runners
 	// Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
 	if(stateInfo->match->pRAI.batHit == 1 &&
-	        stateInfo->match->gameControl.catchHasBeenMade == 0 &&
+	        stateInfo->match->betweenPitchState.catchHasBeenMade == 0 &&
 	        stateInfo->match->pRAI.throwGoingToBase == -1 &&
 	        stateInfo->match->pII.hasBallIndex == -1 &&
 	        stateInfo->match->ballInfo.moving == 1 &&

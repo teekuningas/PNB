@@ -21,9 +21,9 @@ int test_full_free_walk_resolution(void)
 	place_runner_at_base(ctx, runnerIdx, BASE_FIRST, 0.0f);
 
 	// 2. Setup: Free Walk Offer
-	game->gameControl.freeWalkIndex = runnerIdx;
-	game->gameControl.freeWalkBase = BASE_FIRST;
-	game->gameControl.waitingForFreeWalkDecision = 1;
+	game->flowControl.freeWalkIndex = runnerIdx;
+	game->flowControl.freeWalkBase = BASE_FIRST;
+	game->flowControl.waitingForFreeWalkDecision = 1;
 
 	printf("[TEST] Offering Free Walk to Player %d at Base %d\n", runnerIdx, BASE_FIRST);
 

@@ -1,5 +1,8 @@
 # PNB Architecture
 
+**Last updated:** 2026-01-18  
+**Current Status:** Milestone 17 Phase 2B Complete ✅
+
 ## Vision: The Functional Pipeline
 
 Transform from coordinated managers to a strict functional pipeline:
@@ -22,137 +25,214 @@ State_Next = Pipeline(Physics(Input(State)))
 | 10-13 | State Consolidation | ✅ | StateInfo is single source of truth |
 | 14 | The Great Decoupling V1 | ✅ | **Referee_Analyze (pure) + Referee_Apply (impure)** |
 | 15 | Referee Architecture V2 | ✅ | **Referee_Update (Sequential Pipeline)** - Decisions struct eliminated |
-| 16 | Centralized Mutation | ✅ | Initial move of rule writes to Referee |
-| 17 | Kill The Analyst | 🚧 | **Delete game_analysis.c**; Complete Referee Authority |
-| 18 | Physics/State Split | 🔮 | **The Big One:** Deconstruct game_manipulation into Physics + Rules |
+| 16 | Event System | ✅ | GameEvents (transient) established |
+| **17** | **Referee Consolidation** | **✅** | **GameControl split, wounding/foul refactored** |
+| 18 | Physics/State Split | 🎯 | **Next:** Deconstruct game_manipulation into Physics + Rules |
 | 19 | Action Decoupling | 🔮 | Split actions_messy/ into pure + apply |
 | 20 | User Intent Layer | 🔮 | Input -> Intent -> Engine |
 
-## Current State (Post-M16)
+## Current State (Post-M17 - 2026-01-18)
 
-### Key Achievements
-- `Referee_Update` is a functional pipeline.
-- `GameEvents` structure exists for communication.
-
-### The Hybrid Problem
-We currently have a "Hybrid" architecture:
-1.  **Pure Core (`rules_pure/`):** Nice, clean, testable.
-2.  **Legacy Managers (`game_analysis.c`, `game_manipulation.c`):** Old-style "Manager" classes that do too much (Physics + Rules + UI).
-
-**Immediate Goal:** Eliminate `game_analysis.c`. It competes with `referee.c` for authority.
-**Next Major Goal:** Tackle `game_manipulation.c`. This is the "God Object" of the system.
+### Recent Achievements ✅
+- **GameControl Split:** Separated into `BetweenPitchState` (referee decisions) and `FlowControl` (user gates)
+- **Wounding Logic:** Fully owned by referee, timer-based evaluation
+- **Out of Bounds:** Clean pattern - referee decides, reconciliation executes
+- **Pending Runs:** Ball-in-air run system with proper resolution
+- **61 tests passing:** 48 unit + 13 integration (including 2 new pending run regression tests)
 
 ### Key Data Structures
 
 ```c
-// Per-player rule tracking (in RefereeState)
+// Between-pitch sticky flags (reset at pitch start)
+typedef struct _BetweenPitchState {
+    int catchHasBeenMade;     // Fly ball was caught
+    int hasBallHitGround;     // Ball has touched ground
+    int outOfBounds;          // First bounce was out of bounds
+    int resolutionProcessed;  // Referee adjudicated pitch
+} BetweenPitchState;
+
+// User interaction flow
+typedef struct _FlowControl {
+    int pause;
+    int waitingForBatterDecision;
+    int waitingForFreeWalkDecision;
+    int freeWalkCalculationMade;  // Query result
+    int freeWalkIndex;             // Who to offer
+    BaseID freeWalkBase;           // From where
+} FlowControl;
+
+// Per-player rule tracking
 typedef struct {
-    BaseID currentSafetyBase;      // Replaces old baseControlIndex
-    int hasPendingWound;
-    WoundingType woundingType;
-    BaseID baseAtPitchStart;       // Foul play snapshot
+    BaseID currentSafetyBase;      // Legal safety
+    BaseID baseAtPitchStart;       // Snapshot for foul reset
+    int hasPendingWound;           // Catch evaluation pending
+    int hasPendingRun;             // Run pending ball resolution
     int isOut;                     // Logical out
     int hasScored;                 // Logical score
+    WoundingType woundingType;     // NORMAL or TUPLAHAAVA
+    BaseID woundingSourceBase;     // Where to return if wounded
     // ...
 } RefereePlayerState;
-
-// Note: RefereeDecisions struct is GONE.
 ```
+
+### Ownership Map
+
+| Structure | Owner (Writer) | Readers | Lifecycle |
+|-----------|----------------|---------|-----------|
+| `GameEvents` | Physics/Actions | Referee | Clear every frame |
+| `BetweenPitchState` | **Referee ONLY** | Everyone | Reset at pitch start |
+| `FlowControl` | Game flow, UI | Referee, Actions | User-controlled |
+| `RefereeState` | **Referee ONLY** | Everyone | Persistent (until specific events) |
+| `HalfInningState` | **Referee ONLY** | Everyone | Persistent (inning-scoped) |
+
+**Exception:** Initialization functions may write during setup (marked with `// REFEREE INIT`)
 
 ### Referee Pipeline
 
-The `Referee_Update` function runs a sequence of logic updates directly on the state:
-1. `get_ball_at_base_index` (Query)
-2. `update_safety_status` (Grants/Removes safety based on location)
-3. `update_force_outs_and_tuplahaava` (Applies Outs, Events)
-4. `update_runs` (Calculates runs, updates scores)
+**File:** `src/game/referee.c` (~750 LOC)
 
-### State Validator
+**Flow:**
+```c
+void Referee_Update(StateInfo*, RefereeState*, HalfInningState*, 
+                    BetweenPitchState*, PlayerCounters*, Scoreboard*)
+{
+    // 1. Ball location query
+    int ballAtBase = get_ball_at_base_index();
+    
+    // 2. Foul play & wounding logic
+    update_foul_play_logic();        // Out of bounds detection
+    update_wounding_logic();          // Catch evaluation timer
+    
+    // 3. Safety pipeline
+    update_safety_status();           // Grant/revoke safety
+    update_force_outs_and_tuplahaava(); // Apply outs
+    update_runs();                    // Award runs (or set pending)
+    
+    // 4. Pending run resolution
+    resolve_pending_runs();           // Resolve after ball lands
+    
+    // 5. Strike/ball adjudication
+    update_strikes();
+    update_pitch_resolution();
+    update_free_walk_resolution();
+    
+    // 6. State flags
+    update_game_state_flags();        // Reset on pitch release
+}
+```
 
-**File:** `src/core/state_validator.c` (199 LOC)
+### The Hybrid Problem (Improving)
 
-**Checks:**
-1. No two players on same base
-2. Safety consistency (if claims Base X, must be there)
-3. Reverse control (if physically safe, must claim it)
+**Before (M16):**
+- `game_analysis.c` competed with referee for authority
+- Mixed physics, rules, and UI concerns everywhere
 
-**Usage:** `./main --debug-state crash.json` → dumps JSON on violation
+**Now (M17):**
+1. **✅ Pure Core (`rules_pure/`, `referee.c`):** Clean, tested, authoritative
+2. **✅ Event System (`GameEvents`):** Clear communication between layers
+3. **🚧 Manipulation (`game_manipulation.c`):** Still mixes physics + state (M18 target)
+4. **🚧 Analysis (`game_analysis.c`):** Slimmed down but still has flow logic
+
+**Next Goal (M18):** Extract pure physics from `game_manipulation.c`
 
 ## Codebase Map
-
-### Directory Structure
 
 ```
 src/
 ├── core/ (~3.5k LOC)
 │   ├── main.c                 Entry point
-│   ├── state_validator.c      Runtime checks ⭐
+│   ├── state_validator.c      Runtime checks + debug dumps
 │   └── ...
 │
-├── game/ (~8.5k LOC)
-│   ├── game_screen.c          Main game loop
-│   ├── game_analysis.c        Legacy coordinator (slimmed down)
-│   ├── game_manipulation.c    Player movement + ballHome logic
-│   ├── common_logic.c         Shared helpers
-│   ├── mutable_world.c        Main Update Loop (calls Referee_Update)
+├── game/ (~9k LOC)
+│   ├── referee.c ⭐            Referee_Update pipeline (750 LOC)
+│   ├── mutable_world.c         Main loop, reconciliation
+│   ├── game_analysis.c         Flow logic (being slimmed)
+│   ├── game_manipulation.c     Physics + events (M18 target)
+│   ├── common_logic.c          Shared helpers
 │   │
-│   ├── rules_pure/ ⭐ REF CORE
-│   │   ├── referee.c          Referee_Update pipeline
+│   ├── rules_pure/ ⭐
 │   │   ├── base_logic.c       Safety helpers
-│   │   ├── base_control.c     get_base_controller(), get_ball_at_base()
+│   │   ├── base_control.c     Base queries
 │   │   ├── rules_outs.c       Out detection
 │   │   ├── rules_runs.c       Run scoring
-│   │   └── rules_strikes.c    Strike/ball logic
+│   │   ├── rules_strikes.c    Strike/ball logic
+│   │   └── player_utils.c     Player state queries
 │   │
-│   ├── actions_pure/ ...
-│   ├── actions_messy/ ...
-│   └── ai_messy/ ...
+│   ├── actions_pure/          Pure physics (batting, pitching)
+│   ├── actions_messy/         Action implementation (M19 target)
+│   ├── ai_pure/               Strategy functions
+│   └── ai_messy/              AI decision makers
 │
 ├── menu/ ...
-├── cup/ ...
 ├── renderer/ ...
-└── physics/ ...
-
-include/
-└── globals.h - All types
+└── physics/                   Ball physics, collision
 ```
-
-### Next Refactoring Targets (M16)
-
-**Centralized Mutation**
-- Move `foulPlay` restoration logic to Referee.
-- Move `EVENT_STRIKE/BALL` logic to Referee.
-- Ensure `game_manipulation` only handles physics, not rules.
-
-**Game Manipulation**
-- Break down into `updatePhysics`, `updateAI`, `updateReactions`.
 
 ## Test Coverage
 
-**67 tests passing**
+**61 tests passing** ✅
 
-### Unit Tests (53)
-- `test_rules_referee.c` - Verified with Referee_Update
-- `test_rules_outs.c`, `test_rules_runs.c`, `test_rules_strikes.c`
-- `test_base_logic.c`
-- ...
+### Unit Tests (48)
+- Rules: outs, runs, strikes, safety logic
+- AI: catching strategy, batting strategy, pitching strategy  
+- Actions: batting physics, pitching physics
+- Base logic: queries, force outs, free walks
 
-### Integration Tests (14)
-- **Full Scenario:** `test_full_scenarios.c` (Force Out, Scoring)
-- **Legacy Scenarios:** Chain reactions, Tuplahaava, Foul Play, etc.
+### Integration Tests (13)
+- Runner scoring from third
+- Forced outs at bases
+- Fly ball wounding
+- Chain reactions
+- Tuplahaava (double wounding)
+- Out of bounds reset
+- Pitching: strikes & balls
+- Free walk resolution
+- Run of honor (kunniajuoksu)
+- **Pending runs** (2 regression tests for ball-in-air scenarios)
+
+## Next Steps
+
+### Short-term (Current Session Completion)
+- ✅ GameControl split complete
+- ✅ Documentation consolidated (16 → 5 files)
+- 🎯 Ready to commit and move forward
+
+### Mid-term (Milestone 18 - Next 7-8 sessions)
+**Physics/State Split:**
+1. Extract pure physics from `game_manipulation.c`
+2. Create `PhysicsObserver` for event emission
+3. Separate physical queries from legal state
+4. Clear boundary: "what happened" vs "what it means"
+
+### Long-term (Milestones 19-20)
+- M19: Decouple action systems (pure logic vs execution)
+- M20: User Intent layer (replay foundation, networked multiplayer)
 
 ## Build & Run
 
 ```bash
-make main                          # Build game
-./main                             # Run
-./main --debug-state crash.json    # Debug mode
+# Development
+make main                           # Build game
+./main                              # Run
+./main --debug-state crash.json     # Debug mode with state dumps
 
-devenv shell make test             # 53 unit tests
-devenv shell make integration_test # 14 scenario tests
+# Testing
+devenv shell make test              # 48 unit tests
+devenv shell make integration_test  # 13 scenario tests
+devenv shell make clean             # Clean build artifacts
 ```
+
+## Key Principles
+
+1. **Referee Supremacy:** Only `referee.c` writes to `RefereeState`, `BetweenPitchState`
+2. **One-Way Flow:** Physics → Events → Referee → Decisions → Reconciliation
+3. **Clear Ownership:** Each struct has one writer, many readers
+4. **Event-Driven:** Transient events (`GameEvents`) drive referee decisions
+5. **Test Everything:** All rule changes require integration tests
 
 ---
 
-**Last updated:** 2026-01-08
-**Current:** Milestone 15 complete, starting M16
+**See Also:**
+- `.dev/PLAN.md` - Detailed roadmap and task tracking
+- `docs/SAANNOT.md` - Official pesäpallo rules (Finnish)

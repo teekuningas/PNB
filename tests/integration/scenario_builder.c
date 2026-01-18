@@ -126,7 +126,7 @@ void place_ball_at_location(ScenarioContext* ctx, Vector3D location)
 	game->ballInfo.currentFlightHasHitGround = 1;  // Ball on ground
 	game->ballInfo.onGround = 1;
 	// Consistency: If ball is placed on ground, it means the pitch has resolved and ball is live.
-	game->gameControl.hasBallHitGround = 1;
+	game->betweenPitchState.hasBallHitGround = 1;
 	game->pII.hasBallIndex = -1;  // No one has it
 }
 
@@ -201,7 +201,7 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 		MatchSession* game = ctx->state->match;
-		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		if (condition(ctx)) {
@@ -234,17 +234,17 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 
 		// Milestone 14: Rules engine must run after physics to reconcile state
 		MatchSession* game = ctx->state->match;
-		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->gameControl, &game->playerCounters, &ctx->state->match->scoreboard);
+		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters, &ctx->state->match->scoreboard);
 		reconcileLegalAndPhysicalState(ctx->state);
 
 		// Manually handle Foul Play Reset (simulating mutable_world.c logic)
 		static int outOfBoundsTimer = 0;
-		if (game->gameControl.outOfBounds) {
+		if (game->betweenPitchState.outOfBounds) {
 			outOfBoundsTimer++;
 
 			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
 				applyFoulPlayReset(ctx->state, &ctx->seed);
-				game->gameControl.outOfBounds = 0;
+				game->betweenPitchState.outOfBounds = 0;
 				outOfBoundsTimer = 0;
 			}
 		} else {

@@ -211,8 +211,8 @@ void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
 static void takeFreeWalkDecision(StateInfo* stateInfo)
 {
 	if(stateInfo->match->aF.bTAF.takeFreeWalk == FREE_WALK_ACCEPT) {
-		int index = stateInfo->match->gameControl.freeWalkIndex;
-		BaseID base = stateInfo->match->gameControl.freeWalkBase;
+		int index = stateInfo->match->flowControl.freeWalkIndex;
+		BaseID base = stateInfo->match->flowControl.freeWalkBase;
 		if(index != -1) {
 			// there can be a little gap between the decision and when the possibility to decide came
 			// so player might have run already to the following base, and free walk actually
@@ -242,7 +242,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 		}
 	}
 	// no more decision to make.
-	stateInfo->match->gameControl.waitingForFreeWalkDecision = 0;
+	stateInfo->match->flowControl.waitingForFreeWalkDecision = 0;
 	stateInfo->match->aF.bTAF.takeFreeWalk = FREE_WALK_IDLE;
 }
 // so when there is no batter and few other conditions hold

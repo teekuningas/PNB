@@ -50,9 +50,9 @@ void actionInvocations(StateInfo* stateInfo)
 
 	// check these only if necessary. also if it happened to be so that
 	// they are both asked the same time, choose the free walk first
-	if(stateInfo->match->gameControl.waitingForFreeWalkDecision == 1) {
+	if(stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
 		checkFreeWalkDecision(stateInfo, KEY_2, KEY_1, battingControl);
-	} else if(stateInfo->match->gameControl.waitingForBatterDecision == 1) {
+	} else if(stateInfo->match->flowControl.waitingForBatterDecision == 1) {
 		checkBatterSelection(stateInfo, KEY_1, KEY_2, battingControl);
 	}
 	checkBatterAngle(stateInfo, KEY_PLUS, KEY_MINUS, battingControl);

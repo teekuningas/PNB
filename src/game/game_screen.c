@@ -70,19 +70,19 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
 	}
 	// with home-key, one can return to main menu.
 	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-		if(stateInfo->match->gameControl.pause == 0) {
-			stateInfo->match->gameControl.pause = 1;
+		if(stateInfo->match->flowControl.pause == 0) {
+			stateInfo->match->flowControl.pause = 1;
 			StateValidator_Dump(stateInfo, "Manual Pause");
-		} else if(stateInfo->match->gameControl.pause == 1) {
+		} else if(stateInfo->match->flowControl.pause == 1) {
 			stateInfo->changeScreen = 1;
 			stateInfo->updated = 0;
 			stateInfo->screen = SCREEN_MAIN_MENU;
 			menuInfo->mode = MENU_ENTRY_NORMAL;
 		}
 	}
-	if(stateInfo->match->gameControl.pause == 1) {
+	if(stateInfo->match->flowControl.pause == 1) {
 		if(((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-			stateInfo->match->gameControl.pause = 0;
+			stateInfo->match->flowControl.pause = 0;
 		}
 	}
 	// update camera
@@ -298,7 +298,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
 			break;
 		}
 		printText2D(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
-	} else if(stateInfo->match->gameControl.waitingForFreeWalkDecision == 1) {
+	} else if(stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
 		printText2D("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
 	} else {
 		// Player selection info

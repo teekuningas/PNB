@@ -507,9 +507,9 @@ void calculateFreeWalk(MatchSession* match)
 
 		}
 	}
-	match->gameControl.freeWalkIndex = maxIndex;
-	if(maxIndex != -1) match->gameControl.freeWalkBase = match->playerInfo[maxIndex].bTPI.baseId;
-	else match->gameControl.freeWalkBase = BASE_NONE;
+	match->flowControl.freeWalkIndex = maxIndex;
+	if(maxIndex != -1) match->flowControl.freeWalkBase = match->playerInfo[maxIndex].bTPI.baseId;
+	else match->flowControl.freeWalkBase = BASE_NONE;
 }
 /*
 	Here we initialize all the locations and velocities so that players will be in their correct
@@ -793,37 +793,37 @@ void initializeActionInfo(MatchSession* match)
 // these can be flushed
 void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 {
-	match->gameControl.freeWalkCalculationMade = 1;
-	match->gameControl.waitingForBatterDecision = 0;
-	match->gameControl.waitingForFreeWalkDecision = 0;
-	match->gameControl.outOfBounds = 0;
+	match->flowControl.freeWalkCalculationMade = 1;
+	match->flowControl.waitingForBatterDecision = 0;
+	match->flowControl.waitingForFreeWalkDecision = 0;
+	match->betweenPitchState.outOfBounds = 0;
 	match->playerCounters.noMorePlayers = 0;
 	match->gameFlowState.ballHome = 0;
 	match->halfInningState.endPeriod = 0;
 
 	match->halfInningState.event = EVENT_NONE;
-	match->gameControl.freeWalkIndex = -1;
-	match->gameControl.freeWalkBase = -1;
+	match->flowControl.freeWalkIndex = -1;
+	match->flowControl.freeWalkBase = -1;
 	match->gameEvents.playerArrivedAtBase = 0;
-	match->gameControl.pause = 0;
+	match->flowControl.pause = 0;
 
 	// MILESTONE 16: Initialize new structures (Phase 1)
 	// GameEvents (transient, will be cleared each frame)
 	clearFrameEvents(&match->gameEvents);
 
 	// GameControl (stateful) - Reset for new pitch
-	match->gameControl.pause = 0;
-	match->gameControl.waitingForBatterDecision = 0;
-	match->gameControl.waitingForFreeWalkDecision = 0;
-	match->gameControl.freeWalkCalculationMade = 1;
-	match->gameControl.freeWalkIndex = -1;
-	match->gameControl.freeWalkBase = BASE_NONE;
+	match->flowControl.pause = 0;
+	match->flowControl.waitingForBatterDecision = 0;
+	match->flowControl.waitingForFreeWalkDecision = 0;
+	match->flowControl.freeWalkCalculationMade = 1;
+	match->flowControl.freeWalkIndex = -1;
+	match->flowControl.freeWalkBase = BASE_NONE;
 
 	// Reset referee sticky flags for new pitch (Milestone 17)
-	match->gameControl.catchHasBeenMade = 0;
-	match->gameControl.hasBallHitGround = 0;
-	match->gameControl.outOfBounds = 0;
-	match->gameControl.pitchResolutionProcessed = 0;
+	match->betweenPitchState.catchHasBeenMade = 0;
+	match->betweenPitchState.hasBallHitGround = 0;
+	match->betweenPitchState.outOfBounds = 0;
+	match->betweenPitchState.resolutionProcessed = 0;
 
 	initGameAnalysis(&(match->gameFlowState));
 	initGameManipulation(&(match->gameFlowState));

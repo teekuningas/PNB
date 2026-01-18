@@ -190,7 +190,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
 		int hasBallIndex = stateInfo->match->pII.hasBallIndex;
 
 		if(should_ai_drop_ball(&(stateInfo->match->referee),
-		                       &(stateInfo->match->gameControl),
+		                       &(stateInfo->match->betweenPitchState),
 		                       r3BaseAtPitchStart, r3IsOnBase,
 		                       r2BaseAtPitchStart, r2IsOnBase,
 		                       catcherHomeIndex, hasBallIndex)) {

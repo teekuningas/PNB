@@ -72,19 +72,19 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 	// so this will be called only once when possible.
 	if(stateInfo->match->scoreboard.period >= 4) {
 
-	} else if(get_active_batter_index(stateInfo->match) == -1 &&stateInfo->match->gameControl.waitingForBatterDecision == 0 &&
+	} else if(get_active_batter_index(stateInfo->match) == -1 &&stateInfo->match->flowControl.waitingForBatterDecision == 0 &&
 	          stateInfo->match->gameFlowState.endOfInningCounter == -1) {
 		// there have to be a player available
 		if(stateInfo->match->playerCounters.nonJokerPlayersLeft + stateInfo->match->playerCounters.jokersLeft > 0) {
 			// have to check that there is only three players in the field too and that it is not a out of bounds situation.
-			if(count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT &&stateInfo->match->gameControl.outOfBounds == 0) {
+			if(count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT &&stateInfo->match->betweenPitchState.outOfBounds == 0) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
-				if(stateInfo->match->gameControl.hasBallHitGround == 1 || stateInfo->match->gameControl.catchHasBeenMade == 1) {
+				if(stateInfo->match->betweenPitchState.hasBallHitGround == 1 || stateInfo->match->betweenPitchState.catchHasBeenMade == 1) {
 					// if that happens we can now start.
 					int battingTeamIndex = (stateInfo->match->scoreboard.					                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
 					// this will give work to action_invocatin.c and action_implementation.c
-					stateInfo->match->gameControl.waitingForBatterDecision = 1;
+					stateInfo->match->flowControl.waitingForBatterDecision = 1;
 					// we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
 					// just select the next batter in order there. if not, we select the first joker we find that is still unused.
 					// one of these must be true, as we checked there is joker or non-joker left before.
@@ -131,14 +131,14 @@ static void strikesAndBalls(StateInfo* stateInfo)
 	// we calculate the player and the base he has right to go freely only once, and that is when
 	// the ball happens. if player moves to next base and user after that decides to make the free walk
 	// that wont have any effect.
-	if(stateInfo->match->gameControl.freeWalkCalculationMade == 0) {
+	if(stateInfo->match->flowControl.freeWalkCalculationMade == 0) {
 		if(count_active_batting_players(stateInfo->match->playerInfo) == 1) {
 			// if only one player on the field, thats the batter, and then free walks can be made after one pitch.
 			if(stateInfo->match->halfInningState.balls >= 1) {
 				// calculate the index and the base.
 				calculateFreeWalk(stateInfo->match);
 				// and tell action_implementation.c to take care of the rest.
-				stateInfo->match->gameControl.waitingForFreeWalkDecision = 1;
+				stateInfo->match->flowControl.waitingForFreeWalkDecision = 1;
 
 			}
 		} else {
@@ -147,17 +147,17 @@ static void strikesAndBalls(StateInfo* stateInfo)
 				// calculate the index and the base.
 				calculateFreeWalk(stateInfo->match);
 				// and tell action_implementation.c to take care of the rest.
-				stateInfo->match->gameControl.waitingForFreeWalkDecision = 1;
+				stateInfo->match->flowControl.waitingForFreeWalkDecision = 1;
 			}
 		}
-		stateInfo->match->gameControl.freeWalkCalculationMade = 1;
+		stateInfo->match->flowControl.freeWalkCalculationMade = 1;
 	} else {
 		// so that if player just ran without taking hiw free walk, and got wounded or out, then stop asking
 		// that question.
-		if(stateInfo->match->gameControl.waitingForFreeWalkDecision == 1) {
-			if(stateInfo->match->playerInfo[stateInfo->match->gameControl.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
-			        stateInfo->match->playerInfo[stateInfo->match->gameControl.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
-				stateInfo->match->gameControl.waitingForFreeWalkDecision = 0;
+		if(stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
+			if(stateInfo->match->playerInfo[stateInfo->match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
+			        stateInfo->match->playerInfo[stateInfo->match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
+				stateInfo->match->flowControl.waitingForFreeWalkDecision = 0;
 			}
 		}
 	}
@@ -177,7 +177,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 		if(stateInfo->match->gameFlowState.endOfInningCounter == -1) {
 			stateInfo->match->gameFlowState.endOfInningCounter = 0;
 			// so that user wont be prompted for this after inning has ended but screen hasnt changed yet.
-			stateInfo->match->gameControl.waitingForBatterDecision = 0;
+			stateInfo->match->flowControl.waitingForBatterDecision = 0;
 			stateInfo->match->halfInningState.event = EVENT_INNING_ENDING;
 		}
 	}

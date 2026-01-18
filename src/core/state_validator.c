@@ -136,12 +136,12 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameControl\": {\n", sp);
-	fprintf(f, "%s  \"pause\": %d,\n", sp, game->gameControl.pause);
-	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->gameControl.waitingForBatterDecision);
-	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->gameControl.waitingForFreeWalkDecision);
-	fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->gameControl.catchHasBeenMade);
-	fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->gameControl.hasBallHitGround);
-	fprintf(f, "%s  \"outOfBounds\": %d\n", sp, game->gameControl.outOfBounds);
+	fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
+	fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->flowControl.waitingForBatterDecision);
+	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
+	fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
+	fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
+	fprintf(f, "%s  \"outOfBounds\": %d\n", sp, game->betweenPitchState.outOfBounds);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameEvents\": {\n", sp);
@@ -269,7 +269,7 @@ int StateValidator_Check(StateInfo* state)
 	MatchSession* game = state->match;
 
 	// Skip validation if the game is already paused (avoid redundant checks/dumps)
-	if (game->gameControl.pause) return 1;
+	if (game->flowControl.pause) return 1;
 
 	// Invariant 1: Unique Base Occupancy (Safe players)
 	// Check baseControlIndex vs Player state

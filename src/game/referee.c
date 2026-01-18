@@ -19,20 +19,20 @@
 // Referee Update Pipeline (Milestone 15)
 // ============================================================================
 
-static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* halfInningState, const GameEvents* events, GameControl* gameControl)
+static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
 
 	// Out of Bounds Logic: Check ONLY on first bounce
-	if (events->ballHitGround && gameControl->hasBallHitGround == 0) {
+	if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0) {
 		// Check if this first bounce qualifies as foul play:
 		// - Ball was hit by bat
 		// - Ball was not caught
 		// - Ball landed out of bounds
-		if (game->pRAI.batHit == 1 && gameControl->catchHasBeenMade == 0) {
+		if (game->pRAI.batHit == 1 && betweenPitchState->catchHasBeenMade == 0) {
 			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
 				// Set sticky flag in GameControl (Referee decision)
-				gameControl->outOfBounds = 1;
+				betweenPitchState->outOfBounds = 1;
 
 				// Trigger global event once
 				if (halfInningState->event == EVENT_NONE) {
@@ -43,7 +43,7 @@ static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* 
 	}
 }
 
-static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, const GameControl* gameControl)
+static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, const BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
 
@@ -51,8 +51,8 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 	// Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
 	if (events->catchMade &&
 	        game->pRAI.batHit == 1 &&
-	        gameControl->hasBallHitGround == 0 &&
-	        gameControl->catchHasBeenMade == 0) {
+	        betweenPitchState->hasBallHitGround == 0 &&
+	        betweenPitchState->catchHasBeenMade == 0) {
 
 		// Start evaluation period
 		referee->woundingEvaluationActive = 1;
@@ -229,7 +229,7 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 	}
 }
 
-static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase, GameControl* gameControl)
+static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase, BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
 
@@ -268,7 +268,7 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            gameControl->outOfBounds
+			            betweenPitchState->outOfBounds
 			        )) {
 
 				referee->battingPlayers[i].isOut = 1;
@@ -321,7 +321,7 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 	}
 }
 
-static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
 	const MatchSession* game = stateInfo->match;
 
@@ -329,8 +329,8 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 	// We trigger this check if ANY player arrived at a base this frame.
 	if (game->gameEvents.playerArrivedAtBase) {
 
-		int isBallInAir = (gameControl->catchHasBeenMade == 0 && gameControl->hasBallHitGround == 0);
-		int isCatchPending = (gameControl->catchHasBeenMade == 1 && referee->woundingEvaluationFinished == 0);
+		int isBallInAir = (betweenPitchState->catchHasBeenMade == 0 && betweenPitchState->hasBallHitGround == 0);
+		int isCatchPending = (betweenPitchState->catchHasBeenMade == 1 && referee->woundingEvaluationFinished == 0);
 
 		// Case A: Pending Run (Ball in Air OR Catch Evaluation Active)
 		if (isBallInAir || isCatchPending) {
@@ -360,10 +360,10 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 			}
 		}
 		// Case B: Ball Grounded or Catch Confirmed (Immediate Run)
-		else if ((game->gameControl.catchHasBeenMade == 1 || game->gameControl.hasBallHitGround == 1) &&
+		else if ((game->betweenPitchState.catchHasBeenMade == 1 || game->betweenPitchState.hasBallHitGround == 1) &&
 		         referee->woundingEvaluationActive == 0 &&
 		         game->gameFlowState.endOfInningCounter == -1 &&
-		         gameControl->outOfBounds == 0) {
+		         betweenPitchState->outOfBounds == 0) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -458,7 +458,7 @@ static void update_strikes(RefereeState* referee, HalfInningState* halfInningSta
 	}
 }
 
-static void update_pitch_resolution(const StateInfo* stateInfo, HalfInningState* halfInningState, GameControl* gameControl, const GameEvents* events)
+static void update_pitch_resolution(const StateInfo* stateInfo, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, FlowControl* flowControl, const GameEvents* events)
 {
 	// Check if a pitch has physically concluded (hit ground) while still logically active
 	if (events->ballHitGround &&stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
@@ -477,22 +477,22 @@ static void update_pitch_resolution(const StateInfo* stateInfo, HalfInningState*
 			halfInningState->event = EVENT_BALL;
 
 			// Reset free walk calculation flags so they are re-evaluated
-			gameControl->freeWalkCalculationMade = 0;
-			gameControl->freeWalkIndex = -1;
-			gameControl->freeWalkBase = BASE_NONE;
+			flowControl->freeWalkCalculationMade = 0;
+			flowControl->freeWalkIndex = -1;
+			flowControl->freeWalkBase = BASE_NONE;
 		}
 
 		// Signal to reconcile/cleanup that we have adjudicated this pitch
-		gameControl->pitchResolutionProcessed = 1;
+		betweenPitchState->resolutionProcessed = 1;
 	}
 }
 
-static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard, GameControl* gameControl, const GameEvents* events)
+static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard, const FlowControl* flowControl, const GameEvents* events)
 {
 	// 6. Free Walk Resolution
-	if (events->freeWalkAccepted &&gameControl->freeWalkIndex != -1) {
-		int i = gameControl->freeWalkIndex;
-		BaseID sourceBase = gameControl->freeWalkBase;
+	if (events->freeWalkAccepted &&flowControl->freeWalkIndex != -1) {
+		int i = flowControl->freeWalkIndex;
+		BaseID sourceBase = flowControl->freeWalkBase;
 		int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
 		int catchingTeamIndex = (battingTeamIndex + 1) % 2;
 
@@ -559,13 +559,11 @@ static void update_free_walk_resolution(const StateInfo* stateInfo, RefereeState
 	}
 }
 
-static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
-	const MatchSession* game = stateInfo->match;
-
 	// Trigger 1: Ball Hit Ground (Final Verdict)
-	if (gameControl->hasBallHitGround) {
-		if (gameControl->outOfBounds) {
+	if (betweenPitchState->hasBallHitGround) {
+		if (betweenPitchState->outOfBounds) {
 			// FOUL: Void all pending runs
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				referee->battingPlayers[i].hasPendingRun = 0;
@@ -641,22 +639,22 @@ static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* refer
 	}
 }
 
-static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, GameControl* gameControl)
+static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
 	// 6. Game State Flags
 
 	// Persistent Catch State Management
 	// When a catch is made, we lock it in.
 	if (events->catchMade) {
-		gameControl->catchHasBeenMade = 1;
+		betweenPitchState->catchHasBeenMade = 1;
 	}
 	// When a new pitch is released, we reset the catch state for the new play.
 	if (events->pitchReleased) {
 		// 1. Reset Sticky Flags (Moved from pitching_system.c)
-		gameControl->catchHasBeenMade = 0;
-		gameControl->hasBallHitGround = 0;
-		gameControl->outOfBounds = 0;
-		gameControl->pitchResolutionProcessed = 0;
+		betweenPitchState->catchHasBeenMade = 0;
+		betweenPitchState->hasBallHitGround = 0;
+		betweenPitchState->outOfBounds = 0;
+		betweenPitchState->resolutionProcessed = 0;
 		referee->woundingEvaluationFinished = 0;
 		referee->woundingEvaluationActive = 0;
 		referee->woundingEvaluationTimer = -1;
@@ -677,9 +675,10 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	}
 }
 
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, GameControl* gameControl, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
 	const MatchSession* game = stateInfo->match;
+	const FlowControl* flowControl = &game->flowControl;  // Read-only access to flow data
 
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);
@@ -690,30 +689,30 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	}
 
 	// 2.5 Foul Play & Wounding Logic (Milestone 17)
-	update_foul_play_logic(stateInfo, halfInningState, &stateInfo->match->gameEvents, gameControl);
+	update_foul_play_logic(stateInfo, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
 
 	// Mark that ball hit ground (after foul play check, so it can detect first bounce)
 	if (stateInfo->match->gameEvents.ballHitGround) {
-		gameControl->hasBallHitGround = 1;
+		betweenPitchState->hasBallHitGround = 1;
 	}
 
-	update_wounding_logic(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, gameControl);
+	update_wounding_logic(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
 
 	// 3. Safety Pipeline
 	update_safety_status(stateInfo, refereeState);
-	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase, gameControl);
-	update_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
+	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase, betweenPitchState);
+	update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
 
 	// 3.5 Resolve Pending Runs (Milestone 17)
-	resolve_pending_runs(stateInfo, refereeState, halfInningState, gameControl, playerCounters, scoreboard);
+	resolve_pending_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
 
 	// 4. Strikes
 	update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
-	update_pitch_resolution(stateInfo, halfInningState, gameControl, &stateInfo->match->gameEvents);
-	update_free_walk_resolution(stateInfo, refereeState, halfInningState, playerCounters, scoreboard, gameControl, &stateInfo->match->gameEvents);
+	update_pitch_resolution(stateInfo, halfInningState, betweenPitchState, (FlowControl*)&game->flowControl, &stateInfo->match->gameEvents);
+	update_free_walk_resolution(stateInfo, refereeState, halfInningState, playerCounters, scoreboard, flowControl, &stateInfo->match->gameEvents);
 
 	// 5. Game State Flags
-	update_game_state_flags((StateInfo*)stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, gameControl);
+	update_game_state_flags((StateInfo*)stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
 
 	// 6. Homerun Contest: Check if current pair is complete
 	if (scoreboard->period >= 4) {

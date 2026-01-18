@@ -81,15 +81,15 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 	// 4. React to Pitch Resolution (Milestone 17)
 	// If the Referee has adjudicated the pitch (Strike/Ball), we must close the pitch state
 	// to prevent double-counting and to signal the action system that the pitch is over.
-	if (game->gameControl.pitchResolutionProcessed) {
+	if (game->betweenPitchState.resolutionProcessed) {
 		game->pRAI.pitchState = PITCH_STAGE_NONE;
-		game->gameControl.pitchResolutionProcessed = 0; // Consume the flag
+		game->betweenPitchState.resolutionProcessed = 0; // Consume the flag
 	}
 }
 
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	if(stateInfo->match->gameControl.pause == 0) {
+	if(stateInfo->match->flowControl.pause == 0) {
 		gameAnalysis(stateInfo, menuInfo, rng_seed);
 		actionInvocations(stateInfo);
 		actionImplementation(stateInfo, rng_seed);
@@ -101,7 +101,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		    stateInfo,
 		    &game->referee,
 		    &game->halfInningState,
-		    &game->gameControl,
+		    &game->betweenPitchState,
 		    &game->playerCounters,
 		    &stateInfo->match->scoreboard
 		);
@@ -109,14 +109,14 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// Handle Foul Play Reset (Milestone 17)
 		// Timer logic: Count frames when outOfBounds is active
 		static int outOfBoundsTimer = 0;
-		if (game->gameControl.outOfBounds) {
+		if (game->betweenPitchState.outOfBounds) {
 			outOfBoundsTimer++;
 
 			// After ~2 seconds (OUT_OF_BOUNDS_THRESHOLD frames), trigger reset
 			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
 				applyFoulPlayReset(stateInfo, rng_seed);
 				// Clear state to prevent loop
-				game->gameControl.outOfBounds = 0;
+				game->betweenPitchState.outOfBounds = 0;
 				outOfBoundsTimer = 0;
 			}
 		} else {
@@ -129,7 +129,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// Validate state consistency (Debug only)
 		if (!StateValidator_Check(stateInfo)) {
 			StateValidator_Dump(stateInfo, "State Consistency Check Failed");
-			stateInfo->match->gameControl.pause = 1;
+			stateInfo->match->flowControl.pause = 1;
 		}
 
 		// Clear transient events for the next frame
@@ -139,7 +139,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
 	// players and ball are the building blocks of all the action on the screen.
-	if(stateInfo->match->gameControl.pause == 0) {
+	if(stateInfo->match->flowControl.pause == 0) {
 #ifndef NO_RENDER
 		drawPlayerRenderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
 		drawBall(&(stateInfo->match->ballInfo), alpha, rm);

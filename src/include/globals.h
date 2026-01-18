@@ -517,28 +517,26 @@ typedef struct _GameEvents {
 	int freeWalkRejected;        // Player rejected free walk
 } GameEvents;
 
-// MILESTONE 16 (Phase 1): Stateful coordination flags
-// Control flags remain until explicitly changed
-// Written by: various game systems
-// Read by: various game systems
-typedef struct _GameControl {
-	// Flow control
+// MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
+// Sticky flags that persist across frames but reset when new pitch starts
+typedef struct _BetweenPitchState {
+	int catchHasBeenMade;     // Fly ball was caught
+	int hasBallHitGround;     // Ball has touched ground
+	int outOfBounds;          // First bounce was out of bounds (foul play)
+	int resolutionProcessed;  // Referee has adjudicated strike/ball
+} BetweenPitchState;
+
+// MILESTONE 17: User interaction flow control
+typedef struct _FlowControl {
 	int pause;
 	int waitingForBatterDecision;
 	int waitingForFreeWalkDecision;
+
+	// Free walk offer data (calculated by game_analysis, consumed by UI/actions)
 	int freeWalkCalculationMade;
-
-	// Referee Decisions (Sticky State)
-	int catchHasBeenMade; // Persistent flag: catch occurred during this play
-	int hasBallHitGround; // Persistent flag: ball has hit ground during this play (for first bounce detection)
-	int outOfBounds; // Persistent flag: foul play detected (first bounce was out of bounds)
-
-	// Context data
-	int freeWalkIndex;
-	BaseID freeWalkBase;
-	// Referee coordination
-	int pitchResolutionProcessed; // Flag to signal that pitch result has been adjudicated and state should be reset
-} GameControl;
+	int freeWalkIndex;        // Which player to offer free walk (-1 = none)
+	BaseID freeWalkBase;      // From which base (BASE_NONE = none)
+} FlowControl;
 
 typedef struct _CameraState {
 	int homeRunCameraFlag;
@@ -736,7 +734,8 @@ typedef struct _MatchSession {
 	PlayerRelatedActionInfo pRAI;
 	HalfInningState halfInningState; // MILESTONE 7.5 - New core state
 	GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
-	GameControl gameControl; // MILESTONE 16 - Control flags (Phase 1)
+	BetweenPitchState betweenPitchState; // MILESTONE 17 - Sticky referee decisions (reset at pitch start)
+	FlowControl flowControl; // MILESTONE 17 - User flow gates
 	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
 	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
 	HomeRunContestState homeRunContestState; // MILESTONE 7.5 - Game mode specific state

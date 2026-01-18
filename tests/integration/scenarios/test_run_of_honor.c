@@ -43,7 +43,7 @@ int test_full_run_of_honor(void)
 	ctx->state->match->pRAI.batHit = 1;
 	ctx->state->match->pRAI.batterCanAdvance = 1;
 	ctx->state->match->ballInfo.currentFlightHasHitGround = 1;
-	ctx->state->match->gameControl.catchHasBeenMade = 0;
+	ctx->state->match->betweenPitchState.catchHasBeenMade = 0;
 	ctx->state->match->referee.woundingEvaluationActive = 0;
 
 	printf("Ball at (%.1f, %.1f, %.1f), hasHitGround=%d\n",

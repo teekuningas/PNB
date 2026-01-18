@@ -85,23 +85,24 @@ int test_should_ai_throw_replacer()
 int test_should_ai_drop_ball_scenario()
 {
 	RefereeState ref = {0};
-	GameControl gc = {0};
+	BetweenPitchState bps;
+	bps.catchHasBeenMade = 1;
 	ref.woundingEvaluationActive = 1;
 	// checkForRun removed - no longer used
 
 	// Scenario: Runners on 2nd and 3rd, catcher has ball at home base.
 	// woundingEvaluationActive=1, r3=3, r3On=1, r2=2, r2On=1, home==hasBall
-	int result = should_ai_drop_ball(&ref, &gc, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
+	int result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
 	ASSERT_EQ(1, result, "Should drop ball in ajolähtö tactical drop scenario");
 
 	// Not wounding evaluation
 	ref.woundingEvaluationActive = 0;
-	result = should_ai_drop_ball(&ref, &gc, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
+	result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
 	ASSERT_EQ(0, result, "Should not drop if not a fly ball (wounding evaluation)");
 
 	// Catcher doesn't have the ball
 	ref.woundingEvaluationActive = 1;
-	result = should_ai_drop_ball(&ref, &gc, BASE_THIRD, 1, BASE_SECOND, 1, 1, 0);
+	result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 0);
 	ASSERT_EQ(0, result, "Should not drop if catcher doesn't have the ball at home");
 
 	return TEST_PASSED;

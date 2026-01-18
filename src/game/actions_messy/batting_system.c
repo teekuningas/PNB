@@ -106,7 +106,7 @@ void selectBatter(StateInfo* stateInfo)
 		// we set the batterSelect to be 0 so that it will be correct one next time we have the decision
 		stateInfo->match->pendingActionState.batterSelect = 0;
 		// and set these to 0 as decision made.
-		stateInfo->match->gameControl.waitingForBatterDecision = 0;
+		stateInfo->match->flowControl.waitingForBatterDecision = 0;
 		stateInfo->match->aF.bTAF.chooseBatter = CHOOSE_BATTER_IDLE;
 
 		// new batting team player on the field.

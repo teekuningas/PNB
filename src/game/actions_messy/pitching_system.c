@@ -37,7 +37,7 @@ void startPitch(StateInfo* stateInfo)
 	if(stateInfo->match->pII.hasBallIndex == stateInfo->match->pII.catcherOnBaseIndex[0] &&stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE &&
 	        stateInfo->match->pRAI.batterReady == 1 &&stateInfo->match->pendingActionState.throwGoingOn == 0 &&
 	        stateInfo->match->playerInfo[stateInfo->match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
-	        stateInfo->match->gameControl.waitingForFreeWalkDecision == 0) {
+	        stateInfo->match->flowControl.waitingForFreeWalkDecision == 0) {
 		// we stop the pitcher if we were moving with it when we started
 		if(stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.moving == 1) {
 			stopMovement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
