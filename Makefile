@@ -15,8 +15,8 @@ _OBJ_INT_SCENARIOS = tests/integration/scenarios/test_runner_scores_from_third.o
                      tests/integration/scenarios/test_batter_forced_out_at_first.o \
                      tests/integration/scenarios/test_fly_ball_runner_wounded.o \
                      tests/integration/scenarios/test_runner_chain_reaction.o \
-                     tests/integration/scenarios/test_tuplahaava_double_wound.o \
-                     tests/integration/scenarios/test_tuplahaava_late_arrival.o \
+                     tests/integration/scenarios/test_fly_ball_double_wound.o \
+                     tests/integration/scenarios/test_fly_ball_double_wound_late_arrival.o \
                      tests/integration/scenarios/test_out_of_bounds_reset.o \
                      tests/integration/scenarios/test_pitching_strike.o \
                      tests/integration/scenarios/test_pitching_ball.o \
@@ -25,7 +25,7 @@ _OBJ_INT_SCENARIOS = tests/integration/scenarios/test_runner_scores_from_third.o
                      tests/integration/scenarios/test_run_before_ball_lands.o \
                      tests/integration/scenarios/test_run_before_catch.o \
                      tests/integration/scenarios/test_fly_ball_out_and_wound.o \
-                     tests/integration/scenarios/test_batter_early_arrival.o
+                     tests/integration/scenarios/test_fly_ball_early_arrival.o
 
 OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o $(_OBJ_INT_SCENARIOS))

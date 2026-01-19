@@ -7,7 +7,7 @@
 /**
  * TEST 5: Tuplahaava (Double Wound) - Sequence and Safety Verification WITH CATCH
  */
-int test_full_tuplahaava_double_wound(void)
+int test_fly_ball_double_wound(void)
 {
 	ScenarioContext* ctx = create_scenario();
 

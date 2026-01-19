@@ -25,12 +25,12 @@
   arrives at the next base before the catch happens.
 */
 
-int test_batter_arrives_before_catch(void)
+int test_fly_ball_early_arrival(void)
 {
 	ScenarioContext* ctx = create_scenario();
 	MatchSession* match = ctx->state->match;
 
-	printf("\n=== BATTER EARLY ARRIVAL TEST ===\n");
+	printf("\n=== FLY BALL EARLY ARRIVAL TEST ===\n");
 
 	// 1. Setup: Only batter at Home, no other runners
 	setup_batter_at_home(ctx, 0);

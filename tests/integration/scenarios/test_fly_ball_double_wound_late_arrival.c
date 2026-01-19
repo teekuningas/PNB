@@ -7,7 +7,7 @@
 /**
  * TEST 6: Tuplahaava - Late Arrival + Lead Runner Shared Safety
  */
-int test_full_tuplahaava_late_arrival_between_bases(void)
+int test_fly_ball_double_wound_late_arrival(void)
 {
 	ScenarioContext* ctx = create_scenario();
 
