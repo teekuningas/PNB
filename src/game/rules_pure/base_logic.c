@@ -60,7 +60,6 @@ bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID 
 {
 	// If taking free walk, always safe from fly (rule 36/31?)
 	if (state == PLAYER_STATE_ADVANCING_FREELY) {
-		printf("[WOUNDING_CHECK] Player is safe: state=ADVANCING_FREELY\n");
 		return true;
 	}
 
@@ -76,20 +75,14 @@ bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID 
 	// Simplified check based on game_analysis.c:
 	// return false (not safe) if they have advanced.
 	if (current_base != original_base) {
-		printf("[WOUNDING_CHECK] Player NOT safe: current_base(%d) != original_base(%d)\n",
-		       current_base, original_base);
 		return false;
 	}
 
 	// If they are physically safe on the original base, they are safe.
 	if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
-		printf("[WOUNDING_CHECK] Player is safe: state=%d (ON_BASE or AT_BAT) and current==original\n",
-		       state);
 		return true;
 	}
 
-	printf("[WOUNDING_CHECK] Player NOT safe: state=%d, bases match but not ON_BASE/AT_BAT\n",
-	       state);
 	return false; // Off base
 }
 
