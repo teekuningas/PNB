@@ -19,6 +19,20 @@
 // Referee Update Pipeline (Milestone 15)
 // ============================================================================
 
+static void update_batter(const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events)
+{
+	const MatchSession* game = stateInfo->match;
+
+	// Batter Entered: Initialize safety for the new batter
+	if (events->batterEntered) {
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+				referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+			}
+		}
+	}
+}
+
 static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
@@ -679,6 +693,9 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 {
 	const MatchSession* game = stateInfo->match;
 	const FlowControl* flowControl = &game->flowControl;  // Read-only access to flow data
+
+	// 0. Initialization Events (Milestone 17)
+	update_batter(stateInfo, refereeState, &stateInfo->match->gameEvents);
 
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);

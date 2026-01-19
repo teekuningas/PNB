@@ -460,7 +460,10 @@ void prepareBatter(MatchSession* match)
 		// waiting for pitch to go in air before starting the batting movement
 		match->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
-		match->referee.battingPlayers[batterIndex].currentSafetyBase = BASE_HOME;
+		
+		// Event-driven: Signal referee to initialize batter safety
+		match->gameEvents.batterEntered = 1;
+		
 		// and initialize batter so that everything is ready to go.
 		match->pRAI.initBatter = 1;
 	}
@@ -846,6 +849,7 @@ void clearFrameEvents(GameEvents* events)
 	events->ballHitGround = 0;
 	events->freeWalkAccepted = 0;
 	events->freeWalkRejected = 0;
+	events->batterEntered = 0;
 }
 
 // these should be kept when foul play
