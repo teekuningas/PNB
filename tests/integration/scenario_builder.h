@@ -52,6 +52,16 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
  * @brief Hit a fly ball (high arc) to a specific location
  *
  * Sets the ball state to look like it came from a bat hit (woundingCatchPending=1).
+ *
+ * @param ctx The scenario context
+ * @param fromLocation Where the ball starts (usually pitch plate)
+ * @param targetLocation Where the ball should land
+ * @param flightFrames Number of frames for the ball to be in the air (default 150)
+ */
+void hit_fly_ball_to_location_with_time(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation, float flightFrames);
+
+/**
+ * @brief Hit a fly ball with default flight time (150 frames)
  */
 void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation);
 
@@ -82,56 +92,30 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
 void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase);
 
 /**
-
  * @brief Setup a batter at home ready to run
-
  *
-
  * Common pattern: fresh batter with no safety, ready to advance to first.
-
  *
-
  * @param ctx The scenario context
-
  * @param playerIndex Player index to set as batter
-
  */
-
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 
-
-
 /**
-
  * @brief Simulate a pitch thrown to a specific X coordinate relative to plate center
-
  *
-
  * Sets up all necessary state (pitchState, ball velocity, referee snapshots) to mimic
-
  * a real pitch release.
-
  *
-
  * @param ctx The scenario context
-
  * @param targetX The target X coordinate (0.0 = center/strike, >0.75 = ball)
-
  */
-
 void perform_pitch(ScenarioContext* ctx, float targetX);
 
-
-
 /**
-
  * @brief Simulate frames until a condition is met or timeout
-
  *
-
  * @param ctx The scenario context
-
-
  * @param condition Function returning 1 when goal is reached
  * @param maxFrames Maximum frames before giving up
  * @return Number of frames simulated

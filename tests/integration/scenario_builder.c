@@ -334,7 +334,7 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
 	                 dz * power * THROW_POWER_CONSTANT);
 }
 
-void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation)
+void hit_fly_ball_to_location_with_time(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation, float flightFrames)
 {
 	if (!ctx || !ctx->state) return;
 
@@ -348,12 +348,6 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 	if (dist < 0.1f) return;
 
 	// Flight parameters
-	// We want a high arc (Koppi)
-	// Flight time T roughly 150 frames (approx 3 seconds at 50fps logic?)
-	// Actually UPDATE_INTERVAL is 20ms, so 50 updates per second.
-	// 150 frames = 3 seconds.
-
-	float frames = 150.0f;
 	float gravity = GRAVITY; // 0.003f
 
 	// v_x = dx / frames
@@ -362,9 +356,9 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 	// 0 = v_y * T - 0.5 * g * T^2
 	// v_y = 0.5 * g * T
 
-	float vy = 0.5f * gravity * frames;
-	float vx = dx / frames;
-	float vz = dz / frames;
+	float vy = 0.5f * gravity * flightFrames;
+	float vx = dx / flightFrames;
+	float vz = dz / flightFrames;
 
 	// Set starting location
 	game->ballInfo.location = fromLocation;
@@ -378,6 +372,11 @@ void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vecto
 	game->ballInfo.currentFlightHasHitGround = 0;
 	game->gameEvents.catchMade = 0;
 	game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
+}
+
+void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation)
+{
+	hit_fly_ball_to_location_with_time(ctx, fromLocation, targetLocation, 150.0f);
 }
 
 void perform_pitch(ScenarioContext* ctx, float targetX)

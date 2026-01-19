@@ -15,5 +15,6 @@ int test_full_run_of_honor(void); // §42 Kunniajuoksu (Run of Honor)
 int test_run_arrival_before_ball_lands(void); // Regression test for "Lost Run" bug
 int test_run_arrival_before_catch(void); // Pending run voided by catch
 int test_full_fly_ball_out_and_wound(void); // New test
+int test_batter_arrives_before_catch(void); // Batter arrives at base before catch
 
 #endif // ALL_SCENARIOS_H
