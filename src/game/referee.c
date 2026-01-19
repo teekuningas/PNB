@@ -326,25 +326,17 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 	}
 }
 
-static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase, BetweenPitchState* betweenPitchState)
+static void update_force_outs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase, BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
 
-	// 3. Check for Outs (§33) and Tuplahaava Exceptions (§36)
+	// Check for Force Outs (§33) and Safety Removal (§36)
 	if (ballAtBase != -1) {
-		// Default assumption: If ball is at a base, Run of Honor possibility is threatened.
-		// decisions.canMakeRunOfHonor = 0; // We need to update GameModeState? Or pass it?
-		// Referee_Apply handled this: if (decisions.canMakeRunOfHonor == 0) gameModeState.canMakeRunOfHonor = 0;
-		// We should pass GameModeState too or handle it here if we had access.
-		// For now, let's focus on Outs.
-
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			const PlayerInfo* player = &game->playerInfo[i];
 
 			// Only check active players
 			if (player->bTPI.baseId == BASE_NONE) continue;
-
-			// Check Run of Honor (Moved to GameModeState update later?)
 
 			BaseID ballBaseId = (BaseID)ballAtBase;
 			BaseID checkBaseId;
@@ -385,14 +377,17 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 				if (!is_protected) {
 					// Player has safety here but is "irti" - lose safety and must run
 					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-					// Force advance logic handled by Reconcile
 				}
 			}
-
 		}
 	}
+}
 
-	// C. Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
+static void update_tuplahaava_logic(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase)
+{
+	const MatchSession* game = stateInfo->match;
+
+	// Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
 	// These checks must run every frame, not just when ball is at a base
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		const PlayerInfo* player = &game->playerInfo[i];
@@ -788,7 +783,8 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 
 	// 3. Safety Pipeline
 	update_safety_status(stateInfo, refereeState);
-	update_force_outs_and_tuplahaava(stateInfo, refereeState, halfInningState, ballAtBase, betweenPitchState);
+	update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase, betweenPitchState);
+	update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase);
 	update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
 
 	// 3.5 Resolve Pending Runs (Milestone 17)
