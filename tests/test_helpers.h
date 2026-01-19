@@ -36,6 +36,14 @@ extern int tests_failed;
 	} \
 } while(0)
 
+#define ASSERT_NE(expected, actual, message) do { \
+	if ((expected) == (actual)) { \
+		printf("\n  Assertion failed: %s\n  Expected not: %d, Got: %d\n  %s:%d\n", \
+		       message, (int)(expected), (int)(actual), __FILE__, __LINE__); \
+		return TEST_FAILED; \
+	} \
+} while(0)
+
 #define ASSERT_STR_EQ(expected, actual, message) do { \
 	if (strcmp((expected), (actual)) != 0) { \
 		printf("\n  Assertion failed: %s\n  Expected: \"%s\", Got: \"%s\"\n  %s:%d\n", \

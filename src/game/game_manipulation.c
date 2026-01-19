@@ -264,8 +264,9 @@ static void checkIfBallCanBeCatched(StateInfo* stateInfo)
 						stateInfo->match->ballInfo.moving = 0;
 						stateInfo->match->ballInfo.onGround = 0;
 						stateInfo->match->ballInfo.currentFlightHasHitGround = 0;
-						// and set ball's location to player's location.
+						// and set ball's location to player's location (X, Z), but use proper held height (Y)
 						setVectorV(&(stateInfo->match->ballInfo.location), &(stateInfo->match->playerInfo[i].tPI.location));
+						stateInfo->match->ballInfo.location.y = BALL_HEIGHT_WITH_PLAYER;
 					}
 				}
 
@@ -306,10 +307,11 @@ static void checkIfNearHomeLocation(StateInfo* stateInfo)
 static void processPendingWounds(StateInfo* stateInfo)
 {
 	int i;
-	// check all players for pending wounds (independent of arrival)
+	// check all players for pending wounds that are ready for physical removal
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		int index = i;
-		if(stateInfo->match->referee.battingPlayers[index].hasPendingWound == 1) {
+		// Only process if wound has been EVALUATED (referee decided player should leave)
+		if(stateInfo->match->referee.battingPlayers[index].pendingWoundState == WOUND_STATE_EVALUATED) {
 			BaseID currentBase = stateInfo->match->playerInfo[index].bTPI.baseId;
 			BaseID sourceBase = stateInfo->match->referee.battingPlayers[index].woundingSourceBase;
 			WoundingType type = stateInfo->match->referee.battingPlayers[index].woundingType;
@@ -336,9 +338,9 @@ static void processPendingWounds(StateInfo* stateInfo)
 
 				if (shouldWound) {
 					stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
-					stateInfo->match->referee.battingPlayers[index].hasPendingWound = 0;
+					// Note: Do NOT modify referee state here - that's handled by Referee_Update
 
-					// Apply consequences immediately
+					// Apply physical consequences immediately
 					stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
 					movePlayerOut(stateInfo->match->playerInfo, stateInfo->match->playerRuntime, stateInfo->fieldPositions, index);
 

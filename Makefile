@@ -23,7 +23,8 @@ _OBJ_INT_SCENARIOS = tests/integration/scenarios/test_runner_scores_from_third.o
                      tests/integration/scenarios/test_free_walk.o \
                      tests/integration/scenarios/test_run_of_honor.o \
                      tests/integration/scenarios/test_run_before_ball_lands.o \
-                     tests/integration/scenarios/test_run_before_catch.o
+                     tests/integration/scenarios/test_run_before_catch.o \
+                     tests/integration/scenarios/test_fly_ball_out_and_wound.o
 
 OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o $(_OBJ_INT_SCENARIOS))

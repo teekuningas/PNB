@@ -321,6 +321,12 @@ typedef enum {
 	WOUNDING_TYPE_TUPLAHAAVA = 2   // Has safety, can retreat
 } WoundingType;
 
+typedef enum _PendingWoundState {
+	WOUND_STATE_NONE = 0,          // No wound pending
+	WOUND_STATE_PENDING = 1,       // Marked for wounding (evaluation ongoing)
+	WOUND_STATE_EVALUATED = 2      // Wound confirmed (evaluation finished)
+} PendingWoundState;
+
 typedef struct _RefereePlayerState {
 	// === PITCH START SNAPSHOT (for foul play) ===
 	BaseID baseAtPitchStart;       // Where was player when pitch started
@@ -332,7 +338,7 @@ typedef struct _RefereePlayerState {
 	int runOfHonorScored;          // Logical run of honor scored status (decided by Referee)
 
 	// === WOUNDING TRACKING ===
-	int hasPendingWound;           // Marked for wounding
+	PendingWoundState pendingWoundState;  // Wound state machine
 	WoundingType woundingType;     // Normal or Tuplahaava
 	BaseID woundingSourceBase;     // Base they were at when marked
 

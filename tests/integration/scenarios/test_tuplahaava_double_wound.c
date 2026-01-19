@@ -48,8 +48,8 @@ int test_full_tuplahaava_double_wound(void)
 		int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 		int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;
 		Vector3D posB = ctx->state->match->playerInfo[1].tPI.location;
-		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].hasPendingWound;
-		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].hasPendingWound;
+		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].pendingWoundState;
+		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].pendingWoundState;
 		int woundTypeA = ctx->state->match->referee.battingPlayers[0].woundingType;
 		int woundTypeB = ctx->state->match->referee.battingPlayers[1].woundingType;
 		int markedA = ctx->state->match->referee.woundingPlayersMarked[0];

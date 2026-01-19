@@ -146,6 +146,9 @@ void releasePitch(StateInfo* stateInfo)
 	stateInfo->match->ballInfo.moving = 1;
 	stateInfo->match->ballInfo.currentFlightHasHitGround = 0;
 	stateInfo->match->ballInfo.onGround = 0;
+	// BUG FIX: Clear hitsGroundToUnWound at pitch release
+	// This flag should only be set during the current pitch's flight, not carried over from previous pitches
+	stateInfo->match->ballInfo.hitsGroundToUnWound = 0;
 	// set the velocity by our dx and dy
 	setVectorXYZ(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);
 	// .. and move the pitcher

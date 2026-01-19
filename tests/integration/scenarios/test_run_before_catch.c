@@ -79,13 +79,13 @@ int test_run_arrival_before_catch(void)
 	for (int i = 0; i < 600; i++) {
 		// Check pending run state BEFORE simulation
 		int hadPendingRun = ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingRun;
-		int hadPendingWound = ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingWound;
+		int hadPendingWound = ctx->state->match->referee.battingPlayers[runnerIndex].pendingWoundState != WOUND_STATE_NONE;
 
 		simulate_frames(ctx, 1);
 
 		// Check pending run state AFTER simulation
 		int hasPendingRunNow = ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingRun;
-		int hasPendingWoundNow = ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingWound;
+		int hasPendingWoundNow = ctx->state->match->referee.battingPlayers[runnerIndex].pendingWoundState != WOUND_STATE_NONE;
 
 		// Detect pending run transitions
 		if (!hadPendingRun && hasPendingRunNow && !pendingRunSet) {
@@ -137,7 +137,7 @@ int test_run_arrival_before_catch(void)
 			       i, ctx->state->match->referee.woundingEvaluationFinished);
 			printf("  Runner state=%d, hasPendingWound=%d, hasPendingRun=%d\n",
 			       ctx->state->match->playerInfo[runnerIndex].bTPI.state,
-			       ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingWound,
+			       ctx->state->match->referee.battingPlayers[runnerIndex].pendingWoundState != WOUND_STATE_NONE,
 			       ctx->state->match->referee.battingPlayers[runnerIndex].hasPendingRun);
 			printf("  Runner baseId=%d, baseAtPitchStart=%d, woundingSourceBase=%d\n",
 			       ctx->state->match->playerInfo[runnerIndex].bTPI.baseId,

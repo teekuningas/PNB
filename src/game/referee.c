@@ -98,7 +98,7 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 				}
 
 				// Clear temporary rule states
-				referee->battingPlayers[index].hasPendingWound = 0;
+				referee->battingPlayers[index].pendingWoundState = WOUND_STATE_NONE;
 				referee->battingPlayers[index].woundingType = WOUNDING_TYPE_NONE;
 				referee->battingPlayers[index].woundingSourceBase = BASE_NONE;
 			} else {
@@ -190,6 +190,7 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 		}
 		// Timer expired - CONFIRM WOUNDING
 		else if (referee->woundingEvaluationTimer > threshold) {
+
 			// Apply wounding to marked players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				if (referee->woundingPlayersMarked[i] == 1 &&
@@ -200,8 +201,8 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 					// Trigger global event
 					halfInningState->event = EVENT_WOUNDED;
 
-					// Apply wounding state
-					referee->battingPlayers[i].hasPendingWound = 1;
+					// Set wound as PENDING (player is doomed)
+					referee->battingPlayers[i].pendingWoundState = WOUND_STATE_PENDING;
 
 					// Determine wounding type (don't overwrite TUPLAHAAVA)
 					if (referee->battingPlayers[i].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
@@ -211,9 +212,12 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 					// Snapshot current base for event tracking
 					referee->battingPlayers[i].baseAtLastEvent = baseId;
 
-					// Remove safety (unless TUPLAHAAVA)
+					// Remove safety and mark as EVALUATED for NORMAL wounds
+					// For TUPLAHAAVA, keep safety until they meet special conditions
 					if (referee->battingPlayers[i].woundingType != WOUNDING_TYPE_TUPLAHAAVA) {
 						referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+						// Mark as EVALUATED so safety reconciliation won't restore it
+						referee->battingPlayers[i].pendingWoundState = WOUND_STATE_EVALUATED;
 					}
 
 					// Clear marking
@@ -275,11 +279,19 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 		// But Referee doesn't recognize them as the controller yet
 		if (referee->battingPlayers[i].currentSafetyBase != physicalBase) {
 
-			// Grant Safety
-			referee->battingPlayers[i].currentSafetyBase = physicalBase;
+			// BUG FIX: Don't grant safety if wound has been EVALUATED
+			// EVALUATED means safety was already stripped and should not be restored
+			int isWoundEvaluated = (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_EVALUATED);
+
+			if (!isWoundEvaluated) {
+				// Grant Safety (unless wound is evaluated)
+				referee->battingPlayers[i].currentSafetyBase = physicalBase;
+			}
 
 			// Check if this arriving player is marked for a wound
-			int isWoundPending = referee->battingPlayers[i].hasPendingWound || referee->woundingPlayersMarked[i];
+			int isWoundPending = (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_PENDING) ||
+			                     (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_EVALUATED) ||
+			                     referee->woundingPlayersMarked[i];
 
 			if (isWoundPending) {
 				// TUPLAHAAVA LOGIC: Do not displace. Mark existing occupants for Tuplahaava.
@@ -289,10 +301,11 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 					if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
 						// Found an existing occupant. Mark them for Tuplahaava.
 
-						// If the timer has already expired (arriving player is pending),
+						// If the timer has already expired (arriving player has pending wound),
 						// we must immediately set the occupant to pending as well.
-						if (referee->battingPlayers[i].hasPendingWound) {
-							referee->battingPlayers[j].hasPendingWound = 1;
+						if (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_PENDING ||
+						        referee->battingPlayers[i].pendingWoundState == WOUND_STATE_EVALUATED) {
+							referee->battingPlayers[j].pendingWoundState = WOUND_STATE_PENDING;
 						} else {
 							// Otherwise, mark them for the timer to pick up.
 							referee->woundingPlayersMarked[j] = 1;
@@ -382,29 +395,46 @@ static void update_force_outs_and_tuplahaava(const StateInfo* stateInfo, Referee
 				}
 			}
 
-			// C. Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
-			if (referee->battingPlayers[i].hasPendingWound &&
-			        referee->battingPlayers[i].woundingType == WOUNDING_TYPE_TUPLAHAAVA &&
-			        !referee->battingPlayers[i].isOut) {
+		}
+	}
 
-				BaseID source = referee->battingPlayers[i].woundingSourceBase;
-				BaseID next = base_get_next(source);
-				int is_in_between = (player->bTPI.state != PLAYER_STATE_ON_BASE);
+	// C. Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
+	// These checks must run every frame, not just when ball is at a base
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		const PlayerInfo* player = &game->playerInfo[i];
 
-				if (is_in_between) {
-					// Exception 2: Ball at NEXT base -> OUT
-					if (base_to_int_index(next) == ballAtBase) {
-						referee->battingPlayers[i].isOut = 1;
-						halfInningState->outs += 1;
-						halfInningState->event = EVENT_OUT;
-						referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
-					}
-					// Exception 1: Ball at SOURCE base -> Lose Safety
-					else if (base_to_int_index(source) == ballAtBase) {
-						referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-						// "Transition to NORMAL wounding type"
-						referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NORMAL;
-					}
+		// Only check active players with Tuplahaava wounds
+		if (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_PENDING &&
+		        referee->battingPlayers[i].woundingType == WOUNDING_TYPE_TUPLAHAAVA &&
+		        !referee->battingPlayers[i].isOut) {
+
+			BaseID source = referee->battingPlayers[i].woundingSourceBase;
+			BaseID next = base_get_next(source);
+			BaseID currentBase = player->bTPI.baseId;
+			int is_in_between = (player->bTPI.state != PLAYER_STATE_ON_BASE);
+
+			if (is_in_between && ballAtBase != -1) {
+				// Exception 2: Ball at NEXT base -> OUT
+				if (base_to_int_index(next) == ballAtBase) {
+					referee->battingPlayers[i].isOut = 1;
+					halfInningState->outs += 1;
+					halfInningState->event = EVENT_OUT;
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
+					referee->battingPlayers[i].pendingWoundState = WOUND_STATE_EVALUATED; // Ready for removal
+				}
+				// Exception 1: Ball at SOURCE base -> Lose Safety
+				else if (base_to_int_index(source) == ballAtBase) {
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					// "Transition to NORMAL wounding type"
+					referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NORMAL;
+					referee->battingPlayers[i].pendingWoundState = WOUND_STATE_EVALUATED; // Ready for removal
+				}
+			} else if (!is_in_between) {
+				// Player is ON_BASE - check if at source or next base
+				if (currentBase == source || currentBase == next) {
+					// Tuplahaava player at source/next base should be wounded
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					referee->battingPlayers[i].pendingWoundState = WOUND_STATE_EVALUATED;
 				}
 			}
 		}
@@ -702,7 +732,7 @@ static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* refer
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			if (referee->battingPlayers[i].hasPendingRun) {
 				// Only award run if player was NOT wounded by the catch
-				if (referee->battingPlayers[i].hasPendingWound == 0) {
+				if (referee->battingPlayers[i].pendingWoundState == WOUND_STATE_NONE) {
 					// Award Regular Run
 					halfInningState->event = EVENT_RUN_SCORED;
 					int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
@@ -832,7 +862,7 @@ void initializeRefereeState(RefereeState* referee)
 		referee->battingPlayers[i].isOut = 0;
 		referee->battingPlayers[i].hasScored = 0;
 		referee->battingPlayers[i].runOfHonorScored = 0;
-		referee->battingPlayers[i].hasPendingWound = 0;
+		referee->battingPlayers[i].pendingWoundState = WOUND_STATE_NONE;
 		referee->battingPlayers[i].woundingType = WOUNDING_TYPE_NONE;
 		referee->battingPlayers[i].woundingSourceBase = BASE_NONE;
 		referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;

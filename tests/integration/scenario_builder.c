@@ -104,7 +104,7 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 
 	// Set referee tracking
 	game->referee.battingPlayers[playerIndex].baseAtPitchStart = base;
-	game->referee.battingPlayers[playerIndex].hasPendingWound = 0;
+	game->referee.battingPlayers[playerIndex].pendingWoundState = WOUND_STATE_NONE;
 	game->referee.battingPlayers[playerIndex].woundingType = WOUNDING_TYPE_NONE;
 
 	// Set runtime state
@@ -318,6 +318,10 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
 // Place ball at starting location
 	game->ballInfo.location = fromLocation;
 	game->ballInfo.lastLocation = fromLocation;
+
+	// CRITICAL: Set lastHadBallIndex to prevent self-catching
+	// (Same as in throwing_system.c line 77)
+	game->pII.lastHadBallIndex = game->pII.hasBallIndex;
 	game->pII.hasBallIndex = -1;
 
 // Use the game's actual sling function (sets velocity + flags)

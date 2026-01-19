@@ -71,9 +71,15 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE || game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
 			BaseID physBase = game->playerInfo[i].bTPI.baseId;
 			if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
-				// Player is physically at base but legally has no safety there.
-				// They must run forward.
-				runToNextBase(game, stateInfo->fieldPositions, i, physBase);
+				// Don't force run if player is about to be wounded (EVALUATED)
+				// They will be removed from the field instead
+				int aboutToBeWounded = (game->referee.battingPlayers[i].pendingWoundState == WOUND_STATE_EVALUATED);
+
+				if (!aboutToBeWounded) {
+					// Player is physically at base but legally has no safety there.
+					// They must run forward.
+					runToNextBase(game, stateInfo->fieldPositions, i, physBase);
+				}
 			}
 		}
 	}

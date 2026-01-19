@@ -48,8 +48,8 @@ int test_full_tuplahaava_late_arrival_between_bases(void)
 		int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
 		int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 		int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;
-		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].hasPendingWound;
-		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].hasPendingWound;
+		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].pendingWoundState;
+		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].pendingWoundState;
 		int typeB = ctx->state->match->referee.battingPlayers[1].woundingType;
 
 		// Verbose logging
