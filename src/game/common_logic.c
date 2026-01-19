@@ -460,10 +460,10 @@ void prepareBatter(MatchSession* match)
 		// waiting for pitch to go in air before starting the batting movement
 		match->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
-		
+
 		// Event-driven: Signal referee to initialize batter safety
 		match->gameEvents.batterEntered = 1;
-		
+
 		// and initialize batter so that everything is ready to go.
 		match->pRAI.initBatter = 1;
 	}
@@ -842,7 +842,6 @@ void clearFrameEvents(GameEvents* events)
 {
 	events->catchMade = 0;
 	events->playerArrivedAtBase = 0;
-	events->pitchStarted = 0;
 	events->pitchReleased = 0;
 	events->ballHitByBat = 0;
 	events->ballMissedByBat = 0;

@@ -170,58 +170,7 @@ void releasePitch(StateInfo* stateInfo)
 	// Trigger pitch released event
 	stateInfo->match->gameEvents.pitchReleased = 1;
 
-	// always when pitch reaches the stage of ball going to air, we update baserunners'
-	// original bases to their current bases, so that we can make decisions about
-	// foul plays and wounds etc.
-	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		int index = i;
-		if(stateInfo->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
-			BaseID baseId = stateInfo->match->playerInfo[index].bTPI.baseId;
-			int base = base_to_int_index(baseId);
-
-			// Referee Snapshot (Milestone 12)
-			// We snapshot the current state as the baseline for this pitch.
-			if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
-				// Special case: Player is advancing freely.
-				// Their "pitch start" base is effectively the destination they are guaranteed to reach.
-				BaseID destBase;
-				if (baseId == BASE_THIRD) destBase = BASE_HOME_SCORED;
-				else destBase = base_get_next(baseId);
-
-				stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = destBase;
-				stateInfo->match->referee.battingPlayers[index].currentSafetyBase = destBase;
-			} else {
-				stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = baseId;
-
-				// Determine safety status for snapshot
-				int hasSafety = 0;
-				if (base >= 0 &&base < 4) {
-					if (get_base_controller(stateInfo->match, (BaseID)base) == index) {
-						hasSafety = 1;
-					}
-				}
-				// Special case: Batter at home is considered to have "safety" in terms of not being irti yet
-				if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
-					hasSafety = 1;
-				}
-
-				// Initialize current safety tracking
-				if (hasSafety) {
-					stateInfo->match->referee.battingPlayers[index].currentSafetyBase = baseId;
-				} else {
-					stateInfo->match->referee.battingPlayers[index].currentSafetyBase = BASE_NONE;
-				}
-			}
-
-			// Clear temporary event states
-			stateInfo->match->referee.battingPlayers[index].hasPendingWound = 0;
-			stateInfo->match->referee.battingPlayers[index].woundingType = WOUNDING_TYPE_NONE;
-			stateInfo->match->referee.battingPlayers[index].woundingSourceBase = BASE_NONE;
-		} else {
-			// CRITICAL FIX: Clear baseAtPitchStart for inactive players to prevent ghost runners
-			stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = BASE_NONE;
-		}
-	}
+	// Note: Referee state snapshotting is now handled by Referee_Update responding to pitchReleased event.
 
 	// run with batting team
 

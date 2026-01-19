@@ -16,16 +16,18 @@
 
 ## Current Status Summary
 
-**Latest Achievement (2026-01-18):**
+**Latest Achievement (2026-01-19):**
+- ✅ Implemented Event-Driven Initialization (Phase 1):
+  - `batterEntered`: Referee initializes safety for new batter
+  - `pitchReleased`: Referee snapshots legal state for pitch start
+- ✅ Removed direct referee state writes from `common_logic.c` and `pitching_system.c`
 - ✅ Split GameControl → BetweenPitchState + FlowControl (22 files, ~200 references)
 - ✅ Fixed wounding evaluation violation in batting_system.c
 - ✅ All 61 tests passing (48 unit + 13 integration)
-- ✅ Clean ownership boundaries established
-- ✅ Documentation consolidated (16 files → 5 core files)
 
 **Remaining Work (Next Session):**
-- ⚠️ 2 violations to fix (wounding execution, foul reset)
-- ⚠️ Replace init writes with events (batterEntered, pitchStarted, foulResetCompleted)
+- ⚠️ 1 violation to fix (foul reset)
+- ⚠️ Replace foul reset write with event (`foulResetCompleted`)
 - ⚠️ Merge game_analysis into gameConsolidation
 - ⚠️ Reorder main loop (gameConsolidation AFTER referee)
 
@@ -53,9 +55,7 @@
 
 **Exception:** Initialization functions may write during setup (marked with `// REFEREE INIT`):
 - `initializeRefereeState()` - Game start
-- `initializeBatter()` - New batter enters
-- `releasePitch()` - Pitch start snapshot
-- `applyFoulPlayReset()` - Foul reset
+- `applyFoulPlayReset()` - Foul reset (To be fixed next)
 
 ---
 

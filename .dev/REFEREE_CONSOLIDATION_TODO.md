@@ -62,76 +62,47 @@ gameAnalysis → actions → physics → referee → reconciliation
 
 ### Phase 1: Replace Init Writes with Events (2 hours)
 
-**1.1: Batter Entered Event (30 min)**
+**1.1: Batter Entered Event (30 min) - ✅ DONE**
 
 **Add to GameEvents:**
 ```c
 typedef struct _GameEvents {
     ...
     int batterEntered;
-    int batterEnteredIndex;  // Which player
+    // batterEnteredIndex not needed, referee finds AT_BAT player
 } GameEvents;
 ```
 
 **Emit in common_logic.c:463:**
 ```c
-// OLD:
-match->referee.battingPlayers[batterIndex].currentSafetyBase = BASE_HOME;
-
 // NEW:
 match->gameEvents.batterEntered = 1;
-match->gameEvents.batterEnteredIndex = batterIndex;
 ```
 
 **Handle in referee.c:**
 ```c
 if (events->batterEntered) {
-    int idx = events->batterEnteredIndex;
-    referee->battingPlayers[idx].currentSafetyBase = BASE_HOME;
-    referee->battingPlayers[idx].baseAtPitchStart = BASE_HOME;
-    referee->battingPlayers[idx].isOut = 0;
-    referee->battingPlayers[idx].hasScored = 0;
-    // ... all initialization
+    // Find AT_BAT player and set safety
 }
 ```
 
-**1.2: Pitch Started Event (30 min)**
+**1.2: Pitch Started Event (30 min) - ✅ DONE**
 
-**Add to GameEvents:**
-```c
-int pitchStarted;
-```
+**Status:** Used existing `pitchReleased` event instead of creating `pitchStarted`.
 
 **Emit in pitching_system.c (releasePitch):**
 ```c
-// OLD: Direct writes to referee.battingPlayers[].baseAtPitchStart
-
-// NEW:
-stateInfo->match->gameEvents.pitchStarted = 1;
+// Existing event emission:
+stateInfo->match->gameEvents.pitchReleased = 1;
+// Removed direct writes to referee state
 ```
 
 **Handle in referee.c:**
 ```c
-if (events->pitchStarted) {
+if (events->pitchReleased) {
     // Snapshot all players' positions
-    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        referee->battingPlayers[i].baseAtPitchStart = 
-            referee->battingPlayers[i].currentSafetyBase;
-    }
-    
     // Reset between-pitch state
-    betweenPitchState->catchHasBeenMade = 0;
-    betweenPitchState->hasBallHitGround = 0;
-    betweenPitchState->outOfBounds = 0;
-    betweenPitchState->resolutionProcessed = 0;
-    
     // Reset wounding evaluation
-    referee->woundingEvaluationActive = 0;
-    referee->woundingEvaluationTimer = -1;
-    referee->woundingEvaluationFinished = 0;
-    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        referee->woundingPlayersMarked[i] = 0;
-    }
 }
 ```
 

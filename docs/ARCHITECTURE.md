@@ -86,18 +86,21 @@ typedef struct {
 | `HalfInningState` | **Referee ONLY** | Everyone | Persistent (inning-scoped) |
 
 **Exception:** Initialization functions may write during setup (marked with `// REFEREE INIT`)
-
-**Note:** This exception is temporary - next session will replace all init writes with events for true referee supremacy.
+- `initializeRefereeState()` (Game Start)
+- `applyFoulPlayReset()` (Pending Refactor)
 
 ### Referee Pipeline
 
-**File:** `src/game/referee.c` (~750 LOC)
+**File:** `src/game/referee.c` (~800 LOC)
 
 **Flow:**
 ```c
 void Referee_Update(StateInfo*, RefereeState*, HalfInningState*, 
                     BetweenPitchState*, PlayerCounters*, Scoreboard*)
 {
+    // 0. Initialization Events (New M17)
+    update_initialization_events();   // Batter enter, Pitch release (snapshot)
+
     // 1. Ball location query
     int ballAtBase = get_ball_at_base_index();
     
@@ -119,7 +122,7 @@ void Referee_Update(StateInfo*, RefereeState*, HalfInningState*,
     update_free_walk_resolution();
     
     // 6. State flags
-    update_game_state_flags();        // Reset on pitch release
+    update_game_state_flags();        // Persistence
 }
 ```
 

@@ -19,7 +19,7 @@
 // Referee Update Pipeline (Milestone 15)
 // ============================================================================
 
-static void update_batter(const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events)
+static void update_initialization_events(const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState, HalfInningState* halfInningState)
 {
 	const MatchSession* game = stateInfo->match;
 
@@ -28,6 +28,82 @@ static void update_batter(const StateInfo* stateInfo, RefereeState* referee, con
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
 				referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+			}
+		}
+	}
+
+	// Pitch Released: Snapshot state for the new pitch
+	if (events->pitchReleased) {
+		// 1. Reset Sticky Flags
+		betweenPitchState->catchHasBeenMade = 0;
+		betweenPitchState->hasBallHitGround = 0;
+		betweenPitchState->outOfBounds = 0;
+		betweenPitchState->resolutionProcessed = 0;
+		referee->woundingEvaluationFinished = 0;
+		referee->woundingEvaluationActive = 0;
+		referee->woundingEvaluationTimer = -1;
+		referee->ballInThirdBaseSincePitch = 0;
+
+		// Clear all wounding marks
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			referee->woundingPlayersMarked[i] = 0;
+		}
+
+		// 2. Snapshot Strike Count
+		referee->strikesAtPitchStart = halfInningState->strikes;
+
+		// 3. Reset pending run flags
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			referee->battingPlayers[i].hasPendingRun = 0;
+			referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+		}
+
+		// 4. Snapshot Base Positions (The "Legal Baseline" for this pitch)
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			int index = i;
+			if (game->playerInfo[index].bTPI.baseId != BASE_NONE) {
+				BaseID baseId = game->playerInfo[index].bTPI.baseId;
+				int base = base_to_int_index(baseId);
+
+				// Special case: Player is advancing freely.
+				// Their "pitch start" base is effectively the destination they are guaranteed to reach.
+				if (game->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+					BaseID destBase;
+					if (baseId == BASE_THIRD) destBase = BASE_HOME_SCORED;
+					else destBase = base_get_next(baseId);
+
+					referee->battingPlayers[index].baseAtPitchStart = destBase;
+					referee->battingPlayers[index].currentSafetyBase = destBase;
+				} else {
+					referee->battingPlayers[index].baseAtPitchStart = baseId;
+
+					// Determine safety status for snapshot
+					int hasSafety = 0;
+					if (base >= 0 && base < 4) {
+						if (get_base_controller((MatchSession*)game, (BaseID)base) == index) {
+							hasSafety = 1;
+						}
+					}
+					// Special case: Batter at home is considered to have "safety" in terms of not being irti yet
+					if (game->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
+						hasSafety = 1;
+					}
+
+					// Initialize current safety tracking
+					if (hasSafety) {
+						referee->battingPlayers[index].currentSafetyBase = baseId;
+					} else {
+						referee->battingPlayers[index].currentSafetyBase = BASE_NONE;
+					}
+				}
+
+				// Clear temporary rule states
+				referee->battingPlayers[index].hasPendingWound = 0;
+				referee->battingPlayers[index].woundingType = WOUNDING_TYPE_NONE;
+				referee->battingPlayers[index].woundingSourceBase = BASE_NONE;
+			} else {
+				// Clear baseAtPitchStart for inactive players
+				referee->battingPlayers[index].baseAtPitchStart = BASE_NONE;
 			}
 		}
 	}
@@ -662,31 +738,6 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	if (events->catchMade) {
 		betweenPitchState->catchHasBeenMade = 1;
 	}
-	// When a new pitch is released, we reset the catch state for the new play.
-	if (events->pitchReleased) {
-		// 1. Reset Sticky Flags (Moved from pitching_system.c)
-		betweenPitchState->catchHasBeenMade = 0;
-		betweenPitchState->hasBallHitGround = 0;
-		betweenPitchState->outOfBounds = 0;
-		betweenPitchState->resolutionProcessed = 0;
-		referee->woundingEvaluationFinished = 0;
-		referee->woundingEvaluationActive = 0;
-		referee->woundingEvaluationTimer = -1;
-
-		// Clear all wounding marks
-		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			referee->woundingPlayersMarked[i] = 0;
-		}
-
-		// 2. Snapshot Strike Count
-		referee->strikesAtPitchStart = halfInningState->strikes;
-
-		// 3. Reset pending run flags for all players
-		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			referee->battingPlayers[i].hasPendingRun = 0;
-			referee->battingPlayers[i].hasPendingRunOfHonor = 0;
-		}
-	}
 }
 
 void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
@@ -695,7 +746,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	const FlowControl* flowControl = &game->flowControl;  // Read-only access to flow data
 
 	// 0. Initialization Events (Milestone 17)
-	update_batter(stateInfo, refereeState, &stateInfo->match->gameEvents);
+	update_initialization_events(stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState);
 
 	// 1. Where is the ball?
 	int ballAtBase = get_ball_at_base_index(stateInfo);

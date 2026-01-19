@@ -508,7 +508,6 @@ typedef struct _GameEvents {
 	int playerArrivedAtBase;     // Runner arrived at base
 
 	// Future events (not yet used)
-	int pitchStarted;            // Pitch began
 	int pitchReleased;           // Ball left pitcher's hand
 	int ballHitByBat;            // Bat made contact
 	int ballMissedByBat;         // Bat swung and missed
