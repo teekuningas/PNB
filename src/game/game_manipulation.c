@@ -310,42 +310,18 @@ static void processPendingWounds(StateInfo* stateInfo)
 	// check all players for pending wounds that are ready for physical removal
 	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		int index = i;
-		// Only process if wound has been EVALUATED (referee decided player should leave)
-		if(stateInfo->match->referee.battingPlayers[index].pendingWoundState == WOUND_STATE_EVALUATED) {
+		// Process players with WOUNDED status (referee has already decided)
+		RefereePlayerStatus status = stateInfo->match->referee.battingPlayers[index].status;
+		if(status == PLAYER_STATUS_WOUNDED) {
 			BaseID currentBase = stateInfo->match->playerInfo[index].bTPI.baseId;
-			BaseID sourceBase = stateInfo->match->referee.battingPlayers[index].woundingSourceBase;
-			WoundingType type = stateInfo->match->referee.battingPlayers[index].woundingType;
 
 			// We only process if they are actually on a base (or have arrived at one).
 			if (currentBase != BASE_NONE) {
-				int shouldWound = 0;
-				// Check if player is physically touching the base (Safe or At Bat)
-				int is_physically_on_base = (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
-				                             stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT);
-
-				if (type == WOUNDING_TYPE_NORMAL) {
-					if (currentBase != sourceBase) {
-						shouldWound = 1;
-					}
-				} else if (type == WOUNDING_TYPE_TUPLAHAAVA) {
-					BaseID nextBase = base_get_next(sourceBase);
-					// For Tuplahaava, the wound applies when they ACHIEVE safety at source or next base.
-					// If they are LEADING or RUNNING, they effectively have the Pending Wound status.
-					if ((currentBase == sourceBase || currentBase == nextBase) &&is_physically_on_base) {
-						shouldWound = 1;
-					}
-				}
-
-				if (shouldWound) {
-					stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
-					// Note: Do NOT modify referee state here - that's handled by Referee_Update
-
-					// Apply physical consequences immediately
-					stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
-					movePlayerOut(stateInfo->match->playerInfo, stateInfo->match->playerRuntime, stateInfo->fieldPositions, index);
-
-					// Legacy Tuplahaava logic removed (handled by Referee_Update)
-				}
+				// Referee has decided this player should be wounded
+				// Apply physical consequences immediately
+				stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
+				stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
+				movePlayerOut(stateInfo->match->playerInfo, stateInfo->match->playerRuntime, stateInfo->fieldPositions, index);
 			}
 		}
 	}

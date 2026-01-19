@@ -51,7 +51,7 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 	MatchSession* game = stateInfo->match;
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 		// 1. React to OUT
-		if (game->referee.battingPlayers[i].isOut) {
+		if (game->referee.battingPlayers[i].status == PLAYER_STATUS_OUT) {
 			if (game->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
 				game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
 				game->playerInfo[i].bTPI.baseId = BASE_NONE;
@@ -71,11 +71,11 @@ void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
 		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE || game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
 			BaseID physBase = game->playerInfo[i].bTPI.baseId;
 			if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
-				// Don't force run if player is about to be wounded (EVALUATED)
+				// Don't force run if player is wounded (WOUNDED status)
 				// They will be removed from the field instead
-				int aboutToBeWounded = (game->referee.battingPlayers[i].pendingWoundState == WOUND_STATE_EVALUATED);
+				int isWounded = (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
 
-				if (!aboutToBeWounded) {
+				if (!isWounded) {
 					// Player is physically at base but legally has no safety there.
 					// They must run forward.
 					runToNextBase(game, stateInfo->fieldPositions, i, physBase);

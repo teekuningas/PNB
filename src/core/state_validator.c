@@ -192,7 +192,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 		PlayerInfo* p = &game->playerInfo[i];
 		// Only print relevant players (on base, active, pending wound, OR holding safety)
 		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE ||
-		                  game->referee.battingPlayers[i].pendingWoundState != WOUND_STATE_NONE || i == activeBatterIndex ||
+		                  game->referee.battingPlayers[i].status != PLAYER_STATUS_ACTIVE || i == activeBatterIndex ||
 		                  game->referee.battingPlayers[i].currentSafetyBase != BASE_NONE);
 
 		if (isRelevant) {
@@ -210,7 +210,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
 			fprintf(f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp, base_to_string(game->referee.battingPlayers[i].currentSafetyBase));
 			fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, game->referee.battingPlayers[i].baseAtPitchStart);
-			fprintf(f, "%s    \"ref_pendingWoundState\": %d\n", sp, game->referee.battingPlayers[i].pendingWoundState);
+			fprintf(f, "%s    \"ref_status\": %d\n", sp, game->referee.battingPlayers[i].status);
 
 			fprintf(f, "%s  },\n", sp);
 		}

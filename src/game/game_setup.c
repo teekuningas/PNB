@@ -110,8 +110,7 @@ void applyFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
 				game->referee.battingPlayers[j].currentSafetyBase = restoreBase;
 
 				// 3. Clear transient rule states
-				game->referee.battingPlayers[j].pendingWoundState = WOUND_STATE_NONE;
-				game->referee.battingPlayers[j].woundingType = WOUNDING_TYPE_NONE;
+				game->referee.battingPlayers[j].status = PLAYER_STATUS_ACTIVE;
 
 				// 4. Handle scoring from 3rd base (foul fly walk case)
 				if (game->playerInfo[j].bTPI.baseId == BASE_HOME_SCORED) {
@@ -154,7 +153,7 @@ void applyFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
 				}
 			} else {
 				// Restore OUT/SCORED states to avoid re-triggering animations
-				if (game->referee.battingPlayers[j].isOut) {
+				if (game->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
 					game->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
 					game->playerInfo[j].bTPI.baseId = BASE_NONE;
 				} else if (game->referee.battingPlayers[j].hasScored) {

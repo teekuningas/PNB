@@ -315,32 +315,28 @@ typedef struct _PlayerRuntimeState {
 	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
+// Player status enum - replaces flag-based status tracking
 typedef enum {
-	WOUNDING_TYPE_NONE = 0,
-	WOUNDING_TYPE_NORMAL = 1,      // Lost safety, must advance
-	WOUNDING_TYPE_TUPLAHAAVA = 2   // Has safety, can retreat
-} WoundingType;
-
-typedef enum _PendingWoundState {
-	WOUND_STATE_NONE = 0,          // No wound pending
-	WOUND_STATE_PENDING = 1,       // Marked for wounding (evaluation ongoing)
-	WOUND_STATE_EVALUATED = 2      // Wound confirmed (evaluation finished)
-} PendingWoundState;
+	PLAYER_STATUS_ACTIVE = 0,              // Playing normally, no special status
+	PLAYER_STATUS_WOUND_MARKED = 1,        // Vulnerable: evaluation timer running, can cancel if ball drops (normal wound)
+	PLAYER_STATUS_WOUND_MARKED_DOUBLE = 2, // Vulnerable: evaluation timer running (tuplahaava/double wound)
+	PLAYER_STATUS_WOUND_PENDING = 3,       // DOOMED (normal wound): must advance, will get WOUNDED or OUT
+	PLAYER_STATUS_WOUND_PENDING_DOUBLE = 4,// DOOMED (tuplahaava): can retreat to avoid OUT
+	PLAYER_STATUS_WOUNDED = 5,             // TERMINAL: Out of play, returns to home base
+	PLAYER_STATUS_OUT = 6                  // TERMINAL: Out of play, returns to home base
+} RefereePlayerStatus;
 
 typedef struct _RefereePlayerState {
+	// === PRIMARY STATUS ===
+	RefereePlayerStatus status;    // Mutually exclusive player status (wounding/out lifecycle)
+
 	// === PITCH START SNAPSHOT (for foul play) ===
 	BaseID baseAtPitchStart;       // Where was player when pitch started
 
 	// === CURRENT SAFETY STATUS ===
 	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
-	int isOut;                     // Logical out status (decided by Referee)
 	int hasScored;                 // Logical scored status (decided by Referee)
 	int runOfHonorScored;          // Logical run of honor scored status (decided by Referee)
-
-	// === WOUNDING TRACKING ===
-	PendingWoundState pendingWoundState;  // Wound state machine
-	WoundingType woundingType;     // Normal or Tuplahaava
-	BaseID woundingSourceBase;     // Base they were at when marked
 
 	// === EVENT SNAPSHOTS (updated at key moments) ===
 	BaseID baseAtLastEvent;        // Where they were at last important event
@@ -363,7 +359,6 @@ typedef struct _RefereeState {
 	int woundingEvaluationActive;  // Referee is evaluating a potential wounding catch
 	int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
 	int woundingEvaluationTimer;   // Timer counting up during evaluation period
-	int woundingPlayersMarked[PLAYERS_IN_TEAM + JOKER_COUNT]; // Players vulnerable at catch moment
 
 	// Flow Control Timers (Milestone 17 consolidation)
 	int endInningTimer;            // Replaces gameFlowState.endOfInningCounter

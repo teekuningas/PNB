@@ -98,14 +98,14 @@ int test_fly_ball_early_arrival(void)
 		batterState = match->playerInfo[0].bTPI.state;
 		batterSafety = match->referee.battingPlayers[0].currentSafetyBase;
 		int batterBaseAtPitchStart = match->referee.battingPlayers[0].baseAtPitchStart;
-		int pendingWound = match->referee.battingPlayers[0].pendingWoundState;
+		int batterStatus = match->referee.battingPlayers[0].status;
 
 		// Track catch
 		if (hasBall != -1 && catchFrame == -1) {
 			catchFrame = frame;
 			printf("Frame %d: CATCH made\n", frame);
-			printf("  Batter: baseId=%d, state=%d, safety=%d, baseAtPitchStart=%d, pendingWound=%d\n",
-			       batterBase, batterState, batterSafety, batterBaseAtPitchStart, pendingWound);
+			printf("  Batter: baseId=%d, state=%d, safety=%d, baseAtPitchStart=%d, status=%d\n",
+			       batterBase, batterState, batterSafety, batterBaseAtPitchStart, batterStatus);
 			printf("  Position: (%.1f, %.1f)\n",
 			       match->playerInfo[0].tPI.location.x,
 			       match->playerInfo[0].tPI.location.z);
@@ -115,8 +115,8 @@ int test_fly_ball_early_arrival(void)
 		if (batterBase == BASE_FIRST && batterArrivalFrame == -1) {
 			batterArrivalFrame = frame;
 			printf("Frame %d: Batter arrived at 1st\n", frame);
-			printf("  State=%d, safety=%d, baseAtPitchStart=%d, pendingWound=%d\n",
-			       batterState, batterSafety, batterBaseAtPitchStart, pendingWound);
+			printf("  State=%d, safety=%d, baseAtPitchStart=%d, status=%d\n",
+			       batterState, batterSafety, batterBaseAtPitchStart, batterStatus);
 			printf("  Position: (%.1f, %.1f)\n",
 			       match->playerInfo[0].tPI.location.x,
 			       match->playerInfo[0].tPI.location.z);
@@ -126,8 +126,8 @@ int test_fly_ball_early_arrival(void)
 		if (batterState == PLAYER_STATE_WOUNDED && woundFrame == -1) {
 			woundFrame = frame;
 			printf("Frame %d: Batter WOUNDED\n", frame);
-			printf("  BaseId=%d, safety=%d, pendingWound=%d\n",
-			       batterBase, batterSafety, pendingWound);
+			printf("  BaseId=%d, safety=%d, status=%d\n",
+			       batterBase, batterSafety, batterStatus);
 		}
 
 		// Track when safety changes
@@ -143,9 +143,9 @@ int test_fly_ball_early_arrival(void)
 		if (frame % 50 == 0 || frame == catchFrame || frame == batterArrivalFrame || frame == woundFrame ||
 		        (batterArrivalFrame != -1 && frame >= batterArrivalFrame - 5 && frame <= batterArrivalFrame + 10)) {
 			int ballAtBase = get_ball_at_base_index(ctx->state);
-			printf("  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d PW=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n",
+			printf("  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d Status=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n",
 			       frame, batterState, batterBase, batterSafety, batterBaseAtPitchStart,
-			       pendingWound, ballAtBase, hasBall,
+			       batterStatus, ballAtBase, hasBall,
 			       match->playerInfo[0].tPI.location.x,
 			       match->playerInfo[0].tPI.location.z);
 		}

@@ -48,15 +48,14 @@ int test_fly_ball_double_wound_late_arrival(void)
 		int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
 		int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 		int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;
-		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].pendingWoundState;
-		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].pendingWoundState;
-		int typeB = ctx->state->match->referee.battingPlayers[1].woundingType;
+		int statusA = ctx->state->match->referee.battingPlayers[0].status;
+		int statusB = ctx->state->match->referee.battingPlayers[1].status;
 
 		// Verbose logging
 		if (frame % 20 == 0 || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED || arrivalAFrame == frame) {
-			printf("  F%3d: A[St=%d Bs=%d Sf=%d PW=%d] B[St=%d Bs=%d Sf=%d PW=%d Ty=%d] Tmr=%d\n",
-			       frame, stateA, baseA, safeA, pendingWoundA,
-			       stateB, baseB, safeB, pendingWoundB, typeB, timer);
+			printf("  F%3d: A[St=%d Bs=%d Sf=%d Status=%d] B[St=%d Bs=%d Sf=%d Status=%d] Tmr=%d\n",
+			       frame, stateA, baseA, safeA, statusA,
+			       stateB, baseB, safeB, statusB, timer);
 		}
 
 		if (hasBall != -1 &&catchFrame == -1) {

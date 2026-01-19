@@ -104,8 +104,7 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 
 	// Set referee tracking
 	game->referee.battingPlayers[playerIndex].baseAtPitchStart = base;
-	game->referee.battingPlayers[playerIndex].pendingWoundState = WOUND_STATE_NONE;
-	game->referee.battingPlayers[playerIndex].woundingType = WOUNDING_TYPE_NONE;
+	game->referee.battingPlayers[playerIndex].status = PLAYER_STATUS_ACTIVE;
 
 	// Set runtime state
 	game->playerRuntime[playerIndex].arrivedToBase = (progressToNext < 0.1f) ? 1 : 0;

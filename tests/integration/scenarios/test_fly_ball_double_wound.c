@@ -48,20 +48,16 @@ int test_fly_ball_double_wound(void)
 		int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 		int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;
 		Vector3D posB = ctx->state->match->playerInfo[1].tPI.location;
-		int pendingWoundA = ctx->state->match->referee.battingPlayers[0].pendingWoundState;
-		int pendingWoundB = ctx->state->match->referee.battingPlayers[1].pendingWoundState;
-		int woundTypeA = ctx->state->match->referee.battingPlayers[0].woundingType;
-		int woundTypeB = ctx->state->match->referee.battingPlayers[1].woundingType;
-		int markedA = ctx->state->match->referee.woundingPlayersMarked[0];
-		int markedB = ctx->state->match->referee.woundingPlayersMarked[1];
+		int statusA = ctx->state->match->referee.battingPlayers[0].status;
+		int statusB = ctx->state->match->referee.battingPlayers[1].status;
 		int goingFwdA = ctx->state->match->playerRuntime[0].goingForward;
 		int timer = ctx->state->match->referee.woundingEvaluationTimer;
 
 		// Verbose logging for transition frames
 		if (frame % 10 == 0 || (hasBall != -1 &&catchFrame == -1) || baseA == BASE_SECOND || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED || arrivalFrame != -1 || (arrivalFrame != -1 &&frame < arrivalFrame + 50)) {
-			printf("  F%3d: A[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d Fwd=%d] B[St=%d Bs=%d Sf=%d PW=%d WT=%d Mk=%d] Ball=%d Tmr=%d\n",
-			       frame, stateA, baseA, safeA, pendingWoundA, woundTypeA, markedA, goingFwdA,
-			       stateB, baseB, safeB, pendingWoundB, woundTypeB, markedB, hasBall, timer);
+			printf("  F%3d: A[St=%d Bs=%d Sf=%d Status=%d Fwd=%d] B[St=%d Bs=%d Sf=%d Status=%d] Ball=%d Tmr=%d\n",
+			       frame, stateA, baseA, safeA, statusA, goingFwdA,
+			       stateB, baseB, safeB, statusB, hasBall, timer);
 		}
 
 		if (hasBall != -1 &&catchFrame == -1) {
