@@ -1,6 +1,73 @@
 # Referee Pattern Consolidation Plan
-**Date:** 2026-01-18  
+**Date:** 2026-01-18 (Updated: 2026-01-19)
 **Goal:** **Referee_Update is the SOLE writer** - Zero exceptions!
+
+## ✅ COMPLETED: Status Enum Migration (2026-01-19)
+
+**Achievement:** Successfully migrated from flag-based status tracking to enum-based state machine!
+
+**What was removed:**
+- `int isOut` → replaced by `status == PLAYER_STATUS_OUT`
+- `PendingWoundState pendingWoundState` → replaced by status enum
+- `WoundingType woundingType` → replaced by status enum
+- `BaseID woundingSourceBase` → use baseAtPitchStart instead
+- `int woundingPlayersMarked[]` → replaced by status checks
+
+**What was added:**
+- `RefereePlayerStatus` enum with 7 states (ACTIVE, WOUND_MARKED, WOUND_MARKED_DOUBLE, WOUND_PENDING, WOUND_PENDING_DOUBLE, WOUNDED, OUT)
+- Single `status` field in RefereePlayerState
+- Cleaner, more explicit state transitions
+
+**Results:**
+- ✅ All 48 unit tests passing
+- ✅ All 15 integration tests passing
+- ✅ Net -50 lines of code (simpler!)
+- ✅ Simplified game_manipulation.c (removed wound type branching)
+- ✅ Single source of truth for player status
+
+**Key files changed:**
+- src/include/globals.h (new enum, removed old fields)
+- src/game/referee.c (~35 read/write sites updated)
+- src/game/game_manipulation.c (major simplification!)
+- src/game/mutable_world.c (status checks)
+- src/game/game_setup.c (initialization)
+- tests/ (5 files - only debugging output, no assertions changed)
+
+**Documentation:** REFEREE_STATUS_ENUM_PLAN.md completed and removed.
+
+---
+
+## 🎯 NEXT UP: Remaining Consolidation Tasks
+
+### Priority 1: Out of Bounds Logic (Still Outside Referee)
+
+**Problem:** Out of bounds detection and reset logic is scattered:
+- Detection: Possibly in ball_physics.c or game_manipulation.c
+- Timer: applyFoulPlayReset() in mutable_world.c
+- State writes: game_setup.c writes to referee state during reset
+
+**Should be:** 
+- Referee detects out of bounds via events
+- Referee owns the `betweenPitchState.outOfBounds` flag
+- Foul reset uses event-driven pattern (see Phase 1.3 below)
+
+### Priority 2: Wounding Execution Completion
+
+**File:** game_manipulation.c line 339 (now removed during status migration)
+
+**Status:** ✅ May already be fixed! Need to verify game_manipulation.c no longer writes to referee state for wounding completion.
+
+### Priority 3: Foul Reset Event-Driven Pattern
+
+**See Phase 1.3 below** - Use `foulResetCompleted` event instead of direct writes.
+
+### Priority 4: Main Loop Reordering
+
+**Issue:** gameAnalysis runs BEFORE Referee_Update, sees stale balls count (1 frame delay on free walks).
+
+**Fix:** Move gameAnalysis after Referee_Update (see Session 2 below).
+
+---
 
 ---
 
