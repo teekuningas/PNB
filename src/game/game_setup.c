@@ -34,6 +34,12 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 		stateInfo->match->scoreboard.playsFirst = gameSetup->playsFirst;
 	}
 
+	// Clear betweenPitchState when starting a new game (prevents state corruption from previous game)
+	stateInfo->match->betweenPitchState.catchHasBeenMade = 0;
+	stateInfo->match->betweenPitchState.hasBallHitGround = 0;
+	stateInfo->match->betweenPitchState.outOfBounds = 0;
+	stateInfo->match->betweenPitchState.resolutionProcessed = 0;
+
 	if (gameSetup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
 		int half = gameSetup->homerun_choice_count;
 		for (int i = 0; i < 2; i++) {
