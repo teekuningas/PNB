@@ -141,8 +141,9 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
 	fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
 	fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
-	fprintf(f, "%s  \"outOfBounds\": %d\n", sp, game->betweenPitchState.outOfBounds);
-	fprintf(f, "%s},\n", sp);
+	fprintf(f, "%s  \"foulState\": %d\n", sp, (int)game->betweenPitchState.foulState);
+	fprintf(f, "%s },\n", sp);
+
 
 	fprintf(f, "%s\"gameEvents\": {\n", sp);
 	fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);

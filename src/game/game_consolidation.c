@@ -1,43 +1,36 @@
-/*
- * this module tries to tackle rule-related things.
- */
-
-#include <stdio.h>
-#include "globals.h"
-#include "game_analysis.h"
+#include "game_consolidation.h"
 #include "common_logic.h"
-#include "menu_types.h"
-#include "rules_outs.h"
-#include "rules_runs.h"
-#include "rules_strikes.h"
+#include "game_manipulation.h"
+#include "game_setup.h" // For setRunnerAndBatter and initialization helpers
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
+#include "action_implementation.h" // For prepareBatter if needed, or we move it? prepareBatter is in action_implementation.c
 
-#define BASE_RADIUS 2.0f
+// ===============================================================================================
+// FORWARD DECLARATIONS
+// ===============================================================================================
 
+static void enforceLegalState(StateInfo* stateInfo);
+static void handleFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed);
+static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
+
+// Internal helpers from old game_analysis
 static void checkIfNextBatterDecision(StateInfo* stateInfo);
 static void strikesAndBalls(StateInfo* stateInfo);
 static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
 static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed);
+static void populateGameConclusion(StateInfo* stateInfo, int winner);
 
-static void populateGameConclusion(StateInfo* stateInfo, int winner)
-{
-	stateInfo->gameConclusion->winner = winner;
-	stateInfo->gameConclusion->isCupGame = stateInfo->match->scoreboard.isCupGame;
-	stateInfo->gameConclusion->period0Runs[0] = stateInfo->match->scoreboard.teams[0].period0Runs;
-	stateInfo->gameConclusion->period0Runs[1] = stateInfo->match->scoreboard.teams[1].period0Runs;
-	stateInfo->gameConclusion->period1Runs[0] = stateInfo->match->scoreboard.teams[0].period1Runs;
-	stateInfo->gameConclusion->period1Runs[1] = stateInfo->match->scoreboard.teams[1].period1Runs;
-	stateInfo->gameConclusion->period2Runs[0] = stateInfo->match->scoreboard.teams[0].period2Runs;
-	stateInfo->gameConclusion->period2Runs[1] = stateInfo->match->scoreboard.teams[1].period2Runs;
-	stateInfo->gameConclusion->period3Runs[0] = stateInfo->match->scoreboard.teams[0].period3Runs;
-	stateInfo->gameConclusion->period3Runs[1] = stateInfo->match->scoreboard.teams[1].period3Runs;
-}
+// Internal helper for Foul Play Reset (formerly applyFoulPlayReset)
+static void executeFoulPlayTeleport(StateInfo* stateInfo, unsigned int* rng_seed);
 
-void initGameAnalysis(GameFlowState* gameFlowState)
+// ===============================================================================================
+// PUBLIC API
+// ===============================================================================================
+
+void GameConsolidation_Init(GameFlowState* gameFlowState)
 {
-	// init some variables only used here.
 	gameFlowState->outOfBoundsCounter = 0;
 	gameFlowState->endOfInningCounter = -1;
 	gameFlowState->nextPairCounter = -1;
@@ -45,10 +38,159 @@ void initGameAnalysis(GameFlowState* gameFlowState)
 	gameFlowState->homeRunCameraCounter = -1;
 }
 
-void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void GameConsolidation_Update(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	// Reset per-frame flags removed (ballHome handled in game_manipulation.c)
+	// 1. Game Flow Analysis (The Game Master)
+	// Decides if we need to pause for input, change innings, etc.
+	// Running this first allows it to see the fresh Referee state.
+	updateGameFlow(stateInfo, menuInfo, rng_seed);
 
+	// 2. Physical Resets (The Stagehand)
+	// Handles out-of-bounds resets.
+	handleFoulPlayReset(stateInfo, rng_seed);
+
+	// 3. State Enforcement (The Enforcer)
+	// Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
+	enforceLegalState(stateInfo);
+}
+
+// ===============================================================================================
+// INTERNAL: PHYSICAL ENFORCEMENT (formerly reconcileLegalAndPhysicalState)
+// ===============================================================================================
+
+static void enforceLegalState(StateInfo* stateInfo)
+{
+	MatchSession* game = stateInfo->match;
+	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+		// 1. React to OUT
+		if (game->referee.battingPlayers[i].status == PLAYER_STATUS_OUT) {
+			if (game->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
+				game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
+				game->playerInfo[i].bTPI.baseId = BASE_NONE;
+				movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+			}
+		}
+
+		// 2. React to SCORE
+		if (game->referee.battingPlayers[i].hasScored && game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
+			game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
+			game->playerInfo[i].bTPI.baseId = BASE_NONE;
+			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+		}
+
+		// 3. React to displacement (Panic Run)
+		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE || game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
+			BaseID physBase = game->playerInfo[i].bTPI.baseId;
+			if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
+				// Don't force run if player is wounded (WOUNDED status)
+				// They will be removed from the field instead
+				int isWounded = (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
+
+				if (!isWounded) {
+					// Player is physically at base but legally has no safety there.
+					// They must run forward.
+					runToNextBase(game, stateInfo->fieldPositions, i, physBase);
+				}
+			}
+		}
+	}
+
+	// 4. React to Pitch Resolution
+	if (game->betweenPitchState.resolutionProcessed) {
+		game->pRAI.pitchState = PITCH_STAGE_NONE;
+		game->betweenPitchState.resolutionProcessed = 0; // Consume the flag
+	}
+}
+
+// ===============================================================================================
+// INTERNAL: FOUL PLAY RESET
+// ===============================================================================================
+
+static void handleFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
+{
+	MatchSession* game = stateInfo->match;
+
+	// Check if Referee has triggered the reset state
+	if (game->betweenPitchState.foulState == FOUL_STATE_RESETTING) {
+		executeFoulPlayTeleport(stateInfo, rng_seed);
+
+		// Note: Referee will transition state to NONE in the next frame
+		// No manual counter manipulation needed here anymore.
+	}
+}
+
+// Formerly applyFoulPlayReset in game_setup.c
+static void executeFoulPlayTeleport(StateInfo* stateInfo, unsigned int* rng_seed)
+{
+	MatchSession* game = stateInfo->match;
+
+	// Reset standard game state
+	initializeBallInfo(game);
+	initializeActionInfo(game);
+	initializeTemporaryGameAnalysisInfo(game);
+	initializeIndexInformation(game);
+	initializePRAIInformation(game);
+	initializeSpatialPlayerInformation(game, stateInfo->fieldPositions, rng_seed);
+	initializeNonCriticalPlayerInformation(game);
+
+	if (game->scoreboard.period >= 4) {
+		// Homerun Contest special initialization
+		initializeCriticalBattingTeamInformation(game);
+		setRunnerAndBatter(game, &game->scoreboard, stateInfo->fieldPositions);
+	} else {
+		// Physical Reset Only (Referee has already handled legal state)
+
+		// Restore players to their bases at the start of the pitch
+		for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+			if (game->referee.battingPlayers[j].baseAtPitchStart != BASE_NONE) {
+				BaseID restoreBase = game->referee.battingPlayers[j].baseAtPitchStart;
+
+				// 1. Restore Player State and ID (Physical/Logical State)
+				if (restoreBase == BASE_HOME) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_AT_BAT;
+				} else {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_ON_BASE;
+				}
+				game->playerInfo[j].bTPI.baseId = restoreBase;
+
+				// 5. Handle the Batter - Physical State Only
+				if (restoreBase == BASE_HOME) {
+					// Prepare batter for next pitch (animation etc)
+					prepareBatter(game);
+				}
+
+				// 6. Restore Physical Locations for field runners
+				if (game->playerInfo[j].bTPI.baseId == BASE_FIRST) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->firstBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->firstBaseRun.z;
+				} else if (game->playerInfo[j].bTPI.baseId == BASE_SECOND) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->secondBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->secondBaseRun.z;
+				} else if (game->playerInfo[j].bTPI.baseId == BASE_THIRD) {
+					game->playerInfo[j].tPI.location.x = stateInfo->fieldPositions->thirdBaseRun.x;
+					game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->thirdBaseRun.z;
+				}
+			} else {
+				// Restore OUT/SCORED states to avoid re-triggering animations
+				// This is physical state sync
+				if (game->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
+					game->playerInfo[j].bTPI.baseId = BASE_NONE;
+				} else if (game->referee.battingPlayers[j].hasScored) {
+					game->playerInfo[j].bTPI.state = PLAYER_STATE_SCORED;
+					game->playerInfo[j].bTPI.baseId = BASE_NONE;
+				}
+			}
+		}
+	}
+}
+
+// ===============================================================================================
+// INTERNAL: GAME FLOW (formerly game_analysis)
+// ===============================================================================================
+
+static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+{
 	// when player from third base starts running, we change camera view. when the situation is over we
 	// wait 50 update frames, before moving to normal camera
 	if(stateInfo->match->gameFlowState.homeRunCameraCounter >= 0) {
@@ -63,7 +205,6 @@ void gameAnalysis(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_se
 	strikesAndBalls(stateInfo);
 	checkIfEndOfInning(stateInfo, menuInfo, rng_seed);
 	checkIfNextPair(stateInfo, rng_seed);
-
 }
 
 static void checkIfNextBatterDecision(StateInfo* stateInfo)
@@ -72,17 +213,17 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 	// so this will be called only once when possible.
 	if(stateInfo->match->scoreboard.period >= 4) {
 
-	} else if(get_active_batter_index(stateInfo->match) == -1 &&stateInfo->match->flowControl.waitingForBatterDecision == 0 &&
+	} else if(get_active_batter_index(stateInfo->match) == -1 && stateInfo->match->flowControl.waitingForBatterDecision == 0 &&
 	          stateInfo->match->gameFlowState.endOfInningCounter == -1) {
 		// there have to be a player available
 		if(stateInfo->match->playerCounters.nonJokerPlayersLeft + stateInfo->match->playerCounters.jokersLeft > 0) {
 			// have to check that there is only three players in the field too and that it is not a out of bounds situation.
-			if(count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT &&stateInfo->match->betweenPitchState.outOfBounds == 0) {
+			if(count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT && stateInfo->match->betweenPitchState.foulState == FOUL_STATE_NONE) {
 				// also we cannot know yet if it will be out of position situation so we have to wait that the ball will land
 				// in some way.
 				if(stateInfo->match->betweenPitchState.hasBallHitGround == 1 || stateInfo->match->betweenPitchState.catchHasBeenMade == 1) {
 					// if that happens we can now start.
-					int battingTeamIndex = (stateInfo->match->scoreboard.					                        inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
+					int battingTeamIndex = (stateInfo->match->scoreboard.inning+stateInfo->match->scoreboard.playsFirst+stateInfo->match->scoreboard.period)%2;
 					// this will give work to action_invocatin.c and action_implementation.c
 					stateInfo->match->flowControl.waitingForBatterDecision = 1;
 					// we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
@@ -108,6 +249,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 		}
 	}
 }
+
 // so here we are just updating strikes and balls related stuff. batter cant have more than 3 strikes, so something must be
 // done to that, and if pitcher pitches balls, that isnt allowed without some compensation either.
 static void strikesAndBalls(StateInfo* stateInfo)
@@ -121,7 +263,7 @@ static void strikesAndBalls(StateInfo* stateInfo)
 		// Only force run if player is still there and NOT already running.
 		// This prevents re-triggering every frame while preserving the 3 strikes state
 		// until the next batter resets it.
-		if(index != -1 &&stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_RUNNING) {
+		if(index != -1 && stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_RUNNING) {
 			runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, BASE_HOME);
 			// Remove safety from home base handled by Referee update_safety_status eventually
 			// or explicitly here if needed, but runToNextBase sets state to RUNNING which
@@ -163,7 +305,6 @@ static void strikesAndBalls(StateInfo* stateInfo)
 	}
 }
 
-
 static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	// if three outs or
@@ -171,7 +312,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 	// then if ball comes to pitcher, then we can quit this inning.
 	if(stateInfo->match->halfInningState.outs >= 3 || (stateInfo->match->playerCounters.noMorePlayers == 1 &&
 	        stateInfo->match->gameFlowState.ballHome == 1) || stateInfo->match->halfInningState.endPeriod == 1 ||
-	        (stateInfo->match->scoreboard.period >= 4 &&stateInfo->match->homeRunContestState.runnerBatterPairCounter >=
+	        (stateInfo->match->scoreboard.period >= 4 && stateInfo->match->homeRunContestState.runnerBatterPairCounter >=
 	         stateInfo->match->scoreboard.pairCount)) {
 
 		if(stateInfo->match->gameFlowState.endOfInningCounter == -1) {
@@ -216,7 +357,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 		        (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod*2 - 1 &&
 		         (stateInfo->match->scoreboard.teams[catchingTeamIndex].runs >
 		          stateInfo->match->scoreboard.teams[battingTeamIndex].runs || (stateInfo->match->scoreboard.teams[catchingTeamIndex].period0Runs >
-		                  stateInfo->match->scoreboard.teams[battingTeamIndex].period0Runs &&stateInfo->match->scoreboard.teams[catchingTeamIndex].runs ==
+		                  stateInfo->match->scoreboard.teams[battingTeamIndex].period0Runs && stateInfo->match->scoreboard.teams[catchingTeamIndex].runs ==
 		                  stateInfo->match->scoreboard.teams[battingTeamIndex].runs )))) {
 			int i;
 			for(i = 0; i < 2; i++) {
@@ -228,12 +369,12 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 			int team1period0runs = stateInfo->match->scoreboard.teams[1].period0Runs;
 			int team1period1runs = stateInfo->match->scoreboard.teams[1].period1Runs;
 			// is the game over already?
-			if( team0period0runs>=team1period0runs &&team0period1runs>=team1period1runs &&
+			if( team0period0runs>=team1period0runs && team0period1runs>=team1period1runs &&
 			        (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
 				int winner = 0;
 				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
-			} else if( team0period0runs<=team1period0runs &&team0period1runs<=team1period1runs &&
+			} else if( team0period0runs<=team1period0runs && team0period1runs<=team1period1runs &&
 			           (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
 				int winner = 1;
 				populateGameConclusion(stateInfo, winner);
@@ -283,7 +424,7 @@ static void checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigne
 			stateInfo->updated = 0;
 		}
 		// is homerun-batting contest moving to next stage or ending
-		else if(stateInfo->match->scoreboard.period >= 4 &&(stateInfo->match->scoreboard.inning)%2 == 0) {
+		else if(stateInfo->match->scoreboard.period >= 4 && (stateInfo->match->scoreboard.inning)%2 == 0) {
 			int i;
 			for(i = 0; i < 2; i++) {
 				stateInfo->match->scoreboard.teams[i].period3Runs += stateInfo->match->scoreboard.teams[i].runs;
@@ -330,7 +471,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 
 		int runOfHonorPossible = is_run_of_honor_possible(stateInfo->match);
 
-		if((stateInfo->match->gameFlowState.ballHome == 1 &&get_active_batter_index(stateInfo->match) == -1 &&
+		if((stateInfo->match->gameFlowState.ballHome == 1 && get_active_batter_index(stateInfo->match) == -1 &&
 		        runOfHonorPossible == 0) ||
 		        (runnerAtThirdIndex == -1 &&
 		         runOfHonorPossible == 0) ||
@@ -359,7 +500,7 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 				int battingRuns = stateInfo->match->scoreboard.teams[battingTeamIndex].runs;
 				int catchingRuns = stateInfo->match->scoreboard.teams[catchingTeamIndex].runs;
 				// this will allow game to end if catching team has too many runs for batting team ever to catch up.
-				if((stateInfo->match->scoreboard.inning+1)%2 == 0 &&pairsLeft*2 + battingRuns < catchingRuns) {
+				if((stateInfo->match->scoreboard.inning+1)%2 == 0 && pairsLeft*2 + battingRuns < catchingRuns) {
 					stateInfo->match->halfInningState.endPeriod = 1;
 				} else {
 					loadMutableWorldSettings(stateInfo, rng_seed);
@@ -367,4 +508,18 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 			}
 		}
 	}
+}
+
+static void populateGameConclusion(StateInfo* stateInfo, int winner)
+{
+	stateInfo->gameConclusion->winner = winner;
+	stateInfo->gameConclusion->isCupGame = stateInfo->match->scoreboard.isCupGame;
+	stateInfo->gameConclusion->period0Runs[0] = stateInfo->match->scoreboard.teams[0].period0Runs;
+	stateInfo->gameConclusion->period0Runs[1] = stateInfo->match->scoreboard.teams[1].period0Runs;
+	stateInfo->gameConclusion->period1Runs[0] = stateInfo->match->scoreboard.teams[0].period1Runs;
+	stateInfo->gameConclusion->period1Runs[1] = stateInfo->match->scoreboard.teams[1].period1Runs;
+	stateInfo->gameConclusion->period2Runs[0] = stateInfo->match->scoreboard.teams[0].period2Runs;
+	stateInfo->gameConclusion->period2Runs[1] = stateInfo->match->scoreboard.teams[1].period2Runs;
+	stateInfo->gameConclusion->period3Runs[0] = stateInfo->match->scoreboard.teams[0].period3Runs;
+	stateInfo->gameConclusion->period3Runs[1] = stateInfo->match->scoreboard.teams[1].period3Runs;
 }

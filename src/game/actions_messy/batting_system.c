@@ -116,9 +116,9 @@ void selectBatter(StateInfo* stateInfo)
 		// Milestone 12: Referee Update
 		stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME;
 		stateInfo->match->referee.battingPlayers[index].currentSafetyBase = BASE_HOME;
-		// this guy will begin with 0 strikes and 0 balls.
-		stateInfo->match->halfInningState.strikes = 0;
-		stateInfo->match->halfInningState.balls = 0;
+
+		// NOTE: Strikes and Balls reset moved to referee.c (responding to batterEntered event)
+
 		// and they are safe on home base
 		// cant advance yet
 		stateInfo->match->pRAI.batterCanAdvance = 0;

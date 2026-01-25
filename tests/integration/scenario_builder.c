@@ -1,7 +1,7 @@
 #include "scenario_builder.h"
 #include "fixtures.h"
 #include "game_setup.h"
-#include "game_analysis.h"
+#include "game_consolidation.h"
 #include "game_manipulation.h"
 #include "mutable_world.h"
 #include "common_logic.h"
@@ -33,7 +33,7 @@ ScenarioContext* create_scenario(void)
 	setup.playsFirst = 0;
 
 	initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
-	initGameAnalysis(&(ctx->state->match->gameFlowState));
+	GameConsolidation_Init(&(ctx->state->match->gameFlowState));
 
 	// Initialize referee state properly
 	initializeRefereeState(&ctx->state->match->referee);
@@ -196,12 +196,12 @@ int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int
 	if (!ctx || !condition) return 0;
 
 	for (int i = 0; i < maxFrames; i++) {
-		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
+		// New Main Loop Order
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 		MatchSession* game = ctx->state->match;
 		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters, &ctx->state->match->scoreboard);
-		reconcileLegalAndPhysicalState(ctx->state);
+		GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
 
 		if (condition(ctx)) {
 			clearFrameEvents(&game->gameEvents); // Clear events before returning
@@ -226,29 +226,16 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 	}
 
 	for (int i = 0; i < maxFrames; i++) {
-		// Run game progression
-		gameAnalysis(ctx->state, &ctx->menu, &ctx->seed);
+		// New Main Loop Order
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 
 		// Milestone 14: Rules engine must run after physics to reconcile state
 		MatchSession* game = ctx->state->match;
 		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters, &ctx->state->match->scoreboard);
-		reconcileLegalAndPhysicalState(ctx->state);
+		GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
 
-		// Manually handle Foul Play Reset (simulating mutable_world.c logic)
-		static int outOfBoundsTimer = 0;
-		if (game->betweenPitchState.outOfBounds) {
-			outOfBoundsTimer++;
-
-			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
-				applyFoulPlayReset(ctx->state, &ctx->seed);
-				game->betweenPitchState.outOfBounds = 0;
-				outOfBoundsTimer = 0;
-			}
-		} else {
-			outOfBoundsTimer = 0;
-		}
+		// Foul Play Reset is now handled by GameConsolidation_Update. Manual logic removed.
 
 		// Clear transient events for next frame (Critical for correct event loop)
 		clearFrameEvents(&game->gameEvents);

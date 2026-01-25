@@ -5,7 +5,7 @@
 #include "geometry.h"
 #include "rng.h"
 #include "base_logic.h"
-#include "game_analysis.h"
+#include "game_consolidation.h"
 #include "game_manipulation.h"
 #include "base_control.h"
 #include "referee.h"
@@ -799,7 +799,7 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->flowControl.freeWalkCalculationMade = 1;
 	match->flowControl.waitingForBatterDecision = 0;
 	match->flowControl.waitingForFreeWalkDecision = 0;
-	match->betweenPitchState.outOfBounds = 0;
+	match->betweenPitchState.foulState = FOUL_STATE_NONE;
 	match->playerCounters.noMorePlayers = 0;
 	match->gameFlowState.ballHome = 0;
 	match->halfInningState.endPeriod = 0;
@@ -825,10 +825,10 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	// Reset referee sticky flags for new pitch (Milestone 17)
 	match->betweenPitchState.catchHasBeenMade = 0;
 	match->betweenPitchState.hasBallHitGround = 0;
-	match->betweenPitchState.outOfBounds = 0;
+	match->betweenPitchState.foulState = FOUL_STATE_NONE;
 	match->betweenPitchState.resolutionProcessed = 0;
 
-	initGameAnalysis(&(match->gameFlowState));
+	GameConsolidation_Init(&(match->gameFlowState));
 	initGameManipulation(&(match->gameFlowState));
 
 	match->homeRunContestState.forceNextPair = 0;

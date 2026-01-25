@@ -363,6 +363,7 @@ typedef struct _RefereeState {
 	// Flow Control Timers (Milestone 17 consolidation)
 	int endInningTimer;            // Replaces gameFlowState.endOfInningCounter
 	int nextPairTimer;             // Replaces gameFlowState.nextPairCounter
+	int foulTimer;                 // Timer for foul play grace period
 
 	// Run of Honor tracking (Homerun Contest)
 	int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
@@ -518,12 +519,18 @@ typedef struct _GameEvents {
 	int batterEntered;      // New: Signal that new batter is ready
 } GameEvents;
 
+typedef enum {
+	FOUL_STATE_NONE = 0,
+	FOUL_STATE_DETECTED = 1,    // Ball hit ground out of bounds, waiting for grace period
+	FOUL_STATE_RESETTING = 2    // Grace period over, performing reset this frame
+} FoulPlayState;
+
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
 	int catchHasBeenMade;     // Fly ball was caught
 	int hasBallHitGround;     // Ball has touched ground
-	int outOfBounds;          // First bounce was out of bounds (foul play)
+	FoulPlayState foulState;  // Replaces outOfBounds flag
 	int resolutionProcessed;  // Referee has adjudicated strike/ball
 } BetweenPitchState;
 

@@ -32,7 +32,7 @@ typedef struct GameSetup {
 } GameSetup;
 
 void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
+// Loads stored settings (e.g. after a menu sequence)
 void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed);
-void applyFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed);
 
-#endif /* GAME_SETUP_H */
+#endif

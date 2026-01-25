@@ -4,7 +4,7 @@
 #include "game_setup.h"
 #include "mutable_world.h"
 #include "common_logic.h"
-#include "game_analysis.h"
+#include "game_consolidation.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -63,7 +63,7 @@ void setup_runner_at_first_base(StateInfo* state)
 
 	initializeGameFromMenu(state, &setup, &seed);
 
-	initGameAnalysis(&(state->match->gameFlowState));
+	GameConsolidation_Init(&(state->match->gameFlowState));
 	state->match->playerInfo[0].bTPI.baseId = BASE_FIRST;
 	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
 	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
@@ -84,7 +84,7 @@ void setup_runner_at_third_base(StateInfo* state)
 
 	initializeGameFromMenu(state, &setup, &seed);
 
-	initGameAnalysis(&(state->match->gameFlowState));
+	GameConsolidation_Init(&(state->match->gameFlowState));
 	state->match->playerInfo[0].bTPI.baseId = BASE_THIRD;
 	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
 	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;

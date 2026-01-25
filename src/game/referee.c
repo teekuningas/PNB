@@ -23,13 +23,16 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 {
 	const MatchSession* game = stateInfo->match;
 
-	// Batter Entered: Initialize safety for the new batter
+	// Batter Entered: Initialize safety for the new batter and reset count
 	if (events->batterEntered) {
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
 				referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
 			}
 		}
+		// Reset strikes and balls for the new batter
+		halfInningState->strikes = 0;
+		halfInningState->balls = 0;
 	}
 
 	// Pitch Released: Snapshot state for the new pitch
@@ -37,11 +40,12 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 		// 1. Reset Sticky Flags
 		betweenPitchState->catchHasBeenMade = 0;
 		betweenPitchState->hasBallHitGround = 0;
-		betweenPitchState->outOfBounds = 0;
+		betweenPitchState->foulState = FOUL_STATE_NONE;
 		betweenPitchState->resolutionProcessed = 0;
 		referee->woundingEvaluationFinished = 0;
 		referee->woundingEvaluationActive = 0;
 		referee->woundingEvaluationTimer = -1;
+		referee->foulTimer = 0;
 		referee->ballInThirdBaseSincePitch = 0;
 
 		// 2. Snapshot Strike Count
@@ -102,20 +106,75 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 	}
 }
 
-static void update_foul_play_logic(const StateInfo* stateInfo, HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState)
+static void update_foul_play_logic(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
 	const MatchSession* game = stateInfo->match;
 
+	// Transition 3: RESETTING -> NONE (Cleanup after physical reset)
+	if (betweenPitchState->foulState == FOUL_STATE_RESETTING) {
+		betweenPitchState->foulState = FOUL_STATE_NONE;
+		// Reset other flags as we are now "between pitches" effectively
+		betweenPitchState->catchHasBeenMade = 0;
+		betweenPitchState->hasBallHitGround = 0;
+		betweenPitchState->resolutionProcessed = 0;
+		return;
+	}
+
+	// Transition 2: DETECTED -> RESETTING (Grace period expired)
+	if (betweenPitchState->foulState == FOUL_STATE_DETECTED) {
+		referee->foulTimer++;
+		if (referee->foulTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
+			// Trigger Reset
+			betweenPitchState->foulState = FOUL_STATE_RESETTING;
+			referee->foulTimer = 0;
+
+			// RESTORE LEGAL STATE
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				BaseID restore = referee->battingPlayers[i].baseAtPitchStart;
+				if (restore != BASE_NONE) {
+					referee->battingPlayers[i].currentSafetyBase = restore;
+				} else {
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+				}
+
+				if (restore != BASE_NONE) {
+					referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+				}
+
+				referee->battingPlayers[i].hasPendingRun = 0;
+				referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+				referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
+			}
+
+			// Handle Strikes and Outs logic
+			if (referee->strikesAtPitchStart == 2) {
+				halfInningState->strikes = 3;
+				halfInningState->outs += 1;
+				halfInningState->event = EVENT_OUT;
+
+				for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+					if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+						referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
+						referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+						referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+						break;
+					}
+				}
+			} else {
+				halfInningState->strikes = referee->strikesAtPitchStart + 1;
+			}
+		}
+		return;
+	}
+
+	// Transition 1: NONE -> DETECTED (Detection)
 	// Out of Bounds Logic: Check ONLY on first bounce
-	if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0) {
-		// Check if this first bounce qualifies as foul play:
-		// - Ball was hit by bat
-		// - Ball was not caught
-		// - Ball landed out of bounds
+	if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && betweenPitchState->foulState == FOUL_STATE_NONE) {
 		if (game->pRAI.batHit == 1 && betweenPitchState->catchHasBeenMade == 0) {
 			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
-				// Set sticky flag in GameControl (Referee decision)
-				betweenPitchState->outOfBounds = 1;
+				// Transition to DETECTED
+				betweenPitchState->foulState = FOUL_STATE_DETECTED;
+				referee->foulTimer = 0;
 
 				// Trigger global event once
 				if (halfInningState->event == EVENT_NONE) {
@@ -357,7 +416,7 @@ static void update_force_outs(const StateInfo* stateInfo, RefereeState* referee,
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            betweenPitchState->outOfBounds
+			            betweenPitchState->foulState != FOUL_STATE_NONE
 			        )) {
 
 				referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
@@ -468,7 +527,7 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 		else if ((game->betweenPitchState.catchHasBeenMade == 1 || game->betweenPitchState.hasBallHitGround == 1) &&
 		         referee->woundingEvaluationActive == 0 &&
 		         game->gameFlowState.endOfInningCounter == -1 &&
-		         betweenPitchState->outOfBounds == 0) {
+		         betweenPitchState->foulState == FOUL_STATE_NONE) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -668,7 +727,7 @@ static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* refer
 {
 	// Trigger 1: Ball Hit Ground (Final Verdict)
 	if (betweenPitchState->hasBallHitGround) {
-		if (betweenPitchState->outOfBounds) {
+		if (betweenPitchState->foulState != FOUL_STATE_NONE) {
 			// FOUL: Void all pending runs
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				referee->battingPlayers[i].hasPendingRun = 0;
@@ -772,7 +831,15 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	}
 
 	// 2.5 Foul Play & Wounding Logic (Milestone 17)
-	update_foul_play_logic(stateInfo, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
+	update_foul_play_logic(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
+
+	// If foul play reset is triggered, the physical world is out of sync with legal state.
+	// We must abort further processing this frame to prevent the Referee from
+	// "correcting" the legal state based on the stale physical positions.
+	// The physical reset will happen in GameConsolidation later this frame.
+	if (betweenPitchState->foulState == FOUL_STATE_RESETTING) {
+		return;
+	}
 
 	// Mark that ball hit ground (after foul play check, so it can detect first bounce)
 	if (stateInfo->match->gameEvents.ballHitGround) {
@@ -862,4 +929,5 @@ void initializeRefereeState(RefereeState* referee)
 
 	referee->endInningTimer = -1;
 	referee->nextPairTimer = -1;
+	referee->foulTimer = 0;
 }

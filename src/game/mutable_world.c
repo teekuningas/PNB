@@ -8,7 +8,7 @@
 #include "player.h"
 #include "action_implementation.h"
 #include "action_invocations.h"
-#include "game_analysis.h"
+#include "game_consolidation.h"
 #include "game_manipulation.h"
 
 #include "mutable_world.h"
@@ -40,68 +40,27 @@ int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
 
 	initActionImplementation(stateInfo);
 	initActionInvocations(stateInfo);
-	initGameAnalysis(&(stateInfo->match->gameFlowState));
+
+	// Consolidated Init (Game Flow + Reset Logic)
+	GameConsolidation_Init(&(stateInfo->match->gameFlowState));
+
 	initGameManipulation(&(stateInfo->match->gameFlowState));
 
 	return 0;
 }
 
-void reconcileLegalAndPhysicalState(StateInfo* stateInfo)
-{
-	MatchSession* game = stateInfo->match;
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		// 1. React to OUT
-		if (game->referee.battingPlayers[i].status == PLAYER_STATUS_OUT) {
-			if (game->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-				game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
-				game->playerInfo[i].bTPI.baseId = BASE_NONE;
-				movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
-			} else {
-			}
-		}
-
-		// 2. React to SCORE
-		if (game->referee.battingPlayers[i].hasScored &&game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
-			game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
-			game->playerInfo[i].bTPI.baseId = BASE_NONE;
-			movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
-		}
-
-		// 3. React to displacement (Panic Run)
-		if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE || game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
-			BaseID physBase = game->playerInfo[i].bTPI.baseId;
-			if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
-				// Don't force run if player is wounded (WOUNDED status)
-				// They will be removed from the field instead
-				int isWounded = (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
-
-				if (!isWounded) {
-					// Player is physically at base but legally has no safety there.
-					// They must run forward.
-					runToNextBase(game, stateInfo->fieldPositions, i, physBase);
-				}
-			}
-		}
-	}
-
-	// 4. React to Pitch Resolution (Milestone 17)
-	// If the Referee has adjudicated the pitch (Strike/Ball), we must close the pitch state
-	// to prevent double-counting and to signal the action system that the pitch is over.
-	if (game->betweenPitchState.resolutionProcessed) {
-		game->pRAI.pitchState = PITCH_STAGE_NONE;
-		game->betweenPitchState.resolutionProcessed = 0; // Consume the flag
-	}
-}
-
 void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->match->flowControl.pause == 0) {
-		gameAnalysis(stateInfo, menuInfo, rng_seed);
+		// 1. Inputs
 		actionInvocations(stateInfo);
+
+		// 2. Physics & Logic
 		actionImplementation(stateInfo, rng_seed);
 		gameManipulation(stateInfo);
 
-		// Referee logic now runs AFTER physics/manipulation to ensure legal state matches physical state
+		// 3. Referee (Legal State Authority)
+		// Runs AFTER physics to ensure legal state matches physical events
 		MatchSession* game = stateInfo->match;
 		Referee_Update(
 		    stateInfo,
@@ -112,25 +71,11 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		    &stateInfo->match->scoreboard
 		);
 
-		// Handle Foul Play Reset (Milestone 17)
-		// Timer logic: Count frames when outOfBounds is active
-		static int outOfBoundsTimer = 0;
-		if (game->betweenPitchState.outOfBounds) {
-			outOfBoundsTimer++;
-
-			// After ~2 seconds (OUT_OF_BOUNDS_THRESHOLD frames), trigger reset
-			if (outOfBoundsTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
-				applyFoulPlayReset(stateInfo, rng_seed);
-				// Clear state to prevent loop
-				game->betweenPitchState.outOfBounds = 0;
-				outOfBoundsTimer = 0;
-			}
-		} else {
-			outOfBoundsTimer = 0;
-		}
-
-		// React to the new legal state (e.g. panic run if safety lost)
-		reconcileLegalAndPhysicalState(stateInfo);
+		// 4. Consolidation (Reaction Phase)
+		// - Updates Game Flow (innings, user prompts)
+		// - Handles Physical Resets (Foul Play)
+		// - Enforces Legal State (Outs, Scoring)
+		GameConsolidation_Update(stateInfo, menuInfo, rng_seed);
 
 		// Validate state consistency (Debug only)
 		if (!StateValidator_Check(stateInfo)) {
