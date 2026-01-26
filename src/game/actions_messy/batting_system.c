@@ -113,11 +113,10 @@ void selectBatter(StateInfo* stateInfo)
 		// has base of zero, is on base and original base is zero too.
 		stateInfo->match->playerInfo[index].bTPI.baseId = BASE_HOME;
 		stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
-		// Milestone 12: Referee Update
-		stateInfo->match->referee.battingPlayers[index].baseAtPitchStart = BASE_HOME;
-		stateInfo->match->referee.battingPlayers[index].currentSafetyBase = BASE_HOME;
 
-		// NOTE: Strikes and Balls reset moved to referee.c (responding to batterEntered event)
+		// Event-driven: Signal referee that a new batter has entered
+		// This triggers strike/ball reset and safety initialization (referee.c)
+		stateInfo->match->gameEvents.batterEntered = 1;
 
 		// and they are safe on home base
 		// cant advance yet

@@ -461,9 +461,6 @@ void prepareBatter(MatchSession* match)
 		match->aF.bTAF.swing = 0;
 		// batterIndex has been selected before calling this function
 
-		// Event-driven: Signal referee to initialize batter safety
-		match->gameEvents.batterEntered = 1;
-
 		// and initialize batter so that everything is ready to go.
 		match->pRAI.initBatter = 1;
 	}
