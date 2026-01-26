@@ -135,7 +135,6 @@ static void executeFoulPlayTeleport(StateInfo* stateInfo, unsigned int* rng_seed
 
 	if (game->scoreboard.period >= 4) {
 		// Homerun Contest special initialization
-		initializeCriticalBattingTeamInformation(game);
 		setRunnerAndBatter(game, &game->scoreboard, stateInfo->fieldPositions);
 	} else {
 		// Physical Reset Only (Referee has already handled legal state)

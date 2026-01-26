@@ -748,14 +748,6 @@ void initializeNonCriticalPlayerInformation(MatchSession* match)
 	}
 
 }
-// this information is important for correct continuity after foul play.
-void initializeCriticalBattingTeamInformation(MatchSession* match)
-{
-	int i;
-	for(i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		match->referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
-	}
-}
 // ball flags
 void initializeBallInfo(MatchSession* match)
 {
@@ -988,8 +980,6 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
 	// information about players than can be flushed.
 	initializeNonCriticalPlayerInformation(stateInfo->match);
-	// information that cant be flushed when foul play. like baseAtPitchStart.
-	initializeCriticalBattingTeamInformation(stateInfo->match);
 	// initialize referee state
 	initializeRefereeState(&stateInfo->match->referee);
 

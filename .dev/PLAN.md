@@ -1,22 +1,46 @@
 # PNB Development Plan
 
-## 🎯 NEXT MILESTONE: Milestone 18 (Physics/State Split)
+## 🎯 NEXT MILESTONE: Milestone 17.5 (Homerun Contest & Final Referee Cleanup)
 
-**Current Status:** Milestone 17 Complete ✅ (The Plateau Reached 🏔️)
-**Date:** 2026-01-19
+**Current Status:** Milestone 17 Complete ✅ + Strike Reset Bug Fixed 🐛
+**Date:** 2026-01-26
 
-We have successfully consolidated the Referee logic and established a clean, unidirectional main loop. The codebase is stable, tested, and ready for the next major architectural shift.
+Before proceeding to the major Physics/State Split, we need to properly test and clean up the special game mode (Homerun Contest) and complete the final Referee Supremacy task.
 
 ---
 
 ## 🏔️ The Plateau (Current State)
 
-We have achieved **Referee Supremacy**:
+We have achieved **Referee Supremacy** (mostly):
 *   ✅ `Referee_Update` is the **sole writer** of `RefereeState` and `BetweenPitchState`.
 *   ✅ All "initialization exceptions" (foul reset, batter entry) are now handled via **Events**.
 *   ✅ `game_analysis` has been merged into **`game_consolidation.c`**.
 *   ✅ The Main Loop is strictly ordered: **Input → Physics → Referee → Consolidation**.
-*   ✅ All 61 tests (48 unit + 13 integration) are passing.
+*   ✅ All 63 tests (48 unit + 15 integration) are passing.
+*   ✅ **Strike Reset Bug Fixed:** Strikes/balls no longer reset after swinging.
+*   ⚠️ **Exception:** `setRunnerAndBatter()` still writes to referee state for homerun contest setup.
+
+---
+
+## 🎯 Milestone 17.5: Homerun Contest & Final Referee Cleanup (1-2 sessions)
+
+**Goal:** Test the Homerun Contest mode thoroughly and complete the final referee consolidation.
+
+### Phase 1: Homerun Contest Testing
+*   Create integration tests for Homerun Contest mode
+*   Test normal operation (batter + runner setup)
+*   Test foul play reset in homerun contest
+*   Verify strikes, outs, scoring work correctly
+
+### Phase 2: Final Referee Cleanup
+*   Refactor `setRunnerAndBatter()` to use events or move initialization to referee
+*   Remove the last direct writes to referee state from non-referee code
+*   Document any remaining special cases with justification
+
+### Success Criteria
+*   ✅ Homerun Contest has test coverage
+*   ✅ All tests pass (including new homerun contest tests)
+*   ✅ Zero direct writes to referee state from non-referee code (except `initializeRefereeState()` calls)
 
 ---
 
@@ -54,6 +78,12 @@ We have achieved **Referee Supremacy**:
 
 | Milestone | Task | Result |
 | :--- | :--- | :--- |
+| **M17.5** | **Homerun Contest & Final Cleanup** | **IN PROGRESS** |
+| | Strike Reset Bug | Fixed batterEntered event timing |
+| | Redundant Initialization | Removed initializeCriticalBattingTeamInformation |
+| | Referee Write Violations | Fixed batting_system.c writes |
+| | Homerun Contest Testing | TODO |
+| | Final Referee Cleanup | TODO (setRunnerAndBatter) |
 | **M17** | **Referee Consolidation** | **COMPLETED** |
 | | GameControl Split | Separated Flow vs. Rules |
 | | Wounding Logic | Fully timer-based in Referee |

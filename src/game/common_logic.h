@@ -28,7 +28,6 @@ void calculateFreeWalk(MatchSession* match);
 void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fieldPositions, unsigned int* rng_seed);
 void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard* scoreboard, TeamData* teamData);
 void initializeNonCriticalPlayerInformation(MatchSession* match);
-void initializeCriticalBattingTeamInformation(MatchSession* match);
 void initializeBallInfo(MatchSession* match);
 void initializeActionInfo(MatchSession* match);
 void initializeTemporaryGameAnalysisInfo(MatchSession* match);
