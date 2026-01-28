@@ -77,6 +77,11 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// - Enforces Legal State (Outs, Scoring)
 		GameConsolidation_Update(stateInfo, menuInfo, rng_seed);
 
+		// 5. Capture snapshot after all updates when pitch is released
+		if (stateInfo->match->gameEvents.pitchReleased) {
+			StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
+		}
+
 		// Validate state consistency (Debug only)
 		if (!StateValidator_Check(stateInfo)) {
 			StateValidator_Dump(stateInfo, "State Consistency Check Failed");

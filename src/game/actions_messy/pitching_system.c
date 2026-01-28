@@ -173,7 +173,7 @@ void releasePitch(StateInfo* stateInfo)
 	// Trigger pitch released event
 	stateInfo->match->gameEvents.pitchReleased = 1;
 
-	// Note: Referee state snapshotting is now handled by Referee_Update responding to pitchReleased event.
+	// Note: Referee state snapshotting is now handled at end of frame in mutable_world.c
 
 	// run with batting team
 
@@ -190,8 +190,6 @@ void releasePitch(StateInfo* stateInfo)
 	// and pitch is PITCH_ACTION_IDLE so we can try to start pitch again when necessary conditions hold
 	stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 	stateInfo->match->aF.cTAF.actionKeyLock = 0;
-
-	StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
 }
 
 void updatePitchingMeter(StateInfo* stateInfo)
