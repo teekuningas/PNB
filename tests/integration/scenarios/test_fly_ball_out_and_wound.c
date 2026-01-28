@@ -45,36 +45,32 @@ int test_full_fly_ball_out_and_wound(void)
 	       ctx->state->fieldPositions->secondBase.z);
 	printf("  Center Field target: (0.0, 0.0, 30.0)\n");
 
-	// 1. Setup: Runner A at 1st, Batter B at Home
-	place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f);
-	setup_batter_at_home(ctx, 1);
+	// 1. Setup PHYSICAL state: Runner A at 1st, Batter B at Home
+	place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f);  // Runner A
+	setup_batter_at_home(ctx, 1);                      // Batter B
 	match->pII.batterSelectionIndex = 1;
 
-	// Ensure batter is tracked in the referee system
-	match->referee.battingPlayers[1].baseAtPitchStart = BASE_HOME;
-	match->referee.battingPlayers[1].currentSafetyBase = BASE_HOME;
+	// 2. Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
 
-	// 2. Move pitcher and catcher away
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	match->playerInfo[12].tPI.location = away;
-	match->playerInfo[13].tPI.location = away;
+	// 3. Emit pitchReleased to snapshot baseAtPitchStart
+	snapshot_pitch_start_state(ctx);
 
-	// 3. Position fielder at center field to catch the ball
+	// 4. Position fielders
+	move_pitcher_away(ctx);
+
 	int fielderIdx = 16; // Center fielder
 	Vector3D centerField = {0.0f, 0.0f, 30.0f};
 	match->playerInfo[fielderIdx].tPI.location = centerField;
 	match->playerInfo[fielderIdx].tPI.homeLocation = centerField;
 
-	// 4. Position second baseman at 2nd base for the throw
 	int secondBasemanIdx = 18;
 	Vector3D secondBase = ctx->state->fieldPositions->secondBase;
 	match->playerInfo[secondBasemanIdx].tPI.location = secondBase;
 	match->playerInfo[secondBasemanIdx].tPI.homeLocation = secondBase;
 
-	// 5. Trigger runners to advance (Hit and Run)
-	// CRITICAL: Must set batterCanAdvance for the batter to be able to run
+	// 5. Trigger runners to advance
 	match->pRAI.batterCanAdvance = 1;
-
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);   // Runner A: 1st → 2nd
 	trigger_player_run_to_next_base(ctx, 1, BASE_HOME);    // Batter B: Home → 1st
 

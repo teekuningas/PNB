@@ -35,12 +35,36 @@ ScenarioContext* create_scenario(void)
 	initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
 	GameConsolidation_Init(&(ctx->state->match->gameFlowState));
 
-	// Initialize referee state properly
-	initializeRefereeState(&ctx->state->match->referee);
+	// Clear the gameInitialized event.
+	// Tests will explicitly call initialize_referee_from_physical_state()
+	// when they're ready for the referee to scan and initialize.
+	ctx->state->match->gameEvents.gameInitialized = 0;
 
 	ctx->currentFrame = 0;
 
 	return ctx;
+}
+
+void initialize_referee_from_physical_state(ScenarioContext* ctx)
+{
+	// Emit the gameInitialized event
+	ctx->state->match->gameEvents.gameInitialized = 1;
+
+	// Simulate ONE frame so referee processes the event
+	simulate_frames(ctx, 1);
+
+	// Event should now be cleared by the frame event loop
+}
+
+void snapshot_pitch_start_state(ScenarioContext* ctx)
+{
+	// Emit the pitchReleased event
+	ctx->state->match->gameEvents.pitchReleased = 1;
+
+	// Simulate ONE frame so referee snapshots baseAtPitchStart
+	simulate_frames(ctx, 1);
+
+	// Event should now be cleared
 }
 
 void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, float progressToNext)
@@ -84,63 +108,65 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 	position.y = 0.0f;
 	position.z = startPos.z + (endPos.z - startPos.z) * progressToNext;
 
-	// Set physical state
+	// ONLY set PHYSICAL state - let referee handle legal state
 	game->playerInfo[playerIndex].tPI.location = position;
 	game->playerInfo[playerIndex].tPI.lastLocation = position;
 	game->playerInfo[playerIndex].tPI.homeLocation = startPos;
 
-	// Set logical state - this is the KEY part for consistency
+	// Set logical state
 	if (progressToNext < 0.1f) {
-		// At the base - has safety
+		// At the base
 		game->playerInfo[playerIndex].bTPI.baseId = base;
 		game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
-		game->referee.battingPlayers[playerIndex].currentSafetyBase = base;
 	} else {
-		// Between bases - running, no safety
+		// Between bases - running
 		game->playerInfo[playerIndex].bTPI.baseId = base;  // Still logically at source base
 		game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_RUNNING;
-		game->referee.battingPlayers[playerIndex].currentSafetyBase = base;  // Had safety at source
 	}
-
-	// Set referee tracking
-	game->referee.battingPlayers[playerIndex].baseAtPitchStart = base;
-	game->referee.battingPlayers[playerIndex].status = PLAYER_STATUS_ACTIVE;
 
 	// Set runtime state
 	game->playerRuntime[playerIndex].arrivedToBase = (progressToNext < 0.1f) ? 1 : 0;
 	game->playerRuntime[playerIndex].goingForward = 1;
 	game->playerRuntime[playerIndex].hasMadeRunOnThirdBase = 0;
+
+	// DO NOT touch referee state - let referee infer it from events
 }
 
-void place_ball_at_location(ScenarioContext* ctx, Vector3D location)
+void move_pitcher_away(ScenarioContext* ctx)
+{
+	if (!ctx || !ctx->state) return;
+
+	// Move pitcher (Lukkari, player index 12) far away from home plate
+	// so they don't catch fly balls or interfere with runners
+	Vector3D away = {100.0f, 0.0f, 100.0f};
+	ctx->state->match->playerInfo[12].tPI.location = away;
+}
+
+void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
 {
 	if (!ctx || !ctx->state) return;
 
 	MatchSession* game = ctx->state->match;
 
-	game->ballInfo.location = location;
-	game->ballInfo.lastLocation = location;
+	// Place ball in the air above the target location
+	// It will naturally fall and hit the ground at/near targetLocation
+	Vector3D startLocation = targetLocation;
+	startLocation.y = 5.0f; // 5 meters above target
+
+	game->ballInfo.location = startLocation;
+	game->ballInfo.lastLocation = startLocation;
 	game->ballInfo.visible = 1;
-	game->ballInfo.moving = 0;
-	game->ballInfo.currentFlightHasHitGround = 1;  // Ball on ground
-	game->ballInfo.onGround = 1;
-	// Consistency: If ball is placed on ground, it means the pitch has resolved and ball is live.
-	game->betweenPitchState.hasBallHitGround = 1;
+	game->ballInfo.moving = 1;
+	game->ballInfo.onGround = 0;
+	game->ballInfo.currentFlightHasHitGround = 0;
+
+	// Give it a small downward velocity to start falling
+	game->ballInfo.velocity.x = 0.0f;
+	game->ballInfo.velocity.y = -0.1f; // Small initial downward velocity
+	game->ballInfo.velocity.z = 0.0f;
+
 	game->pII.hasBallIndex = -1;  // No one has it
-}
-
-void give_ball_to_fielder(ScenarioContext* ctx, int fielderIndex)
-{
-	if (!ctx || !ctx->state) return;
-
-	MatchSession* game = ctx->state->match;
-
-	// Put ball at fielder's location
-	game->ballInfo.location = game->playerInfo[fielderIndex].tPI.location;
-	game->ballInfo.lastLocation = game->ballInfo.location;
-	game->ballInfo.visible = 0;  // Ball not visible when held
-	game->ballInfo.moving = 0;
-	game->pII.hasBallIndex = fielderIndex;
+	// DO NOT set batHit here - that should be done via actual bat swing simulation
 }
 
 void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, BaseID fromBase)
@@ -182,37 +208,11 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
 	game->playerInfo[playerIndex].bTPI.baseId = BASE_HOME;
 	game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_AT_BAT;
 
-	// Referee state: fresh batter
-	game->referee.battingPlayers[playerIndex].currentSafetyBase = BASE_NONE;
-	game->referee.battingPlayers[playerIndex].baseAtPitchStart = BASE_HOME;
+	// Referee state is NOT set here - let initialize_referee_from_physical_state() handle it
 
 	// Runtime state
 	game->playerRuntime[playerIndex].goingForward = 0;
 	game->playerRuntime[playerIndex].passedPathPoint = 0;
-}
-
-int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int maxFrames)
-{
-	if (!ctx || !condition) return 0;
-
-	for (int i = 0; i < maxFrames; i++) {
-		// New Main Loop Order
-		actionImplementation(ctx->state, &ctx->seed);
-		gameManipulation(ctx->state);
-		MatchSession* game = ctx->state->match;
-		Referee_Update(ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters, &ctx->state->match->scoreboard);
-		GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
-
-		if (condition(ctx)) {
-			clearFrameEvents(&game->gameEvents); // Clear events before returning
-			return i + 1;
-		}
-
-		clearFrameEvents(&game->gameEvents);
-		ctx->currentFrame++;
-	}
-
-	return maxFrames;  // Timed out
 }
 
 int simulate_frames(ScenarioContext* ctx, int maxFrames)
@@ -406,17 +406,10 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 	// 4. Set Pitch State
 	game->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
 	game->pRAI.batterCanAdvance = 1;
-	game->gameEvents.pitchReleased = 1; // Signal event
+	game->gameEvents.pitchReleased = 1; // Signal event - referee will snapshot state automatically
 
-	// 5. Referee Snapshots (Minimal implementation)
-	game->referee.strikesAtPitchStart = game->halfInningState.strikes;
-
-	// Snapshot active runners
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-			game->referee.battingPlayers[i].baseAtPitchStart = game->playerInfo[i].bTPI.baseId;
-			game->referee.battingPlayers[i].currentSafetyBase = game->playerInfo[i].bTPI.baseId;
-		}
-	}
+	// Note: We emit pitchReleased event which triggers the referee to snapshot
+	// baseAtPitchStart and strikesAtPitchStart automatically in update_initialization_events().
+	// No need to manually set referee state here - that would violate Referee Supremacy.
 }
 

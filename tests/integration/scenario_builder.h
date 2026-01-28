@@ -24,6 +24,28 @@ typedef struct {
 ScenarioContext* create_scenario(void);
 
 /**
+ * @brief Initialize referee state from physical world
+ *
+ * Must be called after placing players but BEFORE starting the test.
+ * This emits gameInitialized and simulates one frame so referee can
+ * scan physical state and initialize its legal tracking.
+ *
+ * @param ctx The scenario context
+ */
+void initialize_referee_from_physical_state(ScenarioContext* ctx);
+
+/**
+ * @brief Emit pitchReleased event and let referee snapshot state
+ *
+ * Should be called AFTER placing players and initializing referee,
+ * but BEFORE the actual test actions (hitting ball, running, etc).
+ * This sets baseAtPitchStart for all players based on their current positions.
+ *
+ * @param ctx The scenario context
+ */
+void snapshot_pitch_start_state(ScenarioContext* ctx);
+
+/**
  * @brief Place a runner at or between bases with consistent state
  *
  * @param ctx The scenario context
@@ -34,14 +56,31 @@ ScenarioContext* create_scenario(void);
 void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, float progressToNext);
 
 /**
- * @brief Place the ball at a specific location (not in anyone's hands)
+ * @brief Move the pitcher (Lukkari, idx 12) away from home plate
+ *
+ * In pesäpallo, the pitcher stands at home plate and can catch fly balls.
+ * This helper moves them away to prevent interference in test scenarios.
+ *
+ * Should be called in almost all tests BEFORE initialize_referee_from_physical_state()
+ * to ensure pitcher doesn't catch balls or tag runners.
+ *
+ * Only skip this if you're specifically testing pitcher/home plate defense.
+ *
+ * @param ctx The scenario context
  */
-void place_ball_at_location(ScenarioContext* ctx, Vector3D location);
+void move_pitcher_away(ScenarioContext* ctx);
 
 /**
- * @brief Give the ball to a specific fielder
+ * @brief Place the ball in the air above a location so it drops naturally
+ *
+ * The ball will be placed 5m above the target location with downward velocity.
+ * It will fall naturally and trigger hasBallHitGround when it lands.
+ * Call this AFTER initialize_referee_from_physical_state() and snapshot_pitch_start_state().
+ *
+ * @param ctx The scenario context
+ * @param targetLocation Where the ball should land
  */
-void give_ball_to_fielder(ScenarioContext* ctx, int fielderIndex);
+void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation);
 
 /**
  * @brief Throw ball toward a base using game's calibrated throwing mechanics
@@ -111,16 +150,6 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
  * @param targetX The target X coordinate (0.0 = center/strike, >0.75 = ball)
  */
 void perform_pitch(ScenarioContext* ctx, float targetX);
-
-/**
- * @brief Simulate frames until a condition is met or timeout
- *
- * @param ctx The scenario context
- * @param condition Function returning 1 when goal is reached
- * @param maxFrames Maximum frames before giving up
- * @return Number of frames simulated
- */
-int simulate_until(ScenarioContext* ctx, int (*condition)(ScenarioContext*), int maxFrames);
 
 /**
  * @brief Cleanup scenario and free resources

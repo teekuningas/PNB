@@ -20,27 +20,27 @@ int test_full_out_of_bounds_reset(void)
 {
 	ScenarioContext* ctx = create_scenario();
 
-	// 1. Place Runner at 1st Base (safe), but advanced to 70% of the way to 2nd
+	// 1. Setup PHYSICAL state: Runner at 1st Base, 70% toward 2nd
 	// This ensures they reach 2nd base before the ball (150 frames flight) lands.
 	place_runner_at_base(ctx, 0, BASE_FIRST, 0.7f);
-
-	// Ensure runner has safety at 1st initially
-	ctx->state->match->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
-	ctx->state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
 
 	// Setup batter just so game state is valid
 	setup_batter_at_home(ctx, 1);
 
-	// Move defenders (Lukkari/Catcher) away so they don't catch the ball instantly
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->match->playerInfo[12].tPI.location = away;
-	ctx->state->match->playerInfo[13].tPI.location = away;
+	// 2. Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
+
+	// 3. Emit pitchReleased to snapshot baseAtPitchStart
+	snapshot_pitch_start_state(ctx);
+
+	// 4. Position fielders away
+	move_pitcher_away(ctx);
 
 	printf("[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
 	       ctx->state->match->playerInfo[0].bTPI.baseId,
 	       ctx->state->match->referee.battingPlayers[0].currentSafetyBase);
 
-	// 2. Hit ball far out of bounds
+	// 5. Hit ball far out of bounds
 	// Target: (200, 0, 200) is likely out of bounds
 	Vector3D home = ctx->state->fieldPositions->pitchPlate;
 	Vector3D foulTarget = { 200.0f, 0.0f, 200.0f };
@@ -50,7 +50,7 @@ int test_full_out_of_bounds_reset(void)
 
 	printf("[TEST] Ball hit towards (%.1f, %.1f, %.1f).\n", foulTarget.x, foulTarget.y, foulTarget.z);
 
-	// 3. Runner runs to 2nd Base
+	// 6. Runner runs to 2nd Base
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
 	printf("[TEST] Runner 0 triggered to run to 2nd Base.\n");
 
@@ -65,7 +65,7 @@ int test_full_out_of_bounds_reset(void)
 		PlayerInfo* runner = &ctx->state->match->playerInfo[0];
 
 		// Check if runner reached 2nd base
-		if (!reachedSecond &&runner->bTPI.baseId == BASE_SECOND) {
+		if (!reachedSecond && runner->bTPI.baseId == BASE_SECOND) {
 			int currentSafety = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
 			if (currentSafety == BASE_SECOND) {
 				reachedSecond = 1;

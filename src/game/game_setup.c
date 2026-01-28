@@ -64,6 +64,10 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 	}
 
 	loadMutableWorldSettings(stateInfo, rng_seed);
+
+	// Emit gameInitialized event AFTER physical world is set up
+	// This allows referee to see the physical state and initialize its legal tracking
+	stateInfo->match->gameEvents.gameInitialized = 1;
 }
 
 void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
@@ -73,4 +77,7 @@ void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
 	loadMutableWorldSettings(stateInfo, rng_seed);
+
+	// Emit gameInitialized event
+	stateInfo->match->gameEvents.gameInitialized = 1;
 }

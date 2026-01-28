@@ -1,7 +1,7 @@
 #include "test_helpers.h"
 #include "test_collision.h"
-#include "../src/physics/collision.h"
-#include "../src/core/vector_math.h"
+#include "collision.h"
+#include "vector_math.h"
 #include <stdio.h>
 #include <math.h>
 

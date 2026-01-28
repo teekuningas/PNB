@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests
+IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
@@ -31,7 +31,7 @@ OBJ_MAIN = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_INT  = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) tests/integration/fixtures.o tests/integration/scenario_builder.o $(_OBJ_INT_SCENARIOS))
 
 # Unit test objects (No OpenGL)
-_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o core/state_validator.o tests/test_cup_logic.o tests/test_batting_physics.o tests/test_pitching_physics.o tests/test_batting_ai_strategy.o tests/test_catching_ai_strategy.o tests/test_pitching_ai_strategy.o tests/test_rules_outs.o tests/test_rules_runs.o tests/test_base_logic.o tests/test_collision.o
+_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_base_logic.o tests/unit/test_collision.o
 TEST_OBJ = $(patsubst %,$(ODIR)/unit/%,$(_TEST_OBJ))
 
 # Generic rules for each build type
@@ -51,7 +51,7 @@ $(ODIR)/unit/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(ODIR)/unit/tests/%.o: tests/%.c
+$(ODIR)/unit/tests/unit/%.o: tests/unit/%.c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
@@ -70,8 +70,8 @@ watch_task_agent_copilot:
 	@./.dev/scripts/task_agent_copilot.py
 
 .PHONY: test
-test: $(TEST_OBJ) tests/test_runner.c
-	$(CC) tests/test_runner.c $(TEST_OBJ) -o test_runner $(CFLAGS) -lm -lmxml
+test: $(TEST_OBJ) tests/unit/test_runner.c
+	$(CC) tests/unit/test_runner.c $(TEST_OBJ) -o test_runner $(CFLAGS) -lm -lmxml
 	./test_runner
 
 .PHONY: integration_runner

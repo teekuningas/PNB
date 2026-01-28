@@ -838,6 +838,7 @@ void clearFrameEvents(GameEvents* events)
 	events->freeWalkAccepted = 0;
 	events->freeWalkRejected = 0;
 	events->batterEntered = 0;
+	events->gameInitialized = 0;
 }
 
 // these should be kept when foul play
@@ -883,7 +884,7 @@ void initializePRAIInformation(MatchSession* match)
 	}
 }
 
-void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions)
+void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions)
 {
 	int battingTeamIndex = (scoreboard->
 	                        inning+scoreboard->playsFirst+scoreboard->period)%2;
@@ -898,7 +899,6 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 		if(batterIndex != -1) {
 			match->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
 			match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-			match->referee.battingPlayers[batterIndex].baseAtPitchStart = BASE_HOME;
 			match->playerInfo[batterIndex].bTPI.number = match->homeRunContestState.runnerBatterPairCounter + 1;
 			// move player to default batter ready position
 			target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE)*BATTING_RADIUS);
@@ -909,8 +909,6 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 		if(runnerIndex != -1) {
 			match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
 			match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
-			match->referee.battingPlayers[runnerIndex].baseAtPitchStart = BASE_THIRD;
-			match->referee.battingPlayers[runnerIndex].currentSafetyBase = BASE_THIRD;
 
 			match->playerInfo[runnerIndex].tPI.location.x =
 			    fieldPositions->thirdBaseRun.x;
@@ -930,7 +928,8 @@ void setRunnerAndBatter(MatchSession* match, Scoreboard* scoreboard, FieldPositi
 			match->playerInfo[runnerIndex].tPI.orientation.z =
 			    -match->playerInfo[runnerIndex].tPI.location.x;
 		}
-		// set other runners next to the third base.
+
+		// set other runners next to the third base.		// set other runners next to the third base.
 		for(i = match->homeRunContestState.runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
 			int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
 			if(index != -1) {
@@ -980,8 +979,10 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
 	// information about players than can be flushed.
 	initializeNonCriticalPlayerInformation(stateInfo->match);
-	// initialize referee state
-	initializeRefereeState(&stateInfo->match->referee);
+
+	// Milestone 17.5: Do NOT initialize referee state here.
+	// The referee will initialize itself when it sees the gameInitialized event.
+	// This allows the referee to inspect the physical world and infer its legal state.
 
 	if(stateInfo->match->scoreboard.period >= 4) {
 		if(!(stateInfo->match->homeRunContestState.runnerBatterPairCounter > 0 &&
@@ -989,6 +990,6 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 		        stateInfo->match->scoreboard.pairCount)) {
 			stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
 		}
-		setRunnerAndBatter(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
+		setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
 	}
 }

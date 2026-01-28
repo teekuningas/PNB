@@ -23,6 +23,54 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 {
 	const MatchSession* game = stateInfo->match;
 
+	// Game/Period Initialization (Game Start)
+	if (events->gameInitialized) {
+		printf("[REFEREE] === gameInitialized EVENT ===\n");
+
+		// Reset ALL referee state first
+		initializeRefereeState(referee);
+
+		// For Homerun Contest (period >= 4), scan physical world for batter+runner pair
+		if (stateInfo->match->scoreboard.period >= 4) {
+			// Initialize Legal State for Batter/Runner based on Physical World
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+					referee->battingPlayers[i].baseAtPitchStart = BASE_HOME;
+					referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+				} else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
+				           game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+					referee->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
+					referee->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+				}
+			}
+		} else {
+			// For normal games, scan for ANY players that are already positioned
+			// This handles both: (1) real game initialization, (2) test fixtures
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				PlayerUnitState state = game->playerInfo[i].bTPI.state;
+				BaseID base = game->playerInfo[i].bTPI.baseId;
+
+				if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
+					referee->battingPlayers[i].baseAtPitchStart = BASE_HOME;
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					printf("[REFEREE INIT] Player %d: AT_BAT, baseAtPitchStart=%d\n", i, BASE_HOME);
+				} else if (state == PLAYER_STATE_ON_BASE && base != BASE_NONE) {
+					referee->battingPlayers[i].baseAtPitchStart = base;
+					referee->battingPlayers[i].currentSafetyBase = base;
+					printf("[REFEREE INIT] Player %d: ON_BASE, baseId=%d, baseAtPitchStart=%d\n", i, base, base);
+				} else if (state == PLAYER_STATE_RUNNING && base != BASE_NONE) {
+					// Runner between bases - has left their starting base
+					referee->battingPlayers[i].baseAtPitchStart = base;
+					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					printf("[REFEREE INIT] Player %d: RUNNING, baseId=%d, baseAtPitchStart=%d\n", i, base, base);
+				} else if (state != PLAYER_STATE_OUT && state != PLAYER_STATE_SCORED) {
+					printf("[REFEREE INIT] Player %d: state=%d, baseId=%d, NOT INITIALIZED\n", i, state, base);
+				}
+			}
+		}
+		printf("[REFEREE] === gameInitialized DONE ===\n");
+	}
+
 	// Batter Entered: Initialize safety for the new batter and reset count
 	if (events->batterEntered) {
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -196,6 +244,8 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 	        betweenPitchState->hasBallHitGround == 0 &&
 	        betweenPitchState->catchHasBeenMade == 0) {
 
+		printf("[CATCH] Fly ball caught! Starting wounding evaluation...\n");
+
 		// Start evaluation period
 		referee->woundingEvaluationActive = 1;
 		referee->woundingEvaluationTimer = 0;
@@ -203,12 +253,20 @@ static void update_wounding_logic(const StateInfo* stateInfo, RefereeState* refe
 		// Mark vulnerable players at this moment
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+				PlayerUnitState phys_state = game->playerInfo[i].bTPI.state;
+				BaseID phys_base = game->playerInfo[i].bTPI.baseId;
+				BaseID ref_baseAtStart = referee->battingPlayers[i].baseAtPitchStart;
+
+				bool is_safe = player_is_safe_from_fly(phys_state, phys_base, ref_baseAtStart);
+
+				printf("[CATCH] Player %d: phys_state=%d, phys_baseId=%d, ref_baseAtPitchStart=%d, is_safe=%d\n",
+				       i, phys_state, phys_base, ref_baseAtStart, is_safe);
+
 				// Check if player is vulnerable (not safe from fly ball)
-				if (!player_is_safe_from_fly(game->playerInfo[i].bTPI.state,
-				                             game->playerInfo[i].bTPI.baseId,
-				                             referee->battingPlayers[i].baseAtPitchStart)) {
+				if (!is_safe) {
 					// Mark this player as vulnerable (WOUND_MARKED)
 					referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_MARKED;
+					printf("[CATCH] Player %d MARKED as WOUND_MARKED\n", i);
 				}
 			}
 		}
@@ -867,24 +925,83 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 
 	// 6. Homerun Contest: Check if current pair is complete
 	if (scoreboard->period >= 4) {
-		// Pair is complete when:
-		// - No runner at 3rd base (either scored or out)
-		// - AND no run of honor is possible (batter can't reach 3rd anymore)
-		int runnerAtThird = 0;
-		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-			if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_THIRD &&
-			        game->playerInfo[i].bTPI.baseId != BASE_NONE &&
-			        refereeState->battingPlayers[i].status != PLAYER_STATUS_OUT &&
-			        !refereeState->battingPlayers[i].hasScored) {
-				runnerAtThird = 1;
-				break;
+		// State Machine for Pair Lifecycle
+		// 0 = ACTIVE: Check for end condition
+		// 1 = WAITING: Timer running
+		// 2 = RESETTING: Signal to Consolidation (1 frame)
+
+		int currentState = ((MatchSession*)game)->homeRunContestState.forceNextPair;
+
+		if (currentState == HR_PAIR_STATE_ACTIVE) {
+			// Pair is complete when:
+			// - No runner at 3rd base (either scored or out)
+			// - AND no run of honor is possible (batter can't reach 3rd anymore)
+			int runnerAtThird = 0;
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_THIRD &&
+				        game->playerInfo[i].bTPI.baseId != BASE_NONE &&
+				        refereeState->battingPlayers[i].status != PLAYER_STATUS_OUT &&
+				        !refereeState->battingPlayers[i].hasScored) {
+					runnerAtThird = 1;
+					break;
+				}
 			}
-		}
 
-		int runOfHonorStillPossible = is_run_of_honor_possible(game);
+			int runOfHonorStillPossible = is_run_of_honor_possible(game);
 
-		if (!runnerAtThird && !runOfHonorStillPossible) {
-			((MatchSession*)game)->homeRunContestState.forceNextPair = 1;
+			if (!runnerAtThird && !runOfHonorStillPossible && halfInningState->event != EVENT_NEXT_PAIR) {
+				// Transition to WAITING
+				((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_WAITING;
+				refereeState->nextPairTimer = 0;
+				// Signal UI
+				if (stateInfo->match->gameFlowState.endOfInningCounter == -1) {
+					halfInningState->event = EVENT_NEXT_PAIR;
+				}
+			}
+		} else if (currentState == HR_PAIR_STATE_WAITING) {
+			refereeState->nextPairTimer++;
+			if (refereeState->nextPairTimer > 200) {
+				// Transition to RESETTING
+				((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_RESETTING;
+				refereeState->nextPairTimer = -1;
+			}
+		} else if (currentState == HR_PAIR_STATE_RESETTING) {
+			// Signal has been sent to Consolidation.
+			// Transition back to ACTIVE immediately.
+			((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_ACTIVE;
+
+			// === STATE INFERENCE ===
+			// We are coming out of a Reset. Physical world is fresh.
+			// Initialize Legal State based on current positions.
+
+			// 1. Reset Global Counters
+			halfInningState->strikes = 0;
+			halfInningState->balls = 0;
+			betweenPitchState->catchHasBeenMade = 0;
+			betweenPitchState->hasBallHitGround = 0;
+			betweenPitchState->foulState = FOUL_STATE_NONE;
+			betweenPitchState->resolutionProcessed = 0;
+
+			// 2. Scan players and set safety
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				// Clear old state
+				refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+				refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
+				refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+				refereeState->battingPlayers[i].hasScored = 0;
+				refereeState->battingPlayers[i].runOfHonorScored = 0;
+				refereeState->battingPlayers[i].hasPendingRun = 0;
+				refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+
+				if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+					refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
+					refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
+				} else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
+				           game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+					refereeState->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
+					refereeState->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+				}
+			}
 		}
 	}
 }

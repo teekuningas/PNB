@@ -517,6 +517,7 @@ typedef struct _GameEvents {
 	int freeWalkAccepted;        // Player accepted free walk
 	int freeWalkRejected;        // Player rejected free walk
 	int batterEntered;      // New: Signal that new batter is ready
+	int gameInitialized;    // New: Signal that the game/period has just started (loadMutableWorldSettings ran)
 } GameEvents;
 
 typedef enum {
@@ -688,9 +689,15 @@ typedef struct _PendingActionState {
 	int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
 } PendingActionState;
 
+typedef enum {
+	HR_PAIR_STATE_ACTIVE = 0,
+	HR_PAIR_STATE_WAITING = 1,
+	HR_PAIR_STATE_RESETTING = 2
+} HomeRunPairState;
+
 typedef struct _HomeRunContestState {
 	int runnerBatterPairCounter;
-	int forceNextPair;
+	int forceNextPair; // 0=Active, 1=Waiting, 2=Resetting (Mapped to HomeRunPairState)
 } HomeRunContestState;
 
 typedef enum {

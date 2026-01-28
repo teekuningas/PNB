@@ -29,10 +29,10 @@ int test_run_arrival_before_ball_lands(void)
 
 	int runnerIndex = 1; // Different from batter
 
-	// 1. Setup Runner at 3rd Base
+	// 1. Setup Runner at 3rd Base (physical state)
 	place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
 
-	// Move runner between corner flag and home to ensure quick arrival
+	// 2. Move runner between corner flag and home to ensure quick arrival
 	// runLeftPoint is at Z=-25, homeRunPoint is at Z=-0.65, home plate is around Z=0
 	// Place runner at Z=-10 (between flag and homeRunPoint)
 	Vector3D homeLoc = ctx->state->fieldPositions->pitchPlate;
@@ -40,7 +40,7 @@ int test_run_arrival_before_ball_lands(void)
 	startLoc.z = -10.0f; // Between corner flag (-25) and home (-0.65)
 	startLoc.x = -15.0f; // Left side (3rd base side)
 
-	// Set physical state
+	// Override physical state for precise positioning
 	ctx->state->match->playerInfo[runnerIndex].tPI.location = startLoc;
 	ctx->state->match->playerInfo[runnerIndex].tPI.lastLocation = startLoc;
 
@@ -48,18 +48,20 @@ int test_run_arrival_before_ball_lands(void)
 	// Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)
 	ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
 
-	// CRITICAL: Move pitcher and catcher away so they don't catch the ball or tag the runner
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->match->playerInfo[12].tPI.location = away;  // Pitcher
-	ctx->state->match->playerInfo[13].tPI.location = away;  // Catcher
-
 	printf("Setup: Runner %d placed close to home at (%.1f, %.1f, %.1f)\n",
 	       runnerIndex, startLoc.x, startLoc.y, startLoc.z);
 
-	// 2. Trigger Runner to run home from 3rd
+	// CRITICAL: Move pitcher and catcher away so they don't catch the ball or tag the runner
+	move_pitcher_away(ctx);
+
+	// 3. Initialize referee from physical state (referee doesn't mind runner is off-base)
+	initialize_referee_from_physical_state(ctx);
+	snapshot_pitch_start_state(ctx);
+
+	// 4. Trigger Runner to run home from 3rd
 	trigger_player_run_to_next_base(ctx, runnerIndex, BASE_THIRD);
 
-	// 3. Hit a fly ball into the field (will stay in air for a while)
+	// 5. Hit a fly ball into the field (will stay in air for a while)
 	// Use coordinates known to be in bounds from test_runner_scores_from_third
 	Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
 	Vector3D targetInField = {10.0f, 0.0f, -10.0f};  // Known in-bounds location
@@ -68,7 +70,7 @@ int test_run_arrival_before_ball_lands(void)
 	int runsAtStart = ctx->state->match->halfInningState.runsInTheInning;
 	printf("Runs at start: %d\n", runsAtStart);
 
-	// 4. Simulate frames
+	// 6. Simulate frames
 	int arrived = 0;
 	int ballLanded = 0;
 	int arrivalFrame = -1;

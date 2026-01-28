@@ -17,6 +17,10 @@ int test_full_batter_forced_out_at_first(void)
 	ctx->state->match->playerInfo[13].tPI.location = firstBase;
 	ctx->state->match->playerInfo[13].tPI.homeLocation = firstBase;
 
+	// Initialize referee state from physical setup
+	initialize_referee_from_physical_state(ctx);
+	snapshot_pitch_start_state(ctx);
+
 	Vector3D throwFrom = {5.0f, 1.5f, -10.0f};
 	throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
 

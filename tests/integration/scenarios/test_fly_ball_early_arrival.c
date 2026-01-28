@@ -32,30 +32,29 @@ int test_fly_ball_early_arrival(void)
 
 	printf("\n=== FLY BALL EARLY ARRIVAL TEST ===\n");
 
-	// 1. Setup: Only batter at Home, no other runners
+	// 1. Setup PHYSICAL state: Only batter at Home, no other runners
 	setup_batter_at_home(ctx, 0);
 	match->pII.batterSelectionIndex = 0;
 
-	// Ensure batter is tracked in the referee system
-	match->referee.battingPlayers[0].baseAtPitchStart = BASE_HOME;
-	match->referee.battingPlayers[0].currentSafetyBase = BASE_HOME;
+	// 2. Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
 
-	// 2. Move pitcher and catcher away
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	match->playerInfo[12].tPI.location = away;
-	match->playerInfo[13].tPI.location = away;
+	// 3. Emit pitchReleased to snapshot baseAtPitchStart
+	snapshot_pitch_start_state(ctx);
 
-	// 3. Position fielder at third base area
+	// 4. Position fielders
+	move_pitcher_away(ctx);
+
 	int fielderIdx = 16; // Center fielder
 	Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
 	match->playerInfo[fielderIdx].tPI.location = fielderLoc;
 	match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
 
-	// 4. Trigger batter to run
+	// 5. Trigger batter to run
 	match->pRAI.batterCanAdvance = 1;
 	trigger_player_run_to_next_base(ctx, 0, BASE_HOME);    // Batter: Home → 1st
 
-	// 5. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
+	// 6. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
 	// This gives the batter time to reach 1st before the catch
 	Vector3D pitchLocation = ctx->state->fieldPositions->pitchPlate;
 	hit_fly_ball_to_location_with_time(ctx, pitchLocation, fielderLoc, 300.0f);

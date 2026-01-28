@@ -1,6 +1,6 @@
 #include "test_rules_outs.h"
 #include "test_helpers.h"
-#include "../src/game/rules_pure/rules_outs.h"
+#include "rules_outs.h"
 
 int test_forced_out_at_first_base()
 {

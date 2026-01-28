@@ -135,7 +135,7 @@ static void executeFoulPlayTeleport(StateInfo* stateInfo, unsigned int* rng_seed
 
 	if (game->scoreboard.period >= 4) {
 		// Homerun Contest special initialization
-		setRunnerAndBatter(game, &game->scoreboard, stateInfo->fieldPositions);
+		setupHomerunPhysicalState(game, &game->scoreboard, stateInfo->fieldPositions);
 	} else {
 		// Physical Reset Only (Referee has already handled legal state)
 
@@ -461,34 +461,13 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 {
 	if(stateInfo->match->scoreboard.period >= 4) {
 
-		// this pair has used its turn when:
-		// - player at the third base is no longer in the field and batter cant make run of honor
-		// - batterIndex == -1 and ball is at home( and player can make no run of honor ). after three strikes this happens automatically.
-		// - or if free walks have been used
-		// in this situation runner is always at battingTeamOnFieldIndices[0] so we just have to check that.
-		int runnerAtThirdIndex = get_base_controller(stateInfo->match, BASE_THIRD);
+		// Milestone 17.5: Timer and logic moved to Referee (State Machine).
+		// We only react when Referee signals RESETTING (State 2).
 
-		int runOfHonorPossible = is_run_of_honor_possible(stateInfo->match);
+		int currentState = stateInfo->match->homeRunContestState.forceNextPair;
 
-		if((stateInfo->match->gameFlowState.ballHome == 1 && get_active_batter_index(stateInfo->match) == -1 &&
-		        runOfHonorPossible == 0) ||
-		        (runnerAtThirdIndex == -1 &&
-		         runOfHonorPossible == 0) ||
-		        stateInfo->match->homeRunContestState.forceNextPair == 1) {
-			if(stateInfo->match->gameFlowState.nextPairCounter == -1) {
-				stateInfo->match->gameFlowState.nextPairCounter = 0;
-				// send message only if its not end of inning also.
-				if(stateInfo->match->gameFlowState.endOfInningCounter == -1) {
-					stateInfo->match->halfInningState.event = EVENT_NEXT_PAIR;
-				}
-			}
-		}
-		if(stateInfo->match->gameFlowState.nextPairCounter != -1) {
-			stateInfo->match->gameFlowState.nextPairCounter++;
-		}
-		if(stateInfo->match->gameFlowState.nextPairCounter > 200) {
-			// set to -2 so that we avoid this being called twice. it will be set to -1 in the beginning of the next pair
-			stateInfo->match->gameFlowState.nextPairCounter = -2;
+		if(currentState == HR_PAIR_STATE_RESETTING) {
+
 			stateInfo->match->homeRunContestState.runnerBatterPairCounter++;
 			// if equality holds, ending of inning will load the settings.
 			if(stateInfo->match->homeRunContestState.runnerBatterPairCounter != stateInfo->match->scoreboard.pairCount) {
@@ -502,7 +481,18 @@ static void checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 				if((stateInfo->match->scoreboard.inning+1)%2 == 0 && pairsLeft*2 + battingRuns < catchingRuns) {
 					stateInfo->match->halfInningState.endPeriod = 1;
 				} else {
-					loadMutableWorldSettings(stateInfo, rng_seed);
+					// Physical Reset for Next Pair
+					initializeBallInfo(stateInfo->match);
+					initializeActionInfo(stateInfo->match);
+					initializeTemporaryGameAnalysisInfo(stateInfo->match);
+					initializeIndexInformation(stateInfo->match);
+					initializePRAIInformation(stateInfo->match);
+					// Note: Spatial info for fielders is usually static, but we can re-init if needed.
+					// Keeping it lightweight: Just reset the critical actors.
+					initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
+					initializeNonCriticalPlayerInformation(stateInfo->match);
+
+					setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
 				}
 			}
 		}

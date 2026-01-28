@@ -1,6 +1,6 @@
 #include "test_rules_runs.h"
 #include "test_helpers.h"
-#include "../src/game/rules_pure/rules_runs.h"
+#include "rules_runs.h"
 
 // Parameters for is_regular_run:
 // int is_regular_run(BaseID player_base, BaseID player_original_base, int player_is_wounded);

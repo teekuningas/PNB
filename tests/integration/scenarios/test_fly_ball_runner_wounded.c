@@ -13,14 +13,16 @@ int test_full_fly_ball_runner_wounded(void)
 	place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f);
 	setup_batter_at_home(ctx, 1);
 
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->match->playerInfo[12].tPI.location = away;
-	ctx->state->match->playerInfo[13].tPI.location = away;
+	move_pitcher_away(ctx);
 
 	int fielderIdx = 15;
 	Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
 	ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
 	ctx->state->match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+
+	// Initialize referee state from physical setup
+	initialize_referee_from_physical_state(ctx);
+	snapshot_pitch_start_state(ctx);
 
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
 	hit_fly_ball_to_location(ctx, ctx->state->fieldPositions->pitchPlate, fielderLoc);

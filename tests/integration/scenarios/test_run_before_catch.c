@@ -24,36 +24,41 @@ int test_run_arrival_before_catch(void)
 
 	int runnerIndex = 1; // Different from batter
 
-	// 1. Setup Runner at 3rd Base
+	// 1. Setup Runner at 3rd Base (physical state)
 	place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
 
-	// Move runner between corner flag and home to ensure quick arrival
+	// 2. Move runner between corner flag and home to ensure quick arrival
 	Vector3D homeLoc = ctx->state->fieldPositions->pitchPlate;
 	Vector3D startLoc = homeLoc;
 	startLoc.z = -10.0f; // Between corner flag and homeRunPoint
 	startLoc.x = -15.0f; // Left side (3rd base side)
 
+	// Override physical state for precise positioning
 	ctx->state->match->playerInfo[runnerIndex].tPI.location = startLoc;
 	ctx->state->match->playerInfo[runnerIndex].tPI.lastLocation = startLoc;
-	ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
 
-	// CRITICAL: Move pitcher and catcher away
-	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->match->playerInfo[12].tPI.location = away;
-	ctx->state->match->playerInfo[13].tPI.location = away;
+	// Set runtime state: passedPathPoint=1 means "past corner flag, run to homeRunPoint"
+	ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
 
 	printf("Setup: Runner %d placed close to home\n", runnerIndex);
 
-	// 2. Position a fielder at first base to catch the ball
+	// CRITICAL: Move pitcher and catcher away
+	move_pitcher_away(ctx);
+
+	// 3. Position a fielder at first base to catch the ball
 	int fielderIdx = 14;
 	Vector3D fielderLoc = ctx->state->fieldPositions->firstBase;
 	ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
 	ctx->state->match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
 
-	// 3. Trigger Runner to run home from 3rd
+	// 4. Initialize referee from physical state (referee doesn't mind runner is off-base)
+	initialize_referee_from_physical_state(ctx);
+	snapshot_pitch_start_state(ctx);
+
+	// 5. Trigger Runner to run home from 3rd
 	trigger_player_run_to_next_base(ctx, runnerIndex, BASE_THIRD);
 
-	// 4. Hit a fly ball to first base (will be caught)
+	// 6. Hit a fly ball to first base (will be caught)
 	Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
 	hit_fly_ball_to_location(ctx, pitchPlate, fielderLoc);
 

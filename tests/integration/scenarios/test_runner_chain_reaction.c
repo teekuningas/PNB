@@ -19,22 +19,20 @@ int test_full_runner_chain_reaction_no_catch(void)
 	place_runner_at_base(ctx, 0, BASE_FIRST, 0.6f);
 	setup_batter_at_home(ctx, 2);
 
-	// Move fielders away
+	// Move fielders away so they don't interfere
+	move_pitcher_away(ctx);
 	Vector3D away = {100.0f, 0.0f, 100.0f};
-	ctx->state->match->playerInfo[12].tPI.location = away;
-	ctx->state->match->playerInfo[13].tPI.location = away;
 	ctx->state->match->playerInfo[16].tPI.location = away;
+
+	// Initialize referee state from physical setup
+	initialize_referee_from_physical_state(ctx);
+	snapshot_pitch_start_state(ctx);
 
 	trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
 
-	// Hit ball to ground (no catch) - far away
-	ctx->state->match->ballInfo.location = ctx->state->fieldPositions->pitchPlate;
-	ctx->state->match->ballInfo.velocity.x = -0.5f;
-	ctx->state->match->ballInfo.velocity.y = 0.3f;
-	ctx->state->match->ballInfo.velocity.z = -0.5f;
-	ctx->state->match->ballInfo.moving = 1;
-	ctx->state->match->ballInfo.onGround = 0;
-	ctx->state->match->pRAI.batHit = 1;
+	// Drop ball in outfield (will hit ground, no catch)
+	Vector3D ballTarget = {30.0f, 0.0f, 40.0f};
+	place_ball_over_location(ctx, ballTarget);
 
 	printf("  Chain reaction test (no catch)\n");
 

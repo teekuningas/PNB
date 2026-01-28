@@ -13,11 +13,14 @@ int test_full_pitching_ball(void)
 	ScenarioContext* ctx = create_scenario();
 	setup_batter_at_home(ctx, 0);
 
-	// Move Lukkari away
-	ctx->state->match->playerInfo[12].tPI.location.x = 100.0f;
+	// Move pitcher away
+	move_pitcher_away(ctx);
+
+	// Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
 
 	printf("[TEST] Pitching BALL (Target X=1.0, PlateWidth=0.75)\n");
-	perform_pitch(ctx, 1.0f); // Wide right
+	perform_pitch(ctx, 1.0f); // Wide right (also emits pitchReleased event)
 
 	int ballDetected = 0;
 	for (int i = 0; i < 200; i++) {

@@ -9,57 +9,70 @@
  * Verifies that accepting a free walk:
  * 1. Triggers player movement (Action)
  * 2. Grants safety at the next base (Referee)
- * 3. Does not immediately teleport the player (Physics integrity)
+ * 3. Player physically runs and arrives at the next base
  */
 int test_full_free_walk_resolution(void)
 {
 	ScenarioContext* ctx = create_scenario();
 	MatchSession* game = ctx->state->match;
 
-	// 1. Setup: Runner at 1st base
+	// 1. Setup: Runner at 1st base (physical state)
 	int runnerIdx = 0;
 	place_runner_at_base(ctx, runnerIdx, BASE_FIRST, 0.0f);
 
-	// 2. Setup: Free Walk Offer
+	// 2. Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
+
+	printf("[TEST] Initial state: Player %d at base %d, safety=%d\n",
+	       runnerIdx, game->playerInfo[runnerIdx].bTPI.baseId,
+	       game->referee.battingPlayers[runnerIdx].currentSafetyBase);
+
+	// 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
 	game->flowControl.freeWalkIndex = runnerIdx;
 	game->flowControl.freeWalkBase = BASE_FIRST;
 	game->flowControl.waitingForFreeWalkDecision = 1;
 
-	printf("[TEST] Offering Free Walk to Player %d at Base %d\n", runnerIdx, BASE_FIRST);
+	printf("[TEST] Offering Free Walk to Player %d from Base %d\n", runnerIdx, BASE_FIRST);
 
-	// 2b. Wait a bit (simulate waiting for user input)
-	simulate_frames(ctx, 10);
-
-	// 3. Action: Accept Free Walk
-	printf("[TEST] Action: Accept Free Walk (Player %d)\n", runnerIdx);
-	printf("[TEST] Before: State=%d, SafetyBase=%d\n",
-	       game->playerInfo[runnerIdx].bTPI.state,
-	       game->referee.battingPlayers[runnerIdx].currentSafetyBase);
-
-	game->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
-
-	// 4. Wait for processing (1 frame is enough)
+	// 3b. Wait a frame (simulate UI showing the offer before player responds)
 	simulate_frames(ctx, 1);
 
-	printf("[TEST] After: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
+	// 4. Action: Accept Free Walk
+	game->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+
+	// 5. Process acceptance (1 frame to trigger event and start movement)
+	simulate_frames(ctx, 1);
+
+	printf("[TEST] After acceptance: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
 	       game->playerInfo[runnerIdx].bTPI.state, PLAYER_STATE_ADVANCING_FREELY,
 	       game->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND);
 
-	// NOTE: We cannot check gameEvents.freeWalkAccepted here because simulate_frames
-	// clears transient events at the end of the frame. We must verify by checking the consequences.
-
 	// CHECK 1: Action system started movement
-	// "runToNextBase" sets state to RUNNING or ADVANCING_FREELY
 	ASSERT_EQ(PLAYER_STATE_ADVANCING_FREELY, game->playerInfo[runnerIdx].bTPI.state, "Player state should be ADVANCING_FREELY");
 
-	// CHECK 2: Referee granted safety at NEXT base (2nd)
-	// The refactor moved this to referee.c. It happens immediately on event detection.
+	// CHECK 2: Referee granted safety at NEXT base (2nd) immediately
 	BaseID safetyBase = game->referee.battingPlayers[runnerIdx].currentSafetyBase;
 	ASSERT_EQ(BASE_SECOND, safetyBase, "Referee should grant safety at SECOND base immediately upon event");
 
-	// CHECK 4: Base at pitch start updated (for future foul play resolution)
+	// CHECK 3: Base at pitch start updated (for future foul play resolution)
 	BaseID startBase = game->referee.battingPlayers[runnerIdx].baseAtPitchStart;
 	ASSERT_EQ(BASE_SECOND, startBase, "BaseAtPitchStart should be updated to SECOND base");
+
+	// 6. Wait for runner to physically arrive at second base
+	printf("[TEST] Waiting for runner to arrive at 2nd base...\n");
+	int arrivedAt2nd = 0;
+	for (int frame = 0; frame < 500; frame++) {
+		simulate_frames(ctx, 1);
+		if (game->playerInfo[runnerIdx].bTPI.baseId == BASE_SECOND) {
+			arrivedAt2nd = 1;
+			printf("[TEST] Runner arrived at 2nd base (frame %d)\n", frame);
+			break;
+		}
+	}
+
+	// CHECK 4: Runner physically arrived at destination
+	ASSERT_EQ(1, arrivedAt2nd, "Runner should physically arrive at 2nd base");
+	ASSERT_EQ(BASE_SECOND, game->playerInfo[runnerIdx].bTPI.baseId, "Runner baseId should be SECOND");
 
 	cleanup_scenario(ctx);
 	return TEST_PASSED;

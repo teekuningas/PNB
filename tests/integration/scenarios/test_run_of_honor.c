@@ -21,34 +21,29 @@ int test_full_run_of_honor(void)
 
 	int batterIndex = 0;
 
-	// Setup batter at home using helper
+	// 1. Setup PHYSICAL state: batter at home
 	setup_batter_at_home(ctx, batterIndex);
 
-	// Mark as active batter with proper referee state
-	ctx->state->match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-	ctx->state->match->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
-	ctx->state->match->referee.battingPlayers[batterIndex].baseAtPitchStart = BASE_HOME;
-	ctx->state->match->referee.battingPlayers[batterIndex].currentSafetyBase = BASE_NONE;
-	ctx->state->match->referee.battingPlayers[batterIndex].runOfHonorScored = 0;
-	ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
+	// CRITICAL: Move pitcher/catcher away BEFORE initialization
+	move_pitcher_away(ctx);
 
-	printf("Setup: Batter %d at HOME, baseAtPitchStart=%d\n",
-	       batterIndex, ctx->state->match->referee.battingPlayers[batterIndex].baseAtPitchStart);
+	// 2. Initialize referee from physical state
+	initialize_referee_from_physical_state(ctx);
 
-	// Place ball far in outfield (ball must have hit ground for run of honor)
+	// 3. Emit pitchReleased to snapshot baseAtPitchStart
+	snapshot_pitch_start_state(ctx);
+
+	printf("Setup: Batter %d at HOME\n", batterIndex);
+
+	// 4. Drop ball in outfield so it hits ground naturally
 	Vector3D ballLocation = {30.0f, 0.0f, 40.0f};
-	place_ball_at_location(ctx, ballLocation);
+	place_ball_over_location(ctx, ballLocation);
 
-	// Critical: Mark that ball was hit and has hit ground (not a fly ball!)
-	ctx->state->match->pRAI.batHit = 1;
+	// Critical: Mark that batter can advance
 	ctx->state->match->pRAI.batterCanAdvance = 1;
-	ctx->state->match->ballInfo.currentFlightHasHitGround = 1;
-	ctx->state->match->betweenPitchState.catchHasBeenMade = 0;
-	ctx->state->match->referee.woundingEvaluationActive = 0;
 
-	printf("Ball at (%.1f, %.1f, %.1f), hasHitGround=%d\n",
-	       ballLocation.x, ballLocation.y, ballLocation.z,
-	       ctx->state->match->ballInfo.currentFlightHasHitGround);
+	printf("Ball dropped towards (%.1f, %.1f, %.1f)\n",
+	       ballLocation.x, ballLocation.y, ballLocation.z);
 
 	int runsAtStart = ctx->state->match->halfInningState.runsInTheInning;
 	printf("Runs at start: %d\n\n", runsAtStart);
