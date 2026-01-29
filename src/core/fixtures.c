@@ -5,7 +5,7 @@
 #define DEFAULT_FIXTURE_TEAM1 0
 #define DEFAULT_FIXTURE_TEAM2 1
 #define DEFAULT_FIXTURE_CONTROL1 0  // Player 1
-#define DEFAULT_FIXTURE_CONTROL2 1  // Player 2
+#define DEFAULT_FIXTURE_CONTROL2 2  // AI
 
 void fixture_create_super_inning(GameSetup* setup, int team1, int team2,
                                  int team1_control, int team2_control)

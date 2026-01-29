@@ -39,6 +39,23 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 	stateInfo->match->betweenPitchState.hasBallHitGround = 0;
 	stateInfo->match->betweenPitchState.resolutionProcessed = 0;
 
+	// Initialize batterOrder for ALL game modes.
+	// CRITICAL: batterOrder defines the jersey numbers (1-9 for regulars, 0 for jokers)
+	// via initializeInningPermanentPlayerInformation() in common_logic.c.
+	//
+	// In GAME_MODE_HOMERUN_CONTEST:
+	//   - batterOrder is NOT used to determine who bats (that uses batterRunnerIndices)
+	//   - BUT it IS used to assign jersey numbers and joker status
+	//   - Players keep their jersey numbers from the super inning
+	//   - For test fixtures starting directly in homerun contest, we use default [0,1,2,...,11]
+	//
+	// batterOrder[0..8]  → players who get jerseys 1-9 (JOKER_REGULAR)
+	// batterOrder[9..11] → players who get jersey 0 (JOKER_AVAILABLE)
+	stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
+	stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;
+	memcpy(stateInfo->match->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
+	memcpy(stateInfo->match->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
+
 	if (gameSetup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
 		int half = gameSetup->homerun_choice_count;
 		for (int i = 0; i < 2; i++) {
@@ -55,11 +72,6 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 		}
 		stateInfo->match->scoreboard.pairCount = half;
 		stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
-	} else {
-		stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
-		stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;
-		memcpy(stateInfo->match->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order, sizeof(gameSetup->team1_batting_order));
-		memcpy(stateInfo->match->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
 	}
 
 	// loadMutableWorldSettings is called via updateGameScreen -> loadGameScreenSettings

@@ -405,6 +405,12 @@ static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned
 			}
 			// if not, we move to homerun-batting contest
 			else {
+				// TRANSITION: Super Inning → Homerun Contest
+				// We preserve batterOrder (jersey assignments) across this transition.
+				// Players keep the jersey numbers (1-9 for regulars, 0 for jokers)
+				// they had in the super inning. This is realistic - teams don't
+				// change shirts between super inning and homerun contest.
+				// The batterOrder is NOT reset here or in the menu.
 				stateInfo->match->scoreboard.period = 4;
 				menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
 			}
@@ -433,6 +439,9 @@ static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned
 				populateGameConclusion(stateInfo, winner);
 				menuInfo->mode = MENU_ENTRY_GAME_OVER;
 			} else {
+				// TRANSITION: Homerun Contest Round N → Round N+1
+				// We continue with the same batterOrder (jersey assignments).
+				// Players keep their jerseys across all homerun contest rounds.
 				// +=2 because we want to use 4, 6, 8... for homerun batting contest periods
 				// as we dont want to mess the team ordering when
 				// calculating those battingTeamIndices.

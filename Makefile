@@ -84,19 +84,19 @@ integration_test: integration_runner
 
 .PHONY: run
 run:
-	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed
+	./main --windowed
 
 .PHONY: run-super-inning
 run-super-inning:
-	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed --fixture super-inning
+	./main --windowed --fixture super-inning
 
 .PHONY: run-homerun
 run-homerun:
-	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed --fixture homerun-contest
+	./main --windowed --fixture homerun-contest
 
 .PHONY: run-cup-final-super-inning
 run-cup-final-super-inning:
-	nix run --override-input nixpkgs nixpkgs/nixos-25.05 --impure github:guibou/nixGL -- ./main --windowed --fixture cup-final-super-inning
+	./main --windowed --fixture cup-final-super-inning
 
 .PHONY: clean
 clean:

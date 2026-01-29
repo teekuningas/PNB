@@ -132,27 +132,33 @@ int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions)
 
 int is_run_of_honor_possible(const MatchSession* match)
 {
-	// Simplified version: Check if ball has been at 3rd base since pitch started
-	// If ball reached 3rd base, run of honor is no longer possible
-	if (match->referee.ballInThirdBaseSincePitch) {
-		return 0;
-	}
+	// Simplified logic for homerun contest:
+	// Run of honor is possible if the batter (player who started at HOME) is:
+	// 1. Still ACTIVE (not out/wounded/scored)
+	// AND
+	// 2. Either safe at home OR ball hasn't reached third base yet
+	//
+	// This means:
+	// - If batter hasn't left home yet (safe at home), they can still try
+	// - If batter is advancing and ball hasn't reached 3rd, they can still make it
+	// - Once ball reaches 3rd base, run of honor is no longer possible
+	// - If batter gets out/wounded, run of honor is no longer possible
 
-	// Check if any batter (player who started at HOME) is still advancing
-	// and hasn't already scored run of honor
 	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		const PlayerInfo* player = &match->playerInfo[i];
-		if (player->bTPI.baseId == BASE_NONE) continue;
-
-		// Check if player is a batter who could still make run of honor
-		// 1. At least at 2nd base (so 2nd or 3rd)
-		// 2. Started at Home (Batter)
-		// 3. Hasn't already scored run of honor
-		if (base_is_at_least(player->bTPI.baseId, BASE_SECOND) &&
-		        match->referee.battingPlayers[i].baseAtPitchStart == BASE_HOME &&
-		        !match->referee.battingPlayers[i].runOfHonorScored) {
-			return 1;
+		// Find the batter (player who started at HOME this pitch)
+		if (match->referee.battingPlayers[i].baseAtPitchStart == BASE_HOME) {
+			// Check if batter is still active
+			if (match->referee.battingPlayers[i].status == PLAYER_STATUS_ACTIVE) {
+				// Check if safe at home OR ball hasn't reached 3rd yet
+				if (match->referee.battingPlayers[i].currentSafetyBase == BASE_HOME ||
+				        !match->referee.ballInThirdBaseSincePitch) {
+					return 1; // Run of honor is still possible
+				}
+			}
+			// Found the batter, no need to check others
+			break;
 		}
 	}
-	return 0;
+
+	return 0; // Run of honor not possible
 }
