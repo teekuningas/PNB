@@ -37,7 +37,6 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 	// Clear betweenPitchState when starting a new game (prevents state corruption from previous game)
 	stateInfo->match->betweenPitchState.catchHasBeenMade = 0;
 	stateInfo->match->betweenPitchState.hasBallHitGround = 0;
-	stateInfo->match->betweenPitchState.foulState = FOUL_STATE_NONE;
 	stateInfo->match->betweenPitchState.resolutionProcessed = 0;
 
 	if (gameSetup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
@@ -63,11 +62,8 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 		memcpy(stateInfo->match->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order, sizeof(gameSetup->team2_batting_order));
 	}
 
-	loadMutableWorldSettings(stateInfo, rng_seed);
-
-	// Emit gameInitialized event AFTER physical world is set up
-	// This allows referee to see the physical state and initialize its legal tracking
-	stateInfo->match->gameEvents.gameInitialized = 1;
+	// loadMutableWorldSettings is called via updateGameScreen -> loadGameScreenSettings
+	// because we set changeScreen = 1
 }
 
 void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)

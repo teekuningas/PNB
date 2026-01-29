@@ -788,7 +788,6 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->flowControl.freeWalkCalculationMade = 1;
 	match->flowControl.waitingForBatterDecision = 0;
 	match->flowControl.waitingForFreeWalkDecision = 0;
-	match->betweenPitchState.foulState = FOUL_STATE_NONE;
 	match->playerCounters.noMorePlayers = 0;
 	match->gameFlowState.ballHome = 0;
 	match->halfInningState.endPeriod = 0;
@@ -811,16 +810,14 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 	match->flowControl.freeWalkIndex = -1;
 	match->flowControl.freeWalkBase = BASE_NONE;
 
-	// Reset referee sticky flags for new pitch (Milestone 17)
+	// Reset between-pitch flags (Milestone 17)
 	match->betweenPitchState.catchHasBeenMade = 0;
 	match->betweenPitchState.hasBallHitGround = 0;
-	match->betweenPitchState.foulState = FOUL_STATE_NONE;
 	match->betweenPitchState.resolutionProcessed = 0;
 
 	GameConsolidation_Init(&(match->gameFlowState));
 	initGameManipulation(&(match->gameFlowState));
 
-	match->homeRunContestState.forceNextPair = 0;
 	match->cameraState.homeRunCameraFlag = 0;
 	match->cameraState.targetPoint.x = 0.0f;
 	match->cameraState.targetPoint.y = 0.0f;

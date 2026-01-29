@@ -35,14 +35,9 @@ StateInfo* setup_test_state()
 		state->match->pII.catcherOnBaseIndex[i] = -1;
 		state->match->pII.catcherReplacerOnBaseIndex[i] = -1;
 	}
-	for(int i=0; i<PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		state->match->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
-	}
 	state->match->pII.hasBallIndex = -1;
 	state->match->pII.lastHadBallIndex = -1;
 	state->match->pII.controlIndex = -1;
-	state->match->referee.woundingEvaluationTimer = -1;
-	state->match->gameFlowState.endOfInningCounter = -1;
 
 
 	return state;

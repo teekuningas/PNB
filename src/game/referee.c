@@ -25,7 +25,6 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 
 	// Game/Period Initialization (Game Start)
 	if (events->gameInitialized) {
-		printf("[REFEREE] === gameInitialized EVENT ===\n");
 
 		// Reset ALL referee state first
 		initializeRefereeState(referee);
@@ -53,22 +52,16 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 				if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
 					referee->battingPlayers[i].baseAtPitchStart = BASE_HOME;
 					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-					printf("[REFEREE INIT] Player %d: AT_BAT, baseAtPitchStart=%d\n", i, BASE_HOME);
 				} else if (state == PLAYER_STATE_ON_BASE && base != BASE_NONE) {
 					referee->battingPlayers[i].baseAtPitchStart = base;
 					referee->battingPlayers[i].currentSafetyBase = base;
-					printf("[REFEREE INIT] Player %d: ON_BASE, baseId=%d, baseAtPitchStart=%d\n", i, base, base);
 				} else if (state == PLAYER_STATE_RUNNING && base != BASE_NONE) {
 					// Runner between bases - has left their starting base
 					referee->battingPlayers[i].baseAtPitchStart = base;
 					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-					printf("[REFEREE INIT] Player %d: RUNNING, baseId=%d, baseAtPitchStart=%d\n", i, base, base);
-				} else if (state != PLAYER_STATE_OUT && state != PLAYER_STATE_SCORED) {
-					printf("[REFEREE INIT] Player %d: state=%d, baseId=%d, NOT INITIALIZED\n", i, state, base);
 				}
 			}
 		}
-		printf("[REFEREE] === gameInitialized DONE ===\n");
 	}
 
 	// Batter Entered: Initialize safety for the new batter and reset count
@@ -88,12 +81,12 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 		// 1. Reset Sticky Flags
 		betweenPitchState->catchHasBeenMade = 0;
 		betweenPitchState->hasBallHitGround = 0;
-		betweenPitchState->foulState = FOUL_STATE_NONE;
 		betweenPitchState->resolutionProcessed = 0;
 		referee->woundingEvaluationFinished = 0;
 		referee->woundingEvaluationActive = 0;
 		referee->woundingEvaluationTimer = -1;
-		referee->foulTimer = 0;
+		referee->foulTimer = -1;
+		referee->foulState = FOUL_STATE_NONE;
 		referee->ballInThirdBaseSincePitch = 0;
 
 		// 2. Snapshot Strike Count
@@ -159,8 +152,8 @@ static void update_foul_play_logic(const StateInfo* stateInfo, RefereeState* ref
 	const MatchSession* game = stateInfo->match;
 
 	// Transition 3: RESETTING -> NONE (Cleanup after physical reset)
-	if (betweenPitchState->foulState == FOUL_STATE_RESETTING) {
-		betweenPitchState->foulState = FOUL_STATE_NONE;
+	if (referee->foulState == FOUL_STATE_RESETTING) {
+		referee->foulState = FOUL_STATE_NONE;
 		// Reset other flags as we are now "between pitches" effectively
 		betweenPitchState->catchHasBeenMade = 0;
 		betweenPitchState->hasBallHitGround = 0;
@@ -169,12 +162,12 @@ static void update_foul_play_logic(const StateInfo* stateInfo, RefereeState* ref
 	}
 
 	// Transition 2: DETECTED -> RESETTING (Grace period expired)
-	if (betweenPitchState->foulState == FOUL_STATE_DETECTED) {
+	if (referee->foulState == FOUL_STATE_DETECTED) {
 		referee->foulTimer++;
 		if (referee->foulTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL*1.0f/1000)))) {
 			// Trigger Reset
-			betweenPitchState->foulState = FOUL_STATE_RESETTING;
-			referee->foulTimer = 0;
+			referee->foulState = FOUL_STATE_RESETTING;
+			referee->foulTimer = -1;
 
 			// RESTORE LEGAL STATE
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -217,11 +210,11 @@ static void update_foul_play_logic(const StateInfo* stateInfo, RefereeState* ref
 
 	// Transition 1: NONE -> DETECTED (Detection)
 	// Out of Bounds Logic: Check ONLY on first bounce
-	if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && betweenPitchState->foulState == FOUL_STATE_NONE) {
+	if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
 		if (game->pRAI.batHit == 1 && betweenPitchState->catchHasBeenMade == 0) {
 			if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
 				// Transition to DETECTED
-				betweenPitchState->foulState = FOUL_STATE_DETECTED;
+				referee->foulState = FOUL_STATE_DETECTED;
 				referee->foulTimer = 0;
 
 				// Trigger global event once
@@ -482,7 +475,7 @@ static void update_force_outs(const StateInfo* stateInfo, RefereeState* referee,
 			            is_safe_from_force_out,
 			            checkBaseId,
 			            player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY,
-			            betweenPitchState->foulState != FOUL_STATE_NONE
+			            referee->foulState != FOUL_STATE_NONE
 			        )) {
 
 				referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
@@ -623,8 +616,8 @@ static void update_runs(const StateInfo* stateInfo, RefereeState* referee, HalfI
 		// Case B: Ball Grounded or Catch Confirmed (Immediate Run)
 		else if ((game->betweenPitchState.catchHasBeenMade == 1 || game->betweenPitchState.hasBallHitGround == 1) &&
 		         referee->woundingEvaluationActive == 0 &&
-		         game->gameFlowState.endOfInningCounter == -1 &&
-		         betweenPitchState->foulState == FOUL_STATE_NONE) {
+		         referee->endOfInningState == END_INNING_STATE_NONE &&
+		         referee->foulState == FOUL_STATE_NONE) {
 
 			// Check all players
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -824,7 +817,7 @@ static void resolve_pending_runs(const StateInfo* stateInfo, RefereeState* refer
 {
 	// Trigger 1: Ball Hit Ground (Final Verdict)
 	if (betweenPitchState->hasBallHitGround) {
-		if (betweenPitchState->foulState != FOUL_STATE_NONE) {
+		if (referee->foulState != FOUL_STATE_NONE) {
 			// FOUL: Void all pending runs
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 				referee->battingPlayers[i].hasPendingRun = 0;
@@ -934,7 +927,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	// We must abort further processing this frame to prevent the Referee from
 	// "correcting" the legal state based on the stale physical positions.
 	// The physical reset will happen in GameConsolidation later this frame.
-	if (betweenPitchState->foulState == FOUL_STATE_RESETTING) {
+	if (refereeState->foulState == FOUL_STATE_RESETTING) {
 		return;
 	}
 
@@ -969,7 +962,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 		// 1 = WAITING: Timer running
 		// 2 = RESETTING: Signal to Consolidation (1 frame)
 
-		int currentState = ((MatchSession*)game)->homeRunContestState.forceNextPair;
+		HomeRunPairState currentState = refereeState->forceNextPair;
 
 		if (currentState == HR_PAIR_STATE_ACTIVE) {
 			// Pair is complete when:
@@ -990,48 +983,45 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 
 			if (!runnerAtThird && !runOfHonorStillPossible && halfInningState->event != EVENT_NEXT_PAIR) {
 				// Transition to WAITING
-				((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_WAITING;
+				refereeState->forceNextPair = HR_PAIR_STATE_WAITING;
 				refereeState->nextPairTimer = 0;
 				// Signal UI
-				if (stateInfo->match->gameFlowState.endOfInningCounter == -1) {
+				if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
 					halfInningState->event = EVENT_NEXT_PAIR;
 				}
 			}
 		} else if (currentState == HR_PAIR_STATE_WAITING) {
 			refereeState->nextPairTimer++;
 			if (refereeState->nextPairTimer > 200) {
-				// Transition to RESETTING
-				((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_RESETTING;
+				// Transition to RESETTING and clear referee state
+				refereeState->forceNextPair = HR_PAIR_STATE_RESETTING;
 				refereeState->nextPairTimer = -1;
+
+				// Clear referee state NOW (before consolidation resets physical world)
+				halfInningState->strikes = 0;
+				halfInningState->balls = 0;
+				betweenPitchState->catchHasBeenMade = 0;
+				betweenPitchState->hasBallHitGround = 0;
+				refereeState->foulState = FOUL_STATE_NONE;
+				betweenPitchState->resolutionProcessed = 0;
+
+				for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+					refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+					refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
+					refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+					refereeState->battingPlayers[i].hasScored = 0;
+					refereeState->battingPlayers[i].runOfHonorScored = 0;
+					refereeState->battingPlayers[i].hasPendingRun = 0;
+					refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+				}
 			}
 		} else if (currentState == HR_PAIR_STATE_RESETTING) {
-			// Signal has been sent to Consolidation.
-			// Transition back to ACTIVE immediately.
-			((MatchSession*)game)->homeRunContestState.forceNextPair = HR_PAIR_STATE_ACTIVE;
+			// Consolidation saw RESETTING and reset the physical world.
+			// Transition back to ACTIVE and scan for new batter/runner pair.
+			refereeState->forceNextPair = HR_PAIR_STATE_ACTIVE;
 
-			// === STATE INFERENCE ===
-			// We are coming out of a Reset. Physical world is fresh.
-			// Initialize Legal State based on current positions.
-
-			// 1. Reset Global Counters
-			halfInningState->strikes = 0;
-			halfInningState->balls = 0;
-			betweenPitchState->catchHasBeenMade = 0;
-			betweenPitchState->hasBallHitGround = 0;
-			betweenPitchState->foulState = FOUL_STATE_NONE;
-			betweenPitchState->resolutionProcessed = 0;
-
-			// 2. Scan players and set safety
+			// Scan physical world and initialize safety for new pair
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				// Clear old state
-				refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-				refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
-				refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
-				refereeState->battingPlayers[i].hasScored = 0;
-				refereeState->battingPlayers[i].runOfHonorScored = 0;
-				refereeState->battingPlayers[i].hasPendingRun = 0;
-				refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
-
 				if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
 					refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
 					refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
@@ -1042,6 +1032,63 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 				}
 			}
 		}
+	}
+
+	// 7. End of Inning State Machine
+	// State Machine for Inning Lifecycle
+	// 0 = NONE: Check for end condition
+	// 1 = DETECTED: Timer running
+	// 2 = RESETTING: Signal to Consolidation (1 frame)
+
+	EndOfInningTransitionState endState = refereeState->endOfInningState;
+
+	if (endState == END_INNING_STATE_NONE) {
+		// Check if inning should end:
+		// - Three outs OR
+		// - No more players to bat AND ball is home OR
+		// - Period should end OR
+		// - Homerun contest: all pairs complete
+		if (halfInningState->outs >= 3 ||
+		        (playerCounters->noMorePlayers == 1 && ((MatchSession*)game)->gameFlowState.ballHome == 1) ||
+		        halfInningState->endPeriod == 1 ||
+		        (scoreboard->period >= 4 && ((MatchSession*)game)->homeRunContestState.runnerBatterPairCounter >= scoreboard->pairCount)) {
+
+			// Transition to DETECTED
+			refereeState->endOfInningState = END_INNING_STATE_DETECTED;
+			refereeState->endInningTimer = 0;
+			// Prevent further batter decisions
+			((FlowControl*)flowControl)->waitingForBatterDecision = 0;
+			halfInningState->event = EVENT_INNING_ENDING;
+		}
+	} else if (endState == END_INNING_STATE_DETECTED) {
+		refereeState->endInningTimer++;
+		if (refereeState->endInningTimer > 200) {
+			// Transition to RESETTING and clear referee state
+			refereeState->endOfInningState = END_INNING_STATE_RESETTING;
+			refereeState->endInningTimer = -1;
+
+			// Clear referee state NOW (before consolidation resets physical world)
+			halfInningState->strikes = 0;
+			halfInningState->balls = 0;
+			betweenPitchState->catchHasBeenMade = 0;
+			betweenPitchState->hasBallHitGround = 0;
+			refereeState->foulState = FOUL_STATE_NONE;
+			betweenPitchState->resolutionProcessed = 0;
+
+			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+				refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+				refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
+				refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+				refereeState->battingPlayers[i].hasScored = 0;
+				refereeState->battingPlayers[i].runOfHonorScored = 0;
+				refereeState->battingPlayers[i].hasPendingRun = 0;
+				refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+			}
+		}
+	} else if (endState == END_INNING_STATE_RESETTING) {
+		// Consolidation saw RESETTING and reset the physical world.
+		// Transition back to NONE.
+		refereeState->endOfInningState = END_INNING_STATE_NONE;
 	}
 }
 int is_wounding_evaluation_active(const RefereeState* ref)
@@ -1083,7 +1130,10 @@ void initializeRefereeState(RefereeState* referee)
 	referee->woundingEvaluationTimer = -1;
 	referee->ballInThirdBaseSincePitch = 0;
 
-	referee->endInningTimer = -1;
+	referee->foulState = FOUL_STATE_NONE;
+	referee->foulTimer = -1;
+	referee->forceNextPair = HR_PAIR_STATE_ACTIVE;
 	referee->nextPairTimer = -1;
-	referee->foulTimer = 0;
+	referee->endOfInningState = END_INNING_STATE_NONE;
+	referee->endInningTimer = -1;
 }

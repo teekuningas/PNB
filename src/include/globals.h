@@ -315,6 +315,25 @@ typedef struct _PlayerRuntimeState {
 	int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
+// Flow control state machine enums (used by RefereeState)
+typedef enum {
+	FOUL_STATE_NONE = 0,
+	FOUL_STATE_DETECTED = 1,    // Ball hit ground out of bounds, waiting for grace period
+	FOUL_STATE_RESETTING = 2    // Grace period over, performing reset this frame
+} FoulPlayState;
+
+typedef enum {
+	HR_PAIR_STATE_ACTIVE = 0,
+	HR_PAIR_STATE_WAITING = 1,
+	HR_PAIR_STATE_RESETTING = 2
+} HomeRunPairState;
+
+typedef enum {
+	END_INNING_STATE_NONE = 0,
+	END_INNING_STATE_DETECTED = 1,
+	END_INNING_STATE_RESETTING = 2
+} EndOfInningTransitionState;
+
 // Player status enum - replaces flag-based status tracking
 typedef enum {
 	PLAYER_STATUS_ACTIVE = 0,              // Playing normally, no special status
@@ -360,10 +379,15 @@ typedef struct _RefereeState {
 	int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
 	int woundingEvaluationTimer;   // Timer counting up during evaluation period
 
-	// Flow Control Timers (Milestone 17 consolidation)
-	int endInningTimer;            // Replaces gameFlowState.endOfInningCounter
-	int nextPairTimer;             // Replaces gameFlowState.nextPairCounter
-	int foulTimer;                 // Timer for foul play grace period
+	// Flow Control State Machines (Milestone 17 consolidation)
+	FoulPlayState foulState;                        // Out-of-bounds transition state
+	int foulTimer;                                  // Timer for foul play grace period
+
+	HomeRunPairState forceNextPair;                 // Next-pair transition state
+	int nextPairTimer;                              // Timer for next-pair transition
+
+	EndOfInningTransitionState endOfInningState;    // End-of-inning transition state
+	int endInningTimer;                             // Timer for end-of-inning transition
 
 	// Run of Honor tracking (Homerun Contest)
 	int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
@@ -520,18 +544,11 @@ typedef struct _GameEvents {
 	int gameInitialized;    // New: Signal that the game/period has just started (loadMutableWorldSettings ran)
 } GameEvents;
 
-typedef enum {
-	FOUL_STATE_NONE = 0,
-	FOUL_STATE_DETECTED = 1,    // Ball hit ground out of bounds, waiting for grace period
-	FOUL_STATE_RESETTING = 2    // Grace period over, performing reset this frame
-} FoulPlayState;
-
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
 	int catchHasBeenMade;     // Fly ball was caught
 	int hasBallHitGround;     // Ball has touched ground
-	FoulPlayState foulState;  // Replaces outOfBounds flag
 	int resolutionProcessed;  // Referee has adjudicated strike/ball
 } BetweenPitchState;
 
@@ -641,11 +658,7 @@ typedef struct _AIState {
 } AIState;
 
 typedef struct _GameFlowState {
-	int outOfBoundsCounter;
 	int closeToGround;
-	int endOfInningCounter;
-	int nextPairCounter;
-	int foulPlayEventFlag;
 	int homeRunCameraCounter;
 	int ballHome;    // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
@@ -689,15 +702,8 @@ typedef struct _PendingActionState {
 	int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
 } PendingActionState;
 
-typedef enum {
-	HR_PAIR_STATE_ACTIVE = 0,
-	HR_PAIR_STATE_WAITING = 1,
-	HR_PAIR_STATE_RESETTING = 2
-} HomeRunPairState;
-
 typedef struct _HomeRunContestState {
 	int runnerBatterPairCounter;
-	int forceNextPair; // 0=Active, 1=Waiting, 2=Resetting (Mapped to HomeRunPairState)
 } HomeRunContestState;
 
 typedef enum {

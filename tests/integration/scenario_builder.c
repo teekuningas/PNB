@@ -20,19 +20,24 @@ ScenarioContext* create_scenario(void)
 	// Create basic state
 	ctx->state = setup_test_state();
 
-	// Initialize a fresh game
+	// Initialize game setup (scoreboard, teams, batting order)
 	ctx->seed = 0;
 	GameSetup setup = {0};
 	setup.launchType = GAME_LAUNCH_NEW;
 	setup.gameMode = GAME_MODE_NORMAL;
 	setup.team1 = 0;
 	setup.team2 = 1;
-	setup.team1_control = 0;  // User controlled
-	setup.team2_control = 2;  // AI controlled
+	setup.team1_control = 0;
+	setup.team2_control = 2;
 	setup.halfInningsInPeriod = 4;
 	setup.playsFirst = 0;
 
 	initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
+
+	// In tests, we don't have a game loop that responds to changeScreen=1,
+	// so manually call loadMutableWorldSettings to initialize player counters
+	loadMutableWorldSettings(ctx->state, &ctx->seed);
+
 	GameConsolidation_Init(&(ctx->state->match->gameFlowState));
 
 	// Clear the gameInitialized event.

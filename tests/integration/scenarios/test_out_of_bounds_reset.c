@@ -83,7 +83,7 @@ int test_full_out_of_bounds_reset(void)
 		}
 
 		// Check for Out of Bounds Event
-		if (!outOfBoundsDetected && ctx->state->match->betweenPitchState.foulState != FOUL_STATE_NONE) {
+		if (!outOfBoundsDetected && ctx->state->match->referee.foulState != FOUL_STATE_NONE) {
 			outOfBoundsDetected = 1;
 			printf("[TEST] Frame %d: Out of Bounds declared! Ball has landed.\n", frame);
 		}

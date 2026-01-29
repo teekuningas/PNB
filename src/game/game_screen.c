@@ -447,6 +447,8 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
 	loadMutableWorldSettings(stateInfo, rng_seed);
+	// Signal referee that the game/period has started (or re-started)
+	stateInfo->match->gameEvents.gameInitialized = 1;
 }
 
 static void initCamSettings(StateInfo* stateInfo)

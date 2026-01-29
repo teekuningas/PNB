@@ -141,7 +141,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
 	fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
 	fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
-	fprintf(f, "%s  \"foulState\": %d\n", sp, (int)game->betweenPitchState.foulState);
+	fprintf(f, "%s  \"foulState\": %d\n", sp, (int)game->referee.foulState);
 	fprintf(f, "%s },\n", sp);
 
 
@@ -155,7 +155,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 
 	fprintf(f, "%s\"gameFlowState\": {\n", sp);
 	fprintf(f, "%s  \"ballHome\": %d,\n", sp, game->gameFlowState.ballHome);
-	fprintf(f, "%s  \"endOfInningCounter\": %d\n", sp, game->gameFlowState.endOfInningCounter);
+	fprintf(f, "%s  \"endOfInningState\": %d\n", sp, (int)game->referee.endOfInningState);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"pII\": {\n", sp);
