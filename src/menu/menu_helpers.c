@@ -38,6 +38,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
 		}
 		stateInfo->match->scoreboard.pairCount = pairCount;
 		stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
+		stateInfo->match->homeRunContestState.homerunPairHasPitch = 0;
 		returnToGame(stateInfo, rng_seed);
 	}
 	break;

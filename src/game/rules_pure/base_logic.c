@@ -129,36 +129,3 @@ int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions)
 	}
 	return value;
 }
-
-int is_run_of_honor_possible(const MatchSession* match)
-{
-	// Simplified logic for homerun contest:
-	// Run of honor is possible if the batter (player who started at HOME) is:
-	// 1. Still ACTIVE (not out/wounded/scored)
-	// AND
-	// 2. Either safe at home OR ball hasn't reached third base yet
-	//
-	// This means:
-	// - If batter hasn't left home yet (safe at home), they can still try
-	// - If batter is advancing and ball hasn't reached 3rd, they can still make it
-	// - Once ball reaches 3rd base, run of honor is no longer possible
-	// - If batter gets out/wounded, run of honor is no longer possible
-
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-		// Find the batter (player who started at HOME this pitch)
-		if (match->referee.battingPlayers[i].baseAtPitchStart == BASE_HOME) {
-			// Check if batter is still active
-			if (match->referee.battingPlayers[i].status == PLAYER_STATUS_ACTIVE) {
-				// Check if safe at home OR ball hasn't reached 3rd yet
-				if (match->referee.battingPlayers[i].currentSafetyBase == BASE_HOME ||
-				        !match->referee.ballInThirdBaseSincePitch) {
-					return 1; // Run of honor is still possible
-				}
-			}
-			// Found the batter, no need to check others
-			break;
-		}
-	}
-
-	return 0; // Run of honor not possible
-}

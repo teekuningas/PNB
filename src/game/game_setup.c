@@ -72,6 +72,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 		}
 		stateInfo->match->scoreboard.pairCount = half;
 		stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
+		stateInfo->match->homeRunContestState.homerunPairHasPitch = 0;
 	}
 
 	// loadMutableWorldSettings is called via updateGameScreen -> loadGameScreenSettings

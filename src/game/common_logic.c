@@ -986,6 +986,7 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 		        stateInfo->match->homeRunContestState.runnerBatterPairCounter <
 		        stateInfo->match->scoreboard.pairCount)) {
 			stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
+			stateInfo->match->homeRunContestState.homerunPairHasPitch = 0;
 		}
 		setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
 	}

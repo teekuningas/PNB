@@ -472,7 +472,7 @@ static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 		// Milestone 17.5: Timer and logic moved to Referee (State Machine).
 		// We only react when Referee signals RESETTING (State 2).
 
-		HomeRunPairState currentState = stateInfo->match->referee.forceNextPair;
+		HomeRunPairState currentState = stateInfo->match->referee.nextPairTransitionState;
 
 		if(currentState == HR_PAIR_STATE_RESETTING) {
 

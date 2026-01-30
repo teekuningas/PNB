@@ -323,8 +323,8 @@ typedef enum {
 } FoulPlayState;
 
 typedef enum {
-	HR_PAIR_STATE_ACTIVE = 0,
-	HR_PAIR_STATE_WAITING = 1,
+	HR_PAIR_STATE_NONE = 0,
+	HR_PAIR_STATE_DETECTED = 1,
 	HR_PAIR_STATE_RESETTING = 2
 } HomeRunPairState;
 
@@ -383,7 +383,7 @@ typedef struct _RefereeState {
 	FoulPlayState foulState;                        // Out-of-bounds transition state
 	int foulTimer;                                  // Timer for foul play grace period
 
-	HomeRunPairState forceNextPair;                 // Next-pair transition state
+	HomeRunPairState nextPairTransitionState;       // Next-pair transition state
 	int nextPairTimer;                              // Timer for next-pair transition
 
 	EndOfInningTransitionState endOfInningState;    // End-of-inning transition state
@@ -704,6 +704,7 @@ typedef struct _PendingActionState {
 
 typedef struct _HomeRunContestState {
 	int runnerBatterPairCounter;
+	int homerunPairHasPitch;  // Has at least one pitch been released for current pair (used to determine when to check pair-ending conditions)
 } HomeRunContestState;
 
 typedef enum {

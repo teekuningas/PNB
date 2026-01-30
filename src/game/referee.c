@@ -31,6 +31,8 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 
 		// For Homerun Contest (period >= 4), scan physical world for batter+runner pair
 		if (stateInfo->match->scoreboard.period >= 4) {
+			// Reset homerun pair pitch tracking
+			((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
 			// Initialize Legal State for Batter/Runner based on Physical World
 			// baseAtPitchStart will be set on pitchReleased
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -86,16 +88,21 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 		referee->foulState = FOUL_STATE_NONE;
 		referee->ballInThirdBaseSincePitch = 0;
 
-		// 2. Snapshot Strike Count
+		// 2. Mark that a pitch has been released (for homerun contest pair tracking)
+		if (stateInfo->match->scoreboard.period >= 4) {
+			((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 1;
+		}
+
+		// 3. Snapshot Strike Count
 		referee->strikesAtPitchStart = halfInningState->strikes;
 
-		// 3. Reset pending run flags
+		// 4. Reset pending run flags
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			referee->battingPlayers[i].hasPendingRun = 0;
 			referee->battingPlayers[i].hasPendingRunOfHonor = 0;
 		}
 
-		// 4. Snapshot Base Positions (The "Legal Baseline" for this pitch)
+		// 5. Snapshot Base Positions (The "Legal Baseline" for this pitch)
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
 			int index = i;
 			if (game->playerInfo[index].bTPI.baseId != BASE_NONE) {
@@ -955,69 +962,112 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 	// 6. Homerun Contest: Check if current pair is complete
 	if (scoreboard->period >= 4) {
 		// State Machine for Pair Lifecycle
-		// 0 = ACTIVE: Check for end condition
-		// 1 = WAITING: Timer running
+		// 0 = NONE: Check for end condition
+		// 1 = DETECTED: Timer running
 		// 2 = RESETTING: Signal to Consolidation (1 frame)
 
-		HomeRunPairState currentState = refereeState->forceNextPair;
+		HomeRunPairState currentState = refereeState->nextPairTransitionState;
 
-		if (currentState == HR_PAIR_STATE_ACTIVE) {
-			// Pair is complete when:
-			// - Run of honor is no longer possible (batter can't reach 3rd or already did)
-			// AND one of:
-			//   - No runner at 3rd base (either scored or out)
-			//   - Runner at 3rd but ball is home (pair is "stuck", move on)
-			//
-			// Special case: If runner is done (not ACTIVE) and batter hasn't advanced yet,
-			// end pair immediately to prevent extra swings.
+		if (currentState == HR_PAIR_STATE_NONE) {
+			// Only check pair-ending conditions after at least one pitch has been released
+			// This prevents premature "NEXT PAIR" at the start when baseAtPitchStart is still BASE_NONE
+			if (((MatchSession*)game)->homeRunContestState.homerunPairHasPitch) {
 
-			int runnerAtThird = 0;
-			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-					runnerAtThird = 1;
-					break;
+				// Identify batter and runner using baseAtPitchStart (reliable after first pitch)
+				int batterIndex = -1;
+				int runnerIndex = -1;
+
+				for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+					if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_HOME) {
+						batterIndex = i;
+					}
+					if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_THIRD) {
+						runnerIndex = i;
+					}
+				}
+
+				// Get current state information
+				int ballHome = ((MatchSession*)game)->gameFlowState.ballHome;
+
+				// Check batter status
+				BaseID batterBaseId = BASE_NONE;
+				PlayerUnitState batterState = PLAYER_STATE_IDLE;
+				if (batterIndex != -1) {
+					batterBaseId = game->playerInfo[batterIndex].bTPI.baseId;
+					batterState = game->playerInfo[batterIndex].bTPI.state;
+				}
+
+				// Check runner status
+				BaseID runnerBaseId = BASE_NONE;
+				if (runnerIndex != -1) {
+					runnerBaseId = game->playerInfo[runnerIndex].bTPI.baseId;
+				}
+
+				// Check if batter has safety at home
+				int batterHasSafetyAtHome = 0;
+				if (batterIndex != -1 && refereeState->battingPlayers[batterIndex].currentSafetyBase == BASE_HOME) {
+					batterHasSafetyAtHome = 1;
+				}
+
+				// Check if batter is advancing from second to third (only realistic chance to reach third)
+				int batterAdvancingToThird = 0;
+				if (batterIndex != -1 && batterBaseId == BASE_SECOND && batterState != PLAYER_STATE_ON_BASE) {
+					batterAdvancingToThird = 1;
+				}
+
+				int shouldEndPair = 0;
+
+				// CONDITION 1: Runner at third base (still in play)
+				// Continue if: batter has safety at home OR batter advancing 2nd→3rd
+				// Quit if: ball home AND batter not in those safe states
+				if (runnerBaseId == BASE_THIRD && ballHome) {
+					if (!batterHasSafetyAtHome && !batterAdvancingToThird) {
+						shouldEndPair = 1;
+					}
+				}
+
+				// CONDITION 2: Runner NOT at third (scored/out/gone)
+				// Quit if: ball home AND batter not advancing 2nd→3rd
+				if (runnerBaseId != BASE_THIRD && ballHome) {
+					if (!batterAdvancingToThird) {
+						shouldEndPair = 1;
+					}
+				}
+
+				// CONDITION 3: Safety net - no players with safety anywhere
+				// Quit if: ball home AND no one has safety at any base
+				if (ballHome) {
+					int anyoneHasSafety = 0;
+					for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+						if (refereeState->battingPlayers[i].currentSafetyBase != BASE_NONE) {
+							anyoneHasSafety = 1;
+							break;
+						}
+					}
+					if (!anyoneHasSafety) {
+						shouldEndPair = 1;
+					}
+				}
+
+				if (shouldEndPair) {
+					// Transition to DETECTED
+					refereeState->nextPairTransitionState = HR_PAIR_STATE_DETECTED;
+					refereeState->nextPairTimer = 0;
+					// Signal UI (for display only, not used for logic)
+					if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
+						halfInningState->event = EVENT_NEXT_PAIR;
+					}
 				}
 			}
-
-			int batterAtHome = 0;
-			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				if (game->playerInfo[i].bTPI.baseId == BASE_HOME) {
-					batterAtHome = 1;
-					break;
-				}
-			}
-
-			int runOfHonorStillPossible = is_run_of_honor_possible(game);
-			int ballHome = ((MatchSession*)game)->gameFlowState.ballHome;
-
-			int shouldEndPair = 0;
-
-			// Normal pair ending: run of honor impossible AND (runner gone OR stuck with ball home)
-			if (!runOfHonorStillPossible && (!runnerAtThird || (runnerAtThird && ballHome))) {
-				shouldEndPair = 1;
-			}
-
-			// Special homerun contest rule: If no runner at 3rd, batter still at home, and ball home
-			// This prevents extra swings after runner is done
-			if (!runnerAtThird && batterAtHome && ballHome) {
-				shouldEndPair = 1;
-			}
-
-			if (shouldEndPair) {
-				// Transition to WAITING
-				refereeState->forceNextPair = HR_PAIR_STATE_WAITING;
-				refereeState->nextPairTimer = 0;
-				// Signal UI (for display only, not used for logic)
-				if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
-					halfInningState->event = EVENT_NEXT_PAIR;
-				}
-			}
-		} else if (currentState == HR_PAIR_STATE_WAITING) {
+		} else if (currentState == HR_PAIR_STATE_DETECTED) {
 			refereeState->nextPairTimer++;
 			if (refereeState->nextPairTimer > 200) {
 				// Transition to RESETTING and clear referee state
-				refereeState->forceNextPair = HR_PAIR_STATE_RESETTING;
+				refereeState->nextPairTransitionState = HR_PAIR_STATE_RESETTING;
 				refereeState->nextPairTimer = -1;
+
+				// Reset homerun pair pitch tracking for the next pair
+				((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
 
 				// Clear referee state NOW (before consolidation resets physical world)
 				halfInningState->strikes = 0;
@@ -1040,7 +1090,7 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 		} else if (currentState == HR_PAIR_STATE_RESETTING) {
 			// Consolidation saw RESETTING and reset the physical world.
 			// Transition back to ACTIVE and scan for new batter/runner pair.
-			refereeState->forceNextPair = HR_PAIR_STATE_ACTIVE;
+			refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
 
 			// Scan physical world and initialize safety for new pair
 			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -1097,6 +1147,11 @@ void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, Half
 			// Transition to RESETTING and clear referee state
 			refereeState->endOfInningState = END_INNING_STATE_RESETTING;
 			refereeState->endInningTimer = -1;
+
+			// Reset homerun pair pitch tracking for the next inning
+			if (scoreboard->period >= 4) {
+				((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
+			}
 
 			// Clear referee state NOW (before consolidation resets physical world)
 			halfInningState->strikes = 0;
@@ -1163,7 +1218,7 @@ void initializeRefereeState(RefereeState* referee)
 
 	referee->foulState = FOUL_STATE_NONE;
 	referee->foulTimer = -1;
-	referee->forceNextPair = HR_PAIR_STATE_ACTIVE;
+	referee->nextPairTransitionState = HR_PAIR_STATE_NONE;
 	referee->nextPairTimer = -1;
 	referee->endOfInningState = END_INNING_STATE_NONE;
 	referee->endInningTimer = -1;
