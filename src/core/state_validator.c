@@ -122,8 +122,20 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 		fprintf(f, "%s\"global\": {\n", sp);
 		fprintf(f, "%s  \"inning\": %d,\n", sp, global->inning);
 		fprintf(f, "%s  \"period\": %d,\n", sp, global->period);
+		fprintf(f, "%s  \"pairCount\": %d,\n", sp, global->pairCount);
 		fprintf(f, "%s  \"team0_runs\": %d,\n", sp, global->teams[0].runs);
-		fprintf(f, "%s  \"team1_runs\": %d\n", sp, global->teams[1].runs);
+		fprintf(f, "%s  \"team1_runs\": %d,\n", sp, global->teams[1].runs);
+
+		// Detailed Team Info (Batter Orders)
+		for (int t = 0; t < 2; t++) {
+			fprintf(f, "%s  \"team%d_batterOrderIndex\": %d,\n", sp, t, global->teams[t].batterOrderIndex);
+			fprintf(f, "%s  \"team%d_batterOrder\": [", sp, t);
+			for (int bo = 0; bo < 12; bo++) {
+				fprintf(f, "%d%s", global->teams[t].batterOrder[bo], (bo < 11) ? ", " : "");
+			}
+			fprintf(f, "],\n");
+		}
+		fprintf(f, "%s  \"runs\": [%d, %d]\n", sp, global->teams[0].runs, global->teams[1].runs); // Redundant but convenient
 		fprintf(f, "%s},\n", sp);
 	}
 
@@ -133,6 +145,12 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s  \"strikes\": %d,\n", sp, game->halfInningState.strikes);
 	fprintf(f, "%s  \"balls\": %d,\n", sp, game->halfInningState.balls);
 	fprintf(f, "%s  \"event\": %d\n", sp, game->halfInningState.event);
+	fprintf(f, "%s},\n", sp);
+
+	fprintf(f, "%s\"playerCounters\": {\n", sp);
+	fprintf(f, "%s  \"nonJokerPlayersLeft\": %d,\n", sp, game->playerCounters.nonJokerPlayersLeft);
+	fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, game->playerCounters.jokersLeft);
+	fprintf(f, "%s  \"noMorePlayers\": %d\n", sp, game->playerCounters.noMorePlayers);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameControl\": {\n", sp);
@@ -150,7 +168,8 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s  \"playerArrivedAtBase\": %d,\n", sp, game->gameEvents.playerArrivedAtBase);
 	fprintf(f, "%s  \"ballHitGround\": %d,\n", sp, game->gameEvents.ballHitGround);
 	fprintf(f, "%s  \"ballHitByBat\": %d,\n", sp, game->gameEvents.ballHitByBat);
-	fprintf(f, "%s  \"pitchReleased\": %d\n", sp, game->gameEvents.pitchReleased);
+	fprintf(f, "%s  \"pitchReleased\": %d,\n", sp, game->gameEvents.pitchReleased);
+	fprintf(f, "%s  \"batterEntered\": %d\n", sp, game->gameEvents.batterEntered);
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"gameFlowState\": {\n", sp);
@@ -188,36 +207,34 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 	fprintf(f, "%s},\n", sp);
 
 	fprintf(f, "%s\"players\": [\n", sp);
-	int activeBatterIndex = get_active_batter_index(game);
-	for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+	int totalPlayers = 2 * PLAYERS_IN_TEAM + JOKER_COUNT; // 21
+	for (int i = 0; i < totalPlayers; i++) {
 		PlayerInfo* p = &game->playerInfo[i];
-		// Only print relevant players (on base, active, pending wound, OR holding safety)
-		int isRelevant = (p->bTPI.baseId != BASE_NONE || p->bTPI.state != PLAYER_STATE_IDLE ||
-		                  game->referee.battingPlayers[i].status != PLAYER_STATUS_ACTIVE || i == activeBatterIndex ||
-		                  game->referee.battingPlayers[i].currentSafetyBase != BASE_NONE);
 
-		if (isRelevant) {
-			fprintf(f, "%s  {\n", sp);
-			fprintf(f, "%s    \"id\": %d,\n", sp, i);
-			fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
-			fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
-			fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
-			fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->tPI.location.x, p->tPI.location.z);
+		fprintf(f, "%s  {\n", sp);
+		fprintf(f, "%s    \"id\": %d,\n", sp, i);
+		fprintf(f, "%s    \"team\": %d,\n", sp, p->cPI.team);
+		fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
+		fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
+		fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
+		fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->tPI.location.x, p->tPI.location.z);
+		// Runtime state
+		fprintf(f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp, game->playerRuntime[i].goingForward, game->playerRuntime[i].arrivedToBase);
 
-			// Runtime state
-			fprintf(f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d },\n", sp, game->playerRuntime[i].goingForward, game->playerRuntime[i].arrivedToBase);
-
-			// Referee State
+		// Referee State - Only valid for batting team (indices 0-11)
+		// Assuming 0-11 are ALWAYS the batting team in the current frame
+		if (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
+			fprintf(f, ",\n");
 			fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
 			fprintf(f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp, base_to_string(game->referee.battingPlayers[i].currentSafetyBase));
 			fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, game->referee.battingPlayers[i].baseAtPitchStart);
 			fprintf(f, "%s    \"ref_status\": %d\n", sp, game->referee.battingPlayers[i].status);
-
-			fprintf(f, "%s  },\n", sp);
+		} else {
+			fprintf(f, "\n");
 		}
+
+		fprintf(f, "%s  }%s\n", sp, (i < totalPlayers - 1) ? "," : "");
 	}
-	// Hack to close array validly
-	fprintf(f, "%s  {\"id\": -1}\n", sp);
 	fprintf(f, "%s]", sp);
 }
 

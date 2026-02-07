@@ -2,10 +2,10 @@
 
 ## 🎯 CURRENT MILESTONE: Milestone 18 (Referee Refactoring & Debug Improvements)
 
-**Current Status:** Milestone 18.0 Complete ✅ | M18.1 Debug Logging Next
+**Current Status:** Milestone 18.1 Complete ✅ | M18.2 Test Fixture Unification Next
 **Date:** 2026-02-07
 
-With M18.0 initialization cleanup complete, we now focus on improving debug logging before continuing with test fixtures and internal referee refactoring.
+With M18.1 debug logging improvements complete, we now focus on unifying test fixtures before tackling the internal referee refactoring.
 
 ---
 
@@ -19,8 +19,7 @@ We have achieved **Referee Supremacy** (complete):
 *   ✅ All 63 tests (48 unit + 15 integration) are passing.
 *   ✅ **Strike Reset Bug Fixed:** Strikes/balls no longer reset after swinging.
 *   ✅ **Test Infrastructure Unified:** All 15 integration tests follow Referee Supremacy pattern.
-*   ✅ **Test Directory Reorganized:** `tests/unit/` and `tests/integration/` properly separated.
-*   ✅ **Homerun Contest Logic Fixed:** Pair-ending conditions simplified and working correctly.
+*   ✅ **Debug Logging Upgraded:** Now shows all players, scoreboard state, and game counters.
 
 ---
 
@@ -91,59 +90,22 @@ We have achieved **Referee Supremacy** (complete):
 
 ---
 
-## 🎯 Milestone 18.1: Debug Logging Improvements (NEXT)
+## ✅ Milestone 18.1: Debug Logging Improvements - COMPLETE (2026-02-07)
 
 **Goal:** Fix incomplete debug logging that hides critical game state.
 
-### Problem Found (2026-02-07):
+**Problem Found:** Debug logs only showed active players, missing idle ones and global state.
 
-Current debug.log only shows "active" players (AT_BAT, ON_BASE, OUT, WOUNDED).
-IDLE players in home circle are completely hidden, making it appear like they don't exist.
-Missing critical metadata: scoreboard, batterOrder, halfInningState, playerCounters.
-
-**This made us think there was a bug when the game was actually working fine!**
-
-### Tasks:
-
-**1. Show ALL Players (24 total)**
-- Include all 12 batting team players regardless of state
-- Include all 12 fielding team players
-- Show: id, state, baseId, position, ref_status for each
-
-**2. Add Scoreboard Metadata**
-- period, inning
-- teams[0/1].runs, teams[0/1].batterOrderIndex
-- **teams[0/1].batterOrder (full 12-element array!)**
-- pairCount (for homerun contest)
-
-**3. Add HalfInningState**
-- outs, strikes, balls
-- runsInTheInning
-
-**4. Add PlayerCounters**
-- nonJokerPlayersLeft
-- jokersLeft
-- Helps track "no more players" situations
-
-**5. Improve Format**
-- Clear sections
-- Timestamps/frame numbers
-- Human-readable enums
-
-### Why This Matters:
-- Essential for debugging period transitions
-- Critical for player selection issues
-- Makes integration test debugging practical
-- Helps trace referee state machines
-
-### Files to Find/Update:
-- Locate where debug.log is generated
-- Create comprehensive logging function
-- Call it at appropriate points (pitch start, pause, transitions)
+**Changes Made:**
+1.  **Full Player Roster:** Logs all 21 players (12 batting + 9 fielding) regardless of state.
+2.  **Scoreboard Metadata:** Added period, inning, pairCount, run totals, and **batterOrder**.
+3.  **Game Counters:** Added outs, strikes, balls, `nonJokerPlayersLeft`, `jokersLeft`.
+4.  **Referee State:** Explicitly printing `safetyBase`, `baseAtPitchStart` for batting team.
+5.  **Validation:** Verified correct indexing for batting/fielding teams.
 
 ---
 
-## Milestone 18.2: Test Fixture Unification
+## 🎯 Milestone 18.2: Test Fixture Unification (NEXT)
 
 **Goal:** Ensure all test fixtures follow the same initialization pattern.
 
@@ -397,6 +359,7 @@ static bool is_ball_home(const MatchSession* game);
 | | Removed is_run_of_honor_possible | ✅ Logic now inline and clearer |
 | | Pair-Ending Conditions | ✅ Permissive, history-aware, simple |
 | **M18** | **Referee Refactoring & Test Unification** | **⏳ IN PROGRESS** |
+| | Debug Logging Improvements | ✅ Show all players + metadata |
 | | Test Fixture Unification | ⏳ TODO |
 | | Extract State Machines | ⏳ TODO (homerun pair, end of inning) |
 | | Add Clear Section Headers | ⏳ TODO |

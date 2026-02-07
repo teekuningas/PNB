@@ -172,8 +172,8 @@ When a transition occurs (e.g., End of Inning):
 | **17** | **Referee Consolidation** | **Referee is sole writer. Loop ordered.** | **✅ DONE** |
 | **17.5** | **Homerun Contest & Final Cleanup** | **Test homerun mode. Complete consolidation.** | **✅ DONE** |
 | **18.0** | **Initialization Cleanup** | **Remove gameInitialized event, explicit init.** | **✅ DONE** |
-| **18.1** | **Debug Logging Improvements** | **Show all players, add metadata.** | **🎯 NEXT** |
-| 18.2 | Test Fixture Unification | Unify all test initialization paths. | ⏳ TODO |
+| **18.1** | **Debug Logging Improvements** | **Show all players, add metadata.** | **✅ DONE** |
+| **18.2** | **Test Fixture Unification** | **Unify all test initialization paths.** | **🎯 NEXT** |
 | 18.3 | Referee Internal Refactoring | Extract state machines, RefereeContext. | ⏳ TODO |
 | 19 | Physics/State Split | Extract pure physics from `game_manipulation`. | 🔮 Future |
 | 20 | Action Decoupling | Split `actions_messy/` into pure logic + execution. | 🔮 Future |
