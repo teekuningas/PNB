@@ -835,7 +835,7 @@ void clearFrameEvents(GameEvents* events)
 	events->freeWalkAccepted = 0;
 	events->freeWalkRejected = 0;
 	events->batterEntered = 0;
-	events->gameInitialized = 0;
+	// gameInitialized removed in M18.0
 }
 
 // these should be kept when foul play
@@ -977,9 +977,9 @@ void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	// information about players than can be flushed.
 	initializeNonCriticalPlayerInformation(stateInfo->match);
 
-	// Milestone 17.5: Do NOT initialize referee state here.
-	// The referee will initialize itself when it sees the gameInitialized event.
-	// This allows the referee to inspect the physical world and infer its legal state.
+	// Milestone 18.0: Referee initialization is now explicit.
+	// After loadMutableWorldSettings(), the calling code should call
+	// initialize_referee(stateInfo) to scan the physical world.
 
 	if(stateInfo->match->scoreboard.period >= 4) {
 		if(!(stateInfo->match->homeRunContestState.runnerBatterPairCounter > 0 &&

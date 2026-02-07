@@ -10,6 +10,19 @@
 void initializeRefereeState(RefereeState* referee);
 
 /**
+ * @brief Initialize referee by scanning the physical world.
+ *
+ * Called during game setup (from menu, return to game) to establish
+ * initial legal tracking by inspecting the physical state of players.
+ *
+ * This is NOT used for runtime transitions (end of inning, next pair)
+ * which are handled via state machines within update_referee().
+ *
+ * @param stateInfo Full game state to scan for player positions
+ */
+void initialize_referee(const StateInfo* stateInfo);
+
+/**
  * @brief Query functions for wounding system (Milestone 15 consolidation)
  *
  * These functions provide read-only access to the wounding state,
@@ -47,6 +60,6 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  * @param playerCounters Mutable pointer to player counters.
  * @param scoreboard Mutable pointer to global game info (teams/runs).
  */
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard);
+void update_referee(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard);
 
 #endif // REFEREE_H

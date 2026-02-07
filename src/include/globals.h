@@ -540,8 +540,7 @@ typedef struct _GameEvents {
 	int ballHitGround;           // Ball touched the ground this frame
 	int freeWalkAccepted;        // Player accepted free walk
 	int freeWalkRejected;        // Player rejected free walk
-	int batterEntered;      // New: Signal that new batter is ready
-	int gameInitialized;    // New: Signal that the game/period has just started (loadMutableWorldSettings ran)
+	int batterEntered;           // New: Signal that new batter is ready
 } GameEvents;
 
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)

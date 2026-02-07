@@ -23,46 +23,6 @@ static void update_initialization_events(const StateInfo* stateInfo, RefereeStat
 {
 	const MatchSession* game = stateInfo->match;
 
-	// Game/Period Initialization (Game Start)
-	if (events->gameInitialized) {
-
-		// Reset ALL referee state first
-		initializeRefereeState(referee);
-
-		// For Homerun Contest (period >= 4), scan physical world for batter+runner pair
-		if (stateInfo->match->scoreboard.period >= 4) {
-			// Reset homerun pair pitch tracking
-			((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
-			// Initialize Legal State for Batter/Runner based on Physical World
-			// baseAtPitchStart will be set on pitchReleased
-			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
-					referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
-				} else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
-				           game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-					referee->battingPlayers[i].currentSafetyBase = BASE_THIRD;
-				}
-			}
-		} else {
-			// For normal games, scan for ANY players that are already positioned
-			// This handles both: (1) real game initialization, (2) test fixtures
-			// baseAtPitchStart will be set on pitchReleased
-			for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-				PlayerUnitState state = game->playerInfo[i].bTPI.state;
-				BaseID base = game->playerInfo[i].bTPI.baseId;
-
-				if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
-					referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
-				} else if (state == PLAYER_STATE_ON_BASE && base != BASE_NONE) {
-					referee->battingPlayers[i].currentSafetyBase = base;
-				} else if (state == PLAYER_STATE_RUNNING && base != BASE_NONE) {
-					// Runner between bases - has left their starting base
-					referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-				}
-			}
-		}
-	}
-
 	// Batter Entered: Initialize safety for the new batter and reset count
 	if (events->batterEntered) {
 		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -908,7 +868,7 @@ static void update_game_state_flags(StateInfo* stateInfo, RefereeState* referee,
 	}
 }
 
-void Referee_Update(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
+void update_referee(const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard)
 {
 	const MatchSession* game = stateInfo->match;
 	const FlowControl* flowControl = &game->flowControl;  // Read-only access to flow data
@@ -1185,6 +1145,50 @@ int is_wounding_evaluation_active(const RefereeState* ref)
 int get_wounding_evaluation_timer(const RefereeState* ref)
 {
 	return ref->woundingEvaluationTimer;
+}
+
+void initialize_referee(const StateInfo* stateInfo)
+{
+	const MatchSession* game = stateInfo->match;
+	RefereeState* referee = &((MatchSession*)game)->referee;
+
+	// Full reset first
+	initializeRefereeState(referee);
+
+	// Scan physical world and initialize safety based on player positions
+	if (game->scoreboard.period >= 4) {
+		// Homerun Contest (period >= 4): scan for batter at HOME, runner at THIRD
+		// Reset homerun pair pitch tracking
+		((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
+
+		// Initialize Legal State for Batter/Runner based on Physical World
+		// baseAtPitchStart will be set on pitchReleased
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+				referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+			} else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
+			           game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+				referee->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+			}
+		}
+	} else {
+		// Normal games: scan for ANY players that are already positioned
+		// This handles both: (1) real game initialization, (2) test fixtures
+		// baseAtPitchStart will be set on pitchReleased
+		for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+			PlayerUnitState state = game->playerInfo[i].bTPI.state;
+			BaseID base = game->playerInfo[i].bTPI.baseId;
+
+			if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
+				referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+			} else if (state == PLAYER_STATE_ON_BASE && base != BASE_NONE) {
+				referee->battingPlayers[i].currentSafetyBase = base;
+			} else if (state == PLAYER_STATE_RUNNING && base != BASE_NONE) {
+				// Runner between bases - has left their starting base
+				referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+			}
+		}
+	}
 }
 
 int is_player_marked_for_wound(const RefereeState* ref, int playerIndex)

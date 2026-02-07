@@ -12,6 +12,7 @@
 #include "game_screen.h"
 #include "common_logic.h"
 #include "state_validator.h"
+#include "referee.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f  // Midpoint between original -0.12 and current 0.08
@@ -447,8 +448,8 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
 	initCamSettings(stateInfo);
 	// this will initialize all player settings etc with knowledge in structures from main menu.
 	loadMutableWorldSettings(stateInfo, rng_seed);
-	// Signal referee that the game/period has started (or re-started)
-	stateInfo->match->gameEvents.gameInitialized = 1;
+	// Initialize referee by scanning the physical world
+	initialize_referee(stateInfo);
 }
 
 static void initCamSettings(StateInfo* stateInfo)

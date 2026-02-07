@@ -1,11 +1,11 @@
 # PNB Development Plan
 
-## 🎯 CURRENT MILESTONE: Milestone 18 (Referee Internal Refactoring & Test Fixture Unification)
+## 🎯 CURRENT MILESTONE: Milestone 18 (Referee Refactoring & Debug Improvements)
 
-**Current Status:** Milestone 17.5 Complete ✅ | Starting Fresh Milestone
-**Date:** 2026-01-30
+**Current Status:** Milestone 18.0 Complete ✅ | M18.1 Debug Logging Next
+**Date:** 2026-02-07
 
-With the Homerun Contest logic fixed and working, we now focus on internal cleanup of the referee code and unifying test fixtures before the major Physics/State Split.
+With M18.0 initialization cleanup complete, we now focus on improving debug logging before continuing with test fixtures and internal referee refactoring.
 
 ---
 
@@ -57,49 +57,118 @@ We have achieved **Referee Supremacy** (complete):
 
 **Note:** GameFlowState cleanup and `setRunnerAndBatter()` refactoring deferred to later - not blocking for current work.
 
+
 ---
 
-## 🎯 Milestone 18: Referee Internal Refactoring & Test Fixture Unification (Next 2-3 sessions)
+## ✅ Milestone 18.0: Initialization Cleanup - COMPLETE (2026-02-07)
 
-**Goal:** Clean up the internal structure of referee.c for maintainability and unify test fixtures across integration tests and human testing scenarios.
+**Goal:** Remove the confusing `gameInitialized` event and establish clear initialization patterns.
 
-**Why:** The referee pattern is beautifully decoupled from external code, but internally has grown organically with mixed patterns, inline state machines, and unclear separation of concerns. We need to make it maintainable before the Physics/State Split.
+### Changes Made:
 
-### Part A: Test Fixture Unification (Carried from 17.5)
+1. **Added `initialize_referee()` function**
+   - Public function to scan physical world during setup
+   - Replaces gameInitialized event pattern
 
-**Context:** We have two initialization paths:
-1. Integration tests use `gameInitialized` event → referee scans physical world
-2. Human test fixtures use `setRunnerAndBatter()` + manual referee state writes
+2. **Renamed `Referee_Update` → `update_referee`**
+   - Consistent snake_case naming
 
-**Goal:** Understand all initialization procedures and unify them so both paths work the same way.
+3. **Removed gameInitialized event completely**
+   - From GameEvents struct
+   - From event handling code
+   - From clearFrameEvents
+
+4. **Fixed double-initialization bug**
+   - returnToGame() now consistent with initializeGameFromMenu()
+
+5. **Documentation updated**
+   - ARCHITECTURE.md and PLAN.md reflect current state
+
+### Result:
+✅ All 63 tests passing
+✅ Clear patterns: Setup = explicit calls, Transitions = state machines
+✅ Consistent naming throughout
+
+---
+
+## 🎯 Milestone 18.1: Debug Logging Improvements (NEXT)
+
+**Goal:** Fix incomplete debug logging that hides critical game state.
+
+### Problem Found (2026-02-07):
+
+Current debug.log only shows "active" players (AT_BAT, ON_BASE, OUT, WOUNDED).
+IDLE players in home circle are completely hidden, making it appear like they don't exist.
+Missing critical metadata: scoreboard, batterOrder, halfInningState, playerCounters.
+
+**This made us think there was a bug when the game was actually working fine!**
+
+### Tasks:
+
+**1. Show ALL Players (24 total)**
+- Include all 12 batting team players regardless of state
+- Include all 12 fielding team players
+- Show: id, state, baseId, position, ref_status for each
+
+**2. Add Scoreboard Metadata**
+- period, inning
+- teams[0/1].runs, teams[0/1].batterOrderIndex
+- **teams[0/1].batterOrder (full 12-element array!)**
+- pairCount (for homerun contest)
+
+**3. Add HalfInningState**
+- outs, strikes, balls
+- runsInTheInning
+
+**4. Add PlayerCounters**
+- nonJokerPlayersLeft
+- jokersLeft
+- Helps track "no more players" situations
+
+**5. Improve Format**
+- Clear sections
+- Timestamps/frame numbers
+- Human-readable enums
+
+### Why This Matters:
+- Essential for debugging period transitions
+- Critical for player selection issues
+- Makes integration test debugging practical
+- Helps trace referee state machines
+
+### Files to Find/Update:
+- Locate where debug.log is generated
+- Create comprehensive logging function
+- Call it at appropriate points (pitch start, pause, transitions)
+
+---
+
+## Milestone 18.2: Test Fixture Unification
+
+**Goal:** Ensure all test fixtures follow the same initialization pattern.
 
 **Tasks:**
-*   ⏳ Document all game initialization entry points:
-    *   Normal game start (menu → game_setup.c)
-    *   Homerun contest start (menu → setupHomerunPhysicalState)
-    *   Integration test fixtures (scenario_builder.c)
-    *   Manual "human test" fixtures (F-key shortcuts)
-*   ⏳ Trace how `gameInitialized` event flows through initialization
-*   ⏳ Identify where `setRunnerAndBatter()` differs from event-driven approach
-*   ⏳ Decide on unified pattern: Either:
-    *   A) Make all fixtures emit `gameInitialized` after physical setup, OR
-    *   B) Create explicit `Referee_InitializeFromPhysicalWorld()` helper
-*   ⏳ Refactor human test fixtures to follow the unified pattern
-*   ⏳ Verify all initialization paths produce correct referee state
-
-**Success Criteria:**
-*   Clear documentation of all init paths
-*   Single unified pattern for referee initialization (no special cases)
-*   Human test fixtures work correctly with unified pattern
-*   Integration tests continue to pass
+- ⏳ Audit all test initialization code
+- ⏳ Verify integration tests use `initialize_referee()`
+- ⏳ Verify human fixtures can use same pattern
+- ⏳ Document standard test fixture setup procedure
+- ⏳ Ensure all 63 tests pass with unified approach
 
 ---
 
-### Part B: Referee Internal Refactoring
+## Milestone 18.3: Referee Internal Refactoring
 
-**Context:** referee.c (1225 lines) has grown organically with:
-*   100+ lines of homerun contest logic embedded inline in main update function
-*   Inconsistent patterns (some state machines are functions, some inline)
+**Goal:** Clean up referee.c internal structure.
+
+**Tasks:**
+- Extract state machines to dedicated functions
+- Create RefereeContext struct for shared data
+- Separate transition handling (end of inning, next pair, out of bounds)
+- Improve code organization and readability
+
+---
+
+## 🎯 Milestone 19: Physics/State Split (Future)
 *   Parameter explosion (functions take 5-7 parameters)
 *   Numbering chaos in comments ("2.5", "3.5" showing organic growth)
 *   Hard to see dependencies and what writes what

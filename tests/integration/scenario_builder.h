@@ -27,8 +27,8 @@ ScenarioContext* create_scenario(void);
  * @brief Initialize referee state from physical world
  *
  * Must be called after placing players but BEFORE starting the test.
- * This emits gameInitialized and simulates one frame so referee can
- * scan physical state and initialize its legal tracking.
+ * Directly calls initialize_referee() to scan physical state and
+ * establish legal tracking.
  *
  * @param ctx The scenario context
  */

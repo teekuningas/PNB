@@ -62,7 +62,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
 		// 3. Referee (Legal State Authority)
 		// Runs AFTER physics to ensure legal state matches physical events
 		MatchSession* game = stateInfo->match;
-		Referee_Update(
+		update_referee(
 		    stateInfo,
 		    &game->referee,
 		    &game->halfInningState,

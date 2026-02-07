@@ -1,6 +1,7 @@
 #include "game_setup.h"
 #include "common_logic.h"
 #include "rules_pure/player_utils.h"
+#include "referee.h"
 #include <string.h>
 
 void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
@@ -33,11 +34,6 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 	if (gameSetup->gameMode == GAME_MODE_NORMAL || gameSetup->gameMode == GAME_MODE_SUPER_INNING) {
 		stateInfo->match->scoreboard.playsFirst = gameSetup->playsFirst;
 	}
-
-	// Clear betweenPitchState when starting a new game (prevents state corruption from previous game)
-	stateInfo->match->betweenPitchState.catchHasBeenMade = 0;
-	stateInfo->match->betweenPitchState.hasBallHitGround = 0;
-	stateInfo->match->betweenPitchState.resolutionProcessed = 0;
 
 	// Initialize batterOrder for ALL game modes.
 	// CRITICAL: batterOrder defines the jersey numbers (1-9 for regulars, 0 for jokers)
@@ -85,8 +81,7 @@ void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
 	stateInfo->screen = SCREEN_GAME;
 	stateInfo->changeScreen = 1;
 	stateInfo->updated = 0;
-	loadMutableWorldSettings(stateInfo, rng_seed);
 
-	// Emit gameInitialized event
-	stateInfo->match->gameEvents.gameInitialized = 1;
+	// Initialization will be handled by updateGameScreen() → loadGameScreenSettings()
+	// This makes the flow consistent with initializeGameFromMenu()
 }
