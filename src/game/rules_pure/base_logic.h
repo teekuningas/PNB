@@ -72,7 +72,6 @@ int base_to_int_index(BaseID id);
  * This represents general immunity from being forced out while occupying a base.
  */
 
-
 /**
  * Checks if a player is safe from being wounded by a fly ball catch (koppi).
  * In Pesäpallo, a runner is safe if they have not left their original base,

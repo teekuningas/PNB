@@ -3,7 +3,6 @@
 
 #include "globals.h"
 
-
 /**
  * Pure function to determine the outcome of a pitch.
  */

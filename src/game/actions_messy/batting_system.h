@@ -3,8 +3,8 @@
 
 #include "globals.h"
 
-#define BAT_LOAD_MAX (4*9)
-#define BAT_SWING_MAX (4*13)
+#define BAT_LOAD_MAX (4 * 9)
+#define BAT_SWING_MAX (4 * 13)
 
 void initBattingSystem(StateInfo* stateInfo);
 

@@ -16,69 +16,65 @@
 #define PI 3.141f
 #define EPSILON 0.005f
 #define UPDATE_INTERVAL 20
-#define PERSPECTIVE_ASPECT_RATIO (16.0f/9.0f)
+#define PERSPECTIVE_ASPECT_RATIO (16.0f / 9.0f)
 #define VIRTUAL_WIDTH 1920
 #define VIRTUAL_HEIGHT 1080
 
 // game states
-typedef enum {
-	SCREEN_LOADING,
-	SCREEN_MAIN_MENU,
-	SCREEN_GAME
-} ScreenState;
+typedef enum { SCREEN_LOADING, SCREEN_MAIN_MENU, SCREEN_GAME } ScreenState;
 
 // NEW ENUMS FOR MILESTONE 7 (DATA RENAISSANCE)
 // --------------------------------------------
 
 typedef enum {
-	PITCH_RESULT_NONE = 0,
-	PITCH_RESULT_STRIKE = 1,
-	PITCH_RESULT_BALL = 2,
-	PITCH_RESULT_HIT = 3,
-	PITCH_RESULT_MISS = 4,
-	PITCH_RESULT_FOUL = 5
+    PITCH_RESULT_NONE = 0,
+    PITCH_RESULT_STRIKE = 1,
+    PITCH_RESULT_BALL = 2,
+    PITCH_RESULT_HIT = 3,
+    PITCH_RESULT_MISS = 4,
+    PITCH_RESULT_FOUL = 5
 } PitchResult;
 
 // --------------------------------------------
 
 typedef enum {
-	PLAYER_STATE_IDLE = 0,
-	PLAYER_STATE_AT_BAT,
-	PLAYER_STATE_ON_BASE,      // Replaces isOnBase=1
-	PLAYER_STATE_RUNNING,           // Replaces isOnBase=0, out=0, wounded=0
-	PLAYER_STATE_ADVANCING_FREELY,  // Replaces takingFreeWalk=1
-	PLAYER_STATE_LEADING,           // Replaces leading=1
-	PLAYER_STATE_OUT,               // Replaces out=1
-	PLAYER_STATE_WOUNDED,           // Replaces wounded=1
-	PLAYER_STATE_SCORED             // Explicit state for having scored
+    PLAYER_STATE_IDLE = 0,
+    PLAYER_STATE_AT_BAT,
+    PLAYER_STATE_ON_BASE, // Replaces isOnBase=1
+    PLAYER_STATE_RUNNING, // Replaces isOnBase=0, out=0, wounded=0
+    PLAYER_STATE_ADVANCING_FREELY, // Replaces takingFreeWalk=1
+    PLAYER_STATE_LEADING, // Replaces leading=1
+    PLAYER_STATE_OUT, // Replaces out=1
+    PLAYER_STATE_WOUNDED, // Replaces wounded=1
+    PLAYER_STATE_SCORED // Explicit state for having scored
 } PlayerUnitState;
 
 typedef enum {
-	BASE_HOME = 0,
-	BASE_FIRST = 1,
-	BASE_SECOND = 2,
-	BASE_THIRD = 3,
-	BASE_HOME_SCORED = 4, // Explicitly distinct from starting at home
-	BASE_NONE = -1
+    BASE_HOME = 0,
+    BASE_FIRST = 1,
+    BASE_SECOND = 2,
+    BASE_THIRD = 3,
+    BASE_HOME_SCORED = 4, // Explicitly distinct from starting at home
+    BASE_NONE = -1
 } BaseID;
 
 typedef enum {
-	EVENT_NONE = 0,
-	EVENT_OUT = 1,
-	EVENT_WOUNDED = 2,
-	EVENT_RUN_SCORED = 3,
-	EVENT_OUT_OF_BOUNDS = 4,
-	EVENT_STRIKE = 5,
-	EVENT_BALL = 6,
-	EVENT_INNING_ENDING = 7,
-	EVENT_NEXT_PAIR = 8,
-	EVENT_TWO_RUNS_SCORED = 9
+    EVENT_NONE = 0,
+    EVENT_OUT = 1,
+    EVENT_WOUNDED = 2,
+    EVENT_RUN_SCORED = 3,
+    EVENT_OUT_OF_BOUNDS = 4,
+    EVENT_STRIKE = 5,
+    EVENT_BALL = 6,
+    EVENT_INNING_ENDING = 7,
+    EVENT_NEXT_PAIR = 8,
+    EVENT_TWO_RUNS_SCORED = 9
 } GameEventType;
 
 typedef enum {
-	GAME_MODE_NORMAL = 0,
-	GAME_MODE_SUPER_INNING = 1,    // Potential mapping for period 2/3 if distinct
-	GAME_MODE_HOMERUN_CONTEST = 2  // Replaces period >= 4
+    GAME_MODE_NORMAL = 0,
+    GAME_MODE_SUPER_INNING = 1, // Potential mapping for period 2/3 if distinct
+    GAME_MODE_HOMERUN_CONTEST = 2 // Replaces period >= 4
 } GamePeriodMode;
 
 // --------------------------------------------
@@ -90,7 +86,7 @@ typedef enum {
 
 #define PLATE_WIDTH 1.5f
 #define GRAVITY 0.003f
-#define ZERO_BATTING_ANGLE (19*PI/16)
+#define ZERO_BATTING_ANGLE (19 * PI / 16)
 #define SHADOW_HEIGHT 0.01f
 
 #define WALK_SPEED 0.06f
@@ -100,12 +96,12 @@ typedef enum {
 
 #define GROUND_WIDTH 40.0f
 #define GROUND_LENGTH 30.0f
-#define GROUND_OFFSET_X (-GROUND_WIDTH/34)
-#define GROUND_OFFSET_Z (-GROUND_LENGTH/6)
-#define FIELD_BACK (-4.5f*GROUND_LENGTH + GROUND_OFFSET_Z)
-#define FIELD_FRONT (1.5f*GROUND_LENGTH + GROUND_OFFSET_Z)
-#define FIELD_LEFT (-2.5f*GROUND_WIDTH + GROUND_OFFSET_X)
-#define FIELD_RIGHT (2.5f*GROUND_WIDTH + GROUND_OFFSET_X)
+#define GROUND_OFFSET_X (-GROUND_WIDTH / 34)
+#define GROUND_OFFSET_Z (-GROUND_LENGTH / 6)
+#define FIELD_BACK (-4.5f * GROUND_LENGTH + GROUND_OFFSET_Z)
+#define FIELD_FRONT (1.5f * GROUND_LENGTH + GROUND_OFFSET_Z)
+#define FIELD_LEFT (-2.5f * GROUND_WIDTH + GROUND_OFFSET_X)
+#define FIELD_RIGHT (2.5f * GROUND_WIDTH + GROUND_OFFSET_X)
 #define FENCE_OFFSET 0.5f
 
 #define HOME_RADIUS 6.0f
@@ -129,13 +125,15 @@ typedef enum {
 #define GROUND_UNIT_COUNT 30
 
 typedef struct _GroundUnit {
-	GLuint texture;
-	int x;
-	int y;
+    GLuint texture;
+    int x;
+    int y;
 } GroundUnit;
 
 #define DISTANCE_FROM_HOME_LOCATION_THRESHOLD 1.75f
-#define TARGET_ACHIEVED_THRESHOLD 0.25f // has to have some room here because we are calculating velocity only at the start of movement and everything approximations anyway
+#define TARGET_ACHIEVED_THRESHOLD                                                                                      \
+    0.25f // has to have some room here because we are calculating velocity only at the start of movement and everything
+          // approximations anyway
 // counts
 #define JOKER_COUNT 3
 #define PLAYERS_IN_TEAM 9
@@ -172,102 +170,95 @@ typedef struct _GroundUnit {
 // down[i][j] is 1 when key is down
 // released[i][j] is 1 for one frame when key is released
 typedef struct _KeyStates {
-	int released[3][KEY_COUNT];
-	int down[3][KEY_COUNT];
+    int released[3][KEY_COUNT];
+    int down[3][KEY_COUNT];
 } KeyStates;
 // simple struct to keep spatial information
 typedef struct _Vector3D {
-	float x;
-	float y;
-	float z;
+    float x;
+    float y;
+    float z;
 } Vector3D;
 // relevant field positions. hardcoded in the immutable_world.c
 typedef struct _FieldPositions {
-	Vector3D pitchPlate;
-	Vector3D homeRunPoint;
-	Vector3D pitcher;
-	Vector3D firstBase;
-	Vector3D secondBase;
-	Vector3D thirdBase;
-	Vector3D firstBaseRun;
-	Vector3D secondBaseRun;
-	Vector3D thirdBaseRun;
-	Vector3D leftPoint;
-	Vector3D runLeftPoint;
-	Vector3D backLeftPoint;
-	Vector3D backRightPoint;
-	Vector3D rightPoint;
-	Vector3D bottomRightCatcher;
-	Vector3D middleLeftCatcher;
-	Vector3D middleRightCatcher;
-	Vector3D backLeftCatcher;
-	Vector3D backRightCatcher;
+    Vector3D pitchPlate;
+    Vector3D homeRunPoint;
+    Vector3D pitcher;
+    Vector3D firstBase;
+    Vector3D secondBase;
+    Vector3D thirdBase;
+    Vector3D firstBaseRun;
+    Vector3D secondBaseRun;
+    Vector3D thirdBaseRun;
+    Vector3D leftPoint;
+    Vector3D runLeftPoint;
+    Vector3D backLeftPoint;
+    Vector3D backRightPoint;
+    Vector3D rightPoint;
+    Vector3D bottomRightCatcher;
+    Vector3D middleLeftCatcher;
+    Vector3D middleRightCatcher;
+    Vector3D backLeftCatcher;
+    Vector3D backRightCatcher;
 } FieldPositions;
 
 // ball related information
 typedef struct _BallInfo {
-	Vector3D velocity;
-	Vector3D location;
-	Vector3D lastLocation;
-	int visible; // is ball visible. ball is not visible when some player has it
-	int moving; // is ball moving, only update player orientations and ball's position if ball is moving
-	int currentFlightHasHitGround; // has the ball hit ground
-	int onGround; // is ball rolling on ground
-	int hitsGroundToUnWound; // if ball hits ground after being catched as wounding catch, is set to 1. checked only after wounding catch so, it is set to 0 when the catch is made.
-	int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
-	int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
+    Vector3D velocity;
+    Vector3D location;
+    Vector3D lastLocation;
+    int visible; // is ball visible. ball is not visible when some player has it
+    int moving; // is ball moving, only update player orientations and ball's position if ball is moving
+    int currentFlightHasHitGround; // has the ball hit ground
+    int onGround; // is ball rolling on ground
+    int hitsGroundToUnWound; // if ball hits ground after being catched as wounding catch, is set to 1. checked only
+                             // after wounding catch so, it is set to 0 when the catch is made.
+    int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
+    int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
 } BallInfo;
 // struct to keep player data
 typedef struct _PlayerData {
-	char* id;
-	char* name;
-	int speed;
-	int power;
+    char* id;
+    char* name;
+    int speed;
+    int power;
 } PlayerData;
 
 // struct keeps information about teams
 typedef struct _TeamData {
-	char* id;
-	char* name;
-	int numPlayers;
-	PlayerData* players;
+    char* id;
+    char* name;
+    int numPlayers;
+    PlayerData* players;
 } TeamData;
 typedef enum {
-	ACTION_IDLE = 0,
-	ACTION_TRIGGER_START = 1,
-	ACTION_ACTIVE = 2,
-	ACTION_TRIGGER_STOP = 3
+    ACTION_IDLE = 0,
+    ACTION_TRIGGER_START = 1,
+    ACTION_ACTIVE = 2,
+    ACTION_TRIGGER_STOP = 3
 } ActionTriggerState;
 
 typedef enum {
-	PITCH_ACTION_IDLE = 0,
-	PITCH_ACTION_START = 1,      // Trigger: start windup
-	PITCH_ACTION_POWER_WAIT = 2,  // Active: winding up, waiting for power select
-	PITCH_ACTION_POWER_SET = 3,   // Trigger: power selected
-	PITCH_ACTION_ANGLE_WAIT = 4,  // Active: throw animation, waiting for angle select
-	PITCH_ACTION_ANGLE_SET = 5    // Trigger: angle selected, release ball
+    PITCH_ACTION_IDLE = 0,
+    PITCH_ACTION_START = 1, // Trigger: start windup
+    PITCH_ACTION_POWER_WAIT = 2, // Active: winding up, waiting for power select
+    PITCH_ACTION_POWER_SET = 3, // Trigger: power selected
+    PITCH_ACTION_ANGLE_WAIT = 4, // Active: throw animation, waiting for angle select
+    PITCH_ACTION_ANGLE_SET = 5 // Trigger: angle selected, release ball
 } PitchActionPhase;
 
 typedef enum {
-	BAT_ACTION_IDLE = 0,
-	BAT_ACTION_WAIT_FOR_BALL = 1, // Active: batter ready, ball in air
-	BAT_ACTION_POWER_SET = 2,     // Trigger: swing button pressed (select power)
-	BAT_ACTION_ANGLE_WAIT = 3,    // Active: swinging, waiting for angle select
-	BAT_ACTION_ANGLE_SET = 4,      // Trigger: angle selected
-	BAT_ACTION_DONE = 5           // Active: animation finishing
+    BAT_ACTION_IDLE = 0,
+    BAT_ACTION_WAIT_FOR_BALL = 1, // Active: batter ready, ball in air
+    BAT_ACTION_POWER_SET = 2, // Trigger: swing button pressed (select power)
+    BAT_ACTION_ANGLE_WAIT = 3, // Active: swinging, waiting for angle select
+    BAT_ACTION_ANGLE_SET = 4, // Trigger: angle selected
+    BAT_ACTION_DONE = 5 // Active: animation finishing
 } BatActionPhase;
 
-typedef enum {
-	CHOOSE_BATTER_IDLE = 0,
-	CHOOSE_BATTER_NEXT = 1,
-	CHOOSE_BATTER_SELECT = 2
-} ChooseBatterAction;
+typedef enum { CHOOSE_BATTER_IDLE = 0, CHOOSE_BATTER_NEXT = 1, CHOOSE_BATTER_SELECT = 2 } ChooseBatterAction;
 
-typedef enum {
-	FREE_WALK_IDLE = 0,
-	FREE_WALK_ACCEPT = 1,
-	FREE_WALK_REJECT = 2
-} FreeWalkAction;
+typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
 /*
 Action flags. used in action_invocation.c and action_implementation.c.
@@ -275,253 +266,237 @@ flag is set when key event happens in action_invocation, then its set off or mod
 action_implementation
 */
 typedef struct _BattingTeamActionFlags {
-	ActionTriggerState baseRun[4];
-	ChooseBatterAction chooseBatter;
-	FreeWalkAction takeFreeWalk;
-	BatActionPhase swing;
-	ActionTriggerState increaseBatterAngle;
-	ActionTriggerState decreaseBatterAngle;
+    ActionTriggerState baseRun[4];
+    ChooseBatterAction chooseBatter;
+    FreeWalkAction takeFreeWalk;
+    BatActionPhase swing;
+    ActionTriggerState increaseBatterAngle;
+    ActionTriggerState decreaseBatterAngle;
 } BattingTeamActionFlags;
 
 typedef struct _CatchingTeamActionFlags {
-	ActionTriggerState move[4];
-	ActionTriggerState throwToBase[4];
-	ActionTriggerState changePlayer;
-	ActionTriggerState run;
-	ActionTriggerState dropBall;
-	PitchActionPhase pitch;
-	int actionKeyLock;
+    ActionTriggerState move[4];
+    ActionTriggerState throwToBase[4];
+    ActionTriggerState changePlayer;
+    ActionTriggerState run;
+    ActionTriggerState dropBall;
+    PitchActionPhase pitch;
+    int actionKeyLock;
 } CatchingTeamActionFlags;
 
 typedef struct _ActionFlags {
-	BattingTeamActionFlags bTAF;
-	CatchingTeamActionFlags cTAF;
+    BattingTeamActionFlags bTAF;
+    CatchingTeamActionFlags cTAF;
 } ActionFlags;
 // spatial data for every player
 typedef struct _TechnicalPlayerInfo {
-	Vector3D location;
-	Vector3D lastLocation;
-	Vector3D homeLocation;
-	Vector3D targetLocation;
-	Vector3D velocity;
-	Vector3D orientation;
+    Vector3D location;
+    Vector3D lastLocation;
+    Vector3D homeLocation;
+    Vector3D targetLocation;
+    Vector3D velocity;
+    Vector3D orientation;
 } TechnicalPlayerInfo;
 
 // MILESTONE 7.5 - Separating Control State from Domain State
 typedef struct _PlayerRuntimeState {
-	int arrivedToBase;       // Optimization flag
-	int passedPathPoint;     // State machine variable
-	int goingForward;        // Direction tracking
-	int hasMadeRunOnThirdBase; // Guard flag
+    int arrivedToBase; // Optimization flag
+    int passedPathPoint; // State machine variable
+    int goingForward; // Direction tracking
+    int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
 // Flow control state machine enums (used by RefereeState)
 typedef enum {
-	FOUL_STATE_NONE = 0,
-	FOUL_STATE_DETECTED = 1,    // Ball hit ground out of bounds, waiting for grace period
-	FOUL_STATE_RESETTING = 2    // Grace period over, performing reset this frame
+    FOUL_STATE_NONE = 0,
+    FOUL_STATE_DETECTED = 1, // Ball hit ground out of bounds, waiting for grace period
+    FOUL_STATE_RESETTING = 2 // Grace period over, performing reset this frame
 } FoulPlayState;
 
-typedef enum {
-	HR_PAIR_STATE_NONE = 0,
-	HR_PAIR_STATE_DETECTED = 1,
-	HR_PAIR_STATE_RESETTING = 2
-} HomeRunPairState;
+typedef enum { HR_PAIR_STATE_NONE = 0, HR_PAIR_STATE_DETECTED = 1, HR_PAIR_STATE_RESETTING = 2 } HomeRunPairState;
 
 typedef enum {
-	END_INNING_STATE_NONE = 0,
-	END_INNING_STATE_DETECTED = 1,
-	END_INNING_STATE_RESETTING = 2
+    END_INNING_STATE_NONE = 0,
+    END_INNING_STATE_DETECTED = 1,
+    END_INNING_STATE_RESETTING = 2
 } EndOfInningTransitionState;
 
 // Player status enum - replaces flag-based status tracking
 typedef enum {
-	PLAYER_STATUS_ACTIVE = 0,              // Playing normally, no special status
-	PLAYER_STATUS_WOUND_MARKED = 1,        // Vulnerable: evaluation timer running, can cancel if ball drops (normal wound)
-	PLAYER_STATUS_WOUND_MARKED_DOUBLE = 2, // Vulnerable: evaluation timer running (tuplahaava/double wound)
-	PLAYER_STATUS_WOUND_PENDING = 3,       // DOOMED (normal wound): must advance, will get WOUNDED or OUT
-	PLAYER_STATUS_WOUND_PENDING_DOUBLE = 4,// DOOMED (tuplahaava): can retreat to avoid OUT
-	PLAYER_STATUS_WOUNDED = 5,             // TERMINAL: Out of play, returns to home base
-	PLAYER_STATUS_OUT = 6                  // TERMINAL: Out of play, returns to home base
+    PLAYER_STATUS_ACTIVE = 0, // Playing normally, no special status
+    PLAYER_STATUS_WOUND_MARKED = 1, // Vulnerable: evaluation timer running, can cancel if ball drops (normal wound)
+    PLAYER_STATUS_WOUND_MARKED_DOUBLE = 2, // Vulnerable: evaluation timer running (tuplahaava/double wound)
+    PLAYER_STATUS_WOUND_PENDING = 3, // DOOMED (normal wound): must advance, will get WOUNDED or OUT
+    PLAYER_STATUS_WOUND_PENDING_DOUBLE = 4, // DOOMED (tuplahaava): can retreat to avoid OUT
+    PLAYER_STATUS_WOUNDED = 5, // TERMINAL: Out of play, returns to home base
+    PLAYER_STATUS_OUT = 6 // TERMINAL: Out of play, returns to home base
 } RefereePlayerStatus;
 
 typedef struct _RefereePlayerState {
-	// === PRIMARY STATUS ===
-	RefereePlayerStatus status;    // Mutually exclusive player status (wounding/out lifecycle)
+    // === PRIMARY STATUS ===
+    RefereePlayerStatus status; // Mutually exclusive player status (wounding/out lifecycle)
 
-	// === PITCH START SNAPSHOT (for foul play) ===
-	BaseID baseAtPitchStart;       // Where was player when pitch started
+    // === PITCH START SNAPSHOT (for foul play) ===
+    BaseID baseAtPitchStart; // Where was player when pitch started
 
-	// === CURRENT SAFETY STATUS ===
-	BaseID currentSafetyBase;      // Which base has their safety (-1 if none)
-	int hasScored;                 // Logical scored status (decided by Referee)
-	int runOfHonorScored;          // Logical run of honor scored status (decided by Referee)
+    // === CURRENT SAFETY STATUS ===
+    BaseID currentSafetyBase; // Which base has their safety (-1 if none)
+    int hasScored; // Logical scored status (decided by Referee)
+    int runOfHonorScored; // Logical run of honor scored status (decided by Referee)
 
-	// === EVENT SNAPSHOTS (updated at key moments) ===
-	BaseID baseAtLastEvent;        // Where they were at last important event
-	int hadSafetyAtLastEvent;      // Did they have safety at last event
+    // === EVENT SNAPSHOTS (updated at key moments) ===
+    BaseID baseAtLastEvent; // Where they were at last important event
+    int hadSafetyAtLastEvent; // Did they have safety at last event
 
-	// === PENDING RUNS (Milestone 17) ===
-	int hasPendingRun;             // Arrived at home while ball in air
-	int hasPendingRunOfHonor;      // Arrived at 3rd (homerun) while ball in air
+    // === PENDING RUNS (Milestone 17) ===
+    int hasPendingRun; // Arrived at home while ball in air
+    int hasPendingRunOfHonor; // Arrived at 3rd (homerun) while ball in air
 
 } RefereePlayerState;
 
 typedef struct _RefereeState {
-	// Per-player tracking
-	RefereePlayerState battingPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
+    // Per-player tracking
+    RefereePlayerState battingPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
 
-	// Global events
-	int strikesAtPitchStart;       // Snapshot of strikes when pitch started
+    // Global events
+    int strikesAtPitchStart; // Snapshot of strikes when pitch started
 
-	// Wounding evaluation state (Referee monitors and decides)
-	int woundingEvaluationActive;  // Referee is evaluating a potential wounding catch
-	int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
-	int woundingEvaluationTimer;   // Timer counting up during evaluation period
+    // Wounding evaluation state (Referee monitors and decides)
+    int woundingEvaluationActive; // Referee is evaluating a potential wounding catch
+    int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
+    int woundingEvaluationTimer; // Timer counting up during evaluation period
 
-	// Flow Control State Machines (Milestone 17 consolidation)
-	FoulPlayState foulState;                        // Out-of-bounds transition state
-	int foulTimer;                                  // Timer for foul play grace period
+    // Flow Control State Machines (Milestone 17 consolidation)
+    FoulPlayState foulState; // Out-of-bounds transition state
+    int foulTimer; // Timer for foul play grace period
 
-	HomeRunPairState nextPairTransitionState;       // Next-pair transition state
-	int nextPairTimer;                              // Timer for next-pair transition
+    HomeRunPairState nextPairTransitionState; // Next-pair transition state
+    int nextPairTimer; // Timer for next-pair transition
 
-	EndOfInningTransitionState endOfInningState;    // End-of-inning transition state
-	int endInningTimer;                             // Timer for end-of-inning transition
+    EndOfInningTransitionState endOfInningState; // End-of-inning transition state
+    int endInningTimer; // Timer for end-of-inning transition
 
-	// Run of Honor tracking (Homerun Contest)
-	int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
+    // Run of Honor tracking (Homerun Contest)
+    int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
 
 } RefereeState;
 
-typedef enum {
-	JOKER_REGULAR = 0,
-	JOKER_AVAILABLE = 1,
-	JOKER_USED = 2
-} JokerStatus;
+typedef enum { JOKER_REGULAR = 0, JOKER_AVAILABLE = 1, JOKER_USED = 2 } JokerStatus;
 
 // batting team related flags.
 typedef struct _BattingTeamPlayerInfo {
-	char* name; // some info to be shown in screen to guide player
-	int speed; // used to make some player a bit faster than others
-	int power; // used to make some players bat a bit harder than others
-	int number; // number is shown on screen
-	JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
+    char* name; // some info to be shown in screen to guide player
+    int speed; // used to make some player a bit faster than others
+    int power; // used to make some players bat a bit harder than others
+    int number; // number is shown on screen
+    JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
 
-	// MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
-	PlayerUnitState state;
-	BaseID baseId;
+    // MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
+    PlayerUnitState state;
+    BaseID baseId;
 } BattingTeamPlayerInfo;
 
 typedef enum {
-	PLAYER_ANIM_STAND_NO_BALL = 0,
-	PLAYER_ANIM_STAND_WITH_BALL = 1,
-	PLAYER_ANIM_WALK_NO_BALL = 2,
-	PLAYER_ANIM_WALK_WITH_BALL = 3,
-	PLAYER_ANIM_RUN_NO_BALL = 4,
-	PLAYER_ANIM_RUN_WITH_BALL = 5,
-	PLAYER_ANIM_PITCH_WINDUP = 6,
-	PLAYER_ANIM_PITCH_THROW = 7,
-	PLAYER_ANIM_THROW_WINDUP = 8,
-	PLAYER_ANIM_THROW_RELEASE = 9,
-	PLAYER_ANIM_STAND_BARE = 10,
-	PLAYER_ANIM_WALK_BARE = 11,
-	PLAYER_ANIM_RUN_BARE = 12,
-	PLAYER_ANIM_BATTER_READY = 13,
-	PLAYER_ANIM_BAT_SWING_1 = 14,
-	PLAYER_ANIM_BAT_SWING_2 = 15,
-	PLAYER_ANIM_BAT_SWING_3 = 16
+    PLAYER_ANIM_STAND_NO_BALL = 0,
+    PLAYER_ANIM_STAND_WITH_BALL = 1,
+    PLAYER_ANIM_WALK_NO_BALL = 2,
+    PLAYER_ANIM_WALK_WITH_BALL = 3,
+    PLAYER_ANIM_RUN_NO_BALL = 4,
+    PLAYER_ANIM_RUN_WITH_BALL = 5,
+    PLAYER_ANIM_PITCH_WINDUP = 6,
+    PLAYER_ANIM_PITCH_THROW = 7,
+    PLAYER_ANIM_THROW_WINDUP = 8,
+    PLAYER_ANIM_THROW_RELEASE = 9,
+    PLAYER_ANIM_STAND_BARE = 10,
+    PLAYER_ANIM_WALK_BARE = 11,
+    PLAYER_ANIM_RUN_BARE = 12,
+    PLAYER_ANIM_BATTER_READY = 13,
+    PLAYER_ANIM_BAT_SWING_1 = 14,
+    PLAYER_ANIM_BAT_SWING_2 = 15,
+    PLAYER_ANIM_BAT_SWING_3 = 16
 } PlayerAnimationModel;
 
-typedef enum {
-	CONTROL_PLAYER_1 = 0,
-	CONTROL_PLAYER_2 = 1,
-	CONTROL_AI = 2
-} TeamControlMode;
+typedef enum { CONTROL_PLAYER_1 = 0, CONTROL_PLAYER_2 = 1, CONTROL_AI = 2 } TeamControlMode;
 
-typedef enum {
-	TEAM_BATTING = 0,
-	TEAM_CATCHING = 1
-} TeamSide;
+typedef enum { TEAM_BATTING = 0, TEAM_CATCHING = 1 } TeamSide;
 
-typedef enum {
-	REPLACEMENT_IDLE = 0,
-	REPLACEMENT_ACTIVE = 1
-} ReplacementState;
+typedef enum { REPLACEMENT_IDLE = 0, REPLACEMENT_ACTIVE = 1 } ReplacementState;
 
 typedef struct _CommonPlayerInfo {
-	// player information. name is shown on the screen sometimes, team is used in players.c
-	// and stats are used to make players behave in different ways on some situations.
-	TeamSide team;
+    // player information. name is shown on the screen sometimes, team is used in players.c
+    // and stats are used to make players behave in different ways on some situations.
+    TeamSide team;
 
-	int moving; // 0 doesnt, 1 moves
-	int running; // 0 doesnt, 1 runs
-	int looksForTarget; // used in conjuction with targetLocation when trying to go catching a ball for example
-	int lastLastLocationUpdate; // player needs to have his lastLocation updated, necessary when controlling player and moving stops. twitching without this
-	/* how to intepret the model number:
-		See PlayerAnimationModel enum above
-	*/
-	PlayerAnimationModel model;
-	int animationStage;
-	int animationStageCount;
-	int animationFrequency;
+    int moving; // 0 doesnt, 1 moves
+    int running; // 0 doesnt, 1 runs
+    int looksForTarget; // used in conjuction with targetLocation when trying to go catching a ball for example
+    int lastLastLocationUpdate; // player needs to have his lastLocation updated, necessary when controlling player and
+                                // moving stops. twitching without this
+    /* how to intepret the model number:
+        See PlayerAnimationModel enum above
+    */
+    PlayerAnimationModel model;
+    int animationStage;
+    int animationStageCount;
+    int animationFrequency;
 
 } CommonPlayerInfo;
 
 typedef struct _CatchingTeamPlayerInfo {
-	int position; // pitcher, catcher, 1st baseman..
-	int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
-	int isNearHomeLocation; // used to do base replacing stuff.
-	ReplacementState replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
-	BaseID replacingBase; // in which base is the player replacing
-	int busyCatching; // flag set when player is trying to run in hopes of catching the ball
-	int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
+    int position; // pitcher, catcher, 1st baseman..
+    int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
+    int isNearHomeLocation; // used to do base replacing stuff.
+    ReplacementState
+        replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
+    BaseID replacingBase; // in which base is the player replacing
+    int busyCatching; // flag set when player is trying to run in hopes of catching the ball
+    int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
 } CatchingTeamPlayerInfo;
 
 typedef struct _PlayerInfo {
-	TechnicalPlayerInfo tPI;
-	CommonPlayerInfo cPI;
-	CatchingTeamPlayerInfo cTPI;
-	BattingTeamPlayerInfo bTPI;
+    TechnicalPlayerInfo tPI;
+    CommonPlayerInfo cPI;
+    CatchingTeamPlayerInfo cTPI;
+    BattingTeamPlayerInfo bTPI;
 
 } PlayerInfo;
 
 typedef struct _TeamInfo {
-	int value; // which team, like 1 for ankkurit, 2 for vimpeli etc.
-	TeamControlMode control; // who controls, 0 player 1, 1, player 2, 2 AI
-	int runs; // how many runs has this team
-	int period0Runs;
-	int period1Runs;
-	int period2Runs;
-	int period3Runs;
-	int batterRunnerIndices[2][5];
-	int batterOrder[12]; // this teams' batting order, used in many innings
-	int batterOrderIndex; // what player is next
+    int value; // which team, like 1 for ankkurit, 2 for vimpeli etc.
+    TeamControlMode control; // who controls, 0 player 1, 1, player 2, 2 AI
+    int runs; // how many runs has this team
+    int period0Runs;
+    int period1Runs;
+    int period2Runs;
+    int period3Runs;
+    int batterRunnerIndices[2][5];
+    int batterOrder[12]; // this teams' batting order, used in many innings
+    int batterOrderIndex; // what player is next
 } TeamInfo;
 
 typedef struct _PlayerIndexInfo {
-	int catcherOnBaseIndex[4]; // whos is baseman on base i
-	int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
-	int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
-	// these, and these are also used to select players for busyCatching.
-	int jokerIndices[3]; // indices of all jokers.
-	int batterSelectionIndex; // index of the batter that would be selected if there was decision available
-	int hasBallIndex; // who has the ball
-	int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
-	// set to -1 when someone catches.
-	int controlIndex; // index of the controlled catching team player
-	int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
+    int catcherOnBaseIndex[4]; // whos is baseman on base i
+    int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
+    int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
+    // these, and these are also used to select players for busyCatching.
+    int jokerIndices[3]; // indices of all jokers.
+    int batterSelectionIndex; // index of the batter that would be selected if there was decision available
+    int hasBallIndex; // who has the ball
+    int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
+    // set to -1 when someone catches.
+    int controlIndex; // index of the controlled catching team player
+    int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
 } PlayerIndexInfo;
 
 // MILESTONE 7.5 - Focused Structs
 typedef struct _HalfInningState {
-	int outs;
-	int balls;
-	int strikes;
-	int runsInTheInning;
-	GameEventType event;
-	int outOfBounds; // Rule state: ball is out of bounds
-	int endPeriod;   // Rule state: period should end
+    int outs;
+    int balls;
+    int strikes;
+    int runsInTheInning;
+    GameEventType event;
+    int outOfBounds; // Rule state: ball is out of bounds
+    int endPeriod; // Rule state: period should end
 } HalfInningState;
 
 // MILESTONE 16 (Phase 1): Transient event notifications
@@ -529,276 +504,274 @@ typedef struct _HalfInningState {
 // Written by: action_implementation.c, game_manipulation.c
 // Read by: referee.c, others
 typedef struct _GameEvents {
-	// Event flags (cleared each frame)
-	int catchMade;               // Fly ball was caught
-	int playerArrivedAtBase;     // Runner arrived at base
+    // Event flags (cleared each frame)
+    int catchMade; // Fly ball was caught
+    int playerArrivedAtBase; // Runner arrived at base
 
-	// Future events (not yet used)
-	int pitchReleased;           // Ball left pitcher's hand
-	int ballHitByBat;            // Bat made contact
-	int ballMissedByBat;         // Bat swung and missed
-	int ballHitGround;           // Ball touched the ground this frame
-	int freeWalkAccepted;        // Player accepted free walk
-	int freeWalkRejected;        // Player rejected free walk
-	int batterEntered;           // New: Signal that new batter is ready
+    // Future events (not yet used)
+    int pitchReleased; // Ball left pitcher's hand
+    int ballHitByBat; // Bat made contact
+    int ballMissedByBat; // Bat swung and missed
+    int ballHitGround; // Ball touched the ground this frame
+    int freeWalkAccepted; // Player accepted free walk
+    int freeWalkRejected; // Player rejected free walk
+    int batterEntered; // New: Signal that new batter is ready
 } GameEvents;
 
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
-	int catchHasBeenMade;     // Fly ball was caught
-	int hasBallHitGround;     // Ball has touched ground
-	int resolutionProcessed;  // Referee has adjudicated strike/ball
+    int catchHasBeenMade; // Fly ball was caught
+    int hasBallHitGround; // Ball has touched ground
+    int resolutionProcessed; // Referee has adjudicated strike/ball
 } BetweenPitchState;
 
 // MILESTONE 17: User interaction flow control
 typedef struct _FlowControl {
-	int pause;
-	int waitingForBatterDecision;
-	int waitingForFreeWalkDecision;
+    int pause;
+    int waitingForBatterDecision;
+    int waitingForFreeWalkDecision;
 
-	// Free walk offer data (calculated by game_analysis, consumed by UI/actions)
-	int freeWalkCalculationMade;
-	int freeWalkIndex;        // Which player to offer free walk (-1 = none)
-	BaseID freeWalkBase;      // From which base (BASE_NONE = none)
+    // Free walk offer data (calculated by game_analysis, consumed by UI/actions)
+    int freeWalkCalculationMade;
+    int freeWalkIndex; // Which player to offer free walk (-1 = none)
+    BaseID freeWalkBase; // From which base (BASE_NONE = none)
 } FlowControl;
 
 typedef struct _CameraState {
-	int homeRunCameraFlag;
-	Vector3D targetPoint; // For camera or AI focus
-	int homeRunCameraCounter;
+    int homeRunCameraFlag;
+    Vector3D targetPoint; // For camera or AI focus
+    int homeRunCameraCounter;
 
-	// View vectors
-	Vector3D cam, look, up;
-	Vector3D statCam, statLook, statUp;
-	Vector3D skyBoxCam, skyBoxLook;
+    // View vectors
+    Vector3D cam, look, up;
+    Vector3D statCam, statLook, statUp;
+    Vector3D skyBoxCam, skyBoxLook;
 
-	// Interpolation
-	Vector3D lastCamTargetLocation;
-	Vector3D lastCamLocation;
-	Vector3D camLocation;
-	Vector3D camTargetLocation;
+    // Interpolation
+    Vector3D lastCamTargetLocation;
+    Vector3D lastCamLocation;
+    Vector3D camLocation;
+    Vector3D camTargetLocation;
 
-	// Misc
-	float lightPos[4];
+    // Misc
+    float lightPos[4];
 } CameraState;
 
 typedef struct _UIState {
-	int gameInfoEventTimer;
-	int gameInfoEvent;
-	float lastMeterX;
-	float lastSwingMeterX;
+    int gameInfoEventTimer;
+    int gameInfoEvent;
+    float lastMeterX;
+    float lastSwingMeterX;
 } UIState;
 
 typedef struct _PlayerCounters {
-	int nonJokerPlayersLeft;
-	int jokersLeft;
-	int noMorePlayers;
+    int nonJokerPlayersLeft;
+    int jokersLeft;
+    int noMorePlayers;
 } PlayerCounters;
 
 typedef enum {
-	AI_NO_LOCK = -1,
-	AI_PITCH_LOCK = 0,
-	AI_THROW_LOCK = 1,
-	AI_DROP_LOCK = 2,
-	AI_WAITING_BATTER_LOCK = 3,
-	AI_WAITING_WALK_LOCK = 4,
-	AI_BATTING_LOCK = 5,
-	AI_CHANGE_LOCK = 6,
-	AI_CLICK_LOCK = 7,
-	AI_DOUBLE_CLICK_LOCK = 8,
-	AI_COME_BACK_LOCK = 9,
-	AI_COME_BACK_WRONG_PITCH_LOCK = 10
+    AI_NO_LOCK = -1,
+    AI_PITCH_LOCK = 0,
+    AI_THROW_LOCK = 1,
+    AI_DROP_LOCK = 2,
+    AI_WAITING_BATTER_LOCK = 3,
+    AI_WAITING_WALK_LOCK = 4,
+    AI_BATTING_LOCK = 5,
+    AI_CHANGE_LOCK = 6,
+    AI_CLICK_LOCK = 7,
+    AI_DOUBLE_CLICK_LOCK = 8,
+    AI_COME_BACK_LOCK = 9,
+    AI_COME_BACK_WRONG_PITCH_LOCK = 10
 } AILockType;
 
-typedef enum {
-	BATTING_MODE_SWING = 0,
-	BATTING_MODE_BUNT = 1,
-	BATTING_MODE_STOP = 2
-} BattingMode;
+typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
 
 typedef struct _AIState {
-	// Catching AI
-	int moveCounter;
-	int throwStage;
-	int dropStage;
+    // Catching AI
+    int moveCounter;
+    int throwStage;
+    int dropStage;
 
-	// Batting AI
-	int battingKeyDown;
-	AILockType actionKeyLock;
-	int changingKeyDown;
-	int increaseKeyDown;
-	int decreaseKeyDown;
-	int angleDecided;
-	float decidedAngle;
-	int baseRunnerKeyDown[BASE_COUNT];
-	int baseRunnerDecisionMade[BASE_COUNT];
-	int lastSafeOnBaseIndex[BASE_COUNT];
-	AILockType baseRunnerLock[BASE_COUNT];
-	int amountOfClicks[BASE_COUNT];
-	int clickBreak[BASE_COUNT];
-	int battingStyle;
-	int runningBatter;
-	int runningBaseRunners;
-	int planCalculated;
-	int firstIndex;
-	int firstIndexSelected;
-	int change;
-	int changeHasHappened;
+    // Batting AI
+    int battingKeyDown;
+    AILockType actionKeyLock;
+    int changingKeyDown;
+    int increaseKeyDown;
+    int decreaseKeyDown;
+    int angleDecided;
+    float decidedAngle;
+    int baseRunnerKeyDown[BASE_COUNT];
+    int baseRunnerDecisionMade[BASE_COUNT];
+    int lastSafeOnBaseIndex[BASE_COUNT];
+    AILockType baseRunnerLock[BASE_COUNT];
+    int amountOfClicks[BASE_COUNT];
+    int clickBreak[BASE_COUNT];
+    int battingStyle;
+    int runningBatter;
+    int runningBaseRunners;
+    int planCalculated;
+    int firstIndex;
+    int firstIndexSelected;
+    int change;
+    int changeHasHappened;
 
-	// Pitching AI
-	int pitchStage;
-	unsigned int pitchFirstLimit;
-	unsigned int pitchSecondLimit;
-	int pitchTime;
-	int pitchPreviousTime;
-	int batterReadyTimer;
-	int aiWrongPitch;
+    // Pitching AI
+    int pitchStage;
+    unsigned int pitchFirstLimit;
+    unsigned int pitchSecondLimit;
+    int pitchTime;
+    int pitchPreviousTime;
+    int batterReadyTimer;
+    int aiWrongPitch;
 } AIState;
 
 typedef struct _GameFlowState {
-	int closeToGround;
-	int homeRunCameraCounter;
-	int ballHome;    // Moved from HalfInningState (Logic state: ball is at home base)
+    int closeToGround;
+    int homeRunCameraCounter;
+    int ballHome; // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
 
 typedef struct _PendingActionState {
-	unsigned int meterCounter;
-	unsigned int meterCounterMax;
+    unsigned int meterCounter;
+    unsigned int meterCounterMax;
 
-	int throwGoingOn;
-	int runBatFlag;
-	int batterSelect;
+    int throwGoingOn;
+    int runBatFlag;
+    int batterSelect;
 
-	AILockType aiActionEventLock;
-	int aiLockUpdate;
-	int aiLockTimeoutCounter;
+    AILockType aiActionEventLock;
+    int aiLockUpdate;
+    int aiLockTimeoutCounter;
 
-	// Batting related
-	int battingFrameCount;
-	int increaseBattingFrameCount;
-	int selectedBattingPowerCount;
-	int selectedBattingAngleCount;
-	float batterAngle;
-	int batterAngleSpeed;
-	float batterAdvanceSpeed;
-	float batterAdvance;
-	BattingMode battingMode;
-	float batterAdvanceLimit;
-	int battingStopped;
-	int batterMoving;
-	int updateBatterLocationAndOrientation;
-	int pitchFrameTime; // from batting_system.c
+    // Batting related
+    int battingFrameCount;
+    int increaseBattingFrameCount;
+    int selectedBattingPowerCount;
+    int selectedBattingAngleCount;
+    float batterAngle;
+    int batterAngleSpeed;
+    float batterAdvanceSpeed;
+    float batterAdvance;
+    BattingMode battingMode;
+    float batterAdvanceLimit;
+    int battingStopped;
+    int batterMoving;
+    int updateBatterLocationAndOrientation;
+    int pitchFrameTime; // from batting_system.c
 
-	// Throwing related
-	float throwDistance; // from throwing_system.c
-	Vector3D throwDirection; // from throwing_system.c
+    // Throwing related
+    float throwDistance; // from throwing_system.c
+    Vector3D throwDirection; // from throwing_system.c
 
-	// Pitching related
-	float pitchPower; // from pitching_system.c
+    // Pitching related
+    float pitchPower; // from pitching_system.c
 
-	// Input interpretation
-	int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
+    // Input interpretation
+    int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
 } PendingActionState;
 
 typedef struct _HomeRunContestState {
-	int runnerBatterPairCounter;
-	int homerunPairHasPitch;  // Has at least one pitch been released for current pair (used to determine when to check pair-ending conditions)
+    int runnerBatterPairCounter;
+    int homerunPairHasPitch; // Has at least one pitch been released for current pair (used to determine when to check
+                             // pair-ending conditions)
 } HomeRunContestState;
 
 typedef enum {
-	PITCH_STAGE_NONE = 0,
-	PITCH_STAGE_WINDUP = 1,   // Pitcher winding up
-	PITCH_STAGE_AIRBORNE = 2  // Ball in air towards plate
+    PITCH_STAGE_NONE = 0,
+    PITCH_STAGE_WINDUP = 1, // Pitcher winding up
+    PITCH_STAGE_AIRBORNE = 2 // Ball in air towards plate
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {
-	float meterValue; // meter for pitching and throwing
-	float swingMeterValue; // meter for batting
+    float meterValue; // meter for pitching and throwing
+    float swingMeterValue; // meter for batting
 
-	PitchCycleState pitchState; // Replaces pitchGoingOn and pitchInAir
+    PitchCycleState pitchState; // Replaces pitchGoingOn and pitchInAir
 
-	int throwGoingToBase; // to avoid moving basecatchers out in the wild when ball is thrown to them.
+    int throwGoingToBase; // to avoid moving basecatchers out in the wild when ball is thrown to them.
 
-	int willStartRunning[BASE_COUNT];
+    int willStartRunning[BASE_COUNT];
 
-	int initBatter; // used to initialize batter locally in
-	int batterReady; // is batter ready to swing
-	int batHit; // tells if bat hit the ball. set to back 0 again when next pitch starts
-	int batMiss; // tells if bat missed the ball. set to back 0 when next pitch starts.
-	int battingGoingOn; // time starts when batter reaches ready position and ball is not in air and quits when batting animation is over
-	int batterCanAdvance;
+    int initBatter; // used to initialize batter locally in
+    int batterReady; // is batter ready to swing
+    int batHit; // tells if bat hit the ball. set to back 0 again when next pitch starts
+    int batMiss; // tells if bat missed the ball. set to back 0 when next pitch starts.
+    int battingGoingOn; // time starts when batter reaches ready position and ball is not in air and quits when batting
+                        // animation is over
+    int batterCanAdvance;
 
-	int refreshCatchAndChange; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
-	int initPlayerSelection; // and sometimes with refreshCatchAndChange we set also initPlayerSelection
-	// so that
+    int refreshCatchAndChange; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
+    int initPlayerSelection; // and sometimes with refreshCatchAndChange we set also initPlayerSelection
+    // so that
 
 } PlayerRelatedActionInfo;
 
 typedef struct _Scoreboard {
-	TeamInfo teams[2];
-	int halfInningsInPeriod;
-	int inning;
-	int period;
-	GamePeriodMode mode; // NEW field for Milestone 7
-	int pairCount;
-	int playsFirst;
-	int isCupGame;
+    TeamInfo teams[2];
+    int halfInningsInPeriod;
+    int inning;
+    int period;
+    GamePeriodMode mode; // NEW field for Milestone 7
+    int pairCount;
+    int playsFirst;
+    int isCupGame;
 } Scoreboard;
 
 typedef struct _MatchSession {
-	PlayerInfo playerInfo[2*PLAYERS_IN_TEAM + JOKER_COUNT];
-	PlayerRuntimeState playerRuntime[2*PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
-	RefereeState referee; // Milestone 12 - Referee State
-	ActionFlags aF;
-	PlayerIndexInfo pII;
-	PlayerRelatedActionInfo pRAI;
-	HalfInningState halfInningState; // MILESTONE 7.5 - New core state
-	GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
-	BetweenPitchState betweenPitchState; // MILESTONE 17 - Sticky referee decisions (reset at pitch start)
-	FlowControl flowControl; // MILESTONE 17 - User flow gates
-	CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
-	PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
-	HomeRunContestState homeRunContestState; // MILESTONE 7.5 - Game mode specific state
-	PendingActionState pendingActionState; // Milestone 10 - Action globals
-	AIState aiState; // Milestone 11 - AI globals
-	GameFlowState gameFlowState; // Milestone 11 - Game flow globals
-	UIState uiState; // Milestone 11 - UI state
-	GroundUnit groundUnit[GROUND_UNIT_COUNT];
-	BallInfo ballInfo;
-	Scoreboard scoreboard;
+    PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
+    PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
+    RefereeState referee; // Milestone 12 - Referee State
+    ActionFlags aF;
+    PlayerIndexInfo pII;
+    PlayerRelatedActionInfo pRAI;
+    HalfInningState halfInningState; // MILESTONE 7.5 - New core state
+    GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
+    BetweenPitchState betweenPitchState; // MILESTONE 17 - Sticky referee decisions (reset at pitch start)
+    FlowControl flowControl; // MILESTONE 17 - User flow gates
+    CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
+    PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
+    HomeRunContestState homeRunContestState; // MILESTONE 7.5 - Game mode specific state
+    PendingActionState pendingActionState; // Milestone 10 - Action globals
+    AIState aiState; // Milestone 11 - AI globals
+    GameFlowState gameFlowState; // Milestone 11 - Game flow globals
+    UIState uiState; // Milestone 11 - UI state
+    GroundUnit groundUnit[GROUND_UNIT_COUNT];
+    BallInfo ballInfo;
+    Scoreboard scoreboard;
 
 } MatchSession;
 
 typedef struct _GameConclusion {
-	int winner;
-	int period0Runs[2];
-	int period1Runs[2];
-	int period2Runs[2];
-	int period3Runs[2];
-	int isCupGame;
+    int winner;
+    int period0Runs[2];
+    int period1Runs[2];
+    int period2Runs[2];
+    int period3Runs[2];
+    int isCupGame;
 } GameConclusion;
 
 // Forward declaration for the new Cup structure to avoid circular dependencies
 typedef struct _Cup Cup;
 
 typedef struct _StateInfo {
-	// Main menu or game screen active
-	ScreenState screen;
-	int changeScreen;
-	int updated;
-	int numTeams;
-	int playSoundEffect;
-	int stopSoundEffect;
-	int soundEnabled;
-	int currently_played_cup_match_index; // Used to pass match context to/from game screen
-	// addresses to important information structures
-	KeyStates *keyStates;
-	TeamData *teamData;
-	FieldPositions *fieldPositions;
-	MatchSession* match;
-	Cup* cup;                  // New dynamic tournament state
-	GameConclusion* gameConclusion;
+    // Main menu or game screen active
+    ScreenState screen;
+    int changeScreen;
+    int updated;
+    int numTeams;
+    int playSoundEffect;
+    int stopSoundEffect;
+    int soundEnabled;
+    int currently_played_cup_match_index; // Used to pass match context to/from game screen
+    // addresses to important information structures
+    KeyStates* keyStates;
+    TeamData* teamData;
+    FieldPositions* fieldPositions;
+    MatchSession* match;
+    Cup* cup; // New dynamic tournament state
+    GameConclusion* gameConclusion;
 } StateInfo;
 
 #endif /* GLOBALS_H */

@@ -8,22 +8,17 @@
 #include "render.h"
 
 // Initialize or reset a home-run contest state for one team
-void initHomerunContestState(HomerunContestState *state,
-                             int team_index,
-                             int player_control,
-                             int choiceCount);
+void initHomerunContestState(HomerunContestState* state, int team_index, int player_control, int choiceCount);
 
 // Update function for a home-run contest stage. Returns next MenuStage.
-MenuStage updateHomerunContestMenu(HomerunContestState *state,
-                                   const KeyStates *keyStates,
-                                   MenuStage currentStage,
-                                   GameSetup *gameSetup,
-                                   const TeamData* teamData);
+MenuStage updateHomerunContestMenu(
+    HomerunContestState* state, const KeyStates* keyStates, MenuStage currentStage, GameSetup* gameSetup,
+    const TeamData* teamData
+);
 
 // Draw function for a home-run contest stage
-void drawHomerunContestMenu(const HomerunContestState *state,
-                            const RenderState *rs,
-                            ResourceManager *rm,
-                            const TeamData* teams);
+void drawHomerunContestMenu(
+    const HomerunContestState* state, const RenderState* rs, ResourceManager* rm, const TeamData* teams
+);
 
 #endif // HOMERUN_CONTEST_MENU_H

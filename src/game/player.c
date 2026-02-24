@@ -1,6 +1,7 @@
 /*
-	here we are just gonna render our players. draw function is the key part, it will take all the information about players and use that to draw
-	them. it means that all the data about how the players look like in the scene will be in the playerInfo-structure.
+    here we are just gonna render our players. draw function is the key part, it will take all the information about
+   players and use that to draw them. it means that all the data about how the players look like in the scene will be in
+   the playerInfo-structure.
 */
 
 #include "globals.h"
@@ -12,7 +13,7 @@
 int initPlayer(StateInfo* stateInfo, ResourceManager* rm)
 {
 #ifndef NO_RENDER
-	if(initPlayerRenderer(rm) != 0) return -1;
+    if (initPlayerRenderer(rm) != 0) return -1;
 #endif
-	return 0;
+    return 0;
 }

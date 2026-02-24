@@ -14,13 +14,11 @@ void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs);
 
 // --- 2D Text Rendering Framework ---
 
-typedef enum {
-	TEXT_ALIGN_LEFT,
-	TEXT_ALIGN_CENTER
-} TextAlign;
+typedef enum { TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER } TextAlign;
 
 void draw_text_2d(const char* text, float x, float y, float size, TextAlign align, const RenderState* rs);
-void draw_text_block_2d(const char* text, float x, float y, float width, float size, float lineSpacing, const RenderState* rs);
-
+void draw_text_block_2d(
+    const char* text, float x, float y, float width, float size, float lineSpacing, const RenderState* rs
+);
 
 #endif /* MENU_HELPERS_H */

@@ -12,10 +12,10 @@
  */
 
 typedef struct {
-	StateInfo* state;
-	unsigned int seed;
-	MenuInfo menu;
-	int currentFrame;
+    StateInfo* state;
+    unsigned int seed;
+    MenuInfo menu;
+    int currentFrame;
 } ScenarioContext;
 
 /**
@@ -97,7 +97,9 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
  * @param targetLocation Where the ball should land
  * @param flightFrames Number of frames for the ball to be in the air (default 150)
  */
-void hit_fly_ball_to_location_with_time(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation, float flightFrames);
+void hit_fly_ball_to_location_with_time(
+    ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation, float flightFrames
+);
 
 /**
  * @brief Hit a fly ball with default flight time (150 frames)

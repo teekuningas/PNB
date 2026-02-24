@@ -59,6 +59,8 @@ float calculate_angle_meter_value(int counter, int max, int power_count, int swi
  * @param ball_offset_x The horizontal offset of the ball when hit (affects direction)
  * @return Velocity vector
  */
-Vector3D calculate_batted_ball_velocity(float vertical_angle, float horizontal_angle, float power, int power_factor, float ball_offset_x);
+Vector3D calculate_batted_ball_velocity(
+    float vertical_angle, float horizontal_angle, float power, int power_factor, float ball_offset_x
+);
 
 #endif /* BATTING_PHYSICS_H */

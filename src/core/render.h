@@ -6,8 +6,8 @@
 
 // A struct to hold global rendering state, like window dimensions.
 typedef struct {
-	int window_width;
-	int window_height;
+    int window_width;
+    int window_height;
 } RenderState;
 
 void cleanMesh(MeshObject* mesh);
@@ -23,6 +23,5 @@ void begin_2d_render(const RenderState* rs);
 
 // Draws a textured 2D quad.
 void draw_texture_2d(GLuint texture, float x, float y, float width, float height);
-
 
 #endif /* RENDER_H */

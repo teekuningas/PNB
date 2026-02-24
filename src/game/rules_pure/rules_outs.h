@@ -13,6 +13,9 @@
  * @param halfInningState Current game state containing outOfBounds flag.
  * @return 1 if the runner is forced out, 0 otherwise.
  */
-int is_runner_forced_out(BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk, int out_of_bounds_active);
+int is_runner_forced_out(
+    BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk,
+    int out_of_bounds_active
+);
 
 #endif // RULES_OUTS_H

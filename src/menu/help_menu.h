@@ -5,8 +5,8 @@
 #include "input.h"
 #include "resource_manager.h"
 
-void initHelpMenu(HelpMenuState *state);
-MenuStage updateHelpMenu(HelpMenuState *state, KeyStates *keyStates);
-void drawHelpMenu(HelpMenuState *state, const RenderState* rs, ResourceManager* rm);
+void initHelpMenu(HelpMenuState* state);
+MenuStage updateHelpMenu(HelpMenuState* state, KeyStates* keyStates);
+void drawHelpMenu(HelpMenuState* state, const RenderState* rs, ResourceManager* rm);
 
 #endif // HELP_MENU_H

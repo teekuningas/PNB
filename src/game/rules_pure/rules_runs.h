@@ -25,6 +25,8 @@ int is_regular_run(BaseID player_base, BaseID player_original_base, int player_i
  * @param has_made_run_on_third_base Whether the runner already scored a run of honor this inning.
  * @return 1 if a run of honor is scored, 0 otherwise.
  */
-int is_run_of_honor(BaseID player_base, BaseID player_original_base, int player_is_wounded, int has_made_run_on_third_base);
+int is_run_of_honor(
+    BaseID player_base, BaseID player_original_base, int player_is_wounded, int has_made_run_on_third_base
+);
 
 #endif // RULES_RUNS_H

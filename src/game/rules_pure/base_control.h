@@ -26,4 +26,3 @@ int get_base_controller(const MatchSession* game, BaseID base);
 int get_ball_at_base_index(const StateInfo* stateInfo);
 
 #endif // BASE_CONTROL_H
-

@@ -8,7 +8,8 @@
 
 // Draw the initial loading screen before main menu startup.
 // Takes explicit menuData pointer for state, plus resource and render state
-void drawLoadingScreen(const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo,
-                       ResourceManager* rm, const RenderState* rs);
+void drawLoadingScreen(
+    const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, const RenderState* rs
+);
 
 #endif // LOADING_SCREEN_MENU_H
