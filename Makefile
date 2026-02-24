@@ -110,4 +110,4 @@ shell:
 
 .PHONY: format
 format:
-	@for k in $(shell find src tests -name "*.c" -o -name "*.h"); do astyle --style=kr --indent=tab=4 $$k ; done
+	@find src tests \( -name "*.c" -o -name "*.h" \) ! -name "miniaudio.h" ! -name "stb_image.h" | xargs clang-format -i

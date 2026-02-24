@@ -1,0 +1,14 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 120
+BreakBeforeBraces: Linux
+SpaceBeforeParens: ControlStatements
+AlignAfterOpenBracket: BlockIndent
+AlignTrailingComments: false
+PointerAlignment: Left
+IndentCaseLabels: false
+SortIncludes: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: WithoutElse
+SpaceInEmptyBlock: false

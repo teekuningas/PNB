@@ -127,7 +127,7 @@ The clearing of referee-owned state (strikes, balls, betweenPitchState flags, ba
 
 ### Step 1.4: Replace Tabs with Spaces
 
-Convert all tabs to 4 spaces across every `.c` and `.h` file in the codebase. This is standard modern C style and makes tooling (editors, diff viewers, AI tools) more predictable. Use `expand` or `sed` to do the conversion in a single commit, then add a `.git-blame-ignore-revs` entry for that commit so `git blame` skips the formatting change.
+Convert all tabs to 4 spaces across every `.c` and `.h` file in the codebase. This is standard modern C style and makes tooling (editors, diff viewers, AI tools) more predictable. Use `expand -t 4` to do the conversion in a single commit, update `make format` to use `--indent=spaces=4` instead of `--indent=tab=4`, then add a `.git-blame-ignore-revs` entry for that commit so `git blame` skips the formatting change.
 
 ---
 

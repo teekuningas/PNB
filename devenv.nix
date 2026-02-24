@@ -9,7 +9,7 @@
     miniaudio
     minixml
     gcc
-    astyle
+    clang-tools
     alsa-lib
     gh
     bashInteractive
