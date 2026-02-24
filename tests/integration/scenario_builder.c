@@ -222,7 +222,8 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 	}
 
 	for (int i = 0; i < maxFrames; i++) {
-		// New Main Loop Order
+		// actionInvocations() is intentionally omitted here: tests control player/AI decisions
+		// explicitly via scenario helpers, not through the normal input dispatch path.
 		actionImplementation(ctx->state, &ctx->seed);
 		gameManipulation(ctx->state);
 

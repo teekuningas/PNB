@@ -372,16 +372,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 								// Legacy Tuplahaava logic removed (handled by Referee_Update)
 							} else {
 								// if the player wasnt wounded, now he is arriving in a valid way
-								// §42 Kunniajuoksu Overtaking check:
-								// We prevent the arriving hitter from taking safety if 3rd base is occupied.
-								// This allows gameAnalysis to detect the overtaking and remove the hitter.
-								// if we arrived to base 3 and were originally from homebase
-								if(stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD &&
-								        stateInfo->match->referee.battingPlayers[index].baseAtPitchStart == BASE_HOME &&
-								        stateInfo->match->halfInningState.outs < 3) {
-									// This arrival will be handled by Referee via playerArrivedAtBase event
-									// No need to set any flags here - referee will check is_run_of_honor()
-								}
 							}
 						}
 					}

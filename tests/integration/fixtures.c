@@ -43,48 +43,6 @@ StateInfo* setup_test_state()
 	return state;
 }
 
-void setup_runner_at_first_base(StateInfo* state)
-{
-	unsigned int seed = 0;
-	GameSetup setup = {0};
-	setup.launchType = GAME_LAUNCH_NEW;
-	setup.gameMode = GAME_MODE_NORMAL;
-	setup.team1 = 0;
-	setup.team2 = 1;
-	setup.team1_control = 0;
-	setup.team2_control = 2;
-	setup.halfInningsInPeriod = 4;
-	setup.playsFirst = 0;
-
-	initializeGameFromMenu(state, &setup, &seed);
-
-	GameConsolidation_Init(&(state->match->gameFlowState));
-	state->match->playerInfo[0].bTPI.baseId = BASE_FIRST;
-	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
-	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_FIRST;
-}
-
-void setup_runner_at_third_base(StateInfo* state)
-{
-	unsigned int seed = 0;
-	GameSetup setup = {0};
-	setup.launchType = GAME_LAUNCH_NEW;
-	setup.gameMode = GAME_MODE_NORMAL;
-	setup.team1 = 0;
-	setup.team2 = 1;
-	setup.team1_control = 0;
-	setup.team2_control = 2;
-	setup.halfInningsInPeriod = 4;
-	setup.playsFirst = 0;
-
-	initializeGameFromMenu(state, &setup, &seed);
-
-	GameConsolidation_Init(&(state->match->gameFlowState));
-	state->match->playerInfo[0].bTPI.baseId = BASE_THIRD;
-	state->match->referee.battingPlayers[0].baseAtPitchStart = BASE_THIRD;
-	state->match->referee.battingPlayers[0].currentSafetyBase = BASE_THIRD;
-}
-
 void cleanup_test_state(StateInfo* state)
 {
 	for (int i = 0; i < 2; ++i) {
