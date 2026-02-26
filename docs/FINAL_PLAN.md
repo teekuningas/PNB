@@ -109,7 +109,7 @@ The clearing of referee-owned state (strikes, balls, betweenPitchState flags, ba
 
 ---
 
-## Phase 1: Dead Code Cleanup
+## Phase 1: Dead Code Cleanup ✅ DONE
 
 **Goal:** Remove noise so future diffs are cleaner.
 
@@ -131,7 +131,7 @@ Convert all tabs to 4 spaces across every `.c` and `.h` file in the codebase. Th
 
 ---
 
-## Phase 2: WOUNDED Enforcement — Fix the Layer Violation
+## Phase 2: WOUNDED Enforcement — Fix the Layer Violation 🎯 START HERE
 
 **Goal:** Make WOUNDED follow the same pattern as OUT and SCORED: referee decides, `enforceLegalState()` acts.
 

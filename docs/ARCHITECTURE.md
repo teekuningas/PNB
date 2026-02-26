@@ -1,7 +1,7 @@
 # PNB Architecture
 
-**Last updated:** 2026-02-07
-**Current Status:** Milestone 18.0 Complete ✅ | Ready for M18.1 (Test Fixture Unification) 🎯
+**Last updated:** 2026-02-26
+**Current Status:** FINAL_PLAN.md Phase 1 Complete ✅ | Starting Phase 2 (WOUNDED Enforcement) 🎯
 
 ## Vision: The Functional Pipeline
 
@@ -14,7 +14,7 @@ State_Next = Pipeline(Physics(Input(State)))
 **The Core Loop:**
 1. **Input:** `actionInvocations` → Transforms key presses into Intent/Action Flags.
 2. **Physics:** `actionImplementation`, `gameManipulation` → Updates physical world, emits transient `GameEvents`.
-3. **Referee:** `Referee_Update` → Reads Events, updates **Legal State** (Outs, Runs, Strikes). **SOLE WRITER**.
+3. **Referee:** `update_referee` → Reads Events, updates **Legal State** (Outs, Runs, Strikes). **SOLE WRITER**.
 4. **Consolidation:** `GameConsolidation_Update` → Reacts to Legal State, updates Flow, enforces physical outcomes (e.g., removing OUT players).
 5. **Render:** Draws the state.
 
@@ -51,7 +51,7 @@ State_Next = Pipeline(Physics(Input(State)))
     *   Counts strikes/balls.
     *   Restores legal safety after a Foul Play Reset.
 
-### `src/game/game_manipulation.c` (The Physics Engine - *Target of M18*)
+### `src/game/game_manipulation.c` (The Physics Engine)
 *   **Role:** Simulates the physical world.
 *   **Logic:**
     *   Moves ball and players based on velocity.
@@ -116,68 +116,18 @@ When a transition occurs (e.g., End of Inning):
 
 ---
 
-## Recent Fixes (2026-01-26 to 2026-01-30)
-
-### Strike Reset Bug (M17)
-**Problem:** Strikes/balls were resetting 1-2 seconds after a pitch.
-
-**Fix:** Moved `batterEntered` emission to batter selection time, not ready position. Event fires only once per batter.
-
-### Homerun Contest Logic (M17.5)
-**Problem:** Premature pair transitions, complex pair-ending logic.
-
-**Fix:** 
-- Added `homerunPairHasPitch` tracking flag
-- Simplified pair-ending to 3 explicit conditions
-- Permissive logic (allows play to continue unless stuck)
-
-### Test Infrastructure (M17.5)
-**Achievement:** All 15 integration tests refactored to follow Referee Supremacy pattern.
-- Tests set physical state, emit events, let referee infer legal state
-- Zero manual referee state manipulation in tests
-
-### Initialization Cleanup (M18.0) - 2026-02-07
-**Problem:** Confusing `gameInitialized` event created asymmetry between game start and transitions.
-
-**Changes:**
-- Added `initialize_referee()` - explicit function to scan physical world during setup
-- Renamed `Referee_Update` → `update_referee` for naming consistency
-- Removed `gameInitialized` event entirely
-- Fixed double-initialization bug in `returnToGame()`
-- Made all menu→game transitions consistent
-
-**Result:** 
-- Clear pattern: Setup = explicit calls, Transitions = state machines
-- No confusing events suggesting deferred initialization
-- Consistent snake_case naming throughout
-
-### Debug Logging Issue Found (M18.0) - 2026-02-07
-**Problem:** debug.log only shows "active" players, hiding IDLE players and critical game state.
-
-**Impact:** Makes debugging period transitions and player selection nearly impossible.
-
-**Plan (M18.1):**
-- Show ALL 24 players regardless of state
-- Include scoreboard (period, inning, batterOrder for both teams)
-- Include halfInningState (outs, strikes, balls)
-- Include playerCounters (nonJokerPlayersLeft, jokersLeft)
-- Improve formatting for readability
-
----
-
 ## Current Roadmap
 
-| # | Milestone | Goal | Status |
-|---|-----------|------|--------|
-| **17** | **Referee Consolidation** | **Referee is sole writer. Loop ordered.** | **✅ DONE** |
-| **17.5** | **Homerun Contest & Final Cleanup** | **Test homerun mode. Complete consolidation.** | **✅ DONE** |
-| **18.0** | **Initialization Cleanup** | **Remove gameInitialized event, explicit init.** | **✅ DONE** |
-| **18.1** | **Debug Logging Improvements** | **Show all players, add metadata.** | **✅ DONE** |
-| **18.2** | **Test Fixture Unification** | **Unify all test initialization paths.** | **🎯 NEXT** |
-| 18.3 | Referee Internal Refactoring | Extract state machines, RefereeContext. | ⏳ TODO |
-| 19 | Physics/State Split | Extract pure physics from `game_manipulation`. | 🔮 Future |
-| 20 | Action Decoupling | Split `actions_messy/` into pure logic + execution. | 🔮 Future |
-| 21 | User Intent Layer | Input → Intent → Engine (Replay support). | 🔮 Future |
+The active refactoring plan lives in **`docs/FINAL_PLAN.md`**. Summary:
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| **1** | **Dead Code Cleanup** — remove dead fixtures, empty blocks, tab→space conversion | **✅ DONE** |
+| **2** | **WOUNDED Enforcement** — referee decides, consolidation acts (eliminate `processPendingWounds`) | **🎯 NEXT** |
+| 3 | Referee Ownership — eliminate all const-casts in `referee.c` | ⏳ TODO |
+| 4 | Extract Pure Helpers — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
+| 5 | Test Strengthening — unit tests for pure helpers, pipeline cooperation tests | ⏳ TODO |
+| Future | `game_manipulation.c` decomposition, `common_logic.c` decomposition, action decoupling, intent layer | 🔮 Future |
 
 ---
 
