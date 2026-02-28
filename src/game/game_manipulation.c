@@ -41,7 +41,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo);
 static void moveIdlingPlayersToHomeLocation(StateInfo* stateInfo);
 static void rankPlayersAndMoveThem(StateInfo* stateInfo);
 static void updateModels(StateInfo* stateInfo);
-static void processPendingWounds(StateInfo* stateInfo);
 static void updateBallHomeStatus(StateInfo* stateInfo);
 
 void gameManipulation(StateInfo* stateInfo)
@@ -52,8 +51,6 @@ void gameManipulation(StateInfo* stateInfo)
        // to ball
     checkIfBallCanBeCatched(stateInfo); //  if no one has the ball, it could be catched, couldn't it?
     checkIfNearHomeLocation(stateInfo);
-    processPendingWounds(stateInfo); // NEW: Check for wounds every frame (decoupled from arrival)
-    // baseRunnerMovementsOnBaseArrivals(stateInfo); // MOVED: To after location update
     basemenReplacements(stateInfo);
     moveIdlingPlayersToHomeLocation(stateInfo);
     rankPlayersAndMoveThem(
@@ -320,33 +317,6 @@ static void checkIfNearHomeLocation(StateInfo* stateInfo)
         }
     }
 }
-// so here we are going to handle situations when baserunners arrive bases and we must handle those players' flags
-// and players who were there already must have their status updated also etc
-static void processPendingWounds(StateInfo* stateInfo)
-{
-    int i;
-    // check all players for pending wounds that are ready for physical removal
-    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        int index = i;
-        // Process players with WOUNDED status (referee has already decided)
-        RefereePlayerStatus status = stateInfo->match->referee.battingPlayers[index].status;
-        if (status == PLAYER_STATUS_WOUNDED) {
-            BaseID currentBase = stateInfo->match->playerInfo[index].bTPI.baseId;
-
-            // We only process if they are actually on a base (or have arrived at one).
-            if (currentBase != BASE_NONE) {
-                // Referee has decided this player should be wounded
-                // Apply physical consequences immediately
-                stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_WOUNDED;
-                stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
-                movePlayerOut(
-                    stateInfo->match->playerInfo, stateInfo->match->playerRuntime, stateInfo->fieldPositions, index
-                );
-            }
-        }
-    }
-}
-
 static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
 {
     // so everything starts with some player arriving base, this flag is set on target checking function.
@@ -381,24 +351,6 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
                                 stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
                                 stateInfo->match->playerInfo[index].bTPI.state =
                                     PLAYER_STATE_ON_BASE; // Transition out of ADVANCING_FREELY
-                            }
-
-                            // NOTE: Wounding logic is now handled by processPendingWounds()
-                            // which runs before this function.
-                            // So if a wound applied, state is already PLAYER_STATE_WOUNDED.
-
-                            // if we were wounded we must be removed out of the field and
-                            // also basemen already on the base must be removed as they get wounded too.
-                            if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_WOUNDED) {
-                                stateInfo->match->playerInfo[index].bTPI.baseId = BASE_NONE;
-                                movePlayerOut(
-                                    stateInfo->match->playerInfo, stateInfo->match->playerRuntime,
-                                    stateInfo->fieldPositions, index
-                                );
-
-                                // Legacy Tuplahaava logic removed (handled by Referee_Update)
-                            } else {
-                                // if the player wasnt wounded, now he is arriving in a valid way
                             }
                         }
                     }

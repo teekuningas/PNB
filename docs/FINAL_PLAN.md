@@ -131,7 +131,7 @@ Convert all tabs to 4 spaces across every `.c` and `.h` file in the codebase. Th
 
 ---
 
-## Phase 2: WOUNDED Enforcement — Fix the Layer Violation 🎯 START HERE
+## Phase 2: WOUNDED Enforcement — Fix the Layer Violation ✅ DONE
 
 **Goal:** Make WOUNDED follow the same pattern as OUT and SCORED: referee decides, `enforceLegalState()` acts.
 
@@ -164,7 +164,7 @@ Lines 366-371 in `game_manipulation.c` check for `PLAYER_STATE_WOUNDED` and call
 
 ---
 
-## Phase 3: Referee Ownership Cleanup — Eliminate All Const-Casts
+## Phase 3: Referee Ownership Cleanup — Eliminate All Const-Casts 🎯 START HERE
 
 **Goal:** Zero const-casts in referee.c. The type system becomes our enforcer.
 

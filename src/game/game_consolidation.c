@@ -88,7 +88,16 @@ static void enforceLegalState(StateInfo* stateInfo)
             movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
         }
 
-        // 3. React to displacement (Panic Run)
+        // 3. React to WOUNDED
+        if (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
+            if (game->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
+                game->playerInfo[i].bTPI.state = PLAYER_STATE_WOUNDED;
+                game->playerInfo[i].bTPI.baseId = BASE_NONE;
+                movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
+            }
+        }
+
+        // 4. React to displacement (Panic Run)
         if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE ||
             game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
             BaseID physBase = game->playerInfo[i].bTPI.baseId;
@@ -183,13 +192,16 @@ static void executeFoulPlayTeleport(StateInfo* stateInfo, unsigned int* rng_seed
                     game->playerInfo[j].tPI.location.z = stateInfo->fieldPositions->thirdBaseRun.z;
                 }
             } else {
-                // Restore OUT/SCORED states to avoid re-triggering animations
+                // Restore OUT/SCORED/WOUNDED states to avoid re-triggering animations
                 // This is physical state sync
                 if (game->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
                     game->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
                     game->playerInfo[j].bTPI.baseId = BASE_NONE;
                 } else if (game->referee.battingPlayers[j].hasScored) {
                     game->playerInfo[j].bTPI.state = PLAYER_STATE_SCORED;
+                    game->playerInfo[j].bTPI.baseId = BASE_NONE;
+                } else if (game->referee.battingPlayers[j].status == PLAYER_STATUS_WOUNDED) {
+                    game->playerInfo[j].bTPI.state = PLAYER_STATE_WOUNDED;
                     game->playerInfo[j].bTPI.baseId = BASE_NONE;
                 }
             }

@@ -1,7 +1,7 @@
 # PNB Architecture
 
-**Last updated:** 2026-02-26
-**Current Status:** FINAL_PLAN.md Phase 1 Complete ✅ | Starting Phase 2 (WOUNDED Enforcement) 🎯
+**Last updated:** 2026-02-28
+**Current Status:** FINAL_PLAN.md Phase 2 Complete ✅ | Starting Phase 3 (Referee Ownership) 🎯
 
 ## Vision: The Functional Pipeline
 
@@ -123,8 +123,8 @@ The active refactoring plan lives in **`docs/FINAL_PLAN.md`**. Summary:
 | Phase | Goal | Status |
 |-------|------|--------|
 | **1** | **Dead Code Cleanup** — remove dead fixtures, empty blocks, tab→space conversion | **✅ DONE** |
-| **2** | **WOUNDED Enforcement** — referee decides, consolidation acts (eliminate `processPendingWounds`) | **🎯 NEXT** |
-| 3 | Referee Ownership — eliminate all const-casts in `referee.c` | ⏳ TODO |
+| **2** | **WOUNDED Enforcement** — referee decides, consolidation acts (eliminate `processPendingWounds`) | **✅ DONE** |
+| **3** | **Referee Ownership** — eliminate all const-casts in `referee.c` | **🎯 NEXT** |
 | 4 | Extract Pure Helpers — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
 | 5 | Test Strengthening — unit tests for pure helpers, pipeline cooperation tests | ⏳ TODO |
 | Future | `game_manipulation.c` decomposition, `common_logic.c` decomposition, action decoupling, intent layer | 🔮 Future |
