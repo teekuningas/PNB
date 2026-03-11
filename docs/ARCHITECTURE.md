@@ -1,7 +1,8 @@
 # PNB Architecture
 
-**Last updated:** 2026-02-28
-**Current Status:** FINAL_PLAN.md Phase 2 Complete ✅ | Starting Phase 3 (Referee Ownership) 🎯
+**Last updated:** 2026-03-11
+**Current Status:** Phase 3.1 Complete ✅ (homerunPairHasPitch moved to RefereeState) | Continuing Phase 3 🎯
+**Deep Analysis:** Lifecycle architecture verified — see `PLAN.md` "Lifecycle Architecture" section
 
 ## Vision: The Functional Pipeline
 
@@ -118,16 +119,18 @@ When a transition occurs (e.g., End of Inning):
 
 ## Current Roadmap
 
-The active refactoring plan lives in **`docs/FINAL_PLAN.md`**. Summary:
+The active refactoring plan lives in **`docs/PLAN.md`**. Summary:
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **1** | **Dead Code Cleanup** — remove dead fixtures, empty blocks, tab→space conversion | **✅ DONE** |
-| **2** | **WOUNDED Enforcement** — referee decides, consolidation acts (eliminate `processPendingWounds`) | **✅ DONE** |
-| **3** | **Referee Ownership** — eliminate all const-casts in `referee.c` | **🎯 NEXT** |
-| 4 | Extract Pure Helpers — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
-| 5 | Test Strengthening — unit tests for pure helpers, pipeline cooperation tests | ⏳ TODO |
-| Future | `game_manipulation.c` decomposition, `common_logic.c` decomposition, action decoupling, intent layer | 🔮 Future |
+| **1** | **Consolidate & Knight** — remove trivial const-casts (9→3), add unit tests for stable pure functions | **🎯 NEXT** |
+| **2** | **1-Frame Contract Tests** — prove pipeline stage cooperation at the frame level | ⏳ TODO |
+| **3** | **GameEvents Migration** — move transient pRAI fields to GameEvents, delete defensive reset code | ⏳ TODO |
+| **4** | **Complete Referee Ownership** — eliminate last 3 const-casts (FlowControl moves to consolidation) | ⏳ TODO |
+| **5** | **Extract Pure Helpers** — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
+| Future | Rename/reorganize, `common_logic.c`/`game_manipulation.c` decomposition, pRAI lifecycle completion | 🔮 Future |
+
+*Previous phases (Dead Code Cleanup, WOUNDED Enforcement, homerunPairHasPitch move) are complete. See `docs/archive/` for history.*
 
 ---
 
@@ -137,7 +140,7 @@ The active refactoring plan lives in **`docs/FINAL_PLAN.md`**. Summary:
 # Build
 make main
 
-# Test (63 tests: 48 unit + 15 integration)
+# Test (54 tests: 39 unit + 15 integration)
 devenv shell make test              # Unit tests
 devenv shell make integration_test  # Scenario tests
 ```
