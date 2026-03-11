@@ -53,7 +53,7 @@ static void update_initialization_events(
 
         // 2. Mark that a pitch has been released (for homerun contest pair tracking)
         if (stateInfo->match->scoreboard.period >= 4) {
-            ((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 1;
+            referee->homerunPairHasPitch = 1;
         }
 
         // 3. Snapshot Strike Count
@@ -962,7 +962,7 @@ void update_referee(
         if (currentState == HR_PAIR_STATE_NONE) {
             // Only check pair-ending conditions after at least one pitch has been released
             // This prevents premature "NEXT PAIR" at the start when baseAtPitchStart is still BASE_NONE
-            if (((MatchSession*)game)->homeRunContestState.homerunPairHasPitch) {
+            if (refereeState->homerunPairHasPitch) {
 
                 // Identify batter and runner using baseAtPitchStart (reliable after first pitch)
                 int batterIndex = -1;
@@ -1058,7 +1058,7 @@ void update_referee(
                 refereeState->nextPairTimer = -1;
 
                 // Reset homerun pair pitch tracking for the next pair
-                ((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
+                refereeState->homerunPairHasPitch = 0;
 
                 // Clear referee state NOW (before consolidation resets physical world)
                 halfInningState->strikes = 0;
@@ -1143,7 +1143,7 @@ void update_referee(
 
             // Reset homerun pair pitch tracking for the next inning
             if (scoreboard->period >= 4) {
-                ((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
+                refereeState->homerunPairHasPitch = 0;
             }
 
             // Clear referee state NOW (before consolidation resets physical world)
@@ -1192,7 +1192,7 @@ void initialize_referee(const StateInfo* stateInfo)
     if (game->scoreboard.period >= 4) {
         // Homerun Contest (period >= 4): scan for batter at HOME, runner at THIRD
         // Reset homerun pair pitch tracking
-        ((MatchSession*)game)->homeRunContestState.homerunPairHasPitch = 0;
+        referee->homerunPairHasPitch = 0;
 
         // Initialize Legal State for Batter/Runner based on Physical World
         // baseAtPitchStart will be set on pitchReleased
@@ -1261,4 +1261,5 @@ void initializeRefereeState(RefereeState* referee)
     referee->nextPairTimer = -1;
     referee->endOfInningState = END_INNING_STATE_NONE;
     referee->endInningTimer = -1;
+    referee->homerunPairHasPitch = 0;
 }

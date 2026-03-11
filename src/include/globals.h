@@ -379,6 +379,7 @@ typedef struct _RefereeState {
     // Run of Honor tracking (Homerun Contest)
     int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
 
+    int homerunPairHasPitch; // Has at least one pitch been released for current pair
 } RefereeState;
 
 typedef enum { JOKER_REGULAR = 0, JOKER_AVAILABLE = 1, JOKER_USED = 2 } JokerStatus;
@@ -674,8 +675,6 @@ typedef struct _PendingActionState {
 
 typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
-    int homerunPairHasPitch; // Has at least one pitch been released for current pair (used to determine when to check
-                             // pair-ending conditions)
 } HomeRunContestState;
 
 typedef enum {
