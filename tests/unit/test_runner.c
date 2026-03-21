@@ -98,6 +98,16 @@ extern int test_cup_day_progression_best_of_three();
 extern int test_base_sequence();
 extern int test_base_properties();
 extern int test_base_comparisons();
+extern int test_base_to_int_index();
+extern int test_player_is_safe_from_fly();
+extern int test_count_active_batting_players();
+
+// Declare base control tests
+extern int test_get_base_controller();
+extern int test_get_ball_at_base_index();
+
+// Declare player utils tests
+extern int test_get_active_batter_index();
 
 int main(int argc, char* argv[])
 {
@@ -109,6 +119,16 @@ int main(int argc, char* argv[])
     RUN_TEST(test_base_sequence);
     RUN_TEST(test_base_properties);
     RUN_TEST(test_base_comparisons);
+    RUN_TEST(test_base_to_int_index);
+    RUN_TEST(test_player_is_safe_from_fly);
+    RUN_TEST(test_count_active_batting_players);
+
+    // Base Control tests
+    RUN_TEST(test_get_base_controller);
+    RUN_TEST(test_get_ball_at_base_index);
+
+    // Player Utils tests
+    RUN_TEST(test_get_active_batter_index);
 
     // Fixture tests
     RUN_TEST(test_fixture_super_inning_setup);

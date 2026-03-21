@@ -81,6 +81,6 @@ bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID 
 
 int count_active_batting_players(const PlayerInfo* players);
 
-int checkIfBallIsOutOfBounds(BallInfo* ballInfo, FieldPositions* fieldPositions);
+int checkIfBallIsOutOfBounds(const BallInfo* ballInfo, const FieldPositions* fieldPositions);
 
 #endif // BASE_LOGIC_H

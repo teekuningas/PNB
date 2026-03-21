@@ -89,7 +89,7 @@ static void update_initialization_events(
                     // Determine safety status for snapshot
                     int hasSafety = 0;
                     if (base >= 0 && base < 4) {
-                        if (get_base_controller((MatchSession*)game, (BaseID)base) == index) {
+                        if (get_base_controller(game, (BaseID)base) == index) {
                             hasSafety = 1;
                         }
                     }
@@ -184,7 +184,7 @@ static void update_foul_play_logic(
     // Out of Bounds Logic: Check ONLY on first bounce
     if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
         if (game->pRAI.batHit == 1 && betweenPitchState->catchHasBeenMade == 0) {
-            if (checkIfBallIsOutOfBounds((BallInfo*)&game->ballInfo, stateInfo->fieldPositions)) {
+            if (checkIfBallIsOutOfBounds(&game->ballInfo, stateInfo->fieldPositions)) {
                 // Transition to DETECTED
                 referee->foulState = FOUL_STATE_DETECTED;
                 referee->foulTimer = 0;
@@ -875,7 +875,7 @@ static void resolve_pending_runs(
 }
 
 static void update_game_state_flags(
-    StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
+    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
     BetweenPitchState* betweenPitchState
 )
 {
@@ -946,9 +946,7 @@ void update_referee(
     );
 
     // 5. Game State Flags
-    update_game_state_flags(
-        (StateInfo*)stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState
-    );
+    update_game_state_flags(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
 
     // 6. Homerun Contest: Check if current pair is complete
     if (scoreboard->period >= 4) {
@@ -978,7 +976,7 @@ void update_referee(
                 }
 
                 // Get current state information
-                int ballHome = ((MatchSession*)game)->gameFlowState.ballHome;
+                int ballHome = game->gameFlowState.ballHome;
 
                 // Check batter status
                 BaseID batterBaseId = BASE_NONE;
@@ -1115,15 +1113,13 @@ void update_referee(
 
         if (scoreboard->period >= 4) {
             // Homerun Contest mode: inning ends only when all pairs complete or period ends
-            shouldEndInning =
-                (halfInningState->endPeriod == 1) ||
-                (((MatchSession*)game)->homeRunContestState.runnerBatterPairCounter >= scoreboard->pairCount);
+            shouldEndInning = (halfInningState->endPeriod == 1) ||
+                              (game->homeRunContestState.runnerBatterPairCounter >= scoreboard->pairCount);
         } else {
             // Normal/Super Inning mode: inning ends on 3 outs or no more players
-            shouldEndInning =
-                (halfInningState->outs >= 3) ||
-                (playerCounters->noMorePlayers == 1 && ((MatchSession*)game)->gameFlowState.ballHome == 1) ||
-                (halfInningState->endPeriod == 1);
+            shouldEndInning = (halfInningState->outs >= 3) ||
+                              (playerCounters->noMorePlayers == 1 && game->gameFlowState.ballHome == 1) ||
+                              (halfInningState->endPeriod == 1);
         }
 
         if (shouldEndInning) {
