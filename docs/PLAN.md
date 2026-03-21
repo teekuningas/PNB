@@ -1,28 +1,60 @@
 # Refactoring Plan
 
 **Created:** 2026-03-11
+**Last updated:** 2026-03-21
 **Supersedes:** `archive/FINAL_PLAN.md`, `archive/ALTERNATIVE_PLAN.md`
 
 ---
 
 ## Where We Are
 
-Phases 1–2 of the original plan are **done**. Phase 3.1 (move `homerunPairHasPitch` into `RefereeState`) is **done**. The main loop in `mutable_world.c` is clean: five pipeline stages, proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable pointers. 9 const-casts remain in `referee.c` (down from 12).
+Phases 1–2 of the original plan are **done**. Phase 3.1 (move `homerunPairHasPitch` into `RefereeState`) is **done**. Phases 1–2 of THIS plan are **done** (const-cast consolidation, knighting stable functions, 1-frame contract tests, test directory restructuring). The main loop in `mutable_world.c` is clean: five pipeline stages, proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable pointers. **3 const-casts remain** in `referee.c` (down from 12).
 
-**Test count:** 54 tests (39 unit + 15 integration). All passing.
+**Test count:** 73 tests (54 unit + 4 contract + 15 scenario). All passing.
 
-The codebase is in a strong position architecturally. What's missing is **momentum** — the remaining Phase 3 steps are microsurgery, and the refactoring has become mentally draining. This plan is designed to alternate between consolidation (finishing what's started) and big structural wins (visible progress that deletes code and proves the architecture).
+**Test structure:**
+- `tests/unit/` — 54 pure function unit tests → `make test`
+- `tests/integration/contracts/` — 4 one-frame pipeline contract tests → `make integration_test`
+- `tests/scenario/` — 15 full-game scenario tests → `make scenario_test`
+
+**Cleanups done in Phase 2 (2026-03-21):**
+- Removed duplicate `#define`s in referee.c (BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z already in globals.h)
+- Connected `OUT_OF_BOUNDS_THRESHOLD` constant to its usage in referee.c
+- Cleaned `initializeTemporaryGameAnalysisInfo`: removed duplicate FlowControl clears, fixed `freeWalkBase = -1` → `BASE_NONE`
+- Removed redundant `GameConsolidation_Init` call from `create_scenario` in test infrastructure
+- Removed GameEvents Standard violation in test helper (`gameEvents.catchMade = 0` — only `clearFrameEvents` should zero events)
+
+**Next:** Phase 3 — GameEvents Migration (consolidate `batHit`/`batMiss`).
 
 ---
 
+## Shared Vision
+
+This is a pesäpallo game engine, and it's important to us. The codebase should be as beautiful as the game itself — clear, elegant, correct. We hold ourselves to the highest standard of C programming while embracing functional thinking: pure stages, immutable inputs, explicit data flow. We don't compromise unless necessary, and when we do, we discuss it first.
+
+**Core beliefs:**
+- **Data structure determines everything.** When the data model is right, functions become natural. When it's wrong, bad things cascade everywhere. Getting struct design right is the most important investment.
+- **Functional purity in a C world.** We can't have Haskell's type system, but we can have its discipline. Each pipeline stage reads its inputs and produces its outputs. Side effects are explicit, ownership is enforced by `const`, and the compiler catches violations.
+- **No hacks, no shortcuts.** If something feels sketchy, it's a symptom of a deeper problem. We fix the cause, not the symptom. Every line should be there for a reason.
+- **Invalid states should be unrepresentable.** We prefer enums over flag collections, lifecycle-matching structs over manual clears, and helper functions that produce valid composite states over setting individual flags.
+- **Naming matters.** Files, functions, variables — everything should say what it means. When names stop fitting, we rename. The code is documentation.
+
+**Refactoring procedure:**
+1. Understand what exists and why (read before writing)
+2. Make a plan with small, independently testable steps
+3. Run all 73 tests after every change — green is the only acceptable state
+4. Knight stable interfaces with tests — this locks in progress permanently
+5. Never test things that are about to change — that consolidates bad design
+6. Discuss any decision that has multiple valid approaches
+
 ## Guiding Principles
 
-*Carried forward from the original plan, with additions.*
+*Technical principles that implement the vision above.*
 
 1. **Data ownership is sacred.** Each pipeline stage owns specific structs. Writes must go through proper signatures, never through const-casts.
 2. **Referee decides, Consolidation acts.** The referee sets legal status flags. Consolidation enforces them physically.
 3. **The compiler is our enforcer.** `const` in signatures isn't documentation — it's a contract. If the code compiles without casts, ownership is correct.
-4. **Small verifiable steps.** Each step must leave all 54 tests passing. No multi-step changes that can't be tested in isolation.
+4. **Small verifiable steps.** Each step must leave all 73 tests passing. No multi-step changes that can't be tested in isolation.
 5. **Testing is knighting.** We don't test things that are probably going to change. We add tests to things we've thought hard about and are confident of their stability, naming, and purpose. The test suite is a monument to what's finished.
 6. **Lifecycle determines structure.** Variables should live in structs that enforce their lifecycle. Transient (single-frame) data auto-clears. Persistent data survives. Mixing lifecycles creates defensive code.
 
@@ -116,13 +148,11 @@ These are cross-boundary writes that don't cause bugs but violate strict ownersh
 
 Pure functions from `rules_pure/`, `actions_pure/`, `ai_pure/`. They take values and return values. No state, no side effects. They encode pesäpallo rules and physics formulas that won't change. These are the easiest to knight — if the function's API is stable, the test is forever.
 
-**Currently knighted:** `batting_physics` (5), `pitching_physics` (5), `rules_outs` (7), `rules_runs` (2), `base_logic` (3), `batting_ai_strategy` (4), `catching_ai_strategy` (4), `pitching_ai_strategy` (1), `cup_logic` (4), `collision` (4). Total: 39.
+**Currently knighted (54 tests):** `batting_physics` (5), `pitching_physics` (5), `rules_outs` (7), `rules_runs` (2), `base_logic` (3+4 new), `batting_ai_strategy` (4), `catching_ai_strategy` (4), `pitching_ai_strategy` (1), `cup_logic` (6), `collision` (5), `fixture_setup` (4), `text_width` (1), `get_base_controller` (1), `get_ball_at_base_index` (1), `get_active_batter_index` (1).
 
-**Awaiting knighting:** `get_base_controller`, `get_active_batter_index`, `get_ball_at_base_index`, remaining `base_logic` functions (`base_to_int_index`, `player_is_safe_from_fly`, `count_active_batting_players`).
+**Awaiting knighting:** `determine_pitch_result` — the strike zone logic only checks horizontal position; the API may expand to include height. Not stable enough to knight yet.
 
-**Deferred:** `determine_pitch_result` — the strike zone logic only checks horizontal position; the API may expand to include height. Not stable enough to knight yet.
-
-### Tier 2: 1-Frame Contract Tests (NEW)
+### Tier 2: 1-Frame Contract Tests (4 tests)
 
 These test the **contracts between pipeline stages**, not game scenarios. They set a precise state, run `updateMutableWorld` for exactly 1 frame, and assert the immediate reaction. They answer questions like:
 
@@ -165,9 +195,12 @@ Currently `clearFrameEvents()` runs at the END of the frame (`mutable_world.c:87
 
 ---
 
-## Phase 1: Consolidate & Knight
+## Phase 1: Consolidate & Knight ✅ DONE
 
-**Goal:** Finish the easy parts of const-cast elimination, and knight the stable pure functions. This is celebrating what's already done.
+**Completed 2026-03-21.** Removed 6 unnecessary const-casts (9→3). Fixed 2 function signatures (`checkIfBallIsOutOfBounds`, `update_game_state_flags`) to take `const` pointers. Added 15 new unit tests for `base_logic`, `get_base_controller`, `get_ball_at_base_index`, `get_active_batter_index`, fixture setup, collision, and other stable functions. All tests passing.
+
+<details>
+<summary>Original plan (for reference)</summary>
 
 ### Step 1.1: Remove Unnecessary Read Casts (4 trivial fixes)
 
@@ -202,11 +235,22 @@ Follow existing pattern: extern declarations in `test_runner.c`, `RUN_TEST()` ma
 
 **After Phase 1:** 6 of 9 const-casts eliminated. ~6-10 new unit tests added. Clean position.
 
+</details>
+
 ---
 
-## Phase 2: 1-Frame Contract Tests
+## Phase 2: 1-Frame Contract Tests ✅ DONE
 
-**Goal:** Prove that the pipeline stages cooperate correctly at the frame level. This is a new testing capability that enables future structural changes.
+**Completed 2026-03-21.** Created 4 contract tests proving pipeline stage cooperation. Restructured test directory: scenario tests moved to `tests/scenario/`, contract tests in `tests/integration/contracts/`. Three Makefile targets: `make test`, `make integration_test`, `make scenario_test`. Cleaned up initialization code and test infrastructure. All 73 tests passing.
+
+**Contract tests written:**
+1. `test_clear_frame_events` — verifies ALL GameEvents fields clear + size guard catches struct growth
+2. `test_referee_reacts_to_catch` — catchMade + batHit + runner → woundingEvaluationActive + WOUND_MARKED
+3. `test_referee_reacts_to_pitch` — pitchReleased → baseAtPitchStart captured, strikes saved, BPS cleared
+4. `test_foul_detection` — ballHitGround + batHit + out of bounds → foulState = DETECTED
+
+<details>
+<summary>Original plan (for reference)</summary>
 
 ### Step 2.1: Infrastructure
 
@@ -237,11 +281,15 @@ Recommendation: put them in `tests/integration/` since they share the scenario b
 
 **After Phase 2:** New testing capability. ~4 contract tests that prove the architecture. Foundation for safe structural moves.
 
+</details>
+
 ---
 
-## Phase 3: The GameEvents Migration (Big Win)
+## Phase 3: The GameEvents Migration (Big Win) ← NEXT
 
 **Goal:** Move truly transient pRAI fields into `GameEvents`, delete defensive reset logic. The architecture enforces the lifecycle automatically.
+
+**Getting started:** This phase has clear, mechanical steps. The duplicate fields are already identified (see Step 3.1 below). A good contract test to write alongside the migration: assert that after `clearFrameEvents`, `batHit`/`batMiss` (now in GameEvents) are zero, and that referee still correctly evaluates wounding/foul using the GameEvents versions.
 
 ### Critical Finding: Not All Fields Are Truly Transient
 
@@ -295,7 +343,7 @@ Verified safe by tracing all references:
 
 After step 3.1, review `initializePRAIInformation()` — the `batHit = 0` and `batMiss = 0` lines are gone. Check if other fields cleared there are also now redundant.
 
-Review `initializeTemporaryGameAnalysisInfo()` — it has **duplicate clears** (FlowControl fields initialized twice). Clean this up regardless.
+**NOTE (2026-03-21):** `initializeTemporaryGameAnalysisInfo()` duplicate clears were already cleaned up in Phase 2 (removed duplicate FlowControl block, fixed `freeWalkBase = -1` → `BASE_NONE`). Verify no new duplicates have crept in.
 
 ### Step 3.3: Investigate batterCanAdvance and refreshCatchAndChange
 
@@ -445,12 +493,12 @@ Complete `actions_messy → actions_pure` split. Intent layer for replay/network
 
 ## Summary Table
 
-| Phase | Steps | Risk | Key Metric | Momentum |
-|-------|-------|------|-----------|----------|
-| **1. Consolidate & Knight** | 1.1-1.3 | None | 9→3 const-casts, +6-10 unit tests | ⭐⭐ Clean |
-| **2. 1-Frame Contracts** | 2.1-2.3 | None | +4 contract tests, new capability | ⭐⭐⭐ Exciting |
-| **3. GameEvents Migration** | 3.1-3.3 | Low | -30-50 lines of defensive code | ⭐⭐⭐⭐ Big Win |
-| **4. Referee Ownership** | 4.1-4.4 | Medium | 3→0 const-casts | ⭐⭐⭐ Milestone |
-| **5. Pure Helpers** | 5.1-5.3 | Low | -30+ lines of duplication | ⭐⭐ Clean |
+| Phase | Steps | Risk | Key Metric | Status |
+|-------|-------|------|-----------|--------|
+| **1. Consolidate & Knight** | 1.1-1.3 | None | 9→3 const-casts, +15 unit tests | ✅ Done |
+| **2. 1-Frame Contracts** | 2.1-2.3 | None | +4 contract tests, test restructuring | ✅ Done |
+| **3. GameEvents Migration** | 3.1-3.3 | Low | -30-50 lines of defensive code | 🎯 NEXT |
+| **4. Referee Ownership** | 4.1-4.4 | Medium | 3→0 const-casts | ⏳ TODO |
+| **5. Pure Helpers** | 5.1-5.3 | Low | -30+ lines of duplication | ⏳ TODO |
 
 Each step is independently committable and testable. If any step breaks a test, we fix it before moving on.

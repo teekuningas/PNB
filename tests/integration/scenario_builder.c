@@ -38,8 +38,6 @@ ScenarioContext* create_scenario(void)
     // so manually call loadMutableWorldSettings to initialize player counters
     loadMutableWorldSettings(ctx->state, &ctx->seed);
 
-    GameConsolidation_Init(&(ctx->state->match->gameFlowState));
-
     ctx->currentFrame = 0;
 
     return ctx;
@@ -353,7 +351,6 @@ void hit_fly_ball_to_location_with_time(
 
     // Ensure ball is in "fly ball" state so a catch triggers wounding
     game->ballInfo.currentFlightHasHitGround = 0;
-    game->gameEvents.catchMade = 0;
     game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
 }
 

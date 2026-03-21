@@ -766,27 +766,11 @@ void initializeActionInfo(MatchSession* match)
     match->aF.cTAF.pitch = 0;
     match->aF.cTAF.actionKeyLock = 0;
 }
-// these can be flushed
+// Resets all non-persistent state for a new half-inning.
+// Called by loadMutableWorldSettings() and during foul play resets.
 void initializeTemporaryGameAnalysisInfo(MatchSession* match)
 {
-    match->flowControl.freeWalkCalculationMade = 1;
-    match->flowControl.waitingForBatterDecision = 0;
-    match->flowControl.waitingForFreeWalkDecision = 0;
-    match->playerCounters.noMorePlayers = 0;
-    match->gameFlowState.ballHome = 0;
-    match->halfInningState.endPeriod = 0;
-
-    match->halfInningState.event = EVENT_NONE;
-    match->flowControl.freeWalkIndex = -1;
-    match->flowControl.freeWalkBase = -1;
-    match->gameEvents.playerArrivedAtBase = 0;
-    match->flowControl.pause = 0;
-
-    // MILESTONE 16: Initialize new structures (Phase 1)
-    // GameEvents (transient, will be cleared each frame)
-    clearFrameEvents(&match->gameEvents);
-
-    // GameControl (stateful) - Reset for new pitch
+    // Flow control
     match->flowControl.pause = 0;
     match->flowControl.waitingForBatterDecision = 0;
     match->flowControl.waitingForFreeWalkDecision = 0;
@@ -794,14 +778,25 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
     match->flowControl.freeWalkIndex = -1;
     match->flowControl.freeWalkBase = BASE_NONE;
 
-    // Reset between-pitch flags (Milestone 17)
+    // Half-inning transient state
+    match->halfInningState.event = EVENT_NONE;
+    match->halfInningState.endPeriod = 0;
+    match->playerCounters.noMorePlayers = 0;
+    match->gameFlowState.ballHome = 0;
+
+    // Frame events (cleared every frame, but ensure clean start)
+    clearFrameEvents(&match->gameEvents);
+
+    // Between-pitch flags
     match->betweenPitchState.catchHasBeenMade = 0;
     match->betweenPitchState.hasBallHitGround = 0;
     match->betweenPitchState.resolutionProcessed = 0;
 
+    // Subsystem initialization
     GameConsolidation_Init(&(match->gameFlowState));
     initGameManipulation(&(match->gameFlowState));
 
+    // Camera
     match->cameraState.homeRunCameraFlag = 0;
     match->cameraState.targetPoint.x = 0.0f;
     match->cameraState.targetPoint.y = 0.0f;

@@ -1,4 +1,4 @@
-#include "../scenario_builder.h"
+#include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include "referee.h"

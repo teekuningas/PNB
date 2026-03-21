@@ -1,8 +1,8 @@
 # PNB Architecture
 
-**Last updated:** 2026-03-11
-**Current Status:** Phase 3.1 Complete ✅ (homerunPairHasPitch moved to RefereeState) | Continuing Phase 3 🎯
-**Deep Analysis:** Lifecycle architecture verified — see `PLAN.md` "Lifecycle Architecture" section
+**Last updated:** 2026-03-21
+**Current Status:** Phases 1–2 Complete ✅ (const-casts 12→3, 73 tests, contract testing, test restructuring) | Phase 3 GameEvents Migration 🎯
+**Deep Analysis:** Lifecycle architecture verified — see `PLAN.md` "Lifecycle Architecture" and "Shared Vision" sections
 
 ## Vision: The Functional Pipeline
 
@@ -123,9 +123,9 @@ The active refactoring plan lives in **`docs/PLAN.md`**. Summary:
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **1** | **Consolidate & Knight** — remove trivial const-casts (9→3), add unit tests for stable pure functions | **🎯 NEXT** |
-| **2** | **1-Frame Contract Tests** — prove pipeline stage cooperation at the frame level | ⏳ TODO |
-| **3** | **GameEvents Migration** — move transient pRAI fields to GameEvents, delete defensive reset code | ⏳ TODO |
+| **1** | **Consolidate & Knight** — remove trivial const-casts (9→3), add unit tests for stable pure functions | ✅ Done |
+| **2** | **1-Frame Contract Tests** — prove pipeline stage cooperation at the frame level | ✅ Done |
+| **3** | **GameEvents Migration** — move transient pRAI fields to GameEvents, delete defensive reset code | **🎯 NEXT** |
 | **4** | **Complete Referee Ownership** — eliminate last 3 const-casts (FlowControl moves to consolidation) | ⏳ TODO |
 | **5** | **Extract Pure Helpers** — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
 | Future | Rename/reorganize, `common_logic.c`/`game_manipulation.c` decomposition, pRAI lifecycle completion | 🔮 Future |
@@ -140,7 +140,8 @@ The active refactoring plan lives in **`docs/PLAN.md`**. Summary:
 # Build
 make main
 
-# Test (54 tests: 39 unit + 15 integration)
+# Test (73 tests: 54 unit + 4 contract + 15 scenario)
 devenv shell make test              # Unit tests
-devenv shell make integration_test  # Scenario tests
+devenv shell make integration_test  # Contract tests (1-frame pipeline proofs)
+devenv shell make scenario_test     # Scenario tests (full-game simulations)
 ```

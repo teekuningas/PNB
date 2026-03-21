@@ -3,6 +3,8 @@ obj/
 main
 test_runner
 integration_runner
+scenario_runner
+contract_runner
 *.orig
 *.json
 

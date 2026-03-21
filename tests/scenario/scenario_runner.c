@@ -1,17 +1,15 @@
 #include "test_helpers.h"
 #include "fixtures.h"
-
-// NEW FULL-SCENARIO TESTS
-#include "scenarios/all_scenarios.h"
+#include "all_scenarios.h"
 
 #include <string.h>
 
 int tests_run = 0;
 int tests_failed = 0;
 
-void run_full_scenario_tests(void)
+static void run_scenario_tests(void)
 {
-    printf("Running Full-Scenario Integration Tests...\n");
+    printf("Running Scenario Tests (Full-Game Simulations)...\n");
     RUN_TEST(test_full_runner_scores_from_third);
     RUN_TEST(test_full_batter_forced_out_at_first);
     RUN_TEST(test_full_fly_ball_runner_wounded);
@@ -32,11 +30,10 @@ void run_full_scenario_tests(void)
 int main(int argc, char* argv[])
 {
     printf("========================================\n");
-    printf("PNB Integration Test Suite\n");
+    printf("PNB Scenario Test Suite\n");
     printf("========================================\n\n");
 
-    // NEW Full-scenario tests
-    run_full_scenario_tests();
+    run_scenario_tests();
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

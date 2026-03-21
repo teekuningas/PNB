@@ -9,9 +9,8 @@
 #include "base_control.h"
 #include "common_logic.h"
 
-#define BASE_RADIUS 2.0f
-#define HOME_RADIUS 6.0f
-#define HOME_LINE_Z -0.65f
+// Referee-specific timing thresholds (in frames)
+// BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from globals.h
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
@@ -136,7 +135,7 @@ static void update_foul_play_logic(
     // Transition 2: DETECTED -> RESETTING (Grace period expired)
     if (referee->foulState == FOUL_STATE_DETECTED) {
         referee->foulTimer++;
-        if (referee->foulTimer > (int)(2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))) {
+        if (referee->foulTimer > (int)OUT_OF_BOUNDS_THRESHOLD) {
             // Trigger Reset
             referee->foulState = FOUL_STATE_RESETTING;
             referee->foulTimer = -1;
