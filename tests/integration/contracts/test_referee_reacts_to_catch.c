@@ -46,7 +46,7 @@ int test_referee_starts_wounding_on_catch(void)
 
     // Set contract preconditions: fly ball caught
     ctx->state->match->gameEvents.catchMade = 1;
-    ctx->state->match->pRAI.batHit = 1;
+    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
     ctx->state->match->pII.hasBallIndex = fielderIdx; // Fielder has ball (stabilizes physics)
 
     // Run exactly 1 pipeline frame

@@ -351,7 +351,7 @@ void hit_fly_ball_to_location_with_time(
 
     // Ensure ball is in "fly ball" state so a catch triggers wounding
     game->ballInfo.currentFlightHasHitGround = 0;
-    game->pRAI.batHit = 1; // Crucial: signals this ball came from the bat
+    game->betweenPitchState.batOutcome = BAT_OUTCOME_HIT; // Crucial: signals this ball came from the bat
 }
 
 void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation)

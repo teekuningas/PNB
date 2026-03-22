@@ -1,0 +1,2 @@
+- [ ] Game might not end when its last half inning of the period and the batting teams makes a run to take a lead. Should end because no hope for the other team.
+- [ ] I witnessed a situation where the AI was in second and third bases and started running from pitch with the second base player but did not start to run with the third base player. So probably unintended and is either a logical error in AI code or action (controller) related bug.

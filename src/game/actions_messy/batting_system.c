@@ -318,10 +318,6 @@ void updateBatting(StateInfo* stateInfo)
                 stateInfo->match->pendingActionState.meterCounterMax = BAT_SWING_MAX;
                 // so allow user to select power
                 stateInfo->match->aF.bTAF.swing = BAT_ACTION_WAIT_FOR_BALL;
-                // and set batHit and batMiss flags to zero. these are needed in other parts of
-                // code.
-                stateInfo->match->pRAI.batHit = 0;
-                stateInfo->match->pRAI.batMiss = 0;
                 // and batterReady is zero now. batter isnt ready to action
                 // anymore, action is with him already.
                 stateInfo->match->pRAI.batterReady = 0;
@@ -403,8 +399,10 @@ void updateBatting(StateInfo* stateInfo)
         else if (stateInfo->match->pendingActionState.battingFrameCount >
                  stateInfo->match->pendingActionState.pitchFrameTime) {
             // so here we continue only if user hasn't decided to not to bat and if we havent bat already.
-            if (stateInfo->match->pendingActionState.battingStopped == 0 && stateInfo->match->pRAI.batHit == 0 &&
-                stateInfo->match->pRAI.batMiss == 0) {
+            // Guard reads sticky flag: on the hit frame it's still NONE (allows processing),
+            // referee promotes it later this frame, and next frame the guard blocks re-entry.
+            if (stateInfo->match->pendingActionState.battingStopped == 0 &&
+                stateInfo->match->betweenPitchState.batOutcome == BAT_OUTCOME_NONE) {
                 // if ball doesnt go too far away to left or right
                 if (stateInfo->match->ballInfo.location.x < BALL_MAX_OFFSET &&
                     stateInfo->match->ballInfo.location.x > -BALL_MAX_OFFSET) {
@@ -426,7 +424,7 @@ void updateBatting(StateInfo* stateInfo)
                     // to influence velocity too.
                     if (verticalAngle > VERTICAL_ANGLE_LIMIT || verticalAngle < -VERTICAL_ANGLE_LIMIT) {
                         // we can also just miss, its not so uncommon!
-                        stateInfo->match->pRAI.batMiss = 1;
+                        stateInfo->match->gameEvents.ballMissedByBat = 1;
                     } else {
                         int powerFactor;
                         Vector3D velocity;
@@ -451,8 +449,8 @@ void updateBatting(StateInfo* stateInfo)
                             stateInfo->match->pRAI.initPlayerSelection = 1;
                             // and the sound
                             stateInfo->playSoundEffect = SOUND_SWING;
-                            // bat hits
-                            stateInfo->match->pRAI.batHit = 1;
+                            // bat hits — event for referee to promote
+                            stateInfo->match->gameEvents.ballHitByBat = 1;
                             // not a pitch anymore
                             stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
                             // no throw going on now
@@ -470,16 +468,10 @@ void updateBatting(StateInfo* stateInfo)
                             }
                         }
                     }
-                    // always when batting,
-                    // we get a strike - now handled by Referee via event
-                    stateInfo->match->gameEvents.ballHitByBat = 1;
                 }
-                // if the ball went to far away and we still continued our batting
-                // we just miss. set the flags, trigger the event and
-                // add a strike.
+                // if the ball went too far away and we still continued our batting
+                // we just miss.
                 else {
-                    stateInfo->match->pRAI.batMiss = 1;
-                    // Strike handled by Referee via event
                     stateInfo->match->gameEvents.ballMissedByBat = 1;
                 }
             }

@@ -44,7 +44,7 @@ int test_foul_detected_on_out_of_bounds_hit(void)
     ctx->state->match->ballInfo.velocity.z = 0.0f;
 
     // Set contract preconditions
-    ctx->state->match->pRAI.batHit = 1;
+    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
     ctx->state->match->gameEvents.ballHitGround = 1;
 
     // Verify preconditions are clean

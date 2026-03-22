@@ -395,9 +395,9 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
     // AI: Check if it's safe to advance runners
     // Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
     // AND ball has traveled far enough from home (to avoid triggering when ball is still at home plate)
-    if (stateInfo->match->pRAI.batHit == 1 && stateInfo->match->betweenPitchState.catchHasBeenMade == 0 &&
-        stateInfo->match->pRAI.throwGoingToBase == -1 && stateInfo->match->pII.hasBallIndex == -1 &&
-        stateInfo->match->ballInfo.moving == 1 &&
+    if (stateInfo->match->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
+        stateInfo->match->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
+        stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
         stateInfo->match->ballInfo.location.z < -10.0f && // Ball must be at least 10 units into the field (negative z)
         checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
         isDoubleClickingOk = 1;

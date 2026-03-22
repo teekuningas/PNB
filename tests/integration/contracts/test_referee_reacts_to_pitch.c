@@ -32,6 +32,7 @@ int test_referee_snapshots_on_pitch_released(void)
     // Dirty the betweenPitchState (simulating residue from previous pitch)
     ctx->state->match->betweenPitchState.catchHasBeenMade = 1;
     ctx->state->match->betweenPitchState.hasBallHitGround = 1;
+    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
 
     // Fire pitchReleased
     ctx->state->match->gameEvents.pitchReleased = 1;
@@ -60,6 +61,9 @@ int test_referee_snapshots_on_pitch_released(void)
     );
     ASSERT_EQ(
         0, ctx->state->match->betweenPitchState.hasBallHitGround, "hasBallHitGround should be cleared on new pitch"
+    );
+    ASSERT_EQ(
+        BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome, "batOutcome should be cleared on new pitch"
     );
 
     cleanup_scenario(ctx);

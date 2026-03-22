@@ -1,14 +1,14 @@
 # Refactoring Plan
 
 **Created:** 2026-03-11
-**Last updated:** 2026-03-21
+**Last updated:** 2026-03-22
 **Supersedes:** `archive/FINAL_PLAN.md`, `archive/ALTERNATIVE_PLAN.md`
 
 ---
 
 ## Where We Are
 
-Phases 1–2 of the original plan are **done**. Phase 3.1 (move `homerunPairHasPitch` into `RefereeState`) is **done**. Phases 1–2 of THIS plan are **done** (const-cast consolidation, knighting stable functions, 1-frame contract tests, test directory restructuring). The main loop in `mutable_world.c` is clean: five pipeline stages, proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable pointers. **3 const-casts remain** in `referee.c` (down from 12).
+Phases 1–3 of THIS plan are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages, proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable pointers. **3 const-casts remain** in `referee.c` (down from 12). Phase 3 consolidated `batHit`/`batMiss` into the event→sticky pattern using a `BatOutcome` enum in `BetweenPitchState`, fixing incorrect `ballHitByBat` event semantics and deleting all defensive reset code.
 
 **Test count:** 73 tests (54 unit + 4 contract + 15 scenario). All passing.
 
@@ -24,7 +24,17 @@ Phases 1–2 of the original plan are **done**. Phase 3.1 (move `homerunPairHasP
 - Removed redundant `GameConsolidation_Init` call from `create_scenario` in test infrastructure
 - Removed GameEvents Standard violation in test helper (`gameEvents.catchMade = 0` — only `clearFrameEvents` should zero events)
 
-**Next:** Phase 3 — GameEvents Migration (consolidate `batHit`/`batMiss`).
+**Next:** Phase 4 — Complete Referee Ownership (zero const-casts).
+
+**Cleanups done in Phase 3 (2026-03-22):**
+- Consolidated `pRAI.batHit`/`pRAI.batMiss` into `BetweenPitchState.batOutcome` (`BatOutcome` enum: NONE/HIT/MISSED)
+- Fixed `gameEvents.ballHitByBat` semantics: now only fires on actual bat contact (was incorrectly firing on vertical-angle misses too)
+- Referee promotes `ballHitByBat`/`ballMissedByBat` events to sticky `batOutcome` flag (same pattern as `catchMade→catchHasBeenMade`)
+- Added `clearBetweenPitchState()` static helper in referee.c (replaces 4 identical field-by-field reset blocks)
+- Removed `batHit`/`batMiss` fields from `PlayerRelatedActionInfo` in globals.h
+- Deleted manual clears from `batting_system.c` and `initializePRAIInformation()`
+- Updated contract tests: foul/catch tests use `batOutcome`, pitch test verifies `batOutcome` reset
+- Added `betweenPitchState` section to state_validator debug dump
 
 ---
 
@@ -97,7 +107,8 @@ This three-layer pattern is the heart of the architecture and is **confirmed cor
 Physics Event (1-frame)  →  Referee Decision (1-pitch)  →  Consolidation Enforcement (1-frame reaction)
 catchMade                →  catchHasBeenMade             →  WOUNDED status → player removed
 ballHitGround            →  hasBallHitGround             →  (pitch resolution, foul detection)
-ballHitByBat             →  strikes += 1                 →  (3-strike force run)
+ballHitByBat             →  batOutcome = HIT             →  (foul detection, wounding, strike count)
+ballMissedByBat          →  batOutcome = MISSED          →  (pitch resolution, strike count)
 ```
 
 **Why keep the intermediate event?** The referee adds *validation*. A raw `catchMade` event becomes the legal fact `catchHasBeenMade` only after referee checks: was ball hit (batHit)? hasn't hit ground yet? first catch for this pitch? Letting pre-referee code directly set sticky flags would bypass this validation. The event layer IS the separation of concerns.
@@ -111,7 +122,7 @@ The rule is NOT "pre-referee code must be stupid." The rule is **directional wit
 3. Referee reads GameEvents + world state → produces legal decisions
 4. Consolidation reads legal decisions → enforces physically
 
-**Between frames, everyone reads everyone's published stable state.** This is the scoreboard principle — published decisions from the previous frame are public knowledge. The AI reading `betweenPitchState.catchHasBeenMade` to decide running strategy is natural and correct.
+**Between frames, everyone reads everyone's published stable state.** This is the scoreboard principle — published decisions from the previous frame are public knowledge. The AI reading `betweenPitchState.catchHasBeenMade` to decide running strategy is natural and correct. The batting guard reading `betweenPitchState.batOutcome` to prevent double-processing is the same principle — it reads the referee's published decision from the previous frame.
 
 What pre-referee code must NOT do: write to referee-owned structs or react to *current-frame* GameEvents before referee has processed them. And it doesn't.
 
@@ -285,11 +296,18 @@ Recommendation: put them in `tests/integration/` since they share the scenario b
 
 ---
 
-## Phase 3: The GameEvents Migration (Big Win) ← NEXT
+## Phase 3: The GameEvents Migration (Big Win) ✅ DONE
 
-**Goal:** Move truly transient pRAI fields into `GameEvents`, delete defensive reset logic. The architecture enforces the lifecycle automatically.
+**Completed 2026-03-22.** Consolidated `pRAI.batHit`/`pRAI.batMiss` into `BetweenPitchState.batOutcome` using the event→sticky pattern. Fixed `ballHitByBat` event semantics (was incorrectly firing on vertical-angle misses). All 73 tests passing.
 
-**Getting started:** This phase has clear, mechanical steps. The duplicate fields are already identified (see Step 3.1 below). A good contract test to write alongside the migration: assert that after `clearFrameEvents`, `batHit`/`batMiss` (now in GameEvents) are zero, and that referee still correctly evaluates wounding/foul using the GameEvents versions.
+**Key design decisions:**
+- **`BatOutcome` enum** over two boolean flags — "invalid states should be unrepresentable" (hit+miss simultaneously is impossible)
+- **Event→sticky promotion** by referee — same pattern as `catchMade→catchHasBeenMade` and `ballHitGround→hasBallHitGround`
+- **Guard timing is a feature** — batting_system reads sticky flag before referee promotes, which correctly allows processing on the hit frame and blocks re-entry from next frame
+- **`clearBetweenPitchState()`** static helper in referee.c — replaces 4 copy-paste reset blocks (the 5th caller in common_logic.c clears inline since it's initialization code)
+
+<details>
+<summary>Original plan (for reference)</summary>
 
 ### Critical Finding: Not All Fields Are Truly Transient
 
@@ -355,6 +373,22 @@ These need deeper analysis before moving. See "What Should NOT Move to GameEvent
 These are **future work** — document findings but don't block on them.
 
 **After Phase 3:** ~30-50 lines of defensive code deleted. `batHit`/`batMiss` lifecycle is self-enforcing. Visible, satisfying diff.
+
+</details>
+
+### Knight Phase 3: Contract Test for batOutcome Promotion
+
+**Status: TODO (before Phase 4)**
+
+Phase 3 introduced the `batOutcome` event→sticky pattern. The existing foul and catch contract tests now set `betweenPitchState.batOutcome` directly as a precondition, but no test verifies the promotion chain itself — that `ballHitByBat` / `ballMissedByBat` events cause the referee to set `batOutcome`.
+
+Write `test_bat_outcome_promotion` in `tests/integration/contracts/`:
+
+1. **HIT promotion** — Set `gameEvents.ballHitByBat = 1`, run 1 frame, assert `betweenPitchState.batOutcome == BAT_OUTCOME_HIT`.
+2. **MISSED promotion** — Set `gameEvents.ballMissedByBat = 1`, run 1 frame, assert `betweenPitchState.batOutcome == BAT_OUTCOME_MISSED`.
+3. **Reset on pitchReleased** — Dirty `batOutcome = BAT_OUTCOME_HIT`, fire `pitchReleased`, run 1 frame, assert `batOutcome == BAT_OUTCOME_NONE`.
+
+This knights the new pattern permanently — the same discipline applied to `catchHasBeenMade` and `hasBallHitGround` (tested by `test_referee_reacts_to_pitch`). Also add a `sizeof(BetweenPitchState)` guard to that same test (parallel to the `sizeof(GameEvents)` guard in `test_clear_frame_events`) so new BPS fields force a review of `clearBetweenPitchState()`.
 
 ---
 
@@ -497,7 +531,8 @@ Complete `actions_messy → actions_pure` split. Intent layer for replay/network
 |-------|-------|------|-----------|--------|
 | **1. Consolidate & Knight** | 1.1-1.3 | None | 9→3 const-casts, +15 unit tests | ✅ Done |
 | **2. 1-Frame Contracts** | 2.1-2.3 | None | +4 contract tests, test restructuring | ✅ Done |
-| **3. GameEvents Migration** | 3.1-3.3 | Low | -30-50 lines of defensive code | 🎯 NEXT |
+| **3. GameEvents Migration** | 3.1-3.3 | Low | BatOutcome enum, event→sticky, -25 lines | ✅ Done |
+| **3. Knight Phase 3** | — | None | +1 contract test, sizeof(BPS) guard | 🎯 NEXT |
 | **4. Referee Ownership** | 4.1-4.4 | Medium | 3→0 const-casts | ⏳ TODO |
 | **5. Pure Helpers** | 5.1-5.3 | Low | -30+ lines of duplication | ⏳ TODO |
 

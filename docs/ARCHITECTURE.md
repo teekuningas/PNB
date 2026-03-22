@@ -1,7 +1,7 @@
 # PNB Architecture
 
 **Last updated:** 2026-03-21
-**Current Status:** Phases 1–2 Complete ✅ (const-casts 12→3, 73 tests, contract testing, test restructuring) | Phase 3 GameEvents Migration 🎯
+**Current Status:** Phases 1–3 Complete ✅ (const-casts 12→3, 73 tests, contract testing, BatOutcome consolidation) | Phase 4 Referee Ownership 🎯
 **Deep Analysis:** Lifecycle architecture verified — see `PLAN.md` "Lifecycle Architecture" and "Shared Vision" sections
 
 ## Vision: The Functional Pipeline
@@ -31,7 +31,8 @@ State_Next = Pipeline(Physics(Input(State)))
 ### 2. The Physical State (Physics' Domain)
 *   **`PlayerInfo`:** Location, velocity, animation state, baseId.
 *   **`BallInfo`:** Location, velocity.
-*   **`GameEvents`:** Transient flags cleared every frame (e.g., `catchMade`, `ballHitGround`, `batterEntered`, `pitchReleased`).
+*   **`GameEvents`:** Transient flags cleared every frame (e.g., `catchMade`, `ballHitGround`, `ballHitByBat`, `pitchReleased`).
+*   **`BetweenPitchState`:** Sticky flags promoted from events by referee (e.g., `catchHasBeenMade`, `hasBallHitGround`, `batOutcome`). Reset at pitch start.
 
 ### 3. Flow Control (Consolidation's Domain)
 *   **`FlowControl`:** User interaction flags (Waiting for batter decision, Free walk offers).
@@ -125,8 +126,8 @@ The active refactoring plan lives in **`docs/PLAN.md`**. Summary:
 |-------|------|--------|
 | **1** | **Consolidate & Knight** — remove trivial const-casts (9→3), add unit tests for stable pure functions | ✅ Done |
 | **2** | **1-Frame Contract Tests** — prove pipeline stage cooperation at the frame level | ✅ Done |
-| **3** | **GameEvents Migration** — move transient pRAI fields to GameEvents, delete defensive reset code | **🎯 NEXT** |
-| **4** | **Complete Referee Ownership** — eliminate last 3 const-casts (FlowControl moves to consolidation) | ⏳ TODO |
+| **3** | **GameEvents Migration** — BatOutcome enum in BetweenPitchState, event→sticky pattern, fixed event semantics | ✅ Done |
+| **4** | **Complete Referee Ownership** — eliminate last 3 const-casts (FlowControl moves to consolidation) | **🎯 NEXT** |
 | **5** | **Extract Pure Helpers** — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
 | Future | Rename/reorganize, `common_logic.c`/`game_manipulation.c` decomposition, pRAI lifecycle completion | 🔮 Future |
 

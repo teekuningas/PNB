@@ -190,8 +190,13 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
     fprintf(f, "%s  \"pitchState\": %d,\n", sp, game->pRAI.pitchState);
     fprintf(f, "%s  \"batterReady\": %d,\n", sp, game->pRAI.batterReady);
     fprintf(f, "%s  \"battingGoingOn\": %d,\n", sp, game->pRAI.battingGoingOn);
-    fprintf(f, "%s  \"batHit\": %d,\n", sp, game->pRAI.batHit);
     fprintf(f, "%s  \"initBatter\": %d\n", sp, game->pRAI.initBatter);
+    fprintf(f, "%s},\n", sp);
+
+    fprintf(f, "%s\"betweenPitchState\": {\n", sp);
+    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
+    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
+    fprintf(f, "%s  \"batOutcome\": %d\n", sp, game->betweenPitchState.batOutcome);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"ballInfo\": {\n", sp);

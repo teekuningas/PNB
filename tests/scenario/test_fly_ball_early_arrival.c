@@ -78,10 +78,8 @@ int test_fly_ball_early_arrival(void)
         "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
         match->ballInfo.location.y, match->ballInfo.location.z
     );
-    printf(
-        "  PRAI: batterCanAdvance=%d, batterReady=%d, batHit=%d\n", match->pRAI.batterCanAdvance,
-        match->pRAI.batterReady, match->pRAI.batHit
-    );
+    printf("  PRAI: batterCanAdvance=%d, batterReady=%d\n", match->pRAI.batterCanAdvance, match->pRAI.batterReady);
+    printf("  BPS: batOutcome=%d\n", match->betweenPitchState.batOutcome);
 
     // 6. Simulate and track events
     int catchFrame = -1;

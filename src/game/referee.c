@@ -14,6 +14,14 @@
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
+static void clearBetweenPitchState(BetweenPitchState* bps)
+{
+    bps->catchHasBeenMade = 0;
+    bps->hasBallHitGround = 0;
+    bps->resolutionProcessed = 0;
+    bps->batOutcome = BAT_OUTCOME_NONE;
+}
+
 // ============================================================================
 // Referee Update Pipeline (Milestone 15)
 // ============================================================================
@@ -40,9 +48,7 @@ static void update_initialization_events(
     // Pitch Released: Snapshot state for the new pitch
     if (events->pitchReleased) {
         // 1. Reset Sticky Flags
-        betweenPitchState->catchHasBeenMade = 0;
-        betweenPitchState->hasBallHitGround = 0;
-        betweenPitchState->resolutionProcessed = 0;
+        clearBetweenPitchState(betweenPitchState);
         referee->woundingEvaluationFinished = 0;
         referee->woundingEvaluationActive = 0;
         referee->woundingEvaluationTimer = -1;
@@ -126,9 +132,7 @@ static void update_foul_play_logic(
     if (referee->foulState == FOUL_STATE_RESETTING) {
         referee->foulState = FOUL_STATE_NONE;
         // Reset other flags as we are now "between pitches" effectively
-        betweenPitchState->catchHasBeenMade = 0;
-        betweenPitchState->hasBallHitGround = 0;
-        betweenPitchState->resolutionProcessed = 0;
+        clearBetweenPitchState(betweenPitchState);
         return;
     }
 
@@ -182,7 +186,7 @@ static void update_foul_play_logic(
     // Transition 1: NONE -> DETECTED (Detection)
     // Out of Bounds Logic: Check ONLY on first bounce
     if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
-        if (game->pRAI.batHit == 1 && betweenPitchState->catchHasBeenMade == 0) {
+        if (betweenPitchState->batOutcome == BAT_OUTCOME_HIT && betweenPitchState->catchHasBeenMade == 0) {
             if (checkIfBallIsOutOfBounds(&game->ballInfo, stateInfo->fieldPositions)) {
                 // Transition to DETECTED
                 referee->foulState = FOUL_STATE_DETECTED;
@@ -206,8 +210,8 @@ static void update_wounding_logic(
 
     // A. Start Wounding Evaluation (on catch event)
     // Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
-    if (events->catchMade && game->pRAI.batHit == 1 && betweenPitchState->hasBallHitGround == 0 &&
-        betweenPitchState->catchHasBeenMade == 0) {
+    if (events->catchMade && betweenPitchState->batOutcome == BAT_OUTCOME_HIT &&
+        betweenPitchState->hasBallHitGround == 0 && betweenPitchState->catchHasBeenMade == 0) {
 
         // Start evaluation period
         referee->woundingEvaluationActive = 1;
@@ -693,8 +697,9 @@ static void update_pitch_resolution(
     // Check if a pitch has physically concluded (hit ground) while still logically active
     if (events->ballHitGround && stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
 
-        PitchResult result =
-            determine_pitch_result(stateInfo->match->ballInfo.location.x, PLATE_WIDTH, stateInfo->match->pRAI.batMiss);
+        PitchResult result = determine_pitch_result(
+            stateInfo->match->ballInfo.location.x, PLATE_WIDTH, betweenPitchState->batOutcome == BAT_OUTCOME_MISSED
+        );
 
         if (result == PITCH_RESULT_STRIKE) {
             halfInningState->strikes += 1;
@@ -885,6 +890,15 @@ static void update_game_state_flags(
     if (events->catchMade) {
         betweenPitchState->catchHasBeenMade = 1;
     }
+
+    // Batting Outcome Promotion
+    // Transient events → sticky flag, same pattern as catchMade → catchHasBeenMade
+    if (events->ballHitByBat) {
+        betweenPitchState->batOutcome = BAT_OUTCOME_HIT;
+    }
+    if (events->ballMissedByBat) {
+        betweenPitchState->batOutcome = BAT_OUTCOME_MISSED;
+    }
 }
 
 void update_referee(
@@ -1060,10 +1074,8 @@ void update_referee(
                 // Clear referee state NOW (before consolidation resets physical world)
                 halfInningState->strikes = 0;
                 halfInningState->balls = 0;
-                betweenPitchState->catchHasBeenMade = 0;
-                betweenPitchState->hasBallHitGround = 0;
+                clearBetweenPitchState(betweenPitchState);
                 refereeState->foulState = FOUL_STATE_NONE;
-                betweenPitchState->resolutionProcessed = 0;
 
                 for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                     refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
@@ -1144,10 +1156,8 @@ void update_referee(
             // Clear referee state NOW (before consolidation resets physical world)
             halfInningState->strikes = 0;
             halfInningState->balls = 0;
-            betweenPitchState->catchHasBeenMade = 0;
-            betweenPitchState->hasBallHitGround = 0;
+            clearBetweenPitchState(betweenPitchState);
             refereeState->foulState = FOUL_STATE_NONE;
-            betweenPitchState->resolutionProcessed = 0;
 
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;

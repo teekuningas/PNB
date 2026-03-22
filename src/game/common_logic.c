@@ -791,6 +791,7 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
     match->betweenPitchState.catchHasBeenMade = 0;
     match->betweenPitchState.hasBallHitGround = 0;
     match->betweenPitchState.resolutionProcessed = 0;
+    match->betweenPitchState.batOutcome = BAT_OUTCOME_NONE;
 
     // Subsystem initialization
     GameConsolidation_Init(&(match->gameFlowState));
@@ -847,8 +848,6 @@ void initializePRAIInformation(MatchSession* match)
     match->pRAI.swingMeterValue = 0.0f;
     match->pRAI.battingGoingOn = 0;
     match->pRAI.batterCanAdvance = 0;
-    match->pRAI.batHit = 0;
-    match->pRAI.batMiss = 0;
     match->pRAI.throwGoingToBase = -1;
     match->pRAI.batterReady = 0;
     match->pRAI.refreshCatchAndChange = 0;

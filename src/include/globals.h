@@ -519,12 +519,20 @@ typedef struct _GameEvents {
     int batterEntered; // New: Signal that new batter is ready
 } GameEvents;
 
+// Batting outcome for the current pitch (promoted from GameEvents by referee)
+typedef enum {
+    BAT_OUTCOME_NONE, // No batting outcome yet
+    BAT_OUTCOME_HIT, // Bat made contact with ball
+    BAT_OUTCOME_MISSED // Batter swung and missed
+} BatOutcome;
+
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
-    int catchHasBeenMade; // Fly ball was caught
-    int hasBallHitGround; // Ball has touched ground
+    int catchHasBeenMade; // Fly ball was caught (promoted from catchMade)
+    int hasBallHitGround; // Ball has touched ground (promoted from ballHitGround)
     int resolutionProcessed; // Referee has adjudicated strike/ball
+    BatOutcome batOutcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
 } BetweenPitchState;
 
 // MILESTONE 17: User interaction flow control
@@ -695,8 +703,6 @@ typedef struct _PlayerRelatedActionInfo {
 
     int initBatter; // used to initialize batter locally in
     int batterReady; // is batter ready to swing
-    int batHit; // tells if bat hit the ball. set to back 0 again when next pitch starts
-    int batMiss; // tells if bat missed the ball. set to back 0 when next pitch starts.
     int battingGoingOn; // time starts when batter reaches ready position and ball is not in air and quits when batting
                         // animation is over
     int batterCanAdvance;
