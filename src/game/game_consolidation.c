@@ -116,9 +116,14 @@ static void enforceLegalState(StateInfo* stateInfo)
     }
 
     // 4. React to Pitch Resolution
-    if (game->betweenPitchState.resolutionProcessed) {
+    if (game->betweenPitchState.pitchResult != PITCH_RESULT_NONE && game->pRAI.pitchState != PITCH_STAGE_NONE) {
         game->pRAI.pitchState = PITCH_STAGE_NONE;
-        game->betweenPitchState.resolutionProcessed = 0; // Consume the flag
+        // On ball: reset free walk calculation so it is re-evaluated
+        if (game->betweenPitchState.pitchResult == PITCH_RESULT_BALL) {
+            game->flowControl.freeWalkCalculationMade = 0;
+            game->flowControl.freeWalkIndex = -1;
+            game->flowControl.freeWalkBase = BASE_NONE;
+        }
     }
 }
 
@@ -231,6 +236,12 @@ static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned in
 
 static void checkIfNextBatterDecision(StateInfo* stateInfo)
 {
+    // Cancel pending batter request if inning is ending
+    if (stateInfo->match->referee.endOfInningState != END_INNING_STATE_NONE) {
+        stateInfo->match->flowControl.waitingForBatterDecision = 0;
+        return;
+    }
+
     // so this function's idea is to make progress in selecting a new batter if old one's gone.
     // so this will be called only once when possible.
     if (stateInfo->match->scoreboard.period >= 4) {

@@ -474,7 +474,7 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
     // this will initialize all player settings etc with knowledge in structures from main menu.
     loadMutableWorldSettings(stateInfo, rng_seed);
     // Initialize referee by scanning the physical world
-    initialize_referee(stateInfo);
+    initialize_referee(stateInfo, &stateInfo->match->referee);
 }
 
 static void initCamSettings(StateInfo* stateInfo)

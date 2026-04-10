@@ -376,11 +376,11 @@ Every cross-boundary write in the current codebase, with its status:
 
 | Location | Write | Status |
 |----------|-------|--------|
-| `referee.c:955` | `(FlowControl*)` const-cast for freeWalk fields | Phase 4: move to consolidation |
-| `referee.c:1141` | `(FlowControl*)` const-cast, `waitingForBatterDecision=0` | Phase 4: move to consolidation |
-| `referee.c:1191` | `(MatchSession*)` const-cast for `&referee` | Phase 4: fix signature |
+| ~~`referee.c:955`~~ | ~~`(FlowControl*)` const-cast for freeWalk fields~~ | ✅ Phase 4: moved to consolidation, conditioned on `pitchResult == PITCH_RESULT_BALL` |
+| ~~`referee.c:1141`~~ | ~~`(FlowControl*)` const-cast, `waitingForBatterDecision=0`~~ | ✅ Phase 4: consolidation checks `endOfInningState` |
+| ~~`referee.c:1191`~~ | ~~`(MatchSession*)` const-cast for `&referee`~~ | ✅ Phase 4: explicit `RefereeState*` parameter |
 | `game_consolidation.c:519` | `halfInningState.endPeriod = 1` | Phase 6: move to referee |
-| `game_consolidation.c:121` | `betweenPitchState.resolutionProcessed = 0` | Phase 4+: idempotent guard |
+| ~~`game_consolidation.c:121`~~ | ~~`betweenPitchState.resolutionProcessed = 0`~~ | ✅ Phase 4: replaced with idempotent guard (`pitchState != NONE`) + `pitchResult` replaces `resolutionProcessed` |
 | `game_screen.c:272` | `halfInningState.event = EVENT_NONE` | Future: extract to notification struct |
 | `batting_system.c:108` | `flowControl.waitingForBatterDecision = 0` | Pattern 4: legitimate |
 | `action_implementation.c:245` | `flowControl.waitingForFreeWalkDecision = 0` | Pattern 4: legitimate |

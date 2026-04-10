@@ -790,7 +790,7 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
     // Between-pitch flags
     match->betweenPitchState.catchHasBeenMade = 0;
     match->betweenPitchState.hasBallHitGround = 0;
-    match->betweenPitchState.resolutionProcessed = 0;
+    match->betweenPitchState.pitchResult = PITCH_RESULT_NONE;
     match->betweenPitchState.batOutcome = BAT_OUTCOME_NONE;
 
     // Subsystem initialization

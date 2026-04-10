@@ -9,10 +9,13 @@
 
 ## Where We Are
 
-Phases 1–3 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
+Phases 1–4 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
 proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable
-pointers. **3 const-casts remain** in `referee.c` (down from 12). Phase 3 consolidated
-`batHit`/`batMiss` into the event→sticky pattern.
+pointers. **Zero const-casts** in `referee.c` (down from 12). The compiler enforces data
+ownership — the type system proves the referee is the sole writer of legal state. Phase 3
+consolidated `batHit`/`batMiss` into the event→sticky pattern. Phase 4 replaced the generic
+`resolutionProcessed` boolean with a typed `PitchResult pitchResult` field in BetweenPitchState,
+following the same event→sticky promotion pattern.
 
 **Test count:** 73 tests (54 unit + 4 contract + 15 scenario). All passing.
 
@@ -31,7 +34,7 @@ Fix is in Phase 6.
 Foul tracking moved to `referee.foulState` state machine but the field was not removed.
 Cleanup is in Phase 7.
 
-**Next:** Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8.
+**Next:** Phase 5 → Phase 6 → Phase 7 → Phase 8.
 Knight Phase 3 can be done at any point (low-risk test addition).
 
 <details>
@@ -415,12 +418,29 @@ fields force a review of `clearBetweenPitchState()`.
 
 ---
 
-## Phase 4: Complete Referee Ownership (Zero Const-Casts)
+## Phase 4: Complete Referee Ownership (Zero Const-Casts) ✅ DONE
 
 **Goal:** Eliminate the remaining 3 const-casts. The compiler becomes our enforcer.
 
-**Verified 2026-04-10:** All three casts located, removal paths confirmed safe. No other
-non-owned writes exist in referee.c beyond these three.
+**Completed 2026-04-10.** All three const-casts eliminated. Additionally replaced the
+generic `resolutionProcessed` boolean with a typed `PitchResult pitchResult` field in
+BetweenPitchState, which carries the referee's pitch adjudication (NONE/STRIKE/BALL)
+instead of a bare signal flag. Consolidation now reads this to reset `pitchState` and
+(on BALL only) free walk calculation fields — preserving the correct ball-only trigger
+for free walk offers. The idempotent guard pattern (`pitchState != PITCH_STAGE_NONE`)
+replaced the old flag-consuming pattern, so consolidation no longer writes to
+referee-owned BetweenPitchState. All 73 tests passing.
+
+**Key design decisions:**
+- **`pitchResult` replaces `resolutionProcessed`** — carries more information (which result)
+  in the same struct slot, follows the event→sticky pattern used by all other BPS fields
+- **Ball-only free walk trigger preserved** — consolidation checks
+  `pitchResult == PITCH_RESULT_BALL` before resetting free walk fields, maintaining
+  correct pesäpallo semantics (free walk offers only on balls, not strikes)
+- **Idempotent consolidation** — guard on `pitchState != PITCH_STAGE_NONE` instead of
+  consuming BPS flag; referee clears BPS on its own schedule at `pitchReleased`
+- **End-of-inning cancels batter request** — consolidation checks
+  `endOfInningState != NONE` at top of `checkIfNextBatterDecision` and cancels flow request
 
 ### Step 4.1: Fix initialize_referee Signature
 
@@ -884,8 +904,8 @@ Complete `actions_messy → actions_pure` split. Intent layer for replay/network
 | **1. Consolidate & Knight** | Remove trivial casts, knight stable functions | None | 9→3 casts, +15 unit tests | ✅ Done |
 | **2. 1-Frame Contracts** | Prove pipeline contracts | None | +4 contract tests | ✅ Done |
 | **3. GameEvents Migration** | batOutcome event→sticky | Low | BatOutcome enum, -25 lines | ✅ Done |
-| **4. Zero Const-Casts** | Compiler enforces ownership | Medium | 3→0 const-casts | 🎯 NEXT |
-| **5. get_batting_team_index** | Eliminate 10-copy formula | None | -10 duplicates, +unit tests | ⏳ TODO |
+| **4. Zero Const-Casts** | Compiler enforces ownership | Medium | 3→0 casts, pitchResult replaces resolutionProcessed | ✅ Done |
+| **5. get_batting_team_index** | Eliminate 10-copy formula | None | -10 duplicates, +unit tests | 🎯 NEXT |
 | **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | ⏳ TODO |
 | **7. Init Unification** | Reset recipes, split init by ownership | Medium | No dual-init, no copy-paste | ⏳ TODO |
 | **8. Organization** | Rename, split files, standardize tests | Low | Navigable codebase | ⏳ TODO |

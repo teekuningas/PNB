@@ -18,7 +18,7 @@ static void clearBetweenPitchState(BetweenPitchState* bps)
 {
     bps->catchHasBeenMade = 0;
     bps->hasBallHitGround = 0;
-    bps->resolutionProcessed = 0;
+    bps->pitchResult = PITCH_RESULT_NONE;
     bps->batOutcome = BAT_OUTCOME_NONE;
 }
 
@@ -691,31 +691,29 @@ static void update_strikes(RefereeState* referee, HalfInningState* halfInningSta
 
 static void update_pitch_resolution(
     const StateInfo* stateInfo, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
-    FlowControl* flowControl, const GameEvents* events
+    const GameEvents* events
 )
 {
     // Check if a pitch has physically concluded (hit ground) while still logically active
     if (events->ballHitGround && stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
 
-        PitchResult result = determine_pitch_result(
-            stateInfo->match->ballInfo.location.x, PLATE_WIDTH, betweenPitchState->batOutcome == BAT_OUTCOME_MISSED
-        );
+        if (betweenPitchState->batOutcome == BAT_OUTCOME_NONE) {
+            // No swing: resolve by ball position (strike zone check)
+            PitchResult result = determine_pitch_result(stateInfo->match->ballInfo.location.x, PLATE_WIDTH);
 
-        if (result == PITCH_RESULT_STRIKE) {
-            halfInningState->strikes += 1;
-            halfInningState->event = EVENT_STRIKE;
-        } else if (result == PITCH_RESULT_BALL) {
-            halfInningState->balls += 1;
-            halfInningState->event = EVENT_BALL;
+            if (result == PITCH_RESULT_STRIKE) {
+                halfInningState->strikes += 1;
+                halfInningState->event = EVENT_STRIKE;
+            } else if (result == PITCH_RESULT_BALL) {
+                halfInningState->balls += 1;
+                halfInningState->event = EVENT_BALL;
+            }
 
-            // Reset free walk calculation flags so they are re-evaluated
-            flowControl->freeWalkCalculationMade = 0;
-            flowControl->freeWalkIndex = -1;
-            flowControl->freeWalkBase = BASE_NONE;
+            betweenPitchState->pitchResult = result;
+        } else {
+            // Swing happened: strike already counted by update_strikes, just signal resolution
+            betweenPitchState->pitchResult = PITCH_RESULT_STRIKE;
         }
-
-        // Signal to reconcile/cleanup that we have adjudicated this pitch
-        betweenPitchState->resolutionProcessed = 1;
     }
 }
 
@@ -951,9 +949,7 @@ void update_referee(
 
     // 4. Strikes
     update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
-    update_pitch_resolution(
-        stateInfo, halfInningState, betweenPitchState, (FlowControl*)&game->flowControl, &stateInfo->match->gameEvents
-    );
+    update_pitch_resolution(stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents);
     update_free_walk_resolution(
         stateInfo, refereeState, halfInningState, playerCounters, scoreboard, flowControl, &stateInfo->match->gameEvents
     );
@@ -1137,8 +1133,6 @@ void update_referee(
             // Transition to DETECTED
             refereeState->endOfInningState = END_INNING_STATE_DETECTED;
             refereeState->endInningTimer = 0;
-            // Prevent further batter decisions
-            ((FlowControl*)flowControl)->waitingForBatterDecision = 0;
             halfInningState->event = EVENT_INNING_ENDING;
         }
     } else if (endState == END_INNING_STATE_DETECTED) {
@@ -1185,10 +1179,9 @@ int get_wounding_evaluation_timer(const RefereeState* ref)
     return ref->woundingEvaluationTimer;
 }
 
-void initialize_referee(const StateInfo* stateInfo)
+void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
 {
     const MatchSession* game = stateInfo->match;
-    RefereeState* referee = &((MatchSession*)game)->referee;
 
     // Full reset first
     initializeRefereeState(referee);

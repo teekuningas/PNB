@@ -26,14 +26,7 @@ typedef enum { SCREEN_LOADING, SCREEN_MAIN_MENU, SCREEN_GAME } ScreenState;
 // NEW ENUMS FOR MILESTONE 7 (DATA RENAISSANCE)
 // --------------------------------------------
 
-typedef enum {
-    PITCH_RESULT_NONE = 0,
-    PITCH_RESULT_STRIKE = 1,
-    PITCH_RESULT_BALL = 2,
-    PITCH_RESULT_HIT = 3,
-    PITCH_RESULT_MISS = 4,
-    PITCH_RESULT_FOUL = 5
-} PitchResult;
+typedef enum { PITCH_RESULT_NONE = 0, PITCH_RESULT_STRIKE = 1, PITCH_RESULT_BALL = 2 } PitchResult;
 
 // --------------------------------------------
 
@@ -531,7 +524,7 @@ typedef enum {
 typedef struct _BetweenPitchState {
     int catchHasBeenMade; // Fly ball was caught (promoted from catchMade)
     int hasBallHitGround; // Ball has touched ground (promoted from ballHitGround)
-    int resolutionProcessed; // Referee has adjudicated strike/ball
+    PitchResult pitchResult; // Referee's pitch adjudication (NONE until resolved)
     BatOutcome batOutcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
 } BetweenPitchState;
 

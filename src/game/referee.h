@@ -19,8 +19,9 @@ void initializeRefereeState(RefereeState* referee);
  * which are handled via state machines within update_referee().
  *
  * @param stateInfo Full game state to scan for player positions
+ * @param referee Mutable pointer to the referee state to initialize
  */
-void initialize_referee(const StateInfo* stateInfo);
+void initialize_referee(const StateInfo* stateInfo, RefereeState* referee);
 
 /**
  * @brief Query functions for wounding system (Milestone 15 consolidation)

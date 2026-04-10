@@ -12,7 +12,7 @@
 
 ## Current Status
 
-Phases 1–3 Complete ✅ (const-casts 12→3, 73 tests, contract testing, BatOutcome consolidation) | Phase 4 Zero Const-Casts 🎯
+Phases 1–4 Complete ✅ (const-casts 12→0, 73 tests, contract testing, BatOutcome consolidation, pitchResult promotion, compiler-enforced ownership) | Phase 5 Extract get_batting_team_index 🎯
 
 ## Build & Test
 

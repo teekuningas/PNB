@@ -47,7 +47,7 @@ void initialize_referee_from_physical_state(ScenarioContext* ctx)
 {
     // Initialize referee by scanning the physical world
     // This replaces the old gameInitialized event pattern
-    initialize_referee(ctx->state);
+    initialize_referee(ctx->state, &ctx->state->match->referee);
 }
 
 void snapshot_pitch_start_state(ScenarioContext* ctx)
