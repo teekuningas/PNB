@@ -1,14 +1,18 @@
 # Refactoring Plan
 
 **Created:** 2026-03-11
-**Last updated:** 2026-03-22
+**Last updated:** 2026-04-10
 **Supersedes:** `archive/FINAL_PLAN.md`, `archive/ALTERNATIVE_PLAN.md`
+**Architectural target:** `OPUS_VISION.md`
 
 ---
 
 ## Where We Are
 
-Phases 1–3 of THIS plan are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages, proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable pointers. **3 const-casts remain** in `referee.c` (down from 12). Phase 3 consolidated `batHit`/`batMiss` into the event→sticky pattern using a `BatOutcome` enum in `BetweenPitchState`, fixing incorrect `ballHitByBat` event semantics and deleting all defensive reset code.
+Phases 1–3 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
+proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable
+pointers. **3 const-casts remain** in `referee.c` (down from 12). Phase 3 consolidated
+`batHit`/`batMiss` into the event→sticky pattern.
 
 **Test count:** 73 tests (54 unit + 4 contract + 15 scenario). All passing.
 
@@ -17,16 +21,31 @@ Phases 1–3 of THIS plan are **done**. The main loop in `mutable_world.c` is cl
 - `tests/integration/contracts/` — 4 one-frame pipeline contract tests → `make integration_test`
 - `tests/scenario/` — 15 full-game scenario tests → `make scenario_test`
 
-**Cleanups done in Phase 2 (2026-03-21):**
+**Known Bug #1:** `resolve_pending_runs()` (referee.c:798-879) scores runs at 3 sites
+(lines 818, 832, 858) but has ZERO `endPeriod` checks. Every other scoring path
+(`update_runs`, `update_free_walk_resolution`) checks and sets `endPeriod`. This means
+pending runs that resolve after the period should have ended are incorrectly scored.
+Fix is in Phase 6.
+
+**Known dead field:** `HalfInningState.outOfBounds` (globals.h:499) is never written to.
+Foul tracking moved to `referee.foulState` state machine but the field was not removed.
+Cleanup is in Phase 7.
+
+**Next:** Knight Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8.
+
+<details>
+<summary>Phase 2 cleanups (2026-03-21)</summary>
+
 - Removed duplicate `#define`s in referee.c (BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z already in globals.h)
 - Connected `OUT_OF_BOUNDS_THRESHOLD` constant to its usage in referee.c
 - Cleaned `initializeTemporaryGameAnalysisInfo`: removed duplicate FlowControl clears, fixed `freeWalkBase = -1` → `BASE_NONE`
 - Removed redundant `GameConsolidation_Init` call from `create_scenario` in test infrastructure
 - Removed GameEvents Standard violation in test helper (`gameEvents.catchMade = 0` — only `clearFrameEvents` should zero events)
+</details>
 
-**Next:** Phase 4 — Complete Referee Ownership (zero const-casts).
+<details>
+<summary>Phase 3 cleanups (2026-03-22)</summary>
 
-**Cleanups done in Phase 3 (2026-03-22):**
 - Consolidated `pRAI.batHit`/`pRAI.batMiss` into `BetweenPitchState.batOutcome` (`BatOutcome` enum: NONE/HIT/MISSED)
 - Fixed `gameEvents.ballHitByBat` semantics: now only fires on actual bat contact (was incorrectly firing on vertical-angle misses too)
 - Referee promotes `ballHitByBat`/`ballMissedByBat` events to sticky `batOutcome` flag (same pattern as `catchMade→catchHasBeenMade`)
@@ -35,6 +54,7 @@ Phases 1–3 of THIS plan are **done**. The main loop in `mutable_world.c` is cl
 - Deleted manual clears from `batting_system.c` and `initializePRAIInformation()`
 - Updated contract tests: foul/catch tests use `batOutcome`, pitch test verifies `batOutcome` reset
 - Added `betweenPitchState` section to state_validator debug dump
+</details>
 
 ---
 
@@ -378,7 +398,7 @@ These are **future work** — document findings but don't block on them.
 
 ### Knight Phase 3: Contract Test for batOutcome Promotion
 
-**Status: TODO (before Phase 4)**
+**Status: TODO (can be done at any point — see also Phase 8 Step 8.6)**
 
 Phase 3 introduced the `batOutcome` event→sticky pattern. The existing foul and catch contract tests now set `betweenPitchState.batOutcome` directly as a precondition, but no test verifies the promotion chain itself — that `ballHitByBat` / `ballMissedByBat` events cause the referee to set `batOutcome`.
 
@@ -388,7 +408,9 @@ Write `test_bat_outcome_promotion` in `tests/integration/contracts/`:
 2. **MISSED promotion** — Set `gameEvents.ballMissedByBat = 1`, run 1 frame, assert `betweenPitchState.batOutcome == BAT_OUTCOME_MISSED`.
 3. **Reset on pitchReleased** — Dirty `batOutcome = BAT_OUTCOME_HIT`, fire `pitchReleased`, run 1 frame, assert `batOutcome == BAT_OUTCOME_NONE`.
 
-This knights the new pattern permanently — the same discipline applied to `catchHasBeenMade` and `hasBallHitGround` (tested by `test_referee_reacts_to_pitch`). Also add a `sizeof(BetweenPitchState)` guard to that same test (parallel to the `sizeof(GameEvents)` guard in `test_clear_frame_events`) so new BPS fields force a review of `clearBetweenPitchState()`.
+This knights the new pattern permanently. Also add a `sizeof(BetweenPitchState)` guard
+(parallel to the `sizeof(GameEvents)` guard in `test_clear_frame_events`) so new BPS
+fields force a review of `clearBetweenPitchState()`.
 
 ---
 
@@ -396,71 +418,86 @@ This knights the new pattern permanently — the same discipline applied to `cat
 
 **Goal:** Eliminate the remaining 3 const-casts. The compiler becomes our enforcer.
 
-### Step 4.1: Move Free Walk Reset to Consolidation
+**Verified 2026-04-10:** All three casts located, removal paths confirmed safe. No other
+non-owned writes exist in referee.c beyond these three.
 
-Referee's `update_pitch_resolution()` (line 689) takes `FlowControl*` to reset `freeWalkCalculationMade`, `freeWalkIndex`, `freeWalkBase` when a ball is counted (lines 708-710). The referee's job is counting the ball. The *consequence* (recalculating free walk eligibility) belongs in consolidation.
+### Step 4.1: Fix initialize_referee Signature
 
-Consolidation already reacts to `resolutionProcessed` at `game_consolidation.c:119-122`:
+**Risk: ZERO.** Pure signature change.
+
+Line 1191: `initialize_referee()` takes `const StateInfo*` but needs to write to
+`game->referee` via `&((MatchSession*)game)->referee`. Change signature to pass explicit
+writable pointer:
+
 ```c
-if (game->betweenPitchState.resolutionProcessed) {
-    game->pRAI.pitchState = PITCH_STAGE_NONE;
-    game->betweenPitchState.resolutionProcessed = 0;
-}
+// Before:
+void initialize_referee(const StateInfo* stateInfo)
+// After:
+void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
 ```
-Add the free walk reset here:
-```c
-if (game->betweenPitchState.resolutionProcessed) {
-    game->pRAI.pitchState = PITCH_STAGE_NONE;
-    game->flowControl.freeWalkCalculationMade = 0;
-    game->flowControl.freeWalkIndex = -1;
-    game->flowControl.freeWalkBase = BASE_NONE;
-    game->betweenPitchState.resolutionProcessed = 0;
-}
-```
-Then remove lines 707-710 from `update_pitch_resolution()` in referee.c and remove the `FlowControl*` parameter from its signature. This eliminates the `(FlowControl*)` cast at line 942.
+
+Update callers:
+- `game_screen.c:477` → `initialize_referee(stateInfo, &stateInfo->match->referee)`
+
+Update `referee.h` declaration. Run all 73 tests.
 
 ### Step 4.2: Move waitingForBatterDecision=0 to Consolidation
 
-Line 1134 in referee.c: when the referee detects end-of-inning (`shouldEndInning == true`), it sets `waitingForBatterDecision = 0` to cancel any pending batter prompt. This is a *reaction* to the referee's decision, not the decision itself.
+**Risk: VERY LOW.** One-line move.
 
-The referee already sets `endOfInningState = END_INNING_STATE_DETECTED` (line 1131) and `halfInningState->event = EVENT_INNING_ENDING` (line 1135) in the same block. Consolidation can check either of these and cancel the batter prompt:
+Line 1141: referee sets `waitingForBatterDecision = 0` when it detects end-of-inning.
+The referee already signals via `endOfInningState = END_INNING_STATE_DETECTED`. Move the
+consequence to consolidation:
 
-In consolidation's batter-decision logic (likely `checkIfNextBatterDecision` or equivalent), add a guard:
+In consolidation's batter-decision logic, add a guard:
 ```c
 if (game->referee.endOfInningState != END_INNING_STATE_NONE) {
     game->flowControl.waitingForBatterDecision = 0;
     return;
 }
 ```
-Then remove line 1134 from referee.c. This eliminates the `(FlowControl*)` cast.
+Remove line 1141 from referee.c. This eliminates one `(FlowControl*)` cast.
 
-### Step 4.3: Fix initialize_referee Signature
+### Step 4.3: Move Free Walk Reset to Consolidation
 
-Line 1186: `initialize_referee()` takes `const StateInfo*` but needs to write to `game->referee` (its own state). Since this is setup code called before the main loop (not during the pipeline), the const restriction is artificial.
+**Risk: LOW.** Three-field move, same trigger condition.
 
-Change signature from `void initialize_referee(const StateInfo* stateInfo)` to either:
-- `void initialize_referee(StateInfo* stateInfo)` (simplest — setup code doesn't need const protection), or
-- `void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)` (explicit writable pointer, consistent with `update_referee` pattern)
+Referee's `update_pitch_resolution()` (line 955) takes `FlowControl*` to reset
+`freeWalkCalculationMade`, `freeWalkIndex`, `freeWalkBase` after pitch resolution.
+Consolidation already reacts to `resolutionProcessed` at line 119-122:
 
-The second option is more consistent with our ownership philosophy but adds a parameter to a function called from 2 places. Either works. This eliminates the last `(MatchSession*)` cast.
+```c
+if (game->betweenPitchState.resolutionProcessed) {
+    game->pRAI.pitchState = PITCH_STAGE_NONE;
+    // Add here:
+    game->flowControl.freeWalkCalculationMade = 0;
+    game->flowControl.freeWalkIndex = -1;
+    game->flowControl.freeWalkBase = BASE_NONE;
+    game->betweenPitchState.resolutionProcessed = 0;
+}
+```
 
-Update the declaration in `referee.h:23` to match.
+Remove the three writes from `update_pitch_resolution()` and remove the `FlowControl*`
+parameter from its signature. This eliminates the last `(FlowControl*)` cast.
 
 ### Step 4.4: Verify Zero Casts
 
-`grep -n "(MatchSession\*)\|(FlowControl\*)\|(BallInfo\*)" src/game/referee.c` returns nothing.
+```bash
+grep -n "(MatchSession\*)\|(FlowControl\*)\|(BallInfo\*)" src/game/referee.c
+```
+Returns nothing. Run all 73 tests.
 
-**After Phase 4: Zero const-casts in referee.c.** The type system enforces data ownership. Phase 3 from the original plan is complete.
+**After Phase 4: Zero const-casts in referee.c.** The type system enforces data ownership.
 
 ---
 
-## Phase 5: Extract Pure Helpers
+## Phase 5: Extract get_batting_team_index()
 
-**Goal:** Reduce duplication by extracting commonly-used formulas into tested pure functions.
+**Goal:** Replace 10 copies of the batting-team formula with a tested pure function.
 
-### Step 5.1: Extract get_batting_team_index()
+### Step 5.1: Create scoring_helpers.c
 
-The formula `(scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2` appears **10 times** (7 in `referee.c`, 3 in `common_logic.c`). Extract to `rules_pure/`:
+Create `src/game/rules_pure/scoring_helpers.c` and `scoring_helpers.h`:
 
 ```c
 int get_batting_team_index(const Scoreboard* sb) {
@@ -468,56 +505,326 @@ int get_batting_team_index(const Scoreboard* sb) {
 }
 ```
 
-Replace all call sites. Write unit tests for various inning/period combinations.
+Add to Makefile's `OBJ_MAIN` list.
 
-### Step 5.2: Extract should_period_end()
+### Step 5.2: Replace All 10 Call Sites
 
-`halfInningState->endPeriod = 1` is set in 6 places in `referee.c` (lines 660, 666, 672, 750, 780, 786), each with different conditions involving period boundaries and score comparisons. Extract the condition-checking into a pure function. This is more complex — the 6 sites have different context (normal game vs HR contest, different period boundaries). Needs careful analysis.
+**referee.c** (7 sites): lines 616, 627, 654, 731, 817, 831, 857
+**common_logic.c** (3 sites): lines 634, 824, 863
+**game_consolidation.c** (1 site): line 511
 
-### Step 5.3: Evaluate Further Extractions
+Each local `int battingTeamIndex = (scoreboard->inning + ...)` becomes
+`int battingTeamIndex = get_batting_team_index(scoreboard)`.
 
-After 5.1-5.2, review `common_logic.c` for more extraction candidates. The vector math wrappers (`setVectorXYZ`, `addToVectorXZ`, etc.) and movement primitives may benefit from being in a dedicated file, though they may not be "pure" in the strict sense.
+### Step 5.3: Write Unit Tests
 
-**After Phase 5:** Less duplication in referee.c. New tested pure functions. Cleaner code.
+Test: period 0 inning 0, period 0 inning 1, period 1, HR contest (period 4+), playsFirst
+toggle. Follow existing pattern in `test_runner.c`.
+
+Run all 73 tests + new unit tests.
+
+**After Phase 5:** One formula, one name, tested. Referee.c shorter and less noisy.
 
 ---
 
-## Future Work (Re-evaluate After Phase 5)
+## Phase 6: Bug Fix + Period Logic
 
-These are known goals that should be re-planned after the above phases are complete.
+**Goal:** Fix Bug #1 (pending runs ignore endPeriod) by extracting `should_period_end()`
+as a pure function and adding it to the missing locations.
 
-### Rename & Reorganize
+### Step 6.1: Extract should_period_end()
 
-- `mutable_world.c` → `game_frame.c` or `game_loop.c` (the function is really `runGameFrame`)
-- Do this **after** active refactoring stabilizes to avoid merge pain
+Create pure function in `rules_pure/scoring_helpers.c`:
 
-### common_logic.c Decomposition
+```c
+int should_period_end(const Scoreboard* sb, int batting_runs, int catching_runs,
+                      int batting_period0_runs, int catching_period0_runs) {
+    if (sb->period < 4) {
+        if ((sb->inning + 1) % sb->halfInningsInPeriod == 0 ||
+            sb->inning + 1 == sb->halfInningsInPeriod * 2 + 2) {
+            if (batting_runs > catching_runs) return 1;
+            if (sb->inning + 1 == sb->halfInningsInPeriod * 2 &&
+                batting_period0_runs > catching_period0_runs &&
+                catching_runs == batting_runs) return 1;
+        }
+    } else {
+        if ((sb->inning + 1) % 2 == 0) {
+            if (batting_runs > catching_runs) return 1;
+        }
+    }
+    return 0;
+}
+```
 
-959 lines, 32 functions. Contains vector math, movement primitives, initialization helpers, and game logic. Split by domain:
-- Vector/movement utilities → `movement.c` or `player_movement.c`
-- Initialization functions → evaluate which survive lifecycle sorting
+Write unit tests for normal game, super inning, HR contest.
 
-### game_manipulation.c Decomposition
+### Step 6.2: Replace Existing Period-End Checks
 
-904 lines. Contains ball physics, fielder AI, base runner logic, rendering calls. Future extraction:
-- Fielder behavior → `fielder_behavior.c`
-- `updateModels()` → renderer layer
+Replace inline period-end logic in:
+- `update_runs()` (referee.c:653-678) → call `should_period_end()`
+- `update_free_walk_resolution()` (referee.c:781-792) → call `should_period_end()`
+
+Run all 73 tests. Behavior must be identical — this is a pure extraction.
+
+### Step 6.3: Fix Bug #1 — Add endPeriod Checks to resolve_pending_runs
+
+**The bug:** `resolve_pending_runs()` (referee.c:798-879) scores at three sites (lines
+818, 832, 858) without checking or setting `endPeriod`. Every other scoring path does.
+
+**The fix:** After each scoring block in `resolve_pending_runs()`, add the
+`should_period_end()` call and set `halfInningState->endPeriod = 1` when true.
+
+Optionally: write a scenario test first that demonstrates the bug (period should have
+ended but pending run was scored anyway), then apply the fix and verify the test passes.
+
+### Step 6.4: Move endPeriod Write from Consolidation to Referee
+
+`game_consolidation.c:519` sets `halfInningState.endPeriod = 1` for HR contest
+early-termination (catching team too far ahead). Now that `should_period_end()` exists,
+move this logic into the referee — it's a rules decision, not an enforcement action.
+
+The referee can check this condition after each HR contest pair scoring and set endPeriod
+directly via its owned pointer.
+
+Run all 73 tests.
+
+**After Phase 6:** Bug #1 fixed. `endPeriod` exclusively written by referee. Period-end
+logic is a single tested pure function.
+
+---
+
+## Phase 7: Initialization Unification
+
+**Goal:** Eliminate the dual-initialization problem. Each field cleared by exactly one owner.
+No copy-paste init sequences. Reset recipes document intent.
+
+**Architectural target:** See `OPUS_VISION.md` Section VI for the full vision.
+
+### The Problem Today
+
+`initializeTemporaryGameAnalysisInfo()` (common_logic.c:771-805) crosses ALL ownership
+boundaries: it clears FlowControl (consolidation-owned), BetweenPitchState (referee-owned
+at runtime), HalfInningState.event/endPeriod (referee-owned), camera, and subsystems.
+
+The referee ALSO clears BPS and HIS fields at RESETTING transitions. Result: fields are
+cleared in two places and it's unclear which clearing is authoritative.
+
+Additionally, 7-function init sequences are copy-pasted in 3 places:
+- `executeFoulPlayTeleport()` (consolidation:150-156)
+- `checkIfNextPair()` (consolidation:522-530)
+- `loadMutableWorldSettings()` (common_logic:924-940) — the superset
+
+### Step 7.1: Split initializeTemporaryGameAnalysisInfo() by Ownership
+
+Create `resetFlowState()` with ONLY consolidation-owned fields:
+
+```c
+void resetFlowState(MatchSession* match) {
+    match->flowControl.pause = 0;
+    match->flowControl.waitingForBatterDecision = 0;
+    match->flowControl.waitingForFreeWalkDecision = 0;
+    match->flowControl.freeWalkCalculationMade = 1;
+    match->flowControl.freeWalkIndex = -1;
+    match->flowControl.freeWalkBase = BASE_NONE;
+    match->playerCounters.noMorePlayers = 0;
+    match->gameFlowState.ballHome = 0;
+    GameConsolidation_Init(&(match->gameFlowState));
+    initGameManipulation(&(match->gameFlowState));
+    match->cameraState.homeRunCameraFlag = 0;
+    match->cameraState.targetPoint.x = 0.0f;
+    match->cameraState.targetPoint.y = 0.0f;
+    match->cameraState.targetPoint.z = 0.0f;
+    clearFrameEvents(&match->gameEvents);
+}
+```
+
+Remove the referee-owned fields (BPS, HIS.event, HIS.endPeriod) from this function.
+Those will be handled by the referee's own reset API (Step 7.2).
+
+Replace `initializeTemporaryGameAnalysisInfo()` calls with `resetFlowState()`.
+
+### Step 7.2: Create Referee_ResetForNewInning()
+
+New public API in referee.c that clears ALL referee-owned state:
+
+```c
+void Referee_ResetForNewInning(
+    RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
+{
+    initializeRefereeState(ref);  // existing: clears all player tracking + state machines
+
+    his->outs = 0;
+    his->balls = 0;
+    his->strikes = 0;
+    his->runsInTheInning = 0;
+    his->event = EVENT_NONE;
+    his->endPeriod = 0;
+
+    clearBetweenPitchState(bps);
+}
+```
+
+This absorbs the HIS fields from `initializeCriticalGameInfo()` (common_logic.c:822-833)
+that were crossing the ownership boundary. The remaining fields in that function
+(`playerCounters`, `batterSelectionIndex`) stay in a team setup helper.
+
+**Note:** `clearBetweenPitchState()` is currently `static` in referee.c. Either make it
+non-static or inline the clearing into `Referee_ResetForNewInning()`. The referee's
+RESETTING transitions can continue to call it directly.
+
+### Step 7.3: Create resetPhysicalWorld() Building Block
+
+Extract the shared 7-function sequence into one function:
+
+```c
+void resetPhysicalWorld(StateInfo* stateInfo, unsigned int* rng_seed) {
+    MatchSession* game = stateInfo->match;
+    initializeBallInfo(game);
+    initializeActionInfo(game);
+    initializeIndexInformation(game);
+    initializePRAIInformation(game);
+    initializeSpatialPlayerInformation(game, stateInfo->fieldPositions, rng_seed);
+    initializeNonCriticalPlayerInformation(game);
+}
+```
+
+**Rule: This function does NOT call `resetFlowState()` or touch any referee state.**
+
+### Step 7.4: Create Reset Recipes
+
+Four named recipes, each composing the building blocks. These replace the scattered init
+calls in consolidation and game_screen. Place in a new `game_reset.c` file.
+
+```c
+// Recipe 1: Full reset for new half-inning
+void resetForNewHalfInning(StateInfo* stateInfo, unsigned int* rng_seed) {
+    resetPhysicalWorld(stateInfo, rng_seed);
+    resetFlowState(stateInfo->match);
+    Referee_ResetForNewInning(&match->referee, &match->halfInningState, &match->betweenPitchState);
+    // Team setup (remaining fields from initializeCriticalGameInfo):
+    initializeTeamForInning(stateInfo);  // playerCounters, batterSelectionIndex
+    initializeInningPermanentPlayerInformation(...);
+    if (scoreboard->period >= 4) setupHomerunPhysicalState(...);
+}
+
+// Recipe 2: Foul play — referee already restored legal state from snapshot
+void resetForFoulPlay(StateInfo* stateInfo, unsigned int* rng_seed) {
+    resetPhysicalWorld(stateInfo, rng_seed);
+    resetFlowState(stateInfo->match);
+    restorePlayersToRefereePositions(stateInfo);  // extracted from current executeFoulPlayTeleport
+    if (scoreboard->period >= 4) setupHomerunPhysicalState(...);
+}
+
+// Recipe 3: Next HR pair — referee already cleared per-pair state
+void resetForNextPair(StateInfo* stateInfo, unsigned int* rng_seed) {
+    resetPhysicalWorld(stateInfo, rng_seed);
+    resetFlowState(stateInfo->match);
+    setupHomerunPhysicalState(...);
+}
+
+// Recipe 4: From menu — full reset + explicit referee scan
+void initializeGameFromMenu(StateInfo* stateInfo, unsigned int* rng_seed) {
+    resetForNewHalfInning(stateInfo, rng_seed);
+    initialize_referee(stateInfo, &stateInfo->match->referee);
+}
+```
+
+Replace:
+- `loadGameScreenSettings()` body → calls `initializeGameFromMenu()`
+- `checkIfEndOfInning()` reset path → calls `resetForNewHalfInning()`
+- `executeFoulPlayTeleport()` → calls `resetForFoulPlay()`
+- `checkIfNextPair()` reset path → calls `resetForNextPair()`
+
+### Step 7.5: Remove initializeTemporaryGameAnalysisInfo and loadMutableWorldSettings
+
+After recipes are in place, these functions have no callers. Delete them. Their
+responsibilities are now split cleanly between `resetPhysicalWorld()`, `resetFlowState()`,
+`Referee_ResetForNewInning()`, and the team setup helper.
+
+Run all 73 tests after each substep.
+
+**After Phase 7:** Each field cleared by exactly one system. No copy-paste init.
+Reset recipes make the initialization story readable. The dual-initialization
+problem is gone.
+
+---
+
+## Phase 8: Organization & Polish
+
+**Goal:** Make the codebase navigable. Good names, focused files, discoverable tests.
+
+### Step 8.1: Rename mutable_world.c → game_frame.c
+
+Rename file. Update Makefile. Add the pipeline documentation comment block from
+OPUS_VISION.md Section IV showing stages, ownerships, and data flow.
+
+### Step 8.2: Standardize Test Registration
+
+Currently `test_runner.c` uses two patterns: direct `RUN_TEST()` calls (45 of them) and
+wrapper functions (`run_rules_outs_tests`, `run_rules_runs_tests`) that internally call
+`RUN_TEST()`. This makes `grep RUN_TEST test_runner.c | wc -l` give the wrong count.
+
+Pick one pattern (recommend: all direct `RUN_TEST` calls) and standardize. Update docs
+to reflect accurate count.
+
+### Step 8.3: Remove Dead outOfBounds Field
+
+`HalfInningState.outOfBounds` (globals.h:499) is never written to — foul tracking uses
+`referee.foulState` state machine. Remove the field. Update any documentation that
+references it (`rules_outs.h:13`).
+
+### Step 8.4: Split common_logic.c
+
+952 lines, ~31 functions spanning 6 responsibilities. Split by domain:
+
+- **`player_movement.c`** — ~12 functions: `moveTowardsXZ`, `moveTowardsXYZ`,
+  `setVectorXYZ`, `addToVectorXZ`, etc. Pure movement/vector helpers.
+- **`game_initialization.c`** — Remaining init helpers that aren't absorbed by game_reset.c
+  (`initializeBallInfo`, `initializeActionInfo`, `initializeSpatialPlayerInformation`, etc.)
+
+The functions that move to `game_reset.c` in Phase 7 are already gone from common_logic.c
+by this point.
+
+### Step 8.5: Split game_manipulation.c
+
+~904 lines. Split by domain:
+
+- **`ball_update.c`** — Ball physics, ground detection, bounce behavior
+- **`fielder_behavior.c`** — Fielder AI ranking, catch/throw decisions, positioning
+- **`base_arrivals.c`** — `playerArrivedAtBase` event firing, base advancement
+
+Keep `game_manipulation.c` as a thin orchestrator calling the above.
+
+**Note:** `playerLocationOrientationAndTargets()` (~210 lines) may need decomposition
+before extraction. Evaluate when we get here.
+
+### Step 8.6: Knight Phase 3 Completion
+
+If not done earlier: add `test_bat_outcome_promotion` contract test + `sizeof(BetweenPitchState)`
+guard. This was originally planned before Phase 4 and should be done whenever convenient —
+it can be done at any point without conflicting with other phases.
+
+**After Phase 8:** Files are focused. Names match responsibilities. Tests are discoverable.
+The codebase is navigable.
+
+---
+
+## Future Work (Re-evaluate After Phase 8)
+
+These are known goals that are not part of the current plan:
 
 ### pRAI Lifecycle Completion
 
-After `batHit`/`batMiss` are consolidated into GameEvents, the remaining pRAI fields sort into clear categories (see Lifecycle Architecture section):
-
-- **UI state** (move to `UIState`): `meterValue`, `swingMeterValue` — only read by `game_screen.c`
-- **Pitch-scoped gates** (investigate `BetweenPitchState` or derived state): `batterCanAdvance`
-- **Internal stage coordination** (leave or make local): `refreshCatchAndChange`, `initPlayerSelection`
-- **Action state** (stays in pRAI or `PendingActionState`): `pitchState`, `throwGoingToBase`, `battingGoingOn`, `batterReady`, `initBatter`, `willStartRunning[]`
-
-Goal: pRAI contains only persistent action/physics state. No transient events, no UI values.
+Remaining pRAI fields sort into categories (see Lifecycle Architecture section):
+- **UI state** (`meterValue`, `swingMeterValue`) → move to `UIState`
+- **Pitch-scoped gates** (`batterCanAdvance`) → investigate `BetweenPitchState`
+- **Internal coordination** (`refreshCatchAndChange`) → make local or always-compute
+- **Action state** (the rest) → stays in pRAI
 
 ### Minor Ownership Fixes
 
-- `halfInningState.event` clearing in `game_screen.c:272` — consider a separate UI notification field or accept the pragmatic violation
-- `halfInningState.endPeriod = 1` in `game_consolidation.c:519` — move this homerun catch-up logic to referee
+- `halfInningState.event` clearing in `game_screen.c:272` — consider separate UI notification
+- Any new violations discovered during Phases 4-8
 
 ### Action & AI Decoupling
 
@@ -527,13 +834,21 @@ Complete `actions_messy → actions_pure` split. Intent layer for replay/network
 
 ## Summary Table
 
-| Phase | Steps | Risk | Key Metric | Status |
-|-------|-------|------|-----------|--------|
-| **1. Consolidate & Knight** | 1.1-1.3 | None | 9→3 const-casts, +15 unit tests | ✅ Done |
-| **2. 1-Frame Contracts** | 2.1-2.3 | None | +4 contract tests, test restructuring | ✅ Done |
-| **3. GameEvents Migration** | 3.1-3.3 | Low | BatOutcome enum, event→sticky, -25 lines | ✅ Done |
-| **3. Knight Phase 3** | — | None | +1 contract test, sizeof(BPS) guard | 🎯 NEXT |
-| **4. Referee Ownership** | 4.1-4.4 | Medium | 3→0 const-casts | ⏳ TODO |
-| **5. Pure Helpers** | 5.1-5.3 | Low | -30+ lines of duplication | ⏳ TODO |
+| Phase | Goal | Risk | Key Metric | Status |
+|-------|------|------|-----------|--------|
+| **1. Consolidate & Knight** | Remove trivial casts, knight stable functions | None | 9→3 casts, +15 unit tests | ✅ Done |
+| **2. 1-Frame Contracts** | Prove pipeline contracts | None | +4 contract tests | ✅ Done |
+| **3. GameEvents Migration** | batOutcome event→sticky | Low | BatOutcome enum, -25 lines | ✅ Done |
+| **4. Zero Const-Casts** | Compiler enforces ownership | Medium | 3→0 const-casts | 🎯 NEXT |
+| **5. get_batting_team_index** | Eliminate 10-copy formula | None | -10 duplicates, +unit tests | ⏳ TODO |
+| **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | ⏳ TODO |
+| **7. Init Unification** | Reset recipes, split init by ownership | Medium | No dual-init, no copy-paste | ⏳ TODO |
+| **8. Organization** | Rename, split files, standardize tests | Low | Navigable codebase | ⏳ TODO |
 
-Each step is independently committable and testable. If any step breaks a test, we fix it before moving on.
+Each step is independently committable and testable. Every phase leaves the codebase
+strictly better than before. If we stop at any point, nothing is wasted:
+- Pure functions are always useful
+- Clean ownership is always useful
+- Reset recipes are always useful
+- Good names are always useful
+- Fewer duplicated code paths are always useful

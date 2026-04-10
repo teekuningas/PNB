@@ -1,8 +1,8 @@
 # PNB Architecture
 
-**Last updated:** 2026-03-21
-**Current Status:** Phases 1–3 Complete ✅ (const-casts 12→3, 73 tests, contract testing, BatOutcome consolidation) | Phase 4 Referee Ownership 🎯
-**Deep Analysis:** Lifecycle architecture verified — see `PLAN.md` "Lifecycle Architecture" and "Shared Vision" sections
+**Last updated:** 2026-04-10
+**Current Status:** Phases 1–3 Complete ✅ (const-casts 12→3, 73 tests, contract testing, BatOutcome consolidation) | Phase 4 Zero Const-Casts 🎯
+**Deep Analysis:** See `PLAN.md` for lifecycle architecture and verified forward plan. See `OPUS_VISION.md` for the post-refactoring architectural target.
 
 ## Vision: The Functional Pipeline
 
@@ -89,7 +89,7 @@ State_Next = Pipeline(Physics(Input(State)))
 ### Two Distinct Patterns
 
 **Setup (Game Start):**
-- Explicit function call: `Referee_InitializeFromPhysicalWorld()`
+- Explicit function call: `initialize_referee()` (will become `Referee_ScanPhysicalWorld()` in Phase 7)
 - Called during setup phase (before main loop)
 - Scans physical world and establishes initial legal tracking
 
@@ -120,16 +120,18 @@ When a transition occurs (e.g., End of Inning):
 
 ## Current Roadmap
 
-The active refactoring plan lives in **`docs/PLAN.md`**. Summary:
+The active refactoring plan lives in **`docs/PLAN.md`**. The architectural target is in **`docs/OPUS_VISION.md`**.
 
 | Phase | Goal | Status |
 |-------|------|--------|
 | **1** | **Consolidate & Knight** — remove trivial const-casts (9→3), add unit tests for stable pure functions | ✅ Done |
 | **2** | **1-Frame Contract Tests** — prove pipeline stage cooperation at the frame level | ✅ Done |
 | **3** | **GameEvents Migration** — BatOutcome enum in BetweenPitchState, event→sticky pattern, fixed event semantics | ✅ Done |
-| **4** | **Complete Referee Ownership** — eliminate last 3 const-casts (FlowControl moves to consolidation) | **🎯 NEXT** |
-| **5** | **Extract Pure Helpers** — `get_batting_team_index()`, `should_period_end()` | ⏳ TODO |
-| Future | Rename/reorganize, `common_logic.c`/`game_manipulation.c` decomposition, pRAI lifecycle completion | 🔮 Future |
+| **4** | **Zero Const-Casts** — eliminate last 3 const-casts, compiler enforces ownership | **🎯 NEXT** |
+| **5** | **Extract get_batting_team_index** — replace 10 copies of the batting-team formula | ⏳ TODO |
+| **6** | **Bug Fix + Period Logic** — extract `should_period_end()`, fix Bug #1 (pending runs ignore endPeriod) | ⏳ TODO |
+| **7** | **Initialization Unification** — reset recipes, split init by ownership, eliminate dual-init | ⏳ TODO |
+| **8** | **Organization** — rename files, split large files, standardize tests | ⏳ TODO |
 
 *Previous phases (Dead Code Cleanup, WOUNDED Enforcement, homerunPairHasPitch move) are complete. See `docs/archive/` for history.*
 
