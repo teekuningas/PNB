@@ -31,7 +31,8 @@ Fix is in Phase 6.
 Foul tracking moved to `referee.foulState` state machine but the field was not removed.
 Cleanup is in Phase 7.
 
-**Next:** Knight Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8.
+**Next:** Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8.
+Knight Phase 3 can be done at any point (low-risk test addition).
 
 <details>
 <summary>Phase 2 cleanups (2026-03-21)</summary>
@@ -480,14 +481,55 @@ if (game->betweenPitchState.resolutionProcessed) {
 Remove the three writes from `update_pitch_resolution()` and remove the `FlowControl*`
 parameter from its signature. This eliminates the last `(FlowControl*)` cast.
 
-### Step 4.4: Verify Zero Casts
+### Step 4.4: Fix resolutionProcessed Consume Pattern
+
+**Risk: ZERO.** One guard condition added.
+
+Consolidation currently writes `betweenPitchState.resolutionProcessed = 0` (line 121),
+which is a cross-boundary write to referee-owned BPS. Fix by making consolidation
+**idempotent** instead of consuming:
+
+```c
+// Before:
+if (game->betweenPitchState.resolutionProcessed) {
+    game->pRAI.pitchState = PITCH_STAGE_NONE;
+    game->flowControl.freeWalkCalculationMade = 0;
+    game->flowControl.freeWalkIndex = -1;
+    game->flowControl.freeWalkBase = BASE_NONE;
+    game->betweenPitchState.resolutionProcessed = 0;  // ← boundary crossing
+}
+
+// After:
+if (game->betweenPitchState.resolutionProcessed &&
+    game->pRAI.pitchState != PITCH_STAGE_NONE) {
+    game->pRAI.pitchState = PITCH_STAGE_NONE;
+    game->flowControl.freeWalkCalculationMade = 0;
+    game->flowControl.freeWalkIndex = -1;
+    game->flowControl.freeWalkBase = BASE_NONE;
+    // NO write to BPS — referee clears at next pitchReleased via clearBetweenPitchState
+}
+```
+
+The guard (`pitchState != PITCH_STAGE_NONE`) ensures the reaction fires exactly once.
+The flag stays set harmlessly until referee clears BPS at the next pitch lifecycle boundary.
+This follows the same principle as state machine signals: referee signals → consumer reacts
+→ referee clears on its own schedule.
+
+### Step 4.5: Verify Zero Casts and Zero Boundary Crossings
 
 ```bash
 grep -n "(MatchSession\*)\|(FlowControl\*)\|(BallInfo\*)" src/game/referee.c
 ```
 Returns nothing. Run all 73 tests.
 
-**After Phase 4: Zero const-casts in referee.c.** The type system enforces data ownership.
+Verify that consolidation no longer writes to BPS:
+```bash
+grep -n "betweenPitchState.*= " src/game/game_consolidation.c
+```
+Returns only reads.
+
+**After Phase 4: Zero const-casts in referee.c. Zero consolidation writes to BPS.**
+The type system enforces data ownership.
 
 ---
 
@@ -781,6 +823,9 @@ references it (`rules_outs.h:13`).
   `setVectorXYZ`, `addToVectorXZ`, etc. Pure movement/vector helpers.
 - **`game_initialization.c`** — Remaining init helpers that aren't absorbed by game_reset.c
   (`initializeBallInfo`, `initializeActionInfo`, `initializeSpatialPlayerInformation`, etc.)
+- **Note:** `calculateFreeWalk()` (lines ~460-507) is a consolidation helper that reads
+  referee state and writes FlowControl. It should move to `game_consolidation.c` or
+  `rules_pure/` (as a query returning the result, with consolidation doing the FlowControl write).
 
 The functions that move to `game_reset.c` in Phase 7 are already gone from common_logic.c
 by this point.

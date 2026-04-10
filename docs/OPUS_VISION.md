@@ -227,9 +227,14 @@ void updateGameFrame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng
 
     // ──── Stage 4: Consolidation (Enforcement + Flow + Resets) ────
     // READS:  RefereeState (decisions), BetweenPitchState (flags)
-    // WRITES: PlayerInfo (enforcement), FlowControl (flow decisions),
-    //         pRAI.pitchState (pitch clearing), Scoreboard (inning advancement)
+    // WRITES: PlayerInfo (enforcement), FlowControl (flow posts),
+    //         pRAI.pitchState (enforcement reset), Scoreboard (inning advancement)
     // RESETS: Calls reset recipes when referee signals RESETTING
+    //
+    // NOTE: Consolidation READS BPS signals but does NOT write to BPS.
+    // It uses guard conditions (e.g., pitchState != NONE) for idempotency
+    // instead of consuming (clearing) flags. Referee clears BPS at lifecycle
+    // boundaries (clearBetweenPitchState on pitchReleased).
     GameConsolidation_Update(stateInfo, menuInfo, rng_seed);
 
     // ──── Stage 5: Cleanup ────
@@ -245,15 +250,34 @@ void updateGameFrame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng
 
 | Struct | Initialized by | Runtime writer | Runtime readers | Lifecycle |
 |--------|---------------|----------------|-----------------|-----------|
-| **GameEvents** | clearFrameEvents (auto) | Stage 2 (physics) | Stage 3 (referee) | 1 frame |
+| **GameEvents** | clearFrameEvents (auto) | Pre-referee stages (actions + physics) | Stage 3 (referee) | 1 frame |
 | **BetweenPitchState** | Referee (at pitch start) | Stage 3 (referee) | Stage 2 (guards), Stage 4 | 1 pitch |
 | **RefereeState** | Referee (scan or events) | Stage 3 (referee) | Stage 4 (enforcement) | 1 inning |
 | **HalfInningState** | Referee (via reset API) | Stage 3 (referee) | Stage 4 (flow), renderer | 1 half-inning |
-| **FlowControl** | resetFlowState() | Stage 4 (consolidation) | Stage 2 (guards), everyone | Per-situation |
+| **FlowControl** | resetFlowState() | Stage 4 posts, Stage 2 consumes | Everyone | Per-situation |
+| **PlayerCounters** | resetForNewHalfInning() | Stage 3 (pool refresh) + Stage 4 (availability) | Stage 3, Stage 4 | Per-inning |
 | **PlayerInfo/BallInfo** | resetPhysicalWorld() | Stage 2 + Stage 4 (enforcement) | Everyone | Continuous |
-| **pRAI** | resetPhysicalWorld() | Stage 2 (action) + Stage 4 (pitchState) | Stage 2, Stage 3 (reads) | Mixed |
-| **Scoreboard** | resetForNewHalfInning() | Stage 3 (runs) + Stage 4 (inning++) | Everyone | Per-game |
+| **pRAI** | resetPhysicalWorld() | Stage 2 (action) + Stage 4 (pitchState reset) | Stage 2, Stage 3 (reads) | Mixed |
+| **Scoreboard** | resetForNewHalfInning() | Stage 2 (batterOrderIndex) + Stage 3 (runs) + Stage 4 (inning++) | Everyone | Per-game |
 | **ActionFlags** | Stage 1 (auto) | Stage 1 (input) | Stage 2 (action) | 1 frame |
+
+### Ownership Categories
+
+Not all structs follow single-owner semantics. Three categories exist:
+
+**Single-owner (compiler-enforced):** GameEvents, BetweenPitchState, RefereeState, HalfInningState,
+ActionFlags. The referee's `const StateInfo*` + explicit writable pointers enforce this at
+compile time. These are the core structs that must never have boundary crossings.
+
+**Shared facts (legitimate dual-ownership):** Scoreboard (referee writes runs, consolidation
+writes inning/period, actions advance batterOrderIndex), PlayerCounters (referee writes pool
+refreshes, consolidation writes availability, actions decrement on batter selection),
+PlayerInfo (actions move players, consolidation enforces legal outcomes).
+These have multiple writers because the responsibilities genuinely split across stages.
+
+**Coordination structs (request/acknowledge):** FlowControl (consolidation posts, actions
+consume), pRAI (actions drive forward, consolidation resets). These are communication
+channels, not state owned by one party.
 
 ### The Key Insight: Initialization ≠ Runtime
 
@@ -263,7 +287,7 @@ Initialization and runtime have different ownership rules, and that's OK:
                     INITIALIZATION           RUNTIME (pipeline)
                     ──────────────           ──────────────────
 Physical state:     resetPhysicalWorld()  →  Stage 2 writes, Stage 4 enforces
-Flow state:         resetFlowState()      →  Stage 4 writes
+Flow state:         resetFlowState()      →  Stage 4 posts, Stage 2 consumes
 Legal state:        Referee reset API     →  Stage 3 writes (compiler-enforced)
 ```
 
@@ -273,6 +297,110 @@ During runtime, the pipeline stages enforce ownership through const and signatur
 The old confusion came from `initializeTemporaryGameAnalysisInfo()` mixing both physical
 AND legal initialization. The fix: split it. Physical init stays in game_reset.c.
 Legal init lives in referee API functions.
+
+### The Five Communication Patterns
+
+The pipeline stages communicate through five distinct mechanisms. Understanding these
+patterns is essential — they are the vocabulary of the architecture. Every inter-stage
+data flow must fit one of these patterns; anything that doesn't is a design smell.
+
+**Pattern 1: Frame Events (GameEvents)**
+```
+Writer:    Pre-referee stages (actions + physics)
+Reader:    Referee
+Clearer:   clearFrameEvents() — automatic, end of frame
+Lifecycle: 1 frame
+```
+Binary flags answering "what happened this frame?" Set once (0→1), never explicitly
+zeroed except by `clearFrameEvents()`. This is the entry point for all game events.
+
+**Pattern 2: Referee Decisions (BetweenPitchState)**
+```
+Writer:    Referee (promotes from GameEvents after validation)
+Reader:    Consolidation, AI, action guards (between-frame reads)
+Clearer:   Referee (clearBetweenPitchState at pitchReleased)
+Lifecycle: 1 pitch
+```
+The event→decision→enforcement chain. Referee adds *validation* before promoting a
+raw event to a sticky fact. Consumers read these as published decisions.
+
+**Pattern 3: State Machine Signals (foulState, endOfInningState, nextPairTransitionState)**
+```
+Writer:    Referee (NONE → DETECTED → RESETTING)
+Reader:    Consolidation (checks for RESETTING)
+Clearer:   Referee (RESETTING → NONE, next frame)
+Lifecycle: Multi-frame (timer + two-frame handshake)
+```
+All three state machines follow the same two-frame handshake protocol:
+- Frame N: Referee transitions DETECTED→RESETTING, clears own legal state
+- Frame N: Consolidation sees RESETTING, executes physical reset
+- Frame N+1: Referee transitions RESETTING→NONE
+
+Implementation detail: each state machine captures its state into a local variable
+at the top of its if-else-if chain (e.g., `endState = refereeState->endOfInningState`).
+This prevents same-frame cascading — DETECTED→RESETTING cannot fall through to
+RESETTING→NONE within the same frame.
+
+What happens at RESETTING→NONE differs by disruption type:
+- Foul play: `clearBetweenPitchState()` — post-reset cleanup
+- Next pair: rescan physical world — finds new batter/runner positions
+- End of inning: just transitions — events (`batterEntered`, `pitchReleased`) rebuild naturally
+
+**Pattern 4: Coordination Requests (FlowControl)**
+```
+Poster:    Consolidation (sets requests: waitingForBatterDecision=1, etc.)
+Consumer:  Actions (acknowledges: waitingForBatterDecision=0 when batter enters)
+Canceller: Consolidation (can cancel if situation changes)
+Reader:    Everyone (AI, input, guards)
+Lifecycle: Per-situation (until acknowledged or cancelled)
+```
+NOT single-owner state — it's a two-party request/acknowledge protocol. Either the
+requester (consolidation) or the fulfiller (actions) can clear the flag. This is
+intentional and natural: "we need a batter" → "batter selected."
+
+**Pattern 5: UI Notifications (halfInningState.event)**
+```
+Writer:    Referee (sets EVENT_OUT, EVENT_RUN_SCORED, etc.)
+Reader:    Renderer (game_screen.c)
+Clearer:   Renderer (game_screen.c:272)
+Lifecycle: Until displayed
+```
+A notification message channel, not game state. The renderer clears it because only
+the renderer knows when the notification has been shown. Currently lives in
+`HalfInningState` (referee-owned struct), creating a cross-boundary write from
+the renderer. Future: extract to a dedicated notification struct.
+
+### Known Boundary Crossings (Today)
+
+Every cross-boundary write in the current codebase, with its status:
+
+| Location | Write | Status |
+|----------|-------|--------|
+| `referee.c:955` | `(FlowControl*)` const-cast for freeWalk fields | Phase 4: move to consolidation |
+| `referee.c:1141` | `(FlowControl*)` const-cast, `waitingForBatterDecision=0` | Phase 4: move to consolidation |
+| `referee.c:1191` | `(MatchSession*)` const-cast for `&referee` | Phase 4: fix signature |
+| `game_consolidation.c:519` | `halfInningState.endPeriod = 1` | Phase 6: move to referee |
+| `game_consolidation.c:121` | `betweenPitchState.resolutionProcessed = 0` | Phase 4+: idempotent guard |
+| `game_screen.c:272` | `halfInningState.event = EVENT_NONE` | Future: extract to notification struct |
+| `batting_system.c:108` | `flowControl.waitingForBatterDecision = 0` | Pattern 4: legitimate |
+| `action_implementation.c:245` | `flowControl.waitingForFreeWalkDecision = 0` | Pattern 4: legitimate |
+| `game_consolidation.c:120` | `pRAI.pitchState = PITCH_STAGE_NONE` | Legitimate: enforcement |
+| `game_manipulation.c:891,902` | `gameFlowState.ballHome = 0/1` | Legitimate: physics-derived |
+| `batting_system.c:136` | `scoreboard.teams[].batterOrderIndex++` | Shared fact: action side-effect |
+| `game_screen.c:75,86` | `flowControl.pause = 0/1` | Outer-loop control (see below) |
+| `mutable_world.c:83` | `flowControl.pause = 1` | Debug halt (outer-loop control) |
+| `common_logic.c:502` | `flowControl.freeWalkIndex/Base` | Consolidation helper (called from consolidation, misplaced in common_logic.c — Phase 8) |
+
+**Note on `flowControl.pause`:** This field is not part of the pipeline's inter-stage
+communication. It is outer-loop control — the game screen sets it on user input (HOME key),
+the debug validator sets it on consistency failure, and the pipeline checks it before running.
+It lives in FlowControl for convenience but is conceptually a separate concern. Future
+consideration: move to a dedicated `GameLoopControl` struct or leave as-is (it's harmless).
+
+After Phase 6, the only remaining "crossings" will be legitimate shared patterns
+(Pattern 4, Pattern 5, shared facts, outer-loop control) plus physics-derived state
+and the `calculateFreeWalk()` helper (Phase 8 moves it to its proper home).
+Everything else will be clean.
 
 ---
 
@@ -595,22 +723,25 @@ Everything else is in service of these two concerns.
 ## X. Safe Path from Here to There
 
 Every step below leaves all tests green and makes the codebase strictly better,
-regardless of future macro-decisions.
+regardless of future macro-decisions. **For detailed execution steps (code snippets,
+exact line numbers, verification commands), see `PLAN.md`.** This section explains
+WHY the order is safe; the PLAN explains HOW to execute each step.
 
-### Step 1: Extract `get_batting_team_index()` → `rules_pure/scoring_helpers.c`
-
-Pure function. Replace 10 copies. Write unit tests. Zero risk.
-**What it achieves:** Reduces noise. Makes referee.c shorter. Establishes scoring_helpers.
-
-### Step 2: Knight Phase 3 (`test_bat_outcome_promotion` contract test)
+### Step 1: Knight Phase 3 (`test_bat_outcome_promotion` contract test)
 
 Lock the event→sticky pattern with a test + sizeof guard. Zero risk.
 **What it achieves:** Permanent protection of Phase 3 work.
 
-### Step 3: Phase 4 — Zero const-casts
+### Step 2: Phase 4 — Zero const-casts
 
 Move FlowControl writes to consolidation. Fix initialize_referee signature.
+Fix resolutionProcessed consume pattern with idempotent guard.
 **What it achieves:** Compiler enforces ownership. The biggest single improvement.
+
+### Step 3: Extract `get_batting_team_index()` → `rules_pure/scoring_helpers.c`
+
+Pure function. Replace 10 copies. Write unit tests. Zero risk.
+**What it achieves:** Reduces noise. Makes referee.c shorter. Establishes scoring_helpers.
 
 ### Step 4: Extract `should_period_end()` → `rules_pure/scoring_helpers.c`
 
