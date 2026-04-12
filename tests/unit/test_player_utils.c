@@ -33,7 +33,9 @@ int test_get_batting_team_index()
     memset(&sb, 0, sizeof(Scoreboard));
 
     // Period 0, inning 0, playsFirst 0 → (0+0+0) % 2 = 0
-    sb.inning = 0; sb.period = 0; sb.playsFirst = 0;
+    sb.inning = 0;
+    sb.period = 0;
+    sb.playsFirst = 0;
     ASSERT_EQ(0, get_batting_team_index(&sb), "Period 0, inning 0, playsFirst 0 → team 0 bats");
 
     // Period 0, inning 1 → (1+0+0) % 2 = 1
@@ -45,15 +47,18 @@ int test_get_batting_team_index()
     ASSERT_EQ(0, get_batting_team_index(&sb), "Period 0, inning 2 → team 0 bats again");
 
     // playsFirst flips the order: inning 0, playsFirst 1 → (0+1+0) % 2 = 1
-    sb.inning = 0; sb.playsFirst = 1;
+    sb.inning = 0;
+    sb.playsFirst = 1;
     ASSERT_EQ(1, get_batting_team_index(&sb), "playsFirst=1 flips team 0→1");
 
     // Period 1 flips again: inning 0, playsFirst 0, period 1 → (0+0+1) % 2 = 1
-    sb.playsFirst = 0; sb.period = 1;
+    sb.playsFirst = 0;
+    sb.period = 1;
     ASSERT_EQ(1, get_batting_team_index(&sb), "Period 1 flips batting team");
 
     // HR contest: period 4, inning 0 → (0+0+4) % 2 = 0
-    sb.period = 4; sb.inning = 0;
+    sb.period = 4;
+    sb.inning = 0;
     ASSERT_EQ(0, get_batting_team_index(&sb), "HR contest period 4, inning 0 → team 0");
 
     // HR contest: period 4, inning 1 → (1+0+4) % 2 = 1
@@ -61,7 +66,8 @@ int test_get_batting_team_index()
     ASSERT_EQ(1, get_batting_team_index(&sb), "HR contest period 4, inning 1 → team 1");
 
     // HR contest round 2: period 6, inning 0 → (0+0+6) % 2 = 0
-    sb.period = 6; sb.inning = 0;
+    sb.period = 6;
+    sb.inning = 0;
     ASSERT_EQ(0, get_batting_team_index(&sb), "HR contest period 6 → team 0");
 
     return TEST_PASSED;

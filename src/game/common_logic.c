@@ -286,9 +286,11 @@ void runToNextBase(MatchSession* match, FieldPositions* fieldPositions, int inde
         }
         // and set it so that next player has to have a will of his own to run
         match->pRAI.willStartRunning[base] = 0;
-        // set state to running, BUT only if we aren't already WOUNDED or OUT (which are terminal/override states)
+        // set state to running, BUT only if we aren't already WOUNDED, OUT, or ADVANCING_FREELY
+        // (which are terminal/override states that must not be downgraded)
         if (match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
-            match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
+            match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT &&
+            match->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
             match->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
         }
         // and we are moving forward

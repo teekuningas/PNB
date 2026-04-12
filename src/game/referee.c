@@ -734,6 +734,7 @@ static void update_free_walk_resolution(
             // Homerun Contest / Super Inning Logic
             referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
             referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
+            referee->battingPlayers[i].hasScored = 1;
 
             // Add run
             scoreboard->teams[battingTeamIndex].runs += 1;
@@ -762,9 +763,10 @@ static void update_free_walk_resolution(
                 referee->battingPlayers[i].baseAtPitchStart = targetBase;
                 referee->battingPlayers[i].currentSafetyBase = targetBase;
             } else {
-                // Score from 3rd base
+                // Score from 3rd base — no physical run, player is removed by enforceLegalState
                 referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
+                referee->battingPlayers[i].hasScored = 1;
 
                 // Add run
                 scoreboard->teams[battingTeamIndex].runs += 1;
@@ -791,6 +793,9 @@ static void update_free_walk_resolution(
                 }
             }
         }
+
+        // Reset balls so free walk is not re-offered on the next BALL pitch
+        halfInningState->balls = 0;
     }
 }
 

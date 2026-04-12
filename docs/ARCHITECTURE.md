@@ -12,7 +12,7 @@
 
 ## Current Status
 
-Phases 1–4 Complete ✅ (const-casts 12→0, 73 tests, contract testing, BatOutcome consolidation, pitchResult promotion, compiler-enforced ownership) | Phase 5 Extract get_batting_team_index 🎯
+Phases 1–5 Complete ✅ (const-casts 12→0, 74 tests, contract testing, BatOutcome consolidation, pitchResult promotion, compiler-enforced ownership, get_batting_team_index extracted) | Phase 6 Bug Fix + Period Logic 🎯
 
 ## Build & Test
 
@@ -20,7 +20,7 @@ Phases 1–4 Complete ✅ (const-casts 12→0, 73 tests, contract testing, BatOu
 # Build
 make main
 
-# Test (73 tests: 54 unit + 4 contract + 15 scenario)
+# Test (74 tests: 55 unit + 4 contract + 15 scenario)
 devenv shell make test              # Unit tests
 devenv shell make integration_test  # Contract tests (1-frame pipeline proofs)
 devenv shell make scenario_test     # Scenario tests (full-game simulations)

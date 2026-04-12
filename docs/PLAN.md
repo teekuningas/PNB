@@ -17,10 +17,10 @@ consolidated `batHit`/`batMiss` into the event→sticky pattern. Phase 4 replace
 `resolutionProcessed` boolean with a typed `PitchResult pitchResult` field in BetweenPitchState,
 following the same event→sticky promotion pattern.
 
-**Test count:** 73 tests (54 unit + 4 contract + 15 scenario). All passing.
+**Test count:** 74 tests (55 unit + 4 contract + 15 scenario). All passing.
 
 **Test structure:**
-- `tests/unit/` — 54 pure function unit tests → `make test`
+- `tests/unit/` — 55 pure function unit tests → `make test`
 - `tests/integration/contracts/` — 4 one-frame pipeline contract tests → `make integration_test`
 - `tests/scenario/` — 15 full-game scenario tests → `make scenario_test`
 
@@ -34,7 +34,7 @@ Fix is in Phase 6.
 Foul tracking moved to `referee.foulState` state machine but the field was not removed.
 Cleanup is in Phase 7.
 
-**Next:** Phase 5 → Phase 6 → Phase 7 → Phase 8.
+**Next:** Phase 6 → Phase 7 → Phase 8.
 Knight Phase 3 can be done at any point (low-risk test addition).
 
 <details>
@@ -553,39 +553,20 @@ The type system enforces data ownership.
 
 ---
 
-## Phase 5: Extract get_batting_team_index()
+## Phase 5: Extract get_batting_team_index() ✅ DONE
 
-**Goal:** Replace 10 copies of the batting-team formula with a tested pure function.
+**Completed 2026-04-12.** Extracted `get_batting_team_index(const Scoreboard*)` into
+`rules_pure/player_utils.c` (natural home alongside `get_active_batter_index` — one
+answers "which team bats?", the other "which player bats?"). Replaced all 16 call sites
+across 7 files (referee.c ×7, common_logic.c ×3, game_consolidation.c ×3,
+action_implementation.c ×2, action_invocations.c ×1, game_screen.c ×1, batting_system.c ×1).
+Added unit test covering normal game, period transitions, playsFirst toggle, and HR contest.
+All 74 tests passing (55 unit + 4 contract + 15 scenario).
 
-### Step 5.1: Create scoring_helpers.c
-
-Create `src/game/rules_pure/scoring_helpers.c` and `scoring_helpers.h`:
-
-```c
-int get_batting_team_index(const Scoreboard* sb) {
-    return (sb->inning + sb->playsFirst + sb->period) % 2;
-}
-```
-
-Add to Makefile's `OBJ_MAIN` list.
-
-### Step 5.2: Replace All 10 Call Sites
-
-**referee.c** (7 sites): lines 616, 627, 654, 731, 817, 831, 857
-**common_logic.c** (3 sites): lines 634, 824, 863
-**game_consolidation.c** (1 site): line 511
-
-Each local `int battingTeamIndex = (scoreboard->inning + ...)` becomes
-`int battingTeamIndex = get_batting_team_index(scoreboard)`.
-
-### Step 5.3: Write Unit Tests
-
-Test: period 0 inning 0, period 0 inning 1, period 1, HR contest (period 4+), playsFirst
-toggle. Follow existing pattern in `test_runner.c`.
-
-Run all 73 tests + new unit tests.
-
-**After Phase 5:** One formula, one name, tested. Referee.c shorter and less noisy.
+**Key decision:** Placed in `player_utils` rather than creating a new `scoring_helpers.c`
+because (1) the include is already widespread, (2) "which team bats?" pairs naturally with
+"which player bats?", and (3) if Phase 6 introduces `should_period_end()`, we can reassess
+whether to create a dedicated scoreboard queries file then.
 
 ---
 
@@ -913,8 +894,8 @@ debugging and AI-driven testing. Natural to build after Phase 7.
 | **2. 1-Frame Contracts** | Prove pipeline contracts | None | +4 contract tests | ✅ Done |
 | **3. GameEvents Migration** | batOutcome event→sticky | Low | BatOutcome enum, -25 lines | ✅ Done |
 | **4. Zero Const-Casts** | Compiler enforces ownership | Medium | 3→0 casts, pitchResult replaces resolutionProcessed | ✅ Done |
-| **5. get_batting_team_index** | Eliminate 10-copy formula | None | -10 duplicates, +unit tests | 🎯 NEXT |
-| **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | ⏳ TODO |
+| **5. get_batting_team_index** | Eliminate 16-copy formula | None | -16 duplicates, +1 unit test | ✅ Done |
+| **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | 🎯 NEXT |
 | **7. Init Unification** | Reset recipes, split init by ownership | Medium | No dual-init, no copy-paste | ⏳ TODO |
 | **8. Organization** | Rename, split files, standardize tests | Low | Navigable codebase | ⏳ TODO |
 

@@ -227,13 +227,14 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
                 BaseID currentBaseId = stateInfo->match->playerInfo[index].bTPI.baseId;
 
                 if (currentBaseId == base) {
-                    // we start running to the next base
-                    runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, base);
-
-                    // set takingFreeWalk flag so that this player cant get wounded or tagged
-                    // when he's running
-                    stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
-                    // if he's safe on previous base, set the baseControlIndex for that base to -1
+                    if (base != BASE_THIRD) {
+                        // Start running to the next base
+                        runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, base);
+                        // Protected from wounds/tags while advancing freely
+                        stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
+                    }
+                    // 3rd base: no physical run needed — referee scores the run directly
+                    // and sets hasScored, which causes enforceLegalState to remove the player
                 }
                 // REFEREE MIGRATION: Logic moved to referee.c
                 // We just signal the event here.
