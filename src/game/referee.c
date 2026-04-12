@@ -4,6 +4,7 @@
 #include "rules_runs.h"
 #include "rules_strikes.h"
 #include "base_logic.h"
+#include "rules_pure/player_utils.h"
 #include "geometry.h"
 #include "vector_math.h"
 #include "base_control.h"
@@ -613,7 +614,7 @@ static void update_runs(
 
                     if (regularRun) {
                         halfInningState->event = EVENT_RUN_SCORED;
-                        int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+                        int battingTeamIndex = get_batting_team_index(scoreboard);
                         scoreboard->teams[battingTeamIndex].runs += 1;
                         halfInningState->runsInTheInning += 1;
 
@@ -624,7 +625,7 @@ static void update_runs(
                         }
                     } else if (runOfHonor) {
                         halfInningState->event = EVENT_RUN_SCORED;
-                        int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+                        int battingTeamIndex = get_batting_team_index(scoreboard);
                         scoreboard->teams[battingTeamIndex].runs += 1;
                         halfInningState->runsInTheInning += 1;
 
@@ -651,7 +652,7 @@ static void update_runs(
             }
 
             // Period End Check
-            int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+            int battingTeamIndex = get_batting_team_index(scoreboard);
             int catchingTeamIndex = (battingTeamIndex + 1) % 2;
             int currentRuns = scoreboard->teams[battingTeamIndex].runs;
             int opponentRuns = scoreboard->teams[catchingTeamIndex].runs;
@@ -726,7 +727,7 @@ static void update_free_walk_resolution(
     if (events->freeWalkAccepted && flowControl->freeWalkIndex != -1) {
         int i = flowControl->freeWalkIndex;
         BaseID sourceBase = flowControl->freeWalkBase;
-        int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+        int battingTeamIndex = get_batting_team_index(scoreboard);
         int catchingTeamIndex = (battingTeamIndex + 1) % 2;
 
         if (scoreboard->period >= 4) {
@@ -812,7 +813,7 @@ static void resolve_pending_runs(
                 if (referee->battingPlayers[i].hasPendingRun) {
                     // Award Regular Run
                     halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+                    int battingTeamIndex = get_batting_team_index(scoreboard);
                     scoreboard->teams[battingTeamIndex].runs += 1;
                     halfInningState->runsInTheInning += 1;
 
@@ -826,7 +827,7 @@ static void resolve_pending_runs(
                 if (referee->battingPlayers[i].hasPendingRunOfHonor) {
                     // Award Run of Honor
                     halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+                    int battingTeamIndex = get_batting_team_index(scoreboard);
                     scoreboard->teams[battingTeamIndex].runs += 1;
                     halfInningState->runsInTheInning += 1;
 
@@ -852,7 +853,7 @@ static void resolve_pending_runs(
                 if (referee->battingPlayers[i].status < PLAYER_STATUS_WOUND_MARKED) {
                     // Award Regular Run
                     halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+                    int battingTeamIndex = get_batting_team_index(scoreboard);
                     scoreboard->teams[battingTeamIndex].runs += 1;
                     halfInningState->runsInTheInning += 1;
 

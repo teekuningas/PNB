@@ -95,9 +95,7 @@ void selectBatter(StateInfo* stateInfo)
         return;
     }
 
-    int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                            stateInfo->match->scoreboard.period) %
-                           2;
+    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     // index cannot be -1 as we couldn't have got this far if it was
     int index = stateInfo->match->pII.batterSelectionIndex;
     if (index != -1) {

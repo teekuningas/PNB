@@ -631,7 +631,7 @@ void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fie
 // situation happens
 void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard* scoreboard, TeamData* teamData)
 {
-    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+    int battingTeamIndex = get_batting_team_index(scoreboard);
     int i;
     int jokerCounter = 0;
 
@@ -821,7 +821,7 @@ void clearFrameEvents(GameEvents* events)
 // these should be kept when foul play
 void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard)
 {
-    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+    int battingTeamIndex = get_batting_team_index(scoreboard);
     match->halfInningState.outs = 0;
     match->halfInningState.balls = 0;
     match->halfInningState.strikes = 0;
@@ -860,7 +860,7 @@ void initializePRAIInformation(MatchSession* match)
 
 void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions)
 {
-    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+    int battingTeamIndex = get_batting_team_index(scoreboard);
     Vector3D target;
     int i;
     if (match->homeRunContestState.runnerBatterPairCounter < scoreboard->pairCount) {

@@ -19,3 +19,8 @@ int get_active_batter_index(const MatchSession* game)
 
     return -1;
 }
+
+int get_batting_team_index(const Scoreboard* sb)
+{
+    return (sb->inning + sb->playsFirst + sb->period) % 2;
+}

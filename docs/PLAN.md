@@ -895,6 +895,14 @@ Remaining pRAI fields sort into categories (see Lifecycle Architecture section):
 
 Complete `actions_messy → actions_pure` split. Intent layer for replay/network support.
 
+### Headless Peer & Client-Server Architecture
+
+See `OPUS_VISION.md` Section XI. Three-layer architecture: graphical/AI clients connect
+to a headless peer (physics + referee + consolidation), peers synchronize P2P via
+intent sharing + pitch-cycle state checkpoints. Enforces clean separation of concerns
+at process boundaries. The headless peer doubles as a development tool for interactive
+debugging and AI-driven testing. Natural to build after Phase 7.
+
 ---
 
 ## Summary Table

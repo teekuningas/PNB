@@ -13,6 +13,7 @@
 #include "common_logic.h"
 #include "state_validator.h"
 #include "referee.h"
+#include "rules_pure/player_utils.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f // Midpoint between original -0.12 and current 0.08
@@ -316,9 +317,7 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
             else
                 index = stateInfo->match->pII.batterSelectionIndex;
         } else {
-            int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                                    stateInfo->match->scoreboard.period) %
-                                   2;
+            int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
             index = stateInfo->match->scoreboard.teams[battingTeamIndex]
                         .batterRunnerIndices[0][stateInfo->match->homeRunContestState.runnerBatterPairCounter];
             if (index == -1) shouldContinue = 0;

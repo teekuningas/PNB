@@ -252,9 +252,7 @@ static void changeBatter(StateInfo* stateInfo)
     int done = 0;
     int counter = 0;
     // index in a teams[] array
-    int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                            stateInfo->match->scoreboard.period) %
-                           2;
+    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     int index;
 
     stateInfo->match->aF.bTAF.chooseBatter = 0;
@@ -379,9 +377,7 @@ static void updateMeters(StateInfo* stateInfo)
 
 static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-    int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                            stateInfo->match->scoreboard.period) %
-                           2;
+    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     TeamControlMode battingControl = stateInfo->match->scoreboard.teams[battingTeamIndex].control;
     TeamControlMode catchingControl = stateInfo->match->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
 

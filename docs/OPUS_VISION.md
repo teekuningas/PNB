@@ -803,3 +803,121 @@ pattern changes, the pipeline shape changes), none of these steps become wasted 
 - Reset recipes are always useful
 - Good names are always useful
 - Fewer duplicated code paths are always useful
+
+---
+
+## XI. Future Consideration: Client-Server Architecture
+
+**Status:** Not planned yet. Think about when making refactoring decisions.
+
+### The Three-Layer Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│ Graphical Client │     │   AI Client     │
+│ (render + input) │     │ (programmatic)  │
+└────────┬────────┘     └────────┬────────┘
+         │ intents + state       │ intents + state
+         │ (local IPC)           │ (local IPC)
+┌────────┴────────────────────────┴────────┐
+│            Headless Peer                  │
+│  (physics + referee + consolidation)      │
+└────────────────┬─────────────────────────┘
+                 │ intents + sync snapshots
+                 │ (network / P2P)
+┌────────────────┴─────────────────────────┐
+│            Headless Peer                  │
+│  (physics + referee + consolidation)      │
+└────────┬────────────────────────┬────────┘
+         │                        │
+┌────────┴────────┐     ┌────────┴────────┐
+│ Graphical Client │     │   AI Client     │
+└─────────────────┘     └─────────────────┘
+```
+
+A centralized server only handles matchmaking and results tracking.
+The **headless peer** IS the game — it runs the full pipeline (physics + referee +
+consolidation). Clients are interface layers: the graphical client handles rendering
+and input, the AI client provides programmatic input. Both connect to their local
+headless peer and exchange intents + read-only state views.
+
+### Why pesäpallo is well-suited
+
+Unlike continuous-physics games (FIFA, NHL), pesäpallo's critical decisions happen at
+**discrete events**: pitch released, catch made, player arrives at base, ball hits ground.
+Between events, peers can simulate physics independently. Authority only matters at
+event boundaries — which is exactly what the `GameEvents → BetweenPitchState → enforcement`
+chain models.
+
+### P2P synchronization strategy
+
+Both peers run identical simulations from identical intents. No dedicated game server.
+
+**Between pitches (low-frequency sync):** Peers exchange a state hash at `pitchReleased`
+— the "savepoint" the architecture already defines. If hashes match, carry on. If not,
+reconcile from the tiebreaker peer's snapshot.
+
+**During a live pitch (high-frequency sync):** Share intents every frame, applied at
+agreed-upon frame numbers (input-delay netcode). A small buffer (3-4 frames / 60-80ms)
+ensures both peers process the same input at the same frame. Pesäpallo tolerates this
+well — pitching has wind-up animations, base running decisions aren't frame-critical.
+
+**Referee agreement:** Since both peers run identical physics from identical intents at
+identical frame numbers, referee decisions should be unanimous by construction. The
+pitch-cycle sync checkpoint catches accumulated float drift before it matters. If a
+rare disagreement occurs, the designated tiebreaker peer's referee wins and the other
+peer snaps to that state at the next pitch boundary. No anti-cheat against binary
+modification — the system assumes untouched headless peers and honest intents.
+
+### Why this architecture enforces clean code
+
+The process boundaries make good separation of concerns mandatory:
+
+- **The peer-client boundary forces pRAI cleanup.** UI state (`meterValue`,
+  `swingMeterValue`) must live in the graphical client. Action state must live in the
+  peer. The lifecycle split becomes a process-boundary requirement.
+- **The intent interface forces action/AI decoupling.** `ActionFlags` becomes a
+  serializable message. The `actions_messy → actions_pure` split becomes natural.
+- **The client read-only view forces clean state serialization.** The graphical client
+  receives `PlayerInfo[] + BallInfo + HalfInningState + Scoreboard + UIState` — the same
+  read-only view that `drawMutableWorld(const StateInfo*)` already uses.
+- **The peer-peer interface forces deterministic physics.** The explicit `rng_seed`
+  passing already supports this.
+
+### Headless peer as development tool
+
+Before networking, the headless peer is immediately valuable for development:
+
+- Send intents via API (pitch, swing, run) instead of joystick
+- Step frame-by-frame and inspect full game state as JSON
+- Debug rule edge cases interactively without rendering
+- AI clients can play full games programmatically
+- Reproduce bugs by crafting precise state and stepping through referee logic
+
+The `scenario_builder` infrastructure already does 90% of this. The missing piece is
+an API interface and state serialization (`StateValidator_Dump` is a starting point).
+
+Natural to build after Phase 7 (init unification), when reset recipes map directly to
+API endpoints.
+
+### File ownership mapping
+
+When splitting files (Phase 8), consider which layer each belongs to:
+
+| Headless Peer | Graphical Client |
+|---------------|------------------|
+| `game_frame.c`, `referee.c` | `game_screen.c`, renderer |
+| `game_consolidation.c` | `action_invocations.c` (input → intents) |
+| `action_implementation.c` (executes intents) | UI state from `pRAI` |
+| `game_manipulation.c`, physics | |
+| `rules_pure/*`, `common_logic.c` | |
+
+### Compatibility with current refactoring
+
+All Phases 5-8 work strengthens this future direction:
+- Pure rule functions → portable peer-local logic
+- Clean reset recipes → peer-internal state management
+- Ownership separation → defines the process boundary
+- Intent layer (Future Work) → serializable network messages
+
+No current refactoring decision is counter-productive to this direction.

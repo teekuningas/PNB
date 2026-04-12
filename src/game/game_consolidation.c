@@ -260,10 +260,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
                 if (stateInfo->match->betweenPitchState.hasBallHitGround == 1 ||
                     stateInfo->match->betweenPitchState.catchHasBeenMade == 1) {
                     // if that happens we can now start.
-                    int battingTeamIndex =
-                        (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                         stateInfo->match->scoreboard.period) %
-                        2;
+                    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
                     // this will give work to action_invocatin.c and action_implementation.c
                     stateInfo->match->flowControl.waitingForBatterDecision = 1;
                     // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
@@ -355,9 +352,7 @@ static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned
     EndOfInningTransitionState currentState = stateInfo->match->referee.endOfInningState;
 
     if (currentState == END_INNING_STATE_RESETTING) {
-        int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                                stateInfo->match->scoreboard.period) %
-                               2;
+        int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
         int catchingTeamIndex = (battingTeamIndex + 1) % 2;
 
         stateInfo->match->scoreboard.inning++;
@@ -519,9 +514,7 @@ static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->scoreboard.pairCount) {
                 int pairsLeft = stateInfo->match->scoreboard.pairCount -
                                 stateInfo->match->homeRunContestState.runnerBatterPairCounter;
-                int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                                        stateInfo->match->scoreboard.period) %
-                                       2;
+                int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
                 int catchingTeamIndex = (battingTeamIndex + 1) % 2;
                 int battingRuns = stateInfo->match->scoreboard.teams[battingTeamIndex].runs;
                 int catchingRuns = stateInfo->match->scoreboard.teams[catchingTeamIndex].runs;

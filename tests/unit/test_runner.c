@@ -108,6 +108,7 @@ extern int test_get_ball_at_base_index();
 
 // Declare player utils tests
 extern int test_get_active_batter_index();
+extern int test_get_batting_team_index();
 
 int main(int argc, char* argv[])
 {
@@ -129,6 +130,7 @@ int main(int argc, char* argv[])
 
     // Player Utils tests
     RUN_TEST(test_get_active_batter_index);
+    RUN_TEST(test_get_batting_team_index);
 
     // Fixture tests
     RUN_TEST(test_fixture_super_inning_setup);

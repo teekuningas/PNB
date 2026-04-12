@@ -5,6 +5,7 @@
 
 #include "globals.h"
 #include "action_invocations.h"
+#include "rules_pure/player_utils.h"
 
 static void checkThrow(StateInfo* stateInfo, int key, int actionKey, TeamControlMode control, BaseID base);
 static void checkDrop(StateInfo* stateInfo, int key, TeamControlMode control);
@@ -24,9 +25,7 @@ void initActionInvocations(StateInfo* stateInfo)
 
 void actionInvocations(StateInfo* stateInfo)
 {
-    int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                            stateInfo->match->scoreboard.period) %
-                           2;
+    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     TeamControlMode battingControl = stateInfo->match->scoreboard.teams[battingTeamIndex].control;
     TeamControlMode catchingControl = stateInfo->match->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
 
