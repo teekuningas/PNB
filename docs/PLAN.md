@@ -850,39 +850,147 @@ If not done earlier: add `test_bat_outcome_promotion` contract test + `sizeof(Be
 guard. This was originally planned before Phase 4 and should be done whenever convenient —
 it can be done at any point without conflicting with other phases.
 
+### Step 8.7: Extract UI Meter Fields from pRAI (Optional)
+
+**Goal:** Draw the first concrete boundary between peer-side state and client-side state
+by moving `meterValue` and `swingMeterValue` from `PlayerRelatedActionInfo` to `UIState`.
+
+**Verified safe (2026-04-12):** These fields are written by action/physics code but read
+ONLY by rendering code in `game_screen.c` (lines 390-391). Zero reads from referee,
+consolidation, game_manipulation, AI, or tests. The values represent visual meter
+positions for pitch power and swing power displays.
+
+Note: `meterValue` is written by `action_implementation.c:372` (throwing meter),
+`pitching_system.c:213,241` (pitch meter). `swingMeterValue` is written by
+`batting_system.c:488,504`. Game logic writes these as a byproduct of action execution,
+but never reads them back. The values flow one way: game logic → UI rendering.
+
+The related smoothing values `lastMeterX` and `lastSwingMeterX` already live in `UIState`
+(`globals.h:563-568`). Moving the source values alongside them is natural.
+
+**Changes (6 files):**
+1. `globals.h` — Move `float meterValue` and `float swingMeterValue` from
+   `PlayerRelatedActionInfo` to `UIState`
+2. `common_logic.c:849-850` — Change init to write `uiState.meterValue = 0.0f` etc.
+3. `action_implementation.c:372` — Change throw meter write to `uiState`
+4. `pitching_system.c:213,241` — Change pitch meter writes to `uiState`
+5. `batting_system.c:488,504` — Change swing meter writes to `uiState`
+6. `game_screen.c:390-391` — Change reads to `uiState` (already uses `UIState` for
+   `lastMeterX`)
+
+**Why now:** This is small, safe, and it establishes the principle: "pRAI contains only
+state that game logic both writes AND reads. UI-only output goes in UIState." This
+principle guides future pRAI cleanup and naturally defines what the headless peer sends
+to its graphical client vs what stays peer-internal.
+
+Can be deferred to Future Work if Phase 8 scope feels too large. No dependency on
+other steps.
+
 **After Phase 8:** Files are focused. Names match responsibilities. Tests are discoverable.
-The codebase is navigable.
+The codebase is navigable. If 8.7 is done, the first peer/client state boundary is drawn.
 
 ---
 
 ## Future Work (Re-evaluate After Phase 8)
 
-These are known goals that are not part of the current plan:
+These are known goals that are not part of the current plan. They are ordered by
+natural dependency: pRAI cleanup enables the intent layer, the intent layer enables
+the headless peer. Each is independently valuable but they build on each other.
 
 ### pRAI Lifecycle Completion
 
 Remaining pRAI fields sort into categories (see Lifecycle Architecture section):
 - **UI state** (`meterValue`, `swingMeterValue`) → move to `UIState`
-- **Pitch-scoped gates** (`batterCanAdvance`) → investigate `BetweenPitchState`
-- **Internal coordination** (`refreshCatchAndChange`) → make local or always-compute
-- **Action state** (the rest) → stays in pRAI
+  (If Phase 8.7 is done, this is already complete.)
+- **Pitch-scoped gates** (`batterCanAdvance`) → investigate `BetweenPitchState`.
+  Currently set at pitch release, lives until new batter enters. Moving to BPS would
+  change its clear timing (BPS clears at `pitchReleased`, but `batterCanAdvance` clears
+  at batter entry). Needs careful analysis of `runToNextBase()` gating in common_logic.c.
+- **Internal coordination** (`refreshCatchAndChange`) → make local or always-compute.
+  Set and consumed within `game_manipulation.c` — never crosses stage boundaries.
+- **Action state** (the rest: `throwGoingToBase`, `initBatter`, `batterReady`,
+  `battingGoingOn`, `willStartRunning[]`) → stays in pRAI. These are legitimate
+  action-stage state used by both human input processing and AI.
+
+After this, pRAI contains only action execution state. The peer/client boundary becomes
+clear: pRAI is peer-internal, UIState is what the client needs for display.
 
 ### Minor Ownership Fixes
 
-- `halfInningState.event` clearing in `game_screen.c:272` — consider separate UI notification
-- Any new violations discovered during Phases 4-8
+- `halfInningState.event` clearing in `game_screen.c:272` — renderer writing to
+  referee-owned struct. Fix: extract to a dedicated `UINotification` struct that the
+  referee writes and the renderer reads/clears. Low priority because it works correctly.
+- Any new violations discovered during Phases 4-8.
 
-### Action & AI Decoupling
+### Action & AI Decoupling (Intent Layer)
 
-Complete `actions_messy → actions_pure` split. Intent layer for replay/network support.
+**Goal:** Make `ActionFlags` the explicit interface between all input sources (human,
+AI, network, replay) and the game engine.
 
-### Headless Peer & Client-Server Architecture
+**The vision:** `action_invocations` becomes one of N intent providers. AI becomes
+another. A network receiver becomes a third. All produce `ActionFlags`, which the
+rest of the pipeline consumes identically.
 
-See `OPUS_VISION.md` Section XI. Three-layer architecture: graphical/AI clients connect
-to a headless peer (physics + referee + consolidation), peers synchronize P2P via
-intent sharing + pitch-cycle state checkpoints. Enforces clean separation of concerns
-at process boundaries. The headless peer doubles as a development tool for interactive
-debugging and AI-driven testing. Natural to build after Phase 7.
+**Verified coupling (see OPUS_VISION.md Section XII):** AI currently runs inside
+`action_implementation` (stage 2) and reads `pendingActionState.meterCounter` — the
+game-logic counter behind the pitch/swing power meter — to time actions with
+frame-level precision. This is a deliberate design: the AI simulates the human skill
+mechanic of pressing a button at the right meter position.
+
+Note: `meterCounter` is in `PendingActionState` (game state), not `pRAI.meterValue`
+(UI state). Phase 8.7's UIState extraction doesn't affect this coupling at all.
+
+**The design question:** When a client sends a pitch or swing intent, does the headless
+peer expose the meter minigame (client must time the release) or accept declared values
+(client says `{power=0.73}`)? This is a game design question that determines how AI
+decoupling works. We lean toward accepting declared values (simpler, trusts clients)
+but don't need to decide yet.
+
+**Practical approach (either design):**
+1. For local play: keep AI in stage 2 (current timing is correct).
+2. The `actions_messy → actions_pure` split naturally emerges: pure functions compute
+   what to do given game state, messy functions manage the frame-by-frame execution.
+   AI clients call the pure functions directly.
+3. If meter authority stays with the peer: clients receive meter state each frame and
+   send release timing. If clients declare values: the intent message carries the
+   final value and the peer applies it, skipping the meter animation entirely.
+
+### Headless Peer Foundation
+
+**See OPUS_VISION.md Section XII for verified readiness findings.**
+
+**What already exists:**
+- `simulate_frames()` in scenario_builder.c runs the full pipeline headlessly
+- `-DNO_RENDER` build flag compiles all game logic without OpenGL/GLFW
+- `setup_test_state()` allocates complete game state without any rendering resources
+- `MatchSession` is fully blittable (zero pointers, zero heap allocations)
+- Game logic layer has zero platform coupling (verified: no GL/GLFW calls in `src/game/`)
+
+**What's needed for a development-quality headless peer:**
+1. **Formalize the tick function** — extract from `simulate_frames()` into a proper API:
+   `peer_tick(GameState*, const ActionFlags*, FrameOutput*)`. Add pause gate and
+   StateValidator calls (currently missing from test infrastructure).
+2. **State snapshot output** — after each tick, produce a serializable snapshot of what
+   clients need for rendering: `PlayerInfo[]`, `BallInfo`, `HalfInningState`,
+   `Scoreboard`, `UIState`. These are the same fields `drawMutableWorld(const StateInfo*)`
+   reads.
+3. **Intent input** — accept `ActionFlags` (or `KeyStates` for option 1 from Section XII)
+   as input. The `action_invocations` stage already translates `KeyStates → ActionFlags`.
+4. **Menu/flow integration** — `GameConsolidation_Update` handles period transitions
+   via `MenuInfo`. The headless peer needs a way to signal "period ended, awaiting
+   continuation" and receive the response (continue/quit) from the client.
+
+**What's needed for networking (later):**
+5. **Deterministic tick** — `rng_seed` already passed explicitly. Verify that identical
+   seeds + identical intents produce identical game states across builds.
+6. **Pitch-cycle checkpoints** — hash `MatchSession` at `pitchReleased` events. Compare
+   between peers. Reconcile on mismatch.
+7. **Intent protocol** — choose from the three options documented in OPUS_VISION.md
+   Section XII.
+
+**Natural to build after Phase 7** (when reset recipes become clean API endpoints) or
+**after Phase 8** (when files are organized by responsibility). Steps 1-4 can be done
+incrementally. The scenario builder infrastructure provides the test harness.
 
 ---
 
@@ -898,6 +1006,7 @@ debugging and AI-driven testing. Natural to build after Phase 7.
 | **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | 🎯 NEXT |
 | **7. Init Unification** | Reset recipes, split init by ownership | Medium | No dual-init, no copy-paste | ⏳ TODO |
 | **8. Organization** | Rename, split files, standardize tests | Low | Navigable codebase | ⏳ TODO |
+| **8.7** *(optional)* | Extract UI meters from pRAI → UIState | None | First peer/client boundary | ⏳ TODO |
 
 Each step is independently committable and testable. Every phase leaves the codebase
 strictly better than before. If we stop at any point, nothing is wasted:
@@ -906,3 +1015,4 @@ strictly better than before. If we stop at any point, nothing is wasted:
 - Reset recipes are always useful
 - Good names are always useful
 - Fewer duplicated code paths are always useful
+- Clean peer/client state boundaries are always useful

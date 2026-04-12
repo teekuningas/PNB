@@ -921,3 +921,153 @@ All Phases 5-8 work strengthens this future direction:
 - Intent layer (Future Work) → serializable network messages
 
 No current refactoring decision is counter-productive to this direction.
+
+---
+
+## XII. Verified Architectural Readiness (2026-04-12 Analysis)
+
+Deep codebase investigation confirms the architecture is closer to headless-ready than
+initially assumed. These are verified facts about the current codebase, not aspirations.
+
+### MatchSession is fully blittable
+
+Zero pointer fields in `MatchSession`. Zero `malloc`/`calloc` calls in any game logic
+file (`referee.c`, `game_consolidation.c`, `common_logic.c`, `mutable_world.c`). All
+arrays are inline (`PlayerInfo[26]`, `PlayerRuntimeState[26]`, `GroundUnit[N]`). A
+`memcpy(&snapshot, match, sizeof(MatchSession))` captures complete game state.
+
+`StateInfo` holds pointers TO `MatchSession`, `KeyStates`, `FieldPositions`, `TeamData`
+— but these are allocated once at startup and never change address. `MatchSession` itself
+is a pure value aggregate. This makes state snapshots trivial for same-architecture peers.
+
+For cross-architecture or versioned formats, struct-by-struct serialization (JSON via
+cJSON, MessagePack, or FlatBuffers) is straightforward because every field is a value type.
+
+### ActionFlags is the intent convergence point
+
+Both human input (via `action_invocations`, stage 1) and AI (via `aiLogic` inside
+`action_implementation`, stage 2) write to the same `ActionFlags` struct (~50 bytes,
+all enums and ints, zero pointers). A network client would be a third source writing
+to the same struct. The basic concept requires no redesign.
+
+**However**, ActionFlags uses persistent state machine transitions, NOT per-frame
+snapshots:
+
+```
+IDLE → TRIGGER_START → ACTIVE → TRIGGER_STOP → IDLE
+```
+
+`action_invocations` manages these transitions based on key press/release events.
+`action_implementation` reads the current phase and reacts (e.g., START → begin throw,
+ACTIVE → continue throw, STOP → release throw). ActionFlags is NOT cleared per frame
+like GameEvents.
+
+**Implication for networking:** Broadcasting an ActionFlags snapshot each frame would
+work but is semantically imprecise. Three options for the intent protocol:
+
+1. **Send KeyStates, run action_invocations on each peer.** Simplest and preserves all
+   timing. ~16 bytes per frame. Each peer translates keys → ActionFlags identically.
+   This is the pragmatic first step.
+
+2. **Send ActionFlags transitions** (deltas — which fields changed and to what value).
+   More compact, skips the translation layer, but requires delta encoding.
+
+3. **Redesign to per-frame intent messages** like `{THROW_START, base=FIRST}`,
+   `{SWING, power=0.8, angle=45}`. Cleanest wire protocol but requires reworking
+   both `action_invocations` and `action_implementation`. This is the long-term ideal.
+
+The current refactoring (Phases 6-8) doesn't need to choose — all three options benefit
+equally from clean ownership and pure functions. Option 1 works immediately after the
+headless peer exists.
+
+### AI placement and the meter timing question
+
+The vision says `ActionFlags` becomes the intent interface and AI decouples from the
+physics pipeline. This is architecturally correct but has a verified timing coupling
+whose resolution is partly a **game design** question, not just a technical one.
+
+**Current placement:** AI runs inside `action_implementation()` (stage 2) at line 208,
+called by `aiLogic()`. It runs AFTER `updateBatting()` (line 201) and `updateMeters()`
+(line 207) but BEFORE `gameManipulation()` (stage 2b) and `update_referee()` (stage 3).
+
+**The meter coupling:** Batting AI reads `pendingActionState.meterCounter` — the
+game-logic counter that drives the pitch/swing power meter — using exact thresholds
+to time actions (e.g., `meterCounter > BAT_SWING_MAX - 23`). This counter is in
+`PendingActionState`, NOT `pRAI` — it's game state, not UI state. (The UI-only
+`pRAI.meterValue` is the normalized `meterCounter/meterCounterMax` used only for
+rendering. Phase 8.7's UIState extraction doesn't touch `meterCounter` at all.)
+
+The AI reads `meterCounter` because it simulates the **human skill mechanic**: pressing
+a button at the right moment on a moving meter. The AI "plays" this minigame by reading
+the counter and deciding when to "press."
+
+**Other AI state dependencies:**
+- `pRAI.batterReady`, `pRAI.pitchState` — read from current frame (set before AI runs)
+- `gameFlowState.ballHome`, `pII.hasBallIndex`, `ballInfo.location` — read from previous
+  frame (set by `gameManipulation()` which runs after AI)
+- `betweenPitchState.batOutcome` — read from previous frame (set by `update_referee()`)
+
+**The design question for the intent layer:** When a client (human or AI) sends an
+intent to pitch or swing, does the headless peer:
+
+(a) **Expose the meter minigame** — the peer runs the meter counter, sends counter
+    state to the client each frame, and the client must send `RELEASE` at the right
+    moment. This preserves the skill element for both humans and AI.
+
+(b) **Accept declared values** — the client just says `{PITCH, power=0.73, angle=22°}`
+    and the peer applies it directly. Simpler protocol, trusts the client. The meter
+    minigame becomes client-local UI flavor with no authority.
+
+This is an open design question. Option (a) keeps the game authoritative over outcomes.
+Option (b) simplifies the protocol and trusts clients. We lean toward (b) but don't
+need to decide yet — the current refactoring work (Phases 6-8) is compatible with both.
+
+**What matters now:** The coupling exists, we understand it, and the future resolution
+depends on a game design decision about how much authority the headless peer has over
+action execution. None of this blocks current work.
+
+### The headless tick already exists
+
+`simulate_frames()` in `scenario_builder.c` (line 210) runs stages 2-5 without input or
+rendering. Tests compile with `-DNO_RENDER`. This is already a headless peer tick:
+
+```c
+for (int i = 0; i < maxFrames; i++) {
+    // actionInvocations() intentionally omitted — tests set actions directly
+    actionImplementation(ctx->state, &ctx->seed);
+    gameManipulation(ctx->state);
+    update_referee(ctx->state, ...);
+    GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
+    clearFrameEvents(&game->gameEvents);
+}
+```
+
+**Gaps vs a production headless peer:**
+- No `flowControl.pause` gate (tests always tick)
+- No `StateValidator` integration (no corruption detection)
+- No formalized intent input (tests bypass `actionInvocations` entirely)
+- `MenuInfo` is zeroed (period-end → menu transitions are not exercised)
+- No state snapshot output (nothing captures "what happened" for a client)
+
+**What `setup_test_state()` proves:** `MatchSession`, `TeamData`, `FieldPositions` can be
+allocated and initialized without any GLFW, OpenGL, or `ResourceManager`. The game logic
+layer is fully self-contained.
+
+### The game logic layer has zero platform coupling
+
+Verified: no file in `src/game/` includes `<GL/glew.h>`, `<GLFW/glfw3.h>`, or calls any
+OpenGL/GLFW function directly. All platform interaction is mediated through:
+- `KeyStates` for input (populated by `core/input.c` from GLFW)
+- `#ifndef NO_RENDER` guards for draw calls (in `ball.c`, `player.c`, `mutable_world.c`)
+- `ResourceManager*` passed to draw functions only, never to update functions
+
+### Serialization strategy (when the time comes)
+
+| Context | Format | Rationale |
+|---------|--------|-----------|
+| Local IPC (peer ↔ client, same machine) | Binary struct copy / shared memory | Zero overhead, MatchSession is blittable |
+| Development API (headless peer as debug tool) | JSON via cJSON | Human-readable, `StateValidator_Dump` is a starting point |
+| Network (peer ↔ peer) | MessagePack or FlatBuffers | Compact, versioned, fast. FlatBuffers is zero-copy |
+| Replay recording | Binary with version header | Sequence of `(frame_number, KeyStates)` pairs + initial state snapshot |
+
+Don't add serialization code until there's a consumer. The struct design is already ready.
