@@ -110,6 +110,15 @@ extern int test_get_ball_at_base_index();
 extern int test_get_active_batter_index();
 extern int test_get_batting_team_index();
 
+// Declare scoring helpers tests
+extern int test_should_period_end_last_half_inning_lead(void);
+extern int test_should_period_end_last_half_inning_no_lead(void);
+extern int test_should_period_end_mid_period(void);
+extern int test_should_period_end_period1_last(void);
+extern int test_should_period_end_period0_tiebreaker(void);
+extern int test_should_period_end_super_inning(void);
+extern int test_should_period_end_homerun_contest(void);
+
 int main(int argc, char* argv[])
 {
     printf("========================================\n");
@@ -131,6 +140,15 @@ int main(int argc, char* argv[])
     // Player Utils tests
     RUN_TEST(test_get_active_batter_index);
     RUN_TEST(test_get_batting_team_index);
+
+    // Scoring Helpers tests
+    RUN_TEST(test_should_period_end_last_half_inning_lead);
+    RUN_TEST(test_should_period_end_last_half_inning_no_lead);
+    RUN_TEST(test_should_period_end_mid_period);
+    RUN_TEST(test_should_period_end_period1_last);
+    RUN_TEST(test_should_period_end_period0_tiebreaker);
+    RUN_TEST(test_should_period_end_super_inning);
+    RUN_TEST(test_should_period_end_homerun_contest);
 
     // Fixture tests
     RUN_TEST(test_fixture_super_inning_setup);

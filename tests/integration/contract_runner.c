@@ -20,6 +20,10 @@ static void run_contract_tests(void)
 
     // Foul detection contracts
     RUN_TEST(test_foul_detected_on_out_of_bounds_hit);
+
+    // End-of-inning run blocking contracts
+    RUN_TEST(test_no_pending_runs_during_end_of_inning);
+    RUN_TEST(test_no_free_walk_runs_during_end_of_inning);
 }
 
 int main(int argc, char* argv[])

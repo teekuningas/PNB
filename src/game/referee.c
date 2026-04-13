@@ -5,6 +5,7 @@
 #include "rules_strikes.h"
 #include "base_logic.h"
 #include "rules_pure/player_utils.h"
+#include "scoring_helpers.h"
 #include "geometry.h"
 #include "vector_math.h"
 #include "base_control.h"
@@ -569,7 +570,8 @@ static void update_runs(
         int isCatchPending = (betweenPitchState->catchHasBeenMade == 1 && referee->woundingEvaluationFinished == 0);
 
         // Case A: Pending Run (Ball in Air OR Catch Evaluation Active)
-        if (isBallInAir || isCatchPending) {
+        // Don't mark new pending runs if end-of-inning has been decided
+        if ((isBallInAir || isCatchPending) && referee->endOfInningState == END_INNING_STATE_NONE) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
                     // Check for potential run
@@ -654,28 +656,11 @@ static void update_runs(
             // Period End Check
             int battingTeamIndex = get_batting_team_index(scoreboard);
             int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-            int currentRuns = scoreboard->teams[battingTeamIndex].runs;
-            int opponentRuns = scoreboard->teams[catchingTeamIndex].runs;
-
-            if (scoreboard->period < 4) {
-                if ((scoreboard->inning + 1) % scoreboard->halfInningsInPeriod == 0 ||
-                    scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 + 2) {
-                    if (currentRuns > opponentRuns) {
-                        halfInningState->endPeriod = 1;
-                    }
-                    if (scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 &&
-                        scoreboard->teams[battingTeamIndex].period0Runs >
-                            scoreboard->teams[catchingTeamIndex].period0Runs &&
-                        opponentRuns == currentRuns) {
-                        halfInningState->endPeriod = 1;
-                    }
-                }
-            } else {
-                if ((scoreboard->inning + 1) % 2 == 0) {
-                    if (currentRuns > opponentRuns) {
-                        halfInningState->endPeriod = 1;
-                    }
-                }
+            if (should_period_end(
+                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+                )) {
+                halfInningState->endPeriod = 1;
             }
         }
     }
@@ -723,6 +708,9 @@ static void update_free_walk_resolution(
     Scoreboard* scoreboard, const FlowControl* flowControl, const GameEvents* events
 )
 {
+    // No free walk processing once end-of-inning has been decided
+    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+
     // 6. Free Walk Resolution
     if (events->freeWalkAccepted && flowControl->freeWalkIndex != -1) {
         int i = flowControl->freeWalkIndex;
@@ -749,10 +737,11 @@ static void update_free_walk_resolution(
             }
 
             // Period End Check
-            if ((scoreboard->inning + 1) % 2 == 0) {
-                if (scoreboard->teams[battingTeamIndex].runs > scoreboard->teams[catchingTeamIndex].runs) {
-                    halfInningState->endPeriod = 1;
-                }
+            if (should_period_end(
+                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+                )) {
+                halfInningState->endPeriod = 1;
             }
 
         } else {
@@ -779,17 +768,12 @@ static void update_free_walk_resolution(
                 halfInningState->event = EVENT_RUN_SCORED;
 
                 // Period End Check
-                if ((scoreboard->inning + 1) % scoreboard->halfInningsInPeriod == 0 ||
-                    scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 + 2) {
-                    if (scoreboard->teams[battingTeamIndex].runs > scoreboard->teams[catchingTeamIndex].runs) {
-                        halfInningState->endPeriod = 1;
-                    }
-                    if (scoreboard->inning + 1 == scoreboard->halfInningsInPeriod * 2 &&
-                        scoreboard->teams[battingTeamIndex].period0Runs >
-                            scoreboard->teams[catchingTeamIndex].period0Runs &&
-                        scoreboard->teams[catchingTeamIndex].runs == scoreboard->teams[battingTeamIndex].runs) {
-                        halfInningState->endPeriod = 1;
-                    }
+                if (should_period_end(
+                        scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+                        scoreboard->teams[battingTeamIndex].period0Runs,
+                        scoreboard->teams[catchingTeamIndex].period0Runs
+                    )) {
+                    halfInningState->endPeriod = 1;
                 }
             }
         }
@@ -804,6 +788,9 @@ static void resolve_pending_runs(
     BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard
 )
 {
+    // No run resolution once end-of-inning has been decided
+    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+
     // Trigger 1: Ball Hit Ground (Final Verdict)
     if (betweenPitchState->hasBallHitGround) {
         if (referee->foulState != FOUL_STATE_NONE) {
@@ -838,11 +825,17 @@ static void resolve_pending_runs(
 
                     referee->battingPlayers[i].runOfHonorScored = 1;
                     referee->battingPlayers[i].hasPendingRunOfHonor = 0;
-
-                    // Overtaking logic already handled at arrival time if needed,
-                    // but usually overtaking happens physically.
-                    // Referee check in update_runs handles logical overtaking for HR.
                 }
+            }
+
+            // Period End Check (Bug #1 fix: was missing from resolve_pending_runs)
+            int battingTeamIndex = get_batting_team_index(scoreboard);
+            int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+            if (should_period_end(
+                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+                )) {
+                halfInningState->endPeriod = 1;
             }
         }
     }
@@ -878,6 +871,16 @@ static void resolve_pending_runs(
                 // Void Run of Honor (Batter burnt)
                 referee->battingPlayers[i].hasPendingRunOfHonor = 0;
             }
+        }
+
+        // Period End Check (Bug #1 fix: was missing from resolve_pending_runs)
+        int battingTeamIndex = get_batting_team_index(scoreboard);
+        int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+        if (should_period_end(
+                scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+                scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+            )) {
+            halfInningState->endPeriod = 1;
         }
     }
 }

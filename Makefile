@@ -6,7 +6,7 @@ ODIR=obj
 
 # Object list shared by all builds
 _OBJ_COMMON = core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/geometry.o core/field_layout.o core/state_validator.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
-_OBJ_COMMON += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_consolidation.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o
+_OBJ_COMMON += game/action_implementation.o game/action_invocations.o game/ball.o game/common_logic.o game/game_consolidation.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/mutable_world.o game/player.o game/game_setup.o game/actions_messy/pitching_system.o game/actions_messy/batting_system.o game/actions_messy/throwing_system.o game/ai_messy/catching_ai.o game/ai_messy/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o
 _OBJ_COMMON += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
 _OBJ_COMMON += cup/cup.o
 
@@ -34,14 +34,15 @@ _OBJ_SCENARIOS = tests/scenario/test_runner_scores_from_third.o \
 _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_referee_reacts_to_catch.o \
                  tests/integration/contracts/test_referee_reacts_to_pitch.o \
-                 tests/integration/contracts/test_foul_detection.o
+                 tests/integration/contracts/test_foul_detection.o \
+                 tests/integration/contracts/test_end_of_inning_blocks_runs.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))
 OBJ_CONTRACT = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_CONTRACTS))
 
 # Unit test objects (No OpenGL)
-_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_base_logic.o tests/unit/test_collision.o tests/unit/test_base_control.o tests/unit/test_player_utils.o
+_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_base_logic.o tests/unit/test_collision.o tests/unit/test_base_control.o tests/unit/test_player_utils.o tests/unit/test_scoring_helpers.o
 TEST_OBJ = $(patsubst %,$(ODIR)/unit/%,$(_TEST_OBJ))
 
 # Generic rules for each build type

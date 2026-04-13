@@ -1,7 +1,7 @@
 # Refactoring Plan
 
 **Created:** 2026-03-11
-**Last updated:** 2026-04-10
+**Last updated:** 2026-04-13
 **Supersedes:** `archive/FINAL_PLAN.md`, `archive/ALTERNATIVE_PLAN.md`
 **Architectural target:** `OPUS_VISION.md`
 
@@ -9,32 +9,33 @@
 
 ## Where We Are
 
-Phases 1–4 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
+Phases 1–6 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
 proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable
 pointers. **Zero const-casts** in `referee.c` (down from 12). The compiler enforces data
 ownership — the type system proves the referee is the sole writer of legal state. Phase 3
 consolidated `batHit`/`batMiss` into the event→sticky pattern. Phase 4 replaced the generic
-`resolutionProcessed` boolean with a typed `PitchResult pitchResult` field in BetweenPitchState,
-following the same event→sticky promotion pattern.
+`resolutionProcessed` boolean with a typed `PitchResult pitchResult` field in BetweenPitchState.
+Phase 5 extracted `get_batting_team_index()` (16 duplicates → 1 pure function). Phase 6 fixed
+two bugs (pending runs ignoring endPeriod, and runs scoring during end-of-inning timer),
+extracted `should_period_end()` as a pure function, and added end-of-inning guards to all
+scoring paths.
 
-**Test count:** 74 tests (55 unit + 4 contract + 15 scenario). All passing.
+**Test count:** 83 tests (62 unit + 6 contract + 15 scenario). All passing.
 
 **Test structure:**
-- `tests/unit/` — 55 pure function unit tests → `make test`
-- `tests/integration/contracts/` — 4 one-frame pipeline contract tests → `make integration_test`
+- `tests/unit/` — 62 pure function unit tests → `make test`
+- `tests/integration/contracts/` — 6 one-frame pipeline contract tests → `make integration_test`
 - `tests/scenario/` — 15 full-game scenario tests → `make scenario_test`
 
-**Known Bug #1:** `resolve_pending_runs()` (referee.c:798-879) scores runs at 3 sites
-(lines 818, 832, 858) but has ZERO `endPeriod` checks. Every other scoring path
-(`update_runs`, `update_free_walk_resolution`) checks and sets `endPeriod`. This means
-pending runs that resolve after the period should have ended are incorrectly scored.
-Fix is in Phase 6.
+**Known ownership violation:** `game_consolidation.c:522` writes `endPeriod = 1` for HR
+contest early-termination. This is a rules decision that belongs in the referee. Fix
+planned in Phase 6.5 as part of compound reset detection.
 
 **Known dead field:** `HalfInningState.outOfBounds` (globals.h:499) is never written to.
 Foul tracking moved to `referee.foulState` state machine but the field was not removed.
-Cleanup is in Phase 7.
+Cleanup is in Phase 8.
 
-**Next:** Phase 6 → Phase 7 → Phase 8.
+**Next:** Phase 6.5 → Phase 7 → Phase 8.
 Knight Phase 3 can be done at any point (low-risk test addition).
 
 <details>
@@ -570,10 +571,37 @@ whether to create a dedicated scoreboard queries file then.
 
 ---
 
-## Phase 6: Bug Fix + Period Logic
+## Phase 6: Bug Fix + Period Logic ✅ DONE
 
-**Goal:** Fix Bug #1 (pending runs ignore endPeriod) by extracting `should_period_end()`
-as a pure function and adding it to the missing locations.
+**Completed 2026-04-13.** Extracted `should_period_end()` into `rules_pure/scoring_helpers.c`.
+Replaced inline period-end logic in `update_runs()` and `update_free_walk_resolution()`.
+Fixed Bug #1 (pending runs not triggering endPeriod) and Bug #2 (runs scoring during
+end-of-inning timer). Added 7 unit tests for `should_period_end()` and 2 contract tests
+proving run blocking works. All 83 tests passing (62 unit + 6 contract + 15 scenario).
+
+**Bug #1 fix:** Added `should_period_end()` calls after both scoring loops in
+`resolve_pending_runs()` (ball-hits-ground path and catch-confirmed path).
+
+**Bug #2 fix (new finding):** `update_runs()` Case B (immediate runs) was the only scoring
+path that checked `endOfInningState == NONE`. Three other paths had no guard:
+- `update_runs()` Case A (marking pending runs) — could mark `hasPendingRun` during timer
+- `resolve_pending_runs()` — could cash in pending runs during timer
+- `update_free_walk_resolution()` — could award free walk runs during timer
+
+Added `endOfInningState != NONE` guards to all three, following the existing pattern.
+
+**Step 6.4 deferred:** Moving `endPeriod` write from `game_consolidation.c:522` to referee
+is deferred to Phase 6.5 (see below). A more elegant approach exists: the referee should
+detect compound situations (e.g., HR pair end + inning end) upfront and go directly to
+`END_INNING_STATE_DETECTED`, skipping intermediate state machine transitions entirely.
+
+**Key design decisions:**
+- `should_period_end()` takes pre-computed run values (not pointers) — pure function
+- End-of-inning guards are top-level early returns, not per-scoring-site checks
+- Contract tests prove the guards at the exact pipeline decision point
+
+<details>
+<summary>Original plan (for reference)</summary>
 
 ### Step 6.1: Extract should_period_end()
 
@@ -631,8 +659,138 @@ directly via its owned pointer.
 
 Run all 73 tests.
 
-**After Phase 6:** Bug #1 fixed. `endPeriod` exclusively written by referee. Period-end
-logic is a single tested pure function.
+</details>
+
+---
+
+## Phase 6.5: Compound Reset Detection (endPeriod Ownership)
+
+**Goal:** Eliminate the `endPeriod` ownership violation in `game_consolidation.c:522` by
+teaching the referee to detect compound situations where both a sub-reset (HR pair change
+or foul play) and an end-of-inning would trigger simultaneously. The referee should skip
+the intermediate state machine and go directly to `END_INNING_STATE_DETECTED`.
+
+This is also an opportunity to begin structuring the referee's internal pipeline more
+explicitly — separating "gather facts" from "decide" from "act" — so that the ordering
+dependencies between sub-functions become visible rather than implicit.
+
+### The Problem Today
+
+**Competing state machines:** Three state machines (foul, HR pair, end-of-inning) can
+overlap:
+
+1. **Foul + end-of-inning:** Foul with `strikesAtPitchStart == 2` causes strike 3 →
+   out → potentially 3 outs → end of inning. Currently works correctly because foul
+   RESETTING causes an early return (referee.c:936-937), completing the foul first.
+   On the next frame, `outs >= 3` triggers `END_INNING_STATE_DETECTED`. No overlap.
+
+2. **HR pair + end-of-inning:** When a pair ends AND the catching team is mathematically
+   uncatchable (`pairsLeft * 2 + battingRuns < catchingRuns`). Currently handled by
+   consolidation setting `endPeriod = 1` (game_consolidation.c:522) — an ownership
+   violation. The pair RESETTING completes, then end-of-inning triggers on the next
+   frame via `endPeriod`, causing an unnecessary physical reset for the "next pair"
+   that will never play.
+
+3. **HR pair + end-of-inning (all pairs done):** When `runnerBatterPairCounter >= pairCount`.
+   This is handled cleanly by the end-of-inning state machine checking that condition
+   directly (referee.c:1142). The pair state machine isn't involved.
+
+**Implicit ordering in the referee pipeline:** `update_referee()` calls 14 sub-functions
+in a fixed sequence. Each function both reads and writes to shared state, so later
+functions see mutations from earlier ones. This creates implicit ordering dependencies —
+you can't reorder calls without potentially changing behavior, but the code doesn't make
+it obvious *which* orderings matter and which are coincidental. For example:
+
+- `update_foul_play_logic` must run before `hasBallHitGround` is set (it needs first-bounce detection)
+- `update_safety_status` must run before `update_force_outs` (force outs depend on safety)
+- `update_runs` must run before `resolve_pending_runs` (immediate runs before pending)
+- The end-of-inning state machine must run LAST (it consumes `endPeriod` set by runs)
+
+But some pairs have NO dependency: `update_strikes` and `update_safety_status` don't
+interact at all. Currently this isn't visible in the code — everything looks equally
+sequential.
+
+### The Elegant Solution
+
+**For the compound reset:** At the point where the referee detects `shouldEndPair` in the
+HR pair state machine, also check: "should the inning end instead?" If so, skip
+`HR_PAIR_STATE_DETECTED` entirely and set `END_INNING_STATE_DETECTED` directly.
+End-of-inning is a superset of pair reset (it resets everything the pair reset would,
+plus more).
+
+This requires:
+1. At detection time, the referee needs to know `runnerBatterPairCounter + 1` (the pair
+   count *after* this pair completes) and the current scores
+2. The "mathematically uncatchable" check moves from consolidation into the referee's
+   pair-end detection logic
+3. Consolidation's `checkIfNextPair` no longer needs to check or write `endPeriod`
+
+**Consolidation priority ordering confirms safety** (game_consolidation.c:38-56):
+`checkIfEndOfInning` runs FIRST, then `checkIfNextPair`, then `handleFoulPlayReset`.
+So if both `END_INNING_STATE_RESETTING` and `HR_PAIR_STATE_RESETTING` are set, the
+end-of-inning handler wins (returns early, skipping pair reset). But with the compound
+detection, both would never be set simultaneously — the referee goes directly to
+end-of-inning.
+
+**Complexity note:** The `runnerBatterPairCounter` is currently incremented by
+consolidation (game_consolidation.c:511), not the referee. Moving the detection to the
+referee at pair-end detection time requires either (a) the referee reads the current
+counter value (which hasn't been incremented yet) and adds 1 mentally, or (b) the
+counter increment moves to the referee as well. Option (a) is simpler. Evaluate during
+implementation.
+
+### Toward a "Gather → Decide → Act" Referee Structure
+
+The compound reset is the immediate goal, but it's also the entry point for a broader
+improvement: making the referee's internal pipeline structure explicit. The key insight
+is that the current sequential investigate-act-investigate-act pattern hides dependencies
+between functions. A cleaner pattern separates reading from writing:
+
+**Phase A — Gather facts (read-only, no mutations):**
+All sub-functions that observe the physical world and compute results — but don't write
+to referee-owned state yet. These functions could safely run in any order (or in parallel)
+because they only read. Examples: "did a run happen?", "is it a foul?", "should the pair
+end?", "should the inning end?". The results are intermediate values, not state changes.
+
+**Phase B — Decide priority (single decision point):**
+When multiple transitions want to happen simultaneously (foul AND inning end, pair end
+AND inning end), one explicit priority resolver picks the winner. No "last writer wins"
+— the decision is a deliberate choice with clear priority: end-of-inning > HR pair > foul.
+
+**Phase C — Act (apply the chosen decision):**
+Set exactly one state machine transition. Set exactly one event. Write the results of
+the gathering phase that aren't competing (runs, outs, safety changes can all apply).
+
+**Practical hybrid approach:** Not all 14 sub-functions need to move into this pattern.
+Many are continuous per-frame operations (safety tracking, wounding timers, force outs)
+that genuinely need to run every frame, don't compete with each other, and work fine as
+sequential investigate-act. The gather-decide-act pattern applies specifically to the
+**three state machine transitions** (foul, HR pair, end-of-inning) which are the ones
+that can conflict.
+
+**Enforcing read-only in Phase A:** We could use `const` pointers on the function
+signatures — Phase A functions receive `const RefereeState*` instead of `RefereeState*`,
+making the compiler enforce that they only read. They return result structs instead of
+writing directly. This is the same pattern that already works for `update_referee()`'s
+`const StateInfo*` parameter.
+
+**Mapping dependencies first:** Before restructuring, we should map which sub-functions
+genuinely depend on each other's outputs (same-frame reads) vs which are independent.
+Group dependent functions together, separate independent groups visually. This makes the
+referee code self-documenting about what order matters and what doesn't.
+
+**Testing prerequisite:** The existing 83 tests (especially the 6 contract tests and 15
+scenario tests) provide a strong safety net. But before restructuring the referee
+internals, we should ensure we have contract tests that specifically verify the
+state-machine transition priorities — e.g., "if foul AND 3 outs happen same pitch,
+end-of-inning eventually fires" and "if HR pair end AND catching team uncatchable,
+end-of-inning fires directly." These tests knight the *behavior* so we can freely
+restructure the *implementation*.
+
+**After Phase 6.5:** `endPeriod` exclusively written by referee. No chained resets.
+The compound situation is handled cleanly at detection time. The groundwork is laid
+for the broader gather-decide-act structure, but the full restructuring is optional —
+it can be done incrementally in later phases as needed.
 
 ---
 
@@ -1003,7 +1161,8 @@ incrementally. The scenario builder infrastructure provides the test harness.
 | **3. GameEvents Migration** | batOutcome event→sticky | Low | BatOutcome enum, -25 lines | ✅ Done |
 | **4. Zero Const-Casts** | Compiler enforces ownership | Medium | 3→0 casts, pitchResult replaces resolutionProcessed | ✅ Done |
 | **5. get_batting_team_index** | Eliminate 16-copy formula | None | -16 duplicates, +1 unit test | ✅ Done |
-| **6. Bug Fix + Period Logic** | Fix Bug #1, extract should_period_end | Medium | Bug fixed, endPeriod unified | 🎯 NEXT |
+| **6. Bug Fix + Period Logic** | Fix Bugs #1+#2, extract should_period_end | Medium | 2 bugs fixed, +7 unit tests, +2 contracts | ✅ Done |
+| **6.5 Compound Resets** | endPeriod ownership, skip intermediate resets | Medium | endPeriod exclusively referee-written | 🎯 NEXT |
 | **7. Init Unification** | Reset recipes, split init by ownership | Medium | No dual-init, no copy-paste | ⏳ TODO |
 | **8. Organization** | Rename, split files, standardize tests | Low | Navigable codebase | ⏳ TODO |
 | **8.7** *(optional)* | Extract UI meters from pRAI → UIState | None | First peer/client boundary | ⏳ TODO |
