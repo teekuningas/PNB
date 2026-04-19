@@ -63,7 +63,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
         MatchSession* game = stateInfo->match;
         update_referee(
             stateInfo, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
-            &stateInfo->match->scoreboard
+            &stateInfo->match->scoreboard, &game->homeRunContestState
         );
 
         // 4. Consolidation (Reaction Phase)

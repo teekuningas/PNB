@@ -508,35 +508,21 @@ static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
 
         if (currentState == HR_PAIR_STATE_RESETTING) {
 
-            stateInfo->match->homeRunContestState.runnerBatterPairCounter++;
             // if equality holds, ending of inning will load the settings.
             if (stateInfo->match->homeRunContestState.runnerBatterPairCounter !=
                 stateInfo->match->scoreboard.pairCount) {
-                int pairsLeft = stateInfo->match->scoreboard.pairCount -
-                                stateInfo->match->homeRunContestState.runnerBatterPairCounter;
-                int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
-                int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-                int battingRuns = stateInfo->match->scoreboard.teams[battingTeamIndex].runs;
-                int catchingRuns = stateInfo->match->scoreboard.teams[catchingTeamIndex].runs;
-                // this will allow game to end if catching team has too many runs for batting team ever to catch up.
-                if ((stateInfo->match->scoreboard.inning + 1) % 2 == 0 && pairsLeft * 2 + battingRuns < catchingRuns) {
-                    stateInfo->match->halfInningState.endPeriod = 1;
-                } else {
-                    // Physical Reset for Next Pair
-                    initializeBallInfo(stateInfo->match);
-                    initializeActionInfo(stateInfo->match);
-                    initializeTemporaryGameAnalysisInfo(stateInfo->match);
-                    initializeIndexInformation(stateInfo->match);
-                    initializePRAIInformation(stateInfo->match);
-                    // Note: Spatial info for fielders is usually static, but we can re-init if needed.
-                    // Keeping it lightweight: Just reset the critical actors.
-                    initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
-                    initializeNonCriticalPlayerInformation(stateInfo->match);
+                // Physical Reset for Next Pair
+                initializeBallInfo(stateInfo->match);
+                initializeActionInfo(stateInfo->match);
+                initializeTemporaryGameAnalysisInfo(stateInfo->match);
+                initializeIndexInformation(stateInfo->match);
+                initializePRAIInformation(stateInfo->match);
+                // Note: Spatial info for fielders is usually static, but we can re-init if needed.
+                // Keeping it lightweight: Just reset the critical actors.
+                initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
+                initializeNonCriticalPlayerInformation(stateInfo->match);
 
-                    setupHomerunPhysicalState(
-                        stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions
-                    );
-                }
+                setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
             }
             return 1; // Signal that we reset
         }

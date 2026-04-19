@@ -24,6 +24,10 @@ static void run_contract_tests(void)
     // End-of-inning run blocking contracts
     RUN_TEST(test_no_pending_runs_during_end_of_inning);
     RUN_TEST(test_no_free_walk_runs_during_end_of_inning);
+
+    // Phase 6.5 Compound Resets
+    RUN_TEST(test_compound_foul_and_end_of_inning);
+    RUN_TEST(test_compound_hr_pair_and_uncatchable);
 }
 
 int main(int argc, char* argv[])

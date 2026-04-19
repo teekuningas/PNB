@@ -136,6 +136,25 @@ void move_pitcher_away(ScenarioContext* ctx)
     ctx->state->match->playerInfo[12].tPI.location = away;
 }
 
+void give_ball_to_pitcher(ScenarioContext* ctx)
+{
+    if (!ctx || !ctx->state) return;
+
+    MatchSession* game = ctx->state->match;
+    int pitcherIdx = 12; // Lukkari stands at home plate in pesäpallo
+
+    // Ensure pitcher is at their home location (near home plate)
+    game->playerInfo[pitcherIdx].tPI.location = game->playerInfo[pitcherIdx].tPI.homeLocation;
+
+    // Give them the ball and snap ball position to match
+    game->pII.hasBallIndex = pitcherIdx;
+    game->ballInfo.location = game->playerInfo[pitcherIdx].tPI.location;
+    game->ballInfo.lastLocation = game->ballInfo.location;
+    game->ballInfo.moving = 0;
+    game->ballInfo.onGround = 1;
+    game->ballInfo.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
+}
+
 void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
 {
     if (!ctx || !ctx->state) return;
@@ -227,7 +246,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         MatchSession* game = ctx->state->match;
         update_referee(
             ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
-            &ctx->state->match->scoreboard
+            &ctx->state->match->scoreboard, &game->homeRunContestState
         );
         GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
 

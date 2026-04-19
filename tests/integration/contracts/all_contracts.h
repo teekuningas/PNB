@@ -15,4 +15,8 @@ int test_foul_detected_on_out_of_bounds_hit(void);
 int test_no_pending_runs_during_end_of_inning(void);
 int test_no_free_walk_runs_during_end_of_inning(void);
 
+// Phase 6.5
+int test_compound_foul_and_end_of_inning(void);
+int test_compound_hr_pair_and_uncatchable(void);
+
 #endif // ALL_CONTRACTS_H

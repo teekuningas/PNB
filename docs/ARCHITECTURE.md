@@ -1,6 +1,6 @@
 # PNB Architecture
 
-**Last updated:** 2026-04-12
+**Last updated:** 2026-04-14
 
 ## Documents
 
@@ -12,7 +12,7 @@
 
 ## Current Status
 
-Phases 1–6 Complete ✅ (const-casts 12→0, 83 tests, contract testing, BatOutcome consolidation, pitchResult promotion, compiler-enforced ownership, get_batting_team_index extracted, should_period_end extracted, Bug #1+#2 fixed, end-of-inning run guards) | Phase 6.5 Compound Resets 🎯
+Phases 1–6.5 Complete ✅ (const-casts 12→0, 85 tests, contract testing, BatOutcome consolidation, pitchResult promotion, compiler-enforced ownership, get_batting_team_index extracted, should_period_end extracted, Bug #1+#2 fixed, end-of-inning run guards, compound reset detection, endPeriod exclusively referee-owned, Gather-Decide-Act for state machines) | Phase 7 Initialization Ownership 🎯
 
 ## Build & Test
 
@@ -20,7 +20,7 @@ Phases 1–6 Complete ✅ (const-casts 12→0, 83 tests, contract testing, BatOu
 # Build
 make main
 
-# Test (83 tests: 62 unit + 6 contract + 15 scenario)
+# Test (85 tests: 62 unit + 8 contract + 15 scenario)
 devenv shell make test              # Unit tests
 devenv shell make integration_test  # Contract tests (1-frame pipeline proofs)
 devenv shell make scenario_test     # Scenario tests (full-game simulations)

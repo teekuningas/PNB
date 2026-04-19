@@ -71,6 +71,23 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
 void move_pitcher_away(ScenarioContext* ctx);
 
 /**
+ * @brief Give the ball to the pitcher (Lukkari, idx 12) at home plate
+ *
+ * In pesäpallo, the pitcher stands at home plate. This helper ensures the
+ * ball is physically held by the pitcher at their home location, so that
+ * gameManipulation computes ballHome = 1.
+ *
+ * Use this when your test needs the ball to be "home" — setting
+ * gameFlowState.ballHome directly won't survive a pipeline frame because
+ * gameManipulation recomputes it from physics every frame.
+ *
+ * Do NOT combine with move_pitcher_away in the same test.
+ *
+ * @param ctx The scenario context
+ */
+void give_ball_to_pitcher(ScenarioContext* ctx);
+
+/**
  * @brief Place the ball in the air above a location so it drops naturally
  *
  * The ball will be placed 5m above the target location with downward velocity.

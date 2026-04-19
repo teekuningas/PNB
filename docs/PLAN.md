@@ -1,7 +1,7 @@
 # Refactoring Plan
 
 **Created:** 2026-03-11
-**Last updated:** 2026-04-13
+**Last updated:** 2026-04-14
 **Supersedes:** `archive/FINAL_PLAN.md`, `archive/ALTERNATIVE_PLAN.md`
 **Architectural target:** `OPUS_VISION.md`
 
@@ -9,7 +9,7 @@
 
 ## Where We Are
 
-Phases 1–6 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
+Phases 1–6.5 are **done**. The main loop in `mutable_world.c` is clean: five pipeline stages,
 proper comments, proper ownership. The referee takes `const StateInfo*` plus explicit writable
 pointers. **Zero const-casts** in `referee.c` (down from 12). The compiler enforces data
 ownership — the type system proves the referee is the sole writer of legal state. Phase 3
@@ -18,24 +18,23 @@ consolidated `batHit`/`batMiss` into the event→sticky pattern. Phase 4 replace
 Phase 5 extracted `get_batting_team_index()` (16 duplicates → 1 pure function). Phase 6 fixed
 two bugs (pending runs ignoring endPeriod, and runs scoring during end-of-inning timer),
 extracted `should_period_end()` as a pure function, and added end-of-inning guards to all
-scoring paths.
+scoring paths. Phase 6.5 restructured the referee's three state machines (foul, HR pair,
+end-of-inning) into a Gather-Decide-Act pattern, moved `endPeriod` writes exclusively into the
+referee (eliminating the consolidation ownership violation), and handles compound resets
+(foul+inning, pair+inning) at detection time instead of chaining state machine transitions.
 
-**Test count:** 83 tests (62 unit + 6 contract + 15 scenario). All passing.
+**Test count:** 85 tests (62 unit + 8 contract + 15 scenario). All passing.
 
 **Test structure:**
 - `tests/unit/` — 62 pure function unit tests → `make test`
-- `tests/integration/contracts/` — 6 one-frame pipeline contract tests → `make integration_test`
+- `tests/integration/contracts/` — 8 one-frame pipeline contract tests → `make integration_test`
 - `tests/scenario/` — 15 full-game scenario tests → `make scenario_test`
-
-**Known ownership violation:** `game_consolidation.c:522` writes `endPeriod = 1` for HR
-contest early-termination. This is a rules decision that belongs in the referee. Fix
-planned in Phase 6.5 as part of compound reset detection.
 
 **Known dead field:** `HalfInningState.outOfBounds` (globals.h:499) is never written to.
 Foul tracking moved to `referee.foulState` state machine but the field was not removed.
 Cleanup is in Phase 8.
 
-**Next:** Phase 6.5 → Phase 7 → Phase 8.
+**Next:** Phase 7 → Phase 8.
 Knight Phase 3 can be done at any point (low-risk test addition).
 
 <details>
@@ -77,7 +76,7 @@ This is a pesäpallo game engine, and it's important to us. The codebase should 
 **Refactoring procedure:**
 1. Understand what exists and why (read before writing)
 2. Make a plan with small, independently testable steps
-3. Run all 73 tests after every change — green is the only acceptable state
+3. Run all 85 tests after every change — green is the only acceptable state
 4. Knight stable interfaces with tests — this locks in progress permanently
 5. Never test things that are about to change — that consolidates bad design
 6. Discuss any decision that has multiple valid approaches
@@ -89,7 +88,7 @@ This is a pesäpallo game engine, and it's important to us. The codebase should 
 1. **Data ownership is sacred.** Each pipeline stage owns specific structs. Writes must go through proper signatures, never through const-casts.
 2. **Referee decides, Consolidation acts.** The referee sets legal status flags. Consolidation enforces them physically.
 3. **The compiler is our enforcer.** `const` in signatures isn't documentation — it's a contract. If the code compiles without casts, ownership is correct.
-4. **Small verifiable steps.** Each step must leave all 73 tests passing. No multi-step changes that can't be tested in isolation.
+4. **Small verifiable steps.** Each step must leave all 85 tests passing. No multi-step changes that can't be tested in isolation.
 5. **Testing is knighting.** We don't test things that are probably going to change. We add tests to things we've thought hard about and are confident of their stability, naming, and purpose. The test suite is a monument to what's finished.
 6. **Lifecycle determines structure.** Variables should live in structs that enforce their lifecycle. Transient (single-frame) data auto-clears. Persistent data survives. Mixing lifecycles creates defensive code.
 
@@ -184,18 +183,20 @@ These are cross-boundary writes that don't cause bugs but violate strict ownersh
 
 Pure functions from `rules_pure/`, `actions_pure/`, `ai_pure/`. They take values and return values. No state, no side effects. They encode pesäpallo rules and physics formulas that won't change. These are the easiest to knight — if the function's API is stable, the test is forever.
 
-**Currently knighted (54 tests):** `batting_physics` (5), `pitching_physics` (5), `rules_outs` (7), `rules_runs` (2), `base_logic` (3+4 new), `batting_ai_strategy` (4), `catching_ai_strategy` (4), `pitching_ai_strategy` (1), `cup_logic` (6), `collision` (5), `fixture_setup` (4), `text_width` (1), `get_base_controller` (1), `get_ball_at_base_index` (1), `get_active_batter_index` (1).
+**Currently knighted (62 tests):** `batting_physics` (5), `pitching_physics` (5), `rules_outs` (7), `rules_runs` (2), `base_logic` (3+4 new), `batting_ai_strategy` (4), `catching_ai_strategy` (4), `pitching_ai_strategy` (1), `cup_logic` (6), `collision` (5), `fixture_setup` (4), `text_width` (1), `get_base_controller` (1), `get_ball_at_base_index` (1), `get_active_batter_index` (1), `should_period_end` (8).
 
 **Awaiting knighting:** `determine_pitch_result` — the strike zone logic only checks horizontal position; the API may expand to include height. Not stable enough to knight yet.
 
-### Tier 2: 1-Frame Contract Tests (4 tests)
+### Tier 2: 1-Frame Contract Tests (8 tests)
 
 These test the **contracts between pipeline stages**, not game scenarios. They set a precise state, run `updateMutableWorld` for exactly 1 frame, and assert the immediate reaction. They answer questions like:
 
 - "If `gameEvents.catchMade = 1` and runner has no safety base, does the referee set WOUNDED this frame?"
 - "If referee sets `endOfInningState = RESETTING`, does consolidation act this frame?"
 - "After `clearFrameEvents()`, are ALL transient fields zero?"
-- "If `betweenPitchState.resolutionProcessed = 1`, does consolidation reset `pitchState`?"
+- "If foul play causes 3 outs, does the referee skip foul timer and go directly to end-of-inning?"
+- "If HR pair ends and catching team is uncatchable, does the referee skip pair SM and go directly to end-of-inning?"
+- "Are pending runs and free walks blocked during end-of-inning timer?"
 
 These tests are fast (milliseconds), precise, and catch the subtle bugs that 1000-frame scenario tests miss — where one stage sets something but another doesn't react, or reacts one frame late.
 
@@ -663,7 +664,18 @@ Run all 73 tests.
 
 ---
 
-## Phase 6.5: Compound Reset Detection (endPeriod Ownership)
+## Phase 6.5: Compound Reset Detection (endPeriod Ownership) ✅ DONE
+
+**Completed 2026-04-14.** Restructured the referee's three state machines (foul, HR pair,
+end-of-inning) into a Gather-Decide-Act pattern. `endPeriod` is now exclusively written by
+the referee (zero writes in consolidation). Compound situations are handled at detection time:
+foul strike-3 immediately increments outs and cancels the foul timer when end-of-inning
+triggers; HR pair end with uncatchable catching team skips the pair state machine and goes
+directly to `END_INNING_STATE_DETECTED`. Moved `runnerBatterPairCounter` increment from
+consolidation to referee. Added `clear_referee_for_inning_end()` helper. Created
+`give_ball_to_pitcher()` test helper for robust ball-at-home-base setup. Added 2 contract
+tests (compound foul+inning, compound HR pair+uncatchable) plus 2 contract tests for
+end-of-inning blocking runs. All 85 tests passing (62 unit + 8 contract + 15 scenario).
 
 **Goal:** Eliminate the `endPeriod` ownership violation in `game_consolidation.c:522` by
 teaching the referee to detect compound situations where both a sub-reset (HR pair change
@@ -779,18 +791,17 @@ genuinely depend on each other's outputs (same-frame reads) vs which are indepen
 Group dependent functions together, separate independent groups visually. This makes the
 referee code self-documenting about what order matters and what doesn't.
 
-**Testing prerequisite:** The existing 83 tests (especially the 6 contract tests and 15
-scenario tests) provide a strong safety net. But before restructuring the referee
-internals, we should ensure we have contract tests that specifically verify the
-state-machine transition priorities — e.g., "if foul AND 3 outs happen same pitch,
-end-of-inning eventually fires" and "if HR pair end AND catching team uncatchable,
-end-of-inning fires directly." These tests knight the *behavior* so we can freely
-restructure the *implementation*.
+**Testing prerequisite (satisfied):** The 85 tests (8 contract tests + 15 scenario tests)
+provide a strong safety net. Contract tests specifically verify the state-machine transition
+priorities: `test_compound_foul_and_end_of_inning` proves foul+3-outs skips to inning end,
+`test_compound_hr_pair_and_uncatchable` proves pair-end+uncatchable skips to inning end,
+and `test_end_of_inning_blocks_runs` (×2) proves runs don't score during the end-of-inning
+timer. These tests knight the *behavior* so we can freely restructure the *implementation*.
 
-**After Phase 6.5:** `endPeriod` exclusively written by referee. No chained resets.
-The compound situation is handled cleanly at detection time. The groundwork is laid
-for the broader gather-decide-act structure, but the full restructuring is optional —
-it can be done incrementally in later phases as needed.
+**After Phase 6.5 (achieved):** `endPeriod` exclusively written by referee. No chained resets.
+The compound situation is handled cleanly at detection time. The Gather-Decide-Act structure
+is in place for the three competing state machines, while continuous per-frame operations
+(safety, wounding, force outs) remain as sequential investigate-act.
 
 ---
 

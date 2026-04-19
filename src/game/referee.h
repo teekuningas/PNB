@@ -63,7 +63,8 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  */
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard
+    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
+    HomeRunContestState* homeRunContestState
 );
 
 #endif // REFEREE_H
