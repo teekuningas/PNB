@@ -44,7 +44,7 @@ int test_referee_reacts_to_event(void)
 
     // 4. Set the specific precondition being tested
     ctx->state->match->gameEvents.catchMade = 1;
-    ctx->state->match->pRAI.batHit = 1;
+    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
 
     // 5. Run exactly 1 pipeline frame
     simulate_frames(ctx, 1);
@@ -65,12 +65,17 @@ int test_referee_reacts_to_event(void)
 | `test_clear_frame_events_completeness` | `clearFrameEvents` clears ALL fields; size guard detects struct growth |
 | `test_referee_starts_wounding_on_catch` | `catchMade` + conditions → wounding evaluation + WOUND_MARKED |
 | `test_referee_snapshots_on_pitch_released` | `pitchReleased` → baseAtPitchStart, strikesAtPitchStart, betweenPitch cleared |
-| `test_foul_detected_on_out_of_bounds_hit` | `ballHitGround` + batHit + OOB → foulState = DETECTED |
+| `test_foul_detected_on_out_of_bounds_hit` | `ballHitGround` + batOutcome=HIT + OOB → foulState = DETECTED |
+| `test_no_pending_runs_during_end_of_inning` | Pending runs blocked when endOfInningState != NONE |
+| `test_no_free_walk_runs_during_end_of_inning` | Free walk runs blocked when endOfInningState != NONE |
+| `test_compound_foul_and_end_of_inning` | Foul strike-3 → skip foul timer, go directly to END_INNING_STATE_DETECTED |
+| `test_compound_hr_pair_and_uncatchable` | HR pair end + uncatchable → skip pair SM, go directly to END_INNING_STATE_DETECTED |
+| `test_bat_outcome_promotion` | `ballHitByBat`/`ballMissedByBat` → batOutcome promoted; `pitchReleased` → batOutcome reset |
 
 ## Running
 
 ```bash
-devenv shell make integration_test   # Contract tests (4 tests)
+devenv shell make integration_test   # Contract tests (9 tests)
 devenv shell make scenario_test      # Scenario tests (15 tests)
-devenv shell make test               # Unit tests (54 tests)
+devenv shell make test               # Unit tests (61 tests)
 ```

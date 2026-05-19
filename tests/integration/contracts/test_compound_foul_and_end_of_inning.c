@@ -1,6 +1,6 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
-#include "contracts/all_contracts.h"
+#include "all_contracts.h"
 #include "referee.h"
 
 int test_compound_foul_and_end_of_inning(void)

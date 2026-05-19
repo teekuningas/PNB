@@ -78,13 +78,6 @@ int test_fixture_arg_parsing()
     return TEST_PASSED;
 }
 
-// Example test for menu helpers (we'll add more after refactoring)
-int test_text_width_calculation()
-{
-    // This would test getTextWidth2D if we extract the logic
-    // For now, placeholder to show the pattern
-    return TEST_PASSED;
-}
 
 // Declare new cup tests
 extern int test_cup_creation();
@@ -155,9 +148,6 @@ int main(int argc, char* argv[])
     RUN_TEST(test_fixture_homerun_contest_setup);
     RUN_TEST(test_fixture_cup_final_super_inning_setup);
     RUN_TEST(test_fixture_arg_parsing);
-
-    // Menu helper tests
-    RUN_TEST(test_text_width_calculation);
 
     // New Cup logic tests
     RUN_TEST(test_cup_creation);

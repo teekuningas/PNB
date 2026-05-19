@@ -37,7 +37,8 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_foul_detection.o \
                  tests/integration/contracts/test_end_of_inning_blocks_runs.o \
                  tests/integration/contracts/test_compound_foul_and_end_of_inning.o \
-                 tests/integration/contracts/test_compound_hr_pair_and_uncatchable.o
+                 tests/integration/contracts/test_compound_hr_pair_and_uncatchable.o \
+                 tests/integration/contracts/test_bat_outcome_promotion.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))

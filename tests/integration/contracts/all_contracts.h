@@ -19,4 +19,7 @@ int test_no_free_walk_runs_during_end_of_inning(void);
 int test_compound_foul_and_end_of_inning(void);
 int test_compound_hr_pair_and_uncatchable(void);
 
+// Event→Decision promotion contracts
+int test_bat_outcome_promotion(void);
+
 #endif // ALL_CONTRACTS_H
