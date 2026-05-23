@@ -8,10 +8,8 @@ contract_runner
 *.orig
 *.json
 
-# Devenv
-.devenv*
-devenv.local.nix
-devenv.local.yaml
+# Nix
+result
 
 # direnv
 .direnv

@@ -132,7 +132,7 @@ clean:
 
 .PHONY: shell
 shell:
-	devenv shell
+	nix develop
 
 .PHONY: format
 format:

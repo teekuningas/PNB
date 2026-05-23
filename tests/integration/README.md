@@ -75,7 +75,7 @@ int test_referee_reacts_to_event(void)
 ## Running
 
 ```bash
-devenv shell make integration_test   # Contract tests (9 tests)
-devenv shell make scenario_test      # Scenario tests (15 tests)
-devenv shell make test               # Unit tests (61 tests)
+nix develop --command make integration_test   # Contract tests (9 tests)
+nix develop --command make scenario_test      # Scenario tests (15 tests)
+nix develop --command make test               # Unit tests (61 tests)
 ```

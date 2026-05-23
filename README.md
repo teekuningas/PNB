@@ -40,7 +40,7 @@ gemini
 ### Starting the Agent
 
 ```bash
-devenv shell
+nix develop
 export COPILOT_GITHUB_TOKEN=$(gh auth token)
 export GOOGLE_GENAI_USE_GCA=true
 export GOOGLE_CLOUD_ACCESS_TOKEN=$(./.dev/scripts/extract_gemini_token.py)
