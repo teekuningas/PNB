@@ -39,7 +39,9 @@ ScenarioContext* create_scenario(void)
     // so manually call resetForNewHalfInning to initialize physical+flow+team,
     // then Referee_ResetForNewInning to clear all referee state (from-menu init).
     resetForNewHalfInning(ctx->state, &ctx->seed);
-    Referee_ResetForNewInning(&ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState);
+    Referee_ResetForNewInning(
+        &ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState
+    );
 
     ctx->currentFrame = 0;
 

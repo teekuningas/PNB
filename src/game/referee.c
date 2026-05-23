@@ -179,7 +179,7 @@ static void update_foul_play_logic(
 
                     // Mark batter as OUT immediately
                     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                        if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+                        if (referee->battingPlayers[i].baseAtPitchStart == BASE_HOME) {
                             referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
                             referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                             referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
@@ -985,10 +985,9 @@ static void clear_referee_for_inning_end(
     // They remain RESETTING/-1 for the two-frame handshake with consolidation.
 }
 
-void Referee_ResetForNewInning(
-    RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
+void Referee_ResetForNewInning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
 {
-    initializeRefereeState(ref);  // existing: clears all player tracking + state machines
+    initializeRefereeState(ref); // existing: clears all player tracking + state machines
 
     his->outs = 0;
     his->balls = 0;

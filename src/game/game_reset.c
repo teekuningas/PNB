@@ -2,7 +2,8 @@
 #include "common_logic.h"
 #include "referee.h"
 
-void resetPhysicalWorld(StateInfo* stateInfo, unsigned int* rng_seed) {
+void resetPhysicalWorld(StateInfo* stateInfo, unsigned int* rng_seed)
+{
     MatchSession* game = stateInfo->match;
     initializeBallInfo(game);
     initializeActionInfo(game);
@@ -16,14 +17,15 @@ void resetPhysicalWorld(StateInfo* stateInfo, unsigned int* rng_seed) {
 // Called by consolidation when referee signals END_INNING_STATE_RESETTING.
 // NOTE: Referee has already cleared its own legal state at DETECTED→RESETTING.
 // This function does NOT touch referee-owned state (ownership boundary).
-void resetForNewHalfInning(StateInfo* stateInfo, unsigned int* rng_seed) {
+void resetForNewHalfInning(StateInfo* stateInfo, unsigned int* rng_seed)
+{
     resetPhysicalWorld(stateInfo, rng_seed);
     resetFlowState(stateInfo->match);
 
     // Team setup
     initializeCriticalGameInfo(stateInfo->match, &stateInfo->match->scoreboard);
     initializeInningPermanentPlayerInformation(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->teamData);
-    
+
     if (stateInfo->match->scoreboard.period >= 4) {
         if (!(stateInfo->match->homeRunContestState.runnerBatterPairCounter > 0 &&
               stateInfo->match->homeRunContestState.runnerBatterPairCounter < stateInfo->match->scoreboard.pairCount)) {
@@ -34,10 +36,11 @@ void resetForNewHalfInning(StateInfo* stateInfo, unsigned int* rng_seed) {
 }
 
 // Recipe 2: Foul play — referee already restored legal state from snapshot
-void resetForFoulPlay(StateInfo* stateInfo, unsigned int* rng_seed) {
+void resetForFoulPlay(StateInfo* stateInfo, unsigned int* rng_seed)
+{
     resetPhysicalWorld(stateInfo, rng_seed);
     resetFlowState(stateInfo->match);
-    
+
     MatchSession* game = stateInfo->match;
     if (game->scoreboard.period >= 4) {
         // Homerun Contest special initialization
@@ -92,7 +95,8 @@ void resetForFoulPlay(StateInfo* stateInfo, unsigned int* rng_seed) {
 }
 
 // Recipe 3: Next HR pair — referee already cleared per-pair state
-void resetForNextPair(StateInfo* stateInfo, unsigned int* rng_seed) {
+void resetForNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
+{
     resetPhysicalWorld(stateInfo, rng_seed);
     resetFlowState(stateInfo->match);
     setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);

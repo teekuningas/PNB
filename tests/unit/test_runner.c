@@ -78,7 +78,6 @@ int test_fixture_arg_parsing()
     return TEST_PASSED;
 }
 
-
 // Declare new cup tests
 extern int test_cup_creation();
 extern int test_cup_progression();

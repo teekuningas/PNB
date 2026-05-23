@@ -474,7 +474,9 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
     // Physical world + flow + team setup
     resetForNewHalfInning(stateInfo, rng_seed);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
-    Referee_ResetForNewInning(&stateInfo->match->referee, &stateInfo->match->halfInningState, &stateInfo->match->betweenPitchState);
+    Referee_ResetForNewInning(
+        &stateInfo->match->referee, &stateInfo->match->halfInningState, &stateInfo->match->betweenPitchState
+    );
     // Scan physical world to establish initial legal tracking
     initialize_referee(stateInfo, &stateInfo->match->referee);
 }

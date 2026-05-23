@@ -24,8 +24,7 @@ int test_bat_outcome_promotion(void)
 
         // Precondition: batOutcome starts clean
         ASSERT_EQ(
-            BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome,
-            "Precondition: batOutcome should be NONE"
+            BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome, "Precondition: batOutcome should be NONE"
         );
 
         // Fire ballHitByBat event
