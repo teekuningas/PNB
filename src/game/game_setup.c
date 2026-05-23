@@ -76,7 +76,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
         stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
     }
 
-    // loadMutableWorldSettings is called via updateGameScreen -> loadGameScreenSettings
+    // resetForNewHalfInning is called via updateGameScreen -> loadGameScreenSettings
     // because we set changeScreen = 1
 }
 

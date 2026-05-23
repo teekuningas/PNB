@@ -912,19 +912,19 @@ static void update_game_state_flags(
     }
 }
 
-static void clear_referee_for_inning_end(
-    RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
-    const Scoreboard* scoreboard
+// Per-pair clear for homerun contest next-pair transition.
+// Called by the referee itself at DETECTED→RESETTING for next-pair.
+// Clears per-pitch and per-pair state. Preserves outs, runsInTheInning (inning-level state).
+static void clear_referee_for_pair_end(
+    RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState
 )
 {
-    if (scoreboard->period >= 4) {
-        refereeState->homerunPairHasPitch = 0;
-    }
-
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     clearBetweenPitchState(betweenPitchState);
     refereeState->foulState = FOUL_STATE_NONE;
+    refereeState->foulTimer = -1;
+    refereeState->homerunPairHasPitch = 0;
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
@@ -935,6 +935,69 @@ static void clear_referee_for_inning_end(
         refereeState->battingPlayers[i].hasPendingRun = 0;
         refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
     }
+}
+
+// Full clear of ALL referee-owned state for a new inning.
+// Called by the referee itself at DETECTED→RESETTING for end-of-inning.
+// Clears everything EXCEPT endOfInningState/endInningTimer (the active handshake signal).
+static void clear_referee_for_inning_end(
+    RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState
+)
+{
+    // HalfInningState (all referee-owned fields)
+    halfInningState->outs = 0;
+    halfInningState->strikes = 0;
+    halfInningState->balls = 0;
+    halfInningState->runsInTheInning = 0;
+    halfInningState->event = EVENT_NONE;
+    halfInningState->endPeriod = 0;
+
+    // BetweenPitchState
+    clearBetweenPitchState(betweenPitchState);
+
+    // Player tracking
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+        refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
+        refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+        refereeState->battingPlayers[i].hasScored = 0;
+        refereeState->battingPlayers[i].runOfHonorScored = 0;
+        refereeState->battingPlayers[i].baseAtLastEvent = BASE_NONE;
+        refereeState->battingPlayers[i].hadSafetyAtLastEvent = 0;
+        refereeState->battingPlayers[i].hasPendingRun = 0;
+        refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+    }
+
+    // Referee internal state
+    refereeState->strikesAtPitchStart = 0;
+    refereeState->woundingEvaluationActive = 0;
+    refereeState->woundingEvaluationFinished = 0;
+    refereeState->woundingEvaluationTimer = -1;
+    refereeState->ballInThirdBaseSincePitch = 0;
+    refereeState->homerunPairHasPitch = 0;
+
+    // Sub-state machines (foul + next-pair are done if inning is ending)
+    refereeState->foulState = FOUL_STATE_NONE;
+    refereeState->foulTimer = -1;
+    refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
+    refereeState->nextPairTimer = -1;
+    // NOTE: endOfInningState and endInningTimer are NOT cleared here.
+    // They remain RESETTING/-1 for the two-frame handshake with consolidation.
+}
+
+void Referee_ResetForNewInning(
+    RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
+{
+    initializeRefereeState(ref);  // existing: clears all player tracking + state machines
+
+    his->outs = 0;
+    his->balls = 0;
+    his->strikes = 0;
+    his->runsInTheInning = 0;
+    his->event = EVENT_NONE;
+    his->endPeriod = 0;
+
+    clearBetweenPitchState(bps);
 }
 
 void update_referee(
@@ -1141,8 +1204,8 @@ void update_referee(
                 refereeState->nextPairTransitionState = HR_PAIR_STATE_RESETTING;
                 refereeState->nextPairTimer = -1;
 
-                // Physical state cleanup only
-                clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState, scoreboard);
+                // Per-pair legal state cleanup
+                clear_referee_for_pair_end(refereeState, halfInningState, betweenPitchState);
             }
         } else if (currentState == HR_PAIR_STATE_RESETTING) {
             // Consolidation saw RESETTING and reset the physical world.
@@ -1176,10 +1239,21 @@ void update_referee(
         if (refereeState->endInningTimer > 200) {
             refereeState->endOfInningState = END_INNING_STATE_RESETTING;
             refereeState->endInningTimer = -1;
-            clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState, scoreboard);
+            clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState);
         }
     } else if (endState == END_INNING_STATE_RESETTING) {
+        // Consolidation saw RESETTING and reset the physical world.
+        // Scan new physical world and initialize safety (symmetric with next-pair).
         refereeState->endOfInningState = END_INNING_STATE_NONE;
+
+        for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+                refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
+            } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
+                       game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+                refereeState->battingPlayers[i].currentSafetyBase = game->playerInfo[i].bTPI.baseId;
+            }
+        }
     }
 }
 int is_wounding_evaluation_active(const RefereeState* ref)

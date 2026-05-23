@@ -1,3 +1,4 @@
+#include "game_reset.h"
 #include "scenario_builder.h"
 #include "fixtures.h"
 #include "game_setup.h"
@@ -35,8 +36,10 @@ ScenarioContext* create_scenario(void)
     initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
 
     // In tests, we don't have a game loop that responds to changeScreen=1,
-    // so manually call loadMutableWorldSettings to initialize player counters
-    loadMutableWorldSettings(ctx->state, &ctx->seed);
+    // so manually call resetForNewHalfInning to initialize physical+flow+team,
+    // then Referee_ResetForNewInning to clear all referee state (from-menu init).
+    resetForNewHalfInning(ctx->state, &ctx->seed);
+    Referee_ResetForNewInning(&ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState);
 
     ctx->currentFrame = 0;
 

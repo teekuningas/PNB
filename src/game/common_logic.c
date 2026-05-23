@@ -768,9 +768,9 @@ void initializeActionInfo(MatchSession* match)
     match->aF.cTAF.pitch = 0;
     match->aF.cTAF.actionKeyLock = 0;
 }
-// Resets all non-persistent state for a new half-inning.
-// Called by loadMutableWorldSettings() and during foul play resets.
-void initializeTemporaryGameAnalysisInfo(MatchSession* match)
+// Resets flow control, camera, subsystems, and frame events for a clean restart.
+// Does NOT touch referee-owned state (BPS, HIS, RefereeState).
+void resetFlowState(MatchSession* match)
 {
     // Flow control
     match->flowControl.pause = 0;
@@ -780,20 +780,12 @@ void initializeTemporaryGameAnalysisInfo(MatchSession* match)
     match->flowControl.freeWalkIndex = -1;
     match->flowControl.freeWalkBase = BASE_NONE;
 
-    // Half-inning transient state
-    match->halfInningState.event = EVENT_NONE;
-    match->halfInningState.endPeriod = 0;
+    // Flow state
     match->playerCounters.noMorePlayers = 0;
     match->gameFlowState.ballHome = 0;
 
     // Frame events (cleared every frame, but ensure clean start)
     clearFrameEvents(&match->gameEvents);
-
-    // Between-pitch flags
-    match->betweenPitchState.catchHasBeenMade = 0;
-    match->betweenPitchState.hasBallHitGround = 0;
-    match->betweenPitchState.pitchResult = PITCH_RESULT_NONE;
-    match->betweenPitchState.batOutcome = BAT_OUTCOME_NONE;
 
     // Subsystem initialization
     GameConsolidation_Init(&(match->gameFlowState));
@@ -824,12 +816,9 @@ void clearFrameEvents(GameEvents* events)
 void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
-    match->halfInningState.outs = 0;
-    match->halfInningState.balls = 0;
-    match->halfInningState.strikes = 0;
+
     match->playerCounters.nonJokerPlayersLeft = PLAYERS_IN_TEAM;
     match->playerCounters.jokersLeft = 3;
-    match->halfInningState.runsInTheInning = 0;
     match->pII.batterSelectionIndex =
         scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
 }
@@ -913,43 +902,5 @@ void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, Fiel
                 match->playerInfo[index].tPI.orientation.z = -match->playerInfo[index].tPI.location.x;
             }
         }
-    }
-}
-
-void loadMutableWorldSettings(StateInfo* stateInfo, unsigned int* rng_seed)
-{
-    /*
-     * called always when half-inning starts.
-     *
-     */
-    // initialize ball flags
-    initializeBallInfo(stateInfo->match);
-    // action flags
-    initializeActionInfo(stateInfo->match);
-    // game analysis information that can be flushed when foul play happens
-    initializeTemporaryGameAnalysisInfo(stateInfo->match);
-    // game information that should not be initialized before the inning ends
-    initializeCriticalGameInfo(stateInfo->match, &stateInfo->match->scoreboard);
-    // index information that can be flushed
-    initializeIndexInformation(stateInfo->match);
-    // player-related action information that can be flushed
-    initializePRAIInformation(stateInfo->match);
-    // this is information that stays for the whole inning
-    initializeInningPermanentPlayerInformation(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->teamData);
-    // information about location and models and orientations. will be flushed when foul play happens
-    initializeSpatialPlayerInformation(stateInfo->match, stateInfo->fieldPositions, rng_seed);
-    // information about players than can be flushed.
-    initializeNonCriticalPlayerInformation(stateInfo->match);
-
-    // Milestone 18.0: Referee initialization is now explicit.
-    // After loadMutableWorldSettings(), the calling code should call
-    // initialize_referee(stateInfo) to scan the physical world.
-
-    if (stateInfo->match->scoreboard.period >= 4) {
-        if (!(stateInfo->match->homeRunContestState.runnerBatterPairCounter > 0 &&
-              stateInfo->match->homeRunContestState.runnerBatterPairCounter < stateInfo->match->scoreboard.pairCount)) {
-            stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
-        }
-        setupHomerunPhysicalState(stateInfo->match, &stateInfo->match->scoreboard, stateInfo->fieldPositions);
     }
 }

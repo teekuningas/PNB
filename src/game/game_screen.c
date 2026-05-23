@@ -14,6 +14,7 @@
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
+#include "game_reset.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f // Midpoint between original -0.12 and current 0.08
@@ -470,9 +471,11 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
     stateInfo->match->uiState.gameInfoEventTimer = -1;
     // initialize cam
     initCamSettings(stateInfo);
-    // this will initialize all player settings etc with knowledge in structures from main menu.
-    loadMutableWorldSettings(stateInfo, rng_seed);
-    // Initialize referee by scanning the physical world
+    // Physical world + flow + team setup
+    resetForNewHalfInning(stateInfo, rng_seed);
+    // Referee initialization (from-menu only — no state machine active, full clean slate)
+    Referee_ResetForNewInning(&stateInfo->match->referee, &stateInfo->match->halfInningState, &stateInfo->match->betweenPitchState);
+    // Scan physical world to establish initial legal tracking
     initialize_referee(stateInfo, &stateInfo->match->referee);
 }
 
