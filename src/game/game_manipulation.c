@@ -114,7 +114,7 @@ static void updateBallStatus(MatchSession* match, FieldPositions* fieldPositions
                         match->ballInfo.hitsGroundToUnWound = 1;
                     }
                     // Strike/Ball counting logic moved to Referee_Update (referee.c)
-                    // Pitch state reset moved to reconcileLegalAndPhysicalState (mutable_world.c)
+                    // Pitch state reset moved to consolidation (game_consolidation.c)
 
                     // if ball has enough y-velocity it will bounce
                     if (match->ballInfo.velocity.y < -BALL_BOUNCE_THRESHOLD) {

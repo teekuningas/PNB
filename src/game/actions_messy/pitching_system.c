@@ -182,7 +182,7 @@ void releasePitch(StateInfo* stateInfo)
     // Trigger pitch released event
     stateInfo->match->gameEvents.pitchReleased = 1;
 
-    // Note: Referee state snapshotting is now handled at end of frame in mutable_world.c
+    // Note: Referee state snapshotting is now handled at end of frame in game_frame.c
 
     // run with batting team
 

@@ -1,12 +1,12 @@
 /*
     game divides into two sections, menus and the game. this is the game screen. only main.c is higher but lots of
-   initialization code is still hidden to main.c. almost all visible 3d stuff is delegated to mutable_world and
+   initialization code is still hidden to main.c. almost all visible 3d stuff is delegated to game_frame and
    immutable_world, but here we draw the skybox and some status information for user.
 */
 
 #include "globals.h"
 #include "immutable_world.h"
-#include "mutable_world.h"
+#include "game_frame.h"
 #include "render.h"
 #include "font.h"
 #include "game_screen.h"
@@ -52,7 +52,7 @@ int initGameScreen(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    result = initMutableWorld(stateInfo, rm);
+    result = init_game_frame(stateInfo, rm);
     if (result != 0) {
         printf("Could not init ball. Exiting.");
         return -1;
@@ -133,7 +133,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
     }
 
     // and here will a lot of logic code.
-    updateMutableWorld(stateInfo, menuInfo, rng_seed);
+    update_game_frame(stateInfo, menuInfo, rng_seed);
 }
 
 void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
@@ -173,7 +173,7 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* r
     glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
 
     drawImmutableWorld(stateInfo, alpha, rm);
-    drawMutableWorld(stateInfo, alpha, rm);
+    draw_game_frame(stateInfo, alpha, rm);
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
@@ -539,7 +539,7 @@ int cleanGameScreen(StateInfo* stateInfo)
         return -1;
     }
 
-    result = cleanMutableWorld(stateInfo);
+    result = clean_game_frame(stateInfo);
     if (result != 0) {
         printf("Could not clean mutable world properly.\n");
         return -1;

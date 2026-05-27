@@ -4,7 +4,7 @@
 #include "game_setup.h"
 #include "game_consolidation.h"
 #include "game_manipulation.h"
-#include "mutable_world.h"
+#include "game_frame.h"
 #include "common_logic.h"
 #include "referee.h"
 #include "action_implementation.h"

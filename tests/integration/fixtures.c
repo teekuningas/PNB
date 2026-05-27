@@ -2,7 +2,7 @@
 #include "field_layout.h"
 #include "fill_player_data.h"
 #include "game_setup.h"
-#include "mutable_world.h"
+#include "game_frame.h"
 #include "common_logic.h"
 #include "game_consolidation.h"
 #include <stdlib.h>

@@ -11,7 +11,7 @@
 #include "game_consolidation.h"
 #include "game_manipulation.h"
 
-#include "mutable_world.h"
+#include "game_frame.h"
 #include "common_logic.h"
 #include "game_setup.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
@@ -19,7 +19,7 @@
 #include "referee.h"
 #include "rules_pure/player_utils.h"
 
-int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
+int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
 
@@ -48,7 +48,7 @@ int initMutableWorld(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     if (stateInfo->match->flowControl.pause == 0) {
         // 1. Inputs
@@ -92,7 +92,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
         clearFrameEvents(&stateInfo->match->gameEvents);
     }
 }
-void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
+void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
     // players and ball are the building blocks of all the action on the screen.
     if (stateInfo->match->flowControl.pause == 0) {
@@ -102,7 +102,7 @@ void drawMutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager*
 #endif
     }
 }
-int cleanMutableWorld(StateInfo* stateInfo)
+int clean_game_frame(StateInfo* stateInfo)
 {
     int result;
     result = cleanBall();
