@@ -130,11 +130,9 @@ static void update_foul_play_logic(
 {
     const MatchSession* game = stateInfo->match;
 
-    // Transition 3: RESETTING -> NONE (Cleanup after physical reset)
+    // RESETTING is handled by referee_finalize (post-consolidation stage).
+    // Skip all foul logic this frame — consolidation is doing the physical reset.
     if (referee->foulState == FOUL_STATE_RESETTING) {
-        referee->foulState = FOUL_STATE_NONE;
-        // Reset other flags as we are now "between pitches" effectively
-        clearBetweenPitchState(betweenPitchState);
         return;
     }
 
@@ -1207,20 +1205,8 @@ void update_referee(
                 clear_referee_for_pair_end(refereeState, halfInningState, betweenPitchState);
             }
         } else if (currentState == HR_PAIR_STATE_RESETTING) {
-            // Consolidation saw RESETTING and reset the physical world.
-            refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
-
-            // Scan physical world and initialize safety for new pair
-            for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
-                    refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
-                    refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
-                } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
-                           game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
-                    refereeState->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
-                    refereeState->battingPlayers[i].currentSafetyBase = BASE_THIRD;
-                }
-            }
+            // Handled by referee_finalize (post-consolidation stage).
+            // Nothing to do here — consolidation is performing the physical reset this frame.
         }
     }
 
@@ -1241,8 +1227,50 @@ void update_referee(
             clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState);
         }
     } else if (endState == END_INNING_STATE_RESETTING) {
-        // Consolidation saw RESETTING and reset the physical world.
-        // Scan new physical world and initialize safety (symmetric with next-pair).
+        // Handled by referee_finalize (post-consolidation stage).
+        // Nothing to do here — consolidation is performing the physical reset this frame.
+    }
+}
+
+// ============================================================================
+// Referee Finalize (Post-Consolidation Stage)
+//
+// Runs AFTER consolidation has performed any physical resets.
+// Handles RESETTING→NONE transitions: clears state machine flags and scans the
+// newly-reset physical world to establish legal tracking for the next cycle.
+//
+// This eliminates the old one-frame delay where RESETTING→NONE was processed at
+// the TOP of update_referee in the NEXT frame.
+// ============================================================================
+
+void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, BetweenPitchState* betweenPitchState)
+{
+    const MatchSession* game = stateInfo->match;
+
+    // Foul play: RESETTING → NONE
+    if (refereeState->foulState == FOUL_STATE_RESETTING) {
+        refereeState->foulState = FOUL_STATE_NONE;
+        clearBetweenPitchState(betweenPitchState);
+    }
+
+    // HR pair: RESETTING → NONE + scan physical world for new pair
+    if (refereeState->nextPairTransitionState == HR_PAIR_STATE_RESETTING) {
+        refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
+
+        for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+                refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
+                refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
+            } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
+                       game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+                refereeState->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
+                refereeState->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+            }
+        }
+    }
+
+    // End of inning: RESETTING → NONE + scan physical world for new players
+    if (refereeState->endOfInningState == END_INNING_STATE_RESETTING) {
         refereeState->endOfInningState = END_INNING_STATE_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -1255,6 +1283,7 @@ void update_referee(
         }
     }
 }
+
 int is_wounding_evaluation_active(const RefereeState* ref)
 {
     return ref->woundingEvaluationActive;

@@ -72,7 +72,12 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
         // - Enforces Legal State (Outs, Scoring)
         GameConsolidation_Update(stateInfo, menuInfo, rng_seed);
 
-        // 5. Capture snapshot after all updates when pitch is released
+        // 5. Referee Finalize (Post-Consolidation)
+        // Handles RESETTING→NONE transitions after consolidation has performed
+        // physical resets. Scans the new physical world and establishes legal tracking.
+        referee_finalize(stateInfo, &game->referee, &game->betweenPitchState);
+
+        // 6. Capture snapshot after all updates when pitch is released
         if (stateInfo->match->gameEvents.pitchReleased) {
             StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
         }
@@ -83,7 +88,7 @@ void updateMutableWorld(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
             stateInfo->match->flowControl.pause = 1;
         }
 
-        // Clear transient events for the next frame
+        // 7. Clear transient events for the next frame
         clearFrameEvents(&stateInfo->match->gameEvents);
     }
 }

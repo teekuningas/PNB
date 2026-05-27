@@ -63,6 +63,18 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  */
 void Referee_ResetForNewInning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps);
 
+/**
+ * @brief Post-consolidation referee finalization.
+ *
+ * Handles RESETTING→NONE transitions for all three state machines AFTER
+ * consolidation has performed physical resets. Scans the newly-reset physical
+ * world to establish legal tracking for the next cycle.
+ *
+ * This runs as a separate pipeline stage after consolidation, making the
+ * ownership boundary physically impossible to violate by code placement.
+ */
+void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, BetweenPitchState* betweenPitchState);
+
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
     BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
