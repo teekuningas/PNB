@@ -5,9 +5,12 @@
 #include "menu_types.h"
 
 // Initializes flow control counters and state
-void GameConsolidation_Init(GameFlowState* gameFlowState);
+void consolidation_init(GameFlowState* gameFlowState);
 
 // Main update function: Reacts to Referee decisions, manages flow, and enforces physical state
-void GameConsolidation_Update(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
+// referee is const — consolidation READS legal state but never WRITES to it.
+void consolidation_update(
+    StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed
+);
 
 #endif

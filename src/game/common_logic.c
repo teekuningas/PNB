@@ -770,7 +770,7 @@ void initializeActionInfo(MatchSession* match)
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
-void resetFlowState(MatchSession* match)
+void reset_flow_state(MatchSession* match)
 {
     // Flow control
     match->flowControl.pause = 0;
@@ -785,10 +785,10 @@ void resetFlowState(MatchSession* match)
     match->gameFlowState.ballHome = 0;
 
     // Frame events (cleared every frame, but ensure clean start)
-    clearFrameEvents(&match->gameEvents);
+    clear_frame_events(&match->gameEvents);
 
     // Subsystem initialization
-    GameConsolidation_Init(&(match->gameFlowState));
+    consolidation_init(&(match->gameFlowState));
     initGameManipulation(&(match->gameFlowState));
 
     // Camera
@@ -798,7 +798,7 @@ void resetFlowState(MatchSession* match)
     match->cameraState.targetPoint.z = 0.0f;
 }
 
-void clearFrameEvents(GameEvents* events)
+void clear_frame_events(GameEvents* events)
 {
     events->catchMade = 0;
     events->playerArrivedAtBase = 0;

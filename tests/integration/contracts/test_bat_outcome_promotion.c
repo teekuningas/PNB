@@ -88,11 +88,11 @@ int test_bat_outcome_promotion(void)
     // === Size guard: catch BetweenPitchState struct growth ===
     // 4 fields: catchHasBeenMade (int), hasBallHitGround (int),
     //           pitchResult (PitchResult enum), batOutcome (BatOutcome enum)
-    // Update clearBetweenPitchState(), the field checks above, AND this count
+    // Update clear_between_pitch_state(), the field checks above, AND this count
     // if BetweenPitchState gains new fields.
     ASSERT_EQ(
         2 * sizeof(int) + sizeof(PitchResult) + sizeof(BatOutcome), sizeof(BetweenPitchState),
-        "BetweenPitchState size changed — update clearBetweenPitchState and this test"
+        "BetweenPitchState size changed — update clear_between_pitch_state and this test"
     );
 
     return TEST_PASSED;

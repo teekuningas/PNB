@@ -472,9 +472,9 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
     // initialize cam
     initCamSettings(stateInfo);
     // Physical world + flow + team setup
-    resetForNewHalfInning(stateInfo, rng_seed);
+    reset_for_new_half_inning(stateInfo, rng_seed);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
-    Referee_ResetForNewInning(
+    referee_reset_for_new_inning(
         &stateInfo->match->referee, &stateInfo->match->halfInningState, &stateInfo->match->betweenPitchState
     );
     // Scan physical world to establish initial legal tracking

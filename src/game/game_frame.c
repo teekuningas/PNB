@@ -1,6 +1,16 @@
 /*
-    this section is going to be the core part of non-platfrom specific code and going to handle
-    things happening behind of what is seen on the screen.
+    game_frame.c — The per-frame game pipeline.
+
+    Each frame executes 7 stages in strict order:
+      1. Input           (actionInvocations)
+      2. Physics & Logic (actionImplementation + gameManipulation)
+      3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
+   PlayerCounters, Scoreboard
+      4. Consolidation   (consolidation_update)   — READS referee (const), WRITES: PlayerInfo, FlowControl, pRAI,
+   Scoreboard
+      5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
+      6. Snapshot        (debug)
+      7. Cleanup         (clear_frame_events)
 */
 
 #include "globals.h"
@@ -41,7 +51,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     initActionInvocations(stateInfo);
 
     // Consolidated Init (Game Flow + Reset Logic)
-    GameConsolidation_Init(&(stateInfo->match->gameFlowState));
+    consolidation_init(&(stateInfo->match->gameFlowState));
 
     initGameManipulation(&(stateInfo->match->gameFlowState));
 
@@ -70,7 +80,8 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // - Updates Game Flow (innings, user prompts)
         // - Handles Physical Resets (Foul Play)
         // - Enforces Legal State (Outs, Scoring)
-        GameConsolidation_Update(stateInfo, menuInfo, rng_seed);
+        // referee is passed as const — consolidation reads but never writes legal state.
+        consolidation_update(stateInfo, &game->referee, menuInfo, rng_seed);
 
         // 5. Referee Finalize (Post-Consolidation)
         // Handles RESETTING→NONE transitions after consolidation has performed
@@ -89,7 +100,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         }
 
         // 7. Clear transient events for the next frame
-        clearFrameEvents(&stateInfo->match->gameEvents);
+        clear_frame_events(&stateInfo->match->gameEvents);
     }
 }
 void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm)

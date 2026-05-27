@@ -61,7 +61,7 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
  * @param playerCounters Mutable pointer to player counters.
  * @param scoreboard Mutable pointer to global game info (teams/runs).
  */
-void Referee_ResetForNewInning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps);
+void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps);
 
 /**
  * @brief Post-consolidation referee finalization.

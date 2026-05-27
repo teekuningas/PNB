@@ -34,11 +34,11 @@ void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard*
 void initializeNonCriticalPlayerInformation(MatchSession* match);
 void initializeBallInfo(MatchSession* match);
 void initializeActionInfo(MatchSession* match);
-void resetFlowState(MatchSession* match);
+void reset_flow_state(MatchSession* match);
 void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard);
 void initializeIndexInformation(MatchSession* match);
 void initializePRAIInformation(MatchSession* match);
 void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions);
-void clearFrameEvents(GameEvents* events);
+void clear_frame_events(GameEvents* events);
 
 #endif /* COMMON_LOGIC_H */

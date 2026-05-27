@@ -16,7 +16,7 @@
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
-static void clearBetweenPitchState(BetweenPitchState* bps)
+static void clear_between_pitch_state(BetweenPitchState* bps)
 {
     bps->catchHasBeenMade = 0;
     bps->hasBallHitGround = 0;
@@ -50,7 +50,7 @@ static void update_initialization_events(
     // Pitch Released: Snapshot state for the new pitch
     if (events->pitchReleased) {
         // 1. Reset Sticky Flags
-        clearBetweenPitchState(betweenPitchState);
+        clear_between_pitch_state(betweenPitchState);
         referee->woundingEvaluationFinished = 0;
         referee->woundingEvaluationActive = 0;
         referee->woundingEvaluationTimer = -1;
@@ -919,7 +919,7 @@ static void clear_referee_for_pair_end(
 {
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
-    clearBetweenPitchState(betweenPitchState);
+    clear_between_pitch_state(betweenPitchState);
     refereeState->foulState = FOUL_STATE_NONE;
     refereeState->foulTimer = -1;
     refereeState->homerunPairHasPitch = 0;
@@ -951,7 +951,7 @@ static void clear_referee_for_inning_end(
     halfInningState->endPeriod = 0;
 
     // BetweenPitchState
-    clearBetweenPitchState(betweenPitchState);
+    clear_between_pitch_state(betweenPitchState);
 
     // Player tracking
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -983,7 +983,7 @@ static void clear_referee_for_inning_end(
     // They remain RESETTING/-1 for the two-frame handshake with consolidation.
 }
 
-void Referee_ResetForNewInning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
+void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
 {
     initializeRefereeState(ref); // existing: clears all player tracking + state machines
 
@@ -994,7 +994,7 @@ void Referee_ResetForNewInning(RefereeState* ref, HalfInningState* his, BetweenP
     his->event = EVENT_NONE;
     his->endPeriod = 0;
 
-    clearBetweenPitchState(bps);
+    clear_between_pitch_state(bps);
 }
 
 void update_referee(
@@ -1250,7 +1250,7 @@ void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, Be
     // Foul play: RESETTING → NONE
     if (refereeState->foulState == FOUL_STATE_RESETTING) {
         refereeState->foulState = FOUL_STATE_NONE;
-        clearBetweenPitchState(betweenPitchState);
+        clear_between_pitch_state(betweenPitchState);
     }
 
     // HR pair: RESETTING → NONE + scan physical world for new pair

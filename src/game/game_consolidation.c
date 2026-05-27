@@ -13,66 +13,68 @@
 // FORWARD DECLARATIONS
 // ===============================================================================================
 
-static void enforceLegalState(StateInfo* stateInfo);
-static int handleFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed);
-static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
+static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee);
+static int handleFoulPlayReset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
+static void
+updateGameFlow(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed);
 
 // Internal helpers from old game_analysis
-static void checkIfNextBatterDecision(StateInfo* stateInfo);
+static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* referee);
 static void strikesAndBalls(StateInfo* stateInfo);
-static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
-static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed);
+static int
+checkIfEndOfInning(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed);
+static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
 static void populateGameConclusion(StateInfo* stateInfo, int winner);
 
 // ===============================================================================================
 // PUBLIC API
 // ===============================================================================================
 
-void GameConsolidation_Init(GameFlowState* gameFlowState)
+void consolidation_init(GameFlowState* gameFlowState)
 {
     gameFlowState->closeToGround = 0;
     gameFlowState->homeRunCameraCounter = -1;
 }
 
-void GameConsolidation_Update(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void consolidation_update(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     // 0. Check for Physical Resets FIRST (these reset the world)
     // If any reset happens, abort all further processing for this frame
 
     // Check for end-of-inning reset
-    if (checkIfEndOfInning(stateInfo, menuInfo, rng_seed)) {
+    if (checkIfEndOfInning(stateInfo, referee, menuInfo, rng_seed)) {
         return;
     }
 
     // Check for next pair reset (homerun contest)
-    if (checkIfNextPair(stateInfo, rng_seed)) {
+    if (checkIfNextPair(stateInfo, referee, rng_seed)) {
         return;
     }
 
     // Check for foul play (out of bounds) reset
-    if (handleFoulPlayReset(stateInfo, rng_seed)) {
+    if (handleFoulPlayReset(stateInfo, referee, rng_seed)) {
         return;
     }
 
     // 1. Game Flow Analysis (The Game Master)
     // Decides if we need to pause for input, etc.
-    updateGameFlow(stateInfo, menuInfo, rng_seed);
+    updateGameFlow(stateInfo, referee, menuInfo, rng_seed);
 
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
-    enforceLegalState(stateInfo);
+    enforceLegalState(stateInfo, referee);
 }
 
 // ===============================================================================================
 // INTERNAL: PHYSICAL ENFORCEMENT (formerly reconcileLegalAndPhysicalState)
 // ===============================================================================================
 
-static void enforceLegalState(StateInfo* stateInfo)
+static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee)
 {
     MatchSession* game = stateInfo->match;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         // 1. React to OUT
-        if (game->referee.battingPlayers[i].status == PLAYER_STATUS_OUT) {
+        if (referee->battingPlayers[i].status == PLAYER_STATUS_OUT) {
             if (game->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
                 game->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
                 game->playerInfo[i].bTPI.baseId = BASE_NONE;
@@ -81,14 +83,14 @@ static void enforceLegalState(StateInfo* stateInfo)
         }
 
         // 2. React to SCORE
-        if (game->referee.battingPlayers[i].hasScored && game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
+        if (referee->battingPlayers[i].hasScored && game->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
             game->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
             game->playerInfo[i].bTPI.baseId = BASE_NONE;
             movePlayerOut(game->playerInfo, game->playerRuntime, stateInfo->fieldPositions, i);
         }
 
         // 3. React to WOUNDED
-        if (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
+        if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
             if (game->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
                 game->playerInfo[i].bTPI.state = PLAYER_STATE_WOUNDED;
                 game->playerInfo[i].bTPI.baseId = BASE_NONE;
@@ -100,10 +102,10 @@ static void enforceLegalState(StateInfo* stateInfo)
         if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE ||
             game->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
             BaseID physBase = game->playerInfo[i].bTPI.baseId;
-            if (game->referee.battingPlayers[i].currentSafetyBase != physBase) {
+            if (referee->battingPlayers[i].currentSafetyBase != physBase) {
                 // Don't force run if player is wounded (WOUNDED status)
                 // They will be removed from the field instead
-                int isWounded = (game->referee.battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
+                int isWounded = (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
 
                 if (!isWounded) {
                     // Player is physically at base but legally has no safety there.
@@ -130,15 +132,13 @@ static void enforceLegalState(StateInfo* stateInfo)
 // INTERNAL: FOUL PLAY RESET
 // ===============================================================================================
 
-static int handleFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
+static int handleFoulPlayReset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed)
 {
-    MatchSession* game = stateInfo->match;
-
     // Check if Referee has triggered the reset state
-    if (game->referee.foulState == FOUL_STATE_RESETTING) {
-        resetForFoulPlay(stateInfo, rng_seed);
+    if (referee->foulState == FOUL_STATE_RESETTING) {
+        reset_for_foul_play(stateInfo, referee, rng_seed);
 
-        // Note: Referee will transition state to NONE in the next frame
+        // Note: Referee will transition state to NONE in referee_finalize
         // No manual counter manipulation needed here anymore.
         return 1; // Signal that we reset
     }
@@ -146,13 +146,14 @@ static int handleFoulPlayReset(StateInfo* stateInfo, unsigned int* rng_seed)
 }
 
 // Formerly applyFoulPlayReset in game_setup.c
-// Now handled by game_reset.c: resetForFoulPlay
+// Now handled by game_reset.c: reset_for_foul_play
 
 // ===============================================================================================
 // INTERNAL: GAME FLOW (formerly game_analysis)
 // ===============================================================================================
 
-static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+static void
+updateGameFlow(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     // when player from third base starts running, we change camera view. when the situation is over we
     // wait 50 update frames, before moving to normal camera
@@ -164,14 +165,14 @@ static void updateGameFlow(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned in
         }
     }
 
-    checkIfNextBatterDecision(stateInfo);
+    checkIfNextBatterDecision(stateInfo, referee);
     strikesAndBalls(stateInfo);
 }
 
-static void checkIfNextBatterDecision(StateInfo* stateInfo)
+static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* referee)
 {
     // Cancel pending batter request if inning is ending
-    if (stateInfo->match->referee.endOfInningState != END_INNING_STATE_NONE) {
+    if (referee->endOfInningState != END_INNING_STATE_NONE) {
         stateInfo->match->flowControl.waitingForBatterDecision = 0;
         return;
     }
@@ -182,13 +183,13 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo)
 
     } else if (get_active_batter_index(stateInfo->match) == -1 &&
                stateInfo->match->flowControl.waitingForBatterDecision == 0 &&
-               stateInfo->match->referee.endOfInningState == END_INNING_STATE_NONE) {
+               referee->endOfInningState == END_INNING_STATE_NONE) {
         // there have to be a player available
         if (stateInfo->match->playerCounters.nonJokerPlayersLeft + stateInfo->match->playerCounters.jokersLeft > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
             if (count_active_batting_players(stateInfo->match->playerInfo) < BASE_COUNT &&
-                stateInfo->match->referee.foulState == FOUL_STATE_NONE) {
+                referee->foulState == FOUL_STATE_NONE) {
                 // also we cannot know yet if it will be out of position situation so we have to wait that the ball will
                 // land in some way.
                 if (stateInfo->match->betweenPitchState.hasBallHitGround == 1 ||
@@ -278,12 +279,13 @@ static void strikesAndBalls(StateInfo* stateInfo)
     }
 }
 
-static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+static int
+checkIfEndOfInning(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     // Milestone 17.5: Timer and detection logic moved to Referee (State Machine).
     // We only react when Referee signals RESETTING (State 2).
 
-    EndOfInningTransitionState currentState = stateInfo->match->referee.endOfInningState;
+    EndOfInningTransitionState currentState = referee->endOfInningState;
 
     if (currentState == END_INNING_STATE_RESETTING) {
         int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
@@ -424,7 +426,7 @@ static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned
             stateInfo->updated = 0;
         }
         if (stateInfo->screen != SCREEN_MAIN_MENU) {
-            resetForNewHalfInning(stateInfo, rng_seed);
+            reset_for_new_half_inning(stateInfo, rng_seed);
             // NOTE: Referee scan happens at RESETTING→NONE (next frame).
             // Consolidation does NOT call into referee state — ownership boundary.
         }
@@ -433,14 +435,14 @@ static int checkIfEndOfInning(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned
     return 0; // No reset
 }
 
-static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
+static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed)
 {
     if (stateInfo->match->scoreboard.period >= 4) {
 
         // Milestone 17.5: Timer and logic moved to Referee (State Machine).
         // We only react when Referee signals RESETTING (State 2).
 
-        HomeRunPairState currentState = stateInfo->match->referee.nextPairTransitionState;
+        HomeRunPairState currentState = referee->nextPairTransitionState;
 
         if (currentState == HR_PAIR_STATE_RESETTING) {
 
@@ -448,7 +450,7 @@ static int checkIfNextPair(StateInfo* stateInfo, unsigned int* rng_seed)
             if (stateInfo->match->homeRunContestState.runnerBatterPairCounter !=
                 stateInfo->match->scoreboard.pairCount) {
                 // Physical Reset for Next Pair
-                resetForNextPair(stateInfo, rng_seed);
+                reset_for_next_pair(stateInfo, rng_seed);
             }
             return 1; // Signal that we reset
         }

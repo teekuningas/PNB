@@ -62,7 +62,7 @@ int test_referee_reacts_to_event(void)
 
 | Test | Contract Verified |
 |------|-------------------|
-| `test_clear_frame_events_completeness` | `clearFrameEvents` clears ALL fields; size guard detects struct growth |
+| `test_clear_frame_events_completeness` | `clear_frame_events` clears ALL fields; size guard detects struct growth |
 | `test_referee_starts_wounding_on_catch` | `catchMade` + conditions → wounding evaluation + WOUND_MARKED |
 | `test_referee_snapshots_on_pitch_released` | `pitchReleased` → baseAtPitchStart, strikesAtPitchStart, betweenPitch cleared |
 | `test_foul_detected_on_out_of_bounds_hit` | `ballHitGround` + batOutcome=HIT + OOB → foulState = DETECTED |

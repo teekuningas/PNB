@@ -369,7 +369,7 @@ static void baseRunnerMovementsOnBaseArrivals(StateInfo* stateInfo)
             }
         }
         // set the flag off as now everything has been handled.
-        // stateInfo->match->gameEvents.playerArrivedAtBase = 0; // Handled by clearFrameEvents
+        // stateInfo->match->gameEvents.playerArrivedAtBase = 0; // Handled by clear_frame_events
     }
 }
 

@@ -3,9 +3,9 @@
 
 #include "globals.h"
 
-void resetPhysicalWorld(StateInfo* stateInfo, unsigned int* rng_seed);
-void resetForNewHalfInning(StateInfo* stateInfo, unsigned int* rng_seed);
-void resetForFoulPlay(StateInfo* stateInfo, unsigned int* rng_seed);
-void resetForNextPair(StateInfo* stateInfo, unsigned int* rng_seed);
+void reset_physical_world(StateInfo* stateInfo, unsigned int* rng_seed);
+void reset_for_new_half_inning(StateInfo* stateInfo, unsigned int* rng_seed);
+void reset_for_foul_play(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
+void reset_for_next_pair(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif // GAME_RESET_H

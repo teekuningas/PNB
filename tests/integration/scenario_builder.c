@@ -36,10 +36,10 @@ ScenarioContext* create_scenario(void)
     initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
 
     // In tests, we don't have a game loop that responds to changeScreen=1,
-    // so manually call resetForNewHalfInning to initialize physical+flow+team,
-    // then Referee_ResetForNewInning to clear all referee state (from-menu init).
-    resetForNewHalfInning(ctx->state, &ctx->seed);
-    Referee_ResetForNewInning(
+    // so manually call reset_for_new_half_inning to initialize physical+flow+team,
+    // then referee_reset_for_new_inning to clear all referee state (from-menu init).
+    reset_for_new_half_inning(ctx->state, &ctx->seed);
+    referee_reset_for_new_inning(
         &ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState
     );
 
@@ -253,12 +253,15 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
             ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
             &ctx->state->match->scoreboard, &game->homeRunContestState
         );
-        GameConsolidation_Update(ctx->state, &ctx->menu, &ctx->seed);
+        consolidation_update(ctx->state, &game->referee, &ctx->menu, &ctx->seed);
 
-        // Foul Play Reset is now handled by GameConsolidation_Update. Manual logic removed.
+        // Foul Play Reset is now handled by consolidation_update. Manual logic removed.
+
+        // 5. Referee Finalize (RESETTING→NONE transitions)
+        referee_finalize(ctx->state, &game->referee, &game->betweenPitchState);
 
         // Clear transient events for next frame (Critical for correct event loop)
-        clearFrameEvents(&game->gameEvents);
+        clear_frame_events(&game->gameEvents);
 
         ctx->currentFrame++;
     }

@@ -3,13 +3,13 @@
 #include "globals.h"
 
 /**
- * CONTRACT: clearFrameEvents clears ALL fields in GameEvents.
+ * CONTRACT: clear_frame_events clears ALL fields in GameEvents.
  *
  * This test serves two purposes:
- * 1. Verifies that every known field is zeroed by clearFrameEvents().
+ * 1. Verifies that every known field is zeroed by clear_frame_events().
  * 2. Detects if GameEvents grows (new field added) without updating
- *    clearFrameEvents — the size check will fail, forcing the developer
- *    to update both clearFrameEvents() and this test.
+ *    clear_frame_events — the size check will fail, forcing the developer
+ *    to update both clear_frame_events() and this test.
  */
 int test_clear_frame_events_completeness(void)
 {
@@ -26,7 +26,7 @@ int test_clear_frame_events_completeness(void)
     events.freeWalkRejected = 1;
     events.batterEntered = 1;
 
-    clearFrameEvents(&events);
+    clear_frame_events(&events);
 
     // Verify each field is cleared
     ASSERT_EQ(0, events.catchMade, "catchMade cleared");
@@ -41,8 +41,8 @@ int test_clear_frame_events_completeness(void)
 
     // Guard: if GameEvents gains a new field, this assertion fails.
     // 9 int fields × sizeof(int) = expected size.
-    // Update clearFrameEvents(), the field checks above, AND this count.
-    ASSERT_EQ(9 * sizeof(int), sizeof(GameEvents), "GameEvents size changed — update clearFrameEvents and this test");
+    // Update clear_frame_events(), the field checks above, AND this count.
+    ASSERT_EQ(9 * sizeof(int), sizeof(GameEvents), "GameEvents size changed — update clear_frame_events and this test");
 
     return TEST_PASSED;
 }
