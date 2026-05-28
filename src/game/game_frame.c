@@ -61,16 +61,17 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     if (stateInfo->match->flowControl.pause == 0) {
+        MatchSession* game = stateInfo->match;
+
         // 1. Inputs
-        action_invocations(stateInfo);
+        action_invocations(game, stateInfo->keyStates, &game->scoreboard);
 
         // 2. Physics & Logic
         action_implementation(stateInfo, rng_seed);
-        game_manipulation(stateInfo);
+        game_manipulation(game, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)
         // Runs AFTER physics to ensure legal state matches physical events
-        MatchSession* game = stateInfo->match;
         update_referee(
             stateInfo, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
             &stateInfo->match->scoreboard, &game->homeRunContestState

@@ -1119,7 +1119,7 @@ void update_referee(
     );
 
     // 1. Where is the ball?
-    int ballAtBase = get_ball_at_base_index(stateInfo);
+    int ballAtBase = get_ball_at_base_index(stateInfo->match, stateInfo->fieldPositions);
 
     // 2. Track if ball has been at 3rd base since pitch started (for run of honor logic)
     if (ballAtBase == 3) {

@@ -157,7 +157,7 @@ int test_full_fly_ball_out_and_wound(void)
         }
 
         // Track ball at 2nd base
-        int ballAtBase = get_ball_at_base_index(ctx->state);
+        int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->fieldPositions);
         if (ballAtBase == BASE_SECOND && ballAtSecondFrame == -1) {
             ballAtSecondFrame = frame;
             printf("Frame %d: Ball at 2nd base\n", frame);

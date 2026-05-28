@@ -245,7 +245,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // action_invocations() is intentionally omitted here: tests control player/AI decisions
         // explicitly via scenario helpers, not through the normal input dispatch path.
         action_implementation(ctx->state, &ctx->seed);
-        game_manipulation(ctx->state);
+        game_manipulation(ctx->state->match, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
 
         // Milestone 14: Rules engine must run after physics to reconcile state
         MatchSession* game = ctx->state->match;

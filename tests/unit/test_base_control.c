@@ -67,7 +67,7 @@ int test_get_ball_at_base_index()
 
     // No one has ball
     game.pII.hasBallIndex = -1;
-    ASSERT_EQ(-1, get_ball_at_base_index(&state), "Returns -1 if no one has ball");
+    ASSERT_EQ(-1, get_ball_at_base_index(&game, &fp), "Returns -1 if no one has ball");
 
     // Someone has ball, setup bases
     game.pII.hasBallIndex = 14;
@@ -78,22 +78,22 @@ int test_get_ball_at_base_index()
 
     // Home base uses HOME_LINE_Z check (usually 0 in game coordinates, assuming 0 here)
     // By setting z=1.0 and x=0, dx=0, dz=1, which should be within HOME_RADIUS
-    ASSERT_EQ(0, get_ball_at_base_index(&state), "Returns 0 for Home Base");
+    ASSERT_EQ(0, get_ball_at_base_index(&game, &fp), "Returns 0 for Home Base");
 
     // Test first base
     fp.firstBase = (Vector3D){-20.0f, 0.0f, -20.0f};
     game.ballInfo.location = fp.firstBase;
-    ASSERT_EQ(1, get_ball_at_base_index(&state), "Returns 1 for First Base");
+    ASSERT_EQ(1, get_ball_at_base_index(&game, &fp), "Returns 1 for First Base");
 
     // Test second base
     fp.secondBase = (Vector3D){20.0f, 0.0f, -40.0f};
     game.ballInfo.location = fp.secondBase;
-    ASSERT_EQ(2, get_ball_at_base_index(&state), "Returns 2 for Second Base");
+    ASSERT_EQ(2, get_ball_at_base_index(&game, &fp), "Returns 2 for Second Base");
 
     // Test third base
     fp.thirdBase = (Vector3D){30.0f, 0.0f, -20.0f};
     game.ballInfo.location = fp.thirdBase;
-    ASSERT_EQ(3, get_ball_at_base_index(&state), "Returns 3 for Third Base");
+    ASSERT_EQ(3, get_ball_at_base_index(&game, &fp), "Returns 3 for Third Base");
 
     return TEST_PASSED;
 }
