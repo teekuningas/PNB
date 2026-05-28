@@ -253,7 +253,10 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
             ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
             &ctx->state->match->scoreboard, &game->homeRunContestState
         );
-        consolidation_update(ctx->state, &game->referee, &ctx->menu, &ctx->seed);
+        consolidation_update(
+            ctx->state, &game->referee, &game->betweenPitchState, &game->halfInningState, &game->scoreboard, &ctx->menu,
+            &ctx->seed
+        );
 
         // Foul Play Reset is now handled by consolidation_update. Manual logic removed.
 

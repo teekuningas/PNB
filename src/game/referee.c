@@ -997,6 +997,113 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     clear_between_pitch_state(bps);
 }
 
+// Advance the scoreboard at end-of-inning and determine what period transition occurs.
+// Called by referee at DETECTED→RESETTING time. Consolidation reads periodTransition
+// to know what menu/screen action to take.
+static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreboard* scoreboard)
+{
+    int battingTeamIndex = get_batting_team_index(scoreboard);
+    int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+
+    scoreboard->inning++;
+
+    // First period ending
+    if (scoreboard->inning == scoreboard->halfInningsInPeriod ||
+        (scoreboard->inning == scoreboard->halfInningsInPeriod - 1 &&
+         scoreboard->teams[catchingTeamIndex].runs > scoreboard->teams[battingTeamIndex].runs)) {
+        scoreboard->period = 1;
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].period0Runs = scoreboard->teams[i].runs;
+            scoreboard->teams[i].runs = 0;
+        }
+        if (scoreboard->inning == scoreboard->halfInningsInPeriod - 1) {
+            scoreboard->inning++; // skip the last half-inning
+        }
+        refereeState->periodTransition = PERIOD_TRANSITION_INTER_PERIOD;
+    }
+    // Second period ending
+    else if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 ||
+             (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 - 1 &&
+              (scoreboard->teams[catchingTeamIndex].runs > scoreboard->teams[battingTeamIndex].runs ||
+               (scoreboard->teams[catchingTeamIndex].period0Runs > scoreboard->teams[battingTeamIndex].period0Runs &&
+                scoreboard->teams[catchingTeamIndex].runs == scoreboard->teams[battingTeamIndex].runs)))) {
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].period1Runs = scoreboard->teams[i].runs;
+        }
+
+        int t0p0 = scoreboard->teams[0].period0Runs;
+        int t0p1 = scoreboard->teams[0].period1Runs;
+        int t1p0 = scoreboard->teams[1].period0Runs;
+        int t1p1 = scoreboard->teams[1].period1Runs;
+
+        if (t0p0 >= t1p0 && t0p1 >= t1p1 && (t0p0 != t1p0 || t0p1 != t1p1)) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 0;
+        } else if (t0p0 <= t1p0 && t0p1 <= t1p1 && (t0p0 != t1p0 || t0p1 != t1p1)) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 1;
+        } else {
+            scoreboard->period = 2;
+            refereeState->periodTransition = PERIOD_TRANSITION_SUPER_INNING;
+        }
+
+        if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 - 1) {
+            scoreboard->inning++; // skip the last half-inning
+        }
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].runs = 0;
+        }
+    }
+    // Super inning ending
+    else if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 + 2) {
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].period2Runs = scoreboard->teams[i].runs;
+        }
+
+        if (scoreboard->teams[0].runs > scoreboard->teams[1].runs) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 0;
+        } else if (scoreboard->teams[0].runs < scoreboard->teams[1].runs) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 1;
+        } else {
+            // Super Inning → Homerun Contest
+            scoreboard->period = 4;
+            refereeState->periodTransition = PERIOD_TRANSITION_HOMERUN_CONTEST;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].runs = 0;
+        }
+    }
+    // Homerun contest round ending
+    else if (scoreboard->period >= 4 && (scoreboard->inning) % 2 == 0) {
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].period3Runs += scoreboard->teams[i].runs;
+        }
+
+        if (scoreboard->teams[0].period3Runs > scoreboard->teams[1].period3Runs) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 0;
+        } else if (scoreboard->teams[0].period3Runs < scoreboard->teams[1].period3Runs) {
+            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->periodTransitionWinner = 1;
+        } else {
+            // Next homerun contest round (period += 2 for battingTeamIndex calculation)
+            scoreboard->period += 2;
+            refereeState->periodTransition = PERIOD_TRANSITION_HOMERUN_CONTEST;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            scoreboard->teams[i].runs = 0;
+        }
+    }
+    // Normal next-inning (no period transition)
+    else {
+        refereeState->periodTransition = PERIOD_TRANSITION_NONE;
+    }
+}
+
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
     BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
@@ -1225,6 +1332,7 @@ void update_referee(
             refereeState->endOfInningState = END_INNING_STATE_RESETTING;
             refereeState->endInningTimer = -1;
             clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState);
+            advance_scoreboard_for_inning_end(refereeState, scoreboard);
         }
     } else if (endState == END_INNING_STATE_RESETTING) {
         // Handled by referee_finalize (post-consolidation stage).
@@ -1272,6 +1380,7 @@ void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, Be
     // End of inning: RESETTING → NONE + scan physical world for new players
     if (refereeState->endOfInningState == END_INNING_STATE_RESETTING) {
         refereeState->endOfInningState = END_INNING_STATE_NONE;
+        refereeState->periodTransition = PERIOD_TRANSITION_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
@@ -1374,5 +1483,7 @@ void initializeRefereeState(RefereeState* referee)
     referee->nextPairTimer = -1;
     referee->endOfInningState = END_INNING_STATE_NONE;
     referee->endInningTimer = -1;
+    referee->periodTransition = PERIOD_TRANSITION_NONE;
+    referee->periodTransitionWinner = -1;
     referee->homerunPairHasPitch = 0;
 }

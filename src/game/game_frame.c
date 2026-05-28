@@ -6,8 +6,8 @@
       2. Physics & Logic (actionImplementation + gameManipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    PlayerCounters, Scoreboard
-      4. Consolidation   (consolidation_update)   — READS referee (const), WRITES: PlayerInfo, FlowControl, pRAI,
-   Scoreboard
+      4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
+   WRITES: PlayerInfo, FlowControl, pRAI, GameFlowState
       5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
       6. Snapshot        (debug)
       7. Cleanup         (clear_frame_events)
@@ -80,8 +80,11 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // - Updates Game Flow (innings, user prompts)
         // - Handles Physical Resets (Foul Play)
         // - Enforces Legal State (Outs, Scoring)
-        // referee is passed as const — consolidation reads but never writes legal state.
-        consolidation_update(stateInfo, &game->referee, menuInfo, rng_seed);
+        // Referee-owned state (bps, his) passed as const — consolidation reads but never writes.
+        consolidation_update(
+            stateInfo, &game->referee, &game->betweenPitchState, &game->halfInningState, &game->scoreboard, menuInfo,
+            rng_seed
+        );
 
         // 5. Referee Finalize (Post-Consolidation)
         // Handles RESETTING→NONE transitions after consolidation has performed

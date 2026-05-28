@@ -13,18 +13,25 @@
 // FORWARD DECLARATIONS
 // ===============================================================================================
 
-static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee);
-static int handleFoulPlayReset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
-static void
-updateGameFlow(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed);
+static void enforce_legal_state(StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps);
+static int handle_foul_play_reset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
+static void update_game_flow(
+    StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps, const HalfInningState* his,
+    const Scoreboard* scoreboard, MenuInfo* menuInfo, unsigned int* rng_seed
+);
 
-// Internal helpers from old game_analysis
-static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* referee);
-static void strikesAndBalls(StateInfo* stateInfo);
-static int
-checkIfEndOfInning(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed);
-static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed);
-static void populateGameConclusion(StateInfo* stateInfo, int winner);
+static void check_next_batter_decision(
+    StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps, const Scoreboard* scoreboard
+);
+static void handle_strikes_and_balls(StateInfo* stateInfo, const HalfInningState* his);
+static int check_end_of_inning(
+    StateInfo* stateInfo, const RefereeState* referee, const Scoreboard* scoreboard, MenuInfo* menuInfo,
+    unsigned int* rng_seed
+);
+static int check_next_pair(
+    StateInfo* stateInfo, const RefereeState* referee, const Scoreboard* scoreboard, unsigned int* rng_seed
+);
+static void populate_game_conclusion(StateInfo* stateInfo, const Scoreboard* scoreboard, int winner);
 
 // ===============================================================================================
 // PUBLIC API
@@ -36,40 +43,43 @@ void consolidation_init(GameFlowState* gameFlowState)
     gameFlowState->homeRunCameraCounter = -1;
 }
 
-void consolidation_update(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
+void consolidation_update(
+    StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps, const HalfInningState* his,
+    const Scoreboard* scoreboard, MenuInfo* menuInfo, unsigned int* rng_seed
+)
 {
     // 0. Check for Physical Resets FIRST (these reset the world)
     // If any reset happens, abort all further processing for this frame
 
     // Check for end-of-inning reset
-    if (checkIfEndOfInning(stateInfo, referee, menuInfo, rng_seed)) {
+    if (check_end_of_inning(stateInfo, referee, scoreboard, menuInfo, rng_seed)) {
         return;
     }
 
     // Check for next pair reset (homerun contest)
-    if (checkIfNextPair(stateInfo, referee, rng_seed)) {
+    if (check_next_pair(stateInfo, referee, scoreboard, rng_seed)) {
         return;
     }
 
     // Check for foul play (out of bounds) reset
-    if (handleFoulPlayReset(stateInfo, referee, rng_seed)) {
+    if (handle_foul_play_reset(stateInfo, referee, rng_seed)) {
         return;
     }
 
     // 1. Game Flow Analysis (The Game Master)
     // Decides if we need to pause for input, etc.
-    updateGameFlow(stateInfo, referee, menuInfo, rng_seed);
+    update_game_flow(stateInfo, referee, bps, his, scoreboard, menuInfo, rng_seed);
 
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
-    enforceLegalState(stateInfo, referee);
+    enforce_legal_state(stateInfo, referee, bps);
 }
 
 // ===============================================================================================
 // INTERNAL: PHYSICAL ENFORCEMENT (formerly reconcileLegalAndPhysicalState)
 // ===============================================================================================
 
-static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee)
+static void enforce_legal_state(StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps)
 {
     MatchSession* game = stateInfo->match;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -117,10 +127,10 @@ static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee)
     }
 
     // 4. React to Pitch Resolution
-    if (game->betweenPitchState.pitchResult != PITCH_RESULT_NONE && game->pRAI.pitchState != PITCH_STAGE_NONE) {
+    if (bps->pitchResult != PITCH_RESULT_NONE && game->pRAI.pitchState != PITCH_STAGE_NONE) {
         game->pRAI.pitchState = PITCH_STAGE_NONE;
         // On ball: reset free walk calculation so it is re-evaluated
-        if (game->betweenPitchState.pitchResult == PITCH_RESULT_BALL) {
+        if (bps->pitchResult == PITCH_RESULT_BALL) {
             game->flowControl.freeWalkCalculationMade = 0;
             game->flowControl.freeWalkIndex = -1;
             game->flowControl.freeWalkBase = BASE_NONE;
@@ -132,7 +142,7 @@ static void enforceLegalState(StateInfo* stateInfo, const RefereeState* referee)
 // INTERNAL: FOUL PLAY RESET
 // ===============================================================================================
 
-static int handleFoulPlayReset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed)
+static int handle_foul_play_reset(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed)
 {
     // Check if Referee has triggered the reset state
     if (referee->foulState == FOUL_STATE_RESETTING) {
@@ -152,8 +162,10 @@ static int handleFoulPlayReset(StateInfo* stateInfo, const RefereeState* referee
 // INTERNAL: GAME FLOW (formerly game_analysis)
 // ===============================================================================================
 
-static void
-updateGameFlow(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
+static void update_game_flow(
+    StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps, const HalfInningState* his,
+    const Scoreboard* scoreboard, MenuInfo* menuInfo, unsigned int* rng_seed
+)
 {
     // when player from third base starts running, we change camera view. when the situation is over we
     // wait 50 update frames, before moving to normal camera
@@ -165,11 +177,13 @@ updateGameFlow(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menu
         }
     }
 
-    checkIfNextBatterDecision(stateInfo, referee);
-    strikesAndBalls(stateInfo);
+    check_next_batter_decision(stateInfo, referee, bps, scoreboard);
+    handle_strikes_and_balls(stateInfo, his);
 }
 
-static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* referee)
+static void check_next_batter_decision(
+    StateInfo* stateInfo, const RefereeState* referee, const BetweenPitchState* bps, const Scoreboard* scoreboard
+)
 {
     // Cancel pending batter request if inning is ending
     if (referee->endOfInningState != END_INNING_STATE_NONE) {
@@ -179,7 +193,7 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* 
 
     // so this function's idea is to make progress in selecting a new batter if old one's gone.
     // so this will be called only once when possible.
-    if (stateInfo->match->scoreboard.period >= 4) {
+    if (scoreboard->period >= 4) {
 
     } else if (get_active_batter_index(stateInfo->match) == -1 &&
                stateInfo->match->flowControl.waitingForBatterDecision == 0 &&
@@ -192,10 +206,9 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* 
                 referee->foulState == FOUL_STATE_NONE) {
                 // also we cannot know yet if it will be out of position situation so we have to wait that the ball will
                 // land in some way.
-                if (stateInfo->match->betweenPitchState.hasBallHitGround == 1 ||
-                    stateInfo->match->betweenPitchState.catchHasBeenMade == 1) {
+                if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
                     // if that happens we can now start.
-                    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
+                    int battingTeamIndex = get_batting_team_index(scoreboard);
                     // this will give work to action_invocatin.c and action_implementation.c
                     stateInfo->match->flowControl.waitingForBatterDecision = 1;
                     // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
@@ -203,8 +216,8 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* 
                     // still unused. one of these must be true, as we checked there is joker or non-joker left before.
                     if (stateInfo->match->playerCounters.nonJokerPlayersLeft != 0) {
                         stateInfo->match->pII.batterSelectionIndex =
-                            stateInfo->match->scoreboard.teams[battingTeamIndex]
-                                .batterOrder[stateInfo->match->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                            scoreboard->teams[battingTeamIndex]
+                                .batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
                     } else {
                         int i;
                         for (i = 0; i < JOKER_COUNT; i++) {
@@ -223,12 +236,12 @@ static void checkIfNextBatterDecision(StateInfo* stateInfo, const RefereeState* 
     }
 }
 
-// so here we are just updating strikes and balls related stuff. batter cant have more than 3 strikes, so something must
-// be done to that, and if pitcher pitches balls, that isnt allowed without some compensation either.
-static void strikesAndBalls(StateInfo* stateInfo)
+// Here we handle strikes and balls related consequences. Batter can't have more than 3 strikes,
+// so something must be done, and if pitcher pitches balls, compensation is needed.
+static void handle_strikes_and_balls(StateInfo* stateInfo, const HalfInningState* his)
 {
-    // so if there are three strikes
-    if (stateInfo->match->halfInningState.strikes >= 3) {
+    // if there are three strikes
+    if (his->strikes >= 3) {
         // We restore automatic force running to resolve control ambiguity.
         // The batter is now "forced" to run by the rules.
         int index = get_base_controller(stateInfo->match, BASE_HOME);
@@ -249,7 +262,7 @@ static void strikesAndBalls(StateInfo* stateInfo)
     if (stateInfo->match->flowControl.freeWalkCalculationMade == 0) {
         if (count_active_batting_players(stateInfo->match->playerInfo) == 1) {
             // if only one player on the field, thats the batter, and then free walks can be made after one pitch.
-            if (stateInfo->match->halfInningState.balls >= 1) {
+            if (his->balls >= 1) {
                 // calculate the index and the base.
                 calculateFreeWalk(stateInfo->match);
                 // and tell action_implementation.c to take care of the rest.
@@ -257,7 +270,7 @@ static void strikesAndBalls(StateInfo* stateInfo)
             }
         } else {
             // otherwise there is some non-batter leadrunner and he can have free walks after too balls.
-            if (stateInfo->match->halfInningState.balls >= 2) {
+            if (his->balls >= 2) {
                 // calculate the index and the base.
                 calculateFreeWalk(stateInfo->match);
                 // and tell action_implementation.c to take care of the rest.
@@ -279,165 +292,54 @@ static void strikesAndBalls(StateInfo* stateInfo)
     }
 }
 
-static int
-checkIfEndOfInning(StateInfo* stateInfo, const RefereeState* referee, MenuInfo* menuInfo, unsigned int* rng_seed)
+static int check_end_of_inning(
+    StateInfo* stateInfo, const RefereeState* referee, const Scoreboard* scoreboard, MenuInfo* menuInfo,
+    unsigned int* rng_seed
+)
 {
-    // Milestone 17.5: Timer and detection logic moved to Referee (State Machine).
-    // We only react when Referee signals RESETTING (State 2).
+    // Scoreboard advancement and period logic handled by referee at DETECTED→RESETTING.
+    // We only react when Referee signals RESETTING: perform physical reset + menu routing.
 
-    EndOfInningTransitionState currentState = referee->endOfInningState;
-
-    if (currentState == END_INNING_STATE_RESETTING) {
-        int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
-        int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-
-        stateInfo->match->scoreboard.inning++;
-        // if first period ending
-        if (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod ||
-            (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod - 1 &&
-             stateInfo->match->scoreboard.teams[catchingTeamIndex].runs >
-                 stateInfo->match->scoreboard.teams[battingTeamIndex].runs)) {
-            int i;
-            stateInfo->match->scoreboard.period = 1;
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].period0Runs = stateInfo->match->scoreboard.teams[i].runs;
-                stateInfo->match->scoreboard.teams[i].runs = 0;
-            }
-            if (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod - 1) {
-                stateInfo->match->scoreboard.inning++; // have to skip the last half-inning
-            }
-            menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
-            stateInfo->screen = SCREEN_MAIN_MENU;
-            stateInfo->changeScreen = 1;
-            stateInfo->updated = 0;
-        }
-        // if second period ending
-        else if (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod * 2 ||
-                 (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod * 2 - 1 &&
-                  (stateInfo->match->scoreboard.teams[catchingTeamIndex].runs >
-                       stateInfo->match->scoreboard.teams[battingTeamIndex].runs ||
-                   (stateInfo->match->scoreboard.teams[catchingTeamIndex].period0Runs >
-                        stateInfo->match->scoreboard.teams[battingTeamIndex].period0Runs &&
-                    stateInfo->match->scoreboard.teams[catchingTeamIndex].runs ==
-                        stateInfo->match->scoreboard.teams[battingTeamIndex].runs)))) {
-            int i;
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].period1Runs = stateInfo->match->scoreboard.teams[i].runs;
-            }
-
-            int team0period0runs = stateInfo->match->scoreboard.teams[0].period0Runs;
-            int team0period1runs = stateInfo->match->scoreboard.teams[0].period1Runs;
-            int team1period0runs = stateInfo->match->scoreboard.teams[1].period0Runs;
-            int team1period1runs = stateInfo->match->scoreboard.teams[1].period1Runs;
-            // is the game over already?
-            if (team0period0runs >= team1period0runs && team0period1runs >= team1period1runs &&
-                (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-                int winner = 0;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            } else if (team0period0runs <= team1period0runs && team0period1runs <= team1period1runs &&
-                       (team0period0runs != team1period0runs || team0period1runs != team1period1runs)) {
-                int winner = 1;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            } else {
-                stateInfo->match->scoreboard.period = 2;
-                menuInfo->mode = MENU_ENTRY_SUPER_INNING;
-            }
-            if (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod * 2 - 1) {
-                stateInfo->match->scoreboard.inning++; // have to skip the last half-inning
-            }
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].runs = 0;
-            }
-            stateInfo->screen = SCREEN_MAIN_MENU;
-            stateInfo->changeScreen = 1;
-            stateInfo->updated = 0;
-        }
-        // if super inning ending
-        else if (stateInfo->match->scoreboard.inning == stateInfo->match->scoreboard.halfInningsInPeriod * 2 + 2) {
-            int i;
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].period2Runs = stateInfo->match->scoreboard.teams[i].runs;
-            }
-            // is the game over already?
-            if (stateInfo->match->scoreboard.teams[0].runs > stateInfo->match->scoreboard.teams[1].runs) {
-                int winner = 0;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            } else if (stateInfo->match->scoreboard.teams[0].runs < stateInfo->match->scoreboard.teams[1].runs) {
-                int winner = 1;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            }
-            // if not, we move to homerun-batting contest
-            else {
-                // TRANSITION: Super Inning → Homerun Contest
-                // We preserve batterOrder (jersey assignments) across this transition.
-                // Players keep the jersey numbers (1-9 for regulars, 0 for jokers)
-                // they had in the super inning. This is realistic - teams don't
-                // change shirts between super inning and homerun contest.
-                // The batterOrder is NOT reset here or in the menu.
-                stateInfo->match->scoreboard.period = 4;
-                menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
-            }
-
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].runs = 0;
-            }
-
-            stateInfo->screen = SCREEN_MAIN_MENU;
-            stateInfo->changeScreen = 1;
-            stateInfo->updated = 0;
-        }
-        // is homerun-batting contest moving to next stage or ending
-        else if (stateInfo->match->scoreboard.period >= 4 && (stateInfo->match->scoreboard.inning) % 2 == 0) {
-            int i;
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].period3Runs += stateInfo->match->scoreboard.teams[i].runs;
-            }
-            // is the game over already?
-            if (stateInfo->match->scoreboard.teams[0].period3Runs > stateInfo->match->scoreboard.teams[1].period3Runs) {
-                int winner = 0;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            } else if (stateInfo->match->scoreboard.teams[0].period3Runs <
-                       stateInfo->match->scoreboard.teams[1].period3Runs) {
-                int winner = 1;
-                populateGameConclusion(stateInfo, winner);
-                menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            } else {
-                // TRANSITION: Homerun Contest Round N → Round N+1
-                // We continue with the same batterOrder (jersey assignments).
-                // Players keep their jerseys across all homerun contest rounds.
-                // +=2 because we want to use 4, 6, 8... for homerun batting contest periods
-                // as we dont want to mess the team ordering when
-                // calculating those battingTeamIndices.
-                stateInfo->match->scoreboard.period += 2;
-                menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
-            }
-
-            for (i = 0; i < 2; i++) {
-                stateInfo->match->scoreboard.teams[i].runs = 0;
-            }
-
-            stateInfo->screen = SCREEN_MAIN_MENU;
-            stateInfo->changeScreen = 1;
-            stateInfo->updated = 0;
-        }
-        if (stateInfo->screen != SCREEN_MAIN_MENU) {
-            reset_for_new_half_inning(stateInfo, rng_seed);
-            // NOTE: Referee scan happens at RESETTING→NONE (next frame).
-            // Consolidation does NOT call into referee state — ownership boundary.
-        }
-        return 1; // Signal that we reset
+    if (referee->endOfInningState != END_INNING_STATE_RESETTING) {
+        return 0;
     }
-    return 0; // No reset
+
+    PeriodTransitionType transition = referee->periodTransition;
+
+    if (transition == PERIOD_TRANSITION_NONE) {
+        // Normal next-inning within same period — just reset physical world
+        reset_for_new_half_inning(stateInfo, rng_seed);
+    } else {
+        // Period transition — route to appropriate menu
+        switch (transition) {
+        case PERIOD_TRANSITION_INTER_PERIOD:
+            menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
+            break;
+        case PERIOD_TRANSITION_SUPER_INNING:
+            menuInfo->mode = MENU_ENTRY_SUPER_INNING;
+            break;
+        case PERIOD_TRANSITION_HOMERUN_CONTEST:
+            menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
+            break;
+        case PERIOD_TRANSITION_GAME_OVER:
+            populate_game_conclusion(stateInfo, scoreboard, referee->periodTransitionWinner);
+            menuInfo->mode = MENU_ENTRY_GAME_OVER;
+            break;
+        default:
+            break;
+        }
+        stateInfo->screen = SCREEN_MAIN_MENU;
+        stateInfo->changeScreen = 1;
+        stateInfo->updated = 0;
+    }
+
+    return 1; // Signal that we handled end-of-inning
 }
 
-static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, unsigned int* rng_seed)
+static int
+check_next_pair(StateInfo* stateInfo, const RefereeState* referee, const Scoreboard* scoreboard, unsigned int* rng_seed)
 {
-    if (stateInfo->match->scoreboard.period >= 4) {
+    if (scoreboard->period >= 4) {
 
         // Milestone 17.5: Timer and logic moved to Referee (State Machine).
         // We only react when Referee signals RESETTING (State 2).
@@ -447,8 +349,7 @@ static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, un
         if (currentState == HR_PAIR_STATE_RESETTING) {
 
             // if equality holds, ending of inning will load the settings.
-            if (stateInfo->match->homeRunContestState.runnerBatterPairCounter !=
-                stateInfo->match->scoreboard.pairCount) {
+            if (stateInfo->match->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
                 // Physical Reset for Next Pair
                 reset_for_next_pair(stateInfo, rng_seed);
             }
@@ -458,16 +359,16 @@ static int checkIfNextPair(StateInfo* stateInfo, const RefereeState* referee, un
     return 0; // No reset
 }
 
-static void populateGameConclusion(StateInfo* stateInfo, int winner)
+static void populate_game_conclusion(StateInfo* stateInfo, const Scoreboard* scoreboard, int winner)
 {
     stateInfo->gameConclusion->winner = winner;
-    stateInfo->gameConclusion->isCupGame = stateInfo->match->scoreboard.isCupGame;
-    stateInfo->gameConclusion->period0Runs[0] = stateInfo->match->scoreboard.teams[0].period0Runs;
-    stateInfo->gameConclusion->period0Runs[1] = stateInfo->match->scoreboard.teams[1].period0Runs;
-    stateInfo->gameConclusion->period1Runs[0] = stateInfo->match->scoreboard.teams[0].period1Runs;
-    stateInfo->gameConclusion->period1Runs[1] = stateInfo->match->scoreboard.teams[1].period1Runs;
-    stateInfo->gameConclusion->period2Runs[0] = stateInfo->match->scoreboard.teams[0].period2Runs;
-    stateInfo->gameConclusion->period2Runs[1] = stateInfo->match->scoreboard.teams[1].period2Runs;
-    stateInfo->gameConclusion->period3Runs[0] = stateInfo->match->scoreboard.teams[0].period3Runs;
-    stateInfo->gameConclusion->period3Runs[1] = stateInfo->match->scoreboard.teams[1].period3Runs;
+    stateInfo->gameConclusion->isCupGame = scoreboard->isCupGame;
+    stateInfo->gameConclusion->period0Runs[0] = scoreboard->teams[0].period0Runs;
+    stateInfo->gameConclusion->period0Runs[1] = scoreboard->teams[1].period0Runs;
+    stateInfo->gameConclusion->period1Runs[0] = scoreboard->teams[0].period1Runs;
+    stateInfo->gameConclusion->period1Runs[1] = scoreboard->teams[1].period1Runs;
+    stateInfo->gameConclusion->period2Runs[0] = scoreboard->teams[0].period2Runs;
+    stateInfo->gameConclusion->period2Runs[1] = scoreboard->teams[1].period2Runs;
+    stateInfo->gameConclusion->period3Runs[0] = scoreboard->teams[0].period3Runs;
+    stateInfo->gameConclusion->period3Runs[1] = scoreboard->teams[1].period3Runs;
 }

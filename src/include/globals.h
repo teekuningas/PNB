@@ -314,6 +314,16 @@ typedef enum {
     END_INNING_STATE_RESETTING = 2
 } EndOfInningTransitionState;
 
+// Period transition result — set by referee at DETECTED→RESETTING,
+// read by consolidation to determine menu/screen routing.
+typedef enum {
+    PERIOD_TRANSITION_NONE = 0, // Normal next-inning (no menu, just physical reset)
+    PERIOD_TRANSITION_INTER_PERIOD, // Period 0→1 transition
+    PERIOD_TRANSITION_SUPER_INNING, // Period 1→2 transition (super inning)
+    PERIOD_TRANSITION_HOMERUN_CONTEST, // Period 2→4 or round→round+2
+    PERIOD_TRANSITION_GAME_OVER // Game ended (winner stored separately)
+} PeriodTransitionType;
+
 // Player status enum - replaces flag-based status tracking
 typedef enum {
     PLAYER_STATUS_ACTIVE = 0, // Playing normally, no special status
@@ -368,6 +378,8 @@ typedef struct _RefereeState {
 
     EndOfInningTransitionState endOfInningState; // End-of-inning transition state
     int endInningTimer; // Timer for end-of-inning transition
+    PeriodTransitionType periodTransition; // Result of period logic (set at DETECTED→RESETTING)
+    int periodTransitionWinner; // Winner index (valid when periodTransition == GAME_OVER)
 
     // Run of Honor tracking (Homerun Contest)
     int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
