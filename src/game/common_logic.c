@@ -459,7 +459,7 @@ void prepare_batter(MatchSession* match)
 }
 // so here we calculate index and base of the player who is the leadrunner so that
 // we can move him if thats the decision.
-void calculate_free_walk(MatchSession* match)
+void calculate_free_walk(MatchSession* match, const RefereeState* referee)
 {
     int i;
     BaseID maxBaseAtPitchStart = BASE_NONE;
@@ -490,14 +490,14 @@ void calculate_free_walk(MatchSession* match)
             // Use base_cmp to compare bases semantically (replaces >=)
             if (base_cmp(currentBaseId, maxBaseId) >= 0) {
                 if (currentBaseId == maxBaseId) {
-                    if (base_cmp(match->referee.battingPlayers[index].baseAtPitchStart, maxBaseAtPitchStart) > 0) {
+                    if (base_cmp(referee->battingPlayers[index].baseAtPitchStart, maxBaseAtPitchStart) > 0) {
                         maxBaseId = currentBaseId;
-                        maxBaseAtPitchStart = match->referee.battingPlayers[index].baseAtPitchStart;
+                        maxBaseAtPitchStart = referee->battingPlayers[index].baseAtPitchStart;
                         maxIndex = index;
                     }
                 } else {
                     maxBaseId = currentBaseId;
-                    maxBaseAtPitchStart = match->referee.battingPlayers[index].baseAtPitchStart;
+                    maxBaseAtPitchStart = referee->battingPlayers[index].baseAtPitchStart;
                     maxIndex = index;
                 }
             }
@@ -795,7 +795,7 @@ void reset_flow_state(MatchSession* match)
 
     // Subsystem initialization
     consolidation_init(&(match->gameFlowState));
-    initGameManipulation(&(match->gameFlowState));
+    init_game_manipulation(&(match->gameFlowState));
 
     // Camera
     match->cameraState.homeRunCameraFlag = 0;

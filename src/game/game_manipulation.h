@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-void gameManipulation(StateInfo* stateInfo);
-void initGameManipulation(GameFlowState* gameFlowState);
+void game_manipulation(StateInfo* stateInfo);
+void init_game_manipulation(GameFlowState* gameFlowState);
 
 #endif /* GAME_MANIPULATION_H */

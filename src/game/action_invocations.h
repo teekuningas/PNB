@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-void initActionInvocations(StateInfo* stateInfo);
-void actionInvocations(StateInfo* stateInfo);
+void init_action_invocations(StateInfo* stateInfo);
+void action_invocations(StateInfo* stateInfo);
 
 #endif /* ACTION_INVOCATIONS_H */

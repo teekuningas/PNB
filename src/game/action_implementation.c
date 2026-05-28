@@ -28,7 +28,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base);
 static void updateMeters(StateInfo* stateInfo);
 static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed);
 
-void initActionImplementation(StateInfo* stateInfo)
+void init_action_implementation(StateInfo* stateInfo)
 {
     // just initialize everyone of these static variables to zero
     int i;
@@ -53,7 +53,7 @@ void initActionImplementation(StateInfo* stateInfo)
     initBattingAI(&(stateInfo->match->aiState));
 }
 
-void actionImplementation(StateInfo* stateInfo, unsigned int* rng_seed)
+void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     int i;
 

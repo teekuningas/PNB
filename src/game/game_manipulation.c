@@ -43,7 +43,7 @@ static void rankPlayersAndMoveThem(StateInfo* stateInfo);
 static void updateModels(StateInfo* stateInfo);
 static void updateBallHomeStatus(StateInfo* stateInfo);
 
-void gameManipulation(StateInfo* stateInfo)
+void game_manipulation(StateInfo* stateInfo)
 {
     updateBallStatus(
         stateInfo->match, stateInfo->fieldPositions, &(stateInfo->match->gameFlowState)
@@ -67,7 +67,7 @@ void gameManipulation(StateInfo* stateInfo)
     updateModels(stateInfo);
 }
 
-void initGameManipulation(GameFlowState* gameFlowState)
+void init_game_manipulation(GameFlowState* gameFlowState)
 {
     gameFlowState->closeToGround = 0;
 }

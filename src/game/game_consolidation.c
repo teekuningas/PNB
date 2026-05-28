@@ -29,8 +29,9 @@ static void update_game_flow(
 static void check_next_batter_decision(
     MatchSession* match, const RefereeState* referee, const BetweenPitchState* bps, const Scoreboard* scoreboard
 );
-static void
-handle_strikes_and_balls(MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his);
+static void handle_strikes_and_balls(
+    MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
+);
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
     GameConclusion* game_conclusion, const RefereeState* referee, const Scoreboard* scoreboard, MenuInfo* menuInfo,
@@ -197,7 +198,7 @@ static void update_game_flow(
     }
 
     check_next_batter_decision(match, referee, bps, scoreboard);
-    handle_strikes_and_balls(match, field_positions, his);
+    handle_strikes_and_balls(match, field_positions, his, referee);
 }
 
 static void check_next_batter_decision(
@@ -254,8 +255,9 @@ static void check_next_batter_decision(
 
 // Here we handle strikes and balls related consequences. Batter can't have more than 3 strikes,
 // so something must be done, and if pitcher pitches balls, compensation is needed.
-static void
-handle_strikes_and_balls(MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his)
+static void handle_strikes_and_balls(
+    MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
+)
 {
     // if there are three strikes
     if (his->strikes >= 3) {
@@ -277,13 +279,13 @@ handle_strikes_and_balls(MatchSession* match, const FieldPositions* field_positi
         if (count_active_batting_players(match->playerInfo) == 1) {
             // if only one player on the field, thats the batter, and then free walks can be made after one pitch.
             if (his->balls >= 1) {
-                calculate_free_walk(match);
+                calculate_free_walk(match, referee);
                 match->flowControl.waitingForFreeWalkDecision = 1;
             }
         } else {
             // otherwise there is some non-batter leadrunner and he can have free walks after two balls.
             if (his->balls >= 2) {
-                calculate_free_walk(match);
+                calculate_free_walk(match, referee);
                 match->flowControl.waitingForFreeWalkDecision = 1;
             }
         }

@@ -30,7 +30,7 @@ void run_to_previous_base(
 void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index);
 void changePlayer(MatchSession* match);
 void prepare_batter(MatchSession* match);
-void calculate_free_walk(MatchSession* match);
+void calculate_free_walk(MatchSession* match, const RefereeState* referee);
 void initialize_spatial_player_information(
     MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
 );

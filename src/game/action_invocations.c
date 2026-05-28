@@ -18,12 +18,12 @@ static void checkBatterAngle(StateInfo* stateInfo, int increase, int decrease, T
 static void checkSwing(StateInfo* stateInfo, int key, TeamControlMode control);
 static void checkBattingTeamRun(StateInfo* stateInfo, int key, TeamControlMode control, BaseID base);
 
-void initActionInvocations(StateInfo* stateInfo)
+void init_action_invocations(StateInfo* stateInfo)
 {
     // Placeholder for... future?
 }
 
-void actionInvocations(StateInfo* stateInfo)
+void action_invocations(StateInfo* stateInfo)
 {
     int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     TeamControlMode battingControl = stateInfo->match->scoreboard.teams[battingTeamIndex].control;

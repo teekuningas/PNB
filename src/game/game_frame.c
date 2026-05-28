@@ -2,8 +2,8 @@
     game_frame.c — The per-frame game pipeline.
 
     Each frame executes 7 stages in strict order:
-      1. Input           (actionInvocations)
-      2. Physics & Logic (actionImplementation + gameManipulation)
+      1. Input           (action_invocations)
+      2. Physics & Logic (action_implementation + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    PlayerCounters, Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
@@ -47,13 +47,13 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    initActionImplementation(stateInfo);
-    initActionInvocations(stateInfo);
+    init_action_implementation(stateInfo);
+    init_action_invocations(stateInfo);
 
     // Consolidated Init (Game Flow + Reset Logic)
     consolidation_init(&(stateInfo->match->gameFlowState));
 
-    initGameManipulation(&(stateInfo->match->gameFlowState));
+    init_game_manipulation(&(stateInfo->match->gameFlowState));
 
     return 0;
 }
@@ -62,11 +62,11 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
 {
     if (stateInfo->match->flowControl.pause == 0) {
         // 1. Inputs
-        actionInvocations(stateInfo);
+        action_invocations(stateInfo);
 
         // 2. Physics & Logic
-        actionImplementation(stateInfo, rng_seed);
-        gameManipulation(stateInfo);
+        action_implementation(stateInfo, rng_seed);
+        game_manipulation(stateInfo);
 
         // 3. Referee (Legal State Authority)
         // Runs AFTER physics to ensure legal state matches physical events
