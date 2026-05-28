@@ -41,8 +41,10 @@ static void update_initialization_events(
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
-                // Advance batting order for non-joker batters
-                if (game->playerInfo[i].bTPI.joker != JOKER_AVAILABLE) {
+                // Advance batting order only for regular (non-joker) batters.
+                // Note: joker status is JOKER_USED by this point (batting_system sets it
+                // before firing the event), so we check for JOKER_REGULAR specifically.
+                if (game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
                     scoreboard->teams[battingTeamIndex].batterOrderIndex =
                         (scoreboard->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
                 }
