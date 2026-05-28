@@ -95,7 +95,6 @@ void selectBatter(StateInfo* stateInfo)
         return;
     }
 
-    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
     // index cannot be -1 as we couldn't have got this far if it was
     int index = stateInfo->match->pII.batterSelectionIndex;
     if (index != -1) {
@@ -130,9 +129,7 @@ void selectBatter(StateInfo* stateInfo)
         } else {
             // otherwise he is not a joker player and we must decrease the amount of those.
             stateInfo->match->playerCounters.nonJokerPlayersLeft--;
-            // also the batterIndex will increase(mod 9)
-            stateInfo->match->scoreboard.teams[battingTeamIndex].batterOrderIndex =
-                (stateInfo->match->scoreboard.teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
+            // batterOrderIndex is now advanced by the referee on batterEntered event
         }
         // move player to default batter ready position
         target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);

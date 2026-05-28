@@ -30,16 +30,22 @@ static void clear_between_pitch_state(BetweenPitchState* bps)
 
 static void update_initialization_events(
     const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState,
-    HalfInningState* halfInningState
+    HalfInningState* halfInningState, Scoreboard* scoreboard
 )
 {
     const MatchSession* game = stateInfo->match;
 
     // Batter Entered: Initialize safety for the new batter and reset count
     if (events->batterEntered) {
+        int battingTeamIndex = get_batting_team_index(scoreboard);
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                // Advance batting order for non-joker batters
+                if (game->playerInfo[i].bTPI.joker != JOKER_AVAILABLE) {
+                    scoreboard->teams[battingTeamIndex].batterOrderIndex =
+                        (scoreboard->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
+                }
             }
         }
         // Reset strikes and balls for the new batter
@@ -1115,7 +1121,7 @@ void update_referee(
 
     // 0. Initialization Events (Milestone 17)
     update_initialization_events(
-        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState
+        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, scoreboard
     );
 
     // 1. Where is the ball?
