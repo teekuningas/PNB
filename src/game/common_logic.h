@@ -15,30 +15,38 @@ void stopMovement(PlayerInfo* playerInfo, int index);
 void smoothOutMovement(MatchSession* match); // Still needs ActionFlags
 void stopTargetLookingPlayer(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index);
 void setOrientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i);
-void runToTarget(PlayerInfo* playerInfo, int index, Vector3D* target);
-void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D* target);
-void movePlayerOut(
-    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index
+void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
+void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
+void move_player_out(
+    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
 );
 void moveRankedToCatch(MatchSession* match);
-void runToNextBase(
-    MatchSession* match, FieldPositions* fieldPositions, int index, BaseID base
+void run_to_next_base(
+    MatchSession* match, const FieldPositions* field_positions, int index, BaseID base
 ); // Needs GameControl, PRAI
-void runToPreviousBase(MatchSession* match, FieldPositions* fieldPositions, int index, BaseID base); // Needs PRAI
-void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index);
+void run_to_previous_base(
+    MatchSession* match, const FieldPositions* field_positions, int index, BaseID base
+); // Needs PRAI
+void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index);
 void changePlayer(MatchSession* match);
-void prepareBatter(MatchSession* match);
-void calculateFreeWalk(MatchSession* match);
-void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fieldPositions, unsigned int* rng_seed);
-void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard* scoreboard, TeamData* teamData);
-void initializeNonCriticalPlayerInformation(MatchSession* match);
-void initializeBallInfo(MatchSession* match);
-void initializeActionInfo(MatchSession* match);
+void prepare_batter(MatchSession* match);
+void calculate_free_walk(MatchSession* match);
+void initialize_spatial_player_information(
+    MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
+);
+void initialize_inning_permanent_player_information(
+    MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
+);
+void initialize_non_critical_player_information(MatchSession* match);
+void initialize_ball_info(MatchSession* match);
+void initialize_action_info(MatchSession* match);
 void reset_flow_state(MatchSession* match);
-void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard);
-void initializeIndexInformation(MatchSession* match);
-void initializePRAIInformation(MatchSession* match);
-void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions);
+void initialize_critical_game_info(MatchSession* match, const Scoreboard* scoreboard);
+void initialize_index_information(MatchSession* match);
+void initialize_prai_information(MatchSession* match);
+void setup_homerun_physical_state(
+    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* field_positions
+);
 void clear_frame_events(GameEvents* events);
 
 #endif /* COMMON_LOGIC_H */

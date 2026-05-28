@@ -131,7 +131,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames);
 /**
  * @brief Trigger a player to start running to the next base
  *
- * This taps into the game's base-running machinery (runToNextBase)
+ * This taps into the game's base-running machinery (run_to_next_base)
  * which sets the target location and initiates movement.
  *
  * @param ctx The scenario context

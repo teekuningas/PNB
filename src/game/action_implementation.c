@@ -229,7 +229,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
                 if (currentBaseId == base) {
                     if (base != BASE_THIRD) {
                         // Start running to the next base
-                        runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, base);
+                        run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, base);
                         // Protected from wounds/tags while advancing freely
                         stateInfo->match->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
                     }
@@ -342,7 +342,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
                 if (index != -1) {
                     if (stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_ON_BASE &&
                         stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
-                        runToPreviousBase(stateInfo->match, stateInfo->fieldPositions, index, base);
+                        run_to_previous_base(stateInfo->match, stateInfo->fieldPositions, index, base);
                     }
                 }
             }
@@ -351,7 +351,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
             } else {
                 if (stateInfo->match->pendingActionState.doubleClickCounter[base] >= 0) {
                     if (index != -1) {
-                        runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, base);
+                        run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, base);
                     }
                 }
                 stateInfo->match->pendingActionState.doubleClickCounter[base] = -1;

@@ -138,7 +138,7 @@ void selectBatter(StateInfo* stateInfo)
         target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
         target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
         // move to target can take care of the rest.
-        moveToTarget(stateInfo->match->playerInfo, index, &target);
+        move_to_target(stateInfo->match->playerInfo, index, &target);
     }
 }
 
@@ -390,7 +390,7 @@ void updateBatting(StateInfo* stateInfo)
             target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(stateInfo->fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             if (batterIndex != -1) {
-                moveToTarget(stateInfo->match->playerInfo, batterIndex, &target);
+                move_to_target(stateInfo->match->playerInfo, batterIndex, &target);
             }
         }
         // so here we check if the bat hits. this event happens always the pitch has been in air
@@ -460,7 +460,9 @@ void updateBatting(StateInfo* stateInfo)
                                 int base_index = get_base_controller(stateInfo->match, BASE_HOME);
                                 stateInfo->match->pRAI.willStartRunning[0] = 0;
                                 if (base_index != -1) {
-                                    runToNextBase(stateInfo->match, stateInfo->fieldPositions, base_index, BASE_HOME);
+                                    run_to_next_base(
+                                        stateInfo->match, stateInfo->fieldPositions, base_index, BASE_HOME
+                                    );
                                     stateInfo->match->pendingActionState.runBatFlag = 1;
                                 }
                             }

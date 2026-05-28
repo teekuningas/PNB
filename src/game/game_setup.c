@@ -37,7 +37,7 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
 
     // Initialize batterOrder for ALL game modes.
     // CRITICAL: batterOrder defines the jersey numbers (1-9 for regulars, 0 for jokers)
-    // via initializeInningPermanentPlayerInformation() in common_logic.c.
+    // via initialize_inning_permanent_player_information() in common_logic.c.
     //
     // In GAME_MODE_HOMERUN_CONTEST:
     //   - batterOrder is NOT used to determine who bats (that uses batterRunnerIndices)

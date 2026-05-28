@@ -383,7 +383,7 @@ static void basemenReplacements(StateInfo* stateInfo)
             if (stateInfo->match->pII.catcherReplacerOnBaseIndex[i] != stateInfo->match->pII.controlIndex) {
                 if (stateInfo->match->playerInfo[stateInfo->match->pII.catcherReplacerOnBaseIndex[i]]
                         .cTPI.replacingStage == REPLACEMENT_IDLE) {
-                    moveToTarget(
+                    move_to_target(
                         stateInfo->match->playerInfo, stateInfo->match->pII.catcherReplacerOnBaseIndex[i],
                         &(stateInfo->match->playerInfo[stateInfo->match->pII.catcherOnBaseIndex[i]].tPI.homeLocation)
                     );
@@ -407,7 +407,7 @@ static void basemenReplacements(StateInfo* stateInfo)
                         .cTPI.replacingStage != REPLACEMENT_IDLE) {
                     if (stateInfo->match->playerInfo[stateInfo->match->pII.catcherReplacerOnBaseIndex[i]]
                             .cTPI.replacingBase == (BaseID)i) {
-                        moveToTarget(
+                        move_to_target(
                             stateInfo->match->playerInfo, stateInfo->match->pII.catcherReplacerOnBaseIndex[i],
                             &(stateInfo->match->playerInfo[stateInfo->match->pII.catcherReplacerOnBaseIndex[i]]
                                   .tPI.homeLocation)
@@ -434,7 +434,7 @@ static void moveIdlingPlayersToHomeLocation(StateInfo* stateInfo)
                 if (stateInfo->match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
                     if (stateInfo->match->playerInfo[i].cTPI.replacingStage == REPLACEMENT_IDLE) {
                         if (stateInfo->match->playerInfo[i].cTPI.busyCatching == 0) {
-                            moveToTarget(
+                            move_to_target(
                                 stateInfo->match->playerInfo, i, &(stateInfo->match->playerInfo[i].tPI.homeLocation)
                             );
                         }
@@ -670,7 +670,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
                 if (isVectorSmallEnoughCircleXZ(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
                     int needToStop = 1;
                     if (i == activeBatterIndex && stateInfo->match->playerRuntime[i].goingForward == 0) {
-                        prepareBatter(stateInfo->match);
+                        prepare_batter(stateInfo->match);
                     } else {
                         // select correct model for catchers.
                         if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
@@ -707,7 +707,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
                                 continue;
                             }
                             // and move to target
-                            moveToTarget(stateInfo->match->playerInfo, i, &target);
+                            move_to_target(stateInfo->match->playerInfo, i, &target);
                             continue;
                         }
                         // if we are legally running bases
@@ -746,7 +746,7 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
                                     // if we are moving forward and have not passed the flag yet, change the direction
                                     if (stateInfo->match->playerRuntime[i].passedPathPoint == 0) {
                                         stateInfo->match->playerRuntime[i].passedPathPoint = 1;
-                                        runToNextBase(stateInfo->match, stateInfo->fieldPositions, i, BASE_THIRD);
+                                        run_to_next_base(stateInfo->match, stateInfo->fieldPositions, i, BASE_THIRD);
                                         needToStop = 0;
                                     }
                                     // if have passed the flag we are at homebase, so set the base to 4
@@ -765,14 +765,16 @@ static void playerLocationOrientationAndTargets(StateInfo* stateInfo)
                                         stateInfo->match->playerRuntime[i].arrivedToBase = 1;
                                         target.x = stateInfo->match->playerInfo[i].tPI.homeLocation.x;
                                         target.z = stateInfo->match->playerInfo[i].tPI.homeLocation.z;
-                                        moveToTarget(stateInfo->match->playerInfo, i, &target);
+                                        move_to_target(stateInfo->match->playerInfo, i, &target);
                                         needToStop = 0;
                                     }
                                 } else {
                                     // if we are coming back and have passed the point, change direction
                                     if (stateInfo->match->playerRuntime[i].passedPathPoint == 1) {
                                         stateInfo->match->playerRuntime[i].passedPathPoint = 0;
-                                        runToPreviousBase(stateInfo->match, stateInfo->fieldPositions, i, BASE_THIRD);
+                                        run_to_previous_base(
+                                            stateInfo->match, stateInfo->fieldPositions, i, BASE_THIRD
+                                        );
                                         needToStop = 0;
                                     } else {
                                         // otherwise we are at the third base

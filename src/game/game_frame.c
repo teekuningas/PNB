@@ -81,10 +81,19 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // - Handles Physical Resets (Foul Play)
         // - Enforces Legal State (Outs, Scoring)
         // Referee-owned state (bps, his) passed as const — consolidation reads but never writes.
+        ConsolidationOutput consolidation_output;
         consolidation_update(
-            stateInfo, &game->referee, &game->betweenPitchState, &game->halfInningState, &game->scoreboard, menuInfo,
-            rng_seed
+            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, &game->referee,
+            &game->betweenPitchState, &game->halfInningState, &game->scoreboard, menuInfo, rng_seed,
+            &consolidation_output
         );
+
+        // Handle screen transition requests from consolidation
+        if (consolidation_output.request_screen_change) {
+            stateInfo->screen = consolidation_output.target_screen;
+            stateInfo->changeScreen = 1;
+            stateInfo->updated = 0;
+        }
 
         // 5. Referee Finalize (Post-Consolidation)
         // Handles RESETTING→NONE transitions after consolidation has performed

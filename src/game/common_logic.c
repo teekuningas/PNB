@@ -107,7 +107,7 @@ void setOrientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
     }
 }
 
-void runToTarget(PlayerInfo* playerInfo, int index, Vector3D* target)
+void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
 {
     if (index != -1) {
         float dx;
@@ -148,7 +148,7 @@ void runToTarget(PlayerInfo* playerInfo, int index, Vector3D* target)
     this function puts player with index in the argument moving to some specified
     target by walking. is used for both fielders and batting team.
 */
-void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D* target)
+void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
 {
     if (index != -1) {
         // cant start this if throw is going on. when ball is thrown the
@@ -193,24 +193,26 @@ void moveToTarget(PlayerInfo* playerInfo, int index, Vector3D* target)
 }
 // so this function is called when outs happen but also when wounds happen. it just moves
 // players out of the field and then to homebase.
-void movePlayerOut(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index)
+void move_player_out(
+    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
+)
 {
     Vector3D target;
     // we are walking
     playerInfo[index].cPI.running = 0;
     // left or right?
     if (playerInfo[index].tPI.location.x < 0) {
-        target.x = fieldPositions->leftPoint.x - 5.0f;
-        target.z = fieldPositions->leftPoint.z + 10.0f;
+        target.x = field_positions->leftPoint.x - 5.0f;
+        target.z = field_positions->leftPoint.z + 10.0f;
     } else {
-        target.x = fieldPositions->rightPoint.x + 5.0f;
-        target.z = fieldPositions->rightPoint.z + 10.0f;
+        target.x = field_positions->rightPoint.x + 5.0f;
+        target.z = field_positions->rightPoint.z + 10.0f;
     }
     // path point not passed yet.
     playerRuntime[index].passedPathPoint = 0;
 
     // and move to target takes care of the rest.
-    moveToTarget(playerInfo, index, &target);
+    move_to_target(playerInfo, index, &target);
 }
 // so we have the ranked fielders-array and those are players who are somewhat important in relation
 // to ball's current location and velocity. so its natural that we have those players moving to catch
@@ -240,43 +242,43 @@ void moveRankedToCatch(MatchSession* match)
                     // set busycatching flag, and move player towards the target point
                     // that has been specified beforehand.
                     match->playerInfo[match->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
-                    moveToTarget(match->playerInfo, index, &match->cameraState.targetPoint);
+                    move_to_target(match->playerInfo, index, &match->cameraState.targetPoint);
                 }
             }
         }
     }
 }
 
-void runToNextBase(MatchSession* match, FieldPositions* fieldPositions, int index, BaseID base)
+void run_to_next_base(MatchSession* match, const FieldPositions* field_positions, int index, BaseID base)
 {
     if (index != -1) {
         Vector3D target;
         // first we select the target corresponding to base argument
         if (base == BASE_HOME) {
             if (match->pRAI.batterCanAdvance == 0) return;
-            target.x = fieldPositions->firstBaseRun.x;
-            target.z = fieldPositions->firstBaseRun.z;
+            target.x = field_positions->firstBaseRun.x;
+            target.z = field_positions->firstBaseRun.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.
             match->pRAI.batterReady = 0;
             match->pRAI.battingGoingOn = 0;
         } else if (base == BASE_FIRST) {
-            target.x = fieldPositions->secondBaseRun.x;
-            target.z = fieldPositions->secondBaseRun.z;
+            target.x = field_positions->secondBaseRun.x;
+            target.z = field_positions->secondBaseRun.z;
         } else if (base == BASE_SECOND) {
-            target.x = fieldPositions->thirdBaseRun.x;
-            target.z = fieldPositions->thirdBaseRun.z;
+            target.x = field_positions->thirdBaseRun.x;
+            target.z = field_positions->thirdBaseRun.z;
         } else if (base == BASE_THIRD) {
             // if we are running home, there is the "flag" point, and we must change the direction there.
             // how it matters here is that if we have already passed the flag, we must run towards homebase,
             // if not, we must run towards flag.
             if (match->playerRuntime[index].passedPathPoint == 0) {
-                target.x = fieldPositions->runLeftPoint.x;
-                target.z = fieldPositions->runLeftPoint.z;
+                target.x = field_positions->runLeftPoint.x;
+                target.z = field_positions->runLeftPoint.z;
 
                 match->cameraState.homeRunCameraFlag = 1;
             } else if (match->playerRuntime[index].passedPathPoint == 1) {
-                target.x = fieldPositions->homeRunPoint.x;
-                target.z = fieldPositions->homeRunPoint.z;
+                target.x = field_positions->homeRunPoint.x;
+                target.z = field_positions->homeRunPoint.z;
             } else {
                 return;
             }
@@ -295,12 +297,12 @@ void runToNextBase(MatchSession* match, FieldPositions* fieldPositions, int inde
         }
         // and we are moving forward
         match->playerRuntime[index].goingForward = 1;
-        // and runToTarget can continue the job with index and the already set target.
-        runToTarget(match->playerInfo, index, &target);
+        // and run_to_target can continue the job with index and the already set target.
+        run_to_target(match->playerInfo, index, &target);
     }
 }
 
-void runToPreviousBase(MatchSession* match, FieldPositions* fieldPositions, int index, BaseID base)
+void run_to_previous_base(MatchSession* match, const FieldPositions* field_positions, int index, BaseID base)
 {
     if (index != -1) {
         Vector3D target;
@@ -309,22 +311,22 @@ void runToPreviousBase(MatchSession* match, FieldPositions* fieldPositions, int 
         // the previous base
         if (base == BASE_HOME) {
             // so when batter returns, he will go to his ready position again.
-            target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
         } else if (base == BASE_FIRST) {
-            target.x = fieldPositions->firstBaseRun.x;
-            target.z = fieldPositions->firstBaseRun.z;
+            target.x = field_positions->firstBaseRun.x;
+            target.z = field_positions->firstBaseRun.z;
         } else if (base == BASE_SECOND) {
-            target.x = fieldPositions->secondBaseRun.x;
-            target.z = fieldPositions->secondBaseRun.z;
+            target.x = field_positions->secondBaseRun.x;
+            target.z = field_positions->secondBaseRun.z;
         } else if (base == BASE_THIRD) {
             // here we again select the target by our current location relative to flag
             if (match->playerRuntime[index].passedPathPoint == 0) {
-                target.x = fieldPositions->thirdBaseRun.x;
-                target.z = fieldPositions->thirdBaseRun.z;
+                target.x = field_positions->thirdBaseRun.x;
+                target.z = field_positions->thirdBaseRun.z;
             } else if (match->playerRuntime[index].passedPathPoint == 1) {
-                target.x = fieldPositions->runLeftPoint.x;
-                target.z = fieldPositions->runLeftPoint.z;
+                target.x = field_positions->runLeftPoint.x;
+                target.z = field_positions->runLeftPoint.z;
             } else {
                 return;
             }
@@ -342,13 +344,13 @@ void runToPreviousBase(MatchSession* match, FieldPositions* fieldPositions, int 
             match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
             match->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
         }
-        // and runToTarget can handle the rest
+        // and run_to_target can handle the rest
 
-        runToTarget(match->playerInfo, index, &target);
+        run_to_target(match->playerInfo, index, &target);
     }
 }
 
-void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositions* fieldPositions, int index)
+void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index)
 {
     if (index != -1) {
         int done = 0;
@@ -360,23 +362,23 @@ void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositi
             // using firstBase  instead of location in the difference is because we want the step size to stay
             // same
             target.x = playerInfo[index].tPI.location.x +
-                       LEAD_STEP * (fieldPositions->secondBaseRun.x - fieldPositions->firstBaseRun.x);
+                       LEAD_STEP * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x);
             target.z = playerInfo[index].tPI.location.z +
-                       LEAD_STEP * (fieldPositions->secondBaseRun.z - fieldPositions->firstBaseRun.z);
+                       LEAD_STEP * (field_positions->secondBaseRun.z - field_positions->firstBaseRun.z);
             // if we go over half way, we disallow any leading, you should just run from there.
             if (playerInfo[index].tPI.location.x >
-                fieldPositions->firstBaseRun.x +
-                    0.5f * (fieldPositions->secondBaseRun.x - fieldPositions->firstBaseRun.x))
+                field_positions->firstBaseRun.x +
+                    0.5f * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x))
                 done = 1;
         } else if (playerInfo[index].bTPI.baseId == BASE_SECOND) {
             // same as in previous but from second to third base
             target.x = playerInfo[index].tPI.location.x +
-                       LEAD_STEP * (fieldPositions->thirdBaseRun.x - fieldPositions->secondBaseRun.x);
+                       LEAD_STEP * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x);
             target.z = playerInfo[index].tPI.location.z +
-                       LEAD_STEP * (fieldPositions->thirdBaseRun.z - fieldPositions->secondBaseRun.z);
+                       LEAD_STEP * (field_positions->thirdBaseRun.z - field_positions->secondBaseRun.z);
             if (playerInfo[index].tPI.location.x <
-                fieldPositions->secondBaseRun.x +
-                    0.5f * (fieldPositions->thirdBaseRun.x - fieldPositions->secondBaseRun.x))
+                field_positions->secondBaseRun.x +
+                    0.5f * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x))
                 done = 1;
         } else {
             done = 1;
@@ -384,7 +386,7 @@ void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, FieldPositi
         // if our
         if (done == 0) {
             // walk to our target
-            moveToTarget(playerInfo, index, &target);
+            move_to_target(playerInfo, index, &target);
             // now we in fact are leading
             playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
             // but we dont set going forward flag.
@@ -439,7 +441,7 @@ void changePlayer(MatchSession* match)
     }
 }
 
-void prepareBatter(MatchSession* match)
+void prepare_batter(MatchSession* match)
 {
     int batterIndex = get_active_batter_index(match);
     if (batterIndex != -1) {
@@ -457,7 +459,7 @@ void prepareBatter(MatchSession* match)
 }
 // so here we calculate index and base of the player who is the leadrunner so that
 // we can move him if thats the decision.
-void calculateFreeWalk(MatchSession* match)
+void calculate_free_walk(MatchSession* match)
 {
     int i;
     BaseID maxBaseAtPitchStart = BASE_NONE;
@@ -512,10 +514,12 @@ void calculateFreeWalk(MatchSession* match)
     positions and orientations on the field and ball looks like its thrown to pitcher. Models
     are updated also. Before calling this the fielding team must have its position-attributes filled.
 */
-void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fieldPositions, unsigned int* rng_seed)
+void initialize_spatial_player_information(
+    MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
+)
 {
     int i;
-    Vector3D* fieldPosition;
+    const Vector3D* fieldPosition;
     int battingTeamPlacement[PLAYERS_IN_TEAM + JOKER_COUNT];
     // create array that has 0-11 in random order to give batting players in home
     // circle a nicer visual feelin'
@@ -548,12 +552,12 @@ void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fie
         match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
 
         match->playerInfo[i].tPI.homeLocation.x =
-            (float)(fieldPositions->pitchPlate.x +
+            (float)(field_positions->pitchPlate.x +
                     (HOME_RADIUS)*radiusFix *
                         cos(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
         match->playerInfo[i].tPI.homeLocation.y = BALL_HEIGHT_WITH_PLAYER;
         match->playerInfo[i].tPI.homeLocation.z =
-            (float)(fieldPositions->pitchPlate.z +
+            (float)(field_positions->pitchPlate.z +
                     (HOME_RADIUS)*radiusFix *
                         sin(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
         match->playerInfo[i].tPI.location.x = match->playerInfo[i].tPI.homeLocation.x;
@@ -572,34 +576,34 @@ void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fie
 
         switch (i - 12) {
         case 0:
-            fieldPosition = &(fieldPositions->pitcher);
+            fieldPosition = &(field_positions->pitcher);
             break;
         case 1:
-            fieldPosition = &(fieldPositions->firstBase);
+            fieldPosition = &(field_positions->firstBase);
             break;
         case 2:
-            fieldPosition = &(fieldPositions->secondBase);
+            fieldPosition = &(field_positions->secondBase);
             break;
         case 3:
-            fieldPosition = &(fieldPositions->thirdBase);
+            fieldPosition = &(field_positions->thirdBase);
             break;
         case 4:
-            fieldPosition = &(fieldPositions->bottomRightCatcher);
+            fieldPosition = &(field_positions->bottomRightCatcher);
             break;
         case 5:
-            fieldPosition = &(fieldPositions->middleLeftCatcher);
+            fieldPosition = &(field_positions->middleLeftCatcher);
             break;
         case 6:
-            fieldPosition = &(fieldPositions->middleRightCatcher);
+            fieldPosition = &(field_positions->middleRightCatcher);
             break;
         case 7:
-            fieldPosition = &(fieldPositions->backLeftCatcher);
+            fieldPosition = &(field_positions->backLeftCatcher);
             break;
         case 8:
-            fieldPosition = &(fieldPositions->backRightCatcher);
+            fieldPosition = &(field_positions->backRightCatcher);
             break;
         default:
-            fieldPosition = &(fieldPositions->pitchPlate);
+            fieldPosition = &(field_positions->pitchPlate);
             break;
         }
         match->playerInfo[i].tPI.homeLocation.x = fieldPosition->x;
@@ -631,7 +635,9 @@ void initializeSpatialPlayerInformation(MatchSession* match, FieldPositions* fie
 // here we initialize players' stat information, and team information, whether they are joker or not,
 // their number etc. all is information that is not going to be reinitialized when out of bounds -
 // situation happens
-void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard* scoreboard, TeamData* teamData)
+void initialize_inning_permanent_player_information(
+    MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
+)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
     int i;
@@ -655,9 +661,9 @@ void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard*
             match->pII.jokerIndices[jokerCounter] = i;
             jokerCounter++;
         }
-        match->playerInfo[i].bTPI.name = teamData[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].name;
-        match->playerInfo[i].bTPI.power = teamData[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
-        match->playerInfo[i].bTPI.speed = teamData[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
+        match->playerInfo[i].bTPI.name = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].name;
+        match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
+        match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
     }
     // initialize fielders
     for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -691,7 +697,7 @@ void initializeInningPermanentPlayerInformation(MatchSession* match, Scoreboard*
     }
 }
 // information that can be flushed
-void initializeNonCriticalPlayerInformation(MatchSession* match)
+void initialize_non_critical_player_information(MatchSession* match)
 {
     int i, j;
     for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -709,7 +715,7 @@ void initializeNonCriticalPlayerInformation(MatchSession* match)
         match->playerInfo[i].cPI.looksForTarget = 0;
         match->playerInfo[i].cPI.lastLastLocationUpdate = 1;
 
-        // Critical: throwRecoil must be 0 for all players so moveToTarget doesn't block
+        // Critical: throwRecoil must be 0 for all players so move_to_target doesn't block
         match->playerInfo[i].cTPI.throwRecoil = 0;
 
         if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
@@ -735,7 +741,7 @@ void initializeNonCriticalPlayerInformation(MatchSession* match)
     }
 }
 // ball flags
-void initializeBallInfo(MatchSession* match)
+void initialize_ball_info(MatchSession* match)
 {
     match->ballInfo.visible = 1;
     match->ballInfo.moving = 1;
@@ -746,7 +752,7 @@ void initializeBallInfo(MatchSession* match)
     match->ballInfo.lastLastLocationUpdate = 0;
 }
 // action flag initialization
-void initializeActionInfo(MatchSession* match)
+void initialize_action_info(MatchSession* match)
 {
     int i;
 
@@ -813,7 +819,7 @@ void clear_frame_events(GameEvents* events)
 }
 
 // these should be kept when foul play
-void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard)
+void initialize_critical_game_info(MatchSession* match, const Scoreboard* scoreboard)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
 
@@ -823,7 +829,7 @@ void initializeCriticalGameInfo(MatchSession* match, Scoreboard* scoreboard)
         scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
 }
 // index information initialization, can be called when out of bounds
-void initializeIndexInformation(MatchSession* match)
+void initialize_index_information(MatchSession* match)
 {
     match->pII.hasBallIndex = -1;
     match->pII.lastHadBallIndex = -1;
@@ -831,7 +837,7 @@ void initializeIndexInformation(MatchSession* match)
     match->pII.changePlayerArrayIndex = -1;
 }
 // player-related action information initialization, can be called when foul play.
-void initializePRAIInformation(MatchSession* match)
+void initialize_prai_information(MatchSession* match)
 {
     int i;
     match->pRAI.pitchState = PITCH_STAGE_NONE;
@@ -849,7 +855,9 @@ void initializePRAIInformation(MatchSession* match)
     }
 }
 
-void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, FieldPositions* fieldPositions)
+void setup_homerun_physical_state(
+    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* field_positions
+)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
     Vector3D target;
@@ -865,18 +873,18 @@ void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, Fiel
             match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
             match->playerInfo[batterIndex].bTPI.number = match->homeRunContestState.runnerBatterPairCounter + 1;
             // move player to default batter ready position
-            target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            moveToTarget(match->playerInfo, batterIndex, &target);
+            target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            move_to_target(match->playerInfo, batterIndex, &target);
         }
         // runner
         if (runnerIndex != -1) {
             match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
             match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
 
-            match->playerInfo[runnerIndex].tPI.location.x = fieldPositions->thirdBaseRun.x;
-            match->playerInfo[runnerIndex].tPI.location.y = fieldPositions->thirdBaseRun.y;
-            match->playerInfo[runnerIndex].tPI.location.z = fieldPositions->thirdBaseRun.z;
+            match->playerInfo[runnerIndex].tPI.location.x = field_positions->thirdBaseRun.x;
+            match->playerInfo[runnerIndex].tPI.location.y = field_positions->thirdBaseRun.y;
+            match->playerInfo[runnerIndex].tPI.location.z = field_positions->thirdBaseRun.z;
             match->playerInfo[runnerIndex].tPI.lastLocation.x = match->playerInfo[runnerIndex].tPI.location.x;
             match->playerInfo[runnerIndex].tPI.lastLocation.y = match->playerInfo[runnerIndex].tPI.location.y;
             match->playerInfo[runnerIndex].tPI.lastLocation.z = match->playerInfo[runnerIndex].tPI.location.z;
@@ -890,10 +898,10 @@ void setupHomerunPhysicalState(MatchSession* match, Scoreboard* scoreboard, Fiel
             int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
             if (index != -1) {
                 match->playerInfo[index].tPI.location.x =
-                    fieldPositions->thirdBaseRun.x - 2.0f -
+                    field_positions->thirdBaseRun.x - 2.0f -
                     (i - (match->homeRunContestState.runnerBatterPairCounter + 1)) * 1.5f;
-                match->playerInfo[index].tPI.location.y = fieldPositions->thirdBaseRun.y;
-                match->playerInfo[index].tPI.location.z = fieldPositions->thirdBaseRun.z;
+                match->playerInfo[index].tPI.location.y = field_positions->thirdBaseRun.y;
+                match->playerInfo[index].tPI.location.z = field_positions->thirdBaseRun.z;
                 match->playerInfo[index].tPI.lastLocation.x = match->playerInfo[index].tPI.location.x;
                 match->playerInfo[index].tPI.lastLocation.y = match->playerInfo[index].tPI.location.y;
                 match->playerInfo[index].tPI.lastLocation.z = match->playerInfo[index].tPI.location.z;

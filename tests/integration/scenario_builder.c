@@ -38,7 +38,7 @@ ScenarioContext* create_scenario(void)
     // In tests, we don't have a game loop that responds to changeScreen=1,
     // so manually call reset_for_new_half_inning to initialize physical+flow+team,
     // then referee_reset_for_new_inning to clear all referee state (from-menu init).
-    reset_for_new_half_inning(ctx->state, &ctx->seed);
+    reset_for_new_half_inning(ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, &ctx->seed);
     referee_reset_for_new_inning(
         &ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState
     );
@@ -192,7 +192,7 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
     if (!ctx || !ctx->state) return;
 
     // Call the game's base-running machinery
-    runToNextBase(ctx->state->match, ctx->state->fieldPositions, playerIndex, fromBase);
+    run_to_next_base(ctx->state->match, ctx->state->fieldPositions, playerIndex, fromBase);
 }
 
 void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase)
@@ -200,13 +200,13 @@ void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, 
     if (!ctx || !ctx->state) return;
 
     // Call the game's base-running machinery
-    // Note: runToPreviousBase treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base 3).
-    // But the game logic's `runToPreviousBase` actually takes `BaseID base` as the "current base" or "base we are
-    // retreating FROM"? Let's check common_logic.c: void runToPreviousBase(MatchSession* match, FieldPositions*
+    // Note: run_to_previous_base treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base
+    // 3). But the game logic's `run_to_previous_base` actually takes `BaseID base` as the "current base" or "base we
+    // are retreating FROM"? Let's check common_logic.c: void run_to_previous_base(MatchSession* match, FieldPositions*
     // fieldPositions, int index, BaseID base) if(base == BASE_HOME) ... target = ready pos if(base == BASE_FIRST) ...
     // target = firstBaseRun So `base` is the destination base.
 
-    runToPreviousBase(ctx->state->match, ctx->state->fieldPositions, playerIndex, toBase);
+    run_to_previous_base(ctx->state->match, ctx->state->fieldPositions, playerIndex, toBase);
 }
 
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
@@ -253,10 +253,18 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
             ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
             &ctx->state->match->scoreboard, &game->homeRunContestState
         );
+        ConsolidationOutput consolidation_output;
         consolidation_update(
-            ctx->state, &game->referee, &game->betweenPitchState, &game->halfInningState, &game->scoreboard, &ctx->menu,
-            &ctx->seed
+            game, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, &game->referee,
+            &game->betweenPitchState, &game->halfInningState, &game->scoreboard, &ctx->menu, &ctx->seed,
+            &consolidation_output
         );
+        // Handle screen transition in test context
+        if (consolidation_output.request_screen_change) {
+            ctx->state->screen = consolidation_output.target_screen;
+            ctx->state->changeScreen = 1;
+            ctx->state->updated = 0;
+        }
 
         // Foul Play Reset is now handled by consolidation_update. Manual logic removed.
 

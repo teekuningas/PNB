@@ -160,7 +160,7 @@ void releasePitch(StateInfo* stateInfo)
     // set the velocity by our dx and dy
     setVectorXYZ(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);
     // .. and move the pitcher
-    moveToTarget(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex, &target);
+    move_to_target(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex, &target);
     // set lastHadBallIndex so that pitcher wont catch the ball without it hitting ground first
     stateInfo->match->pII.lastHadBallIndex =
         stateInfo->match->pII.hasBallIndex; // to allow ball to avoid catching by same player when thrown
@@ -191,7 +191,7 @@ void releasePitch(StateInfo* stateInfo)
             int index = get_base_controller(stateInfo->match, (BaseID)i);
             stateInfo->match->pRAI.willStartRunning[i] = 0;
             if (index != -1) {
-                runToNextBase(stateInfo->match, stateInfo->fieldPositions, index, (BaseID)i);
+                run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, (BaseID)i);
             }
         }
     }
