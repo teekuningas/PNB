@@ -7,11 +7,16 @@
 #include "render.h"
 
 // Initialize menuData and prepare menu
-int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs);
+int init_main_menu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs);
 // Update and draw take explicit MenuData pointer for state
 // Update and draw now explicitly take MenuData pointer
-void updateMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates, unsigned int* rng_seed);
-void drawMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm, RenderState* rs);
-int cleanMainMenu(MenuData* menuData);
+void update_main_menu(
+    StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates, unsigned int* rng_seed
+);
+void draw_main_menu(
+    const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm,
+    RenderState* rs
+);
+int clean_main_menu(MenuData* menuData);
 
 #endif /* MAIN_MENU_H */

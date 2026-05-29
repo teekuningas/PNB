@@ -5,7 +5,7 @@
 #include "loadobj.h"
 
 // Using a simple fixed-size array for now. Can be improved later.
-#define MAX_RESOURCES 256
+#define MAX_RESOURCES 1024
 
 // Opaque struct for the public API
 typedef struct ResourceManager ResourceManager;
@@ -15,6 +15,9 @@ void resource_manager_shutdown(ResourceManager* rm);
 
 // Eager-loads all menu resources.
 int resource_manager_load_all_menu_assets(ResourceManager* rm);
+
+// Eager-loads all game resources.
+int resource_manager_load_all_game_assets(ResourceManager* rm);
 
 // Getter functions to retrieve already-loaded resources.
 GLuint resource_manager_get_texture(ResourceManager* rm, const char* path);

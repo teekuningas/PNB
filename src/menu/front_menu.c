@@ -6,75 +6,81 @@
 #include "resource_manager.h"
 #include "menu_helpers.h"
 
-void initFrontMenuState(FrontMenuState *state)
+void init_front_menu_state(FrontMenuState* state)
 {
-	state->pointer = 0;
-	state->rem = 4;
+    state->pointer = 0;
+    state->rem = 4;
 }
 
-MenuStage updateFrontMenu(FrontMenuState *state, KeyStates *keyStates, StateInfo* stateInfo)
+MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates, StateInfo* stateInfo)
 {
-	if(keyStates->released[0][KEY_DOWN]) {
-		state->pointer +=1;
-		state->pointer = (state->pointer+state->rem)%state->rem;
-	}
-	if(keyStates->released[0][KEY_UP]) {
-		state->pointer -=1;
-		state->pointer = (state->pointer+state->rem)%state->rem;
-	}
-	if (keyStates->released[0][KEY_2]) {
-		if (state->pointer == 0) {
-			return MENU_STAGE_TEAM_SELECTION;
-		} else if (state->pointer == 1) {
-			return MENU_STAGE_CUP;
-		} else if (state->pointer == 2) {
-			return MENU_STAGE_HELP;
-		} else if (state->pointer == 3) {
-			return MENU_STAGE_QUIT;
-		}
-	}
-	return MENU_STAGE_FRONT;
+    if (keyStates->released[0][KEY_DOWN]) {
+        state->pointer += 1;
+        state->pointer = (state->pointer + state->rem) % state->rem;
+    }
+    if (keyStates->released[0][KEY_UP]) {
+        state->pointer -= 1;
+        state->pointer = (state->pointer + state->rem) % state->rem;
+    }
+    if (keyStates->released[0][KEY_2]) {
+        if (state->pointer == 0) {
+            return MENU_STAGE_TEAM_SELECTION;
+        } else if (state->pointer == 1) {
+            return MENU_STAGE_CUP;
+        } else if (state->pointer == 2) {
+            return MENU_STAGE_HELP;
+        } else if (state->pointer == 3) {
+            return MENU_STAGE_QUIT;
+        }
+    }
+    return MENU_STAGE_FRONT;
 }
 // New orthographic-only front menu rendering
-void drawFrontMenu(const FrontMenuState *state, const RenderState* rs, ResourceManager* rm)
+void draw_front_menu(const FrontMenuState* state, const RenderState* rs, ResourceManager* rm)
 {
-	// --- Layout Constants ---
-	const float title_y = VIRTUAL_HEIGHT * 0.1f;
-	const float menu_start_y = VIRTUAL_HEIGHT * 0.4f;
-	const float menu_spacing = VIRTUAL_HEIGHT * 0.1f;
-	const float title_fontsize = 120.0f;
-	const float menu_fontsize = 60.0f;
+    // --- Layout Constants ---
+    const float title_y = VIRTUAL_HEIGHT * 0.1f;
+    const float menu_start_y = VIRTUAL_HEIGHT * 0.4f;
+    const float menu_spacing = VIRTUAL_HEIGHT * 0.1f;
+    const float title_fontsize = 120.0f;
+    const float menu_fontsize = 60.0f;
 
-	// Setup orthographic 2D projection and draw shared menu background
-	begin_2d_render(rs);
-	drawMenuLayout2D(rm, rs);
+    // Setup orthographic 2D projection and draw shared menu background
+    begin_2d_render(rs);
+    draw_menu_layout_2d(rm, rs);
 
-	// 2. Draw Batter and Catcher
-	// Re-calculate size and position to better match the original perspective layout
-	float imgHeight = VIRTUAL_HEIGHT * 0.8f;
-	float yPos = VIRTUAL_HEIGHT - imgHeight - (VIRTUAL_HEIGHT * 0.10f); // 10% from bottom
+    // 2. Draw Batter and Catcher
+    // Re-calculate size and position to better match the original perspective layout
+    float imgHeight = VIRTUAL_HEIGHT * 0.8f;
+    float yPos = VIRTUAL_HEIGHT - imgHeight - (VIRTUAL_HEIGHT * 0.10f); // 10% from bottom
 
-	// Batter on left
-	float batterImgWidth = imgHeight * 0.5f;
-	float batterX = VIRTUAL_WIDTH * 0.1f;
-	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/batter.tga"), batterX, yPos, batterImgWidth, imgHeight);
+    // Batter on left
+    float batterImgWidth = imgHeight * 0.5f;
+    float batterX = VIRTUAL_WIDTH * 0.1f;
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/batter.tga"), batterX, yPos, batterImgWidth, imgHeight
+    );
 
-	// Catcher on right
-	float catcherImgWidth = imgHeight * 0.8f;
-	float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
-	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/catcher.tga"), catcherX, yPos, catcherImgWidth, imgHeight);
+    // Catcher on right
+    float catcherImgWidth = imgHeight * 0.8f;
+    float catcherX = VIRTUAL_WIDTH * 1.05f - catcherImgWidth;
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/catcher.tga"), catcherX, yPos, catcherImgWidth, imgHeight
+    );
 
-	// 3. Draw Text and Arrow
-	const float center_x = VIRTUAL_WIDTH / 2.0f;
-	draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Play", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Help", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
-	draw_text_2d("Quit", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+    // 3. Draw Text and Arrow
+    const float center_x = VIRTUAL_WIDTH / 2.0f;
+    draw_text_2d("P N B", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+    draw_text_2d("Play", center_x, menu_start_y, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+    draw_text_2d("Cup", center_x, menu_start_y + menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+    draw_text_2d("Help", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
+    draw_text_2d("Quit", center_x, menu_start_y + 3 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 
-	// Draw Arrow
-	float arrow_size = 80.0f;
-	float arrow_x = center_x + 120.0f;
-	float arrow_y = menu_start_y + (state->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
-	draw_texture_2d(resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size);
+    // Draw Arrow
+    float arrow_size = 80.0f;
+    float arrow_x = center_x + 120.0f;
+    float arrow_y = menu_start_y + (state->pointer * menu_spacing) - (arrow_size - menu_fontsize) / 2.0f;
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/arrow.tga"), arrow_x, arrow_y, arrow_size, arrow_size
+    );
 }
