@@ -6,7 +6,7 @@
 /**
  * @brief Determines if the current period should end after a run is scored.
  *
- * In pesäpallo, a period ends when the batting team takes the lead in the
+ * In pesäpallo, a period ends when the batting team takes the lead_from_base in the
  * last half-inning (the catching team won't bat again, so they can't catch up).
  *
  * Three period types are handled:

@@ -4,8 +4,8 @@
 #include "globals.h"
 #include "resource_manager.h"
 
-int initBall(ResourceManager* rm);
-void drawBall(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
-int cleanBall();
+int init_ball(ResourceManager* rm);
+void draw_ball(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
+int clean_ball();
 
 #endif /* BALL_H */

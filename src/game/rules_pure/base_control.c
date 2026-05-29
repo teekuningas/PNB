@@ -9,7 +9,7 @@ int get_base_controller(const MatchSession* game, BaseID base)
     // Player must BOTH have safety at the base AND be physically at the base.
     // This handles vapaataival (free walk) where player has safety immediately
     // but doesn't "control" the base until arrival.
-    // If multiple players qualify (e.g. Tuplahaava pending), prioritize the lead runner.
+    // If multiple players qualify (e.g. Tuplahaava pending), prioritize the lead_from_base runner.
     int bestCandidate = -1;
     int highestBaseAtPitch = -2;
 

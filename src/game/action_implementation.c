@@ -130,7 +130,7 @@ void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed)
     }
 
     // if change player key has been pressed
-    if (stateInfo->match->aF.cTAF.changePlayer == ACTION_TRIGGER_START) {
+    if (stateInfo->match->aF.cTAF.change_player == ACTION_TRIGGER_START) {
         // no one must have the ball
         if (stateInfo->match->pII.hasBallIndex == -1) {
             // we go to next element in changePlayerArray.
@@ -145,9 +145,9 @@ void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed)
             }
             // and then set the flag, so that other parts of code can handle
             // the job
-            changePlayer(stateInfo->match);
+            change_player(stateInfo->match);
         }
-        stateInfo->match->aF.cTAF.changePlayer = ACTION_IDLE;
+        stateInfo->match->aF.cTAF.change_player = ACTION_IDLE;
         stateInfo->match->aF.cTAF.actionKeyLock = 0;
     }
     // if drop ball key has been pressed, try dropping
@@ -303,14 +303,14 @@ static void changeBatter(StateInfo* stateInfo)
     stateInfo->match->pII.batterSelectionIndex = index;
 }
 
-void genericSlingBall(BallInfo* ballInfo, float x, float y, float z)
+void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 {
     // Make ball visible and moving
     ballInfo->visible = 1;
     ballInfo->moving = 1;
 
     // Set the velocity
-    setVectorXYZ(&(ballInfo->velocity), x, y, z);
+    set_vector_xyz(&(ballInfo->velocity), x, y, z);
 }
 
 // so baserunning.
@@ -328,7 +328,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
                     if (index != -1 && stateInfo->match->playerInfo[index].cPI.moving == 0) {
                         stateInfo->match->pRAI.willStartRunning[base] = 1;
                         if (base == BASE_FIRST || base == BASE_SECOND) {
-                            lead(
+                            lead_from_base(
                                 stateInfo->match->playerInfo, stateInfo->match->playerRuntime,
                                 stateInfo->fieldPositions, index
                             );

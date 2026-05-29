@@ -10,7 +10,7 @@ int should_period_end(
             (sb->inning + 1) % sb->halfInningsInPeriod == 0 || sb->inning + 1 == sb->halfInningsInPeriod * 2 + 2;
 
         if (isLastHalfInning) {
-            // Batting team has taken the lead — opponent won't bat again
+            // Batting team has taken the lead_from_base — opponent won't bat again
             if (batting_runs > catching_runs) return 1;
 
             // Period 1 tiebreaker: overall score tied, but period 0 winner is ahead

@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
     draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
-    result = initGameScreen(&stateInfo, resourceManager);
+    result = init_game_screen(&stateInfo, resourceManager);
     if (result != 0) {
         printf("Could not init game screen. Exiting.");
         return -1;
@@ -189,7 +189,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, 
     updateSound(stateInfo);
     switch (stateInfo->screen) {
     case SCREEN_GAME:
-        updateGameScreen(stateInfo, &menuInfo, rng_seed);
+        update_game_screen(stateInfo, &menuInfo, rng_seed);
         break;
     case SCREEN_MAIN_MENU:
         updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
@@ -206,8 +206,8 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
 {
     switch (stateInfo->screen) {
     case SCREEN_GAME:
-        // Everything within drawGameScreen is currently drawn in 3d context
-        drawGameScreen(stateInfo, alpha, rm, rs);
+        // Everything within draw_game_screen is currently drawn in 3d context
+        draw_game_screen(stateInfo, alpha, rm, rs);
         break;
     case SCREEN_MAIN_MENU:
         drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
@@ -312,7 +312,7 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
         printf("Could not clean player data completely\n");
         retvalue = -1;
     }
-    result = cleanGameScreen(stateInfo);
+    result = clean_game_screen(stateInfo);
     if (result != 0) {
         printf("Could not clean game screen completely\n");
         retvalue = -1;
@@ -352,7 +352,7 @@ static void applyFixture(
         fixture_create_super_inning(
             &gameSetup, request->team1, request->team2, request->team1_control, request->team2_control
         );
-        initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
+        initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (super inning = period 2)
         stateInfo->match->scoreboard.isCupGame = 0;
@@ -377,7 +377,7 @@ static void applyFixture(
         fixture_create_homerun_contest(
             &gameSetup, request->team1, request->team2, request->team1_control, request->team2_control
         );
-        initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
+        initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (homerun = period 4)
         stateInfo->match->scoreboard.isCupGame = 0;
@@ -404,7 +404,7 @@ static void applyFixture(
         fixture_create_cup_final_super_inning(
             &gameSetup, request->team1, request->team2, request->team1_control, request->team2_control
         );
-        initializeGameFromMenu(stateInfo, &gameSetup, rng_seed);
+        initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set up the tournament context with a full, plausible history using the new API
         stateInfo->match->scoreboard.isCupGame = 1;

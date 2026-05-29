@@ -54,7 +54,7 @@ int test_should_period_end_mid_period(void)
     // Mid-period (inning 1), batting leads — should NOT trigger
     sb.inning = 1;
     sb.period = 0;
-    ASSERT_EQ(0, should_period_end(&sb, 5, 2, 0, 0), "Period does NOT end mid-period even with big lead");
+    ASSERT_EQ(0, should_period_end(&sb, 5, 2, 0, 0), "Period does NOT end mid-period even with big lead_from_base");
 
     // Inning 2 (3rd half-inning of period 0)
     sb.inning = 2;

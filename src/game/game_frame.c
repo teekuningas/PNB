@@ -33,15 +33,15 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
 
-    // The initPlayer is now handled by initPlayerRenderer, which is called by initPlayer in player.c
-    // No direct call to initPlayerRenderer here.
-    result = initPlayer(stateInfo, rm);
+    // The init_player is now handled by init_player_renderer, which is called by init_player in player.c
+    // No direct call to init_player_renderer here.
+    result = init_player(stateInfo, rm);
     if (result != 0) {
         printf("Could not init player. Exiting.");
         return -1;
     }
 
-    result = initBall(rm);
+    result = init_ball(rm);
     if (result != 0) {
         printf("Could not init ball. Exiting.");
         return -1;
@@ -121,21 +121,21 @@ void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* 
     // players and ball are the building blocks of all the action on the screen.
     if (stateInfo->match->flowControl.pause == 0) {
 #ifndef NO_RENDER
-        drawPlayerRenderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
-        drawBall(&(stateInfo->match->ballInfo), alpha, rm);
+        draw_player_renderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
+        draw_ball(&(stateInfo->match->ballInfo), alpha, rm);
 #endif
     }
 }
 int clean_game_frame(StateInfo* stateInfo)
 {
     int result;
-    result = cleanBall();
+    result = clean_ball();
     if (result != 0) {
         printf("Could not clean ball properly.\n");
         return -1;
     }
 #ifndef NO_RENDER
-    result = cleanPlayerRenderer();
+    result = clean_player_renderer();
     if (result != 0) {
         printf("Could not clean player properly.\n");
         return -1;

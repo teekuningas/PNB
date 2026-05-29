@@ -7,7 +7,7 @@
  * @brief Initializes the RefereeState structure.
  * Sets all bases to BASE_NONE (-1) instead of 0.
  */
-void initializeRefereeState(RefereeState* referee);
+void initialize_referee_state(RefereeState* referee);
 
 /**
  * @brief Initialize referee by scanning the physical world.

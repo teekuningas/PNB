@@ -22,7 +22,7 @@ static void drawFence(ResourceManager* rm);
 static int initPlate(ResourceManager* rm);
 static void drawPlate(ResourceManager* rm);
 
-int initImmutableWorld(StateInfo* stateInfo, ResourceManager* rm)
+int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
 
@@ -46,7 +46,7 @@ int initImmutableWorld(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void drawImmutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
+void draw_immutable_world(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
     drawGround(stateInfo, rm);
     drawFence(rm);
@@ -153,7 +153,7 @@ static void drawGround(const StateInfo* stateInfo, ResourceManager* rm)
     }
 }
 // cleaning is good for people.
-int cleanImmutableWorld(StateInfo* stateInfo)
+int clean_immutable_world(StateInfo* stateInfo)
 {
     return 0;
 }

@@ -5,12 +5,12 @@
 #include "../core/resource_manager.h"
 
 // Function to initialize player rendering resources (textures, models)
-int initPlayerRenderer(ResourceManager* rm);
+int init_player_renderer(ResourceManager* rm);
 
 // Function to draw players
-void drawPlayerRenderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm);
+void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm);
 
 // Function to clean up player rendering resources
-int cleanPlayerRenderer(void);
+int clean_player_renderer(void);
 
 #endif // PLAYER_RENDERER_H

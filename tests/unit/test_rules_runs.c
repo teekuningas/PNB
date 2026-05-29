@@ -1,4 +1,3 @@
-#include "test_rules_runs.h"
 #include "test_helpers.h"
 #include "rules_runs.h"
 
@@ -9,7 +8,7 @@
 // int is_run_of_honor(BaseID player_base, BaseID player_original_base, int player_is_wounded, int
 // has_made_run_on_third_base);
 
-static int test_is_regular_run()
+int test_is_regular_run()
 {
     // Basic run: Player arrives at home base (BASE_HOME_SCORED), not wounded
     ASSERT_EQ(1, is_regular_run(BASE_HOME_SCORED, BASE_FIRST, 0), "Should score run when arriving at home base");
@@ -26,7 +25,7 @@ static int test_is_regular_run()
     return TEST_PASSED;
 }
 
-static int test_is_run_of_honor()
+int test_is_run_of_honor()
 {
     // Run of Honor: Batter (baseAtPitchStart BASE_HOME) arrives at 3rd base (BASE_THIRD)
     ASSERT_EQ(1, is_run_of_honor(BASE_THIRD, BASE_HOME, 0, 0), "Should score run of honor");
@@ -51,10 +50,4 @@ static int test_is_run_of_honor()
     ASSERT_EQ(0, is_run_of_honor(BASE_SECOND, BASE_HOME, 0, 0), "Cannot score run of honor at 2nd base");
 
     return TEST_PASSED;
-}
-
-void run_rules_runs_tests()
-{
-    RUN_TEST(test_is_regular_run);
-    RUN_TEST(test_is_run_of_honor);
 }

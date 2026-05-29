@@ -5,12 +5,12 @@
 #include "../core/resource_manager.h"
 
 // Function to initialize ball rendering resources (textures, models)
-int initBallRenderer(ResourceManager* rm);
+int init_ball_renderer(ResourceManager* rm);
 
 // Function to draw the ball
-void drawBallRenderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
+void draw_ball_renderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm);
 
 // Function to clean up ball rendering resources
-int cleanBallRenderer(void);
+int clean_ball_renderer(void);
 
 #endif // BALL_RENDERER_H

@@ -7,13 +7,13 @@
 #define BALL_SCALE BALL_SIZE
 #define SHADOW_CONSTANT 0.2f
 
-int initBallRenderer(ResourceManager* rm)
+int init_ball_renderer(ResourceManager* rm)
 {
     return 0;
 }
 
 // Function to draw the ball
-void drawBallRenderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm)
+void draw_ball_renderer(const BallInfo* ballInfo, double alpha, ResourceManager* rm)
 {
     if (ballInfo->visible == 1) {
         // we draw ball and its shadow. shadow's x offset is just proportional to ball's height.
@@ -44,7 +44,7 @@ void drawBallRenderer(const BallInfo* ballInfo, double alpha, ResourceManager* r
     }
 }
 
-int cleanBallRenderer(void)
+int clean_ball_renderer(void)
 {
     return 0;
 }

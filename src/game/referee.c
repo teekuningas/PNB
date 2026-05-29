@@ -340,7 +340,7 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
     }
 
     // Sort by baseAtPitchStart (HIGHER bases first: THIRD=3, SECOND=2, FIRST=1, HOME=0)
-    // So lead runners (higher bases) processed first, rear runners processed last and win conflicts
+    // So lead_from_base runners (higher bases) processed first, rear runners processed last and win conflicts
     for (int i = 0; i < playerCount - 1; i++) {
         for (int j = i + 1; j < playerCount; j++) {
             BaseID baseI = referee->battingPlayers[sortedPlayers[i]].baseAtPitchStart;
@@ -993,7 +993,7 @@ static void clear_referee_for_inning_end(
 
 void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps)
 {
-    initializeRefereeState(ref); // existing: clears all player tracking + state machines
+    initialize_referee_state(ref); // existing: clears all player tracking + state machines
 
     his->outs = 0;
     his->balls = 0;
@@ -1416,7 +1416,7 @@ void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
     const MatchSession* game = stateInfo->match;
 
     // Full reset first
-    initializeRefereeState(referee);
+    initialize_referee_state(referee);
 
     // Scan physical world and initialize safety based on player positions
     if (game->scoreboard.period >= 4) {
@@ -1465,7 +1465,7 @@ int is_player_marked_for_wound(const RefereeState* ref, int playerIndex)
     );
 }
 
-void initializeRefereeState(RefereeState* referee)
+void initialize_referee_state(RefereeState* referee)
 {
     int i;
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {

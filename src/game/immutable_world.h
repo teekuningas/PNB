@@ -4,8 +4,8 @@
 #include "globals.h"
 #include "resource_manager.h"
 
-int initImmutableWorld(StateInfo* stateInfo, ResourceManager* rm);
-void drawImmutableWorld(const StateInfo* stateInfo, double alpha, ResourceManager* rm);
-int cleanImmutableWorld(StateInfo* stateInfo);
+int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm);
+void draw_immutable_world(const StateInfo* stateInfo, double alpha, ResourceManager* rm);
+int clean_immutable_world(StateInfo* stateInfo);
 
 #endif /* IMMUTABLE_WORLD_H */

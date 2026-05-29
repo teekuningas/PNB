@@ -41,7 +41,7 @@ void startPitch(StateInfo* stateInfo)
         stateInfo->match->flowControl.waitingForFreeWalkDecision == 0) {
         // we stop the pitcher if we were moving with it when we started
         if (stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.moving == 1) {
-            stopMovement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
+            stop_movement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
         }
         // we choose animation of pitcher crouching.
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_WINDUP;
@@ -60,7 +60,7 @@ void startPitch(StateInfo* stateInfo)
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.orientation.z = 0.0f;
         // ball is moved to center of the pitchPlate so that pitchs will start
         // rising from there.
-        setVectorXZ(&(stateInfo->match->ballInfo.location), 0.0f, 0.0f);
+        set_vector_xz(&(stateInfo->match->ballInfo.location), 0.0f, 0.0f);
 
         // we enter the next stage where the meter moves and user needs to
         // select the power to continue
@@ -158,7 +158,7 @@ void releasePitch(StateInfo* stateInfo)
     // This flag should only be set during the current pitch's flight, not carried over from previous pitches
     stateInfo->match->ballInfo.hitsGroundToUnWound = 0;
     // set the velocity by our dx and dy
-    setVectorXYZ(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);
+    set_vector_xyz(&(stateInfo->match->ballInfo.velocity), dx, dy, 0);
     // .. and move the pitcher
     move_to_target(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex, &target);
     // set lastHadBallIndex so that pitcher wont catch the ball without it hitting ground first

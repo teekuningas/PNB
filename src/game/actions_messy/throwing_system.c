@@ -87,7 +87,7 @@ void genericThrowRelease(StateInfo* stateInfo)
             stateInfo->match->pendingActionState.throwDirection.z / stateInfo->match->pendingActionState.throwDistance;
         stateInfo->match->pendingActionState.throwDirection.y = 0.06f;
         // ... and then launch the ball
-        genericSlingBall(
+        generic_sling_ball(
             &(stateInfo->match->ballInfo),
             stateInfo->match->pendingActionState.throwDirection.x * power * THROW_POWER_CONSTANT,
             stateInfo->match->pendingActionState.throwDirection.y +
@@ -104,12 +104,12 @@ void genericThrowRelease(StateInfo* stateInfo)
         stateInfo->match->pII.hasBallIndex = -1;
         // set running flag to 0 so that orientation will change
         stateInfo->match->playerInfo[stateInfo->match->pII.controlIndex].cPI.running = 0;
-        // set control to -1 and changePlayer to 0 as a precaution so that the player
+        // set control to -1 and change_player to 0 as a precaution so that the player
         // wouldnt be changed right away after this, as the key
-        // to do this is the same one. let the genericSlingBall handle
+        // to do this is the same one. let the generic_sling_ball handle
         // player changing.
         stateInfo->match->pII.controlIndex = -1;
-        stateInfo->match->aF.cTAF.changePlayer = 0;
+        stateInfo->match->aF.cTAF.change_player = 0;
     }
 }
 
@@ -128,7 +128,7 @@ void genericThrowLoad(StateInfo* stateInfo, BaseID base)
             // stop player if he is moving, moving won't look good as the animation
             // doesn't have foot movement
             if (stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.moving == 1) {
-                stopMovement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
+                stop_movement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
             }
             // set the animation
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_WINDUP;
@@ -206,7 +206,7 @@ void dropBall(StateInfo* stateInfo)
 
             // players' movement will be stopped when doing this, similar to throwing.
             if (stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.moving == 1) {
-                stopMovement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
+                stop_movement(stateInfo->match->playerInfo, stateInfo->match->pII.hasBallIndex);
             }
             // model is set to be the basic standing without ball model.
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
@@ -217,8 +217,8 @@ void dropBall(StateInfo* stateInfo)
             if (norm < EPSILON) norm = 1.0f;
             dx = dx / norm;
             dz = dz / norm;
-            // and use genericSlingBall again to get the ball to the world.
-            genericSlingBall(
+            // and use generic_sling_ball again to get the ball to the world.
+            generic_sling_ball(
                 &(stateInfo->match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT
             );
             // Trigger fielder selection update after drop

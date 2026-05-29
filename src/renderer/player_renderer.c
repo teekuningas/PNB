@@ -12,12 +12,12 @@
 static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type, ResourceManager* rm);
 static void modelSelection(const StateInfo* stateInfo, int index, ResourceManager* rm);
 
-int initPlayerRenderer(ResourceManager* rm)
+int init_player_renderer(ResourceManager* rm)
 {
     return 0;
 }
 
-void drawPlayerRenderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm)
+void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm)
 {
     int i;
     int j = 0;
@@ -197,7 +197,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
     }
 }
 
-int cleanPlayerRenderer(void)
+int clean_player_renderer(void)
 {
     return 0;
 }

@@ -33,7 +33,7 @@ ScenarioContext* create_scenario(void)
     setup.halfInningsInPeriod = 4;
     setup.playsFirst = 0;
 
-    initializeGameFromMenu(ctx->state, &setup, &ctx->seed);
+    initialize_game_from_menu(ctx->state, &setup, &ctx->seed);
 
     // In tests, we don't have a game loop that responds to changeScreen=1,
     // so manually call reset_for_new_half_inning to initialize physical+flow+team,
@@ -348,7 +348,7 @@ void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targ
     // Trigger fielder selection update (same as game does after throws)
     game->pRAI.refreshCatchAndChange = 1;
     game->pRAI.initPlayerSelection = 1;
-    genericSlingBall(&game->ballInfo, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
+    generic_sling_ball(&game->ballInfo, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
 }
 
 void hit_fly_ball_to_location_with_time(
@@ -385,7 +385,7 @@ void hit_fly_ball_to_location_with_time(
     game->pII.hasBallIndex = -1;
 
     // Launch
-    genericSlingBall(&game->ballInfo, vx, vy, vz);
+    generic_sling_ball(&game->ballInfo, vx, vy, vz);
 
     // Ensure ball is in "fly ball" state so a catch triggers wounding
     game->ballInfo.currentFlightHasHitGround = 0;
@@ -432,7 +432,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     game->ballInfo.location = startPos;
     game->ballInfo.lastLocation = startPos;
     game->pII.hasBallIndex = -1;
-    genericSlingBall(&game->ballInfo, vx, vy, vz);
+    generic_sling_ball(&game->ballInfo, vx, vy, vz);
     game->ballInfo.currentFlightHasHitGround = 0;
 
     // 4. Set Pitch State

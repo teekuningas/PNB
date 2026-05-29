@@ -26,7 +26,7 @@ void moveControlledPlayerToLocation(StateInfo* stateInfo, Vector3D* target)
     float dx = tx - px;
     float dz = tz - pz;
 
-    if (!isVectorSmallEnoughCircleXZ(dx, dz, 1.0f) && stateInfo->match->pendingActionState.throwGoingOn == 0) {
+    if (!is_vector_small_enough_circle_xz(dx, dz, 1.0f) && stateInfo->match->pendingActionState.throwGoingOn == 0) {
         if (stateInfo->match->aiState.moveCounter >= 10) {
             MovementKeys keys = calculate_movement_keys(dx, dz);
             // Set triggers only if NOT already moving in that direction to avoid unnecessary resets
@@ -203,8 +203,8 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aF.cTAF.dropBall = ACTION_TRIGGER_START;
             }
         }
-        // otherwise we throw or move towards a base where lead player is going. if lead player is going nowhere
-        // we take ball to home base.
+        // otherwise we throw or move towards a base where lead_from_base player is going. if lead_from_base player is
+        // going nowhere we take ball to home base.
         else {
             BaseID leadBase = BASE_NONE;
             int throwBase = 0;

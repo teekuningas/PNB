@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "batting_ai.h"
 #include "batting_ai_strategy.h"
-#include "action_implementation.h" // for flushKeys
+#include "action_implementation.h"
 #include "actions_messy/batting_system.h"
 #include "game_manipulation.h"
 #include "rng.h"

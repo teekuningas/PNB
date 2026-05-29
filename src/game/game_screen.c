@@ -24,29 +24,29 @@
 #define BASES_X 0.50f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
-static void drawSkyBox(const StateInfo* stateInfo, ResourceManager* rm);
-static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
-static int initLights(StateInfo* stateInfo);
-static void initCamSettings(StateInfo* stateInfo);
-static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed);
+static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
+static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
+static int init_lights(StateInfo* stateInfo);
+static void init_cam_settings(StateInfo* stateInfo);
+static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed);
 
-int initGameScreen(StateInfo* stateInfo, ResourceManager* rm)
+int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
 
     resource_manager_load_all_game_assets(rm);
 
-    initCamSettings(stateInfo);
+    init_cam_settings(stateInfo);
 
     stateInfo->match->uiState.lastMeterX = 0;
     stateInfo->match->uiState.lastSwingMeterX = 0;
 
-    result = initLights(stateInfo);
+    result = init_lights(stateInfo);
     if (result != 0) {
         printf("Could not init lights. Exiting.");
     }
 
-    result = initImmutableWorld(stateInfo, rm);
+    result = init_immutable_world(stateInfo, rm);
     if (result != 0) {
         printf("Could not init immutable world.");
         return -1;
@@ -61,7 +61,7 @@ int initGameScreen(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
     BallInfo* ballInfo = &(stateInfo->match->ballInfo);
     CameraState* cs = &(stateInfo->match->cameraState);
@@ -69,7 +69,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
     if (stateInfo->changeScreen == 1) {
         stateInfo->changeScreen = 0;
         stateInfo->updated = 1;
-        loadGameScreenSettings(stateInfo, rng_seed);
+        load_game_screen_settings(stateInfo, rng_seed);
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -136,7 +136,7 @@ void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rn
     update_game_frame(stateInfo, menuInfo, rng_seed);
 }
 
-void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
 {
     // Ensure the 3D rendering state is correctly set up before drawing the game screen.
     begin_3d_render(rs);
@@ -162,7 +162,7 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* r
         cs->up.z
     );
 
-    drawSkyBox(stateInfo, rm);
+    draw_skybox(stateInfo, rm);
 
     // Re-enable depth writes for the rest of the scene.
     glDepthMask(GL_TRUE);
@@ -172,16 +172,16 @@ void drawGameScreen(const StateInfo* stateInfo, double alpha, ResourceManager* r
     glEnable(GL_LIGHTING);
     glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
 
-    drawImmutableWorld(stateInfo, alpha, rm);
+    draw_immutable_world(stateInfo, alpha, rm);
     draw_game_frame(stateInfo, alpha, rm);
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
-    drawStatistics2D(stateInfo, alpha, rm, rs);
+    draw_statistics_2d(stateInfo, alpha, rm, rs);
 }
 
 // lights
-static int initLights(StateInfo* stateInfo)
+static int init_lights(StateInfo* stateInfo)
 {
     // our lighting is a point light that is so far away that its practically a directional light.
     //
@@ -207,7 +207,7 @@ static int initLights(StateInfo* stateInfo)
     return 0;
 }
 
-static void drawSkyBox(const StateInfo* stateInfo, ResourceManager* rm)
+static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
 {
     glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/skybox.tga"));
     glPushMatrix();
@@ -216,7 +216,7 @@ static void drawSkyBox(const StateInfo* stateInfo, ResourceManager* rm)
     glPopMatrix();
 }
 
-static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
 {
     char* str4;
     char str5[2] = "x";
@@ -466,11 +466,11 @@ static void drawStatistics2D(const StateInfo* stateInfo, double alpha, ResourceM
     }
 }
 
-static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
+static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     stateInfo->match->uiState.gameInfoEventTimer = -1;
     // initialize cam
-    initCamSettings(stateInfo);
+    init_cam_settings(stateInfo);
     // Physical world + flow + team setup
     reset_for_new_half_inning(stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, rng_seed);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
@@ -481,7 +481,7 @@ static void loadGameScreenSettings(StateInfo* stateInfo, unsigned int* rng_seed)
     initialize_referee(stateInfo, &stateInfo->match->referee);
 }
 
-static void initCamSettings(StateInfo* stateInfo)
+static void init_cam_settings(StateInfo* stateInfo)
 {
     CameraState* cs = &(stateInfo->match->cameraState);
 
@@ -529,11 +529,11 @@ static void initCamSettings(StateInfo* stateInfo)
     cs->statLook.z = -1.69f;
 }
 
-int cleanGameScreen(StateInfo* stateInfo)
+int clean_game_screen(StateInfo* stateInfo)
 {
     int result;
 
-    result = cleanImmutableWorld(stateInfo);
+    result = clean_immutable_world(stateInfo);
     if (result != 0) {
         printf("Could not clean immutable world properly.\n");
         return -1;

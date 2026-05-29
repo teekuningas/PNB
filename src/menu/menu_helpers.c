@@ -19,7 +19,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
 {
     switch (gameSetup->launchType) {
     case GAME_LAUNCH_NEW:
-        initializeGameFromMenu(stateInfo, gameSetup, rng_seed);
+        initialize_game_from_menu(stateInfo, gameSetup, rng_seed);
         break;
     case GAME_LAUNCH_RETURN_INTER_PERIOD:
         memcpy(
@@ -32,7 +32,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
         );
         stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
         stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;
-        returnToGame(stateInfo, rng_seed);
+        return_to_game(stateInfo, rng_seed);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
         int pairCount = gameSetup->homerun_choice_count;
@@ -44,7 +44,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
         }
         stateInfo->match->scoreboard.pairCount = pairCount;
         stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
-        returnToGame(stateInfo, rng_seed);
+        return_to_game(stateInfo, rng_seed);
     } break;
     }
 }

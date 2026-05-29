@@ -4,7 +4,7 @@
 #include "referee.h"
 #include <string.h>
 
-void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
+void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
     stateInfo->stopSoundEffect = SOUND_MENU;
     stateInfo->screen = SCREEN_GAME;
@@ -76,17 +76,17 @@ void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, un
         stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
     }
 
-    // reset_for_new_half_inning is called via updateGameScreen -> loadGameScreenSettings
+    // reset_for_new_half_inning is called via update_game_screen -> loadGameScreenSettings
     // because we set changeScreen = 1
 }
 
-void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed)
+void return_to_game(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     stateInfo->stopSoundEffect = SOUND_MENU;
     stateInfo->screen = SCREEN_GAME;
     stateInfo->changeScreen = 1;
     stateInfo->updated = 0;
 
-    // Initialization will be handled by updateGameScreen() → loadGameScreenSettings()
-    // This makes the flow consistent with initializeGameFromMenu()
+    // Initialization will be handled by update_game_screen() → loadGameScreenSettings()
+    // This makes the flow consistent with initialize_game_from_menu()
 }

@@ -3533,7 +3533,7 @@ static int stbi__skip_jpeg_junk_at_end(stbi__jpeg *j)
 			if (stbi__at_eof(j->s)) return STBI__MARKER_none;
 			x = stbi__get8(j->s);
 			if (x != 0x00 &&x != 0xff) {
-				// not a stuffed zero or lead-in to another marker, looks
+				// not a stuffed zero or lead_from_base-in to another marker, looks
 				// like an actual marker, return it
 				return x;
 			}

@@ -10,10 +10,10 @@
 #include "../renderer/player_renderer.h"
 #endif
 
-int initPlayer(StateInfo* stateInfo, ResourceManager* rm)
+int init_player(StateInfo* stateInfo, ResourceManager* rm)
 {
 #ifndef NO_RENDER
-    if (initPlayerRenderer(rm) != 0) return -1;
+    if (init_player_renderer(rm) != 0) return -1;
 #endif
     return 0;
 }

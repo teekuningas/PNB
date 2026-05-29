@@ -257,7 +257,7 @@ void updateBatting(StateInfo* stateInfo)
             float dx2;
             float dz2;
             // update lastLocation for smooth movement
-            setVectorXZ(
+            set_vector_xz(
                 &(stateInfo->match->playerInfo[batterIndex].tPI.lastLocation),
                 stateInfo->match->playerInfo[batterIndex].tPI.location.x,
                 stateInfo->match->playerInfo[batterIndex].tPI.location.z
@@ -265,7 +265,7 @@ void updateBatting(StateInfo* stateInfo)
             // update location with sine and cosine to new location on the circle centered at pitch plate.
             // radius will be given by batterAdvance relative to batting radius
             // angle is given by batterAngle and the default ZERO_BATTING_ANGLE
-            setVectorXZ(
+            set_vector_xz(
                 &(stateInfo->match->playerInfo[batterIndex].tPI.location),
                 (float)(stateInfo->fieldPositions->pitchPlate.x +
                         cos(ZERO_BATTING_ANGLE + stateInfo->match->pendingActionState.batterAngle) *
@@ -280,7 +280,7 @@ void updateBatting(StateInfo* stateInfo)
             dz = stateInfo->fieldPositions->pitchPlate.x - stateInfo->match->playerInfo[batterIndex].tPI.location.z;
             dx2 = (float)(cos(BATTER_ANGLE_FIX) * dx - sin(BATTER_ANGLE_FIX) * dz);
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
-            setVectorXZ(&(stateInfo->match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
+            set_vector_xz(&(stateInfo->match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
 
             stateInfo->match->pendingActionState.updateBatterLocationAndOrientation = 0;
         }
@@ -438,7 +438,7 @@ void updateBatting(StateInfo* stateInfo)
                             );
 
                             // make the ball fly in the air with new velocity
-                            genericSlingBall(&(stateInfo->match->ballInfo), velocity.x, velocity.y, velocity.z);
+                            generic_sling_ball(&(stateInfo->match->ballInfo), velocity.x, velocity.y, velocity.z);
                             // Trigger fielder selection update after ball is hit
                             stateInfo->match->pRAI.refreshCatchAndChange = 1;
                             stateInfo->match->pRAI.initPlayerSelection = 1;

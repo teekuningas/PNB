@@ -270,7 +270,7 @@ typedef struct _BattingTeamActionFlags {
 typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
     ActionTriggerState throwToBase[4];
-    ActionTriggerState changePlayer;
+    ActionTriggerState change_player;
     ActionTriggerState run;
     ActionTriggerState dropBall;
     PitchActionPhase pitch;
@@ -501,7 +501,6 @@ typedef struct _HalfInningState {
     int strikes;
     int runsInTheInning;
     GameEventType event;
-    int outOfBounds; // Rule state: ball is out of bounds
     int endPeriod; // Rule state: period should end
 } HalfInningState;
 

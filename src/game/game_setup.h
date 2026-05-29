@@ -27,8 +27,8 @@ typedef struct GameSetup {
     int homerun_choice_count;
 } GameSetup;
 
-void initializeGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
+void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
 // Loads stored settings (e.g. after a menu sequence)
-void returnToGame(StateInfo* stateInfo, unsigned int* rng_seed);
+void return_to_game(StateInfo* stateInfo, unsigned int* rng_seed);
 
 #endif

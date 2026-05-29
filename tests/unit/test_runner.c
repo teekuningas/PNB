@@ -5,8 +5,6 @@
 #include "test_batting_ai_strategy.h"
 #include "test_catching_ai_strategy.h"
 #include "test_pitching_ai_strategy.h"
-#include "test_rules_outs.h"
-#include "test_rules_runs.h"
 #include "test_collision.h"
 #include "fixtures.h"
 #include "menu_types.h"
@@ -111,6 +109,19 @@ extern int test_should_period_end_period0_tiebreaker(void);
 extern int test_should_period_end_super_inning(void);
 extern int test_should_period_end_homerun_contest(void);
 
+// Declare rules outs tests
+extern int test_forced_out_at_first_base();
+extern int test_safe_on_first_base();
+extern int test_runner_at_different_base();
+extern int test_forced_out_at_second_base();
+extern int test_free_walk_protection();
+extern int test_out_of_bounds_protection();
+extern int test_regression_runner_from_base_zero();
+
+// Declare rules runs tests
+extern int test_is_regular_run();
+extern int test_is_run_of_honor();
+
 int main(int argc, char* argv[])
 {
     printf("========================================\n");
@@ -195,10 +206,17 @@ int main(int argc, char* argv[])
     RUN_TEST(test_calculate_ai_pitch_targets);
 
     // Rules Outs tests
-    run_rules_outs_tests();
+    RUN_TEST(test_forced_out_at_first_base);
+    RUN_TEST(test_safe_on_first_base);
+    RUN_TEST(test_runner_at_different_base);
+    RUN_TEST(test_forced_out_at_second_base);
+    RUN_TEST(test_free_walk_protection);
+    RUN_TEST(test_out_of_bounds_protection);
+    RUN_TEST(test_regression_runner_from_base_zero);
 
     // Rules Runs tests
-    run_rules_runs_tests();
+    RUN_TEST(test_is_regular_run);
+    RUN_TEST(test_is_run_of_honor);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

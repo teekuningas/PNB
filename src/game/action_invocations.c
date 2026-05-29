@@ -116,8 +116,8 @@ static void checkChangePlayer(MatchSession* match, const KeyStates* key_states, 
     if (control != CONTROL_AI) {
         if (match->aF.cTAF.actionKeyLock == 0) {
             if (key_states->released[control][key] == 1) {
-                if (match->aF.cTAF.changePlayer == ACTION_IDLE) {
-                    match->aF.cTAF.changePlayer = ACTION_TRIGGER_START;
+                if (match->aF.cTAF.change_player == ACTION_IDLE) {
+                    match->aF.cTAF.change_player = ACTION_TRIGGER_START;
                     match->aF.cTAF.actionKeyLock = 1;
                 }
             }

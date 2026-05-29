@@ -13,52 +13,52 @@
 
 // Wrapper functions for backward compatibility
 // These now call the pure vector_math functions
-int isVectorSmallEnoughSphere(Vector3D* vector, float limit)
+int is_vector_small_enough_sphere(Vector3D* vector, float limit)
 {
     return vec3_is_small_enough_sphere(vector, limit);
 }
 
-int isVectorSmallEnoughCircleXZV(Vector3D* vector, float limit)
+int is_vector_small_enough_circle_xzv(Vector3D* vector, float limit)
 {
     return vec3_is_small_enough_circle_xz_v(vector, limit);
 }
 
-int isVectorSmallEnoughCircleXZ(float dx, float dz, float limit)
+int is_vector_small_enough_circle_xz(float dx, float dz, float limit)
 {
     return vec3_is_small_enough_circle_xz(dx, dz, limit);
 }
 
-void setVectorXYZ(Vector3D* vector, float x, float y, float z)
+void set_vector_xyz(Vector3D* vector, float x, float y, float z)
 {
     vec3_set_xyz(vector, x, y, z);
 }
 
-void setVectorV(Vector3D* vector1, Vector3D* vector2)
+void set_vector_v(Vector3D* vector1, Vector3D* vector2)
 {
     vec3_set_from_vector(vector1, vector2);
 }
 
-void setVectorXZ(Vector3D* vector, float x, float z)
+void set_vector_xz(Vector3D* vector, float x, float z)
 {
     vec3_set_xz(vector, x, z);
 }
 
-void addToVectorXZ(Vector3D* vector, float x, float z)
+void add_to_vector_xz(Vector3D* vector, float x, float z)
 {
     vec3_add_xz(vector, x, z);
 }
 
-void addToVectorV(Vector3D* vector1, Vector3D* vector2)
+void add_to_vector_v(Vector3D* vector1, Vector3D* vector2)
 {
     vec3_add_vector(vector1, vector2);
 }
 /*
     Index is index of the player in the playerInfo-array.
-    stopMovement stops arrow key initiated movement. Many situations
+    stop_movement stops arrow key initiated movement. Many situations
     where the change of controlled player will leave the previously controlled
     player moving so this is commonly used to stop these ones.
 */
-void stopMovement(PlayerInfo* playerInfo, int index)
+void stop_movement(PlayerInfo* playerInfo, int index)
 {
     int j;
     if (index != -1) {
@@ -78,7 +78,7 @@ void stopMovement(PlayerInfo* playerInfo, int index)
 // sometimes for example after a catch, we stop the the player, so that it wouldnt continue
 // on its own. but it should still continue, as if player has the key presse down all the time.
 // then we call this to start the movement again if there has been no release of the key inbetween
-void smoothOutMovement(MatchSession* match)
+void smooth_out_movement(MatchSession* match)
 {
     int j;
     for (j = 0; j < DIRECTION_COUNT; j++) {
@@ -88,7 +88,7 @@ void smoothOutMovement(MatchSession* match)
     }
 }
 // this is for batting team players
-void stopTargetLookingPlayer(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index)
+void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index)
 {
     playerInfo[index].cPI.moving = 0;
     playerInfo[index].cPI.running = 0;
@@ -96,7 +96,7 @@ void stopTargetLookingPlayer(PlayerInfo* playerInfo, PlayerRuntimeState* playerR
     playerInfo[index].cPI.lastLastLocationUpdate = 1;
 }
 
-void setOrientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
+void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
 {
     // simply set player to orient towards the ball
     if (i != -1) {
@@ -129,7 +129,7 @@ void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
         // set the velocity
 
         speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED / 16) * playerInfo[index].bTPI.speed;
-        setVectorXZ(&playerInfo[index].tPI.velocity, dx * speed / norm, dz * speed / norm);
+        set_vector_xz(&playerInfo[index].tPI.velocity, dx * speed / norm, dz * speed / norm);
         // we are running now, ( so for example our orientation wont change now unless we stop running)
         playerInfo[index].cPI.running = 1;
         // we are moving too
@@ -172,7 +172,7 @@ void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
             norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
 
             if (norm < EPSILON) norm = 1.0f;
-            setVectorXZ(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
+            set_vector_xz(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
             // if the player for some reason was running before this, set that to 0.
             // could happen for example if baserunner gets out.
             playerInfo[index].cPI.running = 0;
@@ -217,7 +217,7 @@ void move_player_out(
 // so we have the ranked fielders-array and those are players who are somewhat important in relation
 // to ball's current location and velocity. so its natural that we have those players moving to catch
 // the ball.
-void moveRankedToCatch(MatchSession* match)
+void move_ranked_to_catch(MatchSession* match)
 {
     int i;
 
@@ -350,15 +350,17 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
     }
 }
 
-void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index)
+void lead_from_base(
+    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
+)
 {
     if (index != -1) {
         int done = 0;
         Vector3D target;
-        // now to lead we must be either on first base or second base, as it doesnt make much sense in
+        // now to lead_from_base we must be either on first base or second base, as it doesnt make much sense in
         // third base nor in homebase.
         if (playerInfo[index].bTPI.baseId == BASE_FIRST) {
-            // lead target is selected by adding a small step to current location to next bases' direction
+            // lead_from_base target is selected by adding a small step to current location to next bases' direction
             // using firstBase  instead of location in the difference is because we want the step size to stay
             // same
             target.x = playerInfo[index].tPI.location.x +
@@ -395,14 +397,14 @@ void lead(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const Field
     }
 }
 
-void changePlayer(MatchSession* match)
+void change_player(MatchSession* match)
 {
-    // this is called by user explicitly and sometimes after updating changePlayer lists.
+    // this is called by user explicitly and sometimes after updating change_player lists.
     // so cant change pitch if pitch is going on
     if (match->pRAI.pitchState == PITCH_STAGE_NONE) {
         // player will start randomly floating after control changes to next player.
         if (match->pII.controlIndex != -1) {
-            stopMovement(match->playerInfo, match->pII.controlIndex);
+            stop_movement(match->playerInfo, match->pII.controlIndex);
         }
 
         if (match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex] !=
@@ -419,14 +421,14 @@ void changePlayer(MatchSession* match)
                 match->playerInfo[match->pII.controlIndex].cTPI.busyCatching = 0;
             }
             // move others to catch( so that the previous one for example doesnt just stop if its near the ball )
-            moveRankedToCatch(match);
+            move_ranked_to_catch(match);
             // stop player who has the selection now
-            stopMovement(match->playerInfo, match->pII.controlIndex);
+            stop_movement(match->playerInfo, match->pII.controlIndex);
             // but start moving again if movement key being held at the same time. for smooth movement.
-            // smoothOutMovement still needs StateInfo due to ActionFlags being in Local but also needing KeyStates?
-            // Wait, smoothOutMovement implementation:
+            // smooth_out_movement still needs StateInfo due to ActionFlags being in Local but also needing KeyStates?
+            // Wait, smooth_out_movement implementation:
             /*
-            void smoothOutMovement(StateInfo* stateInfo)
+            void smooth_out_movement(StateInfo* stateInfo)
             {
                 int j;
                 for(j = 0; j < DIRECTION_COUNT; j++) {
@@ -769,7 +771,7 @@ void initialize_action_info(MatchSession* match)
         match->aF.cTAF.move[i] = 0;
         match->aF.cTAF.throwToBase[i] = 0;
     }
-    match->aF.cTAF.changePlayer = 0;
+    match->aF.cTAF.change_player = 0;
     match->aF.cTAF.dropBall = 0;
     match->aF.cTAF.pitch = 0;
     match->aF.cTAF.actionKeyLock = 0;
