@@ -254,9 +254,7 @@ typedef enum { CHOOSE_BATTER_IDLE = 0, CHOOSE_BATTER_NEXT = 1, CHOOSE_BATTER_SEL
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
 /*
-Action flags. used in action_invocation.c and action_implementation.c.
-flag is set when key event happens in action_invocation, then its set off or modified when its handled in
-action_implementation
+Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
 typedef struct _BattingTeamActionFlags {
     ActionTriggerState baseRun[4];
@@ -506,7 +504,7 @@ typedef struct _HalfInningState {
 
 // MILESTONE 16 (Phase 1): Transient event notifications
 // Events are set this frame, cleared next frame
-// Written by: action_implementation.c, game_manipulation.c
+// Written by: execute_actions.c, game_manipulation.c
 // Read by: referee.c, others
 typedef struct _GameEvents {
     // Event flags (cleared each frame)
@@ -682,7 +680,7 @@ typedef struct _PendingActionState {
     float pitchPower; // from pitching_system.c
 
     // Input interpretation
-    int doubleClickCounter[BASE_COUNT]; // from action_implementation.c
+    int doubleClickCounter[BASE_COUNT];
 } PendingActionState;
 
 typedef struct _HomeRunContestState {

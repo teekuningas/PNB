@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "batting_ai.h"
 #include "batting_ai_strategy.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "actions_messy/batting_system.h"
 #include "game_manipulation.h"
 #include "rng.h"
@@ -14,7 +14,7 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
-// Macros moved from action_implementation.c
+// Macros moved from execute_actions.c
 
 #define CLICK_BREAK_CONSTANT 3
 

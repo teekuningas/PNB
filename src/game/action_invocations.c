@@ -1,5 +1,5 @@
 /*
-    the main purpose of this code is to set flags for action_implementation when key combinations trigger some events.
+    the main purpose of this code is to set flags for execute_actions when key combinations trigger some events.
     everything here is pretty straightforward.
 */
 

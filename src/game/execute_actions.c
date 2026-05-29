@@ -1,12 +1,12 @@
 /*
-    So this file specifically handles user-initiated events. This works in conjuction
-    with action_invocations.c where all the input reading is done. This has also some
-    dirty floating point code, but it should be closely related to something that happens
-    after user presses some keys. Like batting or throwing or running.
+    execute_actions.c — Intent execution.
+
+    Translates ActionFlags (set by human input or AI) into physical state changes:
+    throwing, pitching, batting, base running, player selection.
 */
 
 #include "globals.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "common_logic.h"
 #include "actions_messy/pitching_system.h"
 #include "actions_messy/batting_system.h"
@@ -26,7 +26,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo);
 static void baseRun(StateInfo* stateInfo, BaseID base);
 ;
 
-void init_action_implementation(StateInfo* stateInfo)
+void init_execute_actions(StateInfo* stateInfo)
 {
     // just initialize everyone of these static variables to zero
     int i;
@@ -51,7 +51,7 @@ void init_action_implementation(StateInfo* stateInfo)
     initBattingAI(&(stateInfo->match->aiState));
 }
 
-void action_implementation(StateInfo* stateInfo)
+void execute_actions(StateInfo* stateInfo)
 {
     int i;
 

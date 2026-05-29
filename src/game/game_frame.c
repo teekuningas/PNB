@@ -3,7 +3,7 @@
 
     Each frame executes 7 stages in strict order:
       1. Input           (action_invocations)
-      2. Physics & Logic (action_implementation + game_manipulation)
+      2. Physics & Logic (execute_actions + update_meters + ai_update + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    PlayerCounters, Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
@@ -16,7 +16,7 @@
 #include "globals.h"
 #include "ball.h"
 #include "player.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "action_invocations.h"
 #include "game_consolidation.h"
 #include "game_manipulation.h"
@@ -47,7 +47,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    init_action_implementation(stateInfo);
+    init_execute_actions(stateInfo);
     init_action_invocations(stateInfo);
 
     // Consolidated Init (Game Flow + Reset Logic)
@@ -68,7 +68,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         action_invocations(game, stateInfo->keyStates, &rules->scoreboard);
 
         // 2. Physics & Logic
-        action_implementation(stateInfo);
+        execute_actions(stateInfo);
         update_meters(stateInfo);
         ai_update(stateInfo, rng_seed);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);

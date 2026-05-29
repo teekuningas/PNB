@@ -1,6 +1,6 @@
 #include "actions_messy/pitching_system.h"
 #include "common_logic.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "pitching_ai_strategy.h"
 #include "rng.h"
 #include <stdlib.h> // for rand()
@@ -8,7 +8,7 @@
 #include "base_control.h"
 #include "state_validator.h"
 
-// Required local constant (was in action_implementation.c)
+// Required local constant (was in execute_actions.c)
 #define ANIMATION_FREQUENCY 3
 #define TIMEOUT_CONSTANT 200
 

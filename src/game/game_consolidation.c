@@ -5,7 +5,7 @@
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "game_reset.h"
 #include "referee.h"
 
@@ -224,7 +224,7 @@ static void check_next_batter_decision(MatchSession* match, GameRulesState* rule
                 if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
                     // if that happens we can now start.
                     int battingTeamIndex = get_batting_team_index(scoreboard);
-                    // this will give work to action_invocatin.c and action_implementation.c
+                    // this will give work to action_invocations.c and execute_actions.c
                     match->flowControl.waitingForBatterDecision = 1;
                     // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
                     // just select the next batter in order there. if not, we select the first joker we find that is

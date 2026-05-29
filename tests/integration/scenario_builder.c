@@ -7,7 +7,7 @@
 #include "game_frame.h"
 #include "common_logic.h"
 #include "referee.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "action_invocations.h"
 #include "vector_math.h"
 #include <stdlib.h>
@@ -246,7 +246,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
     for (int i = 0; i < maxFrames; i++) {
         // action_invocations() is intentionally omitted here: tests control player/AI decisions
         // explicitly via scenario helpers, not through the normal input dispatch path.
-        action_implementation(ctx->state);
+        execute_actions(ctx->state);
         game_manipulation(
             ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
         );

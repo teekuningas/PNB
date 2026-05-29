@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "pitching_physics.h"
 
-// Constants moved from action_implementation.c
+// Constants moved from execute_actions.c
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
 
 void startPitch(StateInfo* stateInfo);

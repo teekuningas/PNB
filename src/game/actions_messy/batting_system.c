@@ -1,6 +1,6 @@
 #include "batting_system.h"
 #include "common_logic.h"
-#include "action_implementation.h"
+#include "execute_actions.h"
 #include "actions_messy/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include <math.h>
@@ -8,7 +8,7 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
-// Macros moved from action_implementation.c
+// Macros moved from execute_actions.c
 #define BATTER_ANGLE_SPEED_CONSTANT 0.02f
 #define BATTER_ANGLE_LIMIT PI / 7
 #define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f
