@@ -85,6 +85,16 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
     }
     if (stateInfo->match->pRAI.batterReady == 0 && stateInfo->match->aiState.planCalculated == 1) {
         stateInfo->match->aiState.planCalculated = 0;
+        // Reset all base-runner decision state for a fresh pitch cycle.
+        // Without this, baseRunnerDecisionMade (especially for base 3, which has no
+        // "come back from leading" path) stays stale across pitches, preventing the AI
+        // from issuing new run commands to runners who stayed on their base.
+        for (i = 0; i < BASE_COUNT; i++) {
+            stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
+            stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
+            stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+            stateInfo->match->aiState.clickBreak[i] = 0;
+        }
     }
     // make free walk decision == accept
     if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
