@@ -25,8 +25,6 @@ static void changeBatter(StateInfo* stateInfo);
 static void takeFreeWalkDecision(StateInfo* stateInfo);
 static void baseRun(StateInfo* stateInfo, BaseID base);
 ;
-static void updateMeters(StateInfo* stateInfo);
-static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed);
 
 void init_action_implementation(StateInfo* stateInfo)
 {
@@ -199,13 +197,6 @@ void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed)
     }
     // this is used to handle a lot of stuff happening between and after the decisions.
     updateBatting(stateInfo);
-
-    /*
-     * COMMON
-     */
-    // meters need to be updated for the logic and for the screen.
-    updateMeters(stateInfo);
-    aiLogic(stateInfo, rng_seed);
 }
 
 static void takeFreeWalkDecision(StateInfo* stateInfo)
@@ -361,7 +352,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
     stateInfo->match->aF.bTAF.baseRun[base] = ACTION_IDLE;
 }
 
-static void updateMeters(StateInfo* stateInfo)
+void update_meters(StateInfo* stateInfo)
 {
     updatePitchingMeter(stateInfo);
 
@@ -376,7 +367,7 @@ static void updateMeters(StateInfo* stateInfo)
     }
 }
 
-static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
+void ai_update(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
     TeamControlMode battingControl = stateInfo->rules->scoreboard.teams[battingTeamIndex].control;

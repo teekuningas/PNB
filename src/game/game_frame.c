@@ -69,6 +69,8 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
 
         // 2. Physics & Logic
         action_implementation(stateInfo, rng_seed);
+        update_meters(stateInfo);
+        ai_update(stateInfo, rng_seed);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)
