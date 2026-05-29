@@ -2,9 +2,9 @@
 #define PLAYER_H
 
 #include "globals.h"
+#include "resource_manager.h"
 
-int initPlayer(StateInfo* stateInfo);
-void drawPlayer(StateInfo* stateInfo, PlayerInfo *playerInfo, double alpha);
-int cleanPlayer(StateInfo* stateInfo);
+int init_player(StateInfo* stateInfo, ResourceManager* rm);
+int clean_player(StateInfo* stateInfo);
 
 #endif /* PLAYER_H */

@@ -3,8 +3,8 @@
 
 #include "globals.h"
 
-int initInput(StateInfo* stateInfo);
-void updateInput(StateInfo* stateInfo, GLFWwindow* window);
-void clearReleasedKeys(KeyStates* keyStates);
+int init_input(StateInfo* stateInfo);
+void update_input(StateInfo* stateInfo, GLFWwindow* window);
+void clear_released_keys(KeyStates* keyStates);
 
 #endif /* INPUT_H */

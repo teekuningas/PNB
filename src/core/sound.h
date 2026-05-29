@@ -3,8 +3,8 @@
 
 #include "globals.h"
 
-int initSound(StateInfo* stateInfo);
-void updateSound(StateInfo* stateInfo);
-int cleanSound(StateInfo* stateInfo);
+int init_sound(StateInfo* stateInfo);
+void update_sound(StateInfo* stateInfo);
+int clean_sound(StateInfo* stateInfo);
 
 #endif /* SOUND_H */

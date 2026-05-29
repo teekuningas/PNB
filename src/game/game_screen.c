@@ -1,555 +1,551 @@
 /*
-	game divides into two sections, menus and the game. this is the game screen. only main.c is higher but lots of initialization code is still hidden to
-	main.c. almost all visible 3d stuff is delegated to mutable_world and immutable_world, but here we draw the
-	skybox and some status information for user.
+    game divides into two sections, menus and the game. this is the game screen. only main.c is higher but lots of
+   initialization code is still hidden to main.c. almost all visible 3d stuff is delegated to game_frame and
+   immutable_world, but here we draw the skybox and some status information for user.
 */
 
 #include "globals.h"
 #include "immutable_world.h"
-#include "mutable_world.h"
+#include "game_frame.h"
 #include "render.h"
 #include "font.h"
 #include "game_screen.h"
 #include "common_logic.h"
+#include "state_validator.h"
+#include "referee.h"
+#include "rules_pure/player_utils.h"
+#include "game_reset.h"
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
-#define OTHER_STATS_X -0.03f
-#define METER_X 0.31f
-#define OUTS_X -0.63f
-#define INFO_X -0.53f
-#define BASES_X 0.57f
-#define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL*1.0f/1000)))
+#define OTHER_STATS_X -0.02f // Midpoint between original -0.12 and current 0.08
+#define METER_X 0.32f
+#define OUTS_X -0.69f // Reverted to original
+#define INFO_X -0.60f // Reverted to original
+#define BASES_X 0.50f
+#define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
-static int gameInfoEventTimer;
-static int gameInfoEvent;
+static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
+static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
+static int init_lights(StateInfo* stateInfo);
+static void init_cam_settings(StateInfo* stateInfo);
+static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed);
 
-static void drawSkyBox(StateInfo* stateInfo);
-static void drawStatistics(StateInfo* stateInfo, double alpha);
-static int initLights(StateInfo* stateInfo);
-static void initCamSettings(StateInfo* stateInfo);
-static void loadGameScreenSettings(StateInfo* stateInfo);
-
-static Vector3D cam, look, up;
-static Vector3D statCam, statLook, statUp;
-static Vector3D skyBoxCam, skyBoxLook;
-static float lightPos[4];
-
-static Vector3D lastCamTargetLocation;
-static Vector3D lastCamLocation;
-static Vector3D camLocation;
-static Vector3D camTargetLocation;
-
-static float lastMeterX;
-static float lastSwingMeterX;
-
-static GLuint skyTexture;
-static GLuint meterTexture;
-static GLuint selectionTextureBatting;
-static GLuint selectionTextureFielding;
-static GLuint basesTexture;
-static GLuint basesMarkerTexture;
-
-static MeshObject* planeMesh;
-static GLuint planeDisplayList;
-
-static MeshObject* skyMesh;
-static GLuint skyDisplayList;
-
-
-int initGameScreen(StateInfo* stateInfo)
+int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
 {
-	int result;
+    int result;
 
-	if(tryLoadingTextureGL(&skyTexture, "data/textures/skybox.tga", "sky") != 0) return -1;
-	if(tryLoadingTextureGL(&meterTexture, "data/textures/meter.tga", "meter") != 0) return -1;
-	if(tryLoadingTextureGL(&selectionTextureBatting, "data/textures/selectionBall1.tga", "selection1") != 0) return -1;
-	if(tryLoadingTextureGL(&selectionTextureFielding, "data/textures/selectionBall3.tga", "selection3") != 0) return -1;
-	if(tryLoadingTextureGL(&basesTexture, "data/textures/bases.tga", "bases") != 0) return -1;
-	if(tryLoadingTextureGL(&basesMarkerTexture, "data/textures/basesMarker.tga", "basesMarker") != 0) return -1;
-	skyMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/skybox.obj", "Cube", skyMesh, &skyDisplayList) != 0) return -1;
-	planeMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+    resource_manager_load_all_game_assets(rm);
 
-	initCamSettings(stateInfo);
+    init_cam_settings(stateInfo);
 
-	lastMeterX = 0;
-	lastSwingMeterX = 0;
+    stateInfo->match->uiState.lastMeterX = 0;
+    stateInfo->match->uiState.lastSwingMeterX = 0;
 
-	result = initLights(stateInfo);
-	if(result != 0) {
-		printf("Could not init lights. Exiting.");
-	}
+    result = init_lights(stateInfo);
+    if (result != 0) {
+        printf("Could not init lights. Exiting.");
+    }
 
-	result = initImmutableWorld(stateInfo);
-	if(result != 0) {
-		printf("Could not init immutable world.");
-		return -1;
-	}
+    result = init_immutable_world(stateInfo, rm);
+    if (result != 0) {
+        printf("Could not init immutable world.");
+        return -1;
+    }
 
-	result = initMutableWorld(stateInfo);
-	if(result != 0) {
-		printf("Could not init ball. Exiting.");
-		return -1;
-	}
+    result = init_game_frame(stateInfo, rm);
+    if (result != 0) {
+        printf("Could not init ball. Exiting.");
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }
 
-void updateGameScreen(StateInfo* stateInfo, MenuInfo* menuInfo)
+void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
 {
-	BallInfo* ballInfo = &(stateInfo->localGameInfo->ballInfo);
-	// if we just changed here, load basic settings.
-	if(stateInfo->changeScreen == 1) {
-		stateInfo->changeScreen = 0;
-		stateInfo->updated = 1;
-		loadGameScreenSettings(stateInfo);
-	}
-	// with home-key, one can return to main menu.
-	if(((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-		if(stateInfo->localGameInfo->gAI.pause == 0) {
-			stateInfo->localGameInfo->gAI.pause = 1;
-		} else if(stateInfo->localGameInfo->gAI.pause == 1) {
-			stateInfo->changeScreen = 1;
-			stateInfo->updated = 0;
-			stateInfo->screen = SCREEN_MAIN_MENU;
-			menuInfo->mode = MENU_ENTRY_NORMAL;
-		}
-	}
-	if(stateInfo->localGameInfo->gAI.pause == 1) {
-		if(((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-			stateInfo->localGameInfo->gAI.pause = 0;
-		}
-	}
-	// update camera
-	lastCamTargetLocation.x = camTargetLocation.x;
-	lastCamTargetLocation.y = camTargetLocation.y;
-	lastCamTargetLocation.z = camTargetLocation.z;
+    BallInfo* ballInfo = &(stateInfo->match->ballInfo);
+    CameraState* cs = &(stateInfo->match->cameraState);
+    // if we just changed here, load basic settings.
+    if (stateInfo->changeScreen == 1) {
+        stateInfo->changeScreen = 0;
+        stateInfo->updated = 1;
+        load_game_screen_settings(stateInfo, rng_seed);
+    }
+    // with home-key, one can return to main menu.
+    if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
+        if (stateInfo->match->flowControl.pause == 0) {
+            stateInfo->match->flowControl.pause = 1;
+            state_validator_dump(stateInfo, "Manual Pause");
+        } else if (stateInfo->match->flowControl.pause == 1) {
+            stateInfo->changeScreen = 1;
+            stateInfo->updated = 0;
+            stateInfo->screen = SCREEN_MAIN_MENU;
+            menuInfo->mode = MENU_ENTRY_NORMAL;
+        }
+    }
+    if (stateInfo->match->flowControl.pause == 1) {
+        if (((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
+            stateInfo->match->flowControl.pause = 0;
+        }
+    }
+    // update camera
+    cs->lastCamTargetLocation.x = cs->camTargetLocation.x;
+    cs->lastCamTargetLocation.y = cs->camTargetLocation.y;
+    cs->lastCamTargetLocation.z = cs->camTargetLocation.z;
 
-	lastCamLocation.y = camLocation.y;
-	lastCamLocation.z = camLocation.z;
-	lastCamLocation.x = camLocation.x;
-	// we follow the ball with our camera
-	camTargetLocation.x = ballInfo->location.x;
-	camTargetLocation.y = ballInfo->location.y*0.5f;
-	camTargetLocation.z = ballInfo->location.z;
+    cs->lastCamLocation.y = cs->camLocation.y;
+    cs->lastCamLocation.z = cs->camLocation.z;
+    cs->lastCamLocation.x = cs->camLocation.x;
+    // we follow the ball with our camera
+    cs->camTargetLocation.x = ballInfo->location.x;
+    cs->camTargetLocation.y = ballInfo->location.y * 0.5f;
+    cs->camTargetLocation.z = ballInfo->location.z;
 
-	// and our camera also moves a bit with the ball.
+    // and our camera also moves a bit with the ball.
 
-	camLocation.x = 0.1f*camTargetLocation.x;
-	// if we are behind the homebase
-	if(stateInfo->localGameInfo->ballInfo.location.z > HOME_RADIUS) {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f + (float)fabs(camTargetLocation.x)/3;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 15.0f + (float)fabs(camTargetLocation.x)/2;
-	}
-	// if runner coming from third base
-	else if(stateInfo->localGameInfo->gAI.homeRunCameraFlag == 0 ) {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f;
-	}
-	// and the normal mode
-	else {
-		camLocation.y = camTargetLocation.y - camTargetLocation.z * 0.1f + 3.0f + 5.0f;
-		camLocation.z = camTargetLocation.z - 0.3f*camTargetLocation.z + 12.0f + 8.0f;
-	}
-	// cant update this at the drawing-function as that doesnt happen synchroniusly.
-	// so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
-	// we hit the threshold.
-	if(gameInfoEventTimer != -1) {
-		gameInfoEventTimer+=1;
+    cs->camLocation.x = 0.1f * cs->camTargetLocation.x;
+    // if we are behind the homebase
+    if (stateInfo->match->ballInfo.location.z > HOME_RADIUS) {
+        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f +
+                            (float)fabs(cs->camTargetLocation.x) / 3;
+        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 15.0f +
+                            (float)fabs(cs->camTargetLocation.x) / 2;
+    }
+    // if runner coming from third base
+    else if (stateInfo->match->cameraState.homeRunCameraFlag == 0) {
+        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f;
+        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f;
+    }
+    // and the normal mode
+    else {
+        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
+        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
+    }
+    // cant update this at the drawing-function as that doesnt happen synchroniusly.
+    // so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
+    // we hit the threshold.
+    if (stateInfo->match->uiState.gameInfoEventTimer != -1) {
+        stateInfo->match->uiState.gameInfoEventTimer += 1;
 
-		if(gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-			gameInfoEventTimer = -1;
-		}
-	}
+        if (stateInfo->match->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
+            stateInfo->match->uiState.gameInfoEventTimer = -1;
+        }
+    }
 
-	// and here will a lot of logic code.
-	updateMutableWorld(stateInfo, menuInfo);
-
+    // and here will a lot of logic code.
+    update_game_frame(stateInfo, menuInfo, rng_seed);
 }
 
-void drawGameScreen(StateInfo* stateInfo, double alpha, const RenderState* rs)
+void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
 {
-	// Ensure the 3D rendering state is correctly set up before drawing the game screen.
-	begin_3d_render(rs);
+    // Ensure the 3D rendering state is correctly set up before drawing the game screen.
+    begin_3d_render(rs);
+    CameraState* cs = (CameraState*)&(stateInfo->match->cameraState);
+    Vector3D look, cam, skyBoxLook;
 
-	look.x = (float)(alpha*camTargetLocation.x + (1-alpha)*lastCamTargetLocation.x);
-	look.y = (float)(alpha*camTargetLocation.y + (1-alpha)*lastCamTargetLocation.y);
-	look.z = (float)(alpha*camTargetLocation.z + (1-alpha)*lastCamTargetLocation.z);
-	cam.y = (float)(alpha*camLocation.y + (1-alpha)*lastCamLocation.y);
-	cam.z = (float)(alpha*camLocation.z + (1-alpha)*lastCamLocation.z);
-	cam.x = (float)(alpha*camLocation.x + (1-alpha)*lastCamLocation.x);
-	// with skybox we move to origin
-	skyBoxLook.x = look.x - cam.x;
-	skyBoxLook.y = look.y - cam.y;
-	skyBoxLook.z = look.z - cam.z;
-	// first we draw the skybox. It should not be lit or write to the depth buffer.
-	glDisable(GL_LIGHTING);
-	glDepthMask(GL_FALSE);
-	glLoadIdentity();
-	gluLookAt(skyBoxCam.x, skyBoxCam.y, skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, up.x, up.y, up.z);
+    look.x = (float)(alpha * cs->camTargetLocation.x + (1 - alpha) * cs->lastCamTargetLocation.x);
+    look.y = (float)(alpha * cs->camTargetLocation.y + (1 - alpha) * cs->lastCamTargetLocation.y);
+    look.z = (float)(alpha * cs->camTargetLocation.z + (1 - alpha) * cs->lastCamTargetLocation.z);
+    cam.y = (float)(alpha * cs->camLocation.y + (1 - alpha) * cs->lastCamLocation.y);
+    cam.z = (float)(alpha * cs->camLocation.z + (1 - alpha) * cs->lastCamLocation.z);
+    cam.x = (float)(alpha * cs->camLocation.x + (1 - alpha) * cs->lastCamLocation.x);
+    // with skybox we move to origin
+    skyBoxLook.x = look.x - cam.x;
+    skyBoxLook.y = look.y - cam.y;
+    skyBoxLook.z = look.z - cam.z;
+    // first we draw the skybox. It should not be lit or write to the depth buffer.
+    glDisable(GL_LIGHTING);
+    glDepthMask(GL_FALSE);
+    glLoadIdentity();
+    gluLookAt(
+        cs->skyBoxCam.x, cs->skyBoxCam.y, cs->skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, cs->up.x, cs->up.y,
+        cs->up.z
+    );
 
-	drawSkyBox(stateInfo);
+    draw_skybox(stateInfo, rm);
 
-	// Re-enable depth writes for the rest of the scene.
-	glDepthMask(GL_TRUE);
+    // Re-enable depth writes for the rest of the scene.
+    glDepthMask(GL_TRUE);
 
-	glLoadIdentity();
-	gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, up.x, up.y, up.z);
-	glEnable(GL_LIGHTING);
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    glLoadIdentity();
+    gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, cs->up.x, cs->up.y, cs->up.z);
+    glEnable(GL_LIGHTING);
+    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
 
-	drawImmutableWorld(stateInfo, alpha);
-	drawMutableWorld(stateInfo, alpha);
+    draw_immutable_world(stateInfo, alpha, rm);
+    draw_game_frame(stateInfo, alpha, rm);
 
-	// statistics
-	glDisable(GL_LIGHTING);
-	glDisable(GL_DEPTH_TEST);
-	glLoadIdentity();
-	gluLookAt(statCam.x, statCam.y, statCam.z, statLook.x, statLook.y, statLook.z, statUp.x, statUp.y, statUp.z);
-
-	drawStatistics(stateInfo, alpha);
+    // statistics - Switch to 2D
+    begin_2d_render(rs);
+    draw_statistics_2d(stateInfo, alpha, rm, rs);
 }
-
 
 // lights
-static int initLights(StateInfo* stateInfo)
+static int init_lights(StateInfo* stateInfo)
 {
-	// our lighting is a point light that is so far away that its practically a directional light.
-	//
-	// some settings, quite random, but reasonable.
-	float globalAmb[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float diffuse[] = {1.0f,1.0f,1.0f,1.0f};
-	float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float specular[] = {1.0f, 1.0f,1.0f,1.0f};
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmb);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	lightPos[0] = LIGHT_SOURCE_POSITION_X;
-	lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-	lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-	lightPos[3] = 1.0f;
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+    // our lighting is a point light that is so far away that its practically a directional light.
+    //
+    // some settings, quite random, but reasonable.
+    float globalAmb[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    float diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    float specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    CameraState* cs = &(stateInfo->match->cameraState);
 
-	return 0;
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmb);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    cs->lightPos[0] = LIGHT_SOURCE_POSITION_X;
+    cs->lightPos[1] = LIGHT_SOURCE_POSITION_Y;
+    cs->lightPos[2] = LIGHT_SOURCE_POSITION_Z;
+    cs->lightPos[3] = 1.0f;
+    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
+
+    return 0;
 }
 
-static void drawSkyBox(StateInfo* stateInfo)
+static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
 {
-	glBindTexture(GL_TEXTURE_2D, skyTexture);
-	glPushMatrix();
-	glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-	glCallList(skyDisplayList);
-	glPopMatrix();
+    glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/skybox.tga"));
+    glPushMatrix();
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+    glCallList(resource_manager_get_model(rm, "data/models/skybox.obj"));
+    glPopMatrix();
 }
 
-static void drawStatistics(StateInfo* stateInfo, double alpha)
+static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
 {
-	int i;
-	char str[4] = "B  ";
-	char str2[4] = "S  ";
-	char str3[6] = "R  - ";
-	char* str4;
-	char str5[2] = "x";
-	char str6[4] = "I  ";
-	float swingMeterX;
-	float meterX;
-	// we draw the background for writing text. it will appear at the bottom of screen
-	// because of the camera settings.
-	drawFontBackground();
-	if(stateInfo->globalGameInfo->period < 4) {
-		switch(stateInfo->localGameInfo->gAI.outs) {
-		case 0:
-			break;
-		case 3:
-			printText("XXX", 3, OUTS_X, STATISTICS_TEXT_HEIGHT, 2);
-			break;
-		case 2:
-			printText("XX", 2, OUTS_X, STATISTICS_TEXT_HEIGHT, 2);
-			break;
-		case 1:
-			printText("X", 1, OUTS_X, STATISTICS_TEXT_HEIGHT, 2);
-			break;
-		default:
-			printText("XXX", 3, OUTS_X, STATISTICS_TEXT_HEIGHT, 2);
-			break;
-		}
-	}
-	// inning?
-	if(stateInfo->globalGameInfo->period < 4) {
-		str6[2] = (char)(((int)'0')+ stateInfo->globalGameInfo->inning/2 + 1);
-	} else {
-		str6[2] = (char)(((int)'0'));
-	}
-	printText(str6, 3, OTHER_STATS_X - 0.04f, STATISTICS_TEXT_HEIGHT, 2);
+    char* str4;
+    char str5[2] = "x";
+    float swingMeterX;
+    float meterX;
+    UIState* us = &(stateInfo->match->uiState);
 
-	// here for outs and runs we have to take care of that sometimes we will have more than 9 of them
-	if(stateInfo->localGameInfo->gAI.balls < 10)
-		str[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.balls);
-	else {
-		str[2] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls%10));
-		str[1] = (char)(((int)'0')+(stateInfo->localGameInfo->gAI.balls/10));
-	}
-	printText(str, 3, OTHER_STATS_X + 0.04f, STATISTICS_TEXT_HEIGHT, 2);
+    // Layout Constants
+    const float BASE_Y = VIRTUAL_HEIGHT - 80.0f;
+    const float TEXT_Y = BASE_Y + 20.0f;
+    const float CENTER_X = VIRTUAL_WIDTH / 2.0f;
+    // Direct pixel offsets from center (derived from previous SCALE_FACTOR 1350.0f)
+    const float OUTS_OFFSET_X = -931.5f; // -0.69 * 1350
+    const float INFO_OFFSET_X = -810.0f; // -0.60 * 1350
+    const float STATS_OFFSET_X = -27.0f; // -0.02 * 1350
+    const float METER_OFFSET_X = 432.0f; //  0.32 * 1350
+    const float BASES_OFFSET_X = 675.0f; //  0.50 * 1350
 
-	str2[2] = (char)(((int)'0')+stateInfo->localGameInfo->gAI.strikes);
-	printText(str2, 3, OTHER_STATS_X + 0.12f, STATISTICS_TEXT_HEIGHT, 2);
+    const float FONT_SIZE = 40.0f;
 
-	if(stateInfo->globalGameInfo->teams[0].runs < 10)
-		str3[2] = (char)(((int)'0')+stateInfo->globalGameInfo->teams[0].runs);
-	else {
-		str3[2] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[0].runs%10));
-		str3[1] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[0].runs/10));
-	}
-	if(stateInfo->globalGameInfo->teams[1].runs < 10)
-		str3[4] = (char)(((int)'0')+stateInfo->globalGameInfo->teams[1].runs);
-	else {
-		str3[4] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[1].runs%10));
-		str3[3] = (char)(((int)'0')+(stateInfo->globalGameInfo->teams[1].runs/10));
-	}
-	printText(str3, 5, OTHER_STATS_X + 0.2f, STATISTICS_TEXT_HEIGHT, 2);
-	// so we have these events thats are triggered in other parts of code just by gameInfoEvent = i;
-	// we have a counter so that the info will disappear after some time.
-	if(stateInfo->localGameInfo->gAI.gameInfoEvent != 0) {
-		gameInfoEventTimer = 0;
-		gameInfoEvent = stateInfo->localGameInfo->gAI.gameInfoEvent;
-		stateInfo->localGameInfo->gAI.gameInfoEvent = 0;
-	}
-	if(gameInfoEventTimer != -1) {
-		if(gameInfoEvent == 1) {
-			printText("        OUT", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 2) {
-			printText("     WOUNDED", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 3) {
-			printText("        RUN", 11, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 4) {
-			printText("  OUT OF BOUNDS", 15, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 5) {
-			printText("      STRIKE", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 6) {
-			printText("        BALL", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 7) {
-			printText("HALF-INNING ENDS", 16, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 8) {
-			printText("    NEXT PAIR", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-		if(gameInfoEvent == 9) {
-			printText("     TWO RUNS", 13, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-		}
-	}
-	// when free walk decision and batter decision are both waiting at the same time, choose walk.
-	else if(stateInfo->localGameInfo->gAI.waitingForFreeWalkDecision == 1) {
-		printText(" Take a walk", 12, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-	}
-	// when waiting for batter decision we show "select" and players name and number
-	// so that the decision making is easier.
-	else {
-		char str[5] = "S P ";
-		int speed;
-		int power;
-		int index;
-		int shouldContinue = 1;
-		// index selection a bit different when homerunbatting contest.
-		if(stateInfo->globalGameInfo->period < 4) {
-			if(stateInfo->localGameInfo->pII.batterSelectionIndex == -1) shouldContinue = 0;
-			else index = stateInfo->localGameInfo->pII.batterSelectionIndex;
-		} else {
-			int battingTeamIndex = (stateInfo->globalGameInfo->
-			                        inning+stateInfo->globalGameInfo->playsFirst+stateInfo->globalGameInfo->period)%2;
-			index = stateInfo->globalGameInfo->teams[battingTeamIndex].
-			        batterRunnerIndices[0][stateInfo->localGameInfo->gAI.runnerBatterPairCounter];
-			if(index == -1) shouldContinue = 0;
-		}
-		if(shouldContinue == 1) {
-			speed = stateInfo->localGameInfo->playerInfo[index].bTPI.speed;
-			power = stateInfo->localGameInfo->playerInfo[index].bTPI.power;
-			str[1] = (char)(((int)'0')+(speed));
-			str[3] = (char)(((int)'0')+(power));
-			printText(str, 5, INFO_X, STATISTICS_TEXT_HEIGHT, 2);
-			str4 = stateInfo->localGameInfo->playerInfo[index].bTPI.name;
-			printText(str4, strlen(str4), INFO_X + 0.14f, STATISTICS_TEXT_HEIGHT, 2);
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.joker != 0 && stateInfo->globalGameInfo->period < 4) {
-				str5[0] = 'J';
-			} else {
-				str5[0] = (char)(((int)'0')+stateInfo->localGameInfo->playerInfo[index].bTPI.number);
-			}
-			printText(str5, 1, INFO_X + 0.11f, STATISTICS_TEXT_HEIGHT, 2);
-		}
-	}
-	// then draw, bases- and meterTexture. and selections for meter. meterValues has been set in action_implementation.
+    // Background
+    // Draw a dark strip at the bottom
+    glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/empty_background.tga"));
+    // Using a simple quad logic here to avoid messing up with scaling of the plane model
+    // Actually draw_texture_2d does exactly this.
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/empty_background.tga"), 0, BASE_Y, VIRTUAL_WIDTH, 80.0f
+    ); // Height 80 (was 120)
 
-	meterX = 0.16f*stateInfo->localGameInfo->pRAI.meterValue;
-	swingMeterX = 0.16f*stateInfo->localGameInfo->pRAI.swingMeterValue;
+    // OUTS (Far Left)
+    float outs_x = CENTER_X + OUTS_OFFSET_X;
+    if (stateInfo->rules->scoreboard.period < 4) {
+        switch (stateInfo->rules->halfInningState.outs) {
+        case 3:
+            print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
+            break;
+        case 2:
+            print_text_2d("XX", 2, outs_x, TEXT_Y, FONT_SIZE);
+            break;
+        case 1:
+            print_text_2d("X", 1, outs_x, TEXT_Y, FONT_SIZE);
+            break;
+        case 0:
+        default:
+            break;
+        }
+    }
 
-	//players in bases
-	glBindTexture(GL_TEXTURE_2D, basesTexture);
-	glPushMatrix();
-	glTranslatef(BASES_X, 1.0f, STATISTICS_TEXT_HEIGHT); // these numeric parameters come from
-	glScalef(0.08f, 0.02f, 0.02f);
-	glCallList(planeDisplayList);
-	glPopMatrix();
+    // INFO AREA (Left-Center)
+    float info_x = CENTER_X + INFO_OFFSET_X;
 
-	// meter
-	glBindTexture(GL_TEXTURE_2D, meterTexture);
-	glPushMatrix();
-	glTranslatef(METER_X + 0.08f, 1.0f, STATISTICS_TEXT_HEIGHT);
-	glScalef(0.08f, 0.02f, 0.02f);
-	glCallList(planeDisplayList);
-	glPopMatrix();
+    if (stateInfo->rules->halfInningState.event != EVENT_NONE) {
+        us->gameInfoEventTimer = 0;
+        us->gameInfoEvent = (int)stateInfo->rules->halfInningState.event;
+        stateInfo->rules->halfInningState.event = EVENT_NONE;
+    }
 
-	glBindTexture(GL_TEXTURE_2D, selectionTextureFielding);
-	glPushMatrix();
-	glTranslatef(METER_X + (float)(alpha*meterX + (1-alpha)*lastMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
-	glScalef(0.002f, 0.01f, 0.02f);
-	glCallList(planeDisplayList);
-	glPopMatrix();
+    if (us->gameInfoEventTimer != -1) {
+        const char* msg = "";
+        switch (us->gameInfoEvent) {
+        case EVENT_OUT:
+            msg = "OUT";
+            break;
+        case EVENT_WOUNDED:
+            msg = "WOUNDED";
+            break;
+        case EVENT_RUN_SCORED:
+            msg = "RUN";
+            break;
+        case EVENT_OUT_OF_BOUNDS:
+            msg = "OUT OF BOUNDS";
+            break;
+        case EVENT_STRIKE:
+            msg = "STRIKE";
+            break;
+        case EVENT_BALL:
+            msg = "BALL";
+            break;
+        case EVENT_INNING_ENDING:
+            msg = "HALF-INNING ENDS";
+            break;
+        case EVENT_NEXT_PAIR:
+            msg = "NEXT PAIR";
+            break;
+        case EVENT_TWO_RUNS_SCORED:
+            msg = "TWO RUNS";
+            break;
+        }
+        print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
+    } else if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
+        print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
+    } else {
+        // Player selection info
+        int index;
+        int shouldContinue = 1;
+        if (stateInfo->rules->scoreboard.period < 4) {
+            if (stateInfo->match->pII.batterSelectionIndex == -1)
+                shouldContinue = 0;
+            else
+                index = stateInfo->match->pII.batterSelectionIndex;
+        } else {
+            int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
+            index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
+                        .batterRunnerIndices[0][stateInfo->rules->homeRunContestState.runnerBatterPairCounter];
+            if (index == -1) shouldContinue = 0;
+        }
+        if (shouldContinue == 1) {
+            int speed = stateInfo->match->playerInfo[index].bTPI.speed;
+            int power = stateInfo->match->playerInfo[index].bTPI.power;
+            char p_str[32];
+            sprintf(p_str, "S%d P%d", speed, power);
+            print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
-	glBindTexture(GL_TEXTURE_2D, selectionTextureBatting);
-	glPushMatrix();
-	glTranslatef(METER_X + (float)(alpha*swingMeterX + (1-alpha)*lastSwingMeterX), 1.0f, STATISTICS_TEXT_HEIGHT);
-	glScalef(0.002f, 0.01f, 0.02f);
-	glCallList(planeDisplayList);
-	glPopMatrix();
+            if (stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&
+                stateInfo->rules->scoreboard.period < 4) {
+                str5[0] = 'J';
+            } else {
+                str5[0] = (char)(((int)'0') + stateInfo->match->playerInfo[index].bTPI.number);
+            }
+            // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
+            print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
-	lastMeterX = meterX;
-	lastSwingMeterX = swingMeterX;
+            str4 = stateInfo->match->playerInfo[index].bTPI.name;
+            print_text_2d(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
+        }
+    }
 
+    // STATS (Center)
+    float stats_x = CENTER_X + STATS_OFFSET_X;
 
-	// and then draw little disks over basesTexture to indicate where baserunners are.
-	for(i = 0; i < BASE_COUNT; i++) {
-		int index = stateInfo->localGameInfo->pII.battingTeamOnFieldIndices[i];
-		if(index != -1) {
-			float left = BASES_X - 0.075f;
-			float interval = 0.15f/4;
-			float phase = 0.0f;
-			int base = 0;
-			float distance;
-			// for batter we say at 0 until we have passed the homeline.
-			if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 0) {
-				if(stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
-				        HOME_LINE_Z > 0) {
-					phase = 0.0f;
-				} else {
-					distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
-					phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
-					         HOME_LINE_Z) / distance;
-				}
-				base = 0;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 1) {
-				distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
-				         stateInfo->fieldPositions->firstBaseRun.x) / distance;
-				base = 1;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 2) {
-				distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.x -
-				         stateInfo->fieldPositions->secondBaseRun.x) / distance;
-				base = 2;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 3) {
-				distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
-				phase = (stateInfo->localGameInfo->playerInfo[index].tPI.location.z -
-				         stateInfo->fieldPositions->thirdBase.z) / distance;
-				base = 3;
-			} else if(stateInfo->localGameInfo->playerInfo[index].bTPI.base == 4) {
-				// and for player who arrives homebase we just set  the marker to be at the last position.
-				phase = 0.0f;
-				base = 4;
-			}
-			// and then just draw.
-			glBindTexture(GL_TEXTURE_2D, basesMarkerTexture);
-			glPushMatrix();
-			glTranslatef(left + interval*base + phase*interval,
-			             1.0f, STATISTICS_TEXT_HEIGHT);
-			glScalef(0.005f, 0.005f, 0.005f);
-			glCallList(planeDisplayList);
-			glPopMatrix();
-		}
-	}
+    // Inning
+    char inn_str[16] = "I  ";
+    if (stateInfo->rules->scoreboard.period < 4) {
+        inn_str[2] = (char)(((int)'0') + stateInfo->rules->scoreboard.inning / 2 + 1);
+    } else {
+        inn_str[2] = '0';
+    }
+    print_text_2d(inn_str, 3, stats_x - 140.0f, TEXT_Y, FONT_SIZE); // Moved Left
+
+    // Balls
+    char ball_str[16] = "B  ";
+    if (stateInfo->rules->halfInningState.balls < 10) {
+        ball_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.balls);
+    } else {
+        sprintf(ball_str, "B%d", stateInfo->rules->halfInningState.balls);
+    }
+    print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
+
+    // Strikes
+    char strike_str[16] = "S  ";
+    strike_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.strikes);
+    print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
+
+    // Runs
+    char runs_str[32];
+    sprintf(
+        runs_str, "R %d - %d", stateInfo->rules->scoreboard.teams[0].runs, stateInfo->rules->scoreboard.teams[1].runs
+    );
+    print_text_2d(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
+
+    // METER (Right-Center)
+    float meter_screen_x = CENTER_X + METER_OFFSET_X;
+    float meter_y = BASE_Y + 17.0f; // Shifted 12px down relative to old (Old was BASE_Y(-120)+25 = -95)
+    float meter_w = 200.0f;
+    float meter_h = 40.0f;
+
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/meter.tga"), meter_screen_x, meter_y, meter_w, meter_h
+    );
+
+    // Meter Markers
+    meterX = 0.16f * stateInfo->match->pRAI.meterValue;
+    swingMeterX = 0.16f * stateInfo->match->pRAI.swingMeterValue;
+
+    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * meter_w;
+    float swing_marker_x = meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * meter_w;
+
+    us->lastMeterX = meterX;
+    us->lastSwingMeterX = swingMeterX;
+
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, 5.0f, 40.0f
+    );
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, 5.0f, 40.0f
+    );
+
+    // BASES (Far Right)
+    float bases_screen_x = CENTER_X + BASES_OFFSET_X;
+    float bases_y = BASE_Y + 17.0f; // Shifted 12px down relative to old (Old was BASE_Y(-120)+25 = -95)
+    float bases_w = 200.0f;
+    float bases_h = 40.0f;
+
+    draw_texture_2d(
+        resource_manager_get_texture(rm, "data/textures/bases.tga"), bases_screen_x, bases_y, bases_w, bases_h
+    );
+
+    // Base Runners
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        int index = i;
+        if (stateInfo->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
+            float phase = 0.0f;
+            BaseID base = BASE_HOME;
+            float distance;
+            // Logic copied from original
+            if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
+                if (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
+                    phase = 0.0f;
+                } else {
+                    distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
+                    phase = (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
+                }
+                base = BASE_HOME;
+            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
+                distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
+                phase =
+                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) /
+                    distance;
+                base = BASE_FIRST;
+            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
+                distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
+                phase =
+                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) /
+                    distance;
+                base = BASE_SECOND;
+            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
+                distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
+                phase = (stateInfo->match->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) /
+                        distance;
+                base = BASE_THIRD;
+            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+                phase = 0.0f;
+                base = BASE_HOME_SCORED;
+            }
+
+            // Map to screen
+            // width is bases_w
+            float interval_px = bases_w / 4.0f;
+            float runner_x = bases_screen_x + ((int)base * interval_px) + (phase * interval_px) -
+                             6.0f; // -6.0f offset to center on image spots
+
+            draw_texture_2d(
+                resource_manager_get_texture(rm, "data/textures/basesMarker.tga"), runner_x, bases_y + 10.0f, 15.0f,
+                15.0f
+            );
+        }
+    }
 }
 
-static void loadGameScreenSettings(StateInfo* stateInfo)
+static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-	gameInfoEventTimer = -1;
-	// initialize cam
-	initCamSettings(stateInfo);
-	// this will initialize all player settings etc with knowledge in structures from main menu.
-	loadMutableWorldSettings(stateInfo);
+    stateInfo->match->uiState.gameInfoEventTimer = -1;
+    // initialize cam
+    init_cam_settings(stateInfo);
+    // Physical world + flow + team setup
+    reset_for_new_half_inning(
+        stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules, rng_seed
+    );
+    // Referee initialization (from-menu only — no state machine active, full clean slate)
+    referee_reset_for_new_inning(
+        &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState
+    );
+    // Scan physical world to establish initial legal tracking
+    initialize_referee(stateInfo, &stateInfo->rules->referee);
 }
 
-static void initCamSettings(StateInfo* stateInfo)
+static void init_cam_settings(StateInfo* stateInfo)
 {
-	lastCamTargetLocation.x = 0.0f;
-	lastCamTargetLocation.y = 0.0f;
-	lastCamTargetLocation.z = 0.0f;
-	camTargetLocation.x = 0.0f;
-	camTargetLocation.y = 0.0f;
-	camTargetLocation.z = -1.0f;
-	lastCamLocation.x = 0.0f;
-	lastCamLocation.y = 0.0f;
-	lastCamLocation.z = 0.0f;
-	camLocation.x = 0.0f;
-	camLocation.y = 0.0f;
-	camLocation.z = 0.0f;
+    CameraState* cs = &(stateInfo->match->cameraState);
 
-	cam.x = camLocation.x;
-	cam.y = 0.0f;
-	cam.z = 0.0f;
-	up.x = 0.0f;
-	up.y = 1.0f;
-	up.z = 0.0f;
-	look.x = 0.0f;
-	look.y = 0.0f;
-	look.z = 0.0f;
+    cs->lastCamTargetLocation.x = 0.0f;
+    cs->lastCamTargetLocation.y = 0.0f;
+    cs->lastCamTargetLocation.z = 0.0f;
+    cs->camTargetLocation.x = 0.0f;
+    cs->camTargetLocation.y = 0.0f;
+    cs->camTargetLocation.z = -1.0f;
+    cs->lastCamLocation.x = 0.0f;
+    cs->lastCamLocation.y = 0.0f;
+    cs->lastCamLocation.z = 0.0f;
+    cs->camLocation.x = 0.0f;
+    cs->camLocation.y = 0.0f;
+    cs->camLocation.z = 0.0f;
 
-	skyBoxCam.x = 0.0f;
-	skyBoxCam.y = 0.0f;
-	skyBoxCam.z = 0.0f;
-	skyBoxLook.x = 0.0f;
-	skyBoxLook.y = 0.0f;
-	skyBoxLook.z = -1.0f;
-	// these values are kinda trial and error values to move the statistics window to right place. i think proper deriving is unnecessary as we use perspective
-	// projection at the same time.
+    cs->cam.x = cs->camLocation.x;
+    cs->cam.y = 0.0f;
+    cs->cam.z = 0.0f;
+    cs->up.x = 0.0f;
+    cs->up.y = 1.0f;
+    cs->up.z = 0.0f;
+    cs->look.x = 0.0f;
+    cs->look.y = 0.0f;
+    cs->look.z = 0.0f;
 
-	// to move statistics to safe zone of tv
-	statCam.x = 0.0f;
-	statCam.y = 1.9f;
-	statCam.z = -1.69f;
-	statUp.x = 0.0f;
-	statUp.y = 0.0f;
-	statUp.z = -1.0f;
-	statLook.x = 0.0f;
-	statLook.y = 0.0f;
-	statLook.z = -1.69f;
+    cs->skyBoxCam.x = 0.0f;
+    cs->skyBoxCam.y = 0.0f;
+    cs->skyBoxCam.z = 0.0f;
+    cs->skyBoxLook.x = 0.0f;
+    cs->skyBoxLook.y = 0.0f;
+    cs->skyBoxLook.z = -1.0f;
+    // these values are kinda trial and error values to move the statistics window to right place. i think proper
+    // deriving is unnecessary as we use perspective projection at the same time.
 
+    // to move statistics to safe zone of tv
+    cs->statCam.x = 0.0f;
+    cs->statCam.y = 1.9f;
+    cs->statCam.z = -1.69f;
+    cs->statUp.x = 0.0f;
+    cs->statUp.y = 0.0f;
+    cs->statUp.z = -1.0f;
+    cs->statLook.x = 0.0f;
+    cs->statLook.y = 0.0f;
+    cs->statLook.z = -1.69f;
 }
 
-int cleanGameScreen(StateInfo* stateInfo)
+int clean_game_screen(StateInfo* stateInfo)
 {
-	int result;
-	cleanMesh(skyMesh);
-	cleanMesh(planeMesh);
+    int result;
 
-	result = cleanImmutableWorld(stateInfo);
-	if(result != 0) {
-		printf("Could not clean immutable world properly.\n");
-		return -1;
-	}
+    result = clean_immutable_world(stateInfo);
+    if (result != 0) {
+        printf("Could not clean immutable world properly.\n");
+        return -1;
+    }
 
-	result = cleanMutableWorld(stateInfo);
-	if(result != 0) {
-		printf("Could not clean mutable world properly.\n");
-		return -1;
-	}
+    result = clean_game_frame(stateInfo);
+    if (result != 0) {
+        printf("Could not clean mutable world properly.\n");
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }

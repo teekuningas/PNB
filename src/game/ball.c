@@ -1,68 +1,32 @@
 #include "globals.h"
-#include "render.h"
 #include "ball.h"
+#ifndef NO_RENDER
+#include "../renderer/ball_renderer.h"
+#endif
 
 #define BALL_SCALE BALL_SIZE
 #define SHADOW_CONSTANT 0.2f
 
-static GLuint ballTexture;
-
-static MeshObject* ballMesh;
-static GLuint ballDisplayList;
-
-static MeshObject* shadowMesh;
-static GLuint shadowDisplayList;
-
-
 // initializes ball as an entity in the empty space. ball has to be located to the field in a different place
-int initBall()
+int init_ball(ResourceManager* rm)
 {
-	// we define the texture and the mesh of the ball and its shadow.
-	// shadow is basically made by just removing color intensity of background of the shadow mesh, shadow mesh
-	// itself doesnt have any texture.
-	if(tryLoadingTextureGL(&ballTexture, "data/textures/pallo.tga", "ball") != 0) return -1;
-	ballMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/pallo.obj", "Icosphere", ballMesh, &ballDisplayList) != 0) return -1;
-	shadowMesh = (MeshObject *)malloc ( sizeof(MeshObject));
-	if(tryPreparingMeshGL("data/models/shadow.obj", "Circle", shadowMesh, &shadowDisplayList) != 0) return -1;
-
-	return 0;
+#ifndef NO_RENDER
+    if (init_ball_renderer(rm) != 0) return -1;
+#endif
+    return 0;
 }
-
-void drawBall(BallInfo* ballInfo, double alpha)
+void draw_ball(const BallInfo* ballInfo, double alpha, ResourceManager* rm)
 {
-	if(ballInfo->visible == 1) {
-		// we draw ball and its shadow. shadow's x offset is just proportional to ball's height.
-		glBindTexture(GL_TEXTURE_2D, ballTexture);
-		glPushMatrix();
-		glTranslatef((float)(alpha*ballInfo->location.x + (1-alpha)*ballInfo->lastLocation.x),
-		             (float)(alpha*ballInfo->location.y + (1-alpha)*ballInfo->lastLocation.y),
-		             (float)(alpha*ballInfo->location.z + (1-alpha)*ballInfo->lastLocation.z));
-		glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
-		glCallList(ballDisplayList);
-		glPopMatrix();
-		// and the shadow
-		glEnable(GL_BLEND);
-		glDisable(GL_LIGHTING);
-		glPushMatrix();
-		glTranslatef((float)(alpha*ballInfo->location.x + (1-alpha)*ballInfo->lastLocation.x +
-		                     -SHADOW_CONSTANT*(alpha*ballInfo->location.y + (1-alpha)*ballInfo->lastLocation.y)),
-		             SHADOW_HEIGHT,
-		             (float)(alpha*ballInfo->location.z + (1-alpha)*ballInfo->lastLocation.z));
-		glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
-		glCallList(ballDisplayList);
-		glPopMatrix();
-		glDisable(GL_BLEND);
-		glEnable(GL_LIGHTING);
-	}
+    // well ball renderer handles the ball drawing
+#ifndef NO_RENDER
+    draw_ball_renderer(ballInfo, alpha, rm);
+#endif
 }
-
-
-// cleaning keeps the house tidy
-int cleanBall()
+int clean_ball()
 {
-	cleanMesh(ballMesh);
-	cleanMesh(shadowMesh);
-	return 0;
+#ifndef NO_RENDER
+    return clean_ball_renderer();
+#else
+    return 0;
+#endif
 }
-

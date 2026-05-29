@@ -28,207 +28,203 @@
 // Describes the reason the menu is being entered, usually from the game screen.
 // This determines the menu's starting screen.
 typedef enum {
-	MENU_ENTRY_NORMAL = 0,          // Normal startup, show the main front page.
-	MENU_ENTRY_INTER_PERIOD = 1,    // Between periods, go to batting order.
-	MENU_ENTRY_SUPER_INNING = 2,    // Game tied, go to batting order for super inning.
-	MENU_ENTRY_HOMERUN_CONTEST = 3, // Super inning tied, go to homerun contest setup.
-	MENU_ENTRY_GAME_OVER = 4        // Game is over, show the summary screen.
+    MENU_ENTRY_NORMAL = 0, // Normal startup, show the main front page.
+    MENU_ENTRY_INTER_PERIOD = 1, // Between periods, go to batting order.
+    MENU_ENTRY_SUPER_INNING = 2, // Game tied, go to batting order for super inning.
+    MENU_ENTRY_HOMERUN_CONTEST = 3, // Super inning tied, go to homerun contest setup.
+    MENU_ENTRY_GAME_OVER = 4 // Game is over, show the summary screen.
 } MenuMode;
 
 typedef struct _MenuInfo {
-	MenuMode mode;
+    MenuMode mode;
 } MenuInfo;
 
 typedef enum {
-	MENU_STAGE_FRONT,
-	MENU_STAGE_TEAM_SELECTION,
-	MENU_STAGE_BATTING_ORDER_1,
-	MENU_STAGE_BATTING_ORDER_2,
-	MENU_STAGE_HUTUNKEITTO,
-	MENU_STAGE_GAME_OVER,
-	MENU_STAGE_HOMERUN_CONTEST_1,
-	MENU_STAGE_HOMERUN_CONTEST_2,
-	MENU_STAGE_CUP,
-	MENU_STAGE_HELP,
-	MENU_STAGE_GO_TO_GAME,
-	// Special stage for quitting the application
-	MENU_STAGE_QUIT
+    MENU_STAGE_FRONT,
+    MENU_STAGE_TEAM_SELECTION,
+    MENU_STAGE_BATTING_ORDER_1,
+    MENU_STAGE_BATTING_ORDER_2,
+    MENU_STAGE_HUTUNKEITTO,
+    MENU_STAGE_GAME_OVER,
+    MENU_STAGE_HOMERUN_CONTEST_1,
+    MENU_STAGE_HOMERUN_CONTEST_2,
+    MENU_STAGE_CUP,
+    MENU_STAGE_HELP,
+    MENU_STAGE_GO_TO_GAME,
+    // Special stage for quitting the application
+    MENU_STAGE_QUIT
 } MenuStage;
 
 typedef enum {
-	TEAM_SELECTION_STAGE_TEAM_1,
-	TEAM_SELECTION_STAGE_CONTROL_1,
-	TEAM_SELECTION_STAGE_TEAM_2,
-	TEAM_SELECTION_STAGE_CONTROL_2,
-	TEAM_SELECTION_STAGE_INNINGS
+    TEAM_SELECTION_STAGE_TEAM_1,
+    TEAM_SELECTION_STAGE_CONTROL_1,
+    TEAM_SELECTION_STAGE_TEAM_2,
+    TEAM_SELECTION_STAGE_CONTROL_2,
+    TEAM_SELECTION_STAGE_INNINGS
 } TeamSelectionStage;
 
 typedef struct {
-	char name[32];
-	int speed;
-	int power;
+    char name[32];
+    int speed;
+    int power;
 } BattingOrderPlayer;
 
 // State for batting order screen
 typedef struct {
-	int pointer;
-	int rem;
-	int mark;
-	int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
-	int team_index;
-	int player_control;
-	BattingOrderPlayer players[PLAYERS_IN_TEAM + JOKER_COUNT];
+    int pointer;
+    int rem;
+    int mark;
+    int batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
+    int team_index;
+    int player_control;
+    BattingOrderPlayer players[PLAYERS_IN_TEAM + JOKER_COUNT];
 } BattingOrderState;
 
 // State specific to the team selection screen
 typedef struct {
-	TeamSelectionStage state;
-	int pointer;
-	int team1;
-	int team2;
-	int team1_controller;
-	int team2_controller;
-	int innings;
-	int rem;
-	int numTeams;
+    TeamSelectionStage state;
+    int pointer;
+    int team1;
+    int team2;
+    int team1_controller;
+    int team2_controller;
+    int innings;
+    int rem;
+    int numTeams;
 } TeamSelectionState;
 
 // State for hutunkeitto screen
 
 typedef struct {
-	int state;
-	int batTimer;
-	int batTimerLimit;
-	int batTimerCount;
-	int leftReady;
-	int rightReady;
-	int turnCount;
-	float batHeight;
-	float batPosition;
-	float leftHandHeight;
-	float leftHandPosition;
-	float rightHandHeight;
-	float rightHandPosition;
-	float tempLeftHeight;
-	float handsZ;
-	float refereeHandHeight;
-	int leftScaleCount;
-	int rightScaleCount;
-	int playsFirst;
-	int pointer;
-	int rem;
+    int state;
+    int batTimer;
+    int batTimerLimit;
+    int batTimerCount;
+    int leftReady;
+    int rightReady;
+    int turnCount;
+    float batHeight;
+    float batPosition;
+    float leftHandHeight;
+    float leftHandPosition;
+    float rightHandHeight;
+    float rightHandPosition;
+    float tempLeftHeight;
+    float handsZ;
+    float refereeHandHeight;
+    int leftScaleCount;
+    int rightScaleCount;
+    int playsFirst;
+    int pointer;
+    int rem;
 } HutunkeittoState;
 
 // State for the main menu screen
 typedef struct {
-	int pointer;
-	int rem;
+    int pointer;
+    int rem;
 } FrontMenuState;
 
 // State for the help screen
 typedef struct {
-	int page;
+    int page;
 } HelpMenuState;
 
 // State for the home-run contest stages (one per team)
 typedef struct {
-	int team_index;        // index into StateInfo.teamData
-	int player_control;    // 0=Pad1,1=Pad2,2=AI
-	int pointer;           // current menu cursor (0=Continue, 1+ = player slots)
-	int rem;               // total cursor positions = players+1
-	int choiceCount;       // total picks per team (batters+runners)
-	int choiceCounter;     // how many picks made so far
-	int choices[2][MAX_HOMERUN_PAIRS]; // [0]=batters, [1]=runners
+    int team_index; // index into StateInfo.teamData
+    int player_control; // 0=Pad1,1=Pad2,2=AI
+    int pointer; // current menu cursor (0=Continue, 1+ = player slots)
+    int rem; // total cursor positions = players+1
+    int choiceCount; // total picks per team (batters+runners)
+    int choiceCounter; // how many picks made so far
+    int choices[2][MAX_HOMERUN_PAIRS]; // [0]=batters, [1]=runners
 } HomerunContestState;
 
 typedef enum {
-	CUP_MENU_SCREEN_INITIAL,
-	CUP_MENU_SCREEN_ONGOING,
-	CUP_MENU_SCREEN_NEW_CUP,
-	CUP_MENU_SCREEN_LOAD_CUP,
-	CUP_MENU_SCREEN_VIEW_SCHEDULE,
-	CUP_MENU_SCREEN_VIEW_TREE,
-	CUP_MENU_SCREEN_SAVE_CUP,
-	CUP_MENU_SCREEN_END_CREDITS
+    CUP_MENU_SCREEN_INITIAL,
+    CUP_MENU_SCREEN_ONGOING,
+    CUP_MENU_SCREEN_NEW_CUP,
+    CUP_MENU_SCREEN_LOAD_CUP,
+    CUP_MENU_SCREEN_VIEW_SCHEDULE,
+    CUP_MENU_SCREEN_VIEW_TREE,
+    CUP_MENU_SCREEN_SAVE_CUP,
+    CUP_MENU_SCREEN_END_CREDITS
 } CupMenuScreen;
 
-typedef enum {
-	NEW_CUP_STAGE_TEAM_SELECTION,
-	NEW_CUP_STAGE_WINS_TO_ADVANCE,
-	NEW_CUP_STAGE_INNINGS
-} NewCupStage;
+typedef enum { NEW_CUP_STAGE_TEAM_SELECTION, NEW_CUP_STAGE_WINS_TO_ADVANCE, NEW_CUP_STAGE_INNINGS } NewCupStage;
 
 typedef struct {
-	float x;
-	float y;
+    float x;
+    float y;
 } TreeCoordinates;
 
 typedef struct {
-	float creditsScrollX;
+    float creditsScrollX;
 } CreditsMenuState;
 
 typedef struct {
-	int pointer;
-	int rem;
+    int pointer;
+    int rem;
 } CupInitialState;
 
 typedef struct {
-	int pointer;
-	int rem;
+    int pointer;
+    int rem;
 } CupOngoingState;
 
 typedef struct {
-	int pointer;
-	int rem;
-	NewCupStage new_cup_stage;
-	TeamID team_selection;
-	int wins_to_advance;
+    int pointer;
+    int rem;
+    NewCupStage new_cup_stage;
+    TeamID team_selection;
+    int wins_to_advance;
 } CupNewState;
 
 typedef struct {
-	int pointer;
-	int rem;
+    int pointer;
+    int rem;
 } CupLoadSaveState;
 
 typedef struct {
-	int exists;
-	TeamID user_team_id;
-	TeamID opponent_team_id;
-	int is_finished;
-	int current_day;
+    int exists;
+    TeamID user_team_id;
+    TeamID opponent_team_id;
+    int is_finished;
+    int current_day;
 } SaveSlotInfo;
 
 typedef struct {
-	TreeCoordinates treeCoordinates[SLOT_COUNT];
+    TreeCoordinates treeCoordinates[SLOT_COUNT];
 } CupViewTreeState;
 
 typedef struct {
-	CupMenuScreen screen;
+    CupMenuScreen screen;
 
-	CupInitialState initial;
-	CupOngoingState ongoing;
-	CupNewState new_cup;
-	CupLoadSaveState load_save;
-	CupViewTreeState view_tree;
-	CreditsMenuState credits_menu;
+    CupInitialState initial;
+    CupOngoingState ongoing;
+    CupNewState new_cup;
+    CupLoadSaveState load_save;
+    CupViewTreeState view_tree;
+    CreditsMenuState credits_menu;
 
-	SaveSlotInfo save_slots[5];  // Cached information about save files
+    SaveSlotInfo save_slots[5]; // Cached information about save files
 } CupMenuState;
 
 typedef struct MenuData {
-	// Game Setup Data
-	GameSetup pendingGameSetup;
+    // Game Setup Data
+    GameSetup pendingGameSetup;
 
-	// Menu State
-	MenuStage stage;
-	FrontMenuState front_menu;
-	TeamSelectionState team_selection;
-	BattingOrderState batting_order;
-	HutunkeittoState hutunkeitto;
-	HomerunContestState homerun1;
-	HomerunContestState homerun2;
-	CupMenuState cup_menu;
-	HelpMenuState help_menu;
+    // Menu State
+    MenuStage stage;
+    FrontMenuState front_menu;
+    TeamSelectionState team_selection;
+    BattingOrderState batting_order;
+    HutunkeittoState hutunkeitto;
+    HomerunContestState homerun1;
+    HomerunContestState homerun2;
+    CupMenuState cup_menu;
+    HelpMenuState help_menu;
 } MenuData;
 
 #endif /* MENU_TYPES_H */

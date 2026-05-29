@@ -3,12 +3,52 @@ PNB - Not Baseball Since 2013
 
 ## Installation
 
-Download and extract the zip file from the Releases.  
+Download and extract the zip file from the Releases.
 
-## Install, develop and run using nix on linux
+### GitHub Copilot Setup
 
+GitHub Copilot uses a simple token-based authentication:
+
+```bash
+# Authenticate with GitHub CLI (one-time setup)
+gh auth login
+
+# The token is automatically extracted when starting the agent
 ```
-$ make shell  
-$ make main  
-$ make run
+
+### Gemini CLI Setup
+
+Gemini CLI requires OAuth authentication to use your Google AI Pro subscription quota:
+
+**One-time setup (on host machine):**
+
+```bash
+# 1. Force file-based storage for token extraction
+export GEMINI_FORCE_FILE_STORAGE=true
+
+# 2. Start Gemini CLI and login with your Google account
+gemini
+
+# 3. In the CLI, type: /auth
+# 4. Select "Login with Google"
+# 5. Complete authentication in your browser
+# 6. Exit Gemini CLI
+```
+
+**Note:** This OAuth login gives you access to your Google AI Pro subscription quota instead of consuming GCP billing credits.
+
+### Starting the Agent
+
+```bash
+nix develop
+export COPILOT_GITHUB_TOKEN=$(gh auth token)
+export GOOGLE_GENAI_USE_GCA=true
+export GOOGLE_CLOUD_ACCESS_TOKEN=$(./.dev/scripts/extract_gemini_token.py)
+export GIT_AUTHOR_NAME="$(git config user.name)"
+export GIT_COMMITTER_NAME="$(git config user.name)"
+export GIT_AUTHOR_EMAIL="$(git config user.email)"
+export GIT_COMMITTER_EMAIL="$(git config user.email)"
+devcontainer build --workspace-folder .
+devcontainer up --workspace-folder .
+devcontainer exec --workspace-folder . make watch_task_agent
 ```

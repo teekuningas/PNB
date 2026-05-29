@@ -1,4 +1,20 @@
+__pycache__
 obj/
 main
 test_runner
+integration_runner
+scenario_runner
+contract_runner
 *.orig
+*.json
+
+# Nix
+result
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+debug.log

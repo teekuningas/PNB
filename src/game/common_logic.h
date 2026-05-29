@@ -3,40 +3,53 @@
 
 #include "globals.h"
 
-int isVectorSmallEnoughSphere(Vector3D *vector, float limit);
-int isVectorSmallEnoughCircleXZV(Vector3D *vector, float limit);
-int isVectorSmallEnoughCircleXZ(float dx, float dz, float limit);
-void setVectorXYZ(Vector3D *vector, float x, float y, float z);
-void setVectorV(Vector3D *vector1, Vector3D *vector2);
-void setVectorXZ(Vector3D *vector, float x, float z);
-void addToVectorXZ(Vector3D *vector, float x, float z);
-void addToVectorV(Vector3D *vector1, Vector3D *vector2);
-void stopMovement(StateInfo* stateInfo, int index);
-void smoothOutMovement(StateInfo* stateInfo);
-void stopTargetLookingPlayer(StateInfo* stateInfo, int index);
-void setOrientation(StateInfo* stateInfo, int i);
-void runToTarget(StateInfo* stateInfo, int index, Vector3D *target);
-void moveToTarget(StateInfo* stateInfo, int index, Vector3D *target);
-void movePlayerOut(StateInfo* stateInfo, int index);
-void moveRankedToCatch(StateInfo* stateInfo);
-void runToNextBase(StateInfo* stateInfo, int index, int base);
-void runToPreviousBase(StateInfo* stateInfo, int index, int base);
-void lead(StateInfo* stateInfo, int index);
-int checkIfBallIsOutOfBounds(StateInfo* stateInfo);
-void changePlayer(StateInfo* stateInfo);
-void prepareBatter(StateInfo* stateInfo);
-void calculateFreeWalk(StateInfo* stateInfo);
-void initializeSpatialPlayerInformation(StateInfo* stateInfo);
-void initializeInningPermanentPlayerInformation(StateInfo* stateInfo);
-void initializeNonCriticalPlayerInformation(StateInfo* stateInfo);
-void initializeCriticalBattingTeamInformation(StateInfo* stateInfo);
-void initializeBallInfo(StateInfo* stateInfo);
-void initializeActionInfo(StateInfo* stateInfo);
-void initializeTemporaryGameAnalysisInfo(StateInfo* stateInfo);
-void initializeCriticalGameInfo(StateInfo* stateInfo);
-void initializeIndexInformation(StateInfo* stateInfo);
-void initializePRAIInformation(StateInfo* stateInfo);
-void setRunnerAndBatter(StateInfo* stateInfo);
-void loadMutableWorldSettings(StateInfo* stateInfo);
+int is_vector_small_enough_sphere(Vector3D* vector, float limit);
+int is_vector_small_enough_circle_xzv(Vector3D* vector, float limit);
+int is_vector_small_enough_circle_xz(float dx, float dz, float limit);
+void set_vector_xyz(Vector3D* vector, float x, float y, float z);
+void set_vector_v(Vector3D* vector1, Vector3D* vector2);
+void set_vector_xz(Vector3D* vector, float x, float z);
+void add_to_vector_xz(Vector3D* vector, float x, float z);
+void add_to_vector_v(Vector3D* vector1, Vector3D* vector2);
+void stop_movement(PlayerInfo* playerInfo, int index);
+void smooth_out_movement(MatchSession* match); // Still needs ActionFlags
+void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index);
+void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i);
+void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
+void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
+void move_player_out(
+    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
+);
+void move_ranked_to_catch(MatchSession* match);
+void run_to_next_base(
+    MatchSession* match, const FieldPositions* field_positions, int index, BaseID base
+); // Needs GameControl, PRAI
+void run_to_previous_base(
+    MatchSession* match, const FieldPositions* field_positions, int index, BaseID base
+); // Needs PRAI
+void lead_from_base(
+    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
+);
+void change_player(MatchSession* match);
+void prepare_batter(MatchSession* match);
+void calculate_free_walk(MatchSession* match, const RefereeState* referee);
+void initialize_spatial_player_information(
+    MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
+);
+void initialize_inning_permanent_player_information(
+    MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
+);
+void initialize_non_critical_player_information(MatchSession* match);
+void initialize_ball_info(MatchSession* match);
+void initialize_action_info(MatchSession* match);
+void reset_flow_state(MatchSession* match, PlayerCounters* player_counters);
+void initialize_critical_game_info(MatchSession* match, PlayerCounters* player_counters, const Scoreboard* scoreboard);
+void initialize_index_information(MatchSession* match);
+void initialize_prai_information(MatchSession* match);
+void setup_homerun_physical_state(
+    MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
+    const FieldPositions* field_positions
+);
+void clear_frame_events(GameEvents* events);
 
 #endif /* COMMON_LOGIC_H */

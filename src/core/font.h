@@ -1,11 +1,11 @@
 #ifndef FONT_H
 #define FONT_H
 
-int initFont();
-void drawFontBackground();
-void printText(const char* str, unsigned int len, float x, float y, float size);
-void printText2D(const char* str, unsigned int len, float x, float y, float size);
-float getTextWidth2D(const char* str, unsigned int len, float size);
-int cleanFont();
+int init_font();
+void draw_font_background();
+void print_text(const char* str, unsigned int len, float x, float y, float size);
+void print_text_2d(const char* str, unsigned int len, float x, float y, float size);
+float get_text_width_2d(const char* str, unsigned int len, float size);
+int clean_font();
 
 #endif /* FONT_H */
