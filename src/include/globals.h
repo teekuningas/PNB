@@ -728,27 +728,32 @@ typedef struct _Scoreboard {
     int isCupGame;
 } Scoreboard;
 
+// GameRulesState — Referee-owned state, structurally separated from physical/action state.
+// Only the referee writes these at runtime. Other stages receive const pointers.
+typedef struct _GameRulesState {
+    RefereeState referee;
+    HalfInningState halfInningState;
+    BetweenPitchState betweenPitchState;
+    PlayerCounters playerCounters;
+    HomeRunContestState homeRunContestState;
+    Scoreboard scoreboard;
+} GameRulesState;
+
 typedef struct _MatchSession {
     PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
-    RefereeState referee; // Milestone 12 - Referee State
     ActionFlags aF;
     PlayerIndexInfo pII;
     PlayerRelatedActionInfo pRAI;
-    HalfInningState halfInningState; // MILESTONE 7.5 - New core state
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
-    BetweenPitchState betweenPitchState; // MILESTONE 17 - Sticky referee decisions (reset at pitch start)
     FlowControl flowControl; // MILESTONE 17 - User flow gates
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
-    PlayerCounters playerCounters; // MILESTONE 7.5 - Player tracking
-    HomeRunContestState homeRunContestState; // MILESTONE 7.5 - Game mode specific state
     PendingActionState pendingActionState; // Milestone 10 - Action globals
     AIState aiState; // Milestone 11 - AI globals
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
     UIState uiState; // Milestone 11 - UI state
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
-    Scoreboard scoreboard;
 
 } MatchSession;
 
@@ -779,6 +784,7 @@ typedef struct _StateInfo {
     TeamData* teamData;
     FieldPositions* fieldPositions;
     MatchSession* match;
+    GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;
 } StateInfo;

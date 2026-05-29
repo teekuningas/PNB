@@ -89,7 +89,7 @@ void selectBatter(StateInfo* stateInfo)
     // ARCHITECTURE ENFORCEMENT:
     // We cannot select a new batter if someone else still holds safety at Home Base.
     // The Referee is the single source of truth. If it says Home is occupied, we must wait.
-    if (get_base_controller(stateInfo->match, BASE_HOME) != -1) {
+    if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, BASE_HOME) != -1) {
         // Optional: We could log this or provide feedback, but for now we just prevent the illegal action.
         // This prevents the "Player 3 SAFE vs Controller 2" crash.
         return;
@@ -124,11 +124,11 @@ void selectBatter(StateInfo* stateInfo)
         stateInfo->match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
         // if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
         if (stateInfo->match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
-            stateInfo->match->playerCounters.jokersLeft--;
+            stateInfo->rules->playerCounters.jokersLeft--;
             stateInfo->match->playerInfo[index].bTPI.joker = JOKER_USED;
         } else {
             // otherwise he is not a joker player and we must decrease the amount of those.
-            stateInfo->match->playerCounters.nonJokerPlayersLeft--;
+            stateInfo->rules->playerCounters.nonJokerPlayersLeft--;
             // batterOrderIndex is now advanced by the referee on batterEntered event
         }
         // move player to default batter ready position
@@ -397,7 +397,7 @@ void updateBatting(StateInfo* stateInfo)
             // Guard reads sticky flag: on the hit frame it's still NONE (allows processing),
             // referee promotes it later this frame, and next frame the guard blocks re-entry.
             if (stateInfo->match->pendingActionState.battingStopped == 0 &&
-                stateInfo->match->betweenPitchState.batOutcome == BAT_OUTCOME_NONE) {
+                stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_NONE) {
                 // if ball doesnt go too far away to left or right
                 if (stateInfo->match->ballInfo.location.x < BALL_MAX_OFFSET &&
                     stateInfo->match->ballInfo.location.x > -BALL_MAX_OFFSET) {
@@ -454,7 +454,8 @@ void updateBatting(StateInfo* stateInfo)
                             // move the batter if wanted
 
                             if (stateInfo->match->pRAI.willStartRunning[0] == 1) {
-                                int base_index = get_base_controller(stateInfo->match, BASE_HOME);
+                                int base_index =
+                                    get_base_controller(stateInfo->match, &stateInfo->rules->referee, BASE_HOME);
                                 stateInfo->match->pRAI.willStartRunning[0] = 0;
                                 if (base_index != -1) {
                                     run_to_next_base(

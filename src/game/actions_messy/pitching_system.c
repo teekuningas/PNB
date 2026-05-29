@@ -188,7 +188,7 @@ void releasePitch(StateInfo* stateInfo)
 
     for (i = 1; i < BASE_COUNT; i++) {
         if (stateInfo->match->pRAI.willStartRunning[i] == 1) {
-            int index = get_base_controller(stateInfo->match, (BaseID)i);
+            int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
             stateInfo->match->pRAI.willStartRunning[i] = 0;
             if (index != -1) {
                 run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, (BaseID)i);
@@ -324,7 +324,7 @@ void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
 
                         int onFieldCount = count_active_batting_players(stateInfo->match->playerInfo);
                         calculate_ai_pitch_targets(
-                            rand1, rand2, rand3, onFieldCount, &(stateInfo->match->halfInningState),
+                            rand1, rand2, rand3, onFieldCount, &(stateInfo->rules->halfInningState),
                             ANIMATION_FREQUENCY, &(stateInfo->match->aiState.pitchFirstLimit),
                             &(stateInfo->match->aiState.pitchSecondLimit)
                         );

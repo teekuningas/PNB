@@ -17,41 +17,42 @@ void reset_physical_world(MatchSession* match, const FieldPositions* field_posit
 // NOTE: Referee has already cleared its own legal state at DETECTED→RESETTING.
 // This function does NOT touch referee-owned state (ownership boundary).
 void reset_for_new_half_inning(
-    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, GameRulesState* rules,
+    unsigned int* rng_seed
 )
 {
     reset_physical_world(match, field_positions, rng_seed);
-    reset_flow_state(match);
+    reset_flow_state(match, &rules->playerCounters);
 
     // Team setup
-    initialize_critical_game_info(match, &match->scoreboard);
-    initialize_inning_permanent_player_information(match, &match->scoreboard, team_data);
+    initialize_critical_game_info(match, &rules->playerCounters, &rules->scoreboard);
+    initialize_inning_permanent_player_information(match, &rules->scoreboard, team_data);
 
-    if (match->scoreboard.period >= 4) {
-        if (!(match->homeRunContestState.runnerBatterPairCounter > 0 &&
-              match->homeRunContestState.runnerBatterPairCounter < match->scoreboard.pairCount)) {
-            match->homeRunContestState.runnerBatterPairCounter = 0;
+    if (rules->scoreboard.period >= 4) {
+        if (!(rules->homeRunContestState.runnerBatterPairCounter > 0 &&
+              rules->homeRunContestState.runnerBatterPairCounter < rules->scoreboard.pairCount)) {
+            rules->homeRunContestState.runnerBatterPairCounter = 0;
         }
-        setup_homerun_physical_state(match, &match->scoreboard, field_positions);
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions);
     }
 }
 
 // Recipe 2: Foul play — referee already restored legal state from snapshot
 void reset_for_foul_play(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
 )
 {
     reset_physical_world(match, field_positions, rng_seed);
-    reset_flow_state(match);
+    reset_flow_state(match, &rules->playerCounters);
 
-    if (match->scoreboard.period >= 4) {
+    if (rules->scoreboard.period >= 4) {
         // Homerun Contest special initialization
-        setup_homerun_physical_state(match, &match->scoreboard, field_positions);
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions);
     } else {
         // restorePlayersToRefereePositions: Restore players to their bases at the start of the pitch
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            if (referee->battingPlayers[j].baseAtPitchStart != BASE_NONE) {
-                BaseID restoreBase = referee->battingPlayers[j].baseAtPitchStart;
+            if (rules->referee.battingPlayers[j].baseAtPitchStart != BASE_NONE) {
+                BaseID restoreBase = rules->referee.battingPlayers[j].baseAtPitchStart;
 
                 // 1. Restore Player State and ID (Physical/Logical State)
                 if (restoreBase == BASE_HOME) {
@@ -81,13 +82,13 @@ void reset_for_foul_play(
             } else {
                 // Restore OUT/SCORED/WOUNDED states to avoid re-triggering animations
                 // This is physical state sync
-                if (referee->battingPlayers[j].status == PLAYER_STATUS_OUT) {
+                if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
                     match->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
                     match->playerInfo[j].bTPI.baseId = BASE_NONE;
-                } else if (referee->battingPlayers[j].hasScored) {
+                } else if (rules->referee.battingPlayers[j].hasScored) {
                     match->playerInfo[j].bTPI.state = PLAYER_STATE_SCORED;
                     match->playerInfo[j].bTPI.baseId = BASE_NONE;
-                } else if (referee->battingPlayers[j].status == PLAYER_STATUS_WOUNDED) {
+                } else if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_WOUNDED) {
                     match->playerInfo[j].bTPI.state = PLAYER_STATE_WOUNDED;
                     match->playerInfo[j].bTPI.baseId = BASE_NONE;
                 }
@@ -97,9 +98,12 @@ void reset_for_foul_play(
 }
 
 // Recipe 3: Next HR pair — referee already cleared per-pair state
-void reset_for_next_pair(MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed)
+void reset_for_next_pair(
+    MatchSession* match, const FieldPositions* field_positions, const Scoreboard* scoreboard,
+    const HomeRunContestState* hrcs, PlayerCounters* player_counters, unsigned int* rng_seed
+)
 {
     reset_physical_world(match, field_positions, rng_seed);
-    reset_flow_state(match);
-    setup_homerun_physical_state(match, &match->scoreboard, field_positions);
+    reset_flow_state(match, player_counters);
+    setup_homerun_physical_state(match, scoreboard, hrcs, field_positions);
 }

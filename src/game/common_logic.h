@@ -42,12 +42,13 @@ void initialize_inning_permanent_player_information(
 void initialize_non_critical_player_information(MatchSession* match);
 void initialize_ball_info(MatchSession* match);
 void initialize_action_info(MatchSession* match);
-void reset_flow_state(MatchSession* match);
-void initialize_critical_game_info(MatchSession* match, const Scoreboard* scoreboard);
+void reset_flow_state(MatchSession* match, PlayerCounters* player_counters);
+void initialize_critical_game_info(MatchSession* match, PlayerCounters* player_counters, const Scoreboard* scoreboard);
 void initialize_index_information(MatchSession* match);
 void initialize_prai_information(MatchSession* match);
 void setup_homerun_physical_state(
-    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* field_positions
+    MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
+    const FieldPositions* field_positions
 );
 void clear_frame_events(GameEvents* events);
 

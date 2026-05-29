@@ -16,16 +16,10 @@ void consolidation_init(GameFlowState* gameFlowState);
 
 // Main update function: Reacts to Referee decisions, manages flow, and enforces physical state.
 // Referee-owned state is passed as const — consolidation READS legal state but never WRITES to it.
-// No StateInfo* — consolidation receives only what it needs:
-//   - match: mutable game session (physical state, flow control, action state)
-//   - field_positions: read-only field geometry
-//   - team_data: read-only team roster (for reset recipes)
-//   - game_conclusion: output for game-over summary
-//   - referee/bps/his/scoreboard: const referee-owned state
+// The GameRulesState* is passed for reset recipes that need to read/reset contest state.
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const RefereeState* referee, const BetweenPitchState* bps,
-    const HalfInningState* his, const Scoreboard* scoreboard, MenuInfo* menuInfo, unsigned int* rng_seed,
+    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
     ConsolidationOutput* output
 );
 

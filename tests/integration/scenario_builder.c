@@ -38,9 +38,11 @@ ScenarioContext* create_scenario(void)
     // In tests, we don't have a game loop that responds to changeScreen=1,
     // so manually call reset_for_new_half_inning to initialize physical+flow+team,
     // then referee_reset_for_new_inning to clear all referee state (from-menu init).
-    reset_for_new_half_inning(ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, &ctx->seed);
+    reset_for_new_half_inning(
+        ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules, &ctx->seed
+    );
     referee_reset_for_new_inning(
-        &ctx->state->match->referee, &ctx->state->match->halfInningState, &ctx->state->match->betweenPitchState
+        &ctx->state->rules->referee, &ctx->state->rules->halfInningState, &ctx->state->rules->betweenPitchState
     );
 
     ctx->currentFrame = 0;
@@ -52,7 +54,7 @@ void initialize_referee_from_physical_state(ScenarioContext* ctx)
 {
     // Initialize referee by scanning the physical world
     // This replaces the old gameInitialized event pattern
-    initialize_referee(ctx->state, &ctx->state->match->referee);
+    initialize_referee(ctx->state, &ctx->state->rules->referee);
 }
 
 void snapshot_pitch_start_state(ScenarioContext* ctx)
@@ -245,19 +247,20 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // action_invocations() is intentionally omitted here: tests control player/AI decisions
         // explicitly via scenario helpers, not through the normal input dispatch path.
         action_implementation(ctx->state, &ctx->seed);
-        game_manipulation(ctx->state->match, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+        game_manipulation(
+            ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
+        );
 
         // Milestone 14: Rules engine must run after physics to reconcile state
-        MatchSession* game = ctx->state->match;
+        GameRulesState* rules = ctx->state->rules;
         update_referee(
-            ctx->state, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
-            &ctx->state->match->scoreboard, &game->homeRunContestState
+            ctx->state, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->playerCounters,
+            &rules->scoreboard, &rules->homeRunContestState
         );
         ConsolidationOutput consolidation_output;
         consolidation_update(
-            game, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, &game->referee,
-            &game->betweenPitchState, &game->halfInningState, &game->scoreboard, &ctx->menu, &ctx->seed,
-            &consolidation_output
+            ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, rules,
+            &ctx->menu, &ctx->seed, &consolidation_output
         );
         // Handle screen transition in test context
         if (consolidation_output.request_screen_change) {
@@ -269,10 +272,10 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // Foul Play Reset is now handled by consolidation_update. Manual logic removed.
 
         // 5. Referee Finalize (RESETTING→NONE transitions)
-        referee_finalize(ctx->state, &game->referee, &game->betweenPitchState);
+        referee_finalize(ctx->state, &rules->referee, &rules->betweenPitchState);
 
         // Clear transient events for next frame (Critical for correct event loop)
-        clear_frame_events(&game->gameEvents);
+        clear_frame_events(&ctx->state->match->gameEvents);
 
         ctx->currentFrame++;
     }
@@ -389,7 +392,7 @@ void hit_fly_ball_to_location_with_time(
 
     // Ensure ball is in "fly ball" state so a catch triggers wounding
     game->ballInfo.currentFlightHasHitGround = 0;
-    game->betweenPitchState.batOutcome = BAT_OUTCOME_HIT; // Crucial: signals this ball came from the bat
+    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT; // Crucial: signals this ball came from the bat
 }
 
 void hit_fly_ball_to_location(ScenarioContext* ctx, Vector3D fromLocation, Vector3D targetLocation)

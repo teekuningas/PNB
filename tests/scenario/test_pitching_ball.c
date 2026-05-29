@@ -26,11 +26,11 @@ int test_full_pitching_ball(void)
     for (int i = 0; i < 200; i++) {
         simulate_frames(ctx, 1);
 
-        if (ctx->state->match->halfInningState.balls == 1) {
+        if (ctx->state->rules->halfInningState.balls == 1) {
             ballDetected = 1;
             printf(
-                "[TEST] Frame %d: Ball detected! Count: %d-%d\n", i, ctx->state->match->halfInningState.balls,
-                ctx->state->match->halfInningState.strikes
+                "[TEST] Frame %d: Ball detected! Count: %d-%d\n", i, ctx->state->rules->halfInningState.balls,
+                ctx->state->rules->halfInningState.strikes
             );
             break;
         }

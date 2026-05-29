@@ -171,20 +171,20 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
     }
     // if someone has ball
     if (stateInfo->match->pII.hasBallIndex != -1) {
-        int index3 = get_base_controller(stateInfo->match, (BaseID)3);
-        int index2 = get_base_controller(stateInfo->match, (BaseID)2);
+        int index3 = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)3);
+        int index2 = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)2);
 
         BaseID r3BaseAtPitchStart = BASE_NONE;
         int r3IsOnBase = 0;
         if (index3 != -1) {
-            r3BaseAtPitchStart = stateInfo->match->referee.battingPlayers[index3].baseAtPitchStart;
+            r3BaseAtPitchStart = stateInfo->rules->referee.battingPlayers[index3].baseAtPitchStart;
             r3IsOnBase = (stateInfo->match->playerInfo[index3].bTPI.state == PLAYER_STATE_ON_BASE);
         }
 
         BaseID r2BaseAtPitchStart = BASE_NONE;
         int r2IsOnBase = 0;
         if (index2 != -1) {
-            r2BaseAtPitchStart = stateInfo->match->referee.battingPlayers[index2].baseAtPitchStart;
+            r2BaseAtPitchStart = stateInfo->rules->referee.battingPlayers[index2].baseAtPitchStart;
             r2IsOnBase = (stateInfo->match->playerInfo[index2].bTPI.state == PLAYER_STATE_ON_BASE);
         }
 
@@ -192,7 +192,7 @@ void updateCatchingAI(StateInfo* stateInfo, unsigned int* rng_seed)
         int hasBallIndex = stateInfo->match->pII.hasBallIndex;
 
         if (should_ai_drop_ball(
-                &(stateInfo->match->referee), &(stateInfo->match->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase,
+                &(stateInfo->rules->referee), &(stateInfo->rules->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase,
                 r2BaseAtPitchStart, r2IsOnBase, catcherHomeIndex, hasBallIndex
             )) {
             if (stateInfo->match->pendingActionState.aiActionEventLock == AI_NO_LOCK &&

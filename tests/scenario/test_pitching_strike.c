@@ -25,11 +25,11 @@ int test_full_pitching_strike(void)
     int strikeDetected = 0;
     for (int i = 0; i < 200; i++) {
         simulate_frames(ctx, 1);
-        if (ctx->state->match->halfInningState.strikes == 1) {
+        if (ctx->state->rules->halfInningState.strikes == 1) {
             strikeDetected = 1;
             printf(
-                "[TEST] Frame %d: Strike detected! Count: %d-%d\n", i, ctx->state->match->halfInningState.balls,
-                ctx->state->match->halfInningState.strikes
+                "[TEST] Frame %d: Strike detected! Count: %d-%d\n", i, ctx->state->rules->halfInningState.balls,
+                ctx->state->rules->halfInningState.strikes
             );
             break;
         }

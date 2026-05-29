@@ -46,24 +46,24 @@ int test_referee_starts_wounding_on_catch(void)
 
     // Set contract preconditions: fly ball caught
     ctx->state->match->gameEvents.catchMade = 1;
-    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
     ctx->state->match->pII.hasBallIndex = fielderIdx; // Fielder has ball (stabilizes physics)
 
     // Run exactly 1 pipeline frame
     simulate_frames(ctx, 1);
 
     // Assert: referee started wounding evaluation
-    ASSERT_EQ(1, ctx->state->match->referee.woundingEvaluationActive, "Wounding evaluation should start on catch");
+    ASSERT_EQ(1, ctx->state->rules->referee.woundingEvaluationActive, "Wounding evaluation should start on catch");
 
     // Assert: runner 0 is marked as vulnerable
     ASSERT_EQ(
-        PLAYER_STATUS_WOUND_MARKED, ctx->state->match->referee.battingPlayers[0].status,
+        PLAYER_STATUS_WOUND_MARKED, ctx->state->rules->referee.battingPlayers[0].status,
         "Advanced runner should be WOUND_MARKED"
     );
 
     // Assert: batter (at home = pitch-start base) should NOT be marked
     ASSERT_TRUE(
-        ctx->state->match->referee.battingPlayers[1].status != PLAYER_STATUS_WOUND_MARKED,
+        ctx->state->rules->referee.battingPlayers[1].status != PLAYER_STATUS_WOUND_MARKED,
         "Batter at home (safe) should not be wound-marked"
     );
 

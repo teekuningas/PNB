@@ -62,30 +62,30 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
 {
     if (stateInfo->match->flowControl.pause == 0) {
         MatchSession* game = stateInfo->match;
+        GameRulesState* rules = stateInfo->rules;
 
         // 1. Inputs
-        action_invocations(game, stateInfo->keyStates, &game->scoreboard);
+        action_invocations(game, stateInfo->keyStates, &rules->scoreboard);
 
         // 2. Physics & Logic
         action_implementation(stateInfo, rng_seed);
-        game_manipulation(game, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
+        game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)
         // Runs AFTER physics to ensure legal state matches physical events
         update_referee(
-            stateInfo, &game->referee, &game->halfInningState, &game->betweenPitchState, &game->playerCounters,
-            &stateInfo->match->scoreboard, &game->homeRunContestState
+            stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->playerCounters,
+            &rules->scoreboard, &rules->homeRunContestState
         );
 
         // 4. Consolidation (Reaction Phase)
         // - Updates Game Flow (innings, user prompts)
         // - Handles Physical Resets (Foul Play)
         // - Enforces Legal State (Outs, Scoring)
-        // Referee-owned state (bps, his) passed as const — consolidation reads but never writes.
+        // Referee-owned state passed via GameRulesState — consolidation reads but minimally writes.
         ConsolidationOutput consolidation_output;
         consolidation_update(
-            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, &game->referee,
-            &game->betweenPitchState, &game->halfInningState, &game->scoreboard, menuInfo, rng_seed,
+            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo, rng_seed,
             &consolidation_output
         );
 
@@ -99,7 +99,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // 5. Referee Finalize (Post-Consolidation)
         // Handles RESETTING→NONE transitions after consolidation has performed
         // physical resets. Scans the new physical world and establishes legal tracking.
-        referee_finalize(stateInfo, &game->referee, &game->betweenPitchState);
+        referee_finalize(stateInfo, &rules->referee, &rules->betweenPitchState);
 
         // 6. Capture snapshot after all updates when pitch is released
         if (stateInfo->match->gameEvents.pitchReleased) {

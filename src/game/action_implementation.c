@@ -218,7 +218,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
             // so player might have run already to the following base, and free walk actually
             // gave him the right to go to just that base.
             // so if he still has the same base as before we can go on
-            if (stateInfo->match->scoreboard.period >= 4) {
+            if (stateInfo->rules->scoreboard.period >= 4) {
                 // REFEREE MIGRATION: Logic moved to referee.c
                 // We just signal the event here.
                 stateInfo->match->gameEvents.freeWalkAccepted = 1;
@@ -253,7 +253,7 @@ static void changeBatter(StateInfo* stateInfo)
     int done = 0;
     int counter = 0;
     // index in a teams[] array
-    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
+    int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
     int index;
 
     stateInfo->match->aF.bTAF.chooseBatter = 0;
@@ -268,12 +268,12 @@ static void changeBatter(StateInfo* stateInfo)
     // there is not at least one player.
     while (done == 0) {
         if (stateInfo->match->pendingActionState.batterSelect == 0) {
-            if (stateInfo->match->playerCounters.nonJokerPlayersLeft != 0)
+            if (stateInfo->rules->playerCounters.nonJokerPlayersLeft != 0)
                 done = 1;
             else
                 stateInfo->match->pendingActionState.batterSelect = 1;
         } else if (stateInfo->match->pendingActionState.batterSelect == 4) {
-            if (stateInfo->match->playerCounters.nonJokerPlayersLeft != 0) {
+            if (stateInfo->rules->playerCounters.nonJokerPlayersLeft != 0) {
                 stateInfo->match->pendingActionState.batterSelect = 0;
                 done = 1;
             } else
@@ -294,8 +294,8 @@ static void changeBatter(StateInfo* stateInfo)
     // now we have the batterSelect value and we just need to find a corresponding index for that
     // player.
     if (stateInfo->match->pendingActionState.batterSelect == 0) {
-        index = stateInfo->match->scoreboard.teams[battingTeamIndex]
-                    .batterOrder[stateInfo->match->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+        index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
+                    .batterOrder[stateInfo->rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
     } else {
         index = stateInfo->match->pII.jokerIndices[stateInfo->match->pendingActionState.batterSelect - 1];
     }
@@ -319,9 +319,9 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
 {
     // so baserunning.
     // idea is just to update willStartRunning in every button press. and in special double click case we just run.
-    if (get_base_controller(stateInfo->match, base) != -1) {
+    if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, base) != -1) {
         if (stateInfo->match->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
-            int index = get_base_controller(stateInfo->match, base);
+            int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, base);
             if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
                 stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
                 if (stateInfo->match->pRAI.willStartRunning[base] == 0) {
@@ -378,9 +378,9 @@ static void updateMeters(StateInfo* stateInfo)
 
 static void aiLogic(StateInfo* stateInfo, unsigned int* rng_seed)
 {
-    int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
-    TeamControlMode battingControl = stateInfo->match->scoreboard.teams[battingTeamIndex].control;
-    TeamControlMode catchingControl = stateInfo->match->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
+    int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
+    TeamControlMode battingControl = stateInfo->rules->scoreboard.teams[battingTeamIndex].control;
+    TeamControlMode catchingControl = stateInfo->rules->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
 
     // first ai for catching team
 

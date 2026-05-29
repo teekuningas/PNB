@@ -15,6 +15,7 @@ int test_full_free_walk_resolution(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* game = ctx->state->match;
+    GameRulesState* rules = ctx->state->rules;
 
     // 1. Setup: Runner at 1st base (physical state)
     int runnerIdx = 0;
@@ -25,7 +26,7 @@ int test_full_free_walk_resolution(void)
 
     printf(
         "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx, game->playerInfo[runnerIdx].bTPI.baseId,
-        game->referee.battingPlayers[runnerIdx].currentSafetyBase
+        rules->referee.battingPlayers[runnerIdx].currentSafetyBase
     );
 
     // 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
@@ -47,7 +48,7 @@ int test_full_free_walk_resolution(void)
     printf(
         "[TEST] After acceptance: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
         game->playerInfo[runnerIdx].bTPI.state, PLAYER_STATE_ADVANCING_FREELY,
-        game->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND
+        rules->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND
     );
 
     // CHECK 1: Action system started movement
@@ -56,11 +57,11 @@ int test_full_free_walk_resolution(void)
     );
 
     // CHECK 2: Referee granted safety at NEXT base (2nd) immediately
-    BaseID safetyBase = game->referee.battingPlayers[runnerIdx].currentSafetyBase;
+    BaseID safetyBase = rules->referee.battingPlayers[runnerIdx].currentSafetyBase;
     ASSERT_EQ(BASE_SECOND, safetyBase, "Referee should grant safety at SECOND base immediately upon event");
 
     // CHECK 3: Base at pitch start updated (for future foul play resolution)
-    BaseID startBase = game->referee.battingPlayers[runnerIdx].baseAtPitchStart;
+    BaseID startBase = rules->referee.battingPlayers[runnerIdx].baseAtPitchStart;
     ASSERT_EQ(BASE_SECOND, startBase, "BaseAtPitchStart should be updated to SECOND base");
 
     // 6. Wait for runner to physically arrive at second base

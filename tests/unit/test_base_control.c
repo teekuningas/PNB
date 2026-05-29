@@ -7,47 +7,52 @@
 int test_get_base_controller()
 {
     MatchSession game;
+    RefereeState referee;
     memset(&game, 0, sizeof(MatchSession));
+    memset(&referee, 0, sizeof(RefereeState));
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        game.referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
-        game.referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
+        referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+        referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
         game.playerInfo[i].bTPI.baseId = BASE_NONE;
     }
 
     // Base conditions: no one controls anything
     for (int i = 0; i < BASE_COUNT; i++) {
-        ASSERT_EQ(-1, get_base_controller(&game, (BaseID)i), "Empty game should have no base controllers");
+        ASSERT_EQ(-1, get_base_controller(&game, &referee, (BaseID)i), "Empty game should have no base controllers");
     }
 
     // Invalid base ID
-    ASSERT_EQ(-1, get_base_controller(&game, BASE_NONE), "Invalid base should return -1");
+    ASSERT_EQ(-1, get_base_controller(&game, &referee, BASE_NONE), "Invalid base should return -1");
 
     // Player 2 controls first base
-    game.referee.battingPlayers[2].currentSafetyBase = BASE_FIRST;
+    referee.battingPlayers[2].currentSafetyBase = BASE_FIRST;
     game.playerInfo[2].bTPI.baseId = BASE_FIRST;
-    game.referee.battingPlayers[2].baseAtPitchStart = BASE_HOME;
+    referee.battingPlayers[2].baseAtPitchStart = BASE_HOME;
 
-    ASSERT_EQ(2, get_base_controller(&game, BASE_FIRST), "Player 2 should control first base");
+    ASSERT_EQ(2, get_base_controller(&game, &referee, BASE_FIRST), "Player 2 should control first base");
 
     // Multiple candidates for second base, prioritize higher baseAtPitchStart
-    game.referee.battingPlayers[4].currentSafetyBase = BASE_SECOND;
+    referee.battingPlayers[4].currentSafetyBase = BASE_SECOND;
     game.playerInfo[4].bTPI.baseId = BASE_SECOND;
-    game.referee.battingPlayers[4].baseAtPitchStart = BASE_FIRST; // Lower priority
+    referee.battingPlayers[4].baseAtPitchStart = BASE_FIRST; // Lower priority
 
-    game.referee.battingPlayers[5].currentSafetyBase = BASE_SECOND;
+    referee.battingPlayers[5].currentSafetyBase = BASE_SECOND;
     game.playerInfo[5].bTPI.baseId = BASE_SECOND;
-    game.referee.battingPlayers[5].baseAtPitchStart = BASE_SECOND; // Higher priority
+    referee.battingPlayers[5].baseAtPitchStart = BASE_SECOND; // Higher priority
 
     ASSERT_EQ(
-        5, get_base_controller(&game, BASE_SECOND), "Player 5 should control second base due to higher start base"
+        5, get_base_controller(&game, &referee, BASE_SECOND),
+        "Player 5 should control second base due to higher start base"
     );
 
     // Player must have both safety and physically be there
-    game.referee.battingPlayers[6].currentSafetyBase = BASE_THIRD; // Has safety
+    referee.battingPlayers[6].currentSafetyBase = BASE_THIRD; // Has safety
     game.playerInfo[6].bTPI.baseId = BASE_SECOND; // But physically at second
 
-    ASSERT_EQ(-1, get_base_controller(&game, BASE_THIRD), "No control if player is not physically at the base");
+    ASSERT_EQ(
+        -1, get_base_controller(&game, &referee, BASE_THIRD), "No control if player is not physically at the base"
+    );
 
     return TEST_PASSED;
 }

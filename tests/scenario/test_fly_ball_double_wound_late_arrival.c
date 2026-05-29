@@ -46,12 +46,12 @@ int test_fly_ball_double_wound_late_arrival(void)
         int stateA = ctx->state->match->playerInfo[0].bTPI.state;
         int stateB = ctx->state->match->playerInfo[1].bTPI.state;
         int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
-        int timer = ctx->state->match->referee.woundingEvaluationTimer;
+        int timer = ctx->state->rules->referee.woundingEvaluationTimer;
         int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
-        int safeA = ctx->state->match->referee.battingPlayers[0].currentSafetyBase;
-        int safeB = ctx->state->match->referee.battingPlayers[1].currentSafetyBase;
-        int statusA = ctx->state->match->referee.battingPlayers[0].status;
-        int statusB = ctx->state->match->referee.battingPlayers[1].status;
+        int safeA = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
+        int safeB = ctx->state->rules->referee.battingPlayers[1].currentSafetyBase;
+        int statusA = ctx->state->rules->referee.battingPlayers[0].status;
+        int statusB = ctx->state->rules->referee.battingPlayers[1].status;
 
         // Verbose logging
         if (frame % 20 == 0 || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED ||

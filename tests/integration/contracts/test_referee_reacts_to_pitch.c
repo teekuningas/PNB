@@ -27,13 +27,13 @@ int test_referee_snapshots_on_pitch_released(void)
     initialize_referee_from_physical_state(ctx);
 
     // Set up a non-zero strike count (simulating mid at-bat)
-    ctx->state->match->halfInningState.strikes = 1;
+    ctx->state->rules->halfInningState.strikes = 1;
 
     // Dirty the betweenPitchState (simulating residue from previous pitch)
-    ctx->state->match->betweenPitchState.catchHasBeenMade = 1;
-    ctx->state->match->betweenPitchState.hasBallHitGround = 1;
-    ctx->state->match->betweenPitchState.pitchResult = PITCH_RESULT_BALL;
-    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->betweenPitchState.catchHasBeenMade = 1;
+    ctx->state->rules->betweenPitchState.hasBallHitGround = 1;
+    ctx->state->rules->betweenPitchState.pitchResult = PITCH_RESULT_BALL;
+    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
 
     // Fire pitchReleased
     ctx->state->match->gameEvents.pitchReleased = 1;
@@ -43,32 +43,32 @@ int test_referee_snapshots_on_pitch_released(void)
 
     // Assert: baseAtPitchStart captured for the runner at second
     ASSERT_EQ(
-        BASE_SECOND, ctx->state->match->referee.battingPlayers[0].baseAtPitchStart,
+        BASE_SECOND, ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart,
         "Runner's pitch-start base should be captured"
     );
 
     // Assert: batter's pitch-start base is home
     ASSERT_EQ(
-        BASE_HOME, ctx->state->match->referee.battingPlayers[1].baseAtPitchStart,
+        BASE_HOME, ctx->state->rules->referee.battingPlayers[1].baseAtPitchStart,
         "Batter's pitch-start base should be HOME"
     );
 
     // Assert: strikesAtPitchStart captured
-    ASSERT_EQ(1, ctx->state->match->referee.strikesAtPitchStart, "Strike count at pitch start should be captured");
+    ASSERT_EQ(1, ctx->state->rules->referee.strikesAtPitchStart, "Strike count at pitch start should be captured");
 
     // Assert: betweenPitchState was cleared (fresh for this pitch)
     ASSERT_EQ(
-        0, ctx->state->match->betweenPitchState.catchHasBeenMade, "catchHasBeenMade should be cleared on new pitch"
+        0, ctx->state->rules->betweenPitchState.catchHasBeenMade, "catchHasBeenMade should be cleared on new pitch"
     );
     ASSERT_EQ(
-        0, ctx->state->match->betweenPitchState.hasBallHitGround, "hasBallHitGround should be cleared on new pitch"
+        0, ctx->state->rules->betweenPitchState.hasBallHitGround, "hasBallHitGround should be cleared on new pitch"
     );
     ASSERT_EQ(
-        PITCH_RESULT_NONE, ctx->state->match->betweenPitchState.pitchResult,
+        PITCH_RESULT_NONE, ctx->state->rules->betweenPitchState.pitchResult,
         "pitchResult should be cleared on new pitch"
     );
     ASSERT_EQ(
-        BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome, "batOutcome should be cleared on new pitch"
+        BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome, "batOutcome should be cleared on new pitch"
     );
 
     cleanup_scenario(ctx);

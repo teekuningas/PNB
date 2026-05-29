@@ -44,7 +44,7 @@ int test_full_run_of_honor(void)
 
     printf("Ball dropped towards (%.1f, %.1f, %.1f)\n", ballLocation.x, ballLocation.y, ballLocation.z);
 
-    int runsAtStart = ctx->state->match->halfInningState.runsInTheInning;
+    int runsAtStart = ctx->state->rules->halfInningState.runsInTheInning;
     printf("Runs at start: %d\n\n", runsAtStart);
 
     // === Run to FIRST ===
@@ -89,10 +89,10 @@ int test_full_run_of_honor(void)
 
     // === Run to THIRD (RUN OF HONOR!) ===
     printf("\n--- Running SECOND → THIRD (Expecting Run of Honor!) ---\n");
-    int runsBefore = ctx->state->match->halfInningState.runsInTheInning;
+    int runsBefore = ctx->state->rules->halfInningState.runsInTheInning;
     printf("Runs before: %d\n", runsBefore);
     printf(
-        "runOfHonorScored flag before: %d\n", ctx->state->match->referee.battingPlayers[batterIndex].runOfHonorScored
+        "runOfHonorScored flag before: %d\n", ctx->state->rules->referee.battingPlayers[batterIndex].runOfHonorScored
     );
 
     ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
@@ -110,7 +110,7 @@ int test_full_run_of_honor(void)
             printf("  baseId: %d\n", ctx->state->match->playerInfo[batterIndex].bTPI.baseId);
             printf(
                 "  baseAtPitchStart: %d (HOME)\n",
-                ctx->state->match->referee.battingPlayers[batterIndex].baseAtPitchStart
+                ctx->state->rules->referee.battingPlayers[batterIndex].baseAtPitchStart
             );
             printf("  goingForward: %d\n", ctx->state->match->playerRuntime[batterIndex].goingForward);
             printf("  wounded: %d\n", ctx->state->match->playerInfo[batterIndex].bTPI.state == PLAYER_STATE_WOUNDED);
@@ -129,10 +129,10 @@ int test_full_run_of_honor(void)
 
     // === VERIFICATION ===
     printf("\n--- VERIFICATION ---\n");
-    int runsAfter = ctx->state->match->halfInningState.runsInTheInning;
-    int runOfHonorFlag = ctx->state->match->referee.battingPlayers[batterIndex].runOfHonorScored;
+    int runsAfter = ctx->state->rules->halfInningState.runsInTheInning;
+    int runOfHonorFlag = ctx->state->rules->referee.battingPlayers[batterIndex].runOfHonorScored;
     int playerStillAtThird = (ctx->state->match->playerInfo[batterIndex].bTPI.baseId == BASE_THIRD);
-    int hasScored = ctx->state->match->referee.battingPlayers[batterIndex].hasScored;
+    int hasScored = ctx->state->rules->referee.battingPlayers[batterIndex].hasScored;
 
     printf("Runs after: %d (expected: %d)\n", runsAfter, runsBefore + 1);
     printf("runOfHonorScored: %d (should be 1)\n", runOfHonorFlag);

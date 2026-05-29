@@ -67,7 +67,7 @@ static void update_initialization_events(
         referee->ballInThirdBaseSincePitch = 0;
 
         // 2. Mark that a pitch has been released (for homerun contest pair tracking)
-        if (stateInfo->match->scoreboard.period >= 4) {
+        if (stateInfo->rules->scoreboard.period >= 4) {
             referee->homerunPairHasPitch = 1;
         }
 
@@ -104,7 +104,7 @@ static void update_initialization_events(
                     // Determine safety status for snapshot
                     int hasSafety = 0;
                     if (base >= 0 && base < 4) {
-                        if (get_base_controller(game, (BaseID)base) == index) {
+                        if (get_base_controller(game, referee, (BaseID)base) == index) {
                             hasSafety = 1;
                         }
                     }
@@ -606,7 +606,7 @@ static void update_runs(
             }
         }
         // Case B: Ball Grounded or Catch Confirmed (Immediate Run)
-        else if ((game->betweenPitchState.catchHasBeenMade == 1 || game->betweenPitchState.hasBallHitGround == 1) &&
+        else if ((betweenPitchState->catchHasBeenMade == 1 || betweenPitchState->hasBallHitGround == 1) &&
                  referee->woundingEvaluationActive == 0 && referee->endOfInningState == END_INNING_STATE_NONE &&
                  referee->foulState == FOUL_STATE_NONE) {
 
@@ -1419,7 +1419,7 @@ void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
     initialize_referee_state(referee);
 
     // Scan physical world and initialize safety based on player positions
-    if (game->scoreboard.period >= 4) {
+    if (stateInfo->rules->scoreboard.period >= 4) {
         // Homerun Contest (period >= 4): scan for batter at HOME, runner at THIRD
         // Reset homerun pair pitch tracking
         referee->homerunPairHasPitch = 0;

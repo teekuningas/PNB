@@ -24,7 +24,7 @@ int test_bat_outcome_promotion(void)
 
         // Precondition: batOutcome starts clean
         ASSERT_EQ(
-            BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome, "Precondition: batOutcome should be NONE"
+            BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome, "Precondition: batOutcome should be NONE"
         );
 
         // Fire ballHitByBat event
@@ -35,7 +35,7 @@ int test_bat_outcome_promotion(void)
 
         // Assert: referee promoted to HIT
         ASSERT_EQ(
-            BAT_OUTCOME_HIT, ctx->state->match->betweenPitchState.batOutcome,
+            BAT_OUTCOME_HIT, ctx->state->rules->betweenPitchState.batOutcome,
             "ballHitByBat should promote to BAT_OUTCOME_HIT"
         );
 
@@ -55,7 +55,7 @@ int test_bat_outcome_promotion(void)
 
         // Assert: referee promoted to MISSED
         ASSERT_EQ(
-            BAT_OUTCOME_MISSED, ctx->state->match->betweenPitchState.batOutcome,
+            BAT_OUTCOME_MISSED, ctx->state->rules->betweenPitchState.batOutcome,
             "ballMissedByBat should promote to BAT_OUTCOME_MISSED"
         );
 
@@ -68,7 +68,7 @@ int test_bat_outcome_promotion(void)
         initialize_referee_from_physical_state(ctx);
 
         // Dirty batOutcome to simulate residue from a previous pitch
-        ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+        ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
 
         // Fire pitchReleased (signals new pitch cycle)
         ctx->state->match->gameEvents.pitchReleased = 1;
@@ -78,7 +78,7 @@ int test_bat_outcome_promotion(void)
 
         // Assert: batOutcome was cleared
         ASSERT_EQ(
-            BAT_OUTCOME_NONE, ctx->state->match->betweenPitchState.batOutcome,
+            BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome,
             "pitchReleased should reset batOutcome to NONE"
         );
 

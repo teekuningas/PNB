@@ -29,6 +29,7 @@ int test_fly_ball_early_arrival(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* match = ctx->state->match;
+    GameRulesState* rules = ctx->state->rules;
 
     printf("\n=== FLY BALL EARLY ARRIVAL TEST ===\n");
 
@@ -71,15 +72,15 @@ int test_fly_ball_early_arrival(void)
         match->playerInfo[0].bTPI.state, match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
     );
     printf(
-        "  Referee: baseAtPitchStart=%d, currentSafetyBase=%d\n", match->referee.battingPlayers[0].baseAtPitchStart,
-        match->referee.battingPlayers[0].currentSafetyBase
+        "  Referee: baseAtPitchStart=%d, currentSafetyBase=%d\n", rules->referee.battingPlayers[0].baseAtPitchStart,
+        rules->referee.battingPlayers[0].currentSafetyBase
     );
     printf(
         "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
         match->ballInfo.location.y, match->ballInfo.location.z
     );
     printf("  PRAI: batterCanAdvance=%d, batterReady=%d\n", match->pRAI.batterCanAdvance, match->pRAI.batterReady);
-    printf("  BPS: batOutcome=%d\n", match->betweenPitchState.batOutcome);
+    printf("  BPS: batOutcome=%d\n", rules->betweenPitchState.batOutcome);
 
     // 6. Simulate and track events
     int catchFrame = -1;
@@ -94,9 +95,9 @@ int test_fly_ball_early_arrival(void)
         int hasBall = match->pII.hasBallIndex;
         int batterBase = match->playerInfo[0].bTPI.baseId;
         batterState = match->playerInfo[0].bTPI.state;
-        batterSafety = match->referee.battingPlayers[0].currentSafetyBase;
-        int batterBaseAtPitchStart = match->referee.battingPlayers[0].baseAtPitchStart;
-        int batterStatus = match->referee.battingPlayers[0].status;
+        batterSafety = rules->referee.battingPlayers[0].currentSafetyBase;
+        int batterBaseAtPitchStart = rules->referee.battingPlayers[0].baseAtPitchStart;
+        int batterStatus = rules->referee.battingPlayers[0].status;
 
         // Track catch
         if (hasBall != -1 && catchFrame == -1) {

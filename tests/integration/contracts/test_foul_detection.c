@@ -44,25 +44,25 @@ int test_foul_detected_on_out_of_bounds_hit(void)
     ctx->state->match->ballInfo.velocity.z = 0.0f;
 
     // Set contract preconditions
-    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
     ctx->state->match->gameEvents.ballHitGround = 1;
 
     // Verify preconditions are clean
-    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->match->referee.foulState, "Precondition: foulState should be NONE");
-    ASSERT_EQ(0, ctx->state->match->betweenPitchState.hasBallHitGround, "Precondition: hasBallHitGround should be 0");
+    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foulState, "Precondition: foulState should be NONE");
+    ASSERT_EQ(0, ctx->state->rules->betweenPitchState.hasBallHitGround, "Precondition: hasBallHitGround should be 0");
 
     // Run 1 frame
     simulate_frames(ctx, 1);
 
     // Assert: referee detected foul play
     ASSERT_EQ(
-        FOUL_STATE_DETECTED, ctx->state->match->referee.foulState,
+        FOUL_STATE_DETECTED, ctx->state->rules->referee.foulState,
         "Foul state should be DETECTED after out-of-bounds hit"
     );
 
     // Assert: the event was recorded
     ASSERT_EQ(
-        EVENT_OUT_OF_BOUNDS, ctx->state->match->halfInningState.event, "Half-inning event should be OUT_OF_BOUNDS"
+        EVENT_OUT_OF_BOUNDS, ctx->state->rules->halfInningState.event, "Half-inning event should be OUT_OF_BOUNDS"
     );
 
     cleanup_scenario(ctx);

@@ -23,27 +23,27 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         break;
     case GAME_LAUNCH_RETURN_INTER_PERIOD:
         memcpy(
-            stateInfo->match->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order,
+            stateInfo->rules->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order,
             sizeof(gameSetup->team1_batting_order)
         );
         memcpy(
-            stateInfo->match->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order,
+            stateInfo->rules->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order,
             sizeof(gameSetup->team2_batting_order)
         );
-        stateInfo->match->scoreboard.teams[0].batterOrderIndex = 0;
-        stateInfo->match->scoreboard.teams[1].batterOrderIndex = 0;
+        stateInfo->rules->scoreboard.teams[0].batterOrderIndex = 0;
+        stateInfo->rules->scoreboard.teams[1].batterOrderIndex = 0;
         return_to_game(stateInfo, rng_seed);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
         int pairCount = gameSetup->homerun_choice_count;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < pairCount; j++) {
-                stateInfo->match->scoreboard.teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
-                stateInfo->match->scoreboard.teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
+                stateInfo->rules->scoreboard.teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
+                stateInfo->rules->scoreboard.teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
             }
         }
-        stateInfo->match->scoreboard.pairCount = pairCount;
-        stateInfo->match->homeRunContestState.runnerBatterPairCounter = 0;
+        stateInfo->rules->scoreboard.pairCount = pairCount;
+        stateInfo->rules->homeRunContestState.runnerBatterPairCounter = 0;
         return_to_game(stateInfo, rng_seed);
     } break;
     }
@@ -58,7 +58,7 @@ void reset_menu_for_new_game(MenuData* menuData, StateInfo* stateInfo)
         menuData->pendingGameSetup.team2_batting_order[i] = i;
     }
 
-    if (stateInfo->match->scoreboard.isCupGame != 1) {
+    if (stateInfo->rules->scoreboard.isCupGame != 1) {
         init_front_menu_state(&menuData->front_menu);
         menuData->stage = MENU_STAGE_FRONT;
     } else {

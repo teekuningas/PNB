@@ -79,15 +79,15 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
 {
     // Calculate who is currently batting to map "team" (role) to actual team index
     // team 0 = batting team, team 1 = catching team
-    int battingTeamIndex = (stateInfo->match->scoreboard.inning + stateInfo->match->scoreboard.playsFirst +
-                            stateInfo->match->scoreboard.period) %
+    int battingTeamIndex = (stateInfo->rules->scoreboard.inning + stateInfo->rules->scoreboard.playsFirst +
+                            stateInfo->rules->scoreboard.period) %
                            2;
     int actualTeamIndex = (team + battingTeamIndex) % 2;
 
     // theres two types of texture selections, texture selection for player and texture selection for marker.
     if (type == 0) {
         char path[128];
-        int team_val = (&stateInfo->match->scoreboard)->teams[actualTeamIndex].value;
+        int team_val = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].value;
         if (joker == 0) {
             sprintf(path, "data/textures/team%d.tga", team_val);
         } else {
@@ -98,7 +98,7 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
     // and here, should we use green, blue or red ball on top of a player.
     // depends on who controls.
     else if (type == 1) {
-        int control = (&stateInfo->match->scoreboard)->teams[actualTeamIndex].control;
+        int control = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].control;
         if (control == 0) {
             glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"));
         } else if (control == 1) {

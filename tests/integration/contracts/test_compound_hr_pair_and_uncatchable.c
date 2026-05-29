@@ -8,14 +8,14 @@ int test_compound_hr_pair_and_uncatchable(void)
     ScenarioContext* ctx = create_scenario();
 
     // Set up Homerun Contest (period 4)
-    ctx->state->match->scoreboard.period = 4;
-    ctx->state->match->scoreboard.pairCount = 5;
-    ctx->state->match->homeRunContestState.runnerBatterPairCounter = 0;
+    ctx->state->rules->scoreboard.period = 4;
+    ctx->state->rules->scoreboard.pairCount = 5;
+    ctx->state->rules->homeRunContestState.runnerBatterPairCounter = 0;
 
     // Set up uncatchable score: Inning 1 (bottom of 1st), Catching team (0) has 10, Batting team (1) has 0
-    ctx->state->match->scoreboard.inning = 1;
-    ctx->state->match->scoreboard.teams[0].runs = 10;
-    ctx->state->match->scoreboard.teams[1].runs = 0;
+    ctx->state->rules->scoreboard.inning = 1;
+    ctx->state->rules->scoreboard.teams[0].runs = 10;
+    ctx->state->rules->scoreboard.teams[1].runs = 0;
 
     // Setup physical players to trigger the pair end
     // Pair 0 is active (Runner 0, Batter 1)
@@ -31,7 +31,7 @@ int test_compound_hr_pair_and_uncatchable(void)
 
     // Clear all batting players' safety so pair-end conditions trigger
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        ctx->state->match->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+        ctx->state->rules->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
         ctx->state->match->playerInfo[i].bTPI.baseId = BASE_NONE;
     }
 
@@ -39,10 +39,10 @@ int test_compound_hr_pair_and_uncatchable(void)
     simulate_frames(ctx, 1);
 
     ASSERT_EQ(
-        END_INNING_STATE_DETECTED, ctx->state->match->referee.endOfInningState,
+        END_INNING_STATE_DETECTED, ctx->state->rules->referee.endOfInningState,
         "Did not skip to END_INNING_STATE_DETECTED"
     );
-    ASSERT_EQ(HR_PAIR_STATE_NONE, ctx->state->match->referee.nextPairTransitionState, "Pair state machine was active");
+    ASSERT_EQ(HR_PAIR_STATE_NONE, ctx->state->rules->referee.nextPairTransitionState, "Pair state machine was active");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

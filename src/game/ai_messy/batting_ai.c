@@ -74,14 +74,16 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
         stateInfo->match->aiState.clickBreak[i]++;
         if (stateInfo->match->aiState.clickBreak[i] > 1000) stateInfo->match->aiState.clickBreak[i] = 0;
         if (stateInfo->match->aiState.baseRunnerDecisionMade[i] == 1) {
-            if (get_base_controller(stateInfo->match, (BaseID)i) == -1) {
+            if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) == -1) {
                 stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
             }
-            if (stateInfo->match->aiState.lastSafeOnBaseIndex[i] != get_base_controller(stateInfo->match, (BaseID)i)) {
+            if (stateInfo->match->aiState.lastSafeOnBaseIndex[i] !=
+                get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)) {
                 stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
             }
         }
-        stateInfo->match->aiState.lastSafeOnBaseIndex[i] = get_base_controller(stateInfo->match, (BaseID)i);
+        stateInfo->match->aiState.lastSafeOnBaseIndex[i] =
+            get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
     }
     if (stateInfo->match->pRAI.batterReady == 0 && stateInfo->match->aiState.planCalculated == 1) {
         stateInfo->match->aiState.planCalculated = 0;
@@ -116,9 +118,9 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
         // plan is that if there is a man on first base and current batter would not have a great power,
         // we would try to find a joker that has power instead.
         // and if field is empty we would change a joker with speed instead.
-        int firstBaseIndex = get_base_controller(stateInfo->match, (BaseID)1);
-        int secondBaseIndex = get_base_controller(stateInfo->match, (BaseID)2);
-        int thirdBaseIndex = get_base_controller(stateInfo->match, (BaseID)3);
+        int firstBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)1);
+        int secondBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)2);
+        int thirdBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)3);
         int fieldStatus;
         int index = stateInfo->match->pII.batterSelectionIndex;
 
@@ -174,9 +176,9 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
         // decision tree.. contents can be read within
         if (stateInfo->match->aiState.planCalculated == 0) {
             int batterIndex = get_active_batter_index(stateInfo->match);
-            int firstBaseIndex = get_base_controller(stateInfo->match, (BaseID)1);
-            int secondBaseIndex = get_base_controller(stateInfo->match, (BaseID)2);
-            int thirdBaseIndex = get_base_controller(stateInfo->match, (BaseID)3);
+            int firstBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)1);
+            int secondBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)2);
+            int thirdBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)3);
             int power = stateInfo->match->playerInfo[batterIndex].bTPI.power;
             int speed = stateInfo->match->playerInfo[batterIndex].bTPI.speed;
             int fieldStatus;
@@ -189,7 +191,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
                 fieldStatus = 0;
 
             BattingStrategy strategy = calculate_batting_strategy(
-                &(stateInfo->match->halfInningState), fieldStatus, power, speed, stateInfo->match->scoreboard.period
+                &(stateInfo->rules->halfInningState), fieldStatus, power, speed, stateInfo->rules->scoreboard.period
             );
 
             stateInfo->match->aiState.battingStyle = strategy.style;
@@ -223,9 +225,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
                 if (i == BASE_THIRD && stateInfo->match->gameFlowState.ballHome == 1) continue;
 
                 if (stateInfo->match->aiState.baseRunnerDecisionMade[i] == 0 &&
-                    get_base_controller(stateInfo->match, (BaseID)i) != -1 &&
-                    stateInfo->match->playerInfo[get_base_controller(stateInfo->match, (BaseID)i)].bTPI.state ==
-                        PLAYER_STATE_ON_BASE &&
+                    get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) != -1 &&
+                    stateInfo->match
+                            ->playerInfo[get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)]
+                            .bTPI.state == PLAYER_STATE_ON_BASE &&
                     stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
                     stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
                     stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
@@ -248,9 +251,10 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
         if (stateInfo->match->aiState.runningBaseRunners == 1) {
             int i;
             for (i = 1; i < 3; i++) {
-                if (get_base_controller(stateInfo->match, (BaseID)i) != -1 &&
-                    stateInfo->match->playerInfo[get_base_controller(stateInfo->match, (BaseID)i)].bTPI.state ==
-                        PLAYER_STATE_LEADING &&
+                if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) != -1 &&
+                    stateInfo->match
+                            ->playerInfo[get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)]
+                            .bTPI.state == PLAYER_STATE_LEADING &&
                     stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
                     stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
                     stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
@@ -281,7 +285,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
             // batter isnt handled here
             // this code will make baserunners come back if wrong pitch is pitched
             for (i = 1; i < BASE_COUNT; i++) {
-                int index = get_base_controller(stateInfo->match, (BaseID)i);
+                int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
                 if (index != -1 && stateInfo->match->playerRuntime[index].goingForward == 1 &&
                     stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
                     stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
@@ -405,8 +409,8 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
     // AI: Check if it's safe to advance runners
     // Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
     // AND ball has traveled far enough from home (to avoid triggering when ball is still at home plate)
-    if (stateInfo->match->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
-        stateInfo->match->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
+    if (stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
+        stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
         stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
         stateInfo->match->ballInfo.location.z < -10.0f && // Ball must be at least 10 units into the field (negative z)
         checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
@@ -415,7 +419,7 @@ void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
     // we will run with everyone so we need to simulate double click here.
     for (i = 0; i < BASE_COUNT; i++) {
         int j;
-        int index = get_base_controller(stateInfo->match, (BaseID)i);
+        int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
         int shouldRun = 1;
         if (i == 0 && stateInfo->match->pRAI.batterCanAdvance == 0) continue;
         // here we check that there is no one running this same base interval.

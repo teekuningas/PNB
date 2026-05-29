@@ -110,7 +110,7 @@ static const char* state_to_string(PlayerUnitState s)
     }
 }
 
-static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int indent)
+static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, int indent)
 {
     // Helper for indentation
     char sp[16];
@@ -119,50 +119,51 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
         sp[i] = ' ';
     sp[i] = 0;
 
-    if (global) {
+    if (rules) {
+        const Scoreboard* scoreboard = &rules->scoreboard;
         fprintf(f, "%s\"global\": {\n", sp);
-        fprintf(f, "%s  \"inning\": %d,\n", sp, global->inning);
-        fprintf(f, "%s  \"period\": %d,\n", sp, global->period);
-        fprintf(f, "%s  \"pairCount\": %d,\n", sp, global->pairCount);
-        fprintf(f, "%s  \"team0_runs\": %d,\n", sp, global->teams[0].runs);
-        fprintf(f, "%s  \"team1_runs\": %d,\n", sp, global->teams[1].runs);
+        fprintf(f, "%s  \"inning\": %d,\n", sp, scoreboard->inning);
+        fprintf(f, "%s  \"period\": %d,\n", sp, scoreboard->period);
+        fprintf(f, "%s  \"pairCount\": %d,\n", sp, scoreboard->pairCount);
+        fprintf(f, "%s  \"team0_runs\": %d,\n", sp, scoreboard->teams[0].runs);
+        fprintf(f, "%s  \"team1_runs\": %d,\n", sp, scoreboard->teams[1].runs);
 
         // Detailed Team Info (Batter Orders)
         for (int t = 0; t < 2; t++) {
-            fprintf(f, "%s  \"team%d_batterOrderIndex\": %d,\n", sp, t, global->teams[t].batterOrderIndex);
+            fprintf(f, "%s  \"team%d_batterOrderIndex\": %d,\n", sp, t, scoreboard->teams[t].batterOrderIndex);
             fprintf(f, "%s  \"team%d_batterOrder\": [", sp, t);
             for (int bo = 0; bo < 12; bo++) {
-                fprintf(f, "%d%s", global->teams[t].batterOrder[bo], (bo < 11) ? ", " : "");
+                fprintf(f, "%d%s", scoreboard->teams[t].batterOrder[bo], (bo < 11) ? ", " : "");
             }
             fprintf(f, "],\n");
         }
         fprintf(
-            f, "%s  \"runs\": [%d, %d]\n", sp, global->teams[0].runs, global->teams[1].runs
+            f, "%s  \"runs\": [%d, %d]\n", sp, scoreboard->teams[0].runs, scoreboard->teams[1].runs
         ); // Redundant but convenient
         fprintf(f, "%s},\n", sp);
     }
 
     fprintf(f, "%s\"halfInningState\": {\n", sp);
-    fprintf(f, "%s  \"outs\": %d,\n", sp, game->halfInningState.outs);
-    fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, game->halfInningState.runsInTheInning);
-    fprintf(f, "%s  \"strikes\": %d,\n", sp, game->halfInningState.strikes);
-    fprintf(f, "%s  \"balls\": %d,\n", sp, game->halfInningState.balls);
-    fprintf(f, "%s  \"event\": %d\n", sp, game->halfInningState.event);
+    fprintf(f, "%s  \"outs\": %d,\n", sp, rules->halfInningState.outs);
+    fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, rules->halfInningState.runsInTheInning);
+    fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->halfInningState.strikes);
+    fprintf(f, "%s  \"balls\": %d,\n", sp, rules->halfInningState.balls);
+    fprintf(f, "%s  \"event\": %d\n", sp, rules->halfInningState.event);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"playerCounters\": {\n", sp);
-    fprintf(f, "%s  \"nonJokerPlayersLeft\": %d,\n", sp, game->playerCounters.nonJokerPlayersLeft);
-    fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, game->playerCounters.jokersLeft);
-    fprintf(f, "%s  \"noMorePlayers\": %d\n", sp, game->playerCounters.noMorePlayers);
+    fprintf(f, "%s  \"nonJokerPlayersLeft\": %d,\n", sp, rules->playerCounters.nonJokerPlayersLeft);
+    fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, rules->playerCounters.jokersLeft);
+    fprintf(f, "%s  \"noMorePlayers\": %d\n", sp, rules->playerCounters.noMorePlayers);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"gameControl\": {\n", sp);
     fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
     fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->flowControl.waitingForBatterDecision);
     fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
-    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
-    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
-    fprintf(f, "%s  \"foulState\": %d\n", sp, (int)game->referee.foulState);
+    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
+    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
+    fprintf(f, "%s  \"foulState\": %d\n", sp, (int)rules->referee.foulState);
     fprintf(f, "%s },\n", sp);
 
     fprintf(f, "%s\"gameEvents\": {\n", sp);
@@ -176,7 +177,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
 
     fprintf(f, "%s\"gameFlowState\": {\n", sp);
     fprintf(f, "%s  \"ballHome\": %d,\n", sp, game->gameFlowState.ballHome);
-    fprintf(f, "%s  \"endOfInningState\": %d\n", sp, (int)game->referee.endOfInningState);
+    fprintf(f, "%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"pII\": {\n", sp);
@@ -194,10 +195,10 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"betweenPitchState\": {\n", sp);
-    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, game->betweenPitchState.catchHasBeenMade);
-    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, game->betweenPitchState.hasBallHitGround);
-    fprintf(f, "%s  \"pitchResult\": %d,\n", sp, game->betweenPitchState.pitchResult);
-    fprintf(f, "%s  \"batOutcome\": %d\n", sp, game->betweenPitchState.batOutcome);
+    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
+    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
+    fprintf(f, "%s  \"pitchResult\": %d,\n", sp, rules->betweenPitchState.pitchResult);
+    fprintf(f, "%s  \"batOutcome\": %d\n", sp, rules->betweenPitchState.batOutcome);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"ballInfo\": {\n", sp);
@@ -239,13 +240,13 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
         // Assuming 0-11 are ALWAYS the batting team in the current frame
         if (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
             fprintf(f, ",\n");
-            fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, game->referee.battingPlayers[i].currentSafetyBase);
+            fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, rules->referee.battingPlayers[i].currentSafetyBase);
             fprintf(
                 f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp,
-                base_to_string(game->referee.battingPlayers[i].currentSafetyBase)
+                base_to_string(rules->referee.battingPlayers[i].currentSafetyBase)
             );
-            fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, game->referee.battingPlayers[i].baseAtPitchStart);
-            fprintf(f, "%s    \"ref_status\": %d\n", sp, game->referee.battingPlayers[i].status);
+            fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, rules->referee.battingPlayers[i].baseAtPitchStart);
+            fprintf(f, "%s    \"ref_status\": %d\n", sp, rules->referee.battingPlayers[i].status);
         } else {
             fprintf(f, "\n");
         }
@@ -266,6 +267,7 @@ void state_validator_dump(StateInfo* state, const char* reason)
     }
 
     MatchSession* game = state->match;
+    GameRulesState* rules = state->rules;
 
     fprintf(f, "{\n");
     fprintf(f, "  \"failure_reason\": \"%s\",\n", reason);
@@ -273,7 +275,7 @@ void state_validator_dump(StateInfo* state, const char* reason)
 
     // Current State
     fprintf(f, "  \"currentState\": {\n");
-    print_game_json(f, game, &state->match->scoreboard, 4);
+    print_game_json(f, game, rules, 4);
     fprintf(f, "\n  },\n");
 
     // History
@@ -302,6 +304,7 @@ int state_validator_check(StateInfo* state)
     if (!g_isActive) return 1;
 
     MatchSession* game = state->match;
+    GameRulesState* rules = state->rules;
 
     // Skip validation if the game is already paused (avoid redundant checks/dumps)
     if (game->flowControl.pause) return 1;
@@ -309,7 +312,7 @@ int state_validator_check(StateInfo* state)
     // Invariant 1: Unique Base Occupancy (Safe players)
     // Check baseControlIndex vs Player state
     for (int b = 0; b < BASE_COUNT; b++) {
-        int idx = get_base_controller(game, b);
+        int idx = get_base_controller(game, &rules->referee, b);
         if (idx != -1) {
             // Player at this index MUST be at this base (enforced by get_base_controller definition)
             if (game->playerInfo[idx].bTPI.baseId != (BaseID)b) {

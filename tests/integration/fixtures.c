@@ -30,6 +30,9 @@ StateInfo* setup_test_state()
     state->match = malloc(sizeof(MatchSession));
     memset(state->match, 0, sizeof(MatchSession));
 
+    state->rules = malloc(sizeof(GameRulesState));
+    memset(state->rules, 0, sizeof(GameRulesState));
+
     // Initialize indices to -1
     for (int i = 0; i < 4; i++) {
         state->match->pII.catcherOnBaseIndex[i] = -1;
@@ -50,6 +53,7 @@ void cleanup_test_state(StateInfo* state)
         }
         free(state->teamData[i].players);
     }
+    free(state->rules);
     free(state->match);
     free(state->fieldPositions);
     free(state->teamData);

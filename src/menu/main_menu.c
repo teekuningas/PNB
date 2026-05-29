@@ -46,8 +46,8 @@ void update_main_menu(
         case MENU_ENTRY_INTER_PERIOD:
             // When returning to a game, team info is in scoreboard
             init_batting_order_state(
-                &menuData->batting_order, stateInfo->match->scoreboard.teams[0].value - 1,
-                stateInfo->match->scoreboard.teams[0].control, stateInfo
+                &menuData->batting_order, stateInfo->rules->scoreboard.teams[0].value - 1,
+                stateInfo->rules->scoreboard.teams[0].control, stateInfo
             );
             menuData->stage = MENU_STAGE_BATTING_ORDER_1;
             for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -58,8 +58,8 @@ void update_main_menu(
         case MENU_ENTRY_SUPER_INNING:
             // When returning to a game, team info is in scoreboard
             init_batting_order_state(
-                &menuData->batting_order, stateInfo->match->scoreboard.teams[0].value - 1,
-                stateInfo->match->scoreboard.teams[0].control, stateInfo
+                &menuData->batting_order, stateInfo->rules->scoreboard.teams[0].value - 1,
+                stateInfo->rules->scoreboard.teams[0].control, stateInfo
             );
             menuData->stage = MENU_STAGE_BATTING_ORDER_1;
             for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -68,14 +68,14 @@ void update_main_menu(
             }
             break;
         case MENU_ENTRY_HOMERUN_CONTEST: {
-            int totalPicks = (stateInfo->match->scoreboard.period == 4) ? 10 : 6;
-            int team1Index = stateInfo->match->scoreboard.teams[0].value - 1;
-            int team2Index = stateInfo->match->scoreboard.teams[1].value - 1;
+            int totalPicks = (stateInfo->rules->scoreboard.period == 4) ? 10 : 6;
+            int team1Index = stateInfo->rules->scoreboard.teams[0].value - 1;
+            int team2Index = stateInfo->rules->scoreboard.teams[1].value - 1;
             init_homerun_contest_state(
-                &menuData->homerun1, team1Index, stateInfo->match->scoreboard.teams[0].control, totalPicks
+                &menuData->homerun1, team1Index, stateInfo->rules->scoreboard.teams[0].control, totalPicks
             );
             init_homerun_contest_state(
-                &menuData->homerun2, team2Index, stateInfo->match->scoreboard.teams[1].control, totalPicks
+                &menuData->homerun2, team2Index, stateInfo->rules->scoreboard.teams[1].control, totalPicks
             );
             menuData->stage = MENU_STAGE_HOMERUN_CONTEST_1;
         } break;
@@ -94,7 +94,7 @@ void update_main_menu(
         if (nextStage == MENU_STAGE_CUP) {
             init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
         } else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
-            stateInfo->match->scoreboard.isCupGame = 0;
+            stateInfo->rules->scoreboard.isCupGame = 0;
             init_team_selection_state(&menuData->team_selection, stateInfo->numTeams);
         } else if (nextStage == MENU_STAGE_HELP) {
             init_help_menu(&menuData->help_menu);
@@ -176,8 +176,8 @@ void update_main_menu(
     }
     case MENU_STAGE_GAME_OVER: {
         nextStage = updateGameOverMenu(
-            stateInfo->gameConclusion, keyStates, stateInfo->match->scoreboard.teams[0].control,
-            stateInfo->match->scoreboard.teams[1].control
+            stateInfo->gameConclusion, keyStates, stateInfo->rules->scoreboard.teams[0].control,
+            stateInfo->rules->scoreboard.teams[1].control
         );
         if (nextStage != menuData->stage) {
             stateInfo->playSoundEffect = SOUND_MENU;
@@ -186,7 +186,7 @@ void update_main_menu(
                 if (stateInfo->gameConclusion->isCupGame && stateInfo->cup != NULL) {
                     // 1. Record the user's game result
                     int winner_index = stateInfo->gameConclusion->winner;
-                    TeamID winner_id = stateInfo->match->scoreboard.teams[winner_index].value - 1;
+                    TeamID winner_id = stateInfo->rules->scoreboard.teams[winner_index].value - 1;
                     cup_update_match_result(stateInfo->cup, stateInfo->currently_played_cup_match_index, winner_id);
 
                     // 2. Simulate remaining AI matches for the current day
@@ -223,7 +223,7 @@ void update_main_menu(
 
                 // 4. Check if the winner is human-controlled (Player 1 or Player 2) and the cup is finished
                 int local_winner_index = stateInfo->gameConclusion->winner;
-                int winner_control = stateInfo->match->scoreboard.teams[local_winner_index].control;
+                int winner_control = stateInfo->rules->scoreboard.teams[local_winner_index].control;
 
                 if (stateInfo->cup != NULL && stateInfo->cup->matches[0].winner_id != CUP_MATCH_NO_WINNER &&
                     winner_control != 2) { // 2 = AI
@@ -271,13 +271,13 @@ void update_main_menu(
             menuData->pendingGameSetup.team1_control = cup_output.team1_control;
             menuData->pendingGameSetup.team2_control = cup_output.team2_control;
             menuData->pendingGameSetup.halfInningsInPeriod = cup_output.innings;
-            stateInfo->match->scoreboard.isCupGame = 1;
+            stateInfo->rules->scoreboard.isCupGame = 1;
             init_batting_order_state(
                 &menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control,
                 stateInfo
             );
         } else if (nextStage == MENU_STAGE_FRONT) {
-            stateInfo->match->scoreboard.isCupGame = 0;
+            stateInfo->rules->scoreboard.isCupGame = 0;
             init_front_menu_state(&menuData->front_menu);
         }
         menuData->stage = nextStage;

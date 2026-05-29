@@ -18,28 +18,24 @@ static void enforce_legal_state(
     const BetweenPitchState* bps
 );
 static int handle_foul_play_reset(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
 );
 static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
-    const BetweenPitchState* bps, const HalfInningState* his, const Scoreboard* scoreboard, MenuInfo* menuInfo,
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo,
     unsigned int* rng_seed
 );
 
-static void check_next_batter_decision(
-    MatchSession* match, const RefereeState* referee, const BetweenPitchState* bps, const Scoreboard* scoreboard
-);
+static void check_next_batter_decision(MatchSession* match, GameRulesState* rules);
 static void handle_strikes_and_balls(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 );
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const RefereeState* referee, const Scoreboard* scoreboard, MenuInfo* menuInfo,
-    unsigned int* rng_seed, ConsolidationOutput* output
+    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
+    ConsolidationOutput* output
 );
 static int check_next_pair(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
-    const Scoreboard* scoreboard, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
 );
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner);
 
@@ -55,11 +51,13 @@ void consolidation_init(GameFlowState* gameFlowState)
 
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const RefereeState* referee, const BetweenPitchState* bps,
-    const HalfInningState* his, const Scoreboard* scoreboard, MenuInfo* menuInfo, unsigned int* rng_seed,
+    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
     ConsolidationOutput* output
 )
 {
+    const RefereeState* referee = &rules->referee;
+    const BetweenPitchState* bps = &rules->betweenPitchState;
+
     // Initialize output
     output->request_screen_change = 0;
     output->target_screen = SCREEN_GAME;
@@ -68,25 +66,23 @@ void consolidation_update(
     // If any reset happens, abort all further processing for this frame
 
     // Check for end-of-inning reset
-    if (check_end_of_inning(
-            match, field_positions, team_data, game_conclusion, referee, scoreboard, menuInfo, rng_seed, output
-        )) {
+    if (check_end_of_inning(match, field_positions, team_data, game_conclusion, rules, menuInfo, rng_seed, output)) {
         return;
     }
 
     // Check for next pair reset (homerun contest)
-    if (check_next_pair(match, field_positions, referee, scoreboard, rng_seed)) {
+    if (check_next_pair(match, field_positions, rules, rng_seed)) {
         return;
     }
 
     // Check for foul play (out of bounds) reset
-    if (handle_foul_play_reset(match, field_positions, referee, rng_seed)) {
+    if (handle_foul_play_reset(match, field_positions, rules, rng_seed)) {
         return;
     }
 
     // 1. Game Flow Analysis (The Game Master)
     // Decides if we need to pause for input, etc.
-    update_game_flow(match, field_positions, referee, bps, his, scoreboard, menuInfo, rng_seed);
+    update_game_flow(match, field_positions, rules, menuInfo, rng_seed);
 
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
@@ -161,12 +157,12 @@ static void enforce_legal_state(
 // ===============================================================================================
 
 static int handle_foul_play_reset(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
 )
 {
     // Check if Referee has triggered the reset state
-    if (referee->foulState == FOUL_STATE_RESETTING) {
-        reset_for_foul_play(match, field_positions, referee, rng_seed);
+    if (rules->referee.foulState == FOUL_STATE_RESETTING) {
+        reset_for_foul_play(match, field_positions, rules, rng_seed);
 
         // Note: Referee will transition state to NONE in referee_finalize
         return 1; // Signal that we reset
@@ -182,8 +178,7 @@ static int handle_foul_play_reset(
 // ===============================================================================================
 
 static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
-    const BetweenPitchState* bps, const HalfInningState* his, const Scoreboard* scoreboard, MenuInfo* menuInfo,
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo,
     unsigned int* rng_seed
 )
 {
@@ -197,14 +192,16 @@ static void update_game_flow(
         }
     }
 
-    check_next_batter_decision(match, referee, bps, scoreboard);
-    handle_strikes_and_balls(match, field_positions, his, referee);
+    check_next_batter_decision(match, rules);
+    handle_strikes_and_balls(match, field_positions, &rules->halfInningState, &rules->referee);
 }
 
-static void check_next_batter_decision(
-    MatchSession* match, const RefereeState* referee, const BetweenPitchState* bps, const Scoreboard* scoreboard
-)
+static void check_next_batter_decision(MatchSession* match, GameRulesState* rules)
 {
+    const RefereeState* referee = &rules->referee;
+    const BetweenPitchState* bps = &rules->betweenPitchState;
+    const Scoreboard* scoreboard = &rules->scoreboard;
+
     // Cancel pending batter request if inning is ending
     if (referee->endOfInningState != END_INNING_STATE_NONE) {
         match->flowControl.waitingForBatterDecision = 0;
@@ -218,7 +215,7 @@ static void check_next_batter_decision(
     } else if (get_active_batter_index(match) == -1 && match->flowControl.waitingForBatterDecision == 0 &&
                referee->endOfInningState == END_INNING_STATE_NONE) {
         // there have to be a player available
-        if (match->playerCounters.nonJokerPlayersLeft + match->playerCounters.jokersLeft > 0) {
+        if (rules->playerCounters.nonJokerPlayersLeft + rules->playerCounters.jokersLeft > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
             if (count_active_batting_players(match->playerInfo) < BASE_COUNT && referee->foulState == FOUL_STATE_NONE) {
@@ -232,7 +229,7 @@ static void check_next_batter_decision(
                     // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
                     // just select the next batter in order there. if not, we select the first joker we find that is
                     // still unused. one of these must be true, as we checked there is joker or non-joker left before.
-                    if (match->playerCounters.nonJokerPlayersLeft != 0) {
+                    if (rules->playerCounters.nonJokerPlayersLeft != 0) {
                         match->pII.batterSelectionIndex =
                             scoreboard->teams[battingTeamIndex]
                                 .batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
@@ -248,7 +245,7 @@ static void check_next_batter_decision(
                 }
             }
         } else {
-            match->playerCounters.noMorePlayers = 1;
+            rules->playerCounters.noMorePlayers = 1;
         }
     }
 }
@@ -263,7 +260,7 @@ static void handle_strikes_and_balls(
     if (his->strikes >= 3) {
         // We restore automatic force running to resolve control ambiguity.
         // The batter is now "forced" to run by the rules.
-        int index = get_base_controller(match, BASE_HOME);
+        int index = get_base_controller(match, referee, BASE_HOME);
 
         // Only force run if player is still there and NOT already running.
         // This prevents re-triggering every frame while preserving the 3 strikes state
@@ -303,10 +300,13 @@ static void handle_strikes_and_balls(
 
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const RefereeState* referee, const Scoreboard* scoreboard, MenuInfo* menuInfo,
-    unsigned int* rng_seed, ConsolidationOutput* output
+    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
+    ConsolidationOutput* output
 )
 {
+    const RefereeState* referee = &rules->referee;
+    const Scoreboard* scoreboard = &rules->scoreboard;
+
     // Scoreboard advancement and period logic handled by referee at DETECTED→RESETTING.
     // We only react when Referee signals RESETTING: perform physical reset + menu routing.
 
@@ -318,7 +318,7 @@ static int check_end_of_inning(
 
     if (transition == PERIOD_TRANSITION_NONE) {
         // Normal next-inning within same period — just reset physical world
-        reset_for_new_half_inning(match, field_positions, team_data, rng_seed);
+        reset_for_new_half_inning(match, field_positions, team_data, rules, rng_seed);
     } else {
         // Period transition — route to appropriate menu
         switch (transition) {
@@ -346,23 +346,26 @@ static int check_end_of_inning(
 }
 
 static int check_next_pair(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
-    const Scoreboard* scoreboard, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
 )
 {
+    const Scoreboard* scoreboard = &rules->scoreboard;
+
     if (scoreboard->period >= 4) {
 
         // Milestone 17.5: Timer and logic moved to Referee (State Machine).
         // We only react when Referee signals RESETTING (State 2).
 
-        HomeRunPairState currentState = referee->nextPairTransitionState;
+        HomeRunPairState currentState = rules->referee.nextPairTransitionState;
 
         if (currentState == HR_PAIR_STATE_RESETTING) {
 
             // if equality holds, ending of inning will load the settings.
-            if (match->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
+            if (rules->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
                 // Physical Reset for Next Pair
-                reset_for_next_pair(match, field_positions, rng_seed);
+                reset_for_next_pair(
+                    match, field_positions, scoreboard, &rules->homeRunContestState, &rules->playerCounters, rng_seed
+                );
             }
             return 1; // Signal that we reset
         }

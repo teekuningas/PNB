@@ -248,8 +248,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // OUTS (Far Left)
     float outs_x = CENTER_X + OUTS_OFFSET_X;
-    if (stateInfo->match->scoreboard.period < 4) {
-        switch (stateInfo->match->halfInningState.outs) {
+    if (stateInfo->rules->scoreboard.period < 4) {
+        switch (stateInfo->rules->halfInningState.outs) {
         case 3:
             print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
             break;
@@ -268,10 +268,10 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // INFO AREA (Left-Center)
     float info_x = CENTER_X + INFO_OFFSET_X;
 
-    if (stateInfo->match->halfInningState.event != EVENT_NONE) {
+    if (stateInfo->rules->halfInningState.event != EVENT_NONE) {
         us->gameInfoEventTimer = 0;
-        us->gameInfoEvent = (int)stateInfo->match->halfInningState.event;
-        stateInfo->match->halfInningState.event = EVENT_NONE;
+        us->gameInfoEvent = (int)stateInfo->rules->halfInningState.event;
+        stateInfo->rules->halfInningState.event = EVENT_NONE;
     }
 
     if (us->gameInfoEventTimer != -1) {
@@ -312,15 +312,15 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         // Player selection info
         int index;
         int shouldContinue = 1;
-        if (stateInfo->match->scoreboard.period < 4) {
+        if (stateInfo->rules->scoreboard.period < 4) {
             if (stateInfo->match->pII.batterSelectionIndex == -1)
                 shouldContinue = 0;
             else
                 index = stateInfo->match->pII.batterSelectionIndex;
         } else {
-            int battingTeamIndex = get_batting_team_index(&stateInfo->match->scoreboard);
-            index = stateInfo->match->scoreboard.teams[battingTeamIndex]
-                        .batterRunnerIndices[0][stateInfo->match->homeRunContestState.runnerBatterPairCounter];
+            int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
+            index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
+                        .batterRunnerIndices[0][stateInfo->rules->homeRunContestState.runnerBatterPairCounter];
             if (index == -1) shouldContinue = 0;
         }
         if (shouldContinue == 1) {
@@ -331,7 +331,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
             print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
             if (stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&
-                stateInfo->match->scoreboard.period < 4) {
+                stateInfo->rules->scoreboard.period < 4) {
                 str5[0] = 'J';
             } else {
                 str5[0] = (char)(((int)'0') + stateInfo->match->playerInfo[index].bTPI.number);
@@ -349,8 +349,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // Inning
     char inn_str[16] = "I  ";
-    if (stateInfo->match->scoreboard.period < 4) {
-        inn_str[2] = (char)(((int)'0') + stateInfo->match->scoreboard.inning / 2 + 1);
+    if (stateInfo->rules->scoreboard.period < 4) {
+        inn_str[2] = (char)(((int)'0') + stateInfo->rules->scoreboard.inning / 2 + 1);
     } else {
         inn_str[2] = '0';
     }
@@ -358,22 +358,22 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // Balls
     char ball_str[16] = "B  ";
-    if (stateInfo->match->halfInningState.balls < 10) {
-        ball_str[2] = (char)(((int)'0') + stateInfo->match->halfInningState.balls);
+    if (stateInfo->rules->halfInningState.balls < 10) {
+        ball_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.balls);
     } else {
-        sprintf(ball_str, "B%d", stateInfo->match->halfInningState.balls);
+        sprintf(ball_str, "B%d", stateInfo->rules->halfInningState.balls);
     }
     print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Strikes
     char strike_str[16] = "S  ";
-    strike_str[2] = (char)(((int)'0') + stateInfo->match->halfInningState.strikes);
+    strike_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.strikes);
     print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Runs
     char runs_str[32];
     sprintf(
-        runs_str, "R %d - %d", stateInfo->match->scoreboard.teams[0].runs, stateInfo->match->scoreboard.teams[1].runs
+        runs_str, "R %d - %d", stateInfo->rules->scoreboard.teams[0].runs, stateInfo->rules->scoreboard.teams[1].runs
     );
     print_text_2d(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
 
@@ -472,13 +472,15 @@ static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_se
     // initialize cam
     init_cam_settings(stateInfo);
     // Physical world + flow + team setup
-    reset_for_new_half_inning(stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, rng_seed);
+    reset_for_new_half_inning(
+        stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules, rng_seed
+    );
     // Referee initialization (from-menu only — no state machine active, full clean slate)
     referee_reset_for_new_inning(
-        &stateInfo->match->referee, &stateInfo->match->halfInningState, &stateInfo->match->betweenPitchState
+        &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState
     );
     // Scan physical world to establish initial legal tracking
-    initialize_referee(stateInfo, &stateInfo->match->referee);
+    initialize_referee(stateInfo, &stateInfo->rules->referee);
 }
 
 static void init_cam_settings(StateInfo* stateInfo)
