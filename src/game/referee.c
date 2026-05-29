@@ -30,7 +30,7 @@ static void clear_between_pitch_state(BetweenPitchState* bps)
 
 static void update_initialization_events(
     const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState,
-    HalfInningState* halfInningState, Scoreboard* scoreboard
+    HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -41,12 +41,14 @@ static void update_initialization_events(
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
-                // Advance batting order only for regular (non-joker) batters.
-                // Note: joker status is JOKER_USED by this point (batting_system sets it
-                // before firing the event), so we check for JOKER_REGULAR specifically.
                 if (game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
+                    // Regular batter: advance batting order, decrement available count
                     scoreboard->teams[battingTeamIndex].batterOrderIndex =
                         (scoreboard->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
+                    playerCounters->nonJokerPlayersLeft--;
+                } else {
+                    // Joker batter (already marked JOKER_USED by batting_system)
+                    playerCounters->jokersLeft--;
                 }
             }
         }
@@ -1123,7 +1125,8 @@ void update_referee(
 
     // 0. Initialization Events (Milestone 17)
     update_initialization_events(
-        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, scoreboard
+        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, playerCounters,
+        scoreboard
     );
 
     // 1. Where is the ball?

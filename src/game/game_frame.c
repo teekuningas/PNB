@@ -68,7 +68,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         action_invocations(game, stateInfo->keyStates, &rules->scoreboard);
 
         // 2. Physics & Logic
-        action_implementation(stateInfo, rng_seed);
+        action_implementation(stateInfo);
         update_meters(stateInfo);
         ai_update(stateInfo, rng_seed);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);

@@ -51,7 +51,7 @@ void init_action_implementation(StateInfo* stateInfo)
     initBattingAI(&(stateInfo->match->aiState));
 }
 
-void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed)
+void action_implementation(StateInfo* stateInfo)
 {
     int i;
 

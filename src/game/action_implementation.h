@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-void action_implementation(StateInfo* stateInfo, unsigned int* rng_seed);
+void action_implementation(StateInfo* stateInfo);
 void init_action_implementation(StateInfo* stateInfo);
 void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z);
 void update_meters(StateInfo* stateInfo);

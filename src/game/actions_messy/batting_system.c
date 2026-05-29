@@ -122,14 +122,10 @@ void selectBatter(StateInfo* stateInfo)
         stateInfo->match->playerRuntime[index].goingForward = 0;
         stateInfo->match->playerRuntime[index].passedPathPoint = 0;
         stateInfo->match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
-        // if he is a (unused) joker player, mark him as used, and decrease the amount of jokers left.
+        // if he is a (unused) joker player, mark him as used.
+        // The referee handles playerCounters decrements on batterEntered event.
         if (stateInfo->match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
-            stateInfo->rules->playerCounters.jokersLeft--;
             stateInfo->match->playerInfo[index].bTPI.joker = JOKER_USED;
-        } else {
-            // otherwise he is not a joker player and we must decrease the amount of those.
-            stateInfo->rules->playerCounters.nonJokerPlayersLeft--;
-            // batterOrderIndex is now advanced by the referee on batterEntered event
         }
         // move player to default batter ready position
         target.x = (float)(stateInfo->fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
