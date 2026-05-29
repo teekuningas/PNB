@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit -I./tests/integration
+IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./external -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit -I./tests/integration
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml

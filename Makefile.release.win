@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/include -I./src/menu -I./src/cup -I./tests
+IDIR = -I./src/core -I./src/game -I./src/include -I./external -I./src/menu -I./src/cup -I./tests
 CC = gcc
 CFLAGS = $(IDIR) -I/mingw64/include -O2 -Wall
 LDFLAGS = -L/mingw64/lib -lglfw3 -lglew32 -lmxml -lopengl32 -lglu32

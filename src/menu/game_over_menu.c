@@ -29,10 +29,12 @@ updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates,
     return MENU_STAGE_GAME_OVER;
 }
 
-void drawGameOverMenu(const GameConclusion* conclusion, const TeamData* teamData, RenderState* rs, ResourceManager* rm)
+void draw_game_over_menu(
+    const GameConclusion* conclusion, const TeamData* teamData, RenderState* rs, ResourceManager* rm
+)
 {
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     char buffer[128];
     const float center_x = VIRTUAL_WIDTH / 2.0f;

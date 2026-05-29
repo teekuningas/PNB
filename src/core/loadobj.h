@@ -48,6 +48,6 @@ typedef struct _MeshObject {
 
 } MeshObject;
 
-int LoadObj(const char* filename, const char* objectname, MeshObject* meshObj);
+int load_obj(const char* filename, const char* objectname, MeshObject* meshObj);
 
 #endif /* LOADOBJ_H */

@@ -7,14 +7,14 @@ static int freeTeam(TeamData* teamData);
 static int readTeamsFromFile(StateInfo* stateInfo, const char* filename);
 static int mxmlCountNodes(mxml_node_t* tree, const char* elementName);
 
-int fillPlayerData(StateInfo* stateInfo, const char* filename)
+int fill_player_data(StateInfo* stateInfo, const char* filename)
 {
     stateInfo->numTeams = 0;
     stateInfo->teamData = NULL;
     return readTeamsFromFile(stateInfo, filename);
 }
 
-int cleanPlayerData(StateInfo* stateInfo)
+int clean_player_data(StateInfo* stateInfo)
 {
     for (int i = 0; i < stateInfo->numTeams; i++) {
         freeTeam(&(stateInfo->teamData[i]));

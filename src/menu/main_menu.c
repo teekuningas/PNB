@@ -20,17 +20,17 @@
 
 #define CAM_HEIGHT 2.3f
 
-int initMainMenu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
+int init_main_menu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
 {
     menuInfo->mode = MENU_ENTRY_NORMAL;
 
     resource_manager_load_all_menu_assets(rm);
-    initFrontMenuState(&menuData->front_menu);
+    init_front_menu_state(&menuData->front_menu);
 
     return 0;
 }
 
-void updateMainMenu(
+void update_main_menu(
     StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, KeyStates* keyStates, unsigned int* rng_seed
 )
 {
@@ -41,11 +41,11 @@ void updateMainMenu(
         int i;
         switch (menuInfo->mode) {
         case MENU_ENTRY_NORMAL:
-            resetMenuForNewGame(menuData, stateInfo);
+            reset_menu_for_new_game(menuData, stateInfo);
             break;
         case MENU_ENTRY_INTER_PERIOD:
             // When returning to a game, team info is in scoreboard
-            initBattingOrderState(
+            init_batting_order_state(
                 &menuData->batting_order, stateInfo->match->scoreboard.teams[0].value - 1,
                 stateInfo->match->scoreboard.teams[0].control, stateInfo
             );
@@ -57,7 +57,7 @@ void updateMainMenu(
             break;
         case MENU_ENTRY_SUPER_INNING:
             // When returning to a game, team info is in scoreboard
-            initBattingOrderState(
+            init_batting_order_state(
                 &menuData->batting_order, stateInfo->match->scoreboard.teams[0].value - 1,
                 stateInfo->match->scoreboard.teams[0].control, stateInfo
             );
@@ -71,10 +71,10 @@ void updateMainMenu(
             int totalPicks = (stateInfo->match->scoreboard.period == 4) ? 10 : 6;
             int team1Index = stateInfo->match->scoreboard.teams[0].value - 1;
             int team2Index = stateInfo->match->scoreboard.teams[1].value - 1;
-            initHomerunContestState(
+            init_homerun_contest_state(
                 &menuData->homerun1, team1Index, stateInfo->match->scoreboard.teams[0].control, totalPicks
             );
-            initHomerunContestState(
+            init_homerun_contest_state(
                 &menuData->homerun2, team2Index, stateInfo->match->scoreboard.teams[1].control, totalPicks
             );
             menuData->stage = MENU_STAGE_HOMERUN_CONTEST_1;
@@ -90,14 +90,14 @@ void updateMainMenu(
     }
     switch (menuData->stage) {
     case MENU_STAGE_FRONT: {
-        nextStage = updateFrontMenu(&menuData->front_menu, keyStates, stateInfo);
+        nextStage = update_front_menu(&menuData->front_menu, keyStates, stateInfo);
         if (nextStage == MENU_STAGE_CUP) {
-            initCupMenu(&menuData->cup_menu, stateInfo, rng_seed);
+            init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
         } else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
             stateInfo->match->scoreboard.isCupGame = 0;
-            initTeamSelectionState(&menuData->team_selection, stateInfo->numTeams);
+            init_team_selection_state(&menuData->team_selection, stateInfo->numTeams);
         } else if (nextStage == MENU_STAGE_HELP) {
-            initHelpMenu(&menuData->help_menu);
+            init_help_menu(&menuData->help_menu);
         } else if (nextStage == MENU_STAGE_QUIT) {
             stateInfo->screen = SCREEN_LOADING;
         }
@@ -105,53 +105,53 @@ void updateMainMenu(
         break;
     }
     case MENU_STAGE_TEAM_SELECTION: {
-        nextStage = updateTeamSelectionMenu(&menuData->team_selection, keyStates, &menuData->pendingGameSetup);
+        nextStage = update_team_selection_menu(&menuData->team_selection, keyStates, &menuData->pendingGameSetup);
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
-                initBattingOrderState(
+                init_batting_order_state(
                     &menuData->batting_order, menuData->pendingGameSetup.team1,
                     menuData->pendingGameSetup.team1_control, stateInfo
                 );
             } else if (nextStage == MENU_STAGE_FRONT) {
-                initFrontMenuState(&menuData->front_menu);
+                init_front_menu_state(&menuData->front_menu);
             }
         }
         menuData->stage = nextStage;
         break;
     }
     case MENU_STAGE_BATTING_ORDER_1: {
-        nextStage = updateBattingOrderMenu(
+        nextStage = update_batting_order_menu(
             &menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &menuData->pendingGameSetup
         );
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_BATTING_ORDER_2) {
-                initBattingOrderState(
+                init_batting_order_state(
                     &menuData->batting_order, menuData->pendingGameSetup.team2,
                     menuData->pendingGameSetup.team2_control, stateInfo
                 );
             } else if (nextStage == MENU_STAGE_HUTUNKEITTO) {
-                initHutunkeittoState(&menuData->hutunkeitto);
+                init_hutunkeitto_state(&menuData->hutunkeitto);
             }
         }
         menuData->stage = nextStage;
         break;
     }
     case MENU_STAGE_BATTING_ORDER_2: {
-        nextStage = updateBattingOrderMenu(
+        nextStage = update_batting_order_menu(
             &menuData->batting_order, keyStates, menuData->stage, menuInfo->mode, &menuData->pendingGameSetup
         );
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_HUTUNKEITTO) {
-                initHutunkeittoState(&menuData->hutunkeitto);
+                init_hutunkeitto_state(&menuData->hutunkeitto);
             }
             if (nextStage == MENU_STAGE_GO_TO_GAME) {
                 if (menuInfo->mode == MENU_ENTRY_INTER_PERIOD || menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
                     menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_INTER_PERIOD;
-                    launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
+                    launch_game_from_menu(stateInfo, &menuData->pendingGameSetup, rng_seed);
                 } else {
                     menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
                     menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
-                    launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
+                    launch_game_from_menu(stateInfo, &menuData->pendingGameSetup, rng_seed);
                 }
             }
         }
@@ -159,7 +159,7 @@ void updateMainMenu(
         break;
     }
     case MENU_STAGE_HUTUNKEITTO: {
-        nextStage = updateHutunkeittoMenu(
+        nextStage = update_hutunkeitto_menu(
             &menuData->hutunkeitto, keyStates, menuData->pendingGameSetup.team1_control,
             menuData->pendingGameSetup.team2_control, &menuData->pendingGameSetup, rng_seed
         );
@@ -167,7 +167,7 @@ void updateMainMenu(
             if (nextStage == MENU_STAGE_GO_TO_GAME) {
                 menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
                 menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
-                launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
+                launch_game_from_menu(stateInfo, &menuData->pendingGameSetup, rng_seed);
                 menuInfo->mode = MENU_ENTRY_NORMAL;
             }
         }
@@ -210,7 +210,7 @@ void updateMainMenu(
                 }
 
                 // Initialize the cup menu logic/coordinates before setting specific state
-                initCupMenu(&menuData->cup_menu, stateInfo, rng_seed);
+                init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
 
                 // 3. Set up the cup menu to show ongoing screen
                 menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
@@ -231,14 +231,14 @@ void updateMainMenu(
                     menuData->cup_menu.credits_menu.creditsScrollX = VIRTUAL_WIDTH;
                 }
             } else {
-                resetMenuForNewGame(menuData, stateInfo);
+                reset_menu_for_new_game(menuData, stateInfo);
             }
         }
         menuData->stage = nextStage;
         break;
     }
     case MENU_STAGE_HOMERUN_CONTEST_1: {
-        nextStage = updateHomerunContestMenu(
+        nextStage = update_homerun_contest_menu(
             &menuData->homerun1, keyStates, menuData->stage, &menuData->pendingGameSetup,
             (const TeamData*)stateInfo->teamData
         );
@@ -248,14 +248,14 @@ void updateMainMenu(
         break;
     }
     case MENU_STAGE_HOMERUN_CONTEST_2: {
-        nextStage = updateHomerunContestMenu(
+        nextStage = update_homerun_contest_menu(
             &menuData->homerun2, keyStates, menuData->stage, &menuData->pendingGameSetup,
             (const TeamData*)stateInfo->teamData
         );
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_GO_TO_GAME) {
                 menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_HOMERUN_CONTEST;
-                launchGameFromMenu(stateInfo, &menuData->pendingGameSetup, rng_seed);
+                launch_game_from_menu(stateInfo, &menuData->pendingGameSetup, rng_seed);
             }
             menuData->stage = nextStage;
         }
@@ -263,7 +263,7 @@ void updateMainMenu(
     }
     case MENU_STAGE_CUP: {
         CupMenuOutput cup_output;
-        nextStage = updateCupMenu(&menuData->cup_menu, stateInfo, keyStates, &cup_output, rng_seed);
+        nextStage = update_cup_menu(&menuData->cup_menu, stateInfo, keyStates, &cup_output, rng_seed);
         if (nextStage == MENU_STAGE_BATTING_ORDER_1) {
             // A game is starting, transfer data from cup output to pendingGameSetup
             menuData->pendingGameSetup.team1 = cup_output.team1;
@@ -272,22 +272,22 @@ void updateMainMenu(
             menuData->pendingGameSetup.team2_control = cup_output.team2_control;
             menuData->pendingGameSetup.halfInningsInPeriod = cup_output.innings;
             stateInfo->match->scoreboard.isCupGame = 1;
-            initBattingOrderState(
+            init_batting_order_state(
                 &menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control,
                 stateInfo
             );
         } else if (nextStage == MENU_STAGE_FRONT) {
             stateInfo->match->scoreboard.isCupGame = 0;
-            initFrontMenuState(&menuData->front_menu);
+            init_front_menu_state(&menuData->front_menu);
         }
         menuData->stage = nextStage;
         break;
     }
     case MENU_STAGE_HELP: {
-        nextStage = updateHelpMenu(&menuData->help_menu, keyStates);
+        nextStage = update_help_menu(&menuData->help_menu, keyStates);
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_FRONT) {
-                initFrontMenuState(&menuData->front_menu);
+                init_front_menu_state(&menuData->front_menu);
             }
         }
         menuData->stage = nextStage;
@@ -299,45 +299,49 @@ void updateMainMenu(
         // Quit handled in FRONT case, no update here
         break;
     }
-    clearReleasedKeys(keyStates);
+    clear_released_keys(keyStates);
 }
 
-void drawMainMenu(
+void draw_main_menu(
     const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm,
     RenderState* rs
 )
 {
     switch (menuData->stage) {
     case MENU_STAGE_FRONT:
-        drawFrontMenu(&menuData->front_menu, rs, rm);
+        draw_front_menu(&menuData->front_menu, rs, rm);
         break;
     case MENU_STAGE_HELP:
-        drawHelpMenu(&menuData->help_menu, rs, rm);
+        draw_help_menu(&menuData->help_menu, rs, rm);
         break;
     case MENU_STAGE_BATTING_ORDER_1:
     case MENU_STAGE_BATTING_ORDER_2:
-        drawBattingOrderMenu(&menuData->batting_order, menuData->stage, rs, rm);
+        draw_batting_order_menu(&menuData->batting_order, menuData->stage, rs, rm);
         break;
     case MENU_STAGE_TEAM_SELECTION:
-        drawTeamSelectionMenu(&menuData->team_selection, (const TeamData*)stateInfo->teamData, rs, rm);
+        draw_team_selection_menu(&menuData->team_selection, (const TeamData*)stateInfo->teamData, rs, rm);
         break;
     case MENU_STAGE_HUTUNKEITTO:
-        drawHutunkeittoMenu(
+        draw_hutunkeitto_menu(
             &menuData->hutunkeitto, rs, rm, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team2
         );
         break;
 
     case MENU_STAGE_GAME_OVER:
-        drawGameOverMenu(stateInfo->gameConclusion, (const TeamData*)stateInfo->teamData, rs, rm);
+        draw_game_over_menu(stateInfo->gameConclusion, (const TeamData*)stateInfo->teamData, rs, rm);
         break;
     case MENU_STAGE_HOMERUN_CONTEST_1:
-        drawHomerunContestMenu(&menuData->homerun1, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData);
+        draw_homerun_contest_menu(
+            &menuData->homerun1, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData
+        );
         break;
     case MENU_STAGE_HOMERUN_CONTEST_2:
-        drawHomerunContestMenu(&menuData->homerun2, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData);
+        draw_homerun_contest_menu(
+            &menuData->homerun2, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData
+        );
         break;
     case MENU_STAGE_CUP:
-        drawCupMenu(&menuData->cup_menu, stateInfo, rs, rm);
+        draw_cup_menu(&menuData->cup_menu, stateInfo, rs, rm);
         break;
 
     case MENU_STAGE_GO_TO_GAME:
@@ -346,7 +350,7 @@ void drawMainMenu(
     }
 }
 
-int cleanMainMenu(MenuData* menuData)
+int clean_main_menu(MenuData* menuData)
 {
     // All resources are now cleaned up by the resource manager.
     return 0;

@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
             soundEnabled = 0;
         }
         if (strcmp(argv[i], "--debug-state") == 0 && i + 1 < argc) {
-            StateValidator_Init(argv[i + 1]);
+            state_validator_init(argv[i + 1]);
             printf("State Validation ENABLED. Output: %s\n", argv[i + 1]);
             i++;
         }
@@ -98,29 +98,29 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    result = fillPlayerData(&stateInfo, "data/teams.xml");
+    result = fill_player_data(&stateInfo, "data/teams.xml");
     if (result != 0) {
         printf("Could not init team data. Exiting.");
         return -1;
     }
 
-    result = initMainMenu(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
+    result = init_main_menu(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
     if (result != 0) {
         printf("Could not init main menu. Exiting.");
         return -1;
     }
 
-    result = initInput(&stateInfo);
+    result = init_input(&stateInfo);
     if (result != 0) {
         printf("Could not init input. Exiting.");
         return -1;
     }
-    result = initSound(&stateInfo);
+    result = init_sound(&stateInfo);
     if (result != 0) {
         printf("Could not init sound system. Exiting.");
         return -1;
     }
-    result = initFont();
+    result = init_font();
     if (result != 0) {
         printf("Could not init font. Exiting.");
         return -1;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     // draw loading screen before loading all the player meshes which will take time
     stateInfo.screen = SCREEN_LOADING;
     // we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-    drawLoadingScreen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
+    draw_loading_screen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
     draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
     result = init_game_screen(&stateInfo, resourceManager);
@@ -185,14 +185,14 @@ int main(int argc, char* argv[])
 
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, unsigned int* rng_seed)
 {
-    updateInput(stateInfo, window);
-    updateSound(stateInfo);
+    update_input(stateInfo, window);
+    update_sound(stateInfo);
     switch (stateInfo->screen) {
     case SCREEN_GAME:
         update_game_screen(stateInfo, &menuInfo, rng_seed);
         break;
     case SCREEN_MAIN_MENU:
-        updateMainMenu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
+        update_main_menu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
         break;
     default:
         return 1;
@@ -210,7 +210,7 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
         draw_game_screen(stateInfo, alpha, rm, rs);
         break;
     case SCREEN_MAIN_MENU:
-        drawMainMenu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
+        draw_main_menu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
         break;
     case SCREEN_LOADING:
         break;
@@ -307,7 +307,7 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
 {
     int result;
     int retvalue = 0;
-    result = cleanPlayerData(stateInfo);
+    result = clean_player_data(stateInfo);
     if (result != 0) {
         printf("Could not clean player data completely\n");
         retvalue = -1;
@@ -318,17 +318,17 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
         retvalue = -1;
     }
 
-    result = cleanMainMenu(menuData);
+    result = clean_main_menu(menuData);
     if (result != 0) {
         printf("Could not clean main menu completely\n");
         retvalue = -1;
     }
-    result = cleanFont();
+    result = clean_font();
     if (result != 0) {
         printf("Could not clean font completely\n");
         retvalue = -1;
     }
-    result = cleanSound(stateInfo);
+    result = clean_sound(stateInfo);
     if (result != 0) {
         printf("Could not clean sound completely\n");
         retvalue = -1;

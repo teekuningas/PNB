@@ -75,7 +75,7 @@ void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
         if (stateInfo->match->flowControl.pause == 0) {
             stateInfo->match->flowControl.pause = 1;
-            StateValidator_Dump(stateInfo, "Manual Pause");
+            state_validator_dump(stateInfo, "Manual Pause");
         } else if (stateInfo->match->flowControl.pause == 1) {
             stateInfo->changeScreen = 1;
             stateInfo->updated = 0;
@@ -251,13 +251,13 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     if (stateInfo->match->scoreboard.period < 4) {
         switch (stateInfo->match->halfInningState.outs) {
         case 3:
-            printText2D("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
+            print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
             break;
         case 2:
-            printText2D("XX", 2, outs_x, TEXT_Y, FONT_SIZE);
+            print_text_2d("XX", 2, outs_x, TEXT_Y, FONT_SIZE);
             break;
         case 1:
-            printText2D("X", 1, outs_x, TEXT_Y, FONT_SIZE);
+            print_text_2d("X", 1, outs_x, TEXT_Y, FONT_SIZE);
             break;
         case 0:
         default:
@@ -305,9 +305,9 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
             msg = "TWO RUNS";
             break;
         }
-        printText2D(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
+        print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
     } else if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
-        printText2D("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
+        print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
     } else {
         // Player selection info
         int index;
@@ -328,7 +328,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
             int power = stateInfo->match->playerInfo[index].bTPI.power;
             char p_str[32];
             sprintf(p_str, "S%d P%d", speed, power);
-            printText2D(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
+            print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
             if (stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&
                 stateInfo->match->scoreboard.period < 4) {
@@ -337,10 +337,10 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
                 str5[0] = (char)(((int)'0') + stateInfo->match->playerInfo[index].bTPI.number);
             }
             // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
-            printText2D(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
+            print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
             str4 = stateInfo->match->playerInfo[index].bTPI.name;
-            printText2D(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
+            print_text_2d(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
         }
     }
 
@@ -354,7 +354,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     } else {
         inn_str[2] = '0';
     }
-    printText2D(inn_str, 3, stats_x - 140.0f, TEXT_Y, FONT_SIZE); // Moved Left
+    print_text_2d(inn_str, 3, stats_x - 140.0f, TEXT_Y, FONT_SIZE); // Moved Left
 
     // Balls
     char ball_str[16] = "B  ";
@@ -363,19 +363,19 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     } else {
         sprintf(ball_str, "B%d", stateInfo->match->halfInningState.balls);
     }
-    printText2D(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
+    print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Strikes
     char strike_str[16] = "S  ";
     strike_str[2] = (char)(((int)'0') + stateInfo->match->halfInningState.strikes);
-    printText2D(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
+    print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Runs
     char runs_str[32];
     sprintf(
         runs_str, "R %d - %d", stateInfo->match->scoreboard.teams[0].runs, stateInfo->match->scoreboard.teams[1].runs
     );
-    printText2D(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
+    print_text_2d(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
 
     // METER (Right-Center)
     float meter_screen_x = CENTER_X + METER_OFFSET_X;

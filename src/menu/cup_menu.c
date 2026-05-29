@@ -752,7 +752,7 @@ static void loadCup(StateInfo* stateInfo, int slot)
     }
 }
 
-void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed)
+void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed)
 {
     // Initialize all sub-states to a known default
     memset(&cupMenuState->initial, 0, sizeof(CupInitialState));
@@ -770,7 +770,7 @@ void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int*
     // Set rem based on whether cup exists: 3 options (Resume/New/Load) or 2 (New/Load)
     cupMenuState->initial.rem = (stateInfo->cup != NULL) ? 3 : 2;
 }
-MenuStage updateCupMenu(
+MenuStage update_cup_menu(
     CupMenuState* cupMenuState, StateInfo* stateInfo, const KeyStates* keyStates, CupMenuOutput* output,
     unsigned int* rng_seed
 )
@@ -803,7 +803,7 @@ MenuStage updateCupMenu(
         const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, "
                                    "VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
         const float text_fontsize = 30.0f;
-        float text_width = getTextWidth2D(credits_text, strlen(credits_text), text_fontsize);
+        float text_width = get_text_width_2d(credits_text, strlen(credits_text), text_fontsize);
         cupMenuState->credits_menu.creditsScrollX -= 1.0f;
         if (cupMenuState->credits_menu.creditsScrollX < -text_width) {
             cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;
@@ -814,12 +814,12 @@ MenuStage updateCupMenu(
     return MENU_STAGE_CUP;
 }
 
-void drawCupMenu(
+void draw_cup_menu(
     const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm
 )
 {
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     switch (cupMenuState->screen) {
     case CUP_MENU_SCREEN_INITIAL:

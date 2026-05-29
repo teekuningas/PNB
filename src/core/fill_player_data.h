@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-int fillPlayerData(StateInfo* stateInfo, const char* filename);
-int cleanPlayerData(StateInfo* stateInfo);
+int fill_player_data(StateInfo* stateInfo, const char* filename);
+int clean_player_data(StateInfo* stateInfo);
 
 #endif /* FILL_PLAYER_DATA_H */

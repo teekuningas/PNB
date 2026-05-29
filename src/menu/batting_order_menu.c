@@ -6,7 +6,7 @@
 #include "menu_helpers.h"
 #include <string.h>
 
-void initBattingOrderState(BattingOrderState* state, int team_index, int player_control, const StateInfo* stateInfo)
+void init_batting_order_state(BattingOrderState* state, int team_index, int player_control, const StateInfo* stateInfo)
 {
     state->pointer = 0;
     state->rem = 13; // 12 players + "Continue"
@@ -24,7 +24,7 @@ void initBattingOrderState(BattingOrderState* state, int team_index, int player_
     }
 }
 
-MenuStage updateBattingOrderMenu(
+MenuStage update_batting_order_menu(
     BattingOrderState* state, const KeyStates* keyStates, MenuStage currentStage, MenuMode menuMode,
     GameSetup* gameSetup
 )
@@ -78,7 +78,7 @@ MenuStage updateBattingOrderMenu(
     return currentStage; // Stay in the current stage by default
 }
 
-void drawBattingOrderMenu(
+void draw_batting_order_menu(
     const BattingOrderState* state, MenuStage currentStage, const RenderState* rs, ResourceManager* rm
 )
 
@@ -88,7 +88,7 @@ void drawBattingOrderMenu(
     }
 
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     const float center_x = VIRTUAL_WIDTH / 2.0f;
     const float title_y = VIRTUAL_HEIGHT * 0.05f;

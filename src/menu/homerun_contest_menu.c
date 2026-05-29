@@ -5,7 +5,7 @@
 #include "menu_helpers.h"
 #include <string.h>
 
-void initHomerunContestState(HomerunContestState* state, int team_index, int player_control, int choiceCount)
+void init_homerun_contest_state(HomerunContestState* state, int team_index, int player_control, int choiceCount)
 {
     state->team_index = team_index;
     state->player_control = player_control;
@@ -26,7 +26,7 @@ void initHomerunContestState(HomerunContestState* state, int team_index, int pla
 // Players keep their jersey assignments (1-9 for regulars, 0 for jokers)
 // from the super inning. We only select which players bat/run using
 // batterRunnerIndices, not their jersey numbers.
-MenuStage updateHomerunContestMenu(
+MenuStage update_homerun_contest_menu(
     HomerunContestState* state, const KeyStates* keyStates, MenuStage currentStage, GameSetup* gameSetup,
     const TeamData* teamData
 )
@@ -140,14 +140,14 @@ MenuStage updateHomerunContestMenu(
     return currentStage;
 }
 
-void drawHomerunContestMenu(
+void draw_homerun_contest_menu(
     const HomerunContestState* state, const RenderState* rs, ResourceManager* rm, const TeamData* teams
 )
 {
     if (state->player_control == 2) return; // nothing to draw for AI
 
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     const float center_x = VIRTUAL_WIDTH / 2.0f;
     const float title_y = VIRTUAL_HEIGHT * 0.05f;

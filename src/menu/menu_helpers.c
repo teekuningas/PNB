@@ -8,14 +8,14 @@
 
 // Draws a full-screen 2D background quad for menus
 // Uses the "empty_background" texture from ResourceManager
-void drawMenuLayout2D(ResourceManager* rm, const RenderState* rs)
+void draw_menu_layout_2d(ResourceManager* rm, const RenderState* rs)
 {
     // Bind the shared empty background texture
     GLuint tex = resource_manager_get_texture(rm, "data/textures/empty_background.tga");
     draw_texture_2d(tex, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 }
 
-void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
+void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
     switch (gameSetup->launchType) {
     case GAME_LAUNCH_NEW:
@@ -49,7 +49,7 @@ void launchGameFromMenu(StateInfo* stateInfo, const GameSetup* gameSetup, unsign
     }
 }
 
-void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
+void reset_menu_for_new_game(MenuData* menuData, StateInfo* stateInfo)
 {
     // Reset the pending game setup to a clean state
     memset(&menuData->pendingGameSetup, 0, sizeof(GameSetup));
@@ -59,7 +59,7 @@ void resetMenuForNewGame(MenuData* menuData, StateInfo* stateInfo)
     }
 
     if (stateInfo->match->scoreboard.isCupGame != 1) {
-        initFrontMenuState(&menuData->front_menu);
+        init_front_menu_state(&menuData->front_menu);
         menuData->stage = MENU_STAGE_FRONT;
     } else {
         menuData->stage = MENU_STAGE_CUP;
@@ -77,11 +77,11 @@ void draw_text_2d(const char* text, float x, float y, float size, TextAlign alig
     unsigned int len = strlen(text);
 
     if (align == TEXT_ALIGN_CENTER) {
-        float text_width = getTextWidth2D(text, len, size);
+        float text_width = get_text_width_2d(text, len, size);
         final_x = x - (text_width / 2.0f);
     }
 
-    printText2D(text, len, final_x, y, size);
+    print_text_2d(text, len, final_x, y, size);
 }
 
 void draw_text_block_2d(
@@ -104,7 +104,7 @@ void draw_text_block_2d(
             const char* word_end = next_space ? next_space : end;
 
             int line_len = (word_end - start);
-            if (getTextWidth2D(start, line_len, size) > width) {
+            if (get_text_width_2d(start, line_len, size) > width) {
                 break; // Word doesn't fit, break the line here
             }
 
@@ -121,7 +121,7 @@ void draw_text_block_2d(
             // Find the exact character that overflows
             int char_count = 0;
             while (start + char_count < end) {
-                if (getTextWidth2D(start, char_count + 1, size) > width) {
+                if (get_text_width_2d(start, char_count + 1, size) > width) {
                     break;
                 }
                 char_count++;
@@ -138,7 +138,7 @@ void draw_text_block_2d(
         memcpy(line_buffer, start, line_len);
         line_buffer[line_len] = '\0';
 
-        printText2D(line_buffer, line_len, x, current_y, size);
+        print_text_2d(line_buffer, line_len, x, current_y, size);
 
         // Move to the next line
         current_y += lineSpacing;

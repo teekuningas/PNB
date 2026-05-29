@@ -7,7 +7,7 @@
 #define DEFAULT_CONTROLLED_1 0
 #define DEFAULT_CONTROLLED_2 2
 
-void initTeamSelectionState(TeamSelectionState* state, int numTeams)
+void init_team_selection_state(TeamSelectionState* state, int numTeams)
 {
     state->state = TEAM_SELECTION_STAGE_TEAM_1;
     state->pointer = DEFAULT_TEAM_1;
@@ -20,7 +20,7 @@ void initTeamSelectionState(TeamSelectionState* state, int numTeams)
     state->numTeams = numTeams;
 }
 
-MenuStage updateTeamSelectionMenu(TeamSelectionState* state, const KeyStates* keyStates, GameSetup* gameSetup)
+MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates* keyStates, GameSetup* gameSetup)
 {
     switch (state->state) {
     case TEAM_SELECTION_STAGE_TEAM_1:
@@ -156,12 +156,12 @@ MenuStage updateTeamSelectionMenu(TeamSelectionState* state, const KeyStates* ke
     return MENU_STAGE_TEAM_SELECTION; // Stay in this stage by default
 }
 
-void drawTeamSelectionMenu(
+void draw_team_selection_menu(
     const TeamSelectionState* state, const TeamData* teamData, const RenderState* rs, ResourceManager* rm
 )
 {
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     const float center_x = VIRTUAL_WIDTH / 2.0f;
 

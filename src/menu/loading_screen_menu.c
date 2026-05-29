@@ -7,7 +7,7 @@
 #include "loading_screen_menu.h"
 
 // Reset main-menu state and render loading screen using new 2D pipeline
-void drawLoadingScreen(
+void draw_loading_screen(
     const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, const RenderState* rs
 )
 {
@@ -15,7 +15,7 @@ void drawLoadingScreen(
     // Begin 2D orthographic rendering
     begin_2d_render(rs);
     // Draw shared menu background
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     const float center_x = VIRTUAL_WIDTH * 0.5f;
 

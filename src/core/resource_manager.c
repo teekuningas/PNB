@@ -56,7 +56,7 @@ void resource_manager_shutdown(ResourceManager* rm)
             glDeleteTextures(1, &rm->resources[i].handle.texture_id);
         } else if (rm->resources[i].type == RESOURCE_TYPE_MODEL) {
             glDeleteLists(rm->resources[i].handle.display_list, 1);
-            cleanMesh(rm->resources[i].mesh);
+            clean_mesh(rm->resources[i].mesh);
         }
     }
     free(rm);
@@ -330,12 +330,12 @@ static int load_model(MeshObject** mesh, GLuint* displayList, const char* filena
         return -1;
     }
 
-    if (LoadObj(filename, objectname, *mesh) != 0) {
-        printf("\nError with LoadObj for %s\n", filename);
+    if (load_obj(filename, objectname, *mesh) != 0) {
+        printf("\nError with load_obj for %s\n", filename);
         free(*mesh);
         return -1;
     }
 
-    prepareMesh(*mesh, displayList);
+    prepare_mesh(*mesh, displayList);
     return 0;
 }

@@ -6,13 +6,13 @@
 #include "resource_manager.h"
 #include "menu_helpers.h"
 
-void initFrontMenuState(FrontMenuState* state)
+void init_front_menu_state(FrontMenuState* state)
 {
     state->pointer = 0;
     state->rem = 4;
 }
 
-MenuStage updateFrontMenu(FrontMenuState* state, KeyStates* keyStates, StateInfo* stateInfo)
+MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates, StateInfo* stateInfo)
 {
     if (keyStates->released[0][KEY_DOWN]) {
         state->pointer += 1;
@@ -36,7 +36,7 @@ MenuStage updateFrontMenu(FrontMenuState* state, KeyStates* keyStates, StateInfo
     return MENU_STAGE_FRONT;
 }
 // New orthographic-only front menu rendering
-void drawFrontMenu(const FrontMenuState* state, const RenderState* rs, ResourceManager* rm)
+void draw_front_menu(const FrontMenuState* state, const RenderState* rs, ResourceManager* rm)
 {
     // --- Layout Constants ---
     const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -47,7 +47,7 @@ void drawFrontMenu(const FrontMenuState* state, const RenderState* rs, ResourceM
 
     // Setup orthographic 2D projection and draw shared menu background
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     // 2. Draw Batter and Catcher
     // Re-calculate size and position to better match the original perspective layout

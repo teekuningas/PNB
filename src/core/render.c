@@ -18,7 +18,7 @@ void drawMesh(MeshObject* mesh)
     glEnd();
 }
 
-void cleanMesh(MeshObject* mesh)
+void clean_mesh(MeshObject* mesh)
 {
     if (mesh != NULL) {
         free(mesh->uFaceList);
@@ -30,7 +30,7 @@ void cleanMesh(MeshObject* mesh)
     }
 }
 
-void prepareMesh(MeshObject* mesh, GLuint* displayList)
+void prepare_mesh(MeshObject* mesh, GLuint* displayList)
 {
     *displayList = glGenLists(1);
     glNewList(*displayList, GL_COMPILE);
@@ -38,7 +38,7 @@ void prepareMesh(MeshObject* mesh, GLuint* displayList)
     glEndList();
 }
 
-int tryLoadingTextureGL(GLuint* texture, const char* filename, const char* name)
+int try_loading_texture_gl(GLuint* texture, const char* filename, const char* name)
 {
     int width;
     int height;
@@ -60,17 +60,17 @@ int tryLoadingTextureGL(GLuint* texture, const char* filename, const char* name)
     return 0;
 }
 
-int tryPreparingMeshGL(char* filename, char* objectname, MeshObject* mesh, GLuint* displayList)
+int try_preparing_mesh_gl(char* filename, char* objectname, MeshObject* mesh, GLuint* displayList)
 {
     int result;
     // load from obj file to mesh-struct
-    result = LoadObj(filename, objectname, mesh);
+    result = load_obj(filename, objectname, mesh);
     if (result != 0) {
-        printf("\nError with LoadObj. Error code: %d\n", result);
+        printf("\nError with load_obj. Error code: %d\n", result);
         return -1;
     }
 
-    prepareMesh(mesh, displayList);
+    prepare_mesh(mesh, displayList);
     return 0;
 }
 

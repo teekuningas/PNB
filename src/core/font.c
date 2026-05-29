@@ -24,16 +24,16 @@ static GLuint emptyTexture;
 static MeshObject* planeMesh;
 static GLuint planeDisplayList;
 
-int initFont()
+int init_font()
 {
-    if (tryLoadingTextureGL(&fontTexture, "data/textures/font.tga", "font") != 0) return -1;
-    if (tryLoadingTextureGL(&emptyTexture, "data/textures/empty_background.tga", "empty background") != 0) return -1;
+    if (try_loading_texture_gl(&fontTexture, "data/textures/font.tga", "font") != 0) return -1;
+    if (try_loading_texture_gl(&emptyTexture, "data/textures/empty_background.tga", "empty background") != 0) return -1;
     planeMesh = (MeshObject*)malloc(sizeof(MeshObject));
-    if (tryPreparingMeshGL("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
+    if (try_preparing_mesh_gl("data/models/plane.obj", "Plane", planeMesh, &planeDisplayList) != 0) return -1;
     return 0;
 }
 
-void drawFontBackground()
+void draw_font_background()
 {
     // Background quad is drawn under current 2D pipeline state
     glBindTexture(GL_TEXTURE_2D, emptyTexture);
@@ -42,7 +42,7 @@ void drawFontBackground()
     glCallList(planeDisplayList);
     glPopMatrix();
 }
-void printText(const char* str, unsigned int len, float x, float y, float size)
+void print_text(const char* str, unsigned int len, float x, float y, float size)
 {
     int i;
     glBindTexture(GL_TEXTURE_2D, fontTexture);
@@ -55,7 +55,7 @@ void printText(const char* str, unsigned int len, float x, float y, float size)
     }
 }
 
-void printText2D(const char* str, unsigned int len, float x, float y, float size)
+void print_text_2d(const char* str, unsigned int len, float x, float y, float size)
 {
     int i;
     glBindTexture(GL_TEXTURE_2D, fontTexture);
@@ -248,9 +248,9 @@ static void printCharacter(char character)
     }
 }
 
-int cleanFont()
+int clean_font()
 {
-    cleanMesh(planeMesh);
+    clean_mesh(planeMesh);
     return 0;
 }
 
@@ -430,9 +430,9 @@ static void printCharacter2D(char character)
     }
 }
 
-float getTextWidth2D(const char* str, unsigned int len, float size)
+float get_text_width_2d(const char* str, unsigned int len, float size)
 {
-    // Corresponds to the logic in printText2D
+    // Corresponds to the logic in print_text_2d
     float char_spacing_pixels = size * 0.7f;
     return len * char_spacing_pixels;
 }

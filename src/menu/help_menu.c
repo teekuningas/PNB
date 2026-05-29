@@ -6,12 +6,12 @@
 #include "resource_manager.h"
 #include "menu_helpers.h"
 
-void initHelpMenu(HelpMenuState* state)
+void init_help_menu(HelpMenuState* state)
 {
     state->page = 0;
 }
 
-MenuStage updateHelpMenu(HelpMenuState* state, KeyStates* keyStates)
+MenuStage update_help_menu(HelpMenuState* state, KeyStates* keyStates)
 {
     if (keyStates->released[0][KEY_1]) {
         return MENU_STAGE_FRONT;
@@ -27,10 +27,10 @@ MenuStage updateHelpMenu(HelpMenuState* state, KeyStates* keyStates)
     return MENU_STAGE_HELP;
 }
 
-void drawHelpMenu(HelpMenuState* state, const RenderState* rs, ResourceManager* rm)
+void draw_help_menu(HelpMenuState* state, const RenderState* rs, ResourceManager* rm)
 {
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     // --- Layout Constants ---
     const float left_margin = VIRTUAL_WIDTH * 0.08f;

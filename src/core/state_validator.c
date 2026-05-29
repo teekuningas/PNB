@@ -24,7 +24,7 @@ static int g_historyHead = 0;
 static int g_historyCount = 0;
 static int g_sequenceId = 0;
 
-void StateValidator_Init(const char* jsonPath)
+void state_validator_init(const char* jsonPath)
 {
     if (jsonPath) {
         snprintf(g_dumpPath, sizeof(g_dumpPath), "%s", jsonPath);
@@ -38,12 +38,12 @@ void StateValidator_Init(const char* jsonPath)
     g_sequenceId = 0;
 }
 
-void StateValidator_SetActive(int active)
+void state_validator_set_active(int active)
 {
     g_isActive = active;
 }
 
-void StateValidator_CaptureSnapshot(StateInfo* state, const char* label)
+void state_validator_capture_snapshot(StateInfo* state, const char* label)
 {
     if (!g_isActive) return;
 
@@ -255,7 +255,7 @@ static void print_game_json(FILE* f, MatchSession* game, Scoreboard* global, int
     fprintf(f, "%s]", sp);
 }
 
-void StateValidator_Dump(StateInfo* state, const char* reason)
+void state_validator_dump(StateInfo* state, const char* reason)
 {
     if (!g_dumpPath[0]) return;
 
@@ -297,7 +297,7 @@ void StateValidator_Dump(StateInfo* state, const char* reason)
     printf("State dumped to %s\n", g_dumpPath);
 }
 
-int StateValidator_Check(StateInfo* state)
+int state_validator_check(StateInfo* state)
 {
     if (!g_isActive) return 1;
 

@@ -21,7 +21,7 @@
 #define HUTUNKEITTO_TEAM_1_TEXT_POSITION 0.2f
 #define HUTUNKEITTO_TEAM_2_TEXT_POSITION 0.55f
 
-void initHutunkeittoState(HutunkeittoState* state)
+void init_hutunkeitto_state(HutunkeittoState* state)
 {
     state->batTimer = 0;
     state->batTimerLimit = 0;
@@ -46,7 +46,7 @@ void initHutunkeittoState(HutunkeittoState* state)
     state->rem = 2;
 }
 
-MenuStage updateHutunkeittoMenu(
+MenuStage update_hutunkeitto_menu(
     HutunkeittoState* state, const KeyStates* keyStates, int team1_control, int team2_control, GameSetup* gameSetup,
     unsigned int* rng_seed
 )
@@ -192,13 +192,13 @@ MenuStage updateHutunkeittoMenu(
     return MENU_STAGE_HUTUNKEITTO;
 }
 
-void drawHutunkeittoMenu(
+void draw_hutunkeitto_menu(
     const HutunkeittoState* state, const RenderState* rs, ResourceManager* rm, int team1_idx, int team2_idx
 )
 {
     // --- 2D Background ---
     begin_2d_render(rs);
-    drawMenuLayout2D(rm, rs);
+    draw_menu_layout_2d(rm, rs);
 
     // --- 3D Drawing ---
     glClear(GL_DEPTH_BUFFER_BIT); // Clear depth buffer to draw 3D models on top of the 2D background

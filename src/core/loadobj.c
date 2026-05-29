@@ -10,7 +10,7 @@
 
 static __inline int SeekToObject(FILE* objfile, const char* objectname);
 
-int LoadObj(const char* path, const char* objectname, MeshObject* meshObj)
+int load_obj(const char* path, const char* objectname, MeshObject* meshObj)
 {
     char line[MAX_LINE] = {0}; // Buffer to hold each line.
     char param[2] = {0, 0}; // Returned characters from a line

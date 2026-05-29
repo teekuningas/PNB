@@ -12,7 +12,7 @@ static ma_sound menu;
 static ma_result result;
 static ma_engine engine;
 
-int initSound(StateInfo* stateInfo)
+int init_sound(StateInfo* stateInfo)
 {
     if (stateInfo->soundEnabled == 0) {
         working = 0;
@@ -55,7 +55,7 @@ int initSound(StateInfo* stateInfo)
 
     return 0;
 }
-void updateSound(StateInfo* stateInfo)
+void update_sound(StateInfo* stateInfo)
 {
     if (stateInfo->soundEnabled == 0) {
         stateInfo->playSoundEffect = 0;
@@ -93,7 +93,7 @@ void updateSound(StateInfo* stateInfo)
     }
 }
 
-int cleanSound(StateInfo* stateInfo)
+int clean_sound(StateInfo* stateInfo)
 {
     if (stateInfo->soundEnabled == 0) {
         return 0;

@@ -6,12 +6,12 @@
 #include "resource_manager.h"
 #include "render.h"
 
-void initBattingOrderState(BattingOrderState* state, int team_index, int player_control, const StateInfo* stateInfo);
-MenuStage updateBattingOrderMenu(
+void init_batting_order_state(BattingOrderState* state, int team_index, int player_control, const StateInfo* stateInfo);
+MenuStage update_batting_order_menu(
     BattingOrderState* state, const KeyStates* keyStates, MenuStage currentStage, MenuMode menuMode,
     GameSetup* gameSetup
 );
-void drawBattingOrderMenu(
+void draw_batting_order_menu(
     const BattingOrderState* state, MenuStage currentStage, const RenderState* rs, ResourceManager* rm
 );
 

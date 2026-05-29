@@ -11,7 +11,7 @@ static int buttonsJustReleased[3][KEY_COUNT];
 static void keyCheckL(StateInfo* stateInfo, GLFWwindow* window, const char letter, int keyCode, int index);
 static void keyCheckS(StateInfo* stateInfo, GLFWwindow* window, int special, int keyCode, int index);
 
-int initInput(StateInfo* stateInfo)
+int init_input(StateInfo* stateInfo)
 {
     int i, j;
     for (j = 0; j < 3; j++) {
@@ -61,7 +61,7 @@ static void keyCheckS(StateInfo* stateInfo, GLFWwindow* window, int special, int
     }
 }
 
-void updateInput(StateInfo* stateInfo, GLFWwindow* window)
+void update_input(StateInfo* stateInfo, GLFWwindow* window)
 {
     // here we just check them all and name the keys to associate with keycodes used in keyStates.
     keyCheckS(stateInfo, window, GLFW_KEY_RIGHT_CONTROL, KEY_PLUS, 0);
@@ -84,7 +84,7 @@ void updateInput(StateInfo* stateInfo, GLFWwindow* window)
     keyCheckL(stateInfo, window, 'Q', KEY_HOME, 1);
 }
 
-void clearReleasedKeys(KeyStates* keyStates)
+void clear_released_keys(KeyStates* keyStates)
 {
     int i, j;
     for (j = 0; j < 3; j++) {

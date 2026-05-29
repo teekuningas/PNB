@@ -14,15 +14,15 @@ typedef struct {
     int innings;
 } CupMenuOutput;
 
-void initCupMenu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed);
+void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed);
 
-MenuStage updateCupMenu(
+MenuStage update_cup_menu(
     CupMenuState* cupMenuState,
     StateInfo* stateInfo, // Kept non-const for now to manage tournament state
     const KeyStates* keyStates, CupMenuOutput* output, unsigned int* rng_seed
 );
 
-void drawCupMenu(
+void draw_cup_menu(
     const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm
 );
 

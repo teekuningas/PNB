@@ -103,12 +103,12 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
 
         // 6. Capture snapshot after all updates when pitch is released
         if (stateInfo->match->gameEvents.pitchReleased) {
-            StateValidator_CaptureSnapshot(stateInfo, "PITCH_START");
+            state_validator_capture_snapshot(stateInfo, "PITCH_START");
         }
 
         // Validate state consistency (Debug only)
-        if (!StateValidator_Check(stateInfo)) {
-            StateValidator_Dump(stateInfo, "State Consistency Check Failed");
+        if (!state_validator_check(stateInfo)) {
+            state_validator_dump(stateInfo, "State Consistency Check Failed");
             stateInfo->match->flowControl.pause = 1;
         }
 
