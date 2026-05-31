@@ -802,6 +802,8 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     // Action state
     match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
     match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+    match->pendingActionState.throwGoingOn = 0;
+    match->pRAI.throwGoingToBase = -1;
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 and

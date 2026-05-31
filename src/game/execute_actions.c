@@ -117,6 +117,13 @@ void execute_actions(StateInfo* stateInfo)
         stateInfo->match->pendingActionState.throwGoingOn == 0) {
         stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
     }
+    // Safety: if throwGoingOn is stuck but no throw action is active, clear it.
+    // This catches the case where a reset cleared currentCatchingAction but missed throwGoingOn.
+    if (stateInfo->match->pendingActionState.throwGoingOn == 1 &&
+        stateInfo->match->pendingActionState.currentCatchingAction != CATCHING_ACTION_THROWING) {
+        stateInfo->match->pendingActionState.throwGoingOn = 0;
+        stateInfo->match->pRAI.throwGoingToBase = -1;
+    }
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
     for (i = 0; i < DIRECTION_COUNT; i++) {
