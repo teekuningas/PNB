@@ -77,14 +77,12 @@ static void checkThrow(
 {
     if (control != CONTROL_AI) {
         if (key_states->down[control][key] && key_states->down[control][actionKey]) {
-            if (match->aF.cTAF.throwToBase[base] == ACTION_IDLE) {
+            if (match->aF.cTAF.throwToBase[base] == ACTION_IDLE &&
+                match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE) {
                 match->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
-                // prevent change player event or drop event from happening when we are throwing
-                match->aF.cTAF.actionKeyLock = 1;
             }
         } else if ((key_states)->released[control][actionKey] &&
-                   (match->aF.cTAF.throwToBase[base] == ACTION_ACTIVE ||
-                    match->aF.cTAF.throwToBase[base] == ACTION_TRIGGER_START)) {
+                   match->pendingActionState.currentCatchingAction == CATCHING_ACTION_THROWING) {
             match->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_STOP;
         }
     } else {
@@ -114,7 +112,7 @@ static void checkMove(MatchSession* match, const KeyStates* key_states, int key,
 static void checkChangePlayer(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control)
 {
     if (control != CONTROL_AI) {
-        if (match->aF.cTAF.actionKeyLock == 0) {
+        if (match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE) {
             if (key_states->released[control][key] == 1) {
                 if (match->aF.cTAF.change_player == ACTION_IDLE) {
                     match->aF.cTAF.change_player = ACTION_TRIGGER_START;
@@ -130,7 +128,7 @@ static void checkChangePlayer(MatchSession* match, const KeyStates* key_states, 
 static void checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control)
 {
     if (control != CONTROL_AI) {
-        if (match->aF.cTAF.actionKeyLock == 0) {
+        if (match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE) {
             if (key_states->released[control][key] == 1) {
                 if (match->aF.cTAF.dropBall == ACTION_IDLE) {
                     match->aF.cTAF.dropBall = ACTION_TRIGGER_START;
@@ -148,7 +146,8 @@ static void checkPitch(MatchSession* match, const KeyStates* key_states, int key
     if (control != CONTROL_AI) {
         if (key_states->down[control][key] == 1) {
             if (match->aF.cTAF.pitch == PITCH_ACTION_IDLE) {
-                if (match->aF.cTAF.actionKeyLock == 0) {
+                if (match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE &&
+                    match->aF.cTAF.actionKeyLock == 0) {
                     match->aF.cTAF.pitch = PITCH_ACTION_START;
                     match->aF.cTAF.actionKeyLock = 1;
                 }

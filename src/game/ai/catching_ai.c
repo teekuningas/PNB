@@ -246,12 +246,9 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
             stateInfo->match->pendingActionState.aiLockUpdate = 1;
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
 
-            // AI sets trigger stop directly
-            int i;
-            for (i = 0; i < 4; i++) {
-                if (stateInfo->match->aF.cTAF.throwToBase[i] != ACTION_IDLE) {
-                    stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_TRIGGER_STOP;
-                }
+            // AI signals throw release via throwGoingToBase (set by prepare_throw)
+            if (stateInfo->match->pRAI.throwGoingToBase >= 0 && stateInfo->match->pRAI.throwGoingToBase < BASE_COUNT) {
+                stateInfo->match->aF.cTAF.throwToBase[stateInfo->match->pRAI.throwGoingToBase] = ACTION_TRIGGER_STOP;
             }
         } else {
             stateInfo->match->pendingActionState.aiLockTimeoutCounter++;
@@ -261,10 +258,9 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->pendingActionState.aiLockUpdate = 1;
                 stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
 
-                int i;
-                for (i = 0; i < 4; i++) {
-                    stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
-                }
+                // Force-abort the throw: clear execution state so auto-clear fires
+                stateInfo->match->pendingActionState.throwGoingOn = 0;
+                stateInfo->match->pRAI.throwGoingToBase = -1;
             }
         }
     }

@@ -143,28 +143,30 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
         fprintf(f, "%s},\n", sp);
     }
 
-    fprintf(f, "%s\"halfInningState\": {\n", sp);
-    fprintf(f, "%s  \"outs\": %d,\n", sp, rules->halfInningState.outs);
-    fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, rules->halfInningState.runsInTheInning);
-    fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->halfInningState.strikes);
-    fprintf(f, "%s  \"balls\": %d,\n", sp, rules->halfInningState.balls);
-    fprintf(f, "%s  \"event\": %d\n", sp, rules->halfInningState.event);
-    fprintf(f, "%s},\n", sp);
+    if (rules) {
+        fprintf(f, "%s\"halfInningState\": {\n", sp);
+        fprintf(f, "%s  \"outs\": %d,\n", sp, rules->halfInningState.outs);
+        fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, rules->halfInningState.runsInTheInning);
+        fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->halfInningState.strikes);
+        fprintf(f, "%s  \"balls\": %d,\n", sp, rules->halfInningState.balls);
+        fprintf(f, "%s  \"event\": %d\n", sp, rules->halfInningState.event);
+        fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"playerCounters\": {\n", sp);
-    fprintf(f, "%s  \"nonJokerPlayersLeft\": %d,\n", sp, rules->playerCounters.nonJokerPlayersLeft);
-    fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, rules->playerCounters.jokersLeft);
-    fprintf(f, "%s  \"noMorePlayers\": %d\n", sp, rules->playerCounters.noMorePlayers);
-    fprintf(f, "%s},\n", sp);
+        fprintf(f, "%s\"playerCounters\": {\n", sp);
+        fprintf(f, "%s  \"nonJokerPlayersLeft\": %d,\n", sp, rules->playerCounters.nonJokerPlayersLeft);
+        fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, rules->playerCounters.jokersLeft);
+        fprintf(f, "%s  \"noMorePlayers\": %d\n", sp, rules->playerCounters.noMorePlayers);
+        fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"gameControl\": {\n", sp);
-    fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
-    fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->flowControl.waitingForBatterDecision);
-    fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
-    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
-    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
-    fprintf(f, "%s  \"foulState\": %d\n", sp, (int)rules->referee.foulState);
-    fprintf(f, "%s },\n", sp);
+        fprintf(f, "%s\"gameControl\": {\n", sp);
+        fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
+        fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->flowControl.waitingForBatterDecision);
+        fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
+        fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
+        fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
+        fprintf(f, "%s  \"foulState\": %d\n", sp, (int)rules->referee.foulState);
+        fprintf(f, "%s },\n", sp);
+    }
 
     fprintf(f, "%s\"gameEvents\": {\n", sp);
     fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);
@@ -176,30 +178,52 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"gameFlowState\": {\n", sp);
-    fprintf(f, "%s  \"ballHome\": %d,\n", sp, game->gameFlowState.ballHome);
-    fprintf(f, "%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);
+    fprintf(f, "%s  \"ballHome\": %d", sp, game->gameFlowState.ballHome);
+    if (rules) {
+        fprintf(f, ",\n%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);
+    } else {
+        fprintf(f, "\n");
+    }
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"pII\": {\n", sp);
     fprintf(f, "%s  \"batterIndex\": %d,\n", sp, get_active_batter_index(game));
     fprintf(f, "%s  \"batterSelectionIndex\": %d,\n", sp, game->pII.batterSelectionIndex);
     fprintf(f, "%s  \"hasBallIndex\": %d,\n", sp, game->pII.hasBallIndex);
-    fprintf(f, "%s  \"controlIndex\": %d\n", sp, game->pII.controlIndex);
+    fprintf(f, "%s  \"controlIndex\": %d,\n", sp, game->pII.controlIndex);
+    fprintf(f, "%s  \"catcherOnBaseIndex0\": %d,\n", sp, game->pII.catcherOnBaseIndex[0]);
+    fprintf(
+        f, "%s  \"isNearHome_pitcher\": %d\n", sp,
+        game->playerInfo[game->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation
+    );
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"pRAI\": {\n", sp);
     fprintf(f, "%s  \"pitchState\": %d,\n", sp, game->pRAI.pitchState);
     fprintf(f, "%s  \"batterReady\": %d,\n", sp, game->pRAI.batterReady);
     fprintf(f, "%s  \"battingGoingOn\": %d,\n", sp, game->pRAI.battingGoingOn);
-    fprintf(f, "%s  \"initBatter\": %d\n", sp, game->pRAI.initBatter);
+    fprintf(f, "%s  \"initBatter\": %d,\n", sp, game->pRAI.initBatter);
+    fprintf(f, "%s  \"throwGoingOn\": %d,\n", sp, game->pendingActionState.throwGoingOn);
+    fprintf(f, "%s  \"throwGoingToBase\": %d\n", sp, game->pRAI.throwGoingToBase);
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"betweenPitchState\": {\n", sp);
-    fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
-    fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
-    fprintf(f, "%s  \"pitchResult\": %d,\n", sp, rules->betweenPitchState.pitchResult);
-    fprintf(f, "%s  \"batOutcome\": %d\n", sp, rules->betweenPitchState.batOutcome);
+    fprintf(f, "%s\"actionState\": {\n", sp);
+    fprintf(f, "%s  \"currentCatchingAction\": %d,\n", sp, (int)game->pendingActionState.currentCatchingAction);
+    fprintf(f, "%s  \"actionKeyLock\": %d,\n", sp, game->aF.cTAF.actionKeyLock);
+    fprintf(f, "%s  \"pitch\": %d,\n", sp, game->aF.cTAF.pitch);
+    fprintf(f, "%s  \"dropBall\": %d,\n", sp, game->aF.cTAF.dropBall);
+    fprintf(f, "%s  \"change_player\": %d,\n", sp, game->aF.cTAF.change_player);
+    fprintf(f, "%s  \"meterCounter\": %d\n", sp, game->pendingActionState.meterCounter);
     fprintf(f, "%s},\n", sp);
+
+    if (rules) {
+        fprintf(f, "%s\"betweenPitchState\": {\n", sp);
+        fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
+        fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
+        fprintf(f, "%s  \"pitchResult\": %d,\n", sp, rules->betweenPitchState.pitchResult);
+        fprintf(f, "%s  \"batOutcome\": %d\n", sp, rules->betweenPitchState.batOutcome);
+        fprintf(f, "%s},\n", sp);
+    }
 
     fprintf(f, "%s\"ballInfo\": {\n", sp);
     fprintf(
@@ -238,7 +262,7 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
 
         // Referee State - Only valid for batting team (indices 0-11)
         // Assuming 0-11 are ALWAYS the batting team in the current frame
-        if (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
+        if (rules && i < PLAYERS_IN_TEAM + JOKER_COUNT) {
             fprintf(f, ",\n");
             fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, rules->referee.battingPlayers[i].currentSafetyBase);
             fprintf(

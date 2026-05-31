@@ -33,6 +33,7 @@ void init_execute_actions(StateInfo* stateInfo)
 
     stateInfo->match->pendingActionState.meterCounter = 0;
     stateInfo->match->pendingActionState.meterCounterMax = 0;
+    stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
     for (i = 0; i < BASE_COUNT; i++) {
         stateInfo->match->pendingActionState.doubleClickCounter[i] = -1;
     }
@@ -72,23 +73,17 @@ void execute_actions(StateInfo* stateInfo)
     for (i = 0; i < BASE_COUNT; i++) {
         // for every direction we check if throw key has been pressed
         if (stateInfo->match->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_START) {
-            int throwNotReleasingYet = 1;
-            int j;
-            for (j = 0; j < BASE_COUNT; j++) {
-                if (stateInfo->match->aF.cTAF.throwToBase[i] >= ACTION_TRIGGER_STOP) {
-                    throwNotReleasingYet = 0;
-                }
-            }
             // can throw only if someone has the ball and no throw is already going on
-            if (throwNotReleasingYet == 1 && stateInfo->match->pII.hasBallIndex != -1) {
+            if (stateInfo->match->pII.hasBallIndex != -1) {
+                int j;
                 for (j = 0; j < BASE_COUNT; j++) {
                     if (j != i) stateInfo->match->aF.cTAF.throwToBase[j] = ACTION_IDLE;
                 }
                 // stop pitching if throwing
                 if (stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
                     stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-                    stateInfo->match->aF.cTAF.actionKeyLock = 0;
                     stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
+                    stateInfo->match->aF.cTAF.actionKeyLock = 0;
                     // when pitching the ball is moved to the center of the plate so now when we are terminating the
                     // pitch to throw, we must move the ball back to the player
                     stateInfo->match->ballInfo.location.x =
@@ -102,20 +97,25 @@ void execute_actions(StateInfo* stateInfo)
                 prepare_throw(stateInfo, i);
                 // start by loading
                 throw_load(stateInfo, i);
-            } else {
-                // if no luck, then set throwToBase to one so that can try again
-                stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
-                stateInfo->match->aF.cTAF.actionKeyLock = 0;
+                stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_THROWING;
             }
+            // consume the intent regardless of success
+            stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
         }
-        // if already on release phase, then continue with that and
-        // set the throwToBase to zero so that one can start trying to throw again
-        // immediately
+        // if throw release intent received while a throw is in progress
         else if (stateInfo->match->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_STOP) {
             stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
-            stateInfo->match->aF.cTAF.actionKeyLock = 0;
-            throw_release(stateInfo);
+            if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_THROWING) {
+                throw_release(stateInfo);
+                stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+            }
         }
+    }
+    // Auto-clear: if throw was interrupted externally (e.g., ball caught by game_manipulation
+    // cleared throwGoingOn), reset the action state so other actions can proceed.
+    if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_THROWING &&
+        stateInfo->match->pendingActionState.throwGoingOn == 0) {
+        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
     }
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
@@ -159,6 +159,12 @@ void execute_actions(StateInfo* stateInfo)
         continue_pitch(stateInfo);
     } else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
         release_pitch(stateInfo);
+    }
+    // Safety auto-clear: if actionKeyLock is stuck but all guarded actions are idle,
+    // release it. This prevents permanently stuck states from edge cases.
+    if (stateInfo->match->aF.cTAF.actionKeyLock == 1 && stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_IDLE &&
+        stateInfo->match->aF.cTAF.dropBall == ACTION_IDLE && stateInfo->match->aF.cTAF.change_player == ACTION_IDLE) {
+        stateInfo->match->aF.cTAF.actionKeyLock = 0;
     }
     /*
      * BATTING TEAM

@@ -22,4 +22,10 @@ int test_compound_hr_pair_and_uncatchable(void);
 // Event→Decision promotion contracts
 int test_bat_outcome_promotion(void);
 
+// Action state auto-clear contracts (Bug #8 regression)
+int test_interrupted_throw_clears_action_state(void);
+
+// Run-scoring guard contracts (Bug #9 regression)
+int test_wounded_runner_cannot_score_run(void);
+
 #endif // ALL_CONTRACTS_H

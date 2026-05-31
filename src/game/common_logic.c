@@ -799,6 +799,23 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     consolidation_init(&(match->gameFlowState));
     init_game_manipulation(&(match->gameFlowState));
 
+    // Action state
+    match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+
+    // AI batting state: force re-planning on next pitch cycle.
+    // Without this, after foul play the AI's planCalculated stays 1 and
+    // baseRunnerDecisionMade[] stays stale (the batterReady 0→1 transition
+    // happens within consolidation, AFTER AI has already run that frame,
+    // so the AI never sees batterReady==0 to trigger its own reset).
+    match->aiState.planCalculated = 0;
+    for (int i = 0; i < BASE_COUNT; i++) {
+        match->aiState.baseRunnerDecisionMade[i] = 0;
+        match->aiState.baseRunnerKeyDown[i] = 0;
+        match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+        match->aiState.clickBreak[i] = 0;
+        match->aiState.amountOfClicks[i] = 0;
+    }
+
     // Camera
     match->cameraState.homeRunCameraFlag = 0;
     match->cameraState.targetPoint.x = 0.0f;

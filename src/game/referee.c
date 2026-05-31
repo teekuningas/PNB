@@ -586,15 +586,16 @@ static void update_runs(
         if ((isBallInAir || isCatchPending) && referee->endOfInningState == END_INNING_STATE_NONE) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+                    int isWounded = (game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) ||
+                                    (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
+
                     // Check for potential run
                     int regularRun = is_regular_run(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart,
-                        game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED
+                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded
                     );
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart,
-                        game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
+                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
                         referee->battingPlayers[i].runOfHonorScored
                     );
 
@@ -615,14 +616,18 @@ static void update_runs(
             // Check all players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+                    // Player is wounded if EITHER physical state says so OR referee has already
+                    // decided they're doomed (status may not be reflected physically yet due to
+                    // pipeline ordering: referee decides before consolidation enforces)
+                    int isWounded = (game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) ||
+                                    (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
+
                     int regularRun = is_regular_run(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart,
-                        game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED
+                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded
                     );
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart,
-                        game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED,
+                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
                         referee->battingPlayers[i].runOfHonorScored
                     );
 

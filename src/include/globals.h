@@ -644,9 +644,19 @@ typedef struct _GameFlowState {
     int ballHome; // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
 
+typedef enum {
+    CATCHING_ACTION_NONE = 0,
+    CATCHING_ACTION_THROWING,
+    CATCHING_ACTION_PITCHING,
+    CATCHING_ACTION_DROPPING,
+    CATCHING_ACTION_CHANGING
+} CatchingTeamCurrentAction;
+
 typedef struct _PendingActionState {
     unsigned int meterCounter;
     unsigned int meterCounterMax;
+
+    CatchingTeamCurrentAction currentCatchingAction;
 
     int throwGoingOn;
     int runBatFlag;

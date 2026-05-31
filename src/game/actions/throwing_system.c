@@ -139,8 +139,6 @@ void throw_load(StateInfo* stateInfo, BaseID base)
             stateInfo->match->pendingActionState.meterCounter = 0;
             stateInfo->match->pendingActionState.meterCounterMax =
                 THROW_MAX; // arbitrary decision, seems about right though
-            // continue to next phase
-            stateInfo->match->aF.cTAF.throwToBase[base] = ACTION_ACTIVE;
             // set the flag that is used for example to determine can you move the player.
             stateInfo->match->pendingActionState.throwGoingOn = 1;
             // to avoid twitching when moving key is still pressed and player cant move as hes throwing
@@ -152,8 +150,6 @@ void throw_load(StateInfo* stateInfo, BaseID base)
                 stateInfo->match->pendingActionState.throwDirection.z;
         } else {
             // if too close to base, terminate throwing.
-            stateInfo->match->aF.cTAF.throwToBase[base] = ACTION_IDLE;
-            stateInfo->match->aF.cTAF.actionKeyLock = 0;
             stateInfo->match->pendingActionState.throwGoingOn = 0;
             stateInfo->match->pRAI.throwGoingToBase = -1;
         }
