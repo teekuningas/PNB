@@ -102,7 +102,7 @@ void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation);
 /**
  * @brief Throw ball toward a base using game's calibrated throwing mechanics
  */
-void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase);
+void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase);
 
 /**
  * @brief Hit a fly ball (high arc) to a specific location

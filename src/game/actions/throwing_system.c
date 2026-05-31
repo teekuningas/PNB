@@ -10,7 +10,7 @@
 
 #define DROP_BALL_CONSTANT 0.02f
 
-void initThrowingSystem(StateInfo* stateInfo)
+void init_throwing_system(StateInfo* stateInfo)
 {
     stateInfo->match->pendingActionState.throwDistance = 0;
     stateInfo->match->pendingActionState.throwDirection.x = 0;
@@ -18,7 +18,7 @@ void initThrowingSystem(StateInfo* stateInfo)
     stateInfo->match->pendingActionState.throwDirection.z = 0;
 }
 
-void prepareThrow(StateInfo* stateInfo, BaseID base)
+void prepare_throw(StateInfo* stateInfo, BaseID base)
 {
     switch (base) {
     case BASE_HOME:
@@ -62,7 +62,7 @@ void prepareThrow(StateInfo* stateInfo, BaseID base)
     }
 }
 
-void genericThrowRelease(StateInfo* stateInfo)
+void throw_release(StateInfo* stateInfo)
 {
     if (stateInfo->match->pII.hasBallIndex != -1) {
         float power;
@@ -113,7 +113,7 @@ void genericThrowRelease(StateInfo* stateInfo)
     }
 }
 
-void genericThrowLoad(StateInfo* stateInfo, BaseID base)
+void throw_load(StateInfo* stateInfo, BaseID base)
 {
     if (stateInfo->match->pII.hasBallIndex != -1) {
         // throw distance is the euclidean distance from the base to player throwing.
@@ -160,7 +160,7 @@ void genericThrowLoad(StateInfo* stateInfo, BaseID base)
     }
 }
 
-void genericMove(StateInfo* stateInfo, int direction)
+void fielder_move(StateInfo* stateInfo, int direction)
 {
     // we can move if there is no throw going on and no pitch going on
     // .. and we have same player controlled
@@ -173,27 +173,27 @@ void genericMove(StateInfo* stateInfo, int direction)
         stateInfo->match->playerInfo[stateInfo->match->pII.controlIndex].cTPI.movesToDirection[direction] = 1;
         // and we call this generic function that utilizes this movesToDirection to select
         // velocity and orientation for the player
-        updateControlledPlayerSpeed(stateInfo);
+        update_controlled_player_speed(stateInfo);
     } else {
         stateInfo->match->aF.cTAF.move[direction] = 0;
     }
 }
 
-void genericStopMove(StateInfo* stateInfo, int direction)
+void fielder_stop_move(StateInfo* stateInfo, int direction)
 {
-    // stopping cant be done either when pitching or throwing as updateControlledPlayerSpeed can
+    // stopping cant be done either when pitching or throwing as update_controlled_player_speed can
     // have effects on player's model
     if (stateInfo->match->pendingActionState.throwGoingOn == 0 &&
         stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE && stateInfo->match->pII.controlIndex != -1) {
         stateInfo->match->aF.cTAF.move[direction] = ACTION_IDLE;
         stateInfo->match->playerInfo[stateInfo->match->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
-        updateControlledPlayerSpeed(stateInfo);
+        update_controlled_player_speed(stateInfo);
     } else {
         stateInfo->match->aF.cTAF.move[direction] = 0;
     }
 }
 
-void dropBall(StateInfo* stateInfo)
+void drop_ball(StateInfo* stateInfo)
 {
     // there is a possibility to drop ball if to the ground if you want. it could be convenient when
     // you want a baserunner to be able to get safe from a base for some strategical reason.
@@ -234,7 +234,7 @@ void dropBall(StateInfo* stateInfo)
     stateInfo->match->aF.cTAF.actionKeyLock = 0;
 }
 
-void updateControlledPlayerSpeed(StateInfo* stateInfo)
+void update_controlled_player_speed(StateInfo* stateInfo)
 {
     if (stateInfo->match->pII.controlIndex != -1) {
         // cant move when throw recoil going on.

@@ -1,7 +1,7 @@
-#include "batting_system.h"
+#include "actions/batting_system.h"
 #include "common_logic.h"
 #include "execute_actions.h"
-#include "actions_messy/pitching_system.h"
+#include "actions/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include <math.h>
 #include "base_logic.h"
@@ -26,7 +26,7 @@
 
 #define BATTER_ANGLE_FIX (2 * PI / 4)
 
-void initBattingSystem(StateInfo* stateInfo)
+void init_batting_system(StateInfo* stateInfo)
 {
     stateInfo->match->pendingActionState.batterSelect = 0;
     stateInfo->match->pendingActionState.battingFrameCount = 0;
@@ -45,13 +45,13 @@ void initBattingSystem(StateInfo* stateInfo)
     stateInfo->match->pendingActionState.pitchFrameTime = 0;
 }
 
-void startIncreaseBatterAngle(StateInfo* stateInfo)
+void start_increase_batter_angle(StateInfo* stateInfo)
 {
     stateInfo->match->aF.bTAF.increaseBatterAngle = ACTION_ACTIVE;
     // set batterAngleSpeed to 1 to indicate that the direction of the movement is cw
     stateInfo->match->pendingActionState.batterAngleSpeed = 1;
 }
-void stopIncreaseBatterAngle(StateInfo* stateInfo)
+void stop_increase_batter_angle(StateInfo* stateInfo)
 {
     stateInfo->match->aF.bTAF.increaseBatterAngle = ACTION_IDLE;
     // when stopping the increasing of the angle, we want not to interrupt an ongoing decreasing of the angle
@@ -64,13 +64,13 @@ void stopIncreaseBatterAngle(StateInfo* stateInfo)
     }
 }
 
-void startDecreaseBatterAngle(StateInfo* stateInfo)
+void start_decrease_batter_angle(StateInfo* stateInfo)
 {
     stateInfo->match->aF.bTAF.decreaseBatterAngle = ACTION_ACTIVE;
     // set batterAngleSpeed to 1 to indicate that the direction of the movement is ccw
     stateInfo->match->pendingActionState.batterAngleSpeed = -1;
 }
-void stopDecreaseBatterAngle(StateInfo* stateInfo)
+void stop_decrease_batter_angle(StateInfo* stateInfo)
 {
     stateInfo->match->aF.bTAF.decreaseBatterAngle = ACTION_IDLE;
     // when stopping the decreasing of the angle, we want not to interrupt an ongoing increasing of the angle
@@ -84,7 +84,7 @@ void stopDecreaseBatterAngle(StateInfo* stateInfo)
 }
 
 // here is where the accepting selected player happens.
-void selectBatter(StateInfo* stateInfo)
+void select_batter(StateInfo* stateInfo)
 {
     // ARCHITECTURE ENFORCEMENT:
     // We cannot select a new batter if someone else still holds safety at Home Base.
@@ -136,7 +136,7 @@ void selectBatter(StateInfo* stateInfo)
 }
 
 // so this function is called when we decide the power
-void selectPower(StateInfo* stateInfo)
+void select_power(StateInfo* stateInfo)
 {
     // swing is set to BAT_ACTION_ANGLE_WAIT so that the meter indicator on the screen can start decreasing etc.
     stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_WAIT;
@@ -168,7 +168,7 @@ void selectPower(StateInfo* stateInfo)
     // if power is great enough to give us good swing we'll go with it but thats the default so no need to do anything
     // here.
 }
-void selectAngle(StateInfo* stateInfo)
+void select_angle(StateInfo* stateInfo)
 {
     // simple enough, enter the state of waiting for animation to end
     stateInfo->match->aF.bTAF.swing = BAT_ACTION_DONE;
@@ -176,7 +176,7 @@ void selectAngle(StateInfo* stateInfo)
     stateInfo->match->pendingActionState.selectedBattingAngleCount = stateInfo->match->pendingActionState.meterCounter;
 }
 
-void updateBatting(StateInfo* stateInfo)
+void update_batting(StateInfo* stateInfo)
 {
     int batterIndex = get_active_batter_index(stateInfo->match);
     if (stateInfo->match->pRAI.batterReady == 1 && stateInfo->match->pRAI.pitchState != PITCH_STAGE_AIRBORNE &&
@@ -473,7 +473,7 @@ void updateBatting(StateInfo* stateInfo)
     }
 }
 
-void updateBattingMeter(StateInfo* stateInfo)
+void update_batting_meter(StateInfo* stateInfo)
 {
     // when power has yet to be selected but is to be selected we increase the counter
     // and map the value to proper floating point value to let us show it on the screen.

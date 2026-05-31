@@ -1,9 +1,9 @@
-#include "actions_messy/pitching_system.h"
+#include "actions/pitching_system.h"
 #include "common_logic.h"
 #include "execute_actions.h"
 #include "pitching_ai_strategy.h"
 #include "rng.h"
-#include <stdlib.h> // for rand()
+#include <stdlib.h>
 #include "base_logic.h"
 #include "base_control.h"
 #include "state_validator.h"
@@ -12,7 +12,7 @@
 #define ANIMATION_FREQUENCY 3
 #define TIMEOUT_CONSTANT 200
 
-void resetPitchingSystem(StateInfo* stateInfo)
+void reset_pitching_system(StateInfo* stateInfo)
 {
     stateInfo->match->pendingActionState.pitchPower = 0;
     stateInfo->match->aiState.pitchStage = 0;
@@ -23,7 +23,7 @@ void resetPitchingSystem(StateInfo* stateInfo)
     stateInfo->match->aiState.batterReadyTimer = -1;
 }
 
-void startPitch(StateInfo* stateInfo)
+void start_pitch(StateInfo* stateInfo)
 {
     /*
         To start a pitch few things must hold:
@@ -82,7 +82,7 @@ void startPitch(StateInfo* stateInfo)
     }
 }
 
-void continuePitch(StateInfo* stateInfo)
+void continue_pitch(StateInfo* stateInfo)
 {
     if (stateInfo->match->pII.hasBallIndex != -1) {
         // as power is selected now, we move to the next phase of meter going down, animation
@@ -125,7 +125,7 @@ void continuePitch(StateInfo* stateInfo)
     }
 }
 
-void releasePitch(StateInfo* stateInfo)
+void release_pitch(StateInfo* stateInfo)
 {
     // so here we have now selected the angle also and ball is ready to see the world.
     Vector3D target;
@@ -201,7 +201,7 @@ void releasePitch(StateInfo* stateInfo)
     stateInfo->match->aF.cTAF.actionKeyLock = 0;
 }
 
-void updatePitchingMeter(StateInfo* stateInfo)
+void update_pitching_meter(StateInfo* stateInfo)
 {
     // when pitch has been started but power not yet selected,
     // we increase meterCounter until its in its maximum
@@ -241,114 +241,5 @@ void updatePitchingMeter(StateInfo* stateInfo)
         stateInfo->match->pRAI.meterValue = calculate_meter_value(
             4, stateInfo->match->pendingActionState.meterCounter, stateInfo->match->pendingActionState.meterCounterMax
         );
-    }
-}
-
-void updateAIPitching(StateInfo* stateInfo, unsigned int* rng_seed)
-{
-    int pitcherIndex = stateInfo->match->pII.catcherOnBaseIndex[0];
-    // here we finish pitching if started.
-    // here i use these weird lock timeouts. im not sure if they are necessary
-    // but they could be. not gonna try anymore.
-    if (stateInfo->match->aiState.pitchStage == 1) {
-        if (stateInfo->match->pendingActionState.aiLockTimeoutCounter == -1) {
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter = 0;
-        }
-        if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.pitchFirstLimit) {
-            stateInfo->match->aiState.pitchStage = 2;
-            stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
-        } else {
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter++;
-            if (stateInfo->match->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-                stateInfo->match->aiState.pitchStage = 0;
-                stateInfo->match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-                stateInfo->match->pendingActionState.aiLockUpdate = 1;
-                stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
-            }
-        }
-    } else if (stateInfo->match->aiState.pitchStage == 2) {
-        if (stateInfo->match->pendingActionState.aiLockTimeoutCounter == -1) {
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter = 0;
-        }
-        if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.pitchSecondLimit) {
-            stateInfo->match->aiState.pitchStage = 3;
-            stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
-        } else {
-            stateInfo->match->pendingActionState.aiLockTimeoutCounter++;
-            if (stateInfo->match->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-                stateInfo->match->aiState.pitchStage = 0;
-                stateInfo->match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-                stateInfo->match->pendingActionState.aiLockUpdate = 1;
-                stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
-            }
-        }
-    } else if (stateInfo->match->aiState.pitchStage == 3) {
-        stateInfo->match->aiState.pitchStage = 0;
-        stateInfo->match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-        stateInfo->match->pendingActionState.aiLockUpdate = 1;
-    }
-
-    // if pitcher has the ball and he is in correct position
-    if (stateInfo->match->pII.hasBallIndex == pitcherIndex &&
-        stateInfo->match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1) {
-        // and lets give player some time to prepare
-        if (stateInfo->match->aiState.batterReadyTimer > 70) {
-            // try pitching.
-            if (stateInfo->match->aiState.pitchStage == 0) {
-                int i;
-                int homeLocationFlag = 1;
-                int pitchFlag = 0;
-
-                stateInfo->match->aiState.pitchTime++;
-                if (stateInfo->match->aiState.pitchTime >= 100) {
-                    pitchFlag = 1;
-                }
-                for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                    if (stateInfo->match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
-                        homeLocationFlag = 0;
-                    }
-                }
-                if (stateInfo->match->pendingActionState.aiActionEventLock == AI_NO_LOCK &&
-                    stateInfo->match->pendingActionState.aiLockUpdate == 0) {
-                    if (homeLocationFlag == 1 && pitchFlag == 1) {
-                        int rand1 = seeded_rand(rng_seed, 15);
-                        int rand2 = seeded_rand(rng_seed, 3);
-                        int rand3 = seeded_rand(rng_seed, 10);
-
-                        stateInfo->match->pendingActionState.aiActionEventLock = AI_PITCH_LOCK;
-                        stateInfo->match->pendingActionState.aiLockUpdate = 1;
-                        stateInfo->match->aiState.pitchStage = 1;
-                        stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_START;
-
-                        int onFieldCount = count_active_batting_players(stateInfo->match->playerInfo);
-                        calculate_ai_pitch_targets(
-                            rand1, rand2, rand3, onFieldCount, &(stateInfo->rules->halfInningState),
-                            ANIMATION_FREQUENCY, &(stateInfo->match->aiState.pitchFirstLimit),
-                            &(stateInfo->match->aiState.pitchSecondLimit)
-                        );
-                    } else {
-                        // to stop player from unnecessarily moving
-                    }
-                }
-            }
-        }
-    }
-
-    if (stateInfo->match->aiState.pitchPreviousTime == stateInfo->match->aiState.pitchTime) {
-        stateInfo->match->aiState.pitchTime = 0;
-    }
-    stateInfo->match->aiState.pitchPreviousTime = stateInfo->match->aiState.pitchTime;
-    // this batterReadyTimer is used to give human player a bit more time before AI pitches.
-    if (stateInfo->match->pRAI.batterReady == 1 &&
-        stateInfo->match->pII.catcherOnBaseIndex[0] == stateInfo->match->pII.hasBallIndex &&
-        stateInfo->match->aiState.batterReadyTimer == -1) {
-        stateInfo->match->aiState.batterReadyTimer = 0;
-    } else if (stateInfo->match->pRAI.batterReady == 0) {
-        stateInfo->match->aiState.batterReadyTimer = -1;
-    }
-    if (stateInfo->match->aiState.batterReadyTimer != -1) {
-        stateInfo->match->aiState.batterReadyTimer++;
     }
 }

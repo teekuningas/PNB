@@ -98,7 +98,7 @@ int test_full_fly_ball_out_and_wound(void)
         if (catchFrame != -1 && throwTriggered == 0) {
             throwTriggered = 1;
             throwStartFrame = frame;
-            throw_ball_to_base(ctx, match->playerInfo[fielderIdx].tPI.location, BASE_SECOND);
+            scenario_throw_ball_to_base(ctx, match->playerInfo[fielderIdx].tPI.location, BASE_SECOND);
             printf("Frame %d: Throw to 2nd base triggered\n", frame);
         }
 

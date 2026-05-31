@@ -8,11 +8,11 @@
 #include "globals.h"
 #include "execute_actions.h"
 #include "common_logic.h"
-#include "actions_messy/pitching_system.h"
-#include "actions_messy/batting_system.h"
-#include "actions_messy/throwing_system.h"
-#include "ai_messy/catching_ai.h"
-#include "ai_messy/batting_ai.h"
+#include "actions/pitching_system.h"
+#include "actions/batting_system.h"
+#include "actions/throwing_system.h"
+#include "ai/catching_ai.h"
+#include "ai/batting_ai.h"
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
@@ -21,9 +21,9 @@
 
 #define CLICK_BREAK_CONSTANT 3
 
-static void changeBatter(StateInfo* stateInfo);
-static void takeFreeWalkDecision(StateInfo* stateInfo);
-static void baseRun(StateInfo* stateInfo, BaseID base);
+static void change_batter(StateInfo* stateInfo);
+static void take_free_walk_decision(StateInfo* stateInfo);
+static void base_run(StateInfo* stateInfo, BaseID base);
 ;
 
 void init_execute_actions(StateInfo* stateInfo)
@@ -37,18 +37,18 @@ void init_execute_actions(StateInfo* stateInfo)
         stateInfo->match->pendingActionState.doubleClickCounter[i] = -1;
     }
 
-    resetPitchingSystem(stateInfo);
-    initBattingSystem(stateInfo);
-    initThrowingSystem(stateInfo);
+    reset_pitching_system(stateInfo);
+    init_batting_system(stateInfo);
+    init_throwing_system(stateInfo);
     stateInfo->match->pendingActionState.runBatFlag = 0;
 
     // ai uses a few flags..
 
-    initCatchingAI(&(stateInfo->match->aiState));
+    init_catching_ai(&(stateInfo->match->aiState));
     stateInfo->match->pendingActionState.aiActionEventLock = -1;
     stateInfo->match->pendingActionState.aiLockUpdate = 0;
 
-    initBattingAI(&(stateInfo->match->aiState));
+    init_batting_ai(&(stateInfo->match->aiState));
 }
 
 void execute_actions(StateInfo* stateInfo)
@@ -99,9 +99,9 @@ void execute_actions(StateInfo* stateInfo)
                 // throwGoingToBase variables are used to have better control
                 // over basemen who are wanting go out of base catching the ball.
                 // throws can be directed only towards bases.
-                prepareThrow(stateInfo, i);
+                prepare_throw(stateInfo, i);
                 // start by loading
-                genericThrowLoad(stateInfo, i);
+                throw_load(stateInfo, i);
             } else {
                 // if no luck, then set throwToBase to one so that can try again
                 stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
@@ -114,16 +114,16 @@ void execute_actions(StateInfo* stateInfo)
         else if (stateInfo->match->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_STOP) {
             stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
             stateInfo->match->aF.cTAF.actionKeyLock = 0;
-            genericThrowRelease(stateInfo);
+            throw_release(stateInfo);
         }
     }
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
     for (i = 0; i < DIRECTION_COUNT; i++) {
         if (stateInfo->match->aF.cTAF.move[i] == ACTION_TRIGGER_START) {
-            genericMove(stateInfo, i);
+            fielder_move(stateInfo, i);
         } else if (stateInfo->match->aF.cTAF.move[i] == ACTION_TRIGGER_STOP) {
-            genericStopMove(stateInfo, i);
+            fielder_stop_move(stateInfo, i);
         }
     }
 
@@ -150,56 +150,56 @@ void execute_actions(StateInfo* stateInfo)
     }
     // if drop ball key has been pressed, try dropping
     if (stateInfo->match->aF.cTAF.dropBall == ACTION_TRIGGER_START) {
-        dropBall(stateInfo);
+        drop_ball(stateInfo);
     }
     // pitching
     if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_START) {
-        startPitch(stateInfo);
+        start_pitch(stateInfo);
     } else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_POWER_SET) {
-        continuePitch(stateInfo);
+        continue_pitch(stateInfo);
     } else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
-        releasePitch(stateInfo);
+        release_pitch(stateInfo);
     }
     /*
      * BATTING TEAM
      */
     // when there's no batter, user is prompted to select the next batter
     if (stateInfo->match->aF.bTAF.chooseBatter == CHOOSE_BATTER_NEXT) {
-        changeBatter(stateInfo);
+        change_batter(stateInfo);
     } else if (stateInfo->match->aF.bTAF.chooseBatter == CHOOSE_BATTER_SELECT) {
-        selectBatter(stateInfo);
+        select_batter(stateInfo);
     }
     // free walk decisions, takeFreeWalk can be 0, 1 or 2. if its 2
     // takeFreeWalkDecision() is called but will basically just set takeFreeWalk to 0.
     if (stateInfo->match->aF.bTAF.takeFreeWalk > FREE_WALK_IDLE) {
-        takeFreeWalkDecision(stateInfo);
+        take_free_walk_decision(stateInfo);
     }
     // batter angles
     if (stateInfo->match->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_START) {
-        startIncreaseBatterAngle(stateInfo);
+        start_increase_batter_angle(stateInfo);
     } else if (stateInfo->match->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_STOP) {
-        stopIncreaseBatterAngle(stateInfo);
+        stop_increase_batter_angle(stateInfo);
     }
     if (stateInfo->match->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_START) {
-        startDecreaseBatterAngle(stateInfo);
+        start_decrease_batter_angle(stateInfo);
     } else if (stateInfo->match->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_STOP) {
-        stopDecreaseBatterAngle(stateInfo);
+        stop_decrease_batter_angle(stateInfo);
     }
     // batting
     if (stateInfo->match->aF.bTAF.swing == BAT_ACTION_POWER_SET) {
-        selectPower(stateInfo);
+        select_power(stateInfo);
     } else if (stateInfo->match->aF.bTAF.swing == BAT_ACTION_ANGLE_SET) {
-        selectAngle(stateInfo);
+        select_angle(stateInfo);
     }
     // baserunners must be able to run!
     for (i = 0; i < BASE_COUNT; i++) {
-        baseRun(stateInfo, i);
+        base_run(stateInfo, i);
     }
     // this is used to handle a lot of stuff happening between and after the decisions.
-    updateBatting(stateInfo);
+    update_batting(stateInfo);
 }
 
-static void takeFreeWalkDecision(StateInfo* stateInfo)
+static void take_free_walk_decision(StateInfo* stateInfo)
 {
     if (stateInfo->match->aF.bTAF.takeFreeWalk == FREE_WALK_ACCEPT) {
         int index = stateInfo->match->flowControl.freeWalkIndex;
@@ -239,7 +239,7 @@ static void takeFreeWalkDecision(StateInfo* stateInfo)
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
-static void changeBatter(StateInfo* stateInfo)
+static void change_batter(StateInfo* stateInfo)
 {
     int done = 0;
     int counter = 0;
@@ -306,7 +306,7 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 
 // so baserunning.
 // idea is just to update willStartRunning in every button press. and in special double click case we just run.
-static void baseRun(StateInfo* stateInfo, BaseID base)
+static void base_run(StateInfo* stateInfo, BaseID base)
 {
     // so baserunning.
     // idea is just to update willStartRunning in every button press. and in special double click case we just run.
@@ -354,7 +354,7 @@ static void baseRun(StateInfo* stateInfo, BaseID base)
 
 void update_meters(StateInfo* stateInfo)
 {
-    updatePitchingMeter(stateInfo);
+    update_pitching_meter(stateInfo);
 
     if (stateInfo->match->pendingActionState.throwGoingOn == 1) {
         if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
@@ -363,7 +363,7 @@ void update_meters(StateInfo* stateInfo)
         stateInfo->match->pRAI.meterValue = 1.0f * stateInfo->match->pendingActionState.meterCounter /
                                             stateInfo->match->pendingActionState.meterCounterMax;
     } else {
-        updateBattingMeter(stateInfo);
+        update_batting_meter(stateInfo);
     }
 }
 
@@ -376,10 +376,10 @@ void ai_update(StateInfo* stateInfo, unsigned int* rng_seed)
     // first ai for catching team
 
     if (catchingControl == CONTROL_AI) {
-        updateCatchingAI(stateInfo, rng_seed);
+        update_catching_ai(stateInfo, rng_seed);
     }
     // then ai for batting team
     if (battingControl == CONTROL_AI) {
-        updateBattingAI(stateInfo, rng_seed);
+        update_batting_ai(stateInfo, rng_seed);
     }
 }

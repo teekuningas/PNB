@@ -2,14 +2,12 @@
 #include <stdlib.h>
 
 #include "globals.h"
-#include "batting_ai.h"
+#include "ai/batting_ai.h"
 #include "batting_ai_strategy.h"
 #include "execute_actions.h"
-#include "actions_messy/batting_system.h"
+#include "actions/batting_system.h"
 #include "game_manipulation.h"
 #include "rng.h"
-#include "actions_messy/batting_system.h"
-#include "batting_ai_strategy.h"
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
@@ -18,7 +16,7 @@
 
 #define CLICK_BREAK_CONSTANT 3
 
-void initBattingAI(AIState* aiState)
+void init_batting_ai(AIState* aiState)
 {
     int i;
     aiState->battingKeyDown = 0;
@@ -48,7 +46,7 @@ void initBattingAI(AIState* aiState)
     }
 }
 
-void updateBattingAI(StateInfo* stateInfo, unsigned int* rng_seed)
+void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
 {
     int i;
     int isDoubleClickingOk = 0;

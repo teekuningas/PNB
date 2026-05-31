@@ -294,7 +294,7 @@ void cleanup_scenario(ScenarioContext* ctx)
     free(ctx);
 }
 
-void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase)
+void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase)
 {
     if (!ctx || !ctx->state) return;
 

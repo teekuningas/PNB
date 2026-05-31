@@ -22,7 +22,7 @@ int test_full_batter_forced_out_at_first(void)
     snapshot_pitch_start_state(ctx);
 
     Vector3D throwFrom = {5.0f, 1.5f, -10.0f};
-    throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
+    scenario_throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
 
     ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
     ctx->state->match->pRAI.batterCanAdvance = 1;
