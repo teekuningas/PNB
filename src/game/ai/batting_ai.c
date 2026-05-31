@@ -219,9 +219,6 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         if (stateInfo->match->aiState.runningBaseRunners == 1) {
             int i;
             for (i = 1; i < BASE_COUNT; i++) {
-                // Prevent suicide runs: Don't run from 3rd base (to home) if ball is held at home
-                if (i == BASE_THIRD && stateInfo->match->gameFlowState.ballHome == 1) continue;
-
                 if (stateInfo->match->aiState.baseRunnerDecisionMade[i] == 0 &&
                     get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) != -1 &&
                     stateInfo->match
@@ -407,10 +404,12 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
     // AI: Check if it's safe to advance runners
     // Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
     // AND ball has traveled far enough from home (to avoid triggering when ball is still at home plate)
+    // AND ball has already hit the ground (if still airborne and out of bounds, it's a foul/läpilyönti)
     if (stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
         stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
         stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
-        stateInfo->match->ballInfo.location.z < -10.0f && // Ball must be at least 10 units into the field (negative z)
+        stateInfo->rules->betweenPitchState.hasBallHitGround == 1 &&
+        stateInfo->match->ballInfo.location.z < -10.0f &&
         checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
         isDoubleClickingOk = 1;
     }
