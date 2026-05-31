@@ -116,7 +116,6 @@ static void checkChangePlayer(MatchSession* match, const KeyStates* key_states, 
             if (key_states->released[control][key] == 1) {
                 if (match->aF.cTAF.change_player == ACTION_IDLE) {
                     match->aF.cTAF.change_player = ACTION_TRIGGER_START;
-                    match->aF.cTAF.actionKeyLock = 1;
                 }
             }
         }
@@ -132,7 +131,6 @@ static void checkDrop(MatchSession* match, const KeyStates* key_states, int key,
             if (key_states->released[control][key] == 1) {
                 if (match->aF.cTAF.dropBall == ACTION_IDLE) {
                     match->aF.cTAF.dropBall = ACTION_TRIGGER_START;
-                    match->aF.cTAF.actionKeyLock = 1;
                 }
             }
         }

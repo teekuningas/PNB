@@ -774,7 +774,6 @@ void initialize_action_info(MatchSession* match)
     match->aF.cTAF.change_player = 0;
     match->aF.cTAF.dropBall = 0;
     match->aF.cTAF.pitch = 0;
-    match->aF.cTAF.actionKeyLock = 0;
     match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.

@@ -146,7 +146,6 @@ void execute_actions(StateInfo* stateInfo)
             change_player(stateInfo->match);
         }
         stateInfo->match->aF.cTAF.change_player = ACTION_IDLE;
-        stateInfo->match->aF.cTAF.actionKeyLock = 0;
     }
     // if drop ball key has been pressed, try dropping
     if (stateInfo->match->aF.cTAF.dropBall == ACTION_TRIGGER_START) {
@@ -166,12 +165,7 @@ void execute_actions(StateInfo* stateInfo)
         stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_NONE) {
         stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
     }
-    // Safety auto-clear: if actionKeyLock is stuck but all guarded actions are idle,
-    // release it. This prevents permanently stuck states from edge cases.
-    if (stateInfo->match->aF.cTAF.actionKeyLock == 1 &&
-        stateInfo->match->aF.cTAF.dropBall == ACTION_IDLE && stateInfo->match->aF.cTAF.change_player == ACTION_IDLE) {
-        stateInfo->match->aF.cTAF.actionKeyLock = 0;
-    }
+
     /*
      * BATTING TEAM
      */

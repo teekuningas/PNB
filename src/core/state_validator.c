@@ -210,7 +210,6 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s\"actionState\": {\n", sp);
     fprintf(f, "%s  \"currentCatchingAction\": %d,\n", sp, (int)game->pendingActionState.currentCatchingAction);
     fprintf(f, "%s  \"pitchPhase\": %d,\n", sp, (int)game->pendingActionState.pitchPhase);
-    fprintf(f, "%s  \"actionKeyLock\": %d,\n", sp, game->aF.cTAF.actionKeyLock);
     fprintf(f, "%s  \"pitch\": %d,\n", sp, game->aF.cTAF.pitch);
     fprintf(f, "%s  \"dropBall\": %d,\n", sp, game->aF.cTAF.dropBall);
     fprintf(f, "%s  \"change_player\": %d,\n", sp, game->aF.cTAF.change_player);

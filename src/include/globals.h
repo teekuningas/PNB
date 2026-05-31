@@ -272,7 +272,6 @@ typedef struct _CatchingTeamActionFlags {
     ActionTriggerState run;
     ActionTriggerState dropBall;
     PitchActionPhase pitch;
-    int actionKeyLock;
 } CatchingTeamActionFlags;
 
 typedef struct _ActionFlags {

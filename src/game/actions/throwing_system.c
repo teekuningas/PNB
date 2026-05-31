@@ -227,7 +227,6 @@ void drop_ball(StateInfo* stateInfo)
         }
     }
     stateInfo->match->aF.cTAF.dropBall = ACTION_IDLE;
-    stateInfo->match->aF.cTAF.actionKeyLock = 0;
 }
 
 void update_controlled_player_speed(StateInfo* stateInfo)
