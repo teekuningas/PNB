@@ -145,17 +145,13 @@ static void checkPitch(MatchSession* match, const KeyStates* key_states, int key
 {
     if (control != CONTROL_AI) {
         if (key_states->down[control][key] == 1) {
-            if (match->aF.cTAF.pitch == PITCH_ACTION_IDLE) {
-                if (match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE &&
-                    match->aF.cTAF.actionKeyLock == 0) {
-                    match->aF.cTAF.pitch = PITCH_ACTION_START;
-                    match->aF.cTAF.actionKeyLock = 1;
-                }
-            } else if (match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
+            if (match->pendingActionState.pitchPhase == PITCH_PHASE_ANGLE_WAIT) {
                 match->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
+            } else if (match->pendingActionState.currentCatchingAction == CATCHING_ACTION_NONE) {
+                match->aF.cTAF.pitch = PITCH_ACTION_START;
             }
         } else if (key_states->released[control][key] == 1) {
-            if (match->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
+            if (match->pendingActionState.pitchPhase == PITCH_PHASE_POWER_WAIT) {
                 match->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
             }
         }

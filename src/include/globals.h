@@ -233,11 +233,11 @@ typedef enum {
 
 typedef enum {
     PITCH_ACTION_IDLE = 0,
-    PITCH_ACTION_START = 1, // Trigger: start windup
-    PITCH_ACTION_POWER_WAIT = 2, // Active: winding up, waiting for power select
-    PITCH_ACTION_POWER_SET = 3, // Trigger: power selected
-    PITCH_ACTION_ANGLE_WAIT = 4, // Active: throw animation, waiting for angle select
-    PITCH_ACTION_ANGLE_SET = 5 // Trigger: angle selected, release ball
+    PITCH_ACTION_START = 1,     // Intent: start windup
+    PITCH_ACTION_POWER_WAIT = 2, // (unused after Phase B — state lives in pitchPhase)
+    PITCH_ACTION_POWER_SET = 3, // Intent: power selected
+    PITCH_ACTION_ANGLE_WAIT = 4, // (unused after Phase B — state lives in pitchPhase)
+    PITCH_ACTION_ANGLE_SET = 5  // Intent: angle selected, release ball
 } PitchActionPhase;
 
 typedef enum {
@@ -652,11 +652,18 @@ typedef enum {
     CATCHING_ACTION_CHANGING
 } CatchingTeamCurrentAction;
 
+typedef enum {
+    PITCH_PHASE_NONE = 0,
+    PITCH_PHASE_POWER_WAIT,
+    PITCH_PHASE_ANGLE_WAIT
+} PitchPhase;
+
 typedef struct _PendingActionState {
     unsigned int meterCounter;
     unsigned int meterCounterMax;
 
     CatchingTeamCurrentAction currentCatchingAction;
+    PitchPhase pitchPhase;
 
     int throwGoingOn;
     int runBatFlag;

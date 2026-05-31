@@ -83,7 +83,7 @@ void execute_actions(StateInfo* stateInfo)
                 if (stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
                     stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
                     stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
-                    stateInfo->match->aF.cTAF.actionKeyLock = 0;
+                    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
                     // when pitching the ball is moved to the center of the plate so now when we are terminating the
                     // pitch to throw, we must move the ball back to the player
                     stateInfo->match->ballInfo.location.x =
@@ -160,9 +160,15 @@ void execute_actions(StateInfo* stateInfo)
     } else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
         release_pitch(stateInfo);
     }
+    // Safety auto-clear: if pitching action is stuck but pitchState is NONE, release it.
+    if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_PITCHING &&
+        stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE &&
+        stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_NONE) {
+        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    }
     // Safety auto-clear: if actionKeyLock is stuck but all guarded actions are idle,
     // release it. This prevents permanently stuck states from edge cases.
-    if (stateInfo->match->aF.cTAF.actionKeyLock == 1 && stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_IDLE &&
+    if (stateInfo->match->aF.cTAF.actionKeyLock == 1 &&
         stateInfo->match->aF.cTAF.dropBall == ACTION_IDLE && stateInfo->match->aF.cTAF.change_player == ACTION_IDLE) {
         stateInfo->match->aF.cTAF.actionKeyLock = 0;
     }

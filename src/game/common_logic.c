@@ -775,6 +775,7 @@ void initialize_action_info(MatchSession* match)
     match->aF.cTAF.dropBall = 0;
     match->aF.cTAF.pitch = 0;
     match->aF.cTAF.actionKeyLock = 0;
+    match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -801,6 +802,7 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
 
     // Action state
     match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 and

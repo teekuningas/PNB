@@ -15,6 +15,7 @@
 void reset_pitching_system(StateInfo* stateInfo)
 {
     stateInfo->match->pendingActionState.pitchPower = 0;
+    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
     stateInfo->match->aiState.pitchStage = 0;
     stateInfo->match->aiState.pitchTime = -1;
     stateInfo->match->aiState.pitchPreviousTime = -1;
@@ -62,9 +63,11 @@ void start_pitch(StateInfo* stateInfo)
         // rising from there.
         set_vector_xz(&(stateInfo->match->ballInfo.location), 0.0f, 0.0f);
 
-        // we enter the next stage where the meter moves and user needs to
-        // select the power to continue
-        stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_POWER_WAIT;
+        // Enter power-wait phase: meter moves and user needs to select power
+        stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_POWER_WAIT;
+        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_PITCHING;
+        // Consume the START intent
+        stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
         // we set pitchState flag to PITCH_STAGE_WINDUP which will hold to the moment
         // of bat hitting ball, meter going all the way down ( no angle selected )
         // or ball hitting ground.
@@ -78,7 +81,6 @@ void start_pitch(StateInfo* stateInfo)
         // if conditions dont hold then put pitch=PITCH_ACTION_IDLE so that user can try to
         // initiate new pitch if he wants.
         stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-        stateInfo->match->aF.cTAF.actionKeyLock = 0;
     }
 }
 
@@ -87,7 +89,9 @@ void continue_pitch(StateInfo* stateInfo)
     if (stateInfo->match->pII.hasBallIndex != -1) {
         // as power is selected now, we move to the next phase of meter going down, animation
         // going from crouching to releasing and user to selecting the angle.
-        stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_ANGLE_WAIT;
+        stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_ANGLE_WAIT;
+        // Consume the POWER_SET intent
+        stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
         // here we select pitchpower, and as selected it will be in the interval from
         //  (PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
         stateInfo->match->pendingActionState.pitchPower = calculate_pitch_power(
@@ -196,16 +200,18 @@ void release_pitch(StateInfo* stateInfo)
         }
     }
 
-    // and pitch is PITCH_ACTION_IDLE so we can try to start pitch again when necessary conditions hold
+    // Clear pitch phase and action lock — pitch complete
+    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+    stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    // Consume the ANGLE_SET intent
     stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-    stateInfo->match->aF.cTAF.actionKeyLock = 0;
 }
 
 void update_pitching_meter(StateInfo* stateInfo)
 {
     // when pitch has been started but power not yet selected,
     // we increase meterCounter until its in its maximum
-    if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_POWER_WAIT) {
+    if (stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_POWER_WAIT) {
         if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
             stateInfo->match->pendingActionState.meterCounter += 1;
         }
@@ -216,16 +222,15 @@ void update_pitching_meter(StateInfo* stateInfo)
     }
     // when power has been selected but the angle is not yet selected,
     // we increase meterCounter until its in its maximum
-    else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_WAIT) {
+    else if (stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_ANGLE_WAIT) {
         if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
             stateInfo->match->pendingActionState.meterCounter += 1;
         } else {
             // if counter reaches the maximum, it means animation has
             // reached its end point and indicator on the meter would go off the meter.
             // so when this happnes we terminate the pitch.
-            // first we set pitch=PITCH_ACTION_IDLE so that we can start a new pitch
-            stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-            stateInfo->match->aF.cTAF.actionKeyLock = 0;
+            stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+            stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
             // and we set pitchState to PITCH_STAGE_NONE to tell other functionality in the code
             // what happened.
             stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
