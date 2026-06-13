@@ -11,9 +11,10 @@
 #include "resource_manager.h"
 #include "menu_types.h"
 
-// Updates the game over menu.
-MenuStage
-updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates, int team1_control, int team2_control);
+// Updates the game over menu. Any human pad can dismiss the result screen,
+// independent of team control — so an AI-vs-AI game a human is watching is not
+// trapped here.
+MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates);
 
 // Draws the game over menu.
 void draw_game_over_menu(

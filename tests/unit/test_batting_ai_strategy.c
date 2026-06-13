@@ -86,21 +86,27 @@ int test_is_wrong_pitch()
 
 int test_calculate_ai_batting_angle()
 {
-    // Style 1 (Normal), leadBase 3 -> 0.8 (+- 0.25 variance)
-    float angle = calculate_ai_batting_angle(1, BASE_THIRD, 0);
-    ASSERT_TRUE(fabs(angle - 0.8f) < 0.26f, "Normal style, lead_from_base base 3 should hit left");
+    // Style 1 (Normal): direction is randomized across the field, independent of runners.
+    // Sweep the random input and assert the output stays within the reachable field range
+    // AND genuinely spreads to both sides (it must NOT collapse to center).
+    float minAngle = 1000.0f;
+    float maxAngle = -1000.0f;
+    for (int r = 0; r < 1000; r++) {
+        float angle = calculate_ai_batting_angle(1, r);
+        ASSERT_TRUE(fabs(angle) <= 0.45f, "Normal style angle must stay within the reachable field");
+        if (angle < minAngle) minAngle = angle;
+        if (angle > maxAngle) maxAngle = angle;
+    }
+    ASSERT_TRUE(minAngle < -0.3f, "Normal style should sometimes hit well to the right");
+    ASSERT_TRUE(maxAngle > 0.3f, "Normal style should sometimes hit well to the left");
 
-    // Style 1 (Normal), leadBase 2 -> -0.8 (+- 0.25 variance)
-    angle = calculate_ai_batting_angle(1, BASE_SECOND, 0);
-    ASSERT_TRUE(fabs(angle - (-0.8f)) < 0.26f, "Normal style, lead_from_base base 2 should hit right");
-
-    // Style 1 (Normal), leadBase 1 -> 0.0 (+- 0.25 variance)
-    angle = calculate_ai_batting_angle(1, BASE_FIRST, 0);
-    ASSERT_TRUE(fabs(angle - 0.0f) < 0.26f, "Normal style, lead_from_base base 1 should hit straight");
+    // Style 0 (Bunt): short hit to a random side (~ +-0.5 with +-0.25 variance)
+    float bunt = calculate_ai_batting_angle(0, 0);
+    ASSERT_TRUE(fabs(fabs(bunt) - 0.5f) < 0.26f, "Bunt style should hit short to a side");
 
     // Style 2 (Wound) -> -1.5 (No variance for wounds currently)
-    angle = calculate_ai_batting_angle(2, BASE_NONE, 0);
-    ASSERT_TRUE(fabs(angle - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
+    float wound = calculate_ai_batting_angle(2, 0);
+    ASSERT_TRUE(fabs(wound - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
 
     return TEST_PASSED;
 }

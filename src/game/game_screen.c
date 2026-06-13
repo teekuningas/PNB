@@ -319,9 +319,15 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
                 index = stateInfo->match->pII.batterSelectionIndex;
         } else {
             int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
-            index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
-                        .batterRunnerIndices[0][stateInfo->rules->homeRunContestState.runnerBatterPairCounter];
-            if (index == -1) shouldContinue = 0;
+            int pairIdx = stateInfo->rules->homeRunContestState.runnerBatterPairCounter;
+            // pairIdx reaches pairCount at end-of-inning; clamp so we never read past the
+            // current pair row of batterRunnerIndices.
+            if (pairIdx < 0 || pairIdx >= stateInfo->rules->scoreboard.pairCount) {
+                shouldContinue = 0;
+            } else {
+                index = stateInfo->rules->scoreboard.teams[battingTeamIndex].batterRunnerIndices[0][pairIdx];
+                if (index == -1) shouldContinue = 0;
+            }
         }
         if (shouldContinue == 1) {
             int speed = stateInfo->match->playerInfo[index].bTPI.speed;

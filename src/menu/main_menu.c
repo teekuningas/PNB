@@ -165,8 +165,15 @@ void update_main_menu(
         );
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_GO_TO_GAME) {
-                menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
-                menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
+                if (menuInfo->mode == MENU_ENTRY_SUPER_INNING) {
+                    // Hutunkeitto reached as part of the super inning: resume the
+                    // existing game, don't start a fresh one (which would wipe
+                    // period/inning/run state and loop the game forever).
+                    menuData->pendingGameSetup.launchType = GAME_LAUNCH_RETURN_SUPER_INNING;
+                } else {
+                    menuData->pendingGameSetup.gameMode = GAME_MODE_NORMAL;
+                    menuData->pendingGameSetup.launchType = GAME_LAUNCH_NEW;
+                }
                 launch_game_from_menu(stateInfo, &menuData->pendingGameSetup, rng_seed);
                 menuInfo->mode = MENU_ENTRY_NORMAL;
             }
@@ -175,10 +182,7 @@ void update_main_menu(
         break;
     }
     case MENU_STAGE_GAME_OVER: {
-        nextStage = updateGameOverMenu(
-            stateInfo->gameConclusion, keyStates, stateInfo->rules->scoreboard.teams[0].control,
-            stateInfo->rules->scoreboard.teams[1].control
-        );
+        nextStage = updateGameOverMenu(stateInfo->gameConclusion, keyStates);
         if (nextStage != menuData->stage) {
             stateInfo->playSoundEffect = SOUND_MENU;
             if (nextStage == MENU_STAGE_CUP) {

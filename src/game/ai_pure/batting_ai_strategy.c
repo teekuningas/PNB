@@ -2,6 +2,11 @@
 #include <math.h>
 #include <stdlib.h>
 
+// Largest bat angle (each side) the AI aims for. Kept just inside the batting system's
+// own clamp (PI/7 ≈ 0.449), reachable in the 0.02-per-frame steps the swing uses, so the
+// randomized direction spreads evenly instead of piling up at a clamped extreme.
+#define AI_MAX_BATTING_ANGLE 0.44f
+
 BattingStrategy
 calculate_batting_strategy(const HalfInningState* halfInningState, int fieldStatus, int power, int speed, int period)
 {
@@ -153,26 +158,23 @@ int is_wrong_pitch(float vx, float vy, float gravity, float plate_width)
     return 0;
 }
 
-float calculate_ai_batting_angle(int battingStyle, BaseID leadBase, int randomValue)
+// Decide the direction (bat angle) of an AI swing.
+//
+// Direction is deliberately RANDOMIZED and independent of base runners: the AI spreads
+// its hits across the whole field rather than aiming relative to a lead runner. The
+// returned value is in bat-angle units (0 = straight ahead, positive = left field,
+// negative = right field). The batting system clamps the actual angle to its own limit,
+// so AI_MAX_BATTING_ANGLE is kept just inside that reachable range for an even spread.
+float calculate_ai_batting_angle(int battingStyle, int randomValue)
 {
-    float angle = 0.0f;
-    // Generate variance between -0.25f and +0.25f
-    float variance = ((randomValue % 500) - 250) / 1000.0f;
-
-    if (battingStyle == 0) { // Bunt
-        angle = (randomValue % 100 < 50) ? 0.5f : -0.5f;
-        angle += variance;
-    } else if (battingStyle == 1) { // Normal
-        if (leadBase == BASE_THIRD) {
-            angle = 0.8f; // Hit to left field
-        } else if (leadBase == BASE_SECOND) {
-            angle = -0.8f; // Hit to right field
-        } else {
-            angle = 0.0f;
-        }
-        angle += variance;
-    } else if (battingStyle == 2) { // Wound
-        angle = -1.5f; // Bad angle
+    if (battingStyle == 0) { // Bunt: short hit, random side
+        float variance = ((randomValue % 500) - 250) / 1000.0f; // -0.25 .. +0.25
+        float angle = (randomValue % 100 < 50) ? 0.5f : -0.5f;
+        return angle + variance;
+    } else if (battingStyle == 2) { // Wounding swing: extreme angle to draw a fielder
+        return -1.5f;
     }
-    return angle;
+    // Normal swing: uniform random direction across the reachable field.
+    float t = (randomValue % 1000) / 1000.0f; // 0 .. ~1
+    return t * (2.0f * AI_MAX_BATTING_ANGLE) - AI_MAX_BATTING_ANGLE; // -MAX .. +MAX
 }

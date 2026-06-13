@@ -879,7 +879,7 @@ void initialize_prai_information(MatchSession* match)
 
 void setup_homerun_physical_state(
     MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
-    const FieldPositions* field_positions
+    const FieldPositions* field_positions, int batterResumesInPlace
 )
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
@@ -896,6 +896,14 @@ void setup_homerun_physical_state(
             // move player to default batter ready position
             target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            // On a foul/out-of-bounds reset the same batter resumes, so start them already at
+            // the plate — move_to_target then settles them straight into the ready stance
+            // instead of walking them in from the reset position.
+            if (batterResumesInPlace) {
+                match->playerInfo[batterIndex].tPI.location.x = target.x;
+                match->playerInfo[batterIndex].tPI.location.z = target.z;
+                match->playerInfo[batterIndex].tPI.lastLocation = match->playerInfo[batterIndex].tPI.location;
+            }
             move_to_target(match->playerInfo, batterIndex, &target);
         }
         // runner

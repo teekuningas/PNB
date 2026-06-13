@@ -160,8 +160,20 @@ typedef struct _GroundUnit {
 #define SOUND_MENU 1
 #define SOUND_SWING 2
 #define SOUND_CATCH 3
-// down[i][j] is 1 when key is down
-// released[i][j] is 1 for one frame when key is released
+// Number of real human input devices (pads). Slot 0 = pad 1, slot 1 = pad 2.
+#define HUMAN_PAD_COUNT 2
+
+// The first index is a TeamControlMode value used directly as an input-slot
+// index, so the array is sized to CONTROL_AI + 1 = 3 rows. Slots 0 and 1 are
+// the human pads; slot 2 (CONTROL_AI) is a PHANTOM row that input.c never
+// writes — an AI-controlled team reading down[CONTROL_AI][...] always sees
+// zeros. Callers guard reads with `if (control != CONTROL_AI)` and the AI
+// writes ActionFlags directly instead. Overloading TeamControlMode as an array
+// index is a known minor smell (see PLAN.md "Known Minor Violations"); prefer
+// HUMAN_PAD_COUNT when iterating real devices so watcher-facing code (e.g. the
+// pause key, the game-over screen) never touches the phantom slot.
+//
+// down[i][j] is 1 when key is down; released[i][j] is 1 for one frame on release.
 typedef struct _KeyStates {
     int released[3][KEY_COUNT];
     int down[3][KEY_COUNT];
@@ -233,11 +245,11 @@ typedef enum {
 
 typedef enum {
     PITCH_ACTION_IDLE = 0,
-    PITCH_ACTION_START = 1,     // Intent: start windup
+    PITCH_ACTION_START = 1, // Intent: start windup
     PITCH_ACTION_POWER_WAIT = 2, // (unused after Phase B — state lives in pitchPhase)
     PITCH_ACTION_POWER_SET = 3, // Intent: power selected
     PITCH_ACTION_ANGLE_WAIT = 4, // (unused after Phase B — state lives in pitchPhase)
-    PITCH_ACTION_ANGLE_SET = 5  // Intent: angle selected, release ball
+    PITCH_ACTION_ANGLE_SET = 5 // Intent: angle selected, release ball
 } PitchActionPhase;
 
 typedef enum {
@@ -612,6 +624,7 @@ typedef struct _AIState {
     int decreaseKeyDown;
     int angleDecided;
     float decidedAngle;
+    int decidedSwingTrigger; // meterCounter level at which the AI releases its swing (randomizes power)
     int baseRunnerKeyDown[BASE_COUNT];
     int baseRunnerDecisionMade[BASE_COUNT];
     int lastSafeOnBaseIndex[BASE_COUNT];
@@ -651,11 +664,7 @@ typedef enum {
     CATCHING_ACTION_CHANGING
 } CatchingTeamCurrentAction;
 
-typedef enum {
-    PITCH_PHASE_NONE = 0,
-    PITCH_PHASE_POWER_WAIT,
-    PITCH_PHASE_ANGLE_WAIT
-} PitchPhase;
+typedef enum { PITCH_PHASE_NONE = 0, PITCH_PHASE_POWER_WAIT, PITCH_PHASE_ANGLE_WAIT } PitchPhase;
 
 typedef struct _PendingActionState {
     unsigned int meterCounter;

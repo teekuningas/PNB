@@ -15,6 +15,23 @@ void draw_menu_layout_2d(ResourceManager* rm, const RenderState* rs)
     draw_texture_2d(tex, 0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 }
 
+// Apply the batting orders chosen in the menu without touching the scoreboard's
+// period/inning/run counters — used by the RETURN paths that resume an
+// in-progress game rather than starting a fresh one.
+static void apply_batting_orders(StateInfo* stateInfo, const GameSetup* gameSetup)
+{
+    memcpy(
+        stateInfo->rules->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order,
+        sizeof(gameSetup->team1_batting_order)
+    );
+    memcpy(
+        stateInfo->rules->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order,
+        sizeof(gameSetup->team2_batting_order)
+    );
+    stateInfo->rules->scoreboard.teams[0].batterOrderIndex = 0;
+    stateInfo->rules->scoreboard.teams[1].batterOrderIndex = 0;
+}
+
 void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
     switch (gameSetup->launchType) {
@@ -22,16 +39,15 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         initialize_game_from_menu(stateInfo, gameSetup, rng_seed);
         break;
     case GAME_LAUNCH_RETURN_INTER_PERIOD:
-        memcpy(
-            stateInfo->rules->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order,
-            sizeof(gameSetup->team1_batting_order)
-        );
-        memcpy(
-            stateInfo->rules->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order,
-            sizeof(gameSetup->team2_batting_order)
-        );
-        stateInfo->rules->scoreboard.teams[0].batterOrderIndex = 0;
-        stateInfo->rules->scoreboard.teams[1].batterOrderIndex = 0;
+        apply_batting_orders(stateInfo, gameSetup);
+        return_to_game(stateInfo, rng_seed);
+        break;
+    case GAME_LAUNCH_RETURN_SUPER_INNING:
+        // Resume the game in the super inning the referee already set up (period
+        // and run totals preserved). Only the new batting orders and the
+        // leading-off team (decided fresh by hutunkeitto) are applied.
+        apply_batting_orders(stateInfo, gameSetup);
+        stateInfo->rules->scoreboard.playsFirst = gameSetup->playsFirst;
         return_to_game(stateInfo, rng_seed);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {

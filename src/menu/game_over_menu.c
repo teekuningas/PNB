@@ -2,24 +2,16 @@
 #include "font.h"
 #include "menu_helpers.h"
 #include "globals.h"
+#include "input.h"
 
 void initGameOverMenu(void)
 {
     // This menu is stateless, so nothing to do here
 }
 
-MenuStage
-updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates, int team1_control, int team2_control)
+MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates)
 {
-    int flag = 0;
-    if (team1_control != 2) {
-        if (keyStates->released[team1_control][KEY_2]) flag = 1;
-    }
-    if (team2_control != 2) {
-        if (keyStates->released[team2_control][KEY_2]) flag = 1;
-    }
-
-    if (flag == 1) {
+    if (any_human_released(keyStates, KEY_2)) {
         if (conclusion->isCupGame) {
             return MENU_STAGE_CUP;
         }

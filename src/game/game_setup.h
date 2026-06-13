@@ -7,7 +7,12 @@
 // Enum to represent the game mode, decoupling game logic from menu specifics.
 typedef GamePeriodMode GameMode;
 
-typedef enum { GAME_LAUNCH_NEW, GAME_LAUNCH_RETURN_INTER_PERIOD, GAME_LAUNCH_RETURN_HOMERUN_CONTEST } GameLaunchType;
+typedef enum {
+    GAME_LAUNCH_NEW,
+    GAME_LAUNCH_RETURN_INTER_PERIOD,
+    GAME_LAUNCH_RETURN_SUPER_INNING,
+    GAME_LAUNCH_RETURN_HOMERUN_CONTEST
+} GameLaunchType;
 
 // This struct holds all the parameters needed to initialize a a game.
 // It is populated from the menu and used to set up the game state.

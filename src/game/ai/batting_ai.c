@@ -30,6 +30,7 @@ void init_batting_ai(AIState* aiState)
     aiState->decreaseKeyDown = 0;
     aiState->angleDecided = 0;
     aiState->decidedAngle = 0.0f;
+    aiState->decidedSwingTrigger = BAT_SWING_MAX - 10;
     aiState->aiWrongPitch = 0;
     aiState->planCalculated = 0;
     aiState->firstIndex = -1;
@@ -300,8 +301,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         // a bunt
         if (stateInfo->match->aiState.battingStyle == 0) {
             if (stateInfo->match->aiState.angleDecided == 0) {
-                stateInfo->match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(0, -1, seeded_rand(rng_seed, RAND_MAX));
+                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(0, seeded_rand(rng_seed, RAND_MAX));
                 stateInfo->match->aiState.angleDecided = 1;
             }
             if (stateInfo->match->pendingActionState.meterCounter > BAT_SWING_MAX - 23 &&
@@ -322,24 +322,15 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         // a normal swing
         else if (stateInfo->match->aiState.battingStyle == 1) {
             if (stateInfo->match->aiState.angleDecided == 0) {
-                int i;
-                BaseID leadBase = BASE_NONE;
-
-                for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                    if (stateInfo->match->playerInfo[i].bTPI.baseId != BASE_NONE &&
-                        stateInfo->match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
-                        BaseID currentBaseId = stateInfo->match->playerInfo[i].bTPI.baseId;
-
-                        if (base_cmp(currentBaseId, leadBase) > 0) {
-                            leadBase = currentBaseId;
-                        }
-                    }
-                }
-                stateInfo->match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(1, leadBase, seeded_rand(rng_seed, RAND_MAX));
+                // Direction: randomized across the field, independent of base runners.
+                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(1, seeded_rand(rng_seed, RAND_MAX));
+                // Power: release the swing at a random meter level so power varies between
+                // at-bats (kept in a competent mid-to-strong band — no bunts, no overflow).
+                stateInfo->match->aiState.decidedSwingTrigger =
+                    BAT_SWING_MAX - 4 - seeded_rand(rng_seed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
                 stateInfo->match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meterCounter > BAT_SWING_MAX - 10 &&
+            if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.decidedSwingTrigger &&
                 stateInfo->match->aiState.battingKeyDown == 0 &&
                 stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
                 stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
@@ -357,8 +348,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         // swing that tries to get oneself wounded
         else if (stateInfo->match->aiState.battingStyle == 2) {
             if (stateInfo->match->aiState.angleDecided == 0) {
-                stateInfo->match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(2, BASE_NONE, seeded_rand(rng_seed, RAND_MAX));
+                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(2, seeded_rand(rng_seed, RAND_MAX));
                 stateInfo->match->aiState.angleDecided = 1;
             }
             if (stateInfo->match->pendingActionState.meterCounter > BAT_SWING_MAX - 11 &&
@@ -408,8 +398,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
     if (stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
         stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
         stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
-        stateInfo->rules->betweenPitchState.hasBallHitGround == 1 &&
-        stateInfo->match->ballInfo.location.z < -10.0f &&
+        stateInfo->rules->betweenPitchState.hasBallHitGround == 1 && stateInfo->match->ballInfo.location.z < -10.0f &&
         checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
         isDoubleClickingOk = 1;
     }

@@ -93,3 +93,13 @@ void clear_released_keys(KeyStates* keyStates)
         }
     }
 }
+
+int any_human_released(const KeyStates* keyStates, int key)
+{
+    for (int pad = 0; pad < HUMAN_PAD_COUNT; pad++) {
+        if (keyStates->released[pad][key]) {
+            return 1;
+        }
+    }
+    return 0;
+}

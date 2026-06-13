@@ -33,7 +33,7 @@ void reset_for_new_half_inning(
               rules->homeRunContestState.runnerBatterPairCounter < rules->scoreboard.pairCount)) {
             rules->homeRunContestState.runnerBatterPairCounter = 0;
         }
-        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions);
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions, 0);
     }
 }
 
@@ -46,8 +46,8 @@ void reset_for_foul_play(
     reset_flow_state(match, &rules->playerCounters);
 
     if (rules->scoreboard.period >= 4) {
-        // Homerun Contest special initialization
-        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions);
+        // Homerun Contest: same batter resumes after a foul/out-of-bounds, so keep them at the plate.
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions, 1);
     } else {
         // restorePlayersToRefereePositions: Restore players to their bases at the start of the pitch
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
@@ -105,5 +105,5 @@ void reset_for_next_pair(
 {
     reset_physical_world(match, field_positions, rng_seed);
     reset_flow_state(match, player_counters);
-    setup_homerun_physical_state(match, scoreboard, hrcs, field_positions);
+    setup_homerun_physical_state(match, scoreboard, hrcs, field_positions, 0);
 }

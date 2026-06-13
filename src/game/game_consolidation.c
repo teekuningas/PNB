@@ -193,7 +193,14 @@ static void update_game_flow(
     }
 
     check_next_batter_decision(match, rules);
-    handle_strikes_and_balls(match, field_positions, &rules->halfInningState, &rules->referee);
+
+    // Strikes/balls consequences (force-run on 3 strikes, free-walk offers) only exist in
+    // normal play. The homerun contest has no walks and its own pair/runner machinery, so
+    // running this here would force the batter to run and offer free walks mid-contest,
+    // corrupting the pair state. (check_next_batter_decision already self-guards period >= 4.)
+    if (rules->scoreboard.period < 4) {
+        handle_strikes_and_balls(match, field_positions, &rules->halfInningState, &rules->referee);
+    }
 }
 
 static void check_next_batter_decision(MatchSession* match, GameRulesState* rules)
