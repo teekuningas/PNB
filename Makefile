@@ -1,4 +1,4 @@
-IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./external -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit -I./tests/integration
+IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./external -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit -I./tests/integration -I./tests/sim
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
@@ -42,9 +42,17 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_throw_interrupted_clears_action.o \
                  tests/integration/contracts/test_wounded_runner_cannot_score.o
 
+# Simulation test objects (headless AI-vs-AI, drive the real pipeline, live in tests/sim/)
+_OBJ_SIMS = tests/sim/sim_harness.o \
+            tests/sim/sim_observers.o \
+            tests/sim/test_ai_vs_ai_half_inning.o \
+            tests/sim/test_ai_vs_ai_homerun.o \
+            tests/sim/test_determinism.o
+
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))
 OBJ_CONTRACT = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_CONTRACTS))
+OBJ_SIM      = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SIMS))
 
 # Unit test objects (No OpenGL)
 _TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_base_logic.o tests/unit/test_collision.o tests/unit/test_base_control.o tests/unit/test_player_utils.o tests/unit/test_scoring_helpers.o
@@ -64,6 +72,10 @@ $(ODIR)/int/tests/integration/%.o: tests/integration/%.c
 	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
 
 $(ODIR)/int/tests/scenario/%.o: tests/scenario/%.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
+
+$(ODIR)/int/tests/sim/%.o: tests/sim/%.c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
 
@@ -110,6 +122,14 @@ contract_runner: $(OBJ_CONTRACT) tests/integration/contract_runner.c
 integration_test: contract_runner
 	./contract_runner
 
+.PHONY: sim_runner
+sim_runner: $(OBJ_SIM) tests/sim/sim_runner.c
+	$(CC) tests/sim/sim_runner.c $(OBJ_SIM) -o sim_runner $(CFLAGS) $(LFLAGS)
+
+.PHONY: sim_test
+sim_test: sim_runner
+	./sim_runner
+
 .PHONY: run
 run:
 	./main --windowed
@@ -129,7 +149,7 @@ run-cup-final-super-inning:
 .PHONY: clean
 clean:
 	rm -rf $(ODIR)
-	rm -f *~ core test_runner scenario_runner contract_runner integration_runner main
+	rm -f *~ core test_runner scenario_runner contract_runner integration_runner sim_runner main
 	find . -type f -name '*.orig' -print0 | xargs -0 rm -f
 
 .PHONY: shell

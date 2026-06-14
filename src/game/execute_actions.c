@@ -388,11 +388,11 @@ void ai_update(StateInfo* stateInfo, unsigned int* rng_seed)
 
     // first ai for catching team
 
-    if (catchingControl == CONTROL_AI) {
+    if (team_is_ai(catchingControl)) {
         update_catching_ai(stateInfo, rng_seed);
     }
     // then ai for batting team
-    if (battingControl == CONTROL_AI) {
+    if (team_is_ai(battingControl)) {
         update_batting_ai(stateInfo, rng_seed);
     }
 }

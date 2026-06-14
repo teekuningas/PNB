@@ -24,3 +24,8 @@ int get_batting_team_index(const Scoreboard* sb)
 {
     return (sb->inning + sb->playsFirst + sb->period) % 2;
 }
+
+int team_is_ai(TeamControlMode control)
+{
+    return control == CONTROL_AI;
+}

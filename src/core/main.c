@@ -49,10 +49,12 @@ int main(int argc, char* argv[])
     unsigned int accumulator = 0;
     unsigned int updateInterval = UPDATE_INTERVAL;
 
-    // Initialize the random number generator seed
+    // Initialize the random number generator seed.
     // This single seed is passed down through all functions that need randomness
+    // (everything routes through seeded_rand(&rng_seed, ...) in rng.c). There are no
+    // bare rand() consumers, so the global C RNG is intentionally left unseeded — this
+    // keeps the game fully reproducible from rng_seed alone (see the sim test tier).
     unsigned int rng_seed = (unsigned int)time(NULL);
-    srand(rng_seed); // For legacy code that still uses rand()
 
     // Parse command-line arguments
     FixtureRequest fixtureRequest;

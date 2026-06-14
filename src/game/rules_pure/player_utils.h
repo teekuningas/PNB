@@ -26,4 +26,18 @@ int get_active_batter_index(const MatchSession* game);
  */
 int get_batting_team_index(const Scoreboard* sb);
 
+/**
+ * @brief Whether a team's decisions are made by the AI rather than a human pad.
+ *
+ * Single source of truth for the "is this team AI-controlled?" question. Used by
+ * both the in-game decision path (whether to run ai_update / skip input) and the
+ * menu-decision path (whether menus auto-advance instead of reading a pad). This
+ * is the seam that keeps "who decides" decoupled from the pipeline: today a team
+ * is either a human pad or the AI; future sources (network, replay) slot in here.
+ *
+ * @param control The team's TeamControlMode.
+ * @return 1 if AI-controlled, 0 otherwise.
+ */
+int team_is_ai(TeamControlMode control);
+
 #endif /* PLAYER_UTILS_H */

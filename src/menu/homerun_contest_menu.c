@@ -3,6 +3,7 @@
 #include "render.h"
 #include "font.h"
 #include "menu_helpers.h"
+#include "player_utils.h"
 #include <string.h>
 
 void init_homerun_contest_state(HomerunContestState* state, int team_index, int player_control, int choiceCount)
@@ -45,7 +46,7 @@ MenuStage update_homerun_contest_menu(
     }
 
     // AI auto-selection
-    if (state->player_control == 2) {
+    if (team_is_ai(state->player_control)) {
         // first select batters by descending power
         int counter = 0, currentIndex = 0;
         // clear slots
