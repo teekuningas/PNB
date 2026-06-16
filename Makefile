@@ -1,6 +1,12 @@
 IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./external -I./src/menu -I./src/cup -I./src/physics -I./src/renderer -I./tests/unit -I./tests/integration -I./tests/sim
 CC=gcc
 CFLAGS=$(IDIR) -O2 -Wall
+# Header-dependency tracking: -MMD emits a .d file next to each .o listing the
+# headers it #included; -MP adds phony targets so deleting a header doesn't break
+# the build. Kept OUT of CFLAGS on purpose: CFLAGS is reused on compile-and-link
+# lines (test, scenario_runner, ...) where -MMD would drop a stray .d in the repo
+# root. Only the per-object -c rules below add DEPFLAGS.
+DEPFLAGS = -MMD -MP
 LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
 ODIR=obj
 
@@ -62,31 +68,38 @@ TEST_OBJ = $(patsubst %,$(ODIR)/unit/%,$(_TEST_OBJ))
 # Generic rules for each build type
 $(ODIR)/main/%.o: src/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS)
 
 $(ODIR)/int/%.o: src/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS) -DNO_RENDER
 
 $(ODIR)/int/tests/integration/%.o: tests/integration/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS) -DNO_RENDER
 
 $(ODIR)/int/tests/scenario/%.o: tests/scenario/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS) -DNO_RENDER
 
 $(ODIR)/int/tests/sim/%.o: tests/sim/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS) -DNO_RENDER
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS) -DNO_RENDER
 
 $(ODIR)/unit/%.o: src/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS)
 
 $(ODIR)/unit/tests/unit/%.o: tests/unit/%.c
 	@mkdir -p $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(DEPFLAGS)
+
+# Pull in the generated header-dependency files. The lists are derived from the
+# object lists above (.o -> .d); '-include' (leading dash) ignores the ones that
+# don't exist yet on a clean build. After this, touching a .h rebuilds exactly the
+# .o files that #include it — no more stale-object ABI mismatches.
+DEPS = $(OBJ_MAIN:.o=.d) $(OBJ_SCENARIO:.o=.d) $(OBJ_CONTRACT:.o=.d) $(OBJ_SIM:.o=.d) $(TEST_OBJ:.o=.d)
+-include $(DEPS)
 
 .PHONY: main
 main: $(OBJ_MAIN)
