@@ -34,11 +34,21 @@ int test_ai_vs_ai_homerun(void)
         sim_attach(g, trace_observer_hook, &tr);
     }
 
+    BoxScoreObserver box;
+    box_score_observer_init(&box, getenv("SIM_PBP") ? stdout : NULL);
+    sim_attach(g, box_score_observer_hook, &box);
+
     long frames = sim_run_until(g, homerun_turn_done, HOMERUN_MAX_FRAMES);
 
     printf(
         "\n  [homerun] frames=%ld pitches=%ld count_changes=%ld failed=%d reason='%s'\n", frames, inv.pitches,
         inv.count_changes, g->failed, g->fail_reason
+    );
+    printf(
+        "  box score: pitches=%ld contacts=%ld whiffs=%ld strikes=%ld balls=%ld outs=%ld reachedBase=%ld "
+        "furthestBase=%d runs=%ld\n",
+        box.pitches, box.contacts, box.whiffs, box.strikes_called, box.balls_called, box.outs_made, box.reached_base,
+        box.furthest_base, box.runs_scored
     );
 
     int ok = 1;

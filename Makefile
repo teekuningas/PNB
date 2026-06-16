@@ -47,7 +47,8 @@ _OBJ_SIMS = tests/sim/sim_harness.o \
             tests/sim/sim_observers.o \
             tests/sim/test_ai_vs_ai_half_inning.o \
             tests/sim/test_ai_vs_ai_homerun.o \
-            tests/sim/test_determinism.o
+            tests/sim/test_determinism.o \
+            tests/sim/test_ai_offense_breakdown.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))

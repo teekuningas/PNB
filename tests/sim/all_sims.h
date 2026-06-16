@@ -5,5 +5,6 @@
 int test_ai_vs_ai_half_inning(void);
 int test_ai_vs_ai_homerun(void);
 int test_ai_vs_ai_determinism(void);
+int test_ai_offense_breakdown(void);
 
 #endif /* ALL_SIMS_H */

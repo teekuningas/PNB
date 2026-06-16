@@ -58,6 +58,53 @@ typedef struct {
 void checksum_observer_init(ChecksumObserver* o);
 void checksum_observer_hook(const SimGame* g, void* ctx);
 
+/* ---- Box-score observer ------------------------------------------------ *
+ * Turns frame-by-frame state transitions into a baseball box score (and, if a
+ * log file is attached, a human-readable play-by-play). The CSV trace answers
+ * "what were the raw values each frame?"; this answers "what *happened* in the
+ * game?" — so a headless run can be followed like a radio broadcast.
+ *
+ * Every counter is derived from a rising edge or a positive delta (game events
+ * themselves are cleared before observers run), so it never double-counts. */
+typedef struct {
+    FILE* log; // optional play-by-play sink; NULL = count silently
+
+    // internal edge-detection state (do not set)
+    int initialized;
+    int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
+    int p_batOutcome;
+    int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
+    int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
+
+    // box score (readable after the run)
+    long pitches; // pitches released (rising edge into AIRBORNE)
+    long contacts; // bat made contact (batOutcome → HIT)
+    long whiffs; // swing and a miss (batOutcome → MISSED)
+    long strikes_called; // strike-count increments
+    long balls_called; // ball-count increments
+    long outs_made; // out-count increments
+    long runs_scored; // both teams' run increments
+    long reached_base; // batters that became runners (HOME → 1st)
+    int furthest_base; // furthest base any runner stood on (1..3), 0 if none
+
+    // base-running breakdown — the "stranded vs thrown out vs never tried" question
+    long reached_third; // distinct arrivals onto 3rd base
+    long ran_from_third; // a runner on 3rd broke for home (entered RUNNING/LEADING)
+    long scored_from_third; // a 3rd-base runner reached HOME_SCORED
+    long out_from_third; // a 3rd-base runner went OUT while heading home
+    long wound_from_third; // a 3rd-base runner was WOUNDED while heading home
+
+    // Batting meter, STYLE-1 swings only. decidedSwingTrigger is the AI's real power intent only
+    // for batting style 1 ("normal swing"); styles 0 (bunt) and 2 leave it stale, so their power
+    // is NOT measurable this way and is deliberately excluded. Direction (decidedAngle vs the
+    // realized batterAngle) is not measured yet — see AI_NOTES.md §2 for the proper redo.
+    long s1_swings; // style-1 swings measured
+    long s1_power_err_sum; // Σ (actual − intent) in meter steps; ≈ +1 means the AI hit its target
+} BoxScoreObserver;
+
+void box_score_observer_init(BoxScoreObserver* o, FILE* log);
+void box_score_observer_hook(const SimGame* g, void* ctx);
+
 /* ---- shared helper ----------------------------------------------------- */
 
 /** Count batting-team players currently standing on 1st/2nd/3rd base. */
