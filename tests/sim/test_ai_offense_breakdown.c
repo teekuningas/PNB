@@ -27,6 +27,8 @@ int test_ai_offense_breakdown(void)
     long T_reached_base = 0, T_reached_third = 0, T_ran_third = 0, T_scored_third = 0;
     long T_out_third = 0, T_wound_third = 0, T_runs = 0;
     long T_s1_swings = 0, T_s1_err = 0;
+    long T_fouls = 0, T_power_sum = 0, T_power_n = 0, T_dir[5] = {0};
+    int T_power_min = 9999, T_power_max = -9999;
     int seeds_reached_third = 0, seeds_ran_third = 0, seeds_scored = 0, seeds_incomplete = 0, seeds_stalled = 0;
 
     for (int s = 0; s < SEED_COUNT; s++) {
@@ -70,6 +72,15 @@ int test_ai_offense_breakdown(void)
         T_runs += box.runs_scored;
         T_s1_swings += box.s1_swings;
         T_s1_err += box.s1_power_err_sum;
+        T_fouls += box.fouls;
+        T_power_sum += box.contact_power_sum;
+        T_power_n += box.contact_power_n;
+        if (box.contact_power_n > 0) {
+            if (box.contact_power_min < T_power_min) T_power_min = box.contact_power_min;
+            if (box.contact_power_max > T_power_max) T_power_max = box.contact_power_max;
+        }
+        for (int b = 0; b < 5; b++)
+            T_dir[b] += box.dir_bins[b];
 
         if (box.reached_third > 0) seeds_reached_third++;
         if (box.ran_from_third > 0) seeds_ran_third++;
@@ -94,12 +105,25 @@ int test_ai_offense_breakdown(void)
         "    third→home: ranForHome=%ld (in %d seeds) → scored=%ld, OUT=%ld, wounded=%ld\n", T_ran_third,
         seeds_ran_third, T_scored_third, T_out_third, T_wound_third
     );
-    // Style-1 power only (the one style with a real intent). ≈ +1 means correct meter use.
-    // NOT a hitting-quality metric and NOT direction — see AI_NOTES.md §2 for the proper redo.
+    // Style-1 power-meter accuracy (intent vs realized). ≈ +1 means correct meter use.
     printf(
-        "    meter (style-1 swings only): n=%ld meanPowerErr=%+.2f steps (expect ~+1; direction not measured)\n",
-        T_s1_swings, T_s1_swings ? (double)T_s1_err / T_s1_swings : 0.0
+        "    meter (style-1 swings only): n=%ld meanPowerErr=%+.2f steps (expect ~+1)\n", T_s1_swings,
+        T_s1_swings ? (double)T_s1_err / T_s1_swings : 0.0
     );
+    // Actualized out-of-bounds rate: a hit is either OUT OF BOUNDS or not (a caught ball counts as
+    // in-bounds — "else"). Most hits should land fair, but some fouls are wanted for variety.
+    printf(
+        "    out of bounds: %ld of %ld contacts = %.0f%% (rest land fair or are caught)\n", T_fouls, T_contacts,
+        T_contacts ? 100.0 * T_fouls / T_contacts : 0.0
+    );
+    // Actualized batted-ball power (0..36): the AI should generally hit with real strength.
+    printf(
+        "    power (all contacts): n=%ld mean=%.1f min=%d max=%d (of 36 max)\n", T_power_n,
+        T_power_n ? (double)T_power_sum / T_power_n : 0.0, T_power_n ? T_power_min : 0, T_power_n ? T_power_max : 0
+    );
+    // Normal-swing (style-1) direction spread (realized launch angle, right→left, 5 equal buckets):
+    // should be a broad, roughly uniform fan — NOT collapsed to center, NOT piled at the extremes.
+    printf("    style-1 direction R→L: [%ld %ld %ld %ld %ld]\n", T_dir[0], T_dir[1], T_dir[2], T_dir[3], T_dir[4]);
 
     // Weak floors only — measurement, not a behavioural lock.
     if (T_contacts == 0) {

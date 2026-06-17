@@ -2,10 +2,15 @@
 #include <math.h>
 #include <stdlib.h>
 
-// Largest bat angle (each side) the AI aims for. Kept just inside the batting system's
-// own clamp (PI/7 ≈ 0.449), reachable in the 0.02-per-frame steps the swing uses, so the
-// randomized direction spreads evenly instead of piling up at a clamped extreme.
-#define AI_MAX_BATTING_ANGLE 0.44f
+// Largest bat angle (each side) the AI aims for. The batting system doubles batter_angle into the
+// launch heading (theta = -batter_angle*2), and the foul lines sit at about ±0.75 rad. So an angle
+// A maps to a launch fan of ±2A: choose A so the fan fills the fair field and only the very edges
+// clip foul. Normal swing 0.38 → ±0.76 rad (fills the field, rare foul). Bunts are short and were
+// the main out-of-bounds culprit (the old fixed ±0.5 clamped to 0.449 → ±0.90 rad, well past the
+// foul line), so the bunt fan is kept a touch tighter at 0.32 → ±0.64 rad. Both stay inside the
+// system's own clamp (PI/7 ≈ 0.449), so a uniform draw stays uniform rather than piling at a clamp.
+#define AI_MAX_BATTING_ANGLE 0.38f
+#define AI_BUNT_BATTING_ANGLE 0.32f
 
 BattingStrategy
 calculate_batting_strategy(const HalfInningState* halfInningState, int fieldStatus, int power, int speed, int period)
@@ -160,21 +165,18 @@ int is_wrong_pitch(float vx, float vy, float gravity, float plate_width)
 
 // Decide the direction (bat angle) of an AI swing.
 //
-// Direction is deliberately RANDOMIZED and independent of base runners: the AI spreads
-// its hits across the whole field rather than aiming relative to a lead runner. The
-// returned value is in bat-angle units (0 = straight ahead, positive = left field,
-// negative = right field). The batting system clamps the actual angle to its own limit,
-// so AI_MAX_BATTING_ANGLE is kept just inside that reachable range for an even spread.
+// Direction is deliberately RANDOMIZED and independent of base runners: the AI spreads its hits
+// across the whole field rather than aiming relative to a lead runner. The returned value is in
+// bat-angle units (0 = straight ahead, positive = left field, negative = right field). Both the
+// normal swing AND the bunt draw a UNIFORM direction across their fan (the bunt's is a touch
+// tighter, since a short hit fouls more easily) — a flat, full-field spread, not a pile at the
+// extremes or a collapse to centre. (Wound style is a deliberate fixed extreme; left as-is.)
 float calculate_ai_batting_angle(int battingStyle, int randomValue)
 {
-    if (battingStyle == 0) { // Bunt: short hit, random side
-        float variance = ((randomValue % 500) - 250) / 1000.0f; // -0.25 .. +0.25
-        float angle = (randomValue % 100 < 50) ? 0.5f : -0.5f;
-        return angle + variance;
-    } else if (battingStyle == 2) { // Wounding swing: extreme angle to draw a fielder
+    float t = (randomValue % 1000) / 1000.0f; // 0 .. ~1, uniform
+    if (battingStyle == 2) { // Wounding swing: extreme angle to draw a fielder
         return -1.5f;
     }
-    // Normal swing: uniform random direction across the reachable field.
-    float t = (randomValue % 1000) / 1000.0f; // 0 .. ~1
-    return t * (2.0f * AI_MAX_BATTING_ANGLE) - AI_MAX_BATTING_ANGLE; // -MAX .. +MAX
+    float maxAngle = (battingStyle == 0) ? AI_BUNT_BATTING_ANGLE : AI_MAX_BATTING_ANGLE;
+    return t * (2.0f * maxAngle) - maxAngle; // uniform in [-maxAngle, +maxAngle]
 }

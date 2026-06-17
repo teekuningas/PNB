@@ -86,25 +86,44 @@ int test_is_wrong_pitch()
 
 int test_calculate_ai_batting_angle()
 {
-    // Style 1 (Normal): direction is randomized across the field, independent of runners.
-    // Sweep the random input and assert the output stays within the reachable field range
-    // AND genuinely spreads to both sides (it must NOT collapse to center).
-    float minAngle = 1000.0f;
-    float maxAngle = -1000.0f;
-    for (int r = 0; r < 1000; r++) {
-        float angle = calculate_ai_batting_angle(1, r);
-        ASSERT_TRUE(fabs(angle) <= 0.45f, "Normal style angle must stay within the reachable field");
-        if (angle < minAngle) minAngle = angle;
-        if (angle > maxAngle) maxAngle = angle;
+    printf("Running test: %s\n", __func__);
+
+    // The normal swing (style 1) AND the bunt (style 0) must each produce a UNIFORM direction fan
+    // within their own bound: a flat, full-width spread — no collapse to centre, no pile at an
+    // extreme. Bounds mirror AI_MAX_BATTING_ANGLE (0.38) and AI_BUNT_BATTING_ANGLE (0.32) in
+    // batting_ai_strategy.c (the bunt fan is a touch tighter because a short hit fouls more easily).
+    struct {
+        int style;
+        float bound;
+    } cases[] = {{1, 0.38f}, {0, 0.32f}};
+
+    for (int c = 0; c < 2; c++) {
+        int style = cases[c].style;
+        float bound = cases[c].bound;
+        float minAngle = 1000.0f, maxAngle = -1000.0f;
+        int bins[5] = {0};
+
+        for (int r = 0; r < 1000; r++) {
+            float a = calculate_ai_batting_angle(style, r);
+            ASSERT_TRUE(fabs(a) <= bound + 0.001f, "angle must stay within the style's reachable fan");
+            if (a < minAngle) minAngle = a;
+            if (a > maxAngle) maxAngle = a;
+            int bin = (int)((a + bound) / (2.0f * bound) * 5.0f);
+            if (bin < 0) bin = 0;
+            if (bin > 4) bin = 4;
+            bins[bin]++;
+        }
+
+        // Reaches both edges of its fan (genuine spread, not a timid centre cluster).
+        ASSERT_TRUE(minAngle < -0.8f * bound, "should sometimes hit near the right edge");
+        ASSERT_TRUE(maxAngle > 0.8f * bound, "should sometimes hit near the left edge");
+        // Uniform: every one of the 5 equal buckets is well populated (ideal ~200 each over 1000).
+        for (int b = 0; b < 5; b++) {
+            ASSERT_TRUE(bins[b] > 120, "direction must be a uniform spread, not collapsed or piled up");
+        }
     }
-    ASSERT_TRUE(minAngle < -0.3f, "Normal style should sometimes hit well to the right");
-    ASSERT_TRUE(maxAngle > 0.3f, "Normal style should sometimes hit well to the left");
 
-    // Style 0 (Bunt): short hit to a random side (~ +-0.5 with +-0.25 variance)
-    float bunt = calculate_ai_batting_angle(0, 0);
-    ASSERT_TRUE(fabs(fabs(bunt) - 0.5f) < 0.26f, "Bunt style should hit short to a side");
-
-    // Style 2 (Wound) -> -1.5 (No variance for wounds currently)
+    // Style 2 (Wound): a deliberate fixed extreme angle to draw a fielder (not a uniform fan).
     float wound = calculate_ai_batting_angle(2, 0);
     ASSERT_TRUE(fabs(wound - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
 

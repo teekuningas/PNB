@@ -442,6 +442,12 @@ static void update_force_outs(
 {
     const MatchSession* game = stateInfo->match;
 
+    // Once the half-inning is ending, no further outs are recorded: 3 outs ends the half-inning
+    // immediately and nothing happens after. Mirrors the run paths' guard (update_runs /
+    // resolve_pending_runs). Without it, a ball arriving at a base during the end-of-inning grace
+    // period records a spurious 4th out (outs > 3).
+    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+
     // Check for Force Outs (§33) and Safety Removal (§36)
     if (ballAtBase != -1) {
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -498,6 +504,9 @@ static void update_tuplahaava_logic(
 )
 {
     const MatchSession* game = stateInfo->match;
+
+    // No further outs once the half-inning is ending (see update_force_outs).
+    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
 
     // Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
     // These checks must run every frame, not just when ball is at a base

@@ -228,6 +228,8 @@ void box_score_observer_init(BoxScoreObserver* o, FILE* log)
 {
     memset(o, 0, sizeof(*o));
     o->log = log;
+    o->contact_power_min = 9999; // so the first contact sets a real minimum
+    o->contact_power_max = -9999;
 }
 
 // Play-by-play line, prefixed with where we are in the game. No-op when silent.
@@ -250,11 +252,13 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
 
     int pitch_state = (int)m->pRAI.pitch_state;
     int batOutcome = (int)r->betweenPitchState.batOutcome;
+    int foulState = (int)r->referee.foulState;
 
     if (!o->initialized) {
         o->initialized = 1;
         o->p_pitchState = pitch_state;
         o->p_batOutcome = batOutcome;
+        o->p_foulState = foulState;
         o->p_outs = h->outs;
         o->p_balls = h->balls;
         o->p_strikes = h->strikes;
@@ -288,6 +292,25 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             o->contacts++;
             // Contact only — fair/foul is the referee's later call (a foul shows up as a STRIKE).
             pbp(o, g, r, "contact (bat meets ball)");
+            // Actualized power and direction of THIS batted ball (all styles), for AI tuning.
+            int power = m->pendingActionState.selected_batting_power_count;
+            o->contact_power_sum += power;
+            o->contact_power_n++;
+            if (power < o->contact_power_min) o->contact_power_min = power;
+            if (power > o->contact_power_max) o->contact_power_max = power;
+            // Realized horizontal launch direction of the batted ball, STYLE-1 only (the normal
+            // swing — the style whose direction is meant to be a uniform fan). We read the ACTUAL
+            // ball velocity, not batter_angle: batter_angle is reset to 0 around contact, so reading
+            // it here would fake a collapse to center. atan2(vx, -vz) is the true flight heading
+            // (0 = straight to centre, + = one side) and is constant after launch (gravity only
+            // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
+            if (m->aiState.battingStyle == 1) {
+                float heading = atan2f(m->ballInfo.velocity.x, -m->ballInfo.velocity.z);
+                int bin = (int)((heading + 1.0f) * 2.5f); // [-1,1] rad -> [0,5)
+                if (bin < 0) bin = 0;
+                if (bin > 4) bin = 4;
+                o->dir_bins[bin]++;
+            }
         } else if (batOutcome == BAT_OUTCOME_MISSED) {
             o->whiffs++;
             pbp(o, g, r, "swing and a miss");
@@ -329,6 +352,13 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         char buf[64];
         snprintf(buf, sizeof(buf), "RUN scored! (%d–%d)", sb->teams[0].runs, sb->teams[1].runs);
         pbp(o, g, r, buf);
+    }
+
+    // Foul / out of bounds: the referee arms FOUL_STATE_DETECTED when a batted ball lands outside
+    // the lines. Counting the rising edge gives the "actualized out of bounds" rate (fouls/contacts).
+    if (foulState == FOUL_STATE_DETECTED && o->p_foulState != FOUL_STATE_DETECTED) {
+        o->fouls++;
+        pbp(o, g, r, "FOUL (out of bounds)");
     }
 
     // Base running. We want to answer: when a runner reaches 3rd, do they try for home, and if
@@ -380,6 +410,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
 
     o->p_pitchState = pitch_state;
     o->p_batOutcome = batOutcome;
+    o->p_foulState = foulState;
     o->p_outs = h->outs;
     o->p_balls = h->balls;
     o->p_strikes = h->strikes;

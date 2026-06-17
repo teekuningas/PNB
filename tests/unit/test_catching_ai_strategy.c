@@ -88,7 +88,6 @@ int test_should_ai_drop_ball_scenario()
     BetweenPitchState bps;
     bps.catchHasBeenMade = 1;
     ref.woundingEvaluationActive = 1;
-    // checkForRun removed - no longer used
 
     // Scenario: Runners on 2nd and 3rd, catcher has ball at home base.
     // woundingEvaluationActive=1, r3=3, r3On=1, r2=2, r2On=1, home==hasBall

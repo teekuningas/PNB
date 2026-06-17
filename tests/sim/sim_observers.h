@@ -73,6 +73,7 @@ typedef struct {
     int initialized;
     int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
+    int p_foulState;
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
 
@@ -80,6 +81,7 @@ typedef struct {
     long pitches; // pitches released (rising edge into AIRBORNE)
     long contacts; // bat made contact (batOutcome → HIT)
     long whiffs; // swing and a miss (batOutcome → MISSED)
+    long fouls; // hits called foul / out of bounds (foulState NONE→DETECTED rising edge)
     long strikes_called; // strike-count increments
     long balls_called; // ball-count increments
     long outs_made; // out-count increments
@@ -100,6 +102,18 @@ typedef struct {
     // realized batter_angle) is not measured yet — see AI_NOTES.md §2 for the proper redo.
     long s1_swings; // style-1 swings measured
     long s1_power_err_sum; // Σ (actual − intent) in meter steps; ≈ +1 means the AI hit its target
+
+    // Actualized batted-ball power and direction, over every contact (all styles). These answer the
+    // two tuning questions directly: "are hits powerful enough?" and "is the direction a uniform
+    // spread that lands fair most of the time?". Power is `selected_batting_power_count` (0..36).
+    // Direction is the realized horizontal launch angle (= -batter_angle*2, the production formula);
+    // dir_bins splits the reachable span [-1.0, +1.0] rad into 5 equal buckets (right→left) so a
+    // collapse-to-center or a lopsided pull is visible at a glance.
+    long contact_power_sum;
+    long contact_power_n;
+    int contact_power_min;
+    int contact_power_max;
+    long dir_bins[5];
 } BoxScoreObserver;
 
 void box_score_observer_init(BoxScoreObserver* o, FILE* log);
