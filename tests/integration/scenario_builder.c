@@ -246,7 +246,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
     for (int i = 0; i < maxFrames; i++) {
         // action_invocations() is intentionally omitted here: tests control player/AI decisions
         // explicitly via scenario helpers, not through the normal input dispatch path.
-        execute_actions(ctx->state);
+        execute_actions(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
         game_manipulation(
             ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
         );

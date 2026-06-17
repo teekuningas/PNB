@@ -47,81 +47,80 @@ void init_batting_ai(AIState* aiState)
     }
 }
 
-void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
+void update_batting_ai(
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, unsigned int* rng_seed
+)
 {
     int i;
     int isDoubleClickingOk = 0;
 
     // Cleanup dangling locks if state changed externally
-    if (stateInfo->match->flowControl.waitingForBatterDecision == 0) {
-        if (stateInfo->match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK ||
-            stateInfo->match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
-            stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
-            stateInfo->match->aiState.battingKeyDown = 0;
-            stateInfo->match->aiState.changingKeyDown = 0;
+    if (match->flowControl.waitingForBatterDecision == 0) {
+        if (match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK || match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
+            match->aiState.actionKeyLock = AI_NO_LOCK;
+            match->aiState.battingKeyDown = 0;
+            match->aiState.changingKeyDown = 0;
         }
     }
-    if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 0) {
-        if (stateInfo->match->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {
-            stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
-            stateInfo->match->aiState.battingKeyDown = 0;
+    if (match->flowControl.waitingForFreeWalkDecision == 0) {
+        if (match->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {
+            match->aiState.actionKeyLock = AI_NO_LOCK;
+            match->aiState.battingKeyDown = 0;
         }
     }
 
     // update some flags
     for (i = 0; i < BASE_COUNT; i++) {
-        stateInfo->match->aiState.clickBreak[i]++;
-        if (stateInfo->match->aiState.clickBreak[i] > 1000) stateInfo->match->aiState.clickBreak[i] = 0;
-        if (stateInfo->match->aiState.baseRunnerDecisionMade[i] == 1) {
-            if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) == -1) {
-                stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
+        match->aiState.clickBreak[i]++;
+        if (match->aiState.clickBreak[i] > 1000) match->aiState.clickBreak[i] = 0;
+        if (match->aiState.baseRunnerDecisionMade[i] == 1) {
+            if (get_base_controller(match, &rules->referee, (BaseID)i) == -1) {
+                match->aiState.baseRunnerDecisionMade[i] = 0;
             }
-            if (stateInfo->match->aiState.lastSafeOnBaseIndex[i] !=
-                get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)) {
-                stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
+            if (match->aiState.lastSafeOnBaseIndex[i] != get_base_controller(match, &rules->referee, (BaseID)i)) {
+                match->aiState.baseRunnerDecisionMade[i] = 0;
             }
         }
-        stateInfo->match->aiState.lastSafeOnBaseIndex[i] =
-            get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
+        match->aiState.lastSafeOnBaseIndex[i] = get_base_controller(match, &rules->referee, (BaseID)i);
     }
-    if (stateInfo->match->pRAI.batter_ready == 0 && stateInfo->match->aiState.planCalculated == 1) {
-        stateInfo->match->aiState.planCalculated = 0;
+    if (match->pRAI.batter_ready == 0 && match->aiState.planCalculated == 1) {
+        match->aiState.planCalculated = 0;
         // Reset all base-runner decision state for a fresh pitch cycle.
         // Without this, baseRunnerDecisionMade (especially for base 3, which has no
         // "come back from leading" path) stays stale across pitches, preventing the AI
         // from issuing new run commands to runners who stayed on their base.
         for (i = 0; i < BASE_COUNT; i++) {
-            stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
-            stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
-            stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-            stateInfo->match->aiState.clickBreak[i] = 0;
+            match->aiState.baseRunnerDecisionMade[i] = 0;
+            match->aiState.baseRunnerKeyDown[i] = 0;
+            match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+            match->aiState.clickBreak[i] = 0;
         }
     }
     // make free walk decision == accept
-    if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
-        if (stateInfo->match->aiState.battingKeyDown == 0) {
-            if (stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-                stateInfo->match->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
-                stateInfo->match->aiState.battingKeyDown = 1;
-                stateInfo->match->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
+    if (match->flowControl.waitingForFreeWalkDecision == 1) {
+        if (match->aiState.battingKeyDown == 0) {
+            if (match->aiState.actionKeyLock == AI_NO_LOCK) {
+                match->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
+                match->aiState.battingKeyDown = 1;
+                match->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
             }
         } else {
-            stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
-            stateInfo->match->aiState.battingKeyDown = 0;
+            match->aiState.actionKeyLock = AI_NO_LOCK;
+            match->aiState.battingKeyDown = 0;
         }
     }
     // we decide batter only after ball is at home so that in normal situation ai will have more information
     // to make its strategy decisions
-    if (stateInfo->match->flowControl.waitingForBatterDecision == 1 && stateInfo->match->gameFlowState.ballHome == 1) {
+    if (match->flowControl.waitingForBatterDecision == 1 && match->gameFlowState.ballHome == 1) {
         // we do this by brute force, we change player until we find a fit one or we are back to non joker.
         // plan is that if there is a man on first base and current batter would not have a great power,
         // we would try to find a joker that has power instead.
         // and if field is empty we would change a joker with speed instead.
-        int firstBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)1);
-        int secondBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)2);
-        int thirdBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)3);
+        int firstBaseIndex = get_base_controller(match, &rules->referee, (BaseID)1);
+        int secondBaseIndex = get_base_controller(match, &rules->referee, (BaseID)2);
+        int thirdBaseIndex = get_base_controller(match, &rules->referee, (BaseID)3);
         int fieldStatus;
-        int index = stateInfo->match->pII.batterSelectionIndex;
+        int index = match->pII.batterSelectionIndex;
 
         if (firstBaseIndex != -1)
             fieldStatus = 2;
@@ -130,56 +129,53 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         else
             fieldStatus = 0;
 
-        stateInfo->match->aiState.change = should_change_batter(
-            fieldStatus, stateInfo->match->playerInfo[index].bTPI.power, stateInfo->match->playerInfo[index].bTPI.speed
-        );
+        match->aiState.change =
+            should_change_batter(fieldStatus, match->playerInfo[index].bTPI.power, match->playerInfo[index].bTPI.speed);
 
-        if (stateInfo->match->aiState.firstIndexSelected == 0) {
-            stateInfo->match->aiState.firstIndex = index;
-            stateInfo->match->aiState.firstIndexSelected = 1;
-        } else if (stateInfo->match->aiState.changeHasHappened == 1) {
-            if (stateInfo->match->aiState.firstIndex == index) {
-                stateInfo->match->aiState.change = 0;
+        if (match->aiState.firstIndexSelected == 0) {
+            match->aiState.firstIndex = index;
+            match->aiState.firstIndexSelected = 1;
+        } else if (match->aiState.changeHasHappened == 1) {
+            if (match->aiState.firstIndex == index) {
+                match->aiState.change = 0;
             }
         }
 
         // change player
-        if (stateInfo->match->aiState.change == 1 && stateInfo->match->aiState.changingKeyDown == 0 &&
-            stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-            stateInfo->match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
-            stateInfo->match->aiState.changingKeyDown = 1;
-            stateInfo->match->aiState.actionKeyLock = AI_CHANGE_LOCK;
-        } else if (stateInfo->match->aiState.changingKeyDown == 1 &&
-                   stateInfo->match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
-            stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
-            stateInfo->match->aiState.changingKeyDown = 0;
-            stateInfo->match->aiState.changeHasHappened = 1;
+        if (match->aiState.change == 1 && match->aiState.changingKeyDown == 0 &&
+            match->aiState.actionKeyLock == AI_NO_LOCK) {
+            match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
+            match->aiState.changingKeyDown = 1;
+            match->aiState.actionKeyLock = AI_CHANGE_LOCK;
+        } else if (match->aiState.changingKeyDown == 1 && match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
+            match->aiState.actionKeyLock = AI_NO_LOCK;
+            match->aiState.changingKeyDown = 0;
+            match->aiState.changeHasHappened = 1;
         }
         // select best batter.
-        if (stateInfo->match->aiState.change == 0 && stateInfo->match->aiState.battingKeyDown == 0 &&
-            stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-            stateInfo->match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
-            stateInfo->match->aiState.battingKeyDown = 1;
-            stateInfo->match->aiState.actionKeyLock = AI_WAITING_BATTER_LOCK;
-        } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
-                   stateInfo->match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK) {
-            stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
-            stateInfo->match->aiState.battingKeyDown = 0;
-            stateInfo->match->aiState.firstIndex = -1;
-            stateInfo->match->aiState.firstIndexSelected = 0;
-            stateInfo->match->aiState.changeHasHappened = 0;
+        if (match->aiState.change == 0 && match->aiState.battingKeyDown == 0 &&
+            match->aiState.actionKeyLock == AI_NO_LOCK) {
+            match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
+            match->aiState.battingKeyDown = 1;
+            match->aiState.actionKeyLock = AI_WAITING_BATTER_LOCK;
+        } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK) {
+            match->aiState.actionKeyLock = AI_NO_LOCK;
+            match->aiState.battingKeyDown = 0;
+            match->aiState.firstIndex = -1;
+            match->aiState.firstIndexSelected = 0;
+            match->aiState.changeHasHappened = 0;
         }
 
-    } else if (stateInfo->match->pRAI.batter_ready == 1 && stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
-               stateInfo->match->gameFlowState.ballHome == 1) {
+    } else if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+               match->gameFlowState.ballHome == 1) {
         // decision tree.. contents can be read within
-        if (stateInfo->match->aiState.planCalculated == 0) {
-            int batterIndex = get_active_batter_index(stateInfo->match);
-            int firstBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)1);
-            int secondBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)2);
-            int thirdBaseIndex = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)3);
-            int power = stateInfo->match->playerInfo[batterIndex].bTPI.power;
-            int speed = stateInfo->match->playerInfo[batterIndex].bTPI.speed;
+        if (match->aiState.planCalculated == 0) {
+            int batterIndex = get_active_batter_index(match);
+            int firstBaseIndex = get_base_controller(match, &rules->referee, (BaseID)1);
+            int secondBaseIndex = get_base_controller(match, &rules->referee, (BaseID)2);
+            int thirdBaseIndex = get_base_controller(match, &rules->referee, (BaseID)3);
+            int power = match->playerInfo[batterIndex].bTPI.power;
+            int speed = match->playerInfo[batterIndex].bTPI.speed;
             int fieldStatus;
 
             if (firstBaseIndex != -1)
@@ -190,227 +186,209 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 fieldStatus = 0;
 
             BattingStrategy strategy = calculate_batting_strategy(
-                &(stateInfo->rules->halfInningState), fieldStatus, power, speed, stateInfo->rules->scoreboard.period
+                &(rules->halfInningState), fieldStatus, power, speed, rules->scoreboard.period
             );
 
-            stateInfo->match->aiState.battingStyle = strategy.style;
-            stateInfo->match->aiState.runningBaseRunners = strategy.runBaseRunners;
-            stateInfo->match->aiState.runningBatter = strategy.runBatter;
+            match->aiState.battingStyle = strategy.style;
+            match->aiState.runningBaseRunners = strategy.runBaseRunners;
+            match->aiState.runningBatter = strategy.runBatter;
 
-            stateInfo->match->aiState.planCalculated = 1;
+            match->aiState.planCalculated = 1;
         }
         // if we decide that batter should run, we click down once.
-        if (stateInfo->match->aiState.runningBatter == 1) {
-            if (stateInfo->match->aiState.baseRunnerDecisionMade[0] == 0 &&
-                stateInfo->match->aiState.baseRunnerKeyDown[0] == 0 &&
-                stateInfo->match->aiState.baseRunnerLock[0] == AI_NO_LOCK &&
-                stateInfo->match->aiState.clickBreak[0] > CLICK_BREAK_CONSTANT) {
-                stateInfo->match->aiState.baseRunnerKeyDown[0] = 1;
-                stateInfo->match->aiState.baseRunnerLock[0] = AI_CLICK_LOCK;
-                stateInfo->match->aF.bTAF.base_run[0] = ACTION_TRIGGER_START;
-            } else if (stateInfo->match->aiState.baseRunnerKeyDown[0] == 1 &&
-                       stateInfo->match->aiState.baseRunnerLock[0] == AI_CLICK_LOCK) {
-                stateInfo->match->aiState.baseRunnerKeyDown[0] = 0;
-                stateInfo->match->aiState.baseRunnerDecisionMade[0] = 1;
-                stateInfo->match->aiState.clickBreak[0] = 0;
-                stateInfo->match->aiState.baseRunnerLock[0] = AI_NO_LOCK;
+        if (match->aiState.runningBatter == 1) {
+            if (match->aiState.baseRunnerDecisionMade[0] == 0 && match->aiState.baseRunnerKeyDown[0] == 0 &&
+                match->aiState.baseRunnerLock[0] == AI_NO_LOCK && match->aiState.clickBreak[0] > CLICK_BREAK_CONSTANT) {
+                match->aiState.baseRunnerKeyDown[0] = 1;
+                match->aiState.baseRunnerLock[0] = AI_CLICK_LOCK;
+                match->aF.bTAF.base_run[0] = ACTION_TRIGGER_START;
+            } else if (match->aiState.baseRunnerKeyDown[0] == 1 && match->aiState.baseRunnerLock[0] == AI_CLICK_LOCK) {
+                match->aiState.baseRunnerKeyDown[0] = 0;
+                match->aiState.baseRunnerDecisionMade[0] = 1;
+                match->aiState.clickBreak[0] = 0;
+                match->aiState.baseRunnerLock[0] = AI_NO_LOCK;
             }
         }
         // if decide that baserunners should run, we click their keys.
-        if (stateInfo->match->aiState.runningBaseRunners == 1) {
+        if (match->aiState.runningBaseRunners == 1) {
             int i;
             for (i = 1; i < BASE_COUNT; i++) {
-                if (stateInfo->match->aiState.baseRunnerDecisionMade[i] == 0 &&
-                    get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) != -1 &&
-                    stateInfo->match
-                            ->playerInfo[get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)]
-                            .bTPI.state == PLAYER_STATE_ON_BASE &&
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
-                    stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
-                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           stateInfo->match->aiState.baseRunnerLock[i] == AI_CLICK_LOCK) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    stateInfo->match->aiState.baseRunnerDecisionMade[i] = 1;
-                    stateInfo->match->aiState.clickBreak[i] = 0;
+                if (match->aiState.baseRunnerDecisionMade[i] == 0 &&
+                    get_base_controller(match, &rules->referee, (BaseID)i) != -1 &&
+                    match->playerInfo[get_base_controller(match, &rules->referee, (BaseID)i)].bTPI.state ==
+                        PLAYER_STATE_ON_BASE &&
+                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
+                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
+                    match->aiState.baseRunnerKeyDown[i] = 1;
+                    match->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
+                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
+                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
+                           match->aiState.baseRunnerLock[i] == AI_CLICK_LOCK) {
+                    match->aiState.baseRunnerKeyDown[i] = 0;
+                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+                    match->aiState.baseRunnerDecisionMade[i] = 1;
+                    match->aiState.clickBreak[i] = 0;
                 }
             }
         }
     }
     // if ball is not home, we return players from first and second base to their bases
-    else if (stateInfo->match->pRAI.batter_ready == 1 && stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
-             stateInfo->match->gameFlowState.ballHome == 0) {
-        if (stateInfo->match->aiState.runningBaseRunners == 1) {
+    else if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+             match->gameFlowState.ballHome == 0) {
+        if (match->aiState.runningBaseRunners == 1) {
             int i;
             for (i = 1; i < 3; i++) {
-                if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i) != -1 &&
-                    stateInfo->match
-                            ->playerInfo[get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i)]
-                            .bTPI.state == PLAYER_STATE_LEADING &&
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
-                    stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
-                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           stateInfo->match->aiState.baseRunnerLock[i] == AI_COME_BACK_LOCK) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
-                    stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    stateInfo->match->aiState.clickBreak[i] = 0;
+                if (get_base_controller(match, &rules->referee, (BaseID)i) != -1 &&
+                    match->playerInfo[get_base_controller(match, &rules->referee, (BaseID)i)].bTPI.state ==
+                        PLAYER_STATE_LEADING &&
+                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
+                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
+                    match->aiState.baseRunnerKeyDown[i] = 1;
+                    match->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
+                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
+                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
+                           match->aiState.baseRunnerLock[i] == AI_COME_BACK_LOCK) {
+                    match->aiState.baseRunnerKeyDown[i] = 0;
+                    match->aiState.baseRunnerDecisionMade[i] = 0;
+                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+                    match->aiState.clickBreak[i] = 0;
                 }
             }
         }
     }
     // and here we bat
-    else if (stateInfo->match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+    else if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         int i;
         // predict if pitch is going to be ball
-        if (stateInfo->match->aiState.aiWrongPitch == 0 &&
-            is_wrong_pitch(
-                stateInfo->match->ballInfo.velocity.x, stateInfo->match->ballInfo.velocity.y, GRAVITY, PLATE_WIDTH
-            )) {
-            stateInfo->match->aiState.aiWrongPitch = 1;
+        if (match->aiState.aiWrongPitch == 0 &&
+            is_wrong_pitch(match->ballInfo.velocity.x, match->ballInfo.velocity.y, GRAVITY, PLATE_WIDTH)) {
+            match->aiState.aiWrongPitch = 1;
         }
-        if (stateInfo->match->aiState.aiWrongPitch == 1) {
+        if (match->aiState.aiWrongPitch == 1) {
             // batter isnt handled here
             // this code will make baserunners come back if wrong pitch is pitched
             for (i = 1; i < BASE_COUNT; i++) {
-                int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
-                if (index != -1 && stateInfo->match->playerRuntime[index].goingForward == 1 &&
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
-                    stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
-                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           stateInfo->match->aiState.baseRunnerLock[i] == AI_COME_BACK_WRONG_PITCH_LOCK) {
-                    stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
-                    stateInfo->match->aiState.baseRunnerDecisionMade[i] = 0;
-                    stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    stateInfo->match->aiState.clickBreak[i] = 0;
+                int index = get_base_controller(match, &rules->referee, (BaseID)i);
+                if (index != -1 && match->playerRuntime[index].goingForward == 1 &&
+                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
+                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
+                    match->aiState.baseRunnerKeyDown[i] = 1;
+                    match->aiState.baseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
+                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
+                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
+                           match->aiState.baseRunnerLock[i] == AI_COME_BACK_WRONG_PITCH_LOCK) {
+                    match->aiState.baseRunnerKeyDown[i] = 0;
+                    match->aiState.baseRunnerDecisionMade[i] = 0;
+                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+                    match->aiState.clickBreak[i] = 0;
                 }
             }
         }
         // a bunt
-        if (stateInfo->match->aiState.battingStyle == 0) {
-            if (stateInfo->match->aiState.angleDecided == 0) {
-                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(0, seeded_rand(rng_seed, RAND_MAX));
-                stateInfo->match->aiState.angleDecided = 1;
+        if (match->aiState.battingStyle == 0) {
+            if (match->aiState.angleDecided == 0) {
+                match->aiState.decidedAngle = calculate_ai_batting_angle(0, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meter_counter > BAT_SWING_MAX - 23 &&
-                stateInfo->match->aiState.battingKeyDown == 0 &&
-                stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
-                stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                stateInfo->match->aiState.battingKeyDown = 1;
-                stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
-                       stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 9) {
-                    stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    stateInfo->match->aiState.battingKeyDown = 0;
-                    stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
+            if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 23 && match->aiState.battingKeyDown == 0 &&
+                match->aiState.actionKeyLock == AI_NO_LOCK && match->aiState.aiWrongPitch == 0) {
+                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
+                match->aiState.battingKeyDown = 1;
+                match->aiState.actionKeyLock = AI_BATTING_LOCK;
+            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
+                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 9) {
+                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
+                    match->aiState.battingKeyDown = 0;
+                    match->aiState.actionKeyLock = AI_NO_LOCK;
                 }
             }
         }
         // a normal swing
-        else if (stateInfo->match->aiState.battingStyle == 1) {
-            if (stateInfo->match->aiState.angleDecided == 0) {
+        else if (match->aiState.battingStyle == 1) {
+            if (match->aiState.angleDecided == 0) {
                 // Direction: randomized across the field, independent of base runners.
-                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(1, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.decidedAngle = calculate_ai_batting_angle(1, seeded_rand(rng_seed, RAND_MAX));
                 // Power: release the swing at a random meter level so power varies between
                 // at-bats (kept in a competent mid-to-strong band — no bunts, no overflow).
-                stateInfo->match->aiState.decidedSwingTrigger =
+                match->aiState.decidedSwingTrigger =
                     BAT_SWING_MAX - 4 - seeded_rand(rng_seed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
-                stateInfo->match->aiState.angleDecided = 1;
+                match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meter_counter > stateInfo->match->aiState.decidedSwingTrigger &&
-                stateInfo->match->aiState.battingKeyDown == 0 &&
-                stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
-                stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                stateInfo->match->aiState.battingKeyDown = 1;
-                stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
-                       stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 6) {
-                    stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    stateInfo->match->aiState.battingKeyDown = 0;
-                    stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
+            if (match->pendingActionState.meter_counter > match->aiState.decidedSwingTrigger &&
+                match->aiState.battingKeyDown == 0 && match->aiState.actionKeyLock == AI_NO_LOCK &&
+                match->aiState.aiWrongPitch == 0) {
+                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
+                match->aiState.battingKeyDown = 1;
+                match->aiState.actionKeyLock = AI_BATTING_LOCK;
+            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
+                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 6) {
+                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
+                    match->aiState.battingKeyDown = 0;
+                    match->aiState.actionKeyLock = AI_NO_LOCK;
                 }
             }
         }
         // swing that tries to get oneself wounded
-        else if (stateInfo->match->aiState.battingStyle == 2) {
-            if (stateInfo->match->aiState.angleDecided == 0) {
-                stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(2, seeded_rand(rng_seed, RAND_MAX));
-                stateInfo->match->aiState.angleDecided = 1;
+        else if (match->aiState.battingStyle == 2) {
+            if (match->aiState.angleDecided == 0) {
+                match->aiState.decidedAngle = calculate_ai_batting_angle(2, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meter_counter > BAT_SWING_MAX - 11 &&
-                stateInfo->match->aiState.battingKeyDown == 0 &&
-                stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
-                stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                stateInfo->match->aiState.battingKeyDown = 1;
-                stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
-                       stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 8) {
-                    stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    stateInfo->match->aiState.battingKeyDown = 0;
-                    stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
+            if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 11 && match->aiState.battingKeyDown == 0 &&
+                match->aiState.actionKeyLock == AI_NO_LOCK && match->aiState.aiWrongPitch == 0) {
+                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
+                match->aiState.battingKeyDown = 1;
+                match->aiState.actionKeyLock = AI_BATTING_LOCK;
+            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
+                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 8) {
+                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
+                    match->aiState.battingKeyDown = 0;
+                    match->aiState.actionKeyLock = AI_NO_LOCK;
                 }
             }
         }
-        if (stateInfo->match->aiState.decidedAngle >= 0 &&
-            stateInfo->match->pendingActionState.batter_angle < stateInfo->match->aiState.decidedAngle &&
-            stateInfo->match->aiState.increaseKeyDown == 0) {
-            stateInfo->match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_START;
-            stateInfo->match->aiState.increaseKeyDown = 1;
-        } else if (stateInfo->match->pendingActionState.batter_angle >= stateInfo->match->aiState.decidedAngle &&
-                   stateInfo->match->aiState.increaseKeyDown == 1) {
-            stateInfo->match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_STOP;
-            stateInfo->match->aiState.increaseKeyDown = 0;
+        if (match->aiState.decidedAngle >= 0 && match->pendingActionState.batter_angle < match->aiState.decidedAngle &&
+            match->aiState.increaseKeyDown == 0) {
+            match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_START;
+            match->aiState.increaseKeyDown = 1;
+        } else if (match->pendingActionState.batter_angle >= match->aiState.decidedAngle &&
+                   match->aiState.increaseKeyDown == 1) {
+            match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_STOP;
+            match->aiState.increaseKeyDown = 0;
         }
 
-        if (stateInfo->match->aiState.decidedAngle < 0 &&
-            stateInfo->match->pendingActionState.batter_angle > stateInfo->match->aiState.decidedAngle &&
-            stateInfo->match->aiState.decreaseKeyDown == 0) {
-            stateInfo->match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_START;
-            stateInfo->match->aiState.decreaseKeyDown = 1;
-        } else if (stateInfo->match->pendingActionState.batter_angle <= stateInfo->match->aiState.decidedAngle &&
-                   stateInfo->match->aiState.decreaseKeyDown == 1) {
-            stateInfo->match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_STOP;
-            stateInfo->match->aiState.decreaseKeyDown = 0;
+        if (match->aiState.decidedAngle < 0 && match->pendingActionState.batter_angle > match->aiState.decidedAngle &&
+            match->aiState.decreaseKeyDown == 0) {
+            match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_START;
+            match->aiState.decreaseKeyDown = 1;
+        } else if (match->pendingActionState.batter_angle <= match->aiState.decidedAngle &&
+                   match->aiState.decreaseKeyDown == 1) {
+            match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_STOP;
+            match->aiState.decreaseKeyDown = 0;
         }
     }
-    if (stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && stateInfo->match->aiState.angleDecided == 1) {
-        stateInfo->match->aiState.angleDecided = 0;
+    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && match->aiState.angleDecided == 1) {
+        match->aiState.angleDecided = 0;
     }
     // AI: Check if it's safe to advance runners
     // Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field
     // AND ball has traveled far enough from home (to avoid triggering when ball is still at home plate)
     // AND ball has already hit the ground (if still airborne and out of bounds, it's a foul/läpilyönti)
-    if (stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
-        stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throw_going_to_base == -1 &&
-        stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
-        stateInfo->rules->betweenPitchState.hasBallHitGround == 1 && stateInfo->match->ballInfo.location.z < -10.0f &&
-        checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
+    if (rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT && rules->betweenPitchState.catchHasBeenMade == 0 &&
+        match->pRAI.throw_going_to_base == -1 && match->pII.hasBallIndex == -1 && match->ballInfo.moving == 1 &&
+        rules->betweenPitchState.hasBallHitGround == 1 && match->ballInfo.location.z < -10.0f &&
+        checkIfBallIsOutOfBounds(&match->ballInfo, fieldPositions)) {
         isDoubleClickingOk = 1;
     }
     // we will run with everyone so we need to simulate double click here.
     for (i = 0; i < BASE_COUNT; i++) {
         int j;
-        int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
+        int index = get_base_controller(match, &rules->referee, (BaseID)i);
         int shouldRun = 1;
-        if (i == 0 && stateInfo->match->pRAI.batter_can_advance == 0) continue;
+        if (i == 0 && match->pRAI.batter_can_advance == 0) continue;
         // here we check that there is no one running this same base interval.
         for (j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            BaseID bid = stateInfo->match->playerInfo[j].bTPI.baseId;
+            BaseID bid = match->playerInfo[j].bTPI.baseId;
             if (bid != BASE_NONE) {
                 int baseInt = base_to_int_index(bid);
 
@@ -422,30 +400,28 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
             }
         }
         // if everything ok, initiate running.
-        if (shouldRun == 1 && isDoubleClickingOk == 1 && stateInfo->match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-            stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 && index != -1 &&
-            stateInfo->match->playerRuntime[index].goingForward != 1 &&
-            stateInfo->match->aiState.amountOfClicks[i] == 0 &&
-            stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-            stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-            stateInfo->match->aiState.baseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
-            stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
+        if (shouldRun == 1 && isDoubleClickingOk == 1 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
+            match->aiState.baseRunnerKeyDown[i] == 0 && index != -1 && match->playerRuntime[index].goingForward != 1 &&
+            match->aiState.amountOfClicks[i] == 0 && match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
+            match->aiState.baseRunnerKeyDown[i] = 1;
+            match->aiState.baseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
+            match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
 
-        } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
-                   stateInfo->match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK &&
-                   stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-            stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-            stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-        } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
-                   stateInfo->match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK) {
-            stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
-            if (stateInfo->match->aiState.amountOfClicks[i] == 1) {
-                stateInfo->match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                stateInfo->match->aiState.amountOfClicks[i] = 0;
+        } else if (match->aiState.baseRunnerKeyDown[i] == 0 &&
+                   match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK &&
+                   match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
+            match->aiState.baseRunnerKeyDown[i] = 1;
+            match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
+        } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
+                   match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK) {
+            match->aiState.baseRunnerKeyDown[i] = 0;
+            if (match->aiState.amountOfClicks[i] == 1) {
+                match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
+                match->aiState.amountOfClicks[i] = 0;
             } else {
-                stateInfo->match->aiState.amountOfClicks[i]++;
+                match->aiState.amountOfClicks[i]++;
             }
-            stateInfo->match->aiState.clickBreak[i] = 0;
+            match->aiState.clickBreak[i] = 0;
         }
     }
 }

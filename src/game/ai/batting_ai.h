@@ -4,6 +4,8 @@
 #include "globals.h"
 
 void init_batting_ai(AIState* aiState);
-void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed);
+void update_batting_ai(
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, unsigned int* rng_seed
+);
 
 #endif

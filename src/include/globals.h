@@ -730,8 +730,8 @@ typedef struct _PlayerRelatedActionInfo {
 
     int init_batter; // used to initialize batter locally in
     int batter_ready; // is batter ready to swing
-    int batting_going_on; // time starts when batter reaches ready position and ball is not in air and quits when batting
-                        // animation is over
+    int batting_going_on; // time starts when batter reaches ready position and ball is not in air and quits when
+                          // batting animation is over
     int batter_can_advance;
 
     int refresh_catch_and_change; // when ball hits ground or stops etc we want to refresh changePlayerArrays.

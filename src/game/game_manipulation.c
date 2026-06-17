@@ -435,9 +435,9 @@ static void move_idling_players_to_home_location(MatchSession* match)
 static void rank_players_and_move_them(MatchSession* match)
 {
     // calculating these things only makes sense when no one has ball. even though these usually should be mutually
-    // exclusive theres a small change that refreshCatchAndchange == 1 and ball has been caught. refresh_catch_and_change
-    // is set 1 when ball is thrown or bat or dropped but also when ball hits ground for the first time and when it
-    // stops and also when player is changed. there could be more.
+    // exclusive theres a small change that refreshCatchAndchange == 1 and ball has been caught.
+    // refresh_catch_and_change is set 1 when ball is thrown or bat or dropped but also when ball hits ground for the
+    // first time and when it stops and also when player is changed. there could be more.
     if (match->pRAI.refresh_catch_and_change == 1 && match->pII.hasBallIndex == -1) {
 
         int i, j;
