@@ -61,6 +61,14 @@ void update_batting_ai(
             match->aiState.battingKeyDown = 0;
             match->aiState.changingKeyDown = 0;
         }
+    } else if (match->aiState.actionKeyLock == AI_BATTING_LOCK) {
+        // A swing lock is only valid while a ready batter is mid-swing. Once a new batter
+        // decision has begun, a lingering AI_BATTING_LOCK is orphaned: the at-bat ended (e.g.
+        // a 3rd-strike forced run) before the swing's release path — which lives inside the
+        // batter_ready block below — could clear it. The selection branch requires AI_NO_LOCK,
+        // so without this self-heal the AI batting team deadlocks the entire game.
+        match->aiState.actionKeyLock = AI_NO_LOCK;
+        match->aiState.battingKeyDown = 0;
     }
     if (match->flowControl.waitingForFreeWalkDecision == 0) {
         if (match->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {

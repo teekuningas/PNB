@@ -106,5 +106,11 @@ int test_ai_offense_breakdown(void)
         printf("  AI never made contact across all seeds (batting broken)\n");
         return TEST_FAILED;
     }
+    // A stall IS a hard defect (an AI-vs-AI deadlock), distinct from the soft offense metrics
+    // above: the sim tier is the regression net, so a silent stall must not pass green.
+    if (seeds_stalled != 0) {
+        printf("  %d seed(s) stalled (AI-vs-AI deadlock)\n", seeds_stalled);
+        return TEST_FAILED;
+    }
     return TEST_PASSED;
 }

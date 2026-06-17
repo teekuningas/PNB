@@ -14,6 +14,7 @@ int main(void)
     RUN_TEST(test_ai_vs_ai_homerun);
     RUN_TEST(test_ai_vs_ai_determinism);
     RUN_TEST(test_ai_offense_breakdown);
+    RUN_TEST(test_no_batter_lock_stall);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);
