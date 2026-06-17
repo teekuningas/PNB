@@ -14,8 +14,8 @@
 
 void reset_pitching_system(StateInfo* stateInfo)
 {
-    stateInfo->match->pendingActionState.pitchPower = 0;
-    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+    stateInfo->match->pendingActionState.pitch_power = 0;
+    stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
     stateInfo->match->aiState.pitchStage = 0;
     stateInfo->match->aiState.pitchTime = -1;
     stateInfo->match->aiState.pitchPreviousTime = -1;
@@ -36,8 +36,8 @@ void start_pitch(StateInfo* stateInfo)
         vi) no free walk decisions pending
     */
     if (stateInfo->match->pII.hasBallIndex == stateInfo->match->pII.catcherOnBaseIndex[0] &&
-        stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE && stateInfo->match->pRAI.batterReady == 1 &&
-        stateInfo->match->pendingActionState.throwGoingOn == 0 &&
+        stateInfo->match->pRAI.pitch_state == PITCH_STAGE_NONE && stateInfo->match->pRAI.batter_ready == 1 &&
+        stateInfo->match->pendingActionState.throw_going_on == 0 &&
         stateInfo->match->playerInfo[stateInfo->match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
         stateInfo->match->flowControl.waitingForFreeWalkDecision == 0) {
         // we stop the pitcher if we were moving with it when we started
@@ -64,19 +64,19 @@ void start_pitch(StateInfo* stateInfo)
         set_vector_xz(&(stateInfo->match->ballInfo.location), 0.0f, 0.0f);
 
         // Enter power-wait phase: meter moves and user needs to select power
-        stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_POWER_WAIT;
-        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_PITCHING;
+        stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_POWER_WAIT;
+        stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_PITCHING;
         // Consume the START intent
         stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-        // we set pitchState flag to PITCH_STAGE_WINDUP which will hold to the moment
+        // we set pitch_state flag to PITCH_STAGE_WINDUP which will hold to the moment
         // of bat hitting ball, meter going all the way down ( no angle selected )
         // or ball hitting ground.
-        stateInfo->match->pRAI.pitchState = PITCH_STAGE_WINDUP;
-        // so initialize meterCounter and meterCounterMax values. synchronization with the animation here is nice
+        stateInfo->match->pRAI.pitch_state = PITCH_STAGE_WINDUP;
+        // so initialize meter_counter and meter_counter_max values. synchronization with the animation here is nice
         // as it will let user press the buttons when its natural in the animation. But basically
         // we start from the point 4/13 and go to 1 on the meter.
-        stateInfo->match->pendingActionState.meterCounter = (PITCH_UP_MAX - PITCH_DOWN_MAX) * ANIMATION_FREQUENCY;
-        stateInfo->match->pendingActionState.meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
+        stateInfo->match->pendingActionState.meter_counter = (PITCH_UP_MAX - PITCH_DOWN_MAX) * ANIMATION_FREQUENCY;
+        stateInfo->match->pendingActionState.meter_counter_max = PITCH_UP_MAX * ANIMATION_FREQUENCY;
     } else {
         // if conditions dont hold then put pitch=PITCH_ACTION_IDLE so that user can try to
         // initiate new pitch if he wants.
@@ -89,13 +89,13 @@ void continue_pitch(StateInfo* stateInfo)
     if (stateInfo->match->pII.hasBallIndex != -1) {
         // as power is selected now, we move to the next phase of meter going down, animation
         // going from crouching to releasing and user to selecting the angle.
-        stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_ANGLE_WAIT;
+        stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_ANGLE_WAIT;
         // Consume the POWER_SET intent
         stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
         // here we select pitchpower, and as selected it will be in the interval from
         //  (PITCH_UP_MAX - PITCH_DOWN_MAX)/PITCH_UP_MAX to 1.
-        stateInfo->match->pendingActionState.pitchPower = calculate_pitch_power(
-            stateInfo->match->pendingActionState.meterCounter, stateInfo->match->pendingActionState.meterCounterMax
+        stateInfo->match->pendingActionState.pitch_power = calculate_pitch_power(
+            stateInfo->match->pendingActionState.meter_counter, stateInfo->match->pendingActionState.meter_counter_max
         );
         // we select the animation
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_PITCH_THROW;
@@ -120,12 +120,12 @@ void continue_pitch(StateInfo* stateInfo)
             ANIMATION_FREQUENCY;
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.animationStageCount = PITCH_UP_MAX;
 
-        // so now we initialize meterCounter to be what was left to the full amount in previous phase and set counterMax
-        // to full maximum. on the screen this meterCounter-value is kind of reversed so that we get a nice indicator
+        // so now we initialize meter_counter to be what was left to the full amount in previous phase and set counterMax
+        // to full maximum. on the screen this meter_counter-value is kind of reversed so that we get a nice indicator
         // going up, indicator going down -effect.
-        stateInfo->match->pendingActionState.meterCounter =
-            stateInfo->match->pendingActionState.meterCounterMax - stateInfo->match->pendingActionState.meterCounter;
-        stateInfo->match->pendingActionState.meterCounterMax = PITCH_UP_MAX * ANIMATION_FREQUENCY;
+        stateInfo->match->pendingActionState.meter_counter =
+            stateInfo->match->pendingActionState.meter_counter_max - stateInfo->match->pendingActionState.meter_counter;
+        stateInfo->match->pendingActionState.meter_counter_max = PITCH_UP_MAX * ANIMATION_FREQUENCY;
     }
 }
 
@@ -136,10 +136,10 @@ void release_pitch(StateInfo* stateInfo)
     float dx, dy;
     int i;
     float pitchAngle;
-    // as meterCounter goes from 0 to PITCH_UP_MAX and the zero point will be at the 9/13, we minus
+    // as meter_counter goes from 0 to PITCH_UP_MAX and the zero point will be at the 9/13, we minus
     // that to get the selected angle
     pitchAngle = calculate_pitch_angle(
-        stateInfo->match->pendingActionState.meterCounter, stateInfo->match->pendingActionState.meterCounterMax
+        stateInfo->match->pendingActionState.meter_counter, stateInfo->match->pendingActionState.meter_counter_max
     );
     // So here we set the velocity for the ball when it finally leaves the hand of the pitcher.
     // dx is going to be the error term and it doesnt depend on the power so when ball is pitched higher, the error will
@@ -147,7 +147,7 @@ void release_pitch(StateInfo* stateInfo)
     dx = calculate_pitch_dx(pitchAngle);
     // simple formula, just have base_speed so that there wont any very low pitches and then add some power if wanted.
     // it will be made so that its more difficult to hit the ball the higher the pitch is.
-    dy = calculate_pitch_dy(stateInfo->match->pendingActionState.pitchPower);
+    dy = calculate_pitch_dy(stateInfo->match->pendingActionState.pitch_power);
     // we prepare to move the pitcher a bit
     target.x =
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;
@@ -172,12 +172,12 @@ void release_pitch(StateInfo* stateInfo)
     stateInfo->match->pII.hasBallIndex = -1;
     // pitch in air so that for example the batting can be
     // updated.
-    stateInfo->match->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
+    stateInfo->match->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
     // this flag's purpose is to take care of batter who starts running towards first base and comes back
     // during the pitch.
-    stateInfo->match->pendingActionState.runBatFlag = 0;
+    stateInfo->match->pendingActionState.run_bat_flag = 0;
     // batter can advance now
-    stateInfo->match->pRAI.batterCanAdvance = 1;
+    stateInfo->match->pRAI.batter_can_advance = 1;
     // let ai do the calculation for ball again
     stateInfo->match->aiState.aiWrongPitch = 0;
     // set camera back to normal if there was homerun camera
@@ -191,9 +191,9 @@ void release_pitch(StateInfo* stateInfo)
     // run with batting team
 
     for (i = 1; i < BASE_COUNT; i++) {
-        if (stateInfo->match->pRAI.willStartRunning[i] == 1) {
+        if (stateInfo->match->pRAI.will_start_running[i] == 1) {
             int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
-            stateInfo->match->pRAI.willStartRunning[i] = 0;
+            stateInfo->match->pRAI.will_start_running[i] = 0;
             if (index != -1) {
                 run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, (BaseID)i);
             }
@@ -201,8 +201,8 @@ void release_pitch(StateInfo* stateInfo)
     }
 
     // Clear pitch phase and action lock — pitch complete
-    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
-    stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+    stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     // Consume the ANGLE_SET intent
     stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
 }
@@ -210,30 +210,30 @@ void release_pitch(StateInfo* stateInfo)
 void update_pitching_meter(StateInfo* stateInfo)
 {
     // when pitch has been started but power not yet selected,
-    // we increase meterCounter until its in its maximum
-    if (stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_POWER_WAIT) {
-        if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
-            stateInfo->match->pendingActionState.meterCounter += 1;
+    // we increase meter_counter until its in its maximum
+    if (stateInfo->match->pendingActionState.pitch_phase == PITCH_PHASE_POWER_WAIT) {
+        if (stateInfo->match->pendingActionState.meter_counter < stateInfo->match->pendingActionState.meter_counter_max) {
+            stateInfo->match->pendingActionState.meter_counter += 1;
         }
-        // meterValue is used to render info to screen for user.
-        stateInfo->match->pRAI.meterValue = calculate_meter_value(
-            2, stateInfo->match->pendingActionState.meterCounter, stateInfo->match->pendingActionState.meterCounterMax
+        // meter_value is used to render info to screen for user.
+        stateInfo->match->pRAI.meter_value = calculate_meter_value(
+            2, stateInfo->match->pendingActionState.meter_counter, stateInfo->match->pendingActionState.meter_counter_max
         );
     }
     // when power has been selected but the angle is not yet selected,
-    // we increase meterCounter until its in its maximum
-    else if (stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_ANGLE_WAIT) {
-        if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
-            stateInfo->match->pendingActionState.meterCounter += 1;
+    // we increase meter_counter until its in its maximum
+    else if (stateInfo->match->pendingActionState.pitch_phase == PITCH_PHASE_ANGLE_WAIT) {
+        if (stateInfo->match->pendingActionState.meter_counter < stateInfo->match->pendingActionState.meter_counter_max) {
+            stateInfo->match->pendingActionState.meter_counter += 1;
         } else {
             // if counter reaches the maximum, it means animation has
             // reached its end point and indicator on the meter would go off the meter.
             // so when this happnes we terminate the pitch.
-            stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
-            stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
-            // and we set pitchState to PITCH_STAGE_NONE to tell other functionality in the code
+            stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+            stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
+            // and we set pitch_state to PITCH_STAGE_NONE to tell other functionality in the code
             // what happened.
-            stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
+            stateInfo->match->pRAI.pitch_state = PITCH_STAGE_NONE;
             // ball is returned to its position with player
             stateInfo->match->ballInfo.location.x =
                 stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x;
@@ -243,8 +243,8 @@ void update_pitching_meter(StateInfo* stateInfo)
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
         }
         // update what is seen on the screen.
-        stateInfo->match->pRAI.meterValue = calculate_meter_value(
-            4, stateInfo->match->pendingActionState.meterCounter, stateInfo->match->pendingActionState.meterCounterMax
+        stateInfo->match->pRAI.meter_value = calculate_meter_value(
+            4, stateInfo->match->pendingActionState.meter_counter, stateInfo->match->pendingActionState.meter_counter_max
         );
     }
 }

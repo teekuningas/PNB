@@ -227,8 +227,8 @@ void move_ranked_to_catch(MatchSession* match)
         if (index != match->pII.controlIndex && match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
             // if we are throwing ( towards a base ) we dont want the baseman there to start moving
             // as it would be nice that he is at the base when ball is caught if baserunner is going there.
-            if (match->pRAI.throwGoingToBase == -1 ||
-                (match->pII.catcherOnBaseIndex[match->pRAI.throwGoingToBase] != index)) {
+            if (match->pRAI.throw_going_to_base == -1 ||
+                (match->pII.catcherOnBaseIndex[match->pRAI.throw_going_to_base] != index)) {
                 int k;
                 int done = 0;
                 // and we have special condition not to move any basemen
@@ -255,12 +255,12 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         Vector3D target;
         // first we select the target corresponding to base argument
         if (base == BASE_HOME) {
-            if (match->pRAI.batterCanAdvance == 0) return;
+            if (match->pRAI.batter_can_advance == 0) return;
             target.x = field_positions->firstBaseRun.x;
             target.z = field_positions->firstBaseRun.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.
-            match->pRAI.batterReady = 0;
-            match->pRAI.battingGoingOn = 0;
+            match->pRAI.batter_ready = 0;
+            match->pRAI.batting_going_on = 0;
         } else if (base == BASE_FIRST) {
             target.x = field_positions->secondBaseRun.x;
             target.z = field_positions->secondBaseRun.z;
@@ -287,7 +287,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             return;
         }
         // and set it so that next player has to have a will of his own to run
-        match->pRAI.willStartRunning[base] = 0;
+        match->pRAI.will_start_running[base] = 0;
         // set state to running, BUT only if we aren't already WOUNDED, OUT, or ADVANCING_FREELY
         // (which are terminal/override states that must not be downgraded)
         if (match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
@@ -336,7 +336,7 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         }
 
         // and set it so that next player has to have a will of his own to run
-        match->pRAI.willStartRunning[base] = 0;
+        match->pRAI.will_start_running[base] = 0;
         // we arent going forward
         match->playerRuntime[index].goingForward = 0;
         // set state to running, BUT only if we aren't already WOUNDED or OUT
@@ -401,7 +401,7 @@ void change_player(MatchSession* match)
 {
     // this is called by user explicitly and sometimes after updating change_player lists.
     // so cant change pitch if pitch is going on
-    if (match->pRAI.pitchState == PITCH_STAGE_NONE) {
+    if (match->pRAI.pitch_state == PITCH_STAGE_NONE) {
         // player will start randomly floating after control changes to next player.
         if (match->pII.controlIndex != -1) {
             stop_movement(match->playerInfo, match->pII.controlIndex);
@@ -450,13 +450,13 @@ void prepare_batter(MatchSession* match)
         // batter ready model
         match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
         // can pitch now
-        match->pRAI.batterReady = 1;
+        match->pRAI.batter_ready = 1;
         // waiting for pitch to go in air before starting the batting movement
         match->aF.bTAF.swing = 0;
         // batterIndex has been selected before calling this function
 
         // and initialize batter so that everything is ready to go.
-        match->pRAI.initBatter = 1;
+        match->pRAI.init_batter = 1;
     }
 }
 // so here we calculate index and base of the player who is the leadrunner so that
@@ -759,22 +759,22 @@ void initialize_action_info(MatchSession* match)
     int i;
 
     for (i = 0; i < BASE_COUNT; i++) {
-        match->aF.bTAF.baseRun[i] = 0;
+        match->aF.bTAF.base_run[i] = 0;
     }
-    match->aF.bTAF.chooseBatter = 0;
-    match->aF.bTAF.takeFreeWalk = 0;
+    match->aF.bTAF.choose_batter = 0;
+    match->aF.bTAF.take_free_walk = 0;
     match->aF.bTAF.swing = 0;
-    match->aF.bTAF.increaseBatterAngle = 0;
-    match->aF.bTAF.decreaseBatterAngle = 0;
+    match->aF.bTAF.increase_batter_angle = 0;
+    match->aF.bTAF.decrease_batter_angle = 0;
 
     for (i = 0; i < BASE_COUNT; i++) {
         match->aF.cTAF.move[i] = 0;
-        match->aF.cTAF.throwToBase[i] = 0;
+        match->aF.cTAF.throw_to_base[i] = 0;
     }
     match->aF.cTAF.change_player = 0;
-    match->aF.cTAF.dropBall = 0;
+    match->aF.cTAF.drop_ball = 0;
     match->aF.cTAF.pitch = 0;
-    match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+    match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -800,16 +800,16 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     init_game_manipulation(&(match->gameFlowState));
 
     // Action state
-    match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
-    match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
-    match->pendingActionState.throwGoingOn = 0;
-    match->pRAI.throwGoingToBase = -1;
+    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
+    match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+    match->pendingActionState.throw_going_on = 0;
+    match->pRAI.throw_going_to_base = -1;
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 and
-    // baseRunnerDecisionMade[] stays stale (the batterReady 0→1 transition
+    // baseRunnerDecisionMade[] stays stale (the batter_ready 0→1 transition
     // happens within consolidation, AFTER AI has already run that frame,
-    // so the AI never sees batterReady==0 to trigger its own reset).
+    // so the AI never sees batter_ready==0 to trigger its own reset).
     match->aiState.planCalculated = 0;
     for (int i = 0; i < BASE_COUNT; i++) {
         match->aiState.baseRunnerDecisionMade[i] = 0;
@@ -862,18 +862,18 @@ void initialize_index_information(MatchSession* match)
 void initialize_prai_information(MatchSession* match)
 {
     int i;
-    match->pRAI.pitchState = PITCH_STAGE_NONE;
-    match->pRAI.meterValue = 0.0f;
-    match->pRAI.swingMeterValue = 0.0f;
-    match->pRAI.battingGoingOn = 0;
-    match->pRAI.batterCanAdvance = 0;
-    match->pRAI.throwGoingToBase = -1;
-    match->pRAI.batterReady = 0;
-    match->pRAI.refreshCatchAndChange = 0;
-    match->pRAI.initPlayerSelection = 0;
-    match->pRAI.initBatter = 0;
+    match->pRAI.pitch_state = PITCH_STAGE_NONE;
+    match->pRAI.meter_value = 0.0f;
+    match->pRAI.swing_meter_value = 0.0f;
+    match->pRAI.batting_going_on = 0;
+    match->pRAI.batter_can_advance = 0;
+    match->pRAI.throw_going_to_base = -1;
+    match->pRAI.batter_ready = 0;
+    match->pRAI.refresh_catch_and_change = 0;
+    match->pRAI.init_player_selection = 0;
+    match->pRAI.init_batter = 0;
     for (i = 0; i < BASE_COUNT; i++) {
-        match->pRAI.willStartRunning[i] = 0;
+        match->pRAI.will_start_running[i] = 0;
     }
 }
 

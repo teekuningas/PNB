@@ -12,48 +12,48 @@
 
 void init_throwing_system(StateInfo* stateInfo)
 {
-    stateInfo->match->pendingActionState.throwDistance = 0;
-    stateInfo->match->pendingActionState.throwDirection.x = 0;
-    stateInfo->match->pendingActionState.throwDirection.y = 0;
-    stateInfo->match->pendingActionState.throwDirection.z = 0;
+    stateInfo->match->pendingActionState.throw_distance = 0;
+    stateInfo->match->pendingActionState.throw_direction.x = 0;
+    stateInfo->match->pendingActionState.throw_direction.y = 0;
+    stateInfo->match->pendingActionState.throw_direction.z = 0;
 }
 
 void prepare_throw(StateInfo* stateInfo, BaseID base)
 {
     switch (base) {
     case BASE_HOME:
-        stateInfo->match->pRAI.throwGoingToBase = 0;
-        stateInfo->match->pendingActionState.throwDirection.x =
+        stateInfo->match->pRAI.throw_going_to_base = 0;
+        stateInfo->match->pendingActionState.throw_direction.x =
             stateInfo->fieldPositions->pitcher.x -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x;
-        stateInfo->match->pendingActionState.throwDirection.z =
+        stateInfo->match->pendingActionState.throw_direction.z =
             stateInfo->fieldPositions->pitcher.z -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_FIRST:
-        stateInfo->match->pRAI.throwGoingToBase = 1;
-        stateInfo->match->pendingActionState.throwDirection.x =
+        stateInfo->match->pRAI.throw_going_to_base = 1;
+        stateInfo->match->pendingActionState.throw_direction.x =
             stateInfo->fieldPositions->firstBase.x -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x;
-        stateInfo->match->pendingActionState.throwDirection.z =
+        stateInfo->match->pendingActionState.throw_direction.z =
             stateInfo->fieldPositions->firstBase.z -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_SECOND:
-        stateInfo->match->pRAI.throwGoingToBase = 2;
-        stateInfo->match->pendingActionState.throwDirection.x =
+        stateInfo->match->pRAI.throw_going_to_base = 2;
+        stateInfo->match->pendingActionState.throw_direction.x =
             stateInfo->fieldPositions->secondBase.x -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x;
-        stateInfo->match->pendingActionState.throwDirection.z =
+        stateInfo->match->pendingActionState.throw_direction.z =
             stateInfo->fieldPositions->secondBase.z -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_THIRD:
-        stateInfo->match->pRAI.throwGoingToBase = 3;
-        stateInfo->match->pendingActionState.throwDirection.x =
+        stateInfo->match->pRAI.throw_going_to_base = 3;
+        stateInfo->match->pendingActionState.throw_direction.x =
             stateInfo->fieldPositions->thirdBase.x -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.x;
-        stateInfo->match->pendingActionState.throwDirection.z =
+        stateInfo->match->pendingActionState.throw_direction.z =
             stateInfo->fieldPositions->thirdBase.z -
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.z;
         break;
@@ -67,7 +67,7 @@ void throw_release(StateInfo* stateInfo)
     if (stateInfo->match->pII.hasBallIndex != -1) {
         float power;
         // throw not going anymore, ball already flyin'
-        stateInfo->match->pendingActionState.throwGoingOn = 0;
+        stateInfo->match->pendingActionState.throw_going_on = 0;
         // release animation
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.animationStage = 0;
@@ -77,26 +77,26 @@ void throw_release(StateInfo* stateInfo)
         // until its over ).
         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cTPI.throwRecoil = 1;
 
-        // take power naturally from meterCounter value
-        power = 1.0f * stateInfo->match->pendingActionState.meterCounter /
-                stateInfo->match->pendingActionState.meterCounterMax;
+        // take power naturally from meter_counter value
+        power = 1.0f * stateInfo->match->pendingActionState.meter_counter /
+                stateInfo->match->pendingActionState.meter_counter_max;
         // update these values a bit
-        stateInfo->match->pendingActionState.throwDirection.x =
-            stateInfo->match->pendingActionState.throwDirection.x / stateInfo->match->pendingActionState.throwDistance;
-        stateInfo->match->pendingActionState.throwDirection.z =
-            stateInfo->match->pendingActionState.throwDirection.z / stateInfo->match->pendingActionState.throwDistance;
-        stateInfo->match->pendingActionState.throwDirection.y = 0.06f;
+        stateInfo->match->pendingActionState.throw_direction.x =
+            stateInfo->match->pendingActionState.throw_direction.x / stateInfo->match->pendingActionState.throw_distance;
+        stateInfo->match->pendingActionState.throw_direction.z =
+            stateInfo->match->pendingActionState.throw_direction.z / stateInfo->match->pendingActionState.throw_distance;
+        stateInfo->match->pendingActionState.throw_direction.y = 0.06f;
         // ... and then launch the ball
         generic_sling_ball(
             &(stateInfo->match->ballInfo),
-            stateInfo->match->pendingActionState.throwDirection.x * power * THROW_POWER_CONSTANT,
-            stateInfo->match->pendingActionState.throwDirection.y +
-                stateInfo->match->pendingActionState.throwDistance * THROW_DISTANCE_CONSTANT,
-            stateInfo->match->pendingActionState.throwDirection.z * power * THROW_POWER_CONSTANT
+            stateInfo->match->pendingActionState.throw_direction.x * power * THROW_POWER_CONSTANT,
+            stateInfo->match->pendingActionState.throw_direction.y +
+                stateInfo->match->pendingActionState.throw_distance * THROW_DISTANCE_CONSTANT,
+            stateInfo->match->pendingActionState.throw_direction.z * power * THROW_POWER_CONSTANT
         );
         // Trigger fielder selection update after throw
-        stateInfo->match->pRAI.refreshCatchAndChange = 1;
-        stateInfo->match->pRAI.initPlayerSelection = 1;
+        stateInfo->match->pRAI.refresh_catch_and_change = 1;
+        stateInfo->match->pRAI.init_player_selection = 1;
         // set lastHadBallIndex, its used for example to prevent this player of catching
         // the ball right after throwing.
         stateInfo->match->pII.lastHadBallIndex = stateInfo->match->pII.hasBallIndex;
@@ -117,14 +117,14 @@ void throw_load(StateInfo* stateInfo, BaseID base)
 {
     if (stateInfo->match->pII.hasBallIndex != -1) {
         // throw distance is the euclidean distance from the base to player throwing.
-        stateInfo->match->pendingActionState.throwDistance = (float)sqrt(
-            stateInfo->match->pendingActionState.throwDirection.x *
-                stateInfo->match->pendingActionState.throwDirection.x +
-            stateInfo->match->pendingActionState.throwDirection.z *
-                stateInfo->match->pendingActionState.throwDirection.z
+        stateInfo->match->pendingActionState.throw_distance = (float)sqrt(
+            stateInfo->match->pendingActionState.throw_direction.x *
+                stateInfo->match->pendingActionState.throw_direction.x +
+            stateInfo->match->pendingActionState.throw_direction.z *
+                stateInfo->match->pendingActionState.throw_direction.z
         );
         // if player is already on the base, cant throw.
-        if (stateInfo->match->pendingActionState.throwDistance > THROW_TO_BASE_DISTANCE) {
+        if (stateInfo->match->pendingActionState.throw_distance > THROW_TO_BASE_DISTANCE) {
             // stop player if he is moving, moving won't look good as the animation
             // doesn't have foot movement
             if (stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.moving == 1) {
@@ -136,22 +136,22 @@ void throw_load(StateInfo* stateInfo, BaseID base)
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.animationStageCount = 11;
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.animationFrequency = 3;
             // initialize meters.
-            stateInfo->match->pendingActionState.meterCounter = 0;
-            stateInfo->match->pendingActionState.meterCounterMax =
+            stateInfo->match->pendingActionState.meter_counter = 0;
+            stateInfo->match->pendingActionState.meter_counter_max =
                 THROW_MAX; // arbitrary decision, seems about right though
             // set the flag that is used for example to determine can you move the player.
-            stateInfo->match->pendingActionState.throwGoingOn = 1;
+            stateInfo->match->pendingActionState.throw_going_on = 1;
             // to avoid twitching when moving key is still pressed and player cant move as hes throwing
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
             // and orient player to look at the base too.
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.orientation.x =
-                stateInfo->match->pendingActionState.throwDirection.x;
+                stateInfo->match->pendingActionState.throw_direction.x;
             stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.orientation.z =
-                stateInfo->match->pendingActionState.throwDirection.z;
+                stateInfo->match->pendingActionState.throw_direction.z;
         } else {
             // if too close to base, terminate throwing.
-            stateInfo->match->pendingActionState.throwGoingOn = 0;
-            stateInfo->match->pRAI.throwGoingToBase = -1;
+            stateInfo->match->pendingActionState.throw_going_on = 0;
+            stateInfo->match->pRAI.throw_going_to_base = -1;
         }
     }
 }
@@ -160,8 +160,8 @@ void fielder_move(StateInfo* stateInfo, int direction)
 {
     // we can move if there is no throw going on and no pitch going on
     // .. and we have same player controlled
-    if (stateInfo->match->pendingActionState.throwGoingOn == 0 &&
-        stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE && stateInfo->match->pII.controlIndex != -1) {
+    if (stateInfo->match->pendingActionState.throw_going_on == 0 &&
+        stateInfo->match->pRAI.pitch_state == PITCH_STAGE_NONE && stateInfo->match->pII.controlIndex != -1) {
         // stopping only possible when moving already going on
         // so thats the reason for this value 2
         stateInfo->match->aF.cTAF.move[direction] = ACTION_ACTIVE;
@@ -179,8 +179,8 @@ void fielder_stop_move(StateInfo* stateInfo, int direction)
 {
     // stopping cant be done either when pitching or throwing as update_controlled_player_speed can
     // have effects on player's model
-    if (stateInfo->match->pendingActionState.throwGoingOn == 0 &&
-        stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE && stateInfo->match->pII.controlIndex != -1) {
+    if (stateInfo->match->pendingActionState.throw_going_on == 0 &&
+        stateInfo->match->pRAI.pitch_state == PITCH_STAGE_NONE && stateInfo->match->pII.controlIndex != -1) {
         stateInfo->match->aF.cTAF.move[direction] = ACTION_IDLE;
         stateInfo->match->playerInfo[stateInfo->match->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
         update_controlled_player_speed(stateInfo);
@@ -194,8 +194,8 @@ void drop_ball(StateInfo* stateInfo)
     // there is a possibility to drop ball if to the ground if you want. it could be convenient when
     // you want a baserunner to be able to get safe from a base for some strategical reason.
     if (stateInfo->match->pII.hasBallIndex != -1) {
-        if (stateInfo->match->pendingActionState.throwGoingOn == 0 &&
-            stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE) {
+        if (stateInfo->match->pendingActionState.throw_going_on == 0 &&
+            stateInfo->match->pRAI.pitch_state == PITCH_STAGE_NONE) {
             float norm;
             float dx;
             float dz;
@@ -218,15 +218,15 @@ void drop_ball(StateInfo* stateInfo)
                 &(stateInfo->match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT
             );
             // Trigger fielder selection update after drop
-            stateInfo->match->pRAI.refreshCatchAndChange = 1;
-            stateInfo->match->pRAI.initPlayerSelection = 1;
+            stateInfo->match->pRAI.refresh_catch_and_change = 1;
+            stateInfo->match->pRAI.init_player_selection = 1;
             // and set the lastHadBallIndex so that this player cannot catch it before it hits ground
             stateInfo->match->pII.lastHadBallIndex = stateInfo->match->pII.hasBallIndex;
             // and no player has the ball anymore.
             stateInfo->match->pII.hasBallIndex = -1;
         }
     }
-    stateInfo->match->aF.cTAF.dropBall = ACTION_IDLE;
+    stateInfo->match->aF.cTAF.drop_ball = ACTION_IDLE;
 }
 
 void update_controlled_player_speed(StateInfo* stateInfo)

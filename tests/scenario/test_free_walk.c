@@ -40,7 +40,7 @@ int test_full_free_walk_resolution(void)
     simulate_frames(ctx, 1);
 
     // 4. Action: Accept Free Walk
-    game->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+    game->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
 
     // 5. Process acceptance (1 frame to trigger event and start movement)
     simulate_frames(ctx, 1);

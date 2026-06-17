@@ -349,8 +349,8 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
 
     // Use the game's actual sling function (sets velocity + flags)
     // Trigger fielder selection update (same as game does after throws)
-    game->pRAI.refreshCatchAndChange = 1;
-    game->pRAI.initPlayerSelection = 1;
+    game->pRAI.refresh_catch_and_change = 1;
+    game->pRAI.init_player_selection = 1;
     generic_sling_ball(&game->ballInfo, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
 }
 
@@ -439,8 +439,8 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     game->ballInfo.currentFlightHasHitGround = 0;
 
     // 4. Set Pitch State
-    game->pRAI.pitchState = PITCH_STAGE_AIRBORNE;
-    game->pRAI.batterCanAdvance = 1;
+    game->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
+    game->pRAI.batter_can_advance = 1;
     game->gameEvents.pitchReleased = 1; // Signal event - referee will snapshot state automatically
 
     // Note: We emit pitchReleased event which triggers the referee to snapshot

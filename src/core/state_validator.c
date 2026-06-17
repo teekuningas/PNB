@@ -199,21 +199,21 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"pRAI\": {\n", sp);
-    fprintf(f, "%s  \"pitchState\": %d,\n", sp, game->pRAI.pitchState);
-    fprintf(f, "%s  \"batterReady\": %d,\n", sp, game->pRAI.batterReady);
-    fprintf(f, "%s  \"battingGoingOn\": %d,\n", sp, game->pRAI.battingGoingOn);
-    fprintf(f, "%s  \"initBatter\": %d,\n", sp, game->pRAI.initBatter);
-    fprintf(f, "%s  \"throwGoingOn\": %d,\n", sp, game->pendingActionState.throwGoingOn);
-    fprintf(f, "%s  \"throwGoingToBase\": %d\n", sp, game->pRAI.throwGoingToBase);
+    fprintf(f, "%s  \"pitch_state\": %d,\n", sp, game->pRAI.pitch_state);
+    fprintf(f, "%s  \"batter_ready\": %d,\n", sp, game->pRAI.batter_ready);
+    fprintf(f, "%s  \"batting_going_on\": %d,\n", sp, game->pRAI.batting_going_on);
+    fprintf(f, "%s  \"init_batter\": %d,\n", sp, game->pRAI.init_batter);
+    fprintf(f, "%s  \"throw_going_on\": %d,\n", sp, game->pendingActionState.throw_going_on);
+    fprintf(f, "%s  \"throw_going_to_base\": %d\n", sp, game->pRAI.throw_going_to_base);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"actionState\": {\n", sp);
-    fprintf(f, "%s  \"currentCatchingAction\": %d,\n", sp, (int)game->pendingActionState.currentCatchingAction);
-    fprintf(f, "%s  \"pitchPhase\": %d,\n", sp, (int)game->pendingActionState.pitchPhase);
+    fprintf(f, "%s  \"current_catching_action\": %d,\n", sp, (int)game->pendingActionState.current_catching_action);
+    fprintf(f, "%s  \"pitch_phase\": %d,\n", sp, (int)game->pendingActionState.pitch_phase);
     fprintf(f, "%s  \"pitch\": %d,\n", sp, game->aF.cTAF.pitch);
-    fprintf(f, "%s  \"dropBall\": %d,\n", sp, game->aF.cTAF.dropBall);
+    fprintf(f, "%s  \"drop_ball\": %d,\n", sp, game->aF.cTAF.drop_ball);
     fprintf(f, "%s  \"change_player\": %d,\n", sp, game->aF.cTAF.change_player);
-    fprintf(f, "%s  \"meterCounter\": %d\n", sp, game->pendingActionState.meterCounter);
+    fprintf(f, "%s  \"meter_counter\": %d\n", sp, game->pendingActionState.meter_counter);
     fprintf(f, "%s},\n", sp);
 
     if (rules) {

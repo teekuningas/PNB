@@ -84,7 +84,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         stateInfo->match->aiState.lastSafeOnBaseIndex[i] =
             get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
     }
-    if (stateInfo->match->pRAI.batterReady == 0 && stateInfo->match->aiState.planCalculated == 1) {
+    if (stateInfo->match->pRAI.batter_ready == 0 && stateInfo->match->aiState.planCalculated == 1) {
         stateInfo->match->aiState.planCalculated = 0;
         // Reset all base-runner decision state for a fresh pitch cycle.
         // Without this, baseRunnerDecisionMade (especially for base 3, which has no
@@ -101,7 +101,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
     if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
         if (stateInfo->match->aiState.battingKeyDown == 0) {
             if (stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-                stateInfo->match->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+                stateInfo->match->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
                 stateInfo->match->aiState.battingKeyDown = 1;
                 stateInfo->match->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
             }
@@ -146,7 +146,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         // change player
         if (stateInfo->match->aiState.change == 1 && stateInfo->match->aiState.changingKeyDown == 0 &&
             stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-            stateInfo->match->aF.bTAF.chooseBatter = CHOOSE_BATTER_NEXT;
+            stateInfo->match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
             stateInfo->match->aiState.changingKeyDown = 1;
             stateInfo->match->aiState.actionKeyLock = AI_CHANGE_LOCK;
         } else if (stateInfo->match->aiState.changingKeyDown == 1 &&
@@ -158,7 +158,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         // select best batter.
         if (stateInfo->match->aiState.change == 0 && stateInfo->match->aiState.battingKeyDown == 0 &&
             stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK) {
-            stateInfo->match->aF.bTAF.chooseBatter = CHOOSE_BATTER_SELECT;
+            stateInfo->match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
             stateInfo->match->aiState.battingKeyDown = 1;
             stateInfo->match->aiState.actionKeyLock = AI_WAITING_BATTER_LOCK;
         } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
@@ -170,7 +170,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
             stateInfo->match->aiState.changeHasHappened = 0;
         }
 
-    } else if (stateInfo->match->pRAI.batterReady == 1 && stateInfo->match->pRAI.pitchState != PITCH_STAGE_AIRBORNE &&
+    } else if (stateInfo->match->pRAI.batter_ready == 1 && stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
                stateInfo->match->gameFlowState.ballHome == 1) {
         // decision tree.. contents can be read within
         if (stateInfo->match->aiState.planCalculated == 0) {
@@ -207,7 +207,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.clickBreak[0] > CLICK_BREAK_CONSTANT) {
                 stateInfo->match->aiState.baseRunnerKeyDown[0] = 1;
                 stateInfo->match->aiState.baseRunnerLock[0] = AI_CLICK_LOCK;
-                stateInfo->match->aF.bTAF.baseRun[0] = ACTION_TRIGGER_START;
+                stateInfo->match->aF.bTAF.base_run[0] = ACTION_TRIGGER_START;
             } else if (stateInfo->match->aiState.baseRunnerKeyDown[0] == 1 &&
                        stateInfo->match->aiState.baseRunnerLock[0] == AI_CLICK_LOCK) {
                 stateInfo->match->aiState.baseRunnerKeyDown[0] = 0;
@@ -230,7 +230,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                     stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
                     stateInfo->match->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
-                    stateInfo->match->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
+                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
                 } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
                            stateInfo->match->aiState.baseRunnerLock[i] == AI_CLICK_LOCK) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
@@ -242,7 +242,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         }
     }
     // if ball is not home, we return players from first and second base to their bases
-    else if (stateInfo->match->pRAI.batterReady == 1 && stateInfo->match->pRAI.pitchState != PITCH_STAGE_AIRBORNE &&
+    else if (stateInfo->match->pRAI.batter_ready == 1 && stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
              stateInfo->match->gameFlowState.ballHome == 0) {
         if (stateInfo->match->aiState.runningBaseRunners == 1) {
             int i;
@@ -256,7 +256,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                     stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
                     stateInfo->match->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
-                    stateInfo->match->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
+                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
                 } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
                            stateInfo->match->aiState.baseRunnerLock[i] == AI_COME_BACK_LOCK) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
@@ -268,7 +268,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         }
     }
     // and here we bat
-    else if (stateInfo->match->pRAI.pitchState == PITCH_STAGE_AIRBORNE) {
+    else if (stateInfo->match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         int i;
         // predict if pitch is going to be ball
         if (stateInfo->match->aiState.aiWrongPitch == 0 &&
@@ -288,7 +288,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                     stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
                     stateInfo->match->aiState.baseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
-                    stateInfo->match->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
+                    stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
                 } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
                            stateInfo->match->aiState.baseRunnerLock[i] == AI_COME_BACK_WRONG_PITCH_LOCK) {
                     stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;
@@ -304,7 +304,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(0, seeded_rand(rng_seed, RAND_MAX));
                 stateInfo->match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meterCounter > BAT_SWING_MAX - 23 &&
+            if (stateInfo->match->pendingActionState.meter_counter > BAT_SWING_MAX - 23 &&
                 stateInfo->match->aiState.battingKeyDown == 0 &&
                 stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
                 stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
@@ -312,7 +312,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
             } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
                        stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meterCounter > BAT_LOAD_MAX - 9) {
+                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 9) {
                     stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
                     stateInfo->match->aiState.battingKeyDown = 0;
                     stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
@@ -330,7 +330,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                     BAT_SWING_MAX - 4 - seeded_rand(rng_seed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
                 stateInfo->match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.decidedSwingTrigger &&
+            if (stateInfo->match->pendingActionState.meter_counter > stateInfo->match->aiState.decidedSwingTrigger &&
                 stateInfo->match->aiState.battingKeyDown == 0 &&
                 stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
                 stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
@@ -338,7 +338,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
             } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
                        stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meterCounter > BAT_LOAD_MAX - 6) {
+                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 6) {
                     stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
                     stateInfo->match->aiState.battingKeyDown = 0;
                     stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
@@ -351,7 +351,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.decidedAngle = calculate_ai_batting_angle(2, seeded_rand(rng_seed, RAND_MAX));
                 stateInfo->match->aiState.angleDecided = 1;
             }
-            if (stateInfo->match->pendingActionState.meterCounter > BAT_SWING_MAX - 11 &&
+            if (stateInfo->match->pendingActionState.meter_counter > BAT_SWING_MAX - 11 &&
                 stateInfo->match->aiState.battingKeyDown == 0 &&
                 stateInfo->match->aiState.actionKeyLock == AI_NO_LOCK && stateInfo->match->aiState.aiWrongPitch == 0) {
                 stateInfo->match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
@@ -359,7 +359,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.actionKeyLock = AI_BATTING_LOCK;
             } else if (stateInfo->match->aiState.battingKeyDown == 1 &&
                        stateInfo->match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (stateInfo->match->pendingActionState.meterCounter > BAT_LOAD_MAX - 8) {
+                if (stateInfo->match->pendingActionState.meter_counter > BAT_LOAD_MAX - 8) {
                     stateInfo->match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
                     stateInfo->match->aiState.battingKeyDown = 0;
                     stateInfo->match->aiState.actionKeyLock = AI_NO_LOCK;
@@ -367,28 +367,28 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
             }
         }
         if (stateInfo->match->aiState.decidedAngle >= 0 &&
-            stateInfo->match->pendingActionState.batterAngle < stateInfo->match->aiState.decidedAngle &&
+            stateInfo->match->pendingActionState.batter_angle < stateInfo->match->aiState.decidedAngle &&
             stateInfo->match->aiState.increaseKeyDown == 0) {
-            stateInfo->match->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_START;
+            stateInfo->match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_START;
             stateInfo->match->aiState.increaseKeyDown = 1;
-        } else if (stateInfo->match->pendingActionState.batterAngle >= stateInfo->match->aiState.decidedAngle &&
+        } else if (stateInfo->match->pendingActionState.batter_angle >= stateInfo->match->aiState.decidedAngle &&
                    stateInfo->match->aiState.increaseKeyDown == 1) {
-            stateInfo->match->aF.bTAF.increaseBatterAngle = ACTION_TRIGGER_STOP;
+            stateInfo->match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_STOP;
             stateInfo->match->aiState.increaseKeyDown = 0;
         }
 
         if (stateInfo->match->aiState.decidedAngle < 0 &&
-            stateInfo->match->pendingActionState.batterAngle > stateInfo->match->aiState.decidedAngle &&
+            stateInfo->match->pendingActionState.batter_angle > stateInfo->match->aiState.decidedAngle &&
             stateInfo->match->aiState.decreaseKeyDown == 0) {
-            stateInfo->match->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_START;
+            stateInfo->match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_START;
             stateInfo->match->aiState.decreaseKeyDown = 1;
-        } else if (stateInfo->match->pendingActionState.batterAngle <= stateInfo->match->aiState.decidedAngle &&
+        } else if (stateInfo->match->pendingActionState.batter_angle <= stateInfo->match->aiState.decidedAngle &&
                    stateInfo->match->aiState.decreaseKeyDown == 1) {
-            stateInfo->match->aF.bTAF.decreaseBatterAngle = ACTION_TRIGGER_STOP;
+            stateInfo->match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_STOP;
             stateInfo->match->aiState.decreaseKeyDown = 0;
         }
     }
-    if (stateInfo->match->pRAI.pitchState != PITCH_STAGE_AIRBORNE && stateInfo->match->aiState.angleDecided == 1) {
+    if (stateInfo->match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && stateInfo->match->aiState.angleDecided == 1) {
         stateInfo->match->aiState.angleDecided = 0;
     }
     // AI: Check if it's safe to advance runners
@@ -396,7 +396,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
     // AND ball has traveled far enough from home (to avoid triggering when ball is still at home plate)
     // AND ball has already hit the ground (if still airborne and out of bounds, it's a foul/läpilyönti)
     if (stateInfo->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT &&
-        stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throwGoingToBase == -1 &&
+        stateInfo->rules->betweenPitchState.catchHasBeenMade == 0 && stateInfo->match->pRAI.throw_going_to_base == -1 &&
         stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->ballInfo.moving == 1 &&
         stateInfo->rules->betweenPitchState.hasBallHitGround == 1 && stateInfo->match->ballInfo.location.z < -10.0f &&
         checkIfBallIsOutOfBounds(&stateInfo->match->ballInfo, stateInfo->fieldPositions)) {
@@ -407,7 +407,7 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         int j;
         int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, (BaseID)i);
         int shouldRun = 1;
-        if (i == 0 && stateInfo->match->pRAI.batterCanAdvance == 0) continue;
+        if (i == 0 && stateInfo->match->pRAI.batter_can_advance == 0) continue;
         // here we check that there is no one running this same base interval.
         for (j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
             BaseID bid = stateInfo->match->playerInfo[j].bTPI.baseId;
@@ -429,13 +429,13 @@ void update_batting_ai(StateInfo* stateInfo, unsigned int* rng_seed)
             stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
             stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
             stateInfo->match->aiState.baseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
-            stateInfo->match->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
+            stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
 
         } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 0 &&
                    stateInfo->match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK &&
                    stateInfo->match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
             stateInfo->match->aiState.baseRunnerKeyDown[i] = 1;
-            stateInfo->match->aF.bTAF.baseRun[i] = ACTION_TRIGGER_START;
+            stateInfo->match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
         } else if (stateInfo->match->aiState.baseRunnerKeyDown[i] == 1 &&
                    stateInfo->match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK) {
             stateInfo->match->aiState.baseRunnerKeyDown[i] = 0;

@@ -20,7 +20,7 @@ int test_pitch_power_calc()
 int test_pitch_angle_calc()
 {
     printf("Running test: %s\n", __func__);
-    // pitchAngle = meterCounter/max - 9/13
+    // pitchAngle = meter_counter/max - 9/13
     // 9/13 ~= 0.6923
 
     // max = 1300 (for easy math)

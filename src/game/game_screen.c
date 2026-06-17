@@ -394,8 +394,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     );
 
     // Meter Markers
-    meterX = 0.16f * stateInfo->match->pRAI.meterValue;
-    swingMeterX = 0.16f * stateInfo->match->pRAI.swingMeterValue;
+    meterX = 0.16f * stateInfo->match->pRAI.meter_value;
+    swingMeterX = 0.16f * stateInfo->match->pRAI.swing_meter_value;
 
     float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * meter_w;
     float swing_marker_x = meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * meter_w;

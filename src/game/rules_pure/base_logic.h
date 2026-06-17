@@ -35,7 +35,7 @@ bool base_is_safe_haven(BaseID id);
 
 /**
  * Checks if the ID is a valid base index (0-3).
- * Useful for array indexing (like baseRun[4]).
+ * Useful for array indexing (like base_run[4]).
  * Equivalent to: id >= BASE_HOME &&id <= BASE_THIRD
  */
 bool base_is_index(BaseID id);

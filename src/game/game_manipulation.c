@@ -94,7 +94,7 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                     FIELD_RIGHT, BALL_SLOW_FACTOR_Y
                 )) {
                 // if ball hit a wall, we need to refresh AI targets because the prediction is now wrong
-                match->pRAI.refreshCatchAndChange = 1;
+                match->pRAI.refresh_catch_and_change = 1;
             }
             if (match->ballInfo.onGround == 0) {
                 // if ball is not on the ground yet, let it be affected by gravity.
@@ -122,7 +122,7 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                     // if ball has enough y-velocity it will bounce
                     if (match->ballInfo.velocity.y < -BALL_BOUNCE_THRESHOLD) {
                         // so try to update ranks of fielders
-                        match->pRAI.refreshCatchAndChange = 1;
+                        match->pRAI.refresh_catch_and_change = 1;
                         // change the direction of y-velocity
                         match->ballInfo.velocity.y = -match->ballInfo.velocity.y;
                         set_vector_xyz(
@@ -136,7 +136,7 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                     // ground and change ranked indices for the last time.
                     else if (match->ballInfo.velocity.y < 0) {
                         match->ballInfo.onGround = 1;
-                        match->pRAI.refreshCatchAndChange = 1;
+                        match->pRAI.refresh_catch_and_change = 1;
                         match->ballInfo.location.y = BALL_SIZE / 2;
                         match->ballInfo.velocity.y = 0.0f;
                     }
@@ -198,8 +198,8 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball
     // and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
     // as that could make some weird things happen. try on the next frame again.
-    if (match->pII.hasBallIndex == -1 && match->pRAI.pitchState == PITCH_STAGE_NONE &&
-        match->pRAI.refreshCatchAndChange != 1) {
+    if (match->pII.hasBallIndex == -1 && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
+        match->pRAI.refresh_catch_and_change != 1) {
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             // so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.
             // its purpose is to deny players catching balls right after throwing them.
@@ -222,9 +222,9 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                         p1z = match->playerInfo[i].tPI.location.z;
                         p2x = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.x;
                         p2z = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.z;
-                        if (match->pRAI.throwGoingToBase != -1 &&
-                            (i == match->pII.catcherOnBaseIndex[match->pRAI.throwGoingToBase] ||
-                             i == match->pII.catcherReplacerOnBaseIndex[match->pRAI.throwGoingToBase])) {
+                        if (match->pRAI.throw_going_to_base != -1 &&
+                            (i == match->pII.catcherOnBaseIndex[match->pRAI.throw_going_to_base] ||
+                             i == match->pII.catcherReplacerOnBaseIndex[match->pRAI.throw_going_to_base])) {
                             baseCatcherFlag = 1;
                         }
                     }
@@ -266,7 +266,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
 
                         // make sound
                         *play_sound_effect = SOUND_CATCH;
-                        match->pRAI.throwGoingToBase = -1;
+                        match->pRAI.throw_going_to_base = -1;
                         match->pII.controlIndex = i;
                         match->pII.hasBallIndex = i;
 
@@ -435,10 +435,10 @@ static void move_idling_players_to_home_location(MatchSession* match)
 static void rank_players_and_move_them(MatchSession* match)
 {
     // calculating these things only makes sense when no one has ball. even though these usually should be mutually
-    // exclusive theres a small change that refreshCatchAndchange == 1 and ball has been caught. refreshCatchAndChange
+    // exclusive theres a small change that refreshCatchAndchange == 1 and ball has been caught. refresh_catch_and_change
     // is set 1 when ball is thrown or bat or dropped but also when ball hits ground for the first time and when it
     // stops and also when player is changed. there could be more.
-    if (match->pRAI.refreshCatchAndChange == 1 && match->pII.hasBallIndex == -1) {
+    if (match->pRAI.refresh_catch_and_change == 1 && match->pII.hasBallIndex == -1) {
 
         int i, j;
         int rankedIndices[RANKED_FIELDERS_COUNT];
@@ -459,7 +459,7 @@ static void rank_players_and_move_them(MatchSession* match)
         float distance;
         float evaluation;
         if (match->ballInfo.currentFlightHasHitGround == 0) {
-            if (match->pRAI.throwGoingToBase == -1) {
+            if (match->pRAI.throw_going_to_base == -1) {
                 s = 1.1f; // when batting the height is something like this
             } else {
                 s = BALL_HEIGHT_WITH_PLAYER;
@@ -565,10 +565,10 @@ static void rank_players_and_move_them(MatchSession* match)
 
         // then change cursor to best choice of players if flags says so
         // set for example when ball is first bat/thrown etc or when change player key is pressed.
-        if (match->pRAI.initPlayerSelection == 1) {
+        if (match->pRAI.init_player_selection == 1) {
             match->pII.changePlayerArrayIndex = 0;
             change_player(match);
-            match->pRAI.initPlayerSelection = 0;
+            match->pRAI.init_player_selection = 0;
         } else {
             match->pII.changePlayerArrayIndex = -1;
         }
@@ -576,7 +576,7 @@ static void rank_players_and_move_them(MatchSession* match)
         // move these critical players to ball's final position
         move_ranked_to_catch(match);
     }
-    match->pRAI.refreshCatchAndChange = 0;
+    match->pRAI.refresh_catch_and_change = 0;
 }
 
 static void player_location_orientation_and_targets(MatchSession* match, const FieldPositions* field_positions)

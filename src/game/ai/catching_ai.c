@@ -22,7 +22,7 @@ static void update_ai_pitching(StateInfo* stateInfo, unsigned int* rng_seed)
         if (stateInfo->match->pendingActionState.aiLockTimeoutCounter == -1) {
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = 0;
         }
-        if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.pitchFirstLimit) {
+        if (stateInfo->match->pendingActionState.meter_counter > stateInfo->match->aiState.pitchFirstLimit) {
             stateInfo->match->aiState.pitchStage = 2;
             stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
@@ -39,7 +39,7 @@ static void update_ai_pitching(StateInfo* stateInfo, unsigned int* rng_seed)
         if (stateInfo->match->pendingActionState.aiLockTimeoutCounter == -1) {
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = 0;
         }
-        if (stateInfo->match->pendingActionState.meterCounter > stateInfo->match->aiState.pitchSecondLimit) {
+        if (stateInfo->match->pendingActionState.meter_counter > stateInfo->match->aiState.pitchSecondLimit) {
             stateInfo->match->aiState.pitchStage = 3;
             stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
@@ -107,11 +107,11 @@ static void update_ai_pitching(StateInfo* stateInfo, unsigned int* rng_seed)
     }
     stateInfo->match->aiState.pitchPreviousTime = stateInfo->match->aiState.pitchTime;
     // this batterReadyTimer is used to give human player a bit more time before AI pitches.
-    if (stateInfo->match->pRAI.batterReady == 1 &&
+    if (stateInfo->match->pRAI.batter_ready == 1 &&
         stateInfo->match->pII.catcherOnBaseIndex[0] == stateInfo->match->pII.hasBallIndex &&
         stateInfo->match->aiState.batterReadyTimer == -1) {
         stateInfo->match->aiState.batterReadyTimer = 0;
-    } else if (stateInfo->match->pRAI.batterReady == 0) {
+    } else if (stateInfo->match->pRAI.batter_ready == 0) {
         stateInfo->match->aiState.batterReadyTimer = -1;
     }
     if (stateInfo->match->aiState.batterReadyTimer != -1) {
@@ -136,7 +136,7 @@ void move_controlled_player_to_location(StateInfo* stateInfo, Vector3D* target)
     float dx = tx - px;
     float dz = tz - pz;
 
-    if (!is_vector_small_enough_circle_xz(dx, dz, 1.0f) && stateInfo->match->pendingActionState.throwGoingOn == 0) {
+    if (!is_vector_small_enough_circle_xz(dx, dz, 1.0f) && stateInfo->match->pendingActionState.throw_going_on == 0) {
         if (stateInfo->match->aiState.moveCounter >= 10) {
             MovementKeys keys = calculate_movement_keys(dx, dz);
             // Set triggers only if NOT already moving in that direction to avoid unnecessary resets
@@ -218,7 +218,7 @@ void throw_ball_to_base(StateInfo* stateInfo, BaseID base)
                 stateInfo->match->pendingActionState.aiActionEventLock = AI_THROW_LOCK;
 
                 // AI sets trigger directly
-                stateInfo->match->aF.cTAF.throwToBase[base] = ACTION_TRIGGER_START;
+                stateInfo->match->aF.cTAF.throw_to_base[base] = ACTION_TRIGGER_START;
             }
         }
     }
@@ -240,15 +240,15 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
         if (stateInfo->match->pendingActionState.aiLockTimeoutCounter == -1) {
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = 0;
         }
-        if (stateInfo->match->pendingActionState.meterCounter > THROW_MAX * (3.0f / 4)) {
+        if (stateInfo->match->pendingActionState.meter_counter > THROW_MAX * (3.0f / 4)) {
             stateInfo->match->aiState.throwStage = 0;
             stateInfo->match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
             stateInfo->match->pendingActionState.aiLockUpdate = 1;
             stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
 
-            // AI signals throw release via throwGoingToBase (set by prepare_throw)
-            if (stateInfo->match->pRAI.throwGoingToBase >= 0 && stateInfo->match->pRAI.throwGoingToBase < BASE_COUNT) {
-                stateInfo->match->aF.cTAF.throwToBase[stateInfo->match->pRAI.throwGoingToBase] = ACTION_TRIGGER_STOP;
+            // AI signals throw release via throw_going_to_base (set by prepare_throw)
+            if (stateInfo->match->pRAI.throw_going_to_base >= 0 && stateInfo->match->pRAI.throw_going_to_base < BASE_COUNT) {
+                stateInfo->match->aF.cTAF.throw_to_base[stateInfo->match->pRAI.throw_going_to_base] = ACTION_TRIGGER_STOP;
             }
         } else {
             stateInfo->match->pendingActionState.aiLockTimeoutCounter++;
@@ -259,8 +259,8 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->pendingActionState.aiLockTimeoutCounter = -1;
 
                 // Force-abort the throw: clear execution state so auto-clear fires
-                stateInfo->match->pendingActionState.throwGoingOn = 0;
-                stateInfo->match->pRAI.throwGoingToBase = -1;
+                stateInfo->match->pendingActionState.throw_going_on = 0;
+                stateInfo->match->pRAI.throw_going_to_base = -1;
             }
         }
     }
@@ -269,7 +269,7 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
     if (stateInfo->match->pII.hasBallIndex == -1 && stateInfo->match->pII.controlIndex != -1) {
         if (stateInfo->match->pendingActionState.aiActionEventLock == AI_NO_LOCK &&
             stateInfo->match->pendingActionState.aiLockUpdate == 0) {
-            if (stateInfo->match->pRAI.throwGoingToBase == -1 ||
+            if (stateInfo->match->pRAI.throw_going_to_base == -1 ||
                 stateInfo->match->ballInfo.currentFlightHasHitGround == 1) {
                 move_controlled_player_to_location(stateInfo, &(stateInfo->match->cameraState.targetPoint));
             }
@@ -306,7 +306,7 @@ void update_catching_ai(StateInfo* stateInfo, unsigned int* rng_seed)
                 stateInfo->match->aiState.dropStage = 1;
                 stateInfo->match->pendingActionState.aiLockUpdate = 1;
                 stateInfo->match->pendingActionState.aiActionEventLock = AI_DROP_LOCK;
-                stateInfo->match->aF.cTAF.dropBall = ACTION_TRIGGER_START;
+                stateInfo->match->aF.cTAF.drop_ball = ACTION_TRIGGER_START;
             }
         }
         // otherwise we throw or move towards a base where lead_from_base player is going. if lead_from_base player is

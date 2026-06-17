@@ -162,7 +162,7 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 /**
  * @brief Simulate a pitch thrown to a specific X coordinate relative to plate center
  *
- * Sets up all necessary state (pitchState, ball velocity, referee snapshots) to mimic
+ * Sets up all necessary state (pitch_state, ball velocity, referee snapshots) to mimic
  * a real pitch release.
  *
  * @param ctx The scenario context

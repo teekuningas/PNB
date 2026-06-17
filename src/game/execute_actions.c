@@ -31,17 +31,17 @@ void init_execute_actions(StateInfo* stateInfo)
     // just initialize everyone of these static variables to zero
     int i;
 
-    stateInfo->match->pendingActionState.meterCounter = 0;
-    stateInfo->match->pendingActionState.meterCounterMax = 0;
-    stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    stateInfo->match->pendingActionState.meter_counter = 0;
+    stateInfo->match->pendingActionState.meter_counter_max = 0;
+    stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     for (i = 0; i < BASE_COUNT; i++) {
-        stateInfo->match->pendingActionState.doubleClickCounter[i] = -1;
+        stateInfo->match->pendingActionState.double_click_counter[i] = -1;
     }
 
     reset_pitching_system(stateInfo);
     init_batting_system(stateInfo);
     init_throwing_system(stateInfo);
-    stateInfo->match->pendingActionState.runBatFlag = 0;
+    stateInfo->match->pendingActionState.run_bat_flag = 0;
 
     // ai uses a few flags..
 
@@ -58,10 +58,10 @@ void execute_actions(StateInfo* stateInfo)
 
     // double click counter
     for (i = 0; i < BASE_COUNT; i++) {
-        if (stateInfo->match->pendingActionState.doubleClickCounter[i] >= 0) {
-            stateInfo->match->pendingActionState.doubleClickCounter[i]++;
-            if (stateInfo->match->pendingActionState.doubleClickCounter[i] >= 20) {
-                stateInfo->match->pendingActionState.doubleClickCounter[i] = -1;
+        if (stateInfo->match->pendingActionState.double_click_counter[i] >= 0) {
+            stateInfo->match->pendingActionState.double_click_counter[i]++;
+            if (stateInfo->match->pendingActionState.double_click_counter[i] >= 20) {
+                stateInfo->match->pendingActionState.double_click_counter[i] = -1;
             }
         }
     }
@@ -72,18 +72,18 @@ void execute_actions(StateInfo* stateInfo)
 
     for (i = 0; i < BASE_COUNT; i++) {
         // for every direction we check if throw key has been pressed
-        if (stateInfo->match->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_START) {
+        if (stateInfo->match->aF.cTAF.throw_to_base[i] == ACTION_TRIGGER_START) {
             // can throw only if someone has the ball and no throw is already going on
             if (stateInfo->match->pII.hasBallIndex != -1) {
                 int j;
                 for (j = 0; j < BASE_COUNT; j++) {
-                    if (j != i) stateInfo->match->aF.cTAF.throwToBase[j] = ACTION_IDLE;
+                    if (j != i) stateInfo->match->aF.cTAF.throw_to_base[j] = ACTION_IDLE;
                 }
                 // stop pitching if throwing
-                if (stateInfo->match->pRAI.pitchState != PITCH_STAGE_NONE) {
+                if (stateInfo->match->pRAI.pitch_state != PITCH_STAGE_NONE) {
                     stateInfo->match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-                    stateInfo->match->pRAI.pitchState = PITCH_STAGE_NONE;
-                    stateInfo->match->pendingActionState.pitchPhase = PITCH_PHASE_NONE;
+                    stateInfo->match->pRAI.pitch_state = PITCH_STAGE_NONE;
+                    stateInfo->match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
                     // when pitching the ball is moved to the center of the plate so now when we are terminating the
                     // pitch to throw, we must move the ball back to the player
                     stateInfo->match->ballInfo.location.x =
@@ -91,38 +91,38 @@ void execute_actions(StateInfo* stateInfo)
                     stateInfo->match->ballInfo.location.z =
                         stateInfo->match->playerInfo[stateInfo->match->pII.hasBallIndex].tPI.location.z;
                 }
-                // throwGoingToBase variables are used to have better control
+                // throw_going_to_base variables are used to have better control
                 // over basemen who are wanting go out of base catching the ball.
                 // throws can be directed only towards bases.
                 prepare_throw(stateInfo, i);
                 // start by loading
                 throw_load(stateInfo, i);
-                stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_THROWING;
+                stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
             }
             // consume the intent regardless of success
-            stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
+            stateInfo->match->aF.cTAF.throw_to_base[i] = ACTION_IDLE;
         }
         // if throw release intent received while a throw is in progress
-        else if (stateInfo->match->aF.cTAF.throwToBase[i] == ACTION_TRIGGER_STOP) {
-            stateInfo->match->aF.cTAF.throwToBase[i] = ACTION_IDLE;
-            if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_THROWING) {
+        else if (stateInfo->match->aF.cTAF.throw_to_base[i] == ACTION_TRIGGER_STOP) {
+            stateInfo->match->aF.cTAF.throw_to_base[i] = ACTION_IDLE;
+            if (stateInfo->match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING) {
                 throw_release(stateInfo);
-                stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+                stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
             }
         }
     }
     // Auto-clear: if throw was interrupted externally (e.g., ball caught by game_manipulation
-    // cleared throwGoingOn), reset the action state so other actions can proceed.
-    if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_THROWING &&
-        stateInfo->match->pendingActionState.throwGoingOn == 0) {
-        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    // cleared throw_going_on), reset the action state so other actions can proceed.
+    if (stateInfo->match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING &&
+        stateInfo->match->pendingActionState.throw_going_on == 0) {
+        stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
-    // Safety: if throwGoingOn is stuck but no throw action is active, clear it.
-    // This catches the case where a reset cleared currentCatchingAction but missed throwGoingOn.
-    if (stateInfo->match->pendingActionState.throwGoingOn == 1 &&
-        stateInfo->match->pendingActionState.currentCatchingAction != CATCHING_ACTION_THROWING) {
-        stateInfo->match->pendingActionState.throwGoingOn = 0;
-        stateInfo->match->pRAI.throwGoingToBase = -1;
+    // Safety: if throw_going_on is stuck but no throw action is active, clear it.
+    // This catches the case where a reset cleared current_catching_action but missed throw_going_on.
+    if (stateInfo->match->pendingActionState.throw_going_on == 1 &&
+        stateInfo->match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING) {
+        stateInfo->match->pendingActionState.throw_going_on = 0;
+        stateInfo->match->pRAI.throw_going_to_base = -1;
     }
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
@@ -155,7 +155,7 @@ void execute_actions(StateInfo* stateInfo)
         stateInfo->match->aF.cTAF.change_player = ACTION_IDLE;
     }
     // if drop ball key has been pressed, try dropping
-    if (stateInfo->match->aF.cTAF.dropBall == ACTION_TRIGGER_START) {
+    if (stateInfo->match->aF.cTAF.drop_ball == ACTION_TRIGGER_START) {
         drop_ball(stateInfo);
     }
     // pitching
@@ -166,36 +166,36 @@ void execute_actions(StateInfo* stateInfo)
     } else if (stateInfo->match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
         release_pitch(stateInfo);
     }
-    // Safety auto-clear: if pitching action is stuck but pitchState is NONE, release it.
-    if (stateInfo->match->pendingActionState.currentCatchingAction == CATCHING_ACTION_PITCHING &&
-        stateInfo->match->pRAI.pitchState == PITCH_STAGE_NONE &&
-        stateInfo->match->pendingActionState.pitchPhase == PITCH_PHASE_NONE) {
-        stateInfo->match->pendingActionState.currentCatchingAction = CATCHING_ACTION_NONE;
+    // Safety auto-clear: if pitching action is stuck but pitch_state is NONE, release it.
+    if (stateInfo->match->pendingActionState.current_catching_action == CATCHING_ACTION_PITCHING &&
+        stateInfo->match->pRAI.pitch_state == PITCH_STAGE_NONE &&
+        stateInfo->match->pendingActionState.pitch_phase == PITCH_PHASE_NONE) {
+        stateInfo->match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
 
     /*
      * BATTING TEAM
      */
     // when there's no batter, user is prompted to select the next batter
-    if (stateInfo->match->aF.bTAF.chooseBatter == CHOOSE_BATTER_NEXT) {
+    if (stateInfo->match->aF.bTAF.choose_batter == CHOOSE_BATTER_NEXT) {
         change_batter(stateInfo);
-    } else if (stateInfo->match->aF.bTAF.chooseBatter == CHOOSE_BATTER_SELECT) {
+    } else if (stateInfo->match->aF.bTAF.choose_batter == CHOOSE_BATTER_SELECT) {
         select_batter(stateInfo);
     }
-    // free walk decisions, takeFreeWalk can be 0, 1 or 2. if its 2
-    // takeFreeWalkDecision() is called but will basically just set takeFreeWalk to 0.
-    if (stateInfo->match->aF.bTAF.takeFreeWalk > FREE_WALK_IDLE) {
+    // free walk decisions, take_free_walk can be 0, 1 or 2. if its 2
+    // takeFreeWalkDecision() is called but will basically just set take_free_walk to 0.
+    if (stateInfo->match->aF.bTAF.take_free_walk > FREE_WALK_IDLE) {
         take_free_walk_decision(stateInfo);
     }
     // batter angles
-    if (stateInfo->match->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_START) {
+    if (stateInfo->match->aF.bTAF.increase_batter_angle == ACTION_TRIGGER_START) {
         start_increase_batter_angle(stateInfo);
-    } else if (stateInfo->match->aF.bTAF.increaseBatterAngle == ACTION_TRIGGER_STOP) {
+    } else if (stateInfo->match->aF.bTAF.increase_batter_angle == ACTION_TRIGGER_STOP) {
         stop_increase_batter_angle(stateInfo);
     }
-    if (stateInfo->match->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_START) {
+    if (stateInfo->match->aF.bTAF.decrease_batter_angle == ACTION_TRIGGER_START) {
         start_decrease_batter_angle(stateInfo);
-    } else if (stateInfo->match->aF.bTAF.decreaseBatterAngle == ACTION_TRIGGER_STOP) {
+    } else if (stateInfo->match->aF.bTAF.decrease_batter_angle == ACTION_TRIGGER_STOP) {
         stop_decrease_batter_angle(stateInfo);
     }
     // batting
@@ -214,7 +214,7 @@ void execute_actions(StateInfo* stateInfo)
 
 static void take_free_walk_decision(StateInfo* stateInfo)
 {
-    if (stateInfo->match->aF.bTAF.takeFreeWalk == FREE_WALK_ACCEPT) {
+    if (stateInfo->match->aF.bTAF.take_free_walk == FREE_WALK_ACCEPT) {
         int index = stateInfo->match->flowControl.freeWalkIndex;
         BaseID base = stateInfo->match->flowControl.freeWalkBase;
         if (index != -1) {
@@ -248,7 +248,7 @@ static void take_free_walk_decision(StateInfo* stateInfo)
     }
     // no more decision to make.
     stateInfo->match->flowControl.waitingForFreeWalkDecision = 0;
-    stateInfo->match->aF.bTAF.takeFreeWalk = FREE_WALK_IDLE;
+    stateInfo->match->aF.bTAF.take_free_walk = FREE_WALK_IDLE;
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
@@ -260,48 +260,48 @@ static void change_batter(StateInfo* stateInfo)
     int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
     int index;
 
-    stateInfo->match->aF.bTAF.chooseBatter = 0;
-    // batterSelect variable will point to the current player in selection
+    stateInfo->match->aF.bTAF.choose_batter = 0;
+    // batter_select variable will point to the current player in selection
     // and now as we are changing the selection, we add one to it.
-    stateInfo->match->pendingActionState.batterSelect++;
+    stateInfo->match->pendingActionState.batter_select++;
     // here we have a loop that basically just searches through the possible players and selects
-    // the next one. batterSelect == 0 indicates that it is a normal player, batterSelect != 0 indicates
+    // the next one. batter_select == 0 indicates that it is a normal player, batter_select != 0 indicates
     // it is a joker player.
     // there must be at least one player as this function cannot get called without
     // waitingForBatterDecision-flag, and that can flag cant be true if
     // there is not at least one player.
     while (done == 0) {
-        if (stateInfo->match->pendingActionState.batterSelect == 0) {
+        if (stateInfo->match->pendingActionState.batter_select == 0) {
             if (stateInfo->rules->playerCounters.nonJokerPlayersLeft != 0)
                 done = 1;
             else
-                stateInfo->match->pendingActionState.batterSelect = 1;
-        } else if (stateInfo->match->pendingActionState.batterSelect == 4) {
+                stateInfo->match->pendingActionState.batter_select = 1;
+        } else if (stateInfo->match->pendingActionState.batter_select == 4) {
             if (stateInfo->rules->playerCounters.nonJokerPlayersLeft != 0) {
-                stateInfo->match->pendingActionState.batterSelect = 0;
+                stateInfo->match->pendingActionState.batter_select = 0;
                 done = 1;
             } else
-                stateInfo->match->pendingActionState.batterSelect = 1;
+                stateInfo->match->pendingActionState.batter_select = 1;
 
         } else {
             if (stateInfo->match
                     ->playerInfo[stateInfo->match->pII
-                                     .jokerIndices[stateInfo->match->pendingActionState.batterSelect - 1]]
+                                     .jokerIndices[stateInfo->match->pendingActionState.batter_select - 1]]
                     .bTPI.joker == JOKER_USED)
-                stateInfo->match->pendingActionState.batterSelect++;
+                stateInfo->match->pendingActionState.batter_select++;
             else
                 done = 1;
         }
         if (counter == 4) done = 1;
         counter++;
     }
-    // now we have the batterSelect value and we just need to find a corresponding index for that
+    // now we have the batter_select value and we just need to find a corresponding index for that
     // player.
-    if (stateInfo->match->pendingActionState.batterSelect == 0) {
+    if (stateInfo->match->pendingActionState.batter_select == 0) {
         index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
                     .batterOrder[stateInfo->rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
     } else {
-        index = stateInfo->match->pII.jokerIndices[stateInfo->match->pendingActionState.batterSelect - 1];
+        index = stateInfo->match->pII.jokerIndices[stateInfo->match->pendingActionState.batter_select - 1];
     }
     // and set it here.
     stateInfo->match->pII.batterSelectionIndex = index;
@@ -318,19 +318,19 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 }
 
 // so baserunning.
-// idea is just to update willStartRunning in every button press. and in special double click case we just run.
+// idea is just to update will_start_running in every button press. and in special double click case we just run.
 static void base_run(StateInfo* stateInfo, BaseID base)
 {
     // so baserunning.
-    // idea is just to update willStartRunning in every button press. and in special double click case we just run.
+    // idea is just to update will_start_running in every button press. and in special double click case we just run.
     if (get_base_controller(stateInfo->match, &stateInfo->rules->referee, base) != -1) {
-        if (stateInfo->match->aF.bTAF.baseRun[base] == ACTION_TRIGGER_START) {
+        if (stateInfo->match->aF.bTAF.base_run[base] == ACTION_TRIGGER_START) {
             int index = get_base_controller(stateInfo->match, &stateInfo->rules->referee, base);
             if (stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
                 stateInfo->match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
-                if (stateInfo->match->pRAI.willStartRunning[base] == 0) {
+                if (stateInfo->match->pRAI.will_start_running[base] == 0) {
                     if (index != -1 && stateInfo->match->playerInfo[index].cPI.moving == 0) {
-                        stateInfo->match->pRAI.willStartRunning[base] = 1;
+                        stateInfo->match->pRAI.will_start_running[base] = 1;
                         if (base == BASE_FIRST || base == BASE_SECOND) {
                             lead_from_base(
                                 stateInfo->match->playerInfo, stateInfo->match->playerRuntime,
@@ -339,10 +339,10 @@ static void base_run(StateInfo* stateInfo, BaseID base)
                         }
                     }
                 } else {
-                    stateInfo->match->pRAI.willStartRunning[base] = 0;
+                    stateInfo->match->pRAI.will_start_running[base] = 0;
                 }
             } else {
-                stateInfo->match->pRAI.willStartRunning[base] = 0;
+                stateInfo->match->pRAI.will_start_running[base] = 0;
                 if (index != -1) {
                     if (stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_ON_BASE &&
                         stateInfo->match->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
@@ -350,31 +350,31 @@ static void base_run(StateInfo* stateInfo, BaseID base)
                     }
                 }
             }
-            if (stateInfo->match->pendingActionState.doubleClickCounter[base] == -1) {
-                stateInfo->match->pendingActionState.doubleClickCounter[base] = 0;
+            if (stateInfo->match->pendingActionState.double_click_counter[base] == -1) {
+                stateInfo->match->pendingActionState.double_click_counter[base] = 0;
             } else {
-                if (stateInfo->match->pendingActionState.doubleClickCounter[base] >= 0) {
+                if (stateInfo->match->pendingActionState.double_click_counter[base] >= 0) {
                     if (index != -1) {
                         run_to_next_base(stateInfo->match, stateInfo->fieldPositions, index, base);
                     }
                 }
-                stateInfo->match->pendingActionState.doubleClickCounter[base] = -1;
+                stateInfo->match->pendingActionState.double_click_counter[base] = -1;
             }
         }
     }
-    stateInfo->match->aF.bTAF.baseRun[base] = ACTION_IDLE;
+    stateInfo->match->aF.bTAF.base_run[base] = ACTION_IDLE;
 }
 
 void update_meters(StateInfo* stateInfo)
 {
     update_pitching_meter(stateInfo);
 
-    if (stateInfo->match->pendingActionState.throwGoingOn == 1) {
-        if (stateInfo->match->pendingActionState.meterCounter < stateInfo->match->pendingActionState.meterCounterMax) {
-            stateInfo->match->pendingActionState.meterCounter += 1;
+    if (stateInfo->match->pendingActionState.throw_going_on == 1) {
+        if (stateInfo->match->pendingActionState.meter_counter < stateInfo->match->pendingActionState.meter_counter_max) {
+            stateInfo->match->pendingActionState.meter_counter += 1;
         }
-        stateInfo->match->pRAI.meterValue = 1.0f * stateInfo->match->pendingActionState.meterCounter /
-                                            stateInfo->match->pendingActionState.meterCounterMax;
+        stateInfo->match->pRAI.meter_value = 1.0f * stateInfo->match->pendingActionState.meter_counter /
+                                            stateInfo->match->pendingActionState.meter_counter_max;
     } else {
         update_batting_meter(stateInfo);
     }

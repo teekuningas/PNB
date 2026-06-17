@@ -31,7 +31,7 @@ float calculate_batting_vertical_angle(int power_count, int angle_count, float b
  * Calculates the visual meter value [0.0, 1.0] for power selection.
  *
  * @param counter Current meter counter value
- * @param max Maximum meter counter value (meterCounterMax)
+ * @param max Maximum meter counter value (meter_counter_max)
  * @return Normalized meter value
  */
 float calculate_power_meter_value(int counter, int max);
@@ -53,7 +53,7 @@ float calculate_angle_meter_value(int counter, int max, int power_count, int swi
  * Calculates the 3D velocity vector of the batted ball.
  *
  * @param vertical_angle Calculated vertical angle
- * @param horizontal_angle Calculated horizontal angle (-batterAngle * 2)
+ * @param horizontal_angle Calculated horizontal angle (-batter_angle * 2)
  * @param power Selected power value
  * @param power_factor Player's power attribute
  * @param ball_offset_x The horizontal offset of the ball when hit (affects direction)

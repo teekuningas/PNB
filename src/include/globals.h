@@ -246,9 +246,9 @@ typedef enum {
 typedef enum {
     PITCH_ACTION_IDLE = 0,
     PITCH_ACTION_START = 1, // Intent: start windup
-    PITCH_ACTION_POWER_WAIT = 2, // (unused after Phase B — state lives in pitchPhase)
+    PITCH_ACTION_POWER_WAIT = 2, // (unused after Phase B — state lives in pitch_phase)
     PITCH_ACTION_POWER_SET = 3, // Intent: power selected
-    PITCH_ACTION_ANGLE_WAIT = 4, // (unused after Phase B — state lives in pitchPhase)
+    PITCH_ACTION_ANGLE_WAIT = 4, // (unused after Phase B — state lives in pitch_phase)
     PITCH_ACTION_ANGLE_SET = 5 // Intent: angle selected, release ball
 } PitchActionPhase;
 
@@ -269,20 +269,20 @@ typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } 
 Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
 typedef struct _BattingTeamActionFlags {
-    ActionTriggerState baseRun[4];
-    ChooseBatterAction chooseBatter;
-    FreeWalkAction takeFreeWalk;
+    ActionTriggerState base_run[4];
+    ChooseBatterAction choose_batter;
+    FreeWalkAction take_free_walk;
     BatActionPhase swing;
-    ActionTriggerState increaseBatterAngle;
-    ActionTriggerState decreaseBatterAngle;
+    ActionTriggerState increase_batter_angle;
+    ActionTriggerState decrease_batter_angle;
 } BattingTeamActionFlags;
 
 typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
-    ActionTriggerState throwToBase[4];
+    ActionTriggerState throw_to_base[4];
     ActionTriggerState change_player;
     ActionTriggerState run;
-    ActionTriggerState dropBall;
+    ActionTriggerState drop_ball;
     PitchActionPhase pitch;
 } CatchingTeamActionFlags;
 
@@ -624,7 +624,7 @@ typedef struct _AIState {
     int decreaseKeyDown;
     int angleDecided;
     float decidedAngle;
-    int decidedSwingTrigger; // meterCounter level at which the AI releases its swing (randomizes power)
+    int decidedSwingTrigger; // meter_counter level at which the AI releases its swing (randomizes power)
     int baseRunnerKeyDown[BASE_COUNT];
     int baseRunnerDecisionMade[BASE_COUNT];
     int lastSafeOnBaseIndex[BASE_COUNT];
@@ -667,45 +667,45 @@ typedef enum {
 typedef enum { PITCH_PHASE_NONE = 0, PITCH_PHASE_POWER_WAIT, PITCH_PHASE_ANGLE_WAIT } PitchPhase;
 
 typedef struct _PendingActionState {
-    unsigned int meterCounter;
-    unsigned int meterCounterMax;
+    unsigned int meter_counter;
+    unsigned int meter_counter_max;
 
-    CatchingTeamCurrentAction currentCatchingAction;
-    PitchPhase pitchPhase;
+    CatchingTeamCurrentAction current_catching_action;
+    PitchPhase pitch_phase;
 
-    int throwGoingOn;
-    int runBatFlag;
-    int batterSelect;
+    int throw_going_on;
+    int run_bat_flag;
+    int batter_select;
 
     AILockType aiActionEventLock;
     int aiLockUpdate;
     int aiLockTimeoutCounter;
 
     // Batting related
-    int battingFrameCount;
-    int increaseBattingFrameCount;
-    int selectedBattingPowerCount;
-    int selectedBattingAngleCount;
-    float batterAngle;
-    int batterAngleSpeed;
-    float batterAdvanceSpeed;
-    float batterAdvance;
-    BattingMode battingMode;
-    float batterAdvanceLimit;
-    int battingStopped;
-    int batterMoving;
-    int updateBatterLocationAndOrientation;
-    int pitchFrameTime; // from batting_system.c
+    int batting_frame_count;
+    int increase_batting_frame_count;
+    int selected_batting_power_count;
+    int selected_batting_angle_count;
+    float batter_angle;
+    int batter_angle_speed;
+    float batter_advance_speed;
+    float batter_advance;
+    BattingMode batting_mode;
+    float batter_advance_limit;
+    int batting_stopped;
+    int batter_moving;
+    int update_batter_location_and_orientation;
+    int pitch_frame_time; // from batting_system.c
 
     // Throwing related
-    float throwDistance; // from throwing_system.c
-    Vector3D throwDirection; // from throwing_system.c
+    float throw_distance; // from throwing_system.c
+    Vector3D throw_direction; // from throwing_system.c
 
     // Pitching related
-    float pitchPower; // from pitching_system.c
+    float pitch_power; // from pitching_system.c
 
     // Input interpretation
-    int doubleClickCounter[BASE_COUNT];
+    int double_click_counter[BASE_COUNT];
 } PendingActionState;
 
 typedef struct _HomeRunContestState {
@@ -719,23 +719,23 @@ typedef enum {
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {
-    float meterValue; // meter for pitching and throwing
-    float swingMeterValue; // meter for batting
+    float meter_value; // meter for pitching and throwing
+    float swing_meter_value; // meter for batting
 
-    PitchCycleState pitchState; // Replaces pitchGoingOn and pitchInAir
+    PitchCycleState pitch_state; // Replaces pitchGoingOn and pitchInAir
 
-    int throwGoingToBase; // to avoid moving basecatchers out in the wild when ball is thrown to them.
+    int throw_going_to_base; // to avoid moving basecatchers out in the wild when ball is thrown to them.
 
-    int willStartRunning[BASE_COUNT];
+    int will_start_running[BASE_COUNT];
 
-    int initBatter; // used to initialize batter locally in
-    int batterReady; // is batter ready to swing
-    int battingGoingOn; // time starts when batter reaches ready position and ball is not in air and quits when batting
+    int init_batter; // used to initialize batter locally in
+    int batter_ready; // is batter ready to swing
+    int batting_going_on; // time starts when batter reaches ready position and ball is not in air and quits when batting
                         // animation is over
-    int batterCanAdvance;
+    int batter_can_advance;
 
-    int refreshCatchAndChange; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
-    int initPlayerSelection; // and sometimes with refreshCatchAndChange we set also initPlayerSelection
+    int refresh_catch_and_change; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
+    int init_player_selection; // and sometimes with refresh_catch_and_change we set also init_player_selection
     // so that
 
 } PlayerRelatedActionInfo;
