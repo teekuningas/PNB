@@ -5,6 +5,7 @@ test_runner
 integration_runner
 scenario_runner
 contract_runner
+scripted_runner
 sim_runner
 sim_trace_*.csv
 *.orig
