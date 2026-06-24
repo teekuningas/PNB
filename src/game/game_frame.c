@@ -65,7 +65,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         GameRulesState* rules = stateInfo->rules;
 
         // 1. Inputs
-        action_invocations(game, stateInfo->keyStates, &rules->scoreboard);
+        action_invocations(game, stateInfo->keyStates, &rules->scoreboard, &rules->referee);
 
         // 2. Physics & Logic
         // StateInfo is destructured here (the assembly point): each stage receives exactly the

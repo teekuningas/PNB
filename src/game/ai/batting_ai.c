@@ -12,13 +12,8 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
-// Macros moved from execute_actions.c
-
-#define CLICK_BREAK_CONSTANT 3
-
 void init_batting_ai(AIState* aiState)
 {
-    int i;
     aiState->battingKeyDown = 0;
     aiState->changingKeyDown = 0;
     aiState->actionKeyLock = AI_NO_LOCK;
@@ -37,14 +32,6 @@ void init_batting_ai(AIState* aiState)
     aiState->firstIndexSelected = 0;
     aiState->change = 0;
     aiState->changeHasHappened = 0;
-    for (i = 0; i < BASE_COUNT; i++) {
-        aiState->baseRunnerKeyDown[i] = 0;
-        aiState->lastSafeOnBaseIndex[i] = -1;
-        aiState->baseRunnerDecisionMade[i] = 0;
-        aiState->amountOfClicks[i] = 0;
-        aiState->baseRunnerLock[i] = AI_NO_LOCK;
-        aiState->clickBreak[i] = 0;
-    }
 }
 
 void update_batting_ai(
@@ -52,7 +39,7 @@ void update_batting_ai(
 )
 {
     int i;
-    int isDoubleClickingOk = 0;
+    int okToAdvanceAfterHit = 0;
 
     // Cleanup dangling locks if state changed externally
     if (match->flowControl.waitingForBatterDecision == 0) {
@@ -77,32 +64,11 @@ void update_batting_ai(
         }
     }
 
-    // update some flags
-    for (i = 0; i < BASE_COUNT; i++) {
-        match->aiState.clickBreak[i]++;
-        if (match->aiState.clickBreak[i] > 1000) match->aiState.clickBreak[i] = 0;
-        if (match->aiState.baseRunnerDecisionMade[i] == 1) {
-            if (get_base_controller(match, &rules->referee, (BaseID)i) == -1) {
-                match->aiState.baseRunnerDecisionMade[i] = 0;
-            }
-            if (match->aiState.lastSafeOnBaseIndex[i] != get_base_controller(match, &rules->referee, (BaseID)i)) {
-                match->aiState.baseRunnerDecisionMade[i] = 0;
-            }
-        }
-        match->aiState.lastSafeOnBaseIndex[i] = get_base_controller(match, &rules->referee, (BaseID)i);
-    }
+    // A fresh pitch cycle forces the swing plan to be recomputed. The per-base run decisions
+    // need no bookkeeping reset: the AI re-derives them every frame from live game state
+    // (will_start_running + each runner's PlayerUnitState), so they cannot go stale.
     if (match->pRAI.batter_ready == 0 && match->aiState.planCalculated == 1) {
         match->aiState.planCalculated = 0;
-        // Reset all base-runner decision state for a fresh pitch cycle.
-        // Without this, baseRunnerDecisionMade (especially for base 3, which has no
-        // "come back from leading" path) stays stale across pitches, preventing the AI
-        // from issuing new run commands to runners who stayed on their base.
-        for (i = 0; i < BASE_COUNT; i++) {
-            match->aiState.baseRunnerDecisionMade[i] = 0;
-            match->aiState.baseRunnerKeyDown[i] = 0;
-            match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-            match->aiState.clickBreak[i] = 0;
-        }
     }
     // make free walk decision == accept
     if (match->flowControl.waitingForFreeWalkDecision == 1) {
@@ -203,39 +169,21 @@ void update_batting_ai(
 
             match->aiState.planCalculated = 1;
         }
-        // if we decide that batter should run, we click down once.
-        if (match->aiState.runningBatter == 1) {
-            if (match->aiState.baseRunnerDecisionMade[0] == 0 && match->aiState.baseRunnerKeyDown[0] == 0 &&
-                match->aiState.baseRunnerLock[0] == AI_NO_LOCK && match->aiState.clickBreak[0] > CLICK_BREAK_CONSTANT) {
-                match->aiState.baseRunnerKeyDown[0] = 1;
-                match->aiState.baseRunnerLock[0] = AI_CLICK_LOCK;
-                match->aF.bTAF.base_run[0] = ACTION_TRIGGER_START;
-            } else if (match->aiState.baseRunnerKeyDown[0] == 1 && match->aiState.baseRunnerLock[0] == AI_CLICK_LOCK) {
-                match->aiState.baseRunnerKeyDown[0] = 0;
-                match->aiState.baseRunnerDecisionMade[0] = 1;
-                match->aiState.clickBreak[0] = 0;
-                match->aiState.baseRunnerLock[0] = AI_NO_LOCK;
-            }
+        // Arm the batter to advance — the run is committed on contact. Declared once: the
+        // command's actualization sets will_start_running[BASE_HOME], which makes the guard
+        // below false next frame (no click bookkeeping needed).
+        if (match->aiState.runningBatter == 1 && match->pRAI.will_start_running[BASE_HOME] == 0) {
+            match->aF.bTAF.base_run[BASE_HOME] = RUN_FORWARD;
         }
-        // if decide that baserunners should run, we click their keys.
+        // Arm on-base runners to advance on the pitch. Same self-limiting: once a runner is
+        // armed (and, on 1st/2nd, leads off) it is no longer ON_BASE-and-unarmed, so it is not
+        // re-commanded.
         if (match->aiState.runningBaseRunners == 1) {
-            int i;
             for (i = 1; i < BASE_COUNT; i++) {
-                if (match->aiState.baseRunnerDecisionMade[i] == 0 &&
-                    get_base_controller(match, &rules->referee, (BaseID)i) != -1 &&
-                    match->playerInfo[get_base_controller(match, &rules->referee, (BaseID)i)].bTPI.state ==
-                        PLAYER_STATE_ON_BASE &&
-                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    match->aiState.baseRunnerKeyDown[i] = 1;
-                    match->aiState.baseRunnerLock[i] = AI_CLICK_LOCK;
-                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           match->aiState.baseRunnerLock[i] == AI_CLICK_LOCK) {
-                    match->aiState.baseRunnerKeyDown[i] = 0;
-                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    match->aiState.baseRunnerDecisionMade[i] = 1;
-                    match->aiState.clickBreak[i] = 0;
+                int index = get_base_controller(match, &rules->referee, (BaseID)i);
+                if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE &&
+                    match->pRAI.will_start_running[i] == 0) {
+                    match->aF.bTAF.base_run[i] = RUN_FORWARD;
                 }
             }
         }
@@ -243,23 +191,14 @@ void update_batting_ai(
     // if ball is not home, we return players from first and second base to their bases
     else if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
              match->gameFlowState.ballHome == 0) {
+        // The ball came back home with no pitch in the air: pull any leading 1st/2nd runners
+        // back onto their base. RUN_BACK on a leading runner makes it run back; once it is no
+        // longer LEADING the command stops being issued.
         if (match->aiState.runningBaseRunners == 1) {
-            int i;
             for (i = 1; i < 3; i++) {
-                if (get_base_controller(match, &rules->referee, (BaseID)i) != -1 &&
-                    match->playerInfo[get_base_controller(match, &rules->referee, (BaseID)i)].bTPI.state ==
-                        PLAYER_STATE_LEADING &&
-                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    match->aiState.baseRunnerKeyDown[i] = 1;
-                    match->aiState.baseRunnerLock[i] = AI_COME_BACK_LOCK;
-                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           match->aiState.baseRunnerLock[i] == AI_COME_BACK_LOCK) {
-                    match->aiState.baseRunnerKeyDown[i] = 0;
-                    match->aiState.baseRunnerDecisionMade[i] = 0;
-                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    match->aiState.clickBreak[i] = 0;
+                int index = get_base_controller(match, &rules->referee, (BaseID)i);
+                if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_LEADING) {
+                    match->aF.bTAF.base_run[i] = RUN_BACK;
                 }
             }
         }
@@ -273,22 +212,13 @@ void update_batting_ai(
             match->aiState.aiWrongPitch = 1;
         }
         if (match->aiState.aiWrongPitch == 1) {
-            // batter isnt handled here
-            // this code will make baserunners come back if wrong pitch is pitched
+            // The batter is handled below; here we abort any runner who already broke for the
+            // next base, since the pitch is going to be a ball. RUN_BACK turns a forward run
+            // into a return; once it is no longer going forward the command stops.
             for (i = 1; i < BASE_COUNT; i++) {
                 int index = get_base_controller(match, &rules->referee, (BaseID)i);
-                if (index != -1 && match->playerRuntime[index].goingForward == 1 &&
-                    match->aiState.baseRunnerKeyDown[i] == 0 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-                    match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-                    match->aiState.baseRunnerKeyDown[i] = 1;
-                    match->aiState.baseRunnerLock[i] = AI_COME_BACK_WRONG_PITCH_LOCK;
-                    match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-                } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
-                           match->aiState.baseRunnerLock[i] == AI_COME_BACK_WRONG_PITCH_LOCK) {
-                    match->aiState.baseRunnerKeyDown[i] = 0;
-                    match->aiState.baseRunnerDecisionMade[i] = 0;
-                    match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                    match->aiState.clickBreak[i] = 0;
+                if (index != -1 && match->playerRuntime[index].goingForward == 1) {
+                    match->aF.bTAF.base_run[i] = RUN_BACK;
                 }
             }
         }
@@ -386,50 +316,29 @@ void update_batting_ai(
         match->pRAI.throw_going_to_base == -1 && match->pII.hasBallIndex == -1 && match->ballInfo.moving == 1 &&
         rules->betweenPitchState.hasBallHitGround == 1 && match->ballInfo.location.z < -10.0f &&
         checkIfBallIsOutOfBounds(&match->ballInfo, fieldPositions)) {
-        isDoubleClickingOk = 1;
+        okToAdvanceAfterHit = 1;
     }
-    // we will run with everyone so we need to simulate double click here.
-    for (i = 0; i < BASE_COUNT; i++) {
-        int j;
-        int index = get_base_controller(match, &rules->referee, (BaseID)i);
-        int shouldRun = 1;
-        if (i == 0 && match->pRAI.batter_can_advance == 0) continue;
-        // here we check that there is no one running this same base interval.
-        for (j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            BaseID bid = match->playerInfo[j].bTPI.baseId;
-            if (bid != BASE_NONE) {
-                int baseInt = base_to_int_index(bid);
-
-                if (baseInt == i) {
-                    if (j != index) {
-                        shouldRun = 0;
-                    }
+    // Once the hit is safely loose in the field, send every eligible runner to the next base.
+    // This is a deliberate "run now", so we declare RUN_COMMIT (the AI's equivalent of a human
+    // double-press) — NOT RUN_FORWARD, which only arms. Once a runner is goingForward we stop
+    // re-issuing, so the old double-click simulation (amountOfClicks / clickBreak / locks) is gone.
+    if (okToAdvanceAfterHit) {
+        for (i = 0; i < BASE_COUNT; i++) {
+            int j;
+            int index = get_base_controller(match, &rules->referee, (BaseID)i);
+            int shouldRun = 1;
+            if (i == 0 && match->pRAI.batter_can_advance == 0) continue;
+            if (index == -1 || match->playerRuntime[index].goingForward == 1) continue;
+            // don't send a runner into a base interval someone else already occupies.
+            for (j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
+                BaseID bid = match->playerInfo[j].bTPI.baseId;
+                if (bid != BASE_NONE && base_to_int_index(bid) == i && j != index) {
+                    shouldRun = 0;
                 }
             }
-        }
-        // if everything ok, initiate running.
-        if (shouldRun == 1 && isDoubleClickingOk == 1 && match->aiState.baseRunnerLock[i] == AI_NO_LOCK &&
-            match->aiState.baseRunnerKeyDown[i] == 0 && index != -1 && match->playerRuntime[index].goingForward != 1 &&
-            match->aiState.amountOfClicks[i] == 0 && match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-            match->aiState.baseRunnerKeyDown[i] = 1;
-            match->aiState.baseRunnerLock[i] = AI_DOUBLE_CLICK_LOCK;
-            match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-
-        } else if (match->aiState.baseRunnerKeyDown[i] == 0 &&
-                   match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK &&
-                   match->aiState.clickBreak[i] > CLICK_BREAK_CONSTANT) {
-            match->aiState.baseRunnerKeyDown[i] = 1;
-            match->aF.bTAF.base_run[i] = ACTION_TRIGGER_START;
-        } else if (match->aiState.baseRunnerKeyDown[i] == 1 &&
-                   match->aiState.baseRunnerLock[i] == AI_DOUBLE_CLICK_LOCK) {
-            match->aiState.baseRunnerKeyDown[i] = 0;
-            if (match->aiState.amountOfClicks[i] == 1) {
-                match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-                match->aiState.amountOfClicks[i] = 0;
-            } else {
-                match->aiState.amountOfClicks[i]++;
+            if (shouldRun) {
+                match->aF.bTAF.base_run[i] = RUN_COMMIT;
             }
-            match->aiState.clickBreak[i] = 0;
         }
     }
 }

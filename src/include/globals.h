@@ -265,11 +265,24 @@ typedef enum { CHOOSE_BATTER_IDLE = 0, CHOOSE_BATTER_NEXT = 1, CHOOSE_BATTER_SEL
 
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
+// Base-running command intent (single-frame, consumed by execute_actions::base_run).
+// The producer (human input or AI) declares *which* of two distinct intents it wants — it is never
+// inferred from murky live-ball state (that inference, reading a stale `batter_can_advance`, was the
+// base-run slice's offense regression: a pre-pitch ARM got mis-actualized as a RUN now):
+//   RUN_FORWARD — "arm / lead": the single-press intent. A settled runner arms to advance on the
+//                 next pitch (and leads off 1st/2nd). It NEVER starts a settled runner moving this
+//                 frame. This is the deferred command.
+//   RUN_COMMIT  — "run now": the double-press intent. Start for the next base immediately (a steal,
+//                 or chaining a hit once the ball is live). This is the immediate command.
+//   RUN_BACK    — disarm a pending lead, or run back to the previous base.
+// Both the human (action_invocations) and the AI (batting_ai) emit this same command — no click sim.
+typedef enum { RUN_NONE = 0, RUN_FORWARD = 1, RUN_COMMIT = 2, RUN_BACK = 3 } RunIntent;
+
 /*
 Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
 typedef struct _BattingTeamActionFlags {
-    ActionTriggerState base_run[4];
+    RunIntent base_run[4];
     ChooseBatterAction choose_batter;
     FreeWalkAction take_free_walk;
     BatActionPhase swing;
@@ -625,12 +638,6 @@ typedef struct _AIState {
     int angleDecided;
     float decidedAngle;
     int decidedSwingTrigger; // meter_counter level at which the AI releases its swing (randomizes power)
-    int baseRunnerKeyDown[BASE_COUNT];
-    int baseRunnerDecisionMade[BASE_COUNT];
-    int lastSafeOnBaseIndex[BASE_COUNT];
-    AILockType baseRunnerLock[BASE_COUNT];
-    int amountOfClicks[BASE_COUNT];
-    int clickBreak[BASE_COUNT];
     int battingStyle;
     int runningBatter;
     int runningBaseRunners;
@@ -704,8 +711,11 @@ typedef struct _PendingActionState {
     // Pitching related
     float pitch_power; // from pitching_system.c
 
-    // Input interpretation
-    int double_click_counter[BASE_COUNT];
+    // Human input interpretation: per-base countdown after a base-run key release. A second release
+    // while this is >0 is a double-press → RUN_COMMIT ("run now"); a lone press is RUN_FORWARD/RUN_BACK.
+    // Decremented each frame and read in action_invocations.c (human path only; the AI declares
+    // RUN_COMMIT directly). Not an AI click-sim — it is the human's expressive single/double press.
+    int run_press_window[BASE_COUNT];
 } PendingActionState;
 
 typedef struct _HomeRunContestState {

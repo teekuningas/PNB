@@ -6,6 +6,10 @@
 #include "globals.h"
 #include "action_invocations.h"
 #include "rules_pure/player_utils.h"
+#include "rules_pure/base_control.h"
+
+// How long after a base-run key release a second release still counts as a double-press (= RUN_COMMIT).
+#define RUN_DOUBLE_PRESS_WINDOW 20
 
 static void checkThrow(
     MatchSession* match, const KeyStates* key_states, int key, int actionKey, TeamControlMode control, BaseID base
@@ -23,19 +27,28 @@ static void checkFreeWalkDecision(
 static void
 checkBatterAngle(MatchSession* match, const KeyStates* key_states, int increase, int decrease, TeamControlMode control);
 static void checkSwing(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
-static void
-checkBattingTeamRun(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base);
+static void checkBattingTeamRun(
+    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base,
+    const RefereeState* referee
+);
 
 void init_action_invocations(StateInfo* stateInfo)
 {
     // Placeholder for... future?
 }
 
-void action_invocations(MatchSession* match, const KeyStates* key_states, const Scoreboard* scoreboard)
+void action_invocations(
+    MatchSession* match, const KeyStates* key_states, const Scoreboard* scoreboard, const RefereeState* referee
+)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
     TeamControlMode battingControl = scoreboard->teams[battingTeamIndex].control;
     TeamControlMode catchingControl = scoreboard->teams[(battingTeamIndex + 1) % 2].control;
+
+    // Tick down the human base-run double-press windows once per frame (see checkBattingTeamRun).
+    for (int b = 0; b < BASE_COUNT; b++) {
+        if (match->pendingActionState.run_press_window[b] > 0) match->pendingActionState.run_press_window[b]--;
+    }
 
     checkThrow(match, key_states, KEY_DOWN, KEY_2, catchingControl, BASE_HOME);
     checkThrow(match, key_states, KEY_LEFT, KEY_2, catchingControl, BASE_FIRST);
@@ -65,10 +78,10 @@ void action_invocations(MatchSession* match, const KeyStates* key_states, const 
     checkBatterAngle(match, key_states, KEY_PLUS, KEY_MINUS, battingControl);
     checkSwing(match, key_states, KEY_2, battingControl);
 
-    checkBattingTeamRun(match, key_states, KEY_DOWN, battingControl, BASE_HOME);
-    checkBattingTeamRun(match, key_states, KEY_LEFT, battingControl, BASE_FIRST);
-    checkBattingTeamRun(match, key_states, KEY_RIGHT, battingControl, BASE_SECOND);
-    checkBattingTeamRun(match, key_states, KEY_UP, battingControl, BASE_THIRD);
+    checkBattingTeamRun(match, key_states, KEY_DOWN, battingControl, BASE_HOME, referee);
+    checkBattingTeamRun(match, key_states, KEY_LEFT, battingControl, BASE_FIRST, referee);
+    checkBattingTeamRun(match, key_states, KEY_RIGHT, battingControl, BASE_SECOND, referee);
+    checkBattingTeamRun(match, key_states, KEY_UP, battingControl, BASE_THIRD, referee);
 }
 
 static void checkThrow(
@@ -248,14 +261,39 @@ static void checkSwing(MatchSession* match, const KeyStates* key_states, int key
     }
 }
 
-static void
-checkBattingTeamRun(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base)
+static void checkBattingTeamRun(
+    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base,
+    const RefereeState* referee
+)
 {
     if (control != CONTROL_AI) {
-        if ((key_states)->released[control][key]) {
-            match->aF.bTAF.base_run[base] = ACTION_TRIGGER_START;
+        // One key per base, mapping the human's single/double press to the explicit RunIntent
+        // (globals.h): a SINGLE tap = RUN_FORWARD ("arm / lead") on a settled runner, or RUN_BACK
+        // ("come back") on a runner who has stepped off / is mid-run; a DOUBLE tap (a second release
+        // within run_press_window frames) = RUN_COMMIT ("run now" — the steal / leg it to the next
+        // base). The engine actualizes for the runner's exact state (see execute_actions::base_run).
+        // This is honest input→intent interpretation in the input layer — not game logic, not an AI
+        // click-sim (the AI declares RUN_COMMIT directly in batting_ai.c).
+        if (key_states->released[control][key]) {
+            int index = get_base_controller(match, referee, base);
+            if (index != -1) {
+                if (match->pendingActionState.run_press_window[base] > 0) {
+                    // Second press inside the window → deliberate "run now".
+                    match->aF.bTAF.base_run[base] = RUN_COMMIT;
+                    match->pendingActionState.run_press_window[base] = 0;
+                } else {
+                    // First press → arm (settled) or come back (off the base); open the double-press window.
+                    PlayerUnitState state = match->playerInfo[index].bTPI.state;
+                    if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
+                        match->aF.bTAF.base_run[base] = RUN_FORWARD;
+                    } else {
+                        match->aF.bTAF.base_run[base] = RUN_BACK;
+                    }
+                    match->pendingActionState.run_press_window[base] = RUN_DOUBLE_PRESS_WINDOW;
+                }
+            }
         }
     } else {
-        // AI sets flags directly in AI logic files
+        // AI declares the run command directly in batting_ai.c
     }
 }

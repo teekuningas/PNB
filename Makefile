@@ -62,7 +62,8 @@ _OBJ_SIMS = tests/sim/sim_harness.o \
 _OBJ_SCRIPTED = tests/sim/sim_harness.o \
                 tests/sim/sim_observers.o \
                 tests/scripted/scripted_harness.o \
-                tests/scripted/test_scripted_smoke.o
+                tests/scripted/test_scripted_smoke.o \
+                tests/scripted/test_scripted_base_run.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))

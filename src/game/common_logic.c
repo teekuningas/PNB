@@ -804,20 +804,17 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
     match->pendingActionState.throw_going_on = 0;
     match->pRAI.throw_going_to_base = -1;
+    for (int b = 0; b < BASE_COUNT; b++) {
+        match->pendingActionState.run_press_window[b] = 0; // drop any half-finished human double-press
+    }
 
     // AI batting state: force re-planning on next pitch cycle.
-    // Without this, after foul play the AI's planCalculated stays 1 and
-    // baseRunnerDecisionMade[] stays stale (the batter_ready 0→1 transition
-    // happens within consolidation, AFTER AI has already run that frame,
-    // so the AI never sees batter_ready==0 to trigger its own reset).
+    // Without this, after foul play the AI's planCalculated stays 1 (the batter_ready 0→1
+    // transition happens within consolidation, AFTER AI has already run that frame, so the AI
+    // never sees batter_ready==0 to trigger its own reset). The per-base run decisions need no
+    // reset — the AI now derives them from live game state each frame (will_start_running +
+    // player state), so there is no stale click-sim bookkeeping to clear.
     match->aiState.planCalculated = 0;
-    for (int i = 0; i < BASE_COUNT; i++) {
-        match->aiState.baseRunnerDecisionMade[i] = 0;
-        match->aiState.baseRunnerKeyDown[i] = 0;
-        match->aiState.baseRunnerLock[i] = AI_NO_LOCK;
-        match->aiState.clickBreak[i] = 0;
-        match->aiState.amountOfClicks[i] = 0;
-    }
 
     // Camera
     match->cameraState.homeRunCameraFlag = 0;

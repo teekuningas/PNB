@@ -19,8 +19,6 @@
 
 #define ANIMATION_FREQUENCY 3
 
-#define CLICK_BREAK_CONSTANT 3
-
 static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const PlayerCounters* playerCounters);
 static void
 take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions);
@@ -31,13 +29,11 @@ base_run(MatchSession* match, const RefereeState* referee, const FieldPositions*
 void init_execute_actions(MatchSession* match)
 {
     // just initialize everyone of these static variables to zero
-    int i;
-
     match->pendingActionState.meter_counter = 0;
     match->pendingActionState.meter_counter_max = 0;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    for (i = 0; i < BASE_COUNT; i++) {
-        match->pendingActionState.double_click_counter[i] = -1;
+    for (int i = 0; i < BASE_COUNT; i++) {
+        match->pendingActionState.run_press_window[i] = 0;
     }
 
     reset_pitching_system(match);
@@ -59,16 +55,6 @@ void execute_actions(
 )
 {
     int i;
-
-    // double click counter
-    for (i = 0; i < BASE_COUNT; i++) {
-        if (match->pendingActionState.double_click_counter[i] >= 0) {
-            match->pendingActionState.double_click_counter[i]++;
-            if (match->pendingActionState.double_click_counter[i] >= 20) {
-                match->pendingActionState.double_click_counter[i] = -1;
-            }
-        }
-    }
 
     /*
      * CATCHING TEAM
@@ -313,50 +299,68 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
     set_vector_xyz(&(ballInfo->velocity), x, y, z);
 }
 
-// so baserunning.
-// idea is just to update will_start_running in every button press. and in special double click case we just run.
+// Base running — the shared actualizer for the RunIntent command (set by the human in
+// action_invocations or by the AI in batting_ai; execute_actions does not care which).
+//
+// The producer declares ARM vs COMMIT explicitly (RunIntent in globals.h); the actualizer NEVER
+// infers it from live-ball state. Reading the stale `batter_can_advance` to choose was the slice's
+// offense regression — a pre-pitch arm fired after a caught fly got mis-read as "ball live, run now",
+// sending the next batter into a caught-fly out. With the intent explicit, that is unrepresentable.
+//
+//   RUN_FORWARD (single press — "arm / lead")
+//     - settled on base / at bat  -> arm to advance on the next pitch (release_pitch commits a base
+//                                    runner, the hit commits the batter), and lead off 1st/2nd. If
+//                                    still settling onto the base (mid-move), wait this frame. NEVER
+//                                    starts a settled runner moving now — that is RUN_COMMIT's job.
+//     - leading / already running -> keep going to the next base.
+//   RUN_COMMIT (double press — "run now")
+//     - any state                 -> start for the next base immediately (a steal / chaining a hit).
+//                                    For the batter this is gated inside run_to_next_base(BASE_HOME),
+//                                    which refuses unless the ball is live, so a commit issued when
+//                                    the ball is dead is harmlessly ignored — never a mis-run.
+//   RUN_BACK
+//     - settled on base / at bat  -> disarm a pending lead.
+//     - otherwise                 -> run back to the previous base.
+//
+// The command is single-frame and consumed here; it encodes no timing (the old AI double-click sim
+// is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
 static void
 base_run(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base)
 {
-    // so baserunning.
-    // idea is just to update will_start_running in every button press. and in special double click case we just run.
-    if (get_base_controller(match, referee, base) != -1) {
-        if (match->aF.bTAF.base_run[base] == ACTION_TRIGGER_START) {
-            int index = get_base_controller(match, referee, base);
-            if (match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE ||
-                match->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
-                if (match->pRAI.will_start_running[base] == 0) {
-                    if (index != -1 && match->playerInfo[index].cPI.moving == 0) {
-                        match->pRAI.will_start_running[base] = 1;
-                        if (base == BASE_FIRST || base == BASE_SECOND) {
-                            lead_from_base(match->playerInfo, match->playerRuntime, fieldPositions, index);
-                        }
-                    }
-                } else {
-                    match->pRAI.will_start_running[base] = 0;
-                }
-            } else {
-                match->pRAI.will_start_running[base] = 0;
-                if (index != -1) {
-                    if (match->playerInfo[index].bTPI.state != PLAYER_STATE_ON_BASE &&
-                        match->playerInfo[index].bTPI.state != PLAYER_STATE_AT_BAT) {
-                        run_to_previous_base(match, fieldPositions, index, base);
-                    }
+    int index = get_base_controller(match, referee, base);
+    RunIntent cmd = match->aF.bTAF.base_run[base];
+    match->aF.bTAF.base_run[base] = RUN_NONE; // consume
+
+    if (index == -1 || cmd == RUN_NONE) return;
+
+    PlayerUnitState state = match->playerInfo[index].bTPI.state;
+    int settled_on_base = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
+
+    if (cmd == RUN_FORWARD) {
+        if (settled_on_base) {
+            // Arm only — never commit a settled runner here.
+            if (match->pRAI.will_start_running[base] == 0 && match->playerInfo[index].cPI.moving == 0) {
+                match->pRAI.will_start_running[base] = 1;
+                if (base == BASE_FIRST || base == BASE_SECOND) {
+                    lead_from_base(match->playerInfo, match->playerRuntime, fieldPositions, index);
                 }
             }
-            if (match->pendingActionState.double_click_counter[base] == -1) {
-                match->pendingActionState.double_click_counter[base] = 0;
-            } else {
-                if (match->pendingActionState.double_click_counter[base] >= 0) {
-                    if (index != -1) {
-                        run_to_next_base(match, fieldPositions, index, base);
-                    }
-                }
-                match->pendingActionState.double_click_counter[base] = -1;
-            }
+            // else: already armed, or still settling onto the base — wait.
+        } else {
+            // Leading or mid-run: keep going to the next base.
+            run_to_next_base(match, fieldPositions, index, base);
+        }
+    } else if (cmd == RUN_COMMIT) {
+        // Deliberate "go now". Safe for the batter even if mis-issued: run_to_next_base(BASE_HOME)
+        // self-gates on batter_can_advance.
+        run_to_next_base(match, fieldPositions, index, base);
+    } else { // RUN_BACK
+        if (settled_on_base) {
+            match->pRAI.will_start_running[base] = 0; // cancel a pending lead
+        } else {
+            run_to_previous_base(match, fieldPositions, index, base);
         }
     }
-    match->aF.bTAF.base_run[base] = ACTION_IDLE;
 }
 
 void update_meters(MatchSession* match)
