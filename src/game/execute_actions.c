@@ -60,44 +60,48 @@ void execute_actions(
      * CATCHING TEAM
      */
 
-    for (i = 0; i < BASE_COUNT; i++) {
-        // for every direction we check if throw key has been pressed
-        if (match->aF.cTAF.throw_to_base[i] == ACTION_TRIGGER_START) {
-            // can throw only if someone has the ball and no throw is already going on
-            if (match->pII.hasBallIndex != -1) {
-                int j;
-                for (j = 0; j < BASE_COUNT; j++) {
-                    if (j != i) match->aF.cTAF.throw_to_base[j] = ACTION_IDLE;
-                }
-                // stop pitching if throwing
-                if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
-                    match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
-                    match->pRAI.pitch_state = PITCH_STAGE_NONE;
-                    match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
-                    // when pitching the ball is moved to the center of the plate so now when we are terminating the
-                    // pitch to throw, we must move the ball back to the player
-                    match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-                    match->ballInfo.location.z = match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
-                }
-                // throw_going_to_base variables are used to have better control
-                // over basemen who are wanting go out of base catching the ball.
-                // throws can be directed only towards bases.
-                prepare_throw(match, fieldPositions, i);
-                // start by loading
-                throw_load(match, i);
+    // THROW — a single parameterized command (target base + declared power). The engine owns the
+    // windup: declaring the intent starts a windup whose LENGTH scales with the declared power; the ball
+    // leaves at the end of the windup (the release block below), with a velocity read from the declared
+    // power — never a live meter. No START/STOP pair: there is one declaration, then the engine acts.
+    if (match->aF.cTAF.throw.target != BASE_NONE) {
+        BaseID base = match->aF.cTAF.throw.target;
+        float power = match->aF.cTAF.throw.power;
+        match->aF.cTAF.throw.target = BASE_NONE; // consume the intent regardless of success
+        // can throw only if someone has the ball and no other catching action is in progress (the real
+        // execution-side mutex — the AI no longer mirrors it with its own lock).
+        if (match->pII.hasBallIndex != -1 &&
+            match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+            // stop pitching if throwing
+            if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+                match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
+                match->pRAI.pitch_state = PITCH_STAGE_NONE;
+                match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+                // when pitching the ball is moved to the center of the plate so now when we are terminating the
+                // pitch to throw, we must move the ball back to the player
+                match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
+                match->ballInfo.location.z = match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
+            }
+            // throw_going_to_base variables are used to have better control
+            // over basemen who are wanting go out of base catching the ball.
+            // throws can be directed only towards bases.
+            prepare_throw(match, fieldPositions, base);
+            // start by loading (begins the engine-owned windup, scaled by power)
+            throw_load(match, base, power);
+            // only commit the action state if the throw actually started (throw_load refuses if the
+            // thrower is already on the target base)
+            if (match->pendingActionState.throw_going_on == 1) {
                 match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
             }
-            // consume the intent regardless of success
-            match->aF.cTAF.throw_to_base[i] = ACTION_IDLE;
         }
-        // if throw release intent received while a throw is in progress
-        else if (match->aF.cTAF.throw_to_base[i] == ACTION_TRIGGER_STOP) {
-            match->aF.cTAF.throw_to_base[i] = ACTION_IDLE;
-            if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING) {
-                throw_release(match);
-                match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-            }
-        }
+    }
+    // Engine-owned windup completion: when the windup clock reaches its (power-scaled) end, the ball
+    // leaves. This replaces the old human-STOP / AI-meter-watch release — release is now time-driven.
+    if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING &&
+        match->pendingActionState.throw_going_on == 1 &&
+        match->pendingActionState.meter_counter >= match->pendingActionState.meter_counter_max) {
+        throw_release(match);
+        match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
     // Auto-clear: if throw was interrupted externally (e.g., ball caught by game_manipulation
     // cleared throw_going_on), reset the action state so other actions can proceed.

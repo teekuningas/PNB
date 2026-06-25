@@ -5,6 +5,7 @@
 
 #include "globals.h"
 #include "action_invocations.h"
+#include "actions/throwing_system.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/base_control.h"
 
@@ -89,14 +90,18 @@ static void checkThrow(
 )
 {
     if (control != CONTROL_AI) {
+        // Declare the throw command (target base + power) directly. The engine owns the windup and
+        // releases the ball when it completes — there is no STOP edge any more.
+        // NOTE (PLAN §4.12 sub-step 2, headless-first): power is THROW_POWER_DEFAULT for now. The
+        // client-local charge widget that converts hold-time → declared power lands in the human-path
+        // commit (validated in the scripted tier); the AI path is migrated first. This placeholder is
+        // explicitly temporary, not a permanent structure.
         if (key_states->down[control][key] && key_states->down[control][actionKey]) {
-            if (match->aF.cTAF.throw_to_base[base] == ACTION_IDLE &&
+            if (match->aF.cTAF.throw.target == BASE_NONE &&
                 match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-                match->aF.cTAF.throw_to_base[base] = ACTION_TRIGGER_START;
+                match->aF.cTAF.throw.target = base;
+                match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
             }
-        } else if ((key_states)->released[control][actionKey] &&
-                   match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING) {
-            match->aF.cTAF.throw_to_base[base] = ACTION_TRIGGER_STOP;
         }
     } else {
         // AI sets flags directly in AI logic files

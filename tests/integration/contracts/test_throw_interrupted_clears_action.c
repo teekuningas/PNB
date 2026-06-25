@@ -1,6 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
+#include "actions/throwing_system.h"
 
 /**
  * CONTRACT: When a throw is interrupted (throw_going_on cleared externally),
@@ -34,8 +35,9 @@ int test_interrupted_throw_clears_action_state(void)
     // Place target base far enough away for throw to succeed
     // (throw_distance > THROW_TO_BASE_DISTANCE check in throw_load)
 
-    // Simulate: human presses throw to base 1
-    ctx->state->match->aF.cTAF.throw_to_base[1] = ACTION_TRIGGER_START;
+    // Simulate: a throw to base 1 is declared (target base + power) — by human or AI, same intent.
+    ctx->state->match->aF.cTAF.throw.target = BASE_FIRST;
+    ctx->state->match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
 
     // Run one frame — execute_actions should process the throw start
     simulate_frames(ctx, 1);

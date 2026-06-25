@@ -69,8 +69,9 @@ void throw_release(MatchSession* match)
         // until its over ).
         match->playerInfo[match->pII.hasBallIndex].cTPI.throwRecoil = 1;
 
-        // take power naturally from meter_counter value
-        power = 1.0f * match->pendingActionState.meter_counter / match->pendingActionState.meter_counter_max;
+        // power is the DECLARED value carried by the intent (copied into throw_power at throw_load) —
+        // never a live meter read. The meter/clock only times the windup; it does not set the outcome.
+        power = match->pendingActionState.throw_power;
         // update these values a bit
         match->pendingActionState.throw_direction.x =
             match->pendingActionState.throw_direction.x / match->pendingActionState.throw_distance;
@@ -103,7 +104,7 @@ void throw_release(MatchSession* match)
     }
 }
 
-void throw_load(MatchSession* match, BaseID base)
+void throw_load(MatchSession* match, BaseID base, float power)
 {
     if (match->pII.hasBallIndex != -1) {
         // throw distance is the euclidean distance from the base to player throwing.
@@ -123,9 +124,17 @@ void throw_load(MatchSession* match, BaseID base)
             match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
             match->playerInfo[match->pII.hasBallIndex].cPI.animationStageCount = 11;
             match->playerInfo[match->pII.hasBallIndex].cPI.animationFrequency = 3;
-            // initialize meters.
+            // Store the declared power, clamped to [0,1]. The release velocity reads this — not a meter.
+            if (power < 0.0f) power = 0.0f;
+            if (power > 1.0f) power = 1.0f;
+            match->pendingActionState.throw_power = power;
+            // The windup is an engine-owned clock: meter_counter ramps 0 → meter_counter_max, and the ball
+            // leaves when it completes (execute_actions). The windup LENGTH scales with the declared power
+            // (more power = longer windup), so meter_counter_max = power · THROW_MAX (floored at 1 frame).
+            // No game logic reads meter_counter for the outcome — only to time the windup.
             match->pendingActionState.meter_counter = 0;
-            match->pendingActionState.meter_counter_max = THROW_MAX; // arbitrary decision, seems about right though
+            match->pendingActionState.meter_counter_max = (unsigned int)(power * THROW_MAX);
+            if (match->pendingActionState.meter_counter_max < 1) match->pendingActionState.meter_counter_max = 1;
             // set the flag that is used for example to determine can you move the player.
             match->pendingActionState.throw_going_on = 1;
             // to avoid twitching when moving key is still pressed and player cant move as hes throwing

@@ -769,8 +769,8 @@ void initialize_action_info(MatchSession* match)
 
     for (i = 0; i < BASE_COUNT; i++) {
         match->aF.cTAF.move[i] = 0;
-        match->aF.cTAF.throw_to_base[i] = 0;
     }
+    match->aF.cTAF.throw.target = BASE_NONE; // no throw declared
     match->aF.cTAF.change_player = 0;
     match->aF.cTAF.drop_ball = 0;
     match->aF.cTAF.pitch = 0;

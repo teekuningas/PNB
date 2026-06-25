@@ -278,6 +278,25 @@ typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } 
 // Both the human (action_invocations) and the AI (batting_ai) emit this same command — no click sim.
 typedef enum { RUN_NONE = 0, RUN_FORWARD = 1, RUN_COMMIT = 2, RUN_BACK = 3 } RunIntent;
 
+// Throw command intent (catching team) — a single, parameterized command declared atomically: WHICH
+// base, and at WHAT power. Replaces the old `throw_to_base[4]` array of per-base ActionTriggerStates,
+// which could represent "throwing to two bases at once" (execute_actions had to defensively clear the
+// others). With one `target`, that invalid state is unrepresentable.
+//   - `target == BASE_NONE` means "no throw declared"; any other BaseID is the single target base.
+//   - `power` is the declared throw power in [0,1]. The engine reads THIS for the windup length and the
+//     release velocity — never a live meter (the meter is a client-local widget only). Meaningful only
+//     when target != BASE_NONE.
+// Lifecycle: single-frame, consumed-and-cleared by execute_actions (sets target back to BASE_NONE).
+// Power lives WITH the command (not in a separate persistent aim block) because a throw's power is
+// declared atomically with the trigger and never revised over a window — "lifecycle determines
+// structure." The persistent/revisable aim block arrives at the pitch/swing slices, where a level
+// genuinely is set over a window. (Refines ARCHITECTURE_VISION.md §8.5.) Both the human
+// (action_invocations) and the AI (catching_ai) emit this same command.
+typedef struct _ThrowIntent {
+    BaseID target;
+    float power;
+} ThrowIntent;
+
 /*
 Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
@@ -292,7 +311,7 @@ typedef struct _BattingTeamActionFlags {
 
 typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
-    ActionTriggerState throw_to_base[4];
+    ThrowIntent throw; // which base + declared power (replaces throw_to_base[4]; see ThrowIntent)
     ActionTriggerState change_player;
     ActionTriggerState run;
     ActionTriggerState drop_ball;
@@ -609,9 +628,10 @@ typedef struct _PlayerCounters {
 typedef enum {
     AI_NO_LOCK = -1,
     AI_PITCH_LOCK = 0,
-    AI_THROW_LOCK = 1,
-    // AI_DROP_LOCK (=2) deleted with the drop intent migration (§4.12) — drop is now a self-guarded
-    // command needing no AI lock. Value 2 intentionally left vacant; the whole enum dies at the pitch slice.
+    // AI_THROW_LOCK (=1) deleted with the throw intent migration (§4.12 sub-step 2) — the throw is now a
+    // declared command actualized by an engine-owned windup, gated by the real execution-side mutex
+    // (current_catching_action), so the AI's duplicate lock was redundant. AI_DROP_LOCK (=2) deleted at
+    // the drop slice. Values 1 and 2 intentionally left vacant; the whole enum dies at the pitch slice.
     AI_WAITING_BATTER_LOCK = 3,
     AI_WAITING_WALK_LOCK = 4,
     AI_BATTING_LOCK = 5,
@@ -627,7 +647,6 @@ typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP 
 typedef struct _AIState {
     // Catching AI
     int moveCounter;
-    int throwStage;
 
     // Batting AI
     int battingKeyDown;
@@ -707,6 +726,9 @@ typedef struct _PendingActionState {
     // Throwing related
     float throw_distance; // from throwing_system.c
     Vector3D throw_direction; // from throwing_system.c
+    float throw_power; // declared power being actualized this throw (copied from the consumed ThrowIntent);
+                       // drives the windup length (meter_counter_max) and the release velocity. Engine-owned
+                       // actualization state — NOT the intent (which is consumed the frame it arrives).
 
     // Pitching related
     float pitch_power; // from pitching_system.c

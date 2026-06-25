@@ -118,7 +118,6 @@ static void update_ai_pitching(MatchSession* match, const HalfInningState* halfI
 
 void init_catching_ai(AIState* aiState)
 {
-    aiState->throwStage = 0;
     aiState->moveCounter = 0;
 }
 
@@ -176,37 +175,38 @@ void move_controlled_player_to_location(MatchSession* match, Vector3D* target)
 
 void throw_ball_to_base(MatchSession* match, BaseID base)
 {
-    if (match->aiState.throwStage == 0) {
-        if (match->pendingActionState.aiActionEventLock == AI_NO_LOCK && match->pendingActionState.aiLockUpdate == 0) {
-            int catcherIndex = match->pII.catcherOnBaseIndex[base];
-            int catcherNearHome = 0;
-            if (catcherIndex != -1) {
-                catcherNearHome = match->playerInfo[catcherIndex].cTPI.isNearHomeLocation;
-            }
+    // Don't start a throw if any catching action is already in progress. We read the real
+    // execution-side mutex (current_catching_action) directly — the AI no longer keeps a duplicate
+    // throwStage/AI_THROW_LOCK state machine that had to mirror (and drifted from) it.
+    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_NONE) {
+        return;
+    }
 
-            int replacerIndex = match->pII.catcherReplacerOnBaseIndex[base];
-            ReplacementState replacerStage = REPLACEMENT_IDLE;
-            int replacerBase = -1;
-            int replacerMoving = 0;
-            if (replacerIndex != -1) {
-                replacerStage = match->playerInfo[replacerIndex].cTPI.replacingStage;
-                replacerBase = match->playerInfo[replacerIndex].cTPI.replacingBase;
-                replacerMoving = match->playerInfo[replacerIndex].cPI.moving;
-            }
+    int catcherIndex = match->pII.catcherOnBaseIndex[base];
+    int catcherNearHome = 0;
+    if (catcherIndex != -1) {
+        catcherNearHome = match->playerInfo[catcherIndex].cTPI.isNearHomeLocation;
+    }
 
-            int shouldThrow = should_ai_throw(
-                &(match->pII), catcherNearHome, replacerIndex, replacerStage, replacerBase, replacerMoving, base
-            );
+    int replacerIndex = match->pII.catcherReplacerOnBaseIndex[base];
+    ReplacementState replacerStage = REPLACEMENT_IDLE;
+    int replacerBase = -1;
+    int replacerMoving = 0;
+    if (replacerIndex != -1) {
+        replacerStage = match->playerInfo[replacerIndex].cTPI.replacingStage;
+        replacerBase = match->playerInfo[replacerIndex].cTPI.replacingBase;
+        replacerMoving = match->playerInfo[replacerIndex].cPI.moving;
+    }
 
-            if (shouldThrow == 1) {
-                match->aiState.throwStage = 1;
-                match->pendingActionState.aiLockUpdate = 1;
-                match->pendingActionState.aiActionEventLock = AI_THROW_LOCK;
+    int shouldThrow = should_ai_throw(
+        &(match->pII), catcherNearHome, replacerIndex, replacerStage, replacerBase, replacerMoving, base
+    );
 
-                // AI sets trigger directly
-                match->aF.cTAF.throw_to_base[base] = ACTION_TRIGGER_START;
-            }
-        }
+    if (shouldThrow == 1) {
+        // Declare the throw command directly: which base + how hard. The engine actualizes it through
+        // the windup dance (execute_actions / throwing_system); the AI does not puppeteer a meter.
+        match->aF.cTAF.throw.target = base;
+        match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
     }
 }
 
@@ -215,35 +215,10 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsign
     // Update AI pitching
     update_ai_pitching(match, &rules->halfInningState, rng_seed);
 
-    // finish throwing
-    if (match->aiState.throwStage == 1) {
-        if (match->pendingActionState.aiLockTimeoutCounter == -1) {
-            match->pendingActionState.aiLockTimeoutCounter = 0;
-        }
-        if (match->pendingActionState.meter_counter > THROW_MAX * (3.0f / 4)) {
-            match->aiState.throwStage = 0;
-            match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-            match->pendingActionState.aiLockUpdate = 1;
-            match->pendingActionState.aiLockTimeoutCounter = -1;
+    // (The throw no longer needs an AI-side "finish throwing" step: the engine owns the windup and
+    // releases the ball when it completes — PLAN §4.12 sub-step 2. throwStage / AI_THROW_LOCK / the
+    // meter-watch / the timeout-abort fallback all deleted with it.)
 
-            // AI signals throw release via throw_going_to_base (set by prepare_throw)
-            if (match->pRAI.throw_going_to_base >= 0 && match->pRAI.throw_going_to_base < BASE_COUNT) {
-                match->aF.cTAF.throw_to_base[match->pRAI.throw_going_to_base] = ACTION_TRIGGER_STOP;
-            }
-        } else {
-            match->pendingActionState.aiLockTimeoutCounter++;
-            if (match->pendingActionState.aiLockTimeoutCounter > TIMEOUT_CONSTANT) {
-                match->aiState.throwStage = 0;
-                match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-                match->pendingActionState.aiLockUpdate = 1;
-                match->pendingActionState.aiLockTimeoutCounter = -1;
-
-                // Force-abort the throw: clear execution state so auto-clear fires
-                match->pendingActionState.throw_going_on = 0;
-                match->pRAI.throw_going_to_base = -1;
-            }
-        }
-    }
     // if noone has ball and someone is controlled, ai will try to move towards the target point calculated
     // in game_manipulation.
     if (match->pII.hasBallIndex == -1 && match->pII.controlIndex != -1) {
