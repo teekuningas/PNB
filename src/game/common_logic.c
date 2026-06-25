@@ -807,6 +807,9 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     for (int b = 0; b < BASE_COUNT; b++) {
         match->pendingActionState.run_press_window[b] = 0; // drop any half-finished human double-press
     }
+    match->pendingActionState.throw_charge.base = BASE_NONE; // drop any half-finished human throw charge
+    match->pendingActionState.throw_charge.power = 0;
+    match->pendingActionState.throw_charge.engaged = 0;
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 (the batter_ready 0→1

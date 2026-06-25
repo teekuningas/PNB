@@ -10,6 +10,39 @@
 
 #define DROP_BALL_CONSTANT 0.02f
 
+float throw_charge_to_power(int charge)
+{
+    if (charge < 0) charge = 0;
+    if (charge > THROW_CHARGE_MAX) charge = THROW_CHARGE_MAX;
+    float t = (float)charge / (float)THROW_CHARGE_MAX;
+    return THROW_POWER_MIN + (1.0f - THROW_POWER_MIN) * t;
+}
+
+static void
+orient_player_toward_base(MatchSession* match, const FieldPositions* fieldPositions, int playerIndex, BaseID base)
+{
+    Vector3D target;
+    switch (base) {
+    case BASE_HOME:
+        target = fieldPositions->pitcher;
+        break;
+    case BASE_FIRST:
+        target = fieldPositions->firstBase;
+        break;
+    case BASE_SECOND:
+        target = fieldPositions->secondBase;
+        break;
+    case BASE_THIRD:
+        target = fieldPositions->thirdBase;
+        break;
+    default:
+        return;
+    }
+    // Same un-normalized direction vector throw_load writes; the renderer only reads its angle.
+    match->playerInfo[playerIndex].tPI.orientation.x = target.x - match->playerInfo[playerIndex].tPI.location.x;
+    match->playerInfo[playerIndex].tPI.orientation.z = target.z - match->playerInfo[playerIndex].tPI.location.z;
+}
+
 void init_throwing_system(MatchSession* match)
 {
     match->pendingActionState.throw_distance = 0;
@@ -129,12 +162,11 @@ void throw_load(MatchSession* match, BaseID base, float power)
             if (power > 1.0f) power = 1.0f;
             match->pendingActionState.throw_power = power;
             // The windup is an engine-owned clock: meter_counter ramps 0 → meter_counter_max, and the ball
-            // leaves when it completes (execute_actions). The windup LENGTH scales with the declared power
-            // (more power = longer windup), so meter_counter_max = power · THROW_MAX (floored at 1 frame).
-            // No game logic reads meter_counter for the outcome — only to time the windup.
+            // leaves when it completes (execute_actions). The windup LENGTH is FIXED (THROW_WINDUP) — the
+            // same short wait for every throw, independent of power; power only sets the release velocity
+            // (above). No game logic reads meter_counter for the outcome — only to time the windup.
             match->pendingActionState.meter_counter = 0;
-            match->pendingActionState.meter_counter_max = (unsigned int)(power * THROW_MAX);
-            if (match->pendingActionState.meter_counter_max < 1) match->pendingActionState.meter_counter_max = 1;
+            match->pendingActionState.meter_counter_max = THROW_WINDUP;
             // set the flag that is used for example to determine can you move the player.
             match->pendingActionState.throw_going_on = 1;
             // to avoid twitching when moving key is still pressed and player cant move as hes throwing
@@ -276,4 +308,20 @@ void update_controlled_player_speed(MatchSession* match)
             }
         }
     }
+}
+
+// Client-visual only. While a human is charging a throw, face the ball-holder toward the latched target
+// base so they can see where the ball will go. Called from execute_actions right after the per-direction
+// move handling, so it is the single orientation writer for a charging thrower: movement is suppressed
+// during a charge (checkMove stops the fielder while the action key is held), so the two never fight, and
+// running this last makes the facing authoritative if a stale move event set an orientation that frame.
+// It never touches the throw outcome — that direction is computed fresh at declaration (prepare_throw) —
+// and is gated on the human charge gesture, which the AI never sets.
+void update_thrower_facing(MatchSession* match, const FieldPositions* fieldPositions)
+{
+    ThrowCharge* tc = &match->pendingActionState.throw_charge;
+    if (!tc->engaged || tc->base == BASE_NONE || match->pII.hasBallIndex == -1) {
+        return;
+    }
+    orient_player_toward_base(match, fieldPositions, match->pII.hasBallIndex, tc->base);
 }

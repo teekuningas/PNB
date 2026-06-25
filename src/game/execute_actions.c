@@ -35,6 +35,9 @@ void init_execute_actions(MatchSession* match)
     for (int i = 0; i < BASE_COUNT; i++) {
         match->pendingActionState.run_press_window[i] = 0;
     }
+    match->pendingActionState.throw_charge.base = BASE_NONE;
+    match->pendingActionState.throw_charge.power = 0;
+    match->pendingActionState.throw_charge.engaged = 0;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -103,14 +106,23 @@ void execute_actions(
         throw_release(match);
         match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
-    // Auto-clear: if throw was interrupted externally (e.g., ball caught by game_manipulation
-    // cleared throw_going_on), reset the action state so other actions can proceed.
+    // Auto-clear (external interrupt): if the throw was interrupted externally (e.g. the ball was caught
+    // by game_manipulation, which cleared throw_going_on), reset the action state so other actions can
+    // proceed. Knighted by test_interrupted_throw_clears_action.
     if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING &&
         match->pendingActionState.throw_going_on == 0) {
         match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
-    // Safety: if throw_going_on is stuck but no throw action is active, clear it.
-    // This catches the case where a reset cleared current_catching_action but missed throw_going_on.
+    // Safety net (drift heal): if throw_going_on is stuck at 1 while no throw action is active, clear it.
+    // This is NOT dead code — it heals a real, reachable drift between throw_going_on and
+    // current_catching_action. A throw sets {throw_going_on=1, cca=THROWING} together, but the AI's
+    // duplicate pitch lock machine (pitchStage/aiActionEventLock, the smell §8 deletes at the pitch slice)
+    // can line a throw's throw_going_on=1 up with a pitch-end path clearing cca (pitching_system.c clears
+    // cca WITHOUT touching throw_going_on). Without this heal the pitcher is frozen: holding the ball, but
+    // throw_going_on=1 blocks move/pitch/drop while cca=NONE stops the windup-completion block from ever
+    // calling throw_release to clear it — a hard deadlock (reproduced under a shorter windup; PLAN §7).
+    // Remove this only when the pitch slice deletes the duplicate lock machine that makes the drift
+    // representable.
     if (match->pendingActionState.throw_going_on == 1 &&
         match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING) {
         match->pendingActionState.throw_going_on = 0;
@@ -125,6 +137,10 @@ void execute_actions(
             fielder_stop_move(match, i);
         }
     }
+    // Client-visual only: a human charging a throw faces the target base. Runs right after the move
+    // handling so it is the single, authoritative orientation for a charging thrower (movement is
+    // suppressed during a charge). See update_thrower_facing — no effect on the throw outcome.
+    update_thrower_facing(match, fieldPositions);
 
     // if change player key has been pressed
     if (match->aF.cTAF.change_player == ACTION_TRIGGER_START) {
@@ -372,11 +388,16 @@ void update_meters(MatchSession* match)
     update_pitching_meter(match);
 
     if (match->pendingActionState.throw_going_on == 1) {
+        // Engine-owned windup clock (post-declaration): the meter fills as the windup runs out.
         if (match->pendingActionState.meter_counter < match->pendingActionState.meter_counter_max) {
             match->pendingActionState.meter_counter += 1;
         }
         match->pRAI.meter_value =
             1.0f * match->pendingActionState.meter_counter / match->pendingActionState.meter_counter_max;
+    } else if (match->pendingActionState.throw_charge.engaged &&
+               match->pendingActionState.throw_charge.base != BASE_NONE) {
+        // Human is charging a throw (pre-declaration): show the declared power growing on the same meter.
+        match->pRAI.meter_value = 1.0f * match->pendingActionState.throw_charge.power / THROW_CHARGE_MAX;
     } else {
         update_batting_meter(match);
     }

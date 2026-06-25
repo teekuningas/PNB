@@ -297,6 +297,24 @@ typedef struct _ThrowIntent {
     float power;
 } ThrowIntent;
 
+// Human throw-charge gesture state (client-local input memory). A human declares a throw by holding the
+// action key (KEY_2) together with a direction key: the charge meter rises while KEY_2 is held, pressing
+// a different direction redirects (restarting the meter), and releasing KEY_2 declares ThrowIntent{ base,
+// power=charge }. Once a direction is latched it stays latched for the hold — releasing the arrow does not
+// cancel. The AI never uses this — it declares the ThrowIntent atomically. Lives here, in the synced
+// MatchSession, only as a parking spot: like `run_press_window` and the live `meter_counter`, hold-time
+// is *local to a client* and belongs in the client-local input layer carved at the pitch slice
+// (ARCHITECTURE_VISION.md §8.5; PLAN.md §8). Tracked there as the same debt.
+//   - `base`    : the latched throw direction (BASE_NONE = gesture not started).
+//   - `power`   : charge counter [0, THROW_CHARGE_MAX]; mapped to declared power by throw_charge_to_power.
+//   - `engaged` : 1 once this KEY_2-hold has become a throw gesture (a direction was pressed), so the
+//                 meter keeps charging even after the arrow is released and the KEY_2 release won't drop.
+typedef struct _ThrowCharge {
+    BaseID base;
+    int power;
+    int engaged;
+} ThrowCharge;
+
 /*
 Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
@@ -738,6 +756,10 @@ typedef struct _PendingActionState {
     // Decremented each frame and read in action_invocations.c (human path only; the AI declares
     // RUN_COMMIT directly). Not an AI click-sim — it is the human's expressive single/double press.
     int run_press_window[BASE_COUNT];
+
+    // Human throw-charge gesture (see ThrowCharge). Client-local input memory, human path only; the AI
+    // declares the ThrowIntent directly. Parked here until the client-local input layer (PLAN.md §8).
+    ThrowCharge throw_charge;
 } PendingActionState;
 
 typedef struct _HomeRunContestState {
