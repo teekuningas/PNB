@@ -74,11 +74,17 @@ typedef struct {
     int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
+    int p_throwGoingOn;
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
 
     // box score (readable after the run)
     long pitches; // pitches released (rising edge into AIRBORNE)
+    long throws; // throws to a base started (throw_going_on rising edge 0→1 — set only by throw_load)
+    // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (hasBallIndex −1, ball moving,
+    // pitch NONE, throw 0) is indistinguishable from a half-inning / HR-pair RESET that clears a
+    // fielder's ball — so any state-based drop count aliases resets (verified via PBP). The drop is
+    // knighted by construction instead: tests/integration/contracts/test_ai_tactical_drop.c.
     long contacts; // bat made contact (batOutcome → HIT)
     long whiffs; // swing and a miss (batOutcome → MISSED)
     long fouls; // hits called foul / out of bounds (foulState NONE→DETECTED rising edge)

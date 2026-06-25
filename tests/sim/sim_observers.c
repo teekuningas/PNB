@@ -266,6 +266,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_runs1 = sb->teams[1].runs;
         o->p_inning = sb->inning;
         o->p_period = sb->period;
+        o->p_throwGoingOn = (int)m->pendingActionState.throw_going_on;
         for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
             o->p_baseId[i] = (int)m->playerInfo[i].bTPI.baseId;
             o->p_state[i] = (int)m->playerInfo[i].bTPI.state;
@@ -360,6 +361,17 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->fouls++;
         pbp(o, g, r, "FOUL (out of bounds)");
     }
+
+    // Throw to a base started: throw_load began the windup (throw_going_on rising edge 0→1). This is a
+    // single, unambiguous source — resets clear throw_going_on to 0, so a 0→1 edge is always a real
+    // throw. (A drop counter was tried here but removed: a §30 drop's post-frame state aliases a
+    // half-inning / HR-pair reset that also clears a fielder's ball — see the note in sim_observers.h.)
+    int throwGoingOn = (int)m->pendingActionState.throw_going_on;
+    if (throwGoingOn == 1 && o->p_throwGoingOn == 0) {
+        o->throws++;
+        pbp(o, g, r, "throw to a base (windup)");
+    }
+    o->p_throwGoingOn = throwGoingOn;
 
     // Base running. We want to answer: when a runner reaches 3rd, do they try for home, and if
     // so do they score, get thrown out, get wounded — or just strand? A runner heading home keeps

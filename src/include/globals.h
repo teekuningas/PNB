@@ -610,7 +610,8 @@ typedef enum {
     AI_NO_LOCK = -1,
     AI_PITCH_LOCK = 0,
     AI_THROW_LOCK = 1,
-    AI_DROP_LOCK = 2,
+    // AI_DROP_LOCK (=2) deleted with the drop intent migration (§4.12) — drop is now a self-guarded
+    // command needing no AI lock. Value 2 intentionally left vacant; the whole enum dies at the pitch slice.
     AI_WAITING_BATTER_LOCK = 3,
     AI_WAITING_WALK_LOCK = 4,
     AI_BATTING_LOCK = 5,
@@ -627,7 +628,6 @@ typedef struct _AIState {
     // Catching AI
     int moveCounter;
     int throwStage;
-    int dropStage;
 
     // Batting AI
     int battingKeyDown;

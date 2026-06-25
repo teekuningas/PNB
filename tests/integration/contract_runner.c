@@ -37,6 +37,9 @@ static void run_contract_tests(void)
 
     // Run-scoring guard contracts (Bug #9 regression)
     RUN_TEST(test_wounded_runner_cannot_score_run);
+
+    // Catching-AI intent contracts (§4.12 — drop migration)
+    RUN_TEST(test_ai_declares_and_executes_tactical_drop);
 }
 
 int main(int argc, char* argv[])

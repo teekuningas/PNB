@@ -40,10 +40,10 @@ int test_ai_vs_ai_half_inning(void)
         inv.count_changes, g->failed, g->fail_reason
     );
     printf(
-        "  box score: pitches=%ld contacts=%ld whiffs=%ld strikes=%ld balls=%ld outs=%ld reachedBase=%ld "
-        "furthestBase=%d runs=%ld\n",
-        box.pitches, box.contacts, box.whiffs, box.strikes_called, box.balls_called, box.outs_made, box.reached_base,
-        box.furthest_base, box.runs_scored
+        "  box score: pitches=%ld throws=%ld contacts=%ld whiffs=%ld strikes=%ld balls=%ld outs=%ld "
+        "reachedBase=%ld furthestBase=%d runs=%ld\n",
+        box.pitches, box.throws, box.contacts, box.whiffs, box.strikes_called, box.balls_called, box.outs_made,
+        box.reached_base, box.furthest_base, box.runs_scored
     );
 
     int ok = 1;

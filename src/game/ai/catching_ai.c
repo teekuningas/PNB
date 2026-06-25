@@ -118,7 +118,6 @@ static void update_ai_pitching(MatchSession* match, const HalfInningState* halfI
 
 void init_catching_ai(AIState* aiState)
 {
-    aiState->dropStage = 0;
     aiState->throwStage = 0;
     aiState->moveCounter = 0;
 }
@@ -216,12 +215,6 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsign
     // Update AI pitching
     update_ai_pitching(match, &rules->halfInningState, rng_seed);
 
-    // finish dropping
-    if (match->aiState.dropStage == 1) {
-        match->pendingActionState.aiActionEventLock = AI_NO_LOCK;
-        match->aiState.dropStage = 0;
-        match->pendingActionState.aiLockUpdate = 1;
-    }
     // finish throwing
     if (match->aiState.throwStage == 1) {
         if (match->pendingActionState.aiLockTimeoutCounter == -1) {
@@ -286,13 +279,13 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsign
                 &(rules->referee), &(rules->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
                 r2IsOnBase, catcherHomeIndex, hasBallIndex
             )) {
-            if (match->pendingActionState.aiActionEventLock == AI_NO_LOCK &&
-                match->pendingActionState.aiLockUpdate == 0) {
-                match->aiState.dropStage = 1;
-                match->pendingActionState.aiLockUpdate = 1;
-                match->pendingActionState.aiActionEventLock = AI_DROP_LOCK;
-                match->aF.cTAF.drop_ball = ACTION_TRIGGER_START;
-            }
+            // Declare the drop command directly (intent). drop_ball() in throwing_system.c is
+            // instantaneous and self-guarded — it no-ops unless this catcher still holds the ball and
+            // no throw/pitch is in flight — so the old AI_DROP_LOCK / dropStage wrapper around it was
+            // pure redundancy of the execution-side state (the §8.1 duplicate-state-machine smell). The
+            // execution-side `hasBallIndex` flips to -1 the frame the drop is consumed, preventing any
+            // re-issue on its own.
+            match->aF.cTAF.drop_ball = ACTION_TRIGGER_START;
         }
         // otherwise we throw or move towards a base where lead_from_base player is going. if lead_from_base player is
         // going nowhere we take ball to home base.

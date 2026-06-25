@@ -46,7 +46,8 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_compound_hr_pair_and_uncatchable.o \
                  tests/integration/contracts/test_bat_outcome_promotion.o \
                  tests/integration/contracts/test_throw_interrupted_clears_action.o \
-                 tests/integration/contracts/test_wounded_runner_cannot_score.o
+                 tests/integration/contracts/test_wounded_runner_cannot_score.o \
+                 tests/integration/contracts/test_ai_tactical_drop.o
 
 # Simulation test objects (headless AI-vs-AI, drive the real pipeline, live in tests/sim/)
 _OBJ_SIMS = tests/sim/sim_harness.o \

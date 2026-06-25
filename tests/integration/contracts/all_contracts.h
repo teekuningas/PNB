@@ -28,4 +28,7 @@ int test_interrupted_throw_clears_action_state(void);
 // Run-scoring guard contracts (Bug #9 regression)
 int test_wounded_runner_cannot_score_run(void);
 
+// Catching-AI intent contracts (§4.12 — drop migration)
+int test_ai_declares_and_executes_tactical_drop(void);
+
 #endif // ALL_CONTRACTS_H
