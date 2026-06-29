@@ -162,6 +162,19 @@ void give_ball_to_pitcher(ScenarioContext* ctx)
     game->ballInfo.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
 }
 
+void setup_pitcher_ready(ScenarioContext* ctx)
+{
+    if (!ctx || !ctx->state) return;
+
+    MatchSession* game = ctx->state->match;
+    const int pitcherIdx = 12; // Lukkari, the home catcher
+
+    give_ball_to_pitcher(ctx); // ball in hand at the plate
+    game->pII.catcherOnBaseIndex[0] = pitcherIdx; // the pitcher is the home catcher
+    game->playerInfo[pitcherIdx].cTPI.isNearHomeLocation = 1; // close enough to pitch
+    game->pRAI.batter_ready = 1; // a batter is in
+}
+
 void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
 {
     if (!ctx || !ctx->state) return;
@@ -246,7 +259,10 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
     for (int i = 0; i < maxFrames; i++) {
         // action_invocations() is intentionally omitted here: tests control player/AI decisions
         // explicitly via scenario helpers, not through the normal input dispatch path.
-        execute_actions(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+        execute_actions(
+            ctx->state->match, ctx->state->clientInput, ctx->state->rules, ctx->state->fieldPositions,
+            &ctx->state->playSoundEffect
+        );
         game_manipulation(
             ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
         );

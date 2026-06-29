@@ -70,7 +70,9 @@ int test_ai_declares_and_executes_tactical_drop(void)
     );
 
     // The execution side consumes the declared command and the ball leaves the hand.
-    execute_actions(match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+    execute_actions(
+        match, ctx->state->clientInput, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect
+    );
 
     ASSERT_EQ(-1, match->pII.hasBallIndex, "drop must release the ball (hasBallIndex → -1)");
     ASSERT_EQ(1, match->ballInfo.moving, "dropped ball should be in motion");

@@ -4,86 +4,37 @@
 #include "pitching_physics.h"
 #include <stdio.h>
 
-int test_calculate_ai_pitch_targets(void)
+int test_decide_pitch_aim(void)
 {
+    printf("Running test: %s\n", __func__);
 
-    unsigned int limit1, limit2;
+    // Default (count 9, 0-0): rand_dir=3 -> direction exactly 0 (dead-centre strike).
+    PitchAim a = decide_pitch_aim(9, 0, 0, 2, 3, 0);
+    ASSERT_TRUE(a.direction > -0.001f && a.direction < 0.001f, "rand_dir=3 -> direction 0 (strike)");
 
-    int animation_freq = 3;
+    // One batter left -> fixed toss height (no jitter), regardless of rand_power.
+    PitchAim s1 = decide_pitch_aim(1, 0, 0, 0, 3, 0);
+    PitchAim s2 = decide_pitch_aim(1, 0, 0, 4, 3, 0);
+    ASSERT_TRUE(s1.power == s2.power, "one batter -> power has no jitter");
 
-    HalfInningState gs = {0};
+    // rand_power moves the toss height around the base when more than one batter remains.
+    PitchAim lo = decide_pitch_aim(9, 0, 0, 0, 3, 0);
+    PitchAim hi = decide_pitch_aim(9, 0, 0, 4, 3, 0);
+    ASSERT_TRUE(hi.power > lo.power, "more rand_power -> higher toss");
 
-    // Test case 1: Standard case
+    // Ahead in the count (a strike, no balls): deliberate ball placements off the plate.
+    PitchAim ball_hi = decide_pitch_aim(9, 1, 0, 2, 3, 9);
+    ASSERT_TRUE(ball_hi.direction > 0.1f, "rand_choice=9 -> deliberate ball (off plate +)");
+    PitchAim ball_lo = decide_pitch_aim(9, 1, 0, 2, 3, 8);
+    ASSERT_TRUE(ball_lo.direction < -0.1f, "rand_choice=8 -> deliberate ball (off plate -)");
 
-    int onFieldCount = 9;
+    // Ahead but rand_choice not 8/9 -> still a strike near the centre.
+    PitchAim strike = decide_pitch_aim(9, 1, 0, 2, 3, 0);
+    ASSERT_TRUE(strike.direction > -0.05f && strike.direction < 0.05f, "no deliberate ball -> centre");
 
-    gs.strikes = 0;
-
-    gs.balls = 0;
-
-    calculate_ai_pitch_targets(5, 1, 0, onFieldCount, &gs, animation_freq, &limit1, &limit2);
-
-    // limit1 = (13 - 9) * 3 + 5 + 5 = 4*3 + 10 = 12 + 10 = 22
-
-    // limit2 = 3 * 9 - 2 + 1 + 0 = 27 - 2 + 1 = 26
-
-    ASSERT_EQ(22, limit1, "Standard case limit1 mismatch");
-
-    ASSERT_EQ(26, limit2, "Standard case limit2 mismatch");
-
-    // Test case 2: Single player on field (rand1 becomes 0)
-
-    onFieldCount = 1;
-
-    gs.strikes = 0;
-
-    gs.balls = 0;
-
-    calculate_ai_pitch_targets(10, 0, 5, onFieldCount, &gs, animation_freq, &limit1, &limit2);
-
-    // limit1 = (13 - 9) * 3 + 5 + 0 = 12 + 5 = 17
-
-    // limit2 = 3 * 9 - 2 + 0 + 0 = 25
-
-    ASSERT_EQ(17, limit1, "Single player case limit1 mismatch");
-
-    ASSERT_EQ(25, limit2, "Single player case limit2 mismatch");
-
-    // Test case 3: 0 balls, some strikes, rand3 = 9 (var = 10)
-
-    onFieldCount = 9;
-
-    gs.strikes = 1;
-
-    gs.balls = 0;
-
-    calculate_ai_pitch_targets(0, 0, 9, onFieldCount, &gs, animation_freq, &limit1, &limit2);
-
-    // limit1 = (4)*3 + 5 + 0 = 17
-
-    // limit2 = 27 - 2 + 0 + 10 = 35
-
-    ASSERT_EQ(17, limit1, "Strike/No ball var=10 case limit1 mismatch");
-
-    ASSERT_EQ(35, limit2, "Strike/No ball var=10 case limit2 mismatch");
-
-    // Test case 4: 0 balls, some strikes, rand3 = 8 (var = -10)
-
-    onFieldCount = 9;
-
-    gs.strikes = 1;
-
-    gs.balls = 0;
-
-    calculate_ai_pitch_targets(0, 0, 8, onFieldCount, &gs, animation_freq, &limit1, &limit2);
-
-    // limit1 = 17
-
-    // limit2 = 27 - 2 + 0 - 10 = 15
-
-    ASSERT_EQ(17, limit1, "Strike/No ball var=-10 case limit1 mismatch");
-
-    ASSERT_EQ(15, limit2, "Strike/No ball var=-10 case limit2 mismatch");
+    // Not ahead (balls already on the count) -> never a deliberate ball, even on rand_choice 8/9.
+    PitchAim notahead = decide_pitch_aim(9, 1, 1, 2, 3, 9);
+    ASSERT_TRUE(notahead.direction > -0.05f && notahead.direction < 0.05f, "balls>0 -> no deliberate ball");
 
     return TEST_PASSED;
 }

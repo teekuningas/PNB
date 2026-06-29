@@ -47,7 +47,8 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_bat_outcome_promotion.o \
                  tests/integration/contracts/test_throw_interrupted_clears_action.o \
                  tests/integration/contracts/test_wounded_runner_cannot_score.o \
-                 tests/integration/contracts/test_ai_tactical_drop.o
+                 tests/integration/contracts/test_ai_tactical_drop.o \
+                 tests/integration/contracts/test_pitch_declaration.o
 
 # Simulation test objects (headless AI-vs-AI, drive the real pipeline, live in tests/sim/)
 _OBJ_SIMS = tests/sim/sim_harness.o \
@@ -64,7 +65,8 @@ _OBJ_SCRIPTED = tests/sim/sim_harness.o \
                 tests/sim/sim_observers.o \
                 tests/scripted/scripted_harness.o \
                 tests/scripted/test_scripted_smoke.o \
-                tests/scripted/test_scripted_base_run.o
+                tests/scripted/test_scripted_base_run.o \
+                tests/scripted/test_scripted_pitch.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))

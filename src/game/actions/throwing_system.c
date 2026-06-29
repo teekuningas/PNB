@@ -317,9 +317,11 @@ void update_controlled_player_speed(MatchSession* match)
 // running this last makes the facing authoritative if a stale move event set an orientation that frame.
 // It never touches the throw outcome — that direction is computed fresh at declaration (prepare_throw) —
 // and is gated on the human charge gesture, which the AI never sets.
-void update_thrower_facing(MatchSession* match, const FieldPositions* fieldPositions)
+void update_thrower_facing(
+    MatchSession* match, const ClientInputState* clientInput, const FieldPositions* fieldPositions
+)
 {
-    ThrowCharge* tc = &match->pendingActionState.throw_charge;
+    const ThrowCharge* tc = &clientInput->throw_charge;
     if (!tc->engaged || tc->base == BASE_NONE || match->pII.hasBallIndex == -1) {
         return;
     }

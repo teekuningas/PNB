@@ -773,8 +773,10 @@ void initialize_action_info(MatchSession* match)
     match->aF.cTAF.throw.target = BASE_NONE; // no throw declared
     match->aF.cTAF.change_player = 0;
     match->aF.cTAF.drop_ball = 0;
-    match->aF.cTAF.pitch = 0;
-    match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+    match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
+    match->aF.cTAF.pitch.power = 0.0f;
+    match->aF.cTAF.pitch.direction = 0.0f;
+    match->pendingActionState.pitchActualization.timer = 0;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -801,15 +803,15 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
 
     // Action state
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+    match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
+    match->pendingActionState.pitchActualization.timer = 0;
     match->pendingActionState.throw_going_on = 0;
     match->pRAI.throw_going_to_base = -1;
-    for (int b = 0; b < BASE_COUNT; b++) {
-        match->pendingActionState.run_press_window[b] = 0; // drop any half-finished human double-press
-    }
-    match->pendingActionState.throw_charge.base = BASE_NONE; // drop any half-finished human throw charge
-    match->pendingActionState.throw_charge.power = 0;
-    match->pendingActionState.throw_charge.engaged = 0;
+    // NOTE: client-local input (run_press_window, throw_charge — now in ClientInputState) is deliberately
+    // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
+    // separation as §4.3 (physical resets never touch referee state). Client input is initialized once and
+    // self-clears during play (each gesture's own guards disengage when its preconditions fail), so a
+    // foul/inning reset needs to do nothing to it.
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 (the batter_ready 0→1

@@ -4,11 +4,12 @@
 #include "globals.h"
 
 void execute_actions(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, int* playSoundEffect
+    MatchSession* match, const ClientInputState* clientInput, const GameRulesState* rules,
+    const FieldPositions* fieldPositions, int* playSoundEffect
 );
-void init_execute_actions(MatchSession* match);
+void init_execute_actions(MatchSession* match, ClientInputState* clientInput);
 void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z);
-void update_meters(MatchSession* match);
+void update_meters(MatchSession* match, const ClientInputState* clientInput);
 void ai_update(
     MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, unsigned int* rng_seed
 );

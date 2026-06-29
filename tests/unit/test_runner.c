@@ -174,10 +174,7 @@ int main(int argc, char* argv[])
     RUN_TEST(test_batted_ball_velocity);
 
     // Pitching Physics tests
-    RUN_TEST(test_pitch_power_calc);
-    RUN_TEST(test_pitch_angle_calc);
-    RUN_TEST(test_pitch_velocity);
-    RUN_TEST(test_pitch_meter_ui);
+    RUN_TEST(test_pitch_velocity_from_aim);
 
     // Collision Physics tests
     RUN_TEST(test_collision_resolve_boundaries_no_collision);
@@ -203,7 +200,7 @@ int main(int argc, char* argv[])
     RUN_TEST(test_determine_lead_base_random);
 
     // Pitching AI Strategy tests
-    RUN_TEST(test_calculate_ai_pitch_targets);
+    RUN_TEST(test_decide_pitch_aim);
 
     // Rules Outs tests
     RUN_TEST(test_forced_out_at_first_base);

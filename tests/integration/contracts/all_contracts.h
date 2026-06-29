@@ -31,4 +31,8 @@ int test_wounded_runner_cannot_score_run(void);
 // Catching-AI intent contracts (§4.12 — drop migration)
 int test_ai_declares_and_executes_tactical_drop(void);
 
+// Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
+int test_pitch_aimed_releases_with_declared_velocity(void);
+int test_pitch_unaimed_is_valesyotto(void);
+
 #endif // ALL_CONTRACTS_H

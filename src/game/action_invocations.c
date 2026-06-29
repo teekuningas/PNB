@@ -12,12 +12,20 @@
 // How long after a base-run key release a second release still counts as a double-press (= RUN_COMMIT).
 #define RUN_DOUBLE_PRESS_WINDOW 20
 
-static int checkThrowCharge(MatchSession* match, const KeyStates* key_states, TeamControlMode control);
+// Ramp length (frames) of the human pitch sampling widget — how long it takes to sweep 0→full before
+// wrapping. A pure feel knob (client-local); the engine windup clock is separate and authoritative.
+#define PITCH_WIDGET_MAX 30
+
+static int checkThrowCharge(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
+);
 static void checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
 static void
 checkMove(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, int direction);
 static void checkChangePlayer(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
-static void checkPitch(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
+static void checkPitch(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control
+);
 static void
 checkBatterSelection(MatchSession* match, const KeyStates* key_states, int change, int select, TeamControlMode control);
 static void checkFreeWalkDecision(
@@ -27,8 +35,8 @@ static void
 checkBatterAngle(MatchSession* match, const KeyStates* key_states, int increase, int decrease, TeamControlMode control);
 static void checkSwing(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
 static void checkBattingTeamRun(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base,
-    const RefereeState* referee
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
+    BaseID base, const RefereeState* referee
 );
 
 void init_action_invocations(StateInfo* stateInfo)
@@ -37,7 +45,8 @@ void init_action_invocations(StateInfo* stateInfo)
 }
 
 void action_invocations(
-    MatchSession* match, const KeyStates* key_states, const Scoreboard* scoreboard, const RefereeState* referee
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
+    const RefereeState* referee
 )
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
@@ -46,21 +55,21 @@ void action_invocations(
 
     // Tick down the human base-run double-press windows once per frame (see checkBattingTeamRun).
     for (int b = 0; b < BASE_COUNT; b++) {
-        if (match->pendingActionState.run_press_window[b] > 0) match->pendingActionState.run_press_window[b]--;
+        if (clientInput->run_press_window[b] > 0) clientInput->run_press_window[b]--;
     }
 
     // The action key (KEY_2) is shared. Held together with a direction key it charges a throw; held
     // alone it pitches / drops / changes. checkThrowCharge runs first and reports whether a throw gesture
     // owns KEY_2 this frame — if so we suppress the others, so declaring (or cancelling) a throw never
     // doubles as a drop/pitch on the same key edge.
-    int throw_engaged = checkThrowCharge(match, key_states, catchingControl);
+    int throw_engaged = checkThrowCharge(match, clientInput, key_states, catchingControl);
     if (!throw_engaged) {
         if (match->pII.hasBallIndex == -1) {
             checkChangePlayer(match, key_states, KEY_2, catchingControl);
         } else if (match->pII.controlIndex != match->pII.catcherOnBaseIndex[0]) {
             checkDrop(match, key_states, KEY_2, catchingControl);
         } else {
-            checkPitch(match, key_states, KEY_2, catchingControl);
+            checkPitch(match, clientInput, key_states, KEY_2, catchingControl);
         }
     }
 
@@ -79,10 +88,10 @@ void action_invocations(
     checkBatterAngle(match, key_states, KEY_PLUS, KEY_MINUS, battingControl);
     checkSwing(match, key_states, KEY_2, battingControl);
 
-    checkBattingTeamRun(match, key_states, KEY_DOWN, battingControl, BASE_HOME, referee);
-    checkBattingTeamRun(match, key_states, KEY_LEFT, battingControl, BASE_FIRST, referee);
-    checkBattingTeamRun(match, key_states, KEY_RIGHT, battingControl, BASE_SECOND, referee);
-    checkBattingTeamRun(match, key_states, KEY_UP, battingControl, BASE_THIRD, referee);
+    checkBattingTeamRun(match, clientInput, key_states, KEY_DOWN, battingControl, BASE_HOME, referee);
+    checkBattingTeamRun(match, clientInput, key_states, KEY_LEFT, battingControl, BASE_FIRST, referee);
+    checkBattingTeamRun(match, clientInput, key_states, KEY_RIGHT, battingControl, BASE_SECOND, referee);
+    checkBattingTeamRun(match, clientInput, key_states, KEY_UP, battingControl, BASE_THIRD, referee);
 }
 
 // Human throw-charge gesture (client-local input → ThrowIntent). Returns 1 if a throw gesture owns the
@@ -96,7 +105,9 @@ void action_invocations(
 //     cancel (you can release the arrow first, then KEY_2, and the throw still fires). There is no cancel.
 //   - KEY_2 released → declare ThrowIntent{ latched base, power=charge }.
 // The AI never charges — it declares the ThrowIntent atomically — so AI control returns early here.
-static int checkThrowCharge(MatchSession* match, const KeyStates* key_states, TeamControlMode control)
+static int checkThrowCharge(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
+)
 {
     if (control == CONTROL_AI) {
         return 0; // AI declares the throw command directly in catching_ai.c
@@ -105,7 +116,7 @@ static int checkThrowCharge(MatchSession* match, const KeyStates* key_states, Te
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
 
-    ThrowCharge* tc = &match->pendingActionState.throw_charge;
+    ThrowCharge* tc = &clientInput->throw_charge;
     int enterDown = key_states->down[control][KEY_2];
     int enterReleased = key_states->released[control][KEY_2];
 
@@ -213,22 +224,49 @@ static void checkDrop(MatchSession* match, const KeyStates* key_states, int key,
     }
 }
 
-static void checkPitch(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control)
+// Human pitch input — the 3-click dance, each click advancing the phased PitchDeclaration:
+//   click 1 (start) → WINDUP: begin the windup; the sampling widget starts ramping.
+//   click 2 (power) → POWER:  sample the widget → declared power [0,1]; widget restarts for the aim.
+//   click 3 (aim)   → AIMED:  sample the widget → declared direction [-1,1] (mid = on the plate / strike).
+// If the human never reaches AIMED before the engine windup elapses, it resolves to a valesyöttö (the
+// engine's job — see update_pitch_actualization). The widget is client-local input interpretation only;
+// the AI declares values directly and never touches it.
+static void checkPitch(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control
+)
 {
-    if (control != CONTROL_AI) {
-        if (key_states->down[control][key] == 1) {
-            if (match->pendingActionState.pitch_phase == PITCH_PHASE_ANGLE_WAIT) {
-                match->aF.cTAF.pitch = PITCH_ACTION_ANGLE_SET;
-            } else if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-                match->aF.cTAF.pitch = PITCH_ACTION_START;
-            }
-        } else if (key_states->released[control][key] == 1) {
-            if (match->pendingActionState.pitch_phase == PITCH_PHASE_POWER_WAIT) {
-                match->aF.cTAF.pitch = PITCH_ACTION_POWER_SET;
-            }
-        }
-    } else {
-        // AI sets flags directly
+    if (control == CONTROL_AI) {
+        return; // AI declares the pitch directly in catching_ai.c
+    }
+
+    InputWidget* w = &clientInput->pitchWidget;
+    PitchDeclaration* decl = &match->aF.cTAF.pitch;
+
+    // Ramp the sampling widget while the human is still gathering (between clicks).
+    int gathering = (decl->phase == PITCH_DECL_WINDUP || decl->phase == PITCH_DECL_POWER);
+    if (gathering && w->counter_max > 0) {
+        w->counter++;
+        if (w->counter > w->counter_max) w->counter = 0; // sawtooth — time the click to catch the value
+    }
+
+    if (key_states->released[control][key] != 1) {
+        return; // declarations happen on the click (the release edge)
+    }
+
+    if (decl->phase == PITCH_DECL_IDLE && match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+        // click 1: begin the windup; start sampling.
+        decl->phase = PITCH_DECL_WINDUP;
+        w->counter = 0;
+        w->counter_max = PITCH_WIDGET_MAX;
+    } else if (decl->phase == PITCH_DECL_WINDUP) {
+        // click 2: declare power from the widget; restart the widget for the aim.
+        decl->power = (float)w->counter / (float)w->counter_max; // [0,1]
+        decl->phase = PITCH_DECL_POWER;
+        w->counter = 0;
+    } else if (decl->phase == PITCH_DECL_POWER) {
+        // click 3: declare direction from the widget (mid = on the plate → strike).
+        decl->direction = 2.0f * ((float)w->counter / (float)w->counter_max) - 1.0f; // [-1,1]
+        decl->phase = PITCH_DECL_AIMED;
     }
 }
 
@@ -323,8 +361,8 @@ static void checkSwing(MatchSession* match, const KeyStates* key_states, int key
 }
 
 static void checkBattingTeamRun(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, BaseID base,
-    const RefereeState* referee
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
+    BaseID base, const RefereeState* referee
 )
 {
     if (control != CONTROL_AI) {
@@ -338,10 +376,10 @@ static void checkBattingTeamRun(
         if (key_states->released[control][key]) {
             int index = get_base_controller(match, referee, base);
             if (index != -1) {
-                if (match->pendingActionState.run_press_window[base] > 0) {
+                if (clientInput->run_press_window[base] > 0) {
                     // Second press inside the window → deliberate "run now".
                     match->aF.bTAF.base_run[base] = RUN_COMMIT;
-                    match->pendingActionState.run_press_window[base] = 0;
+                    clientInput->run_press_window[base] = 0;
                 } else {
                     // First press → arm (settled) or come back (off the base); open the double-press window.
                     PlayerUnitState state = match->playerInfo[index].bTPI.state;
@@ -350,7 +388,7 @@ static void checkBattingTeamRun(
                     } else {
                         match->aF.bTAF.base_run[base] = RUN_BACK;
                     }
-                    match->pendingActionState.run_press_window[base] = RUN_DOUBLE_PRESS_WINDOW;
+                    clientInput->run_press_window[base] = RUN_DOUBLE_PRESS_WINDOW;
                 }
             }
         }

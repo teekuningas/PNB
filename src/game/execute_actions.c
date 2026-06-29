@@ -26,18 +26,23 @@ static void
 base_run(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base);
 ;
 
-void init_execute_actions(MatchSession* match)
+void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 {
     // just initialize everyone of these static variables to zero
     match->pendingActionState.meter_counter = 0;
     match->pendingActionState.meter_counter_max = 0;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
+
+    // Client-local input memory: initialized once here, self-clears during play (a physical-world reset
+    // never touches it — see reset_flow_state).
     for (int i = 0; i < BASE_COUNT; i++) {
-        match->pendingActionState.run_press_window[i] = 0;
+        clientInput->run_press_window[i] = 0;
     }
-    match->pendingActionState.throw_charge.base = BASE_NONE;
-    match->pendingActionState.throw_charge.power = 0;
-    match->pendingActionState.throw_charge.engaged = 0;
+    clientInput->throw_charge.base = BASE_NONE;
+    clientInput->throw_charge.power = 0;
+    clientInput->throw_charge.engaged = 0;
+    clientInput->pitchWidget.counter = 0;
+    clientInput->pitchWidget.counter_max = 0;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -47,14 +52,13 @@ void init_execute_actions(MatchSession* match)
     // ai uses a few flags..
 
     init_catching_ai(&(match->aiState));
-    match->pendingActionState.aiActionEventLock = -1;
-    match->pendingActionState.aiLockUpdate = 0;
 
     init_batting_ai(&(match->aiState));
 }
 
 void execute_actions(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, int* playSoundEffect
+    MatchSession* match, const ClientInputState* clientInput, const GameRulesState* rules,
+    const FieldPositions* fieldPositions, int* playSoundEffect
 )
 {
     int i;
@@ -75,11 +79,14 @@ void execute_actions(
         // execution-side mutex — the AI no longer mirrors it with its own lock).
         if (match->pII.hasBallIndex != -1 &&
             match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-            // stop pitching if throwing
+            // stop pitching if throwing (a pitch may be cancelled for a throw, never the reverse): drop
+            // the pitch declaration and the windup clock.
             if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
-                match->aF.cTAF.pitch = PITCH_ACTION_IDLE;
+                match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
+                match->aF.cTAF.pitch.power = 0.0f;
+                match->aF.cTAF.pitch.direction = 0.0f;
                 match->pRAI.pitch_state = PITCH_STAGE_NONE;
-                match->pendingActionState.pitch_phase = PITCH_PHASE_NONE;
+                match->pendingActionState.pitchActualization.timer = 0;
                 // when pitching the ball is moved to the center of the plate so now when we are terminating the
                 // pitch to throw, we must move the ball back to the player
                 match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
@@ -113,21 +120,11 @@ void execute_actions(
         match->pendingActionState.throw_going_on == 0) {
         match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     }
-    // Safety net (drift heal): if throw_going_on is stuck at 1 while no throw action is active, clear it.
-    // This is NOT dead code — it heals a real, reachable drift between throw_going_on and
-    // current_catching_action. A throw sets {throw_going_on=1, cca=THROWING} together, but the AI's
-    // duplicate pitch lock machine (pitchStage/aiActionEventLock, the smell §8 deletes at the pitch slice)
-    // can line a throw's throw_going_on=1 up with a pitch-end path clearing cca (pitching_system.c clears
-    // cca WITHOUT touching throw_going_on). Without this heal the pitcher is frozen: holding the ball, but
-    // throw_going_on=1 blocks move/pitch/drop while cca=NONE stops the windup-completion block from ever
-    // calling throw_release to clear it — a hard deadlock (reproduced under a shorter windup; PLAN §7).
-    // Remove this only when the pitch slice deletes the duplicate lock machine that makes the drift
-    // representable.
-    if (match->pendingActionState.throw_going_on == 1 &&
-        match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING) {
-        match->pendingActionState.throw_going_on = 0;
-        match->pRAI.throw_going_to_base = -1;
-    }
+    // (The throw_going_on/cca drift safety net is GONE — root cure, active bug #3. It existed only because
+    // the AI's duplicate pitch-lock machine could line a throw's throw_going_on=1 up with a pitch-end path
+    // clearing cca. That machine is deleted (the pitch is a declared intent now), so the drift is
+    // unrepresentable, not merely healed. The sim net — test_ai_offense_breakdown — guards against any
+    // recurrence.)
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
     for (i = 0; i < DIRECTION_COUNT; i++) {
@@ -140,7 +137,7 @@ void execute_actions(
     // Client-visual only: a human charging a throw faces the target base. Runs right after the move
     // handling so it is the single, authoritative orientation for a charging thrower (movement is
     // suppressed during a charge). See update_thrower_facing — no effect on the throw outcome.
-    update_thrower_facing(match, fieldPositions);
+    update_thrower_facing(match, clientInput, fieldPositions);
 
     // if change player key has been pressed
     if (match->aF.cTAF.change_player == ACTION_TRIGGER_START) {
@@ -163,19 +160,10 @@ void execute_actions(
     if (match->aF.cTAF.drop_ball == ACTION_TRIGGER_START) {
         drop_ball(match);
     }
-    // pitching
-    if (match->aF.cTAF.pitch == PITCH_ACTION_START) {
-        start_pitch(match);
-    } else if (match->aF.cTAF.pitch == PITCH_ACTION_POWER_SET) {
-        continue_pitch(match);
-    } else if (match->aF.cTAF.pitch == PITCH_ACTION_ANGLE_SET) {
-        release_pitch(match, &rules->referee, fieldPositions);
-    }
-    // Safety auto-clear: if pitching action is stuck but pitch_state is NONE, release it.
-    if (match->pendingActionState.current_catching_action == CATCHING_ACTION_PITCHING &&
-        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->pendingActionState.pitch_phase == PITCH_PHASE_NONE) {
-        match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    }
+    // pitching — the engine-owned actualizer reads the phased declaration (cTAF.pitch), runs the
+    // deterministic windup clock, and releases on AIMED (or fakes / valesyöttö otherwise). No meter read,
+    // no lock machine, no stuck-state auto-clear: the declaration is consumer-cleared at resolution.
+    update_pitch_actualization(match, &rules->referee, fieldPositions);
 
     /*
      * BATTING TEAM
@@ -383,21 +371,23 @@ base_run(MatchSession* match, const RefereeState* referee, const FieldPositions*
     }
 }
 
-void update_meters(MatchSession* match)
+void update_meters(MatchSession* match, const ClientInputState* clientInput)
 {
-    update_pitching_meter(match);
-
-    if (match->pendingActionState.throw_going_on == 1) {
+    // The pitch no longer uses the shared meter — it has its own engine clock (PitchActualization). The
+    // only meter display it needs is the human's sampling widget while gathering (WINDUP/POWER); show that.
+    const PitchDeclaration* pd = &match->aF.cTAF.pitch;
+    if ((pd->phase == PITCH_DECL_WINDUP || pd->phase == PITCH_DECL_POWER) && clientInput->pitchWidget.counter_max > 0) {
+        match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
+    } else if (match->pendingActionState.throw_going_on == 1) {
         // Engine-owned windup clock (post-declaration): the meter fills as the windup runs out.
         if (match->pendingActionState.meter_counter < match->pendingActionState.meter_counter_max) {
             match->pendingActionState.meter_counter += 1;
         }
         match->pRAI.meter_value =
             1.0f * match->pendingActionState.meter_counter / match->pendingActionState.meter_counter_max;
-    } else if (match->pendingActionState.throw_charge.engaged &&
-               match->pendingActionState.throw_charge.base != BASE_NONE) {
+    } else if (clientInput->throw_charge.engaged && clientInput->throw_charge.base != BASE_NONE) {
         // Human is charging a throw (pre-declaration): show the declared power growing on the same meter.
-        match->pRAI.meter_value = 1.0f * match->pendingActionState.throw_charge.power / THROW_CHARGE_MAX;
+        match->pRAI.meter_value = 1.0f * clientInput->throw_charge.power / THROW_CHARGE_MAX;
     } else {
         update_batting_meter(match);
     }

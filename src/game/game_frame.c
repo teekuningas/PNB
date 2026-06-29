@@ -47,7 +47,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    init_execute_actions(stateInfo->match);
+    init_execute_actions(stateInfo->match, stateInfo->clientInput);
     init_action_invocations(stateInfo);
 
     // Consolidated Init (Game Flow + Reset Logic)
@@ -65,14 +65,15 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         GameRulesState* rules = stateInfo->rules;
 
         // 1. Inputs
-        action_invocations(game, stateInfo->keyStates, &rules->scoreboard, &rules->referee);
+        action_invocations(game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee);
 
         // 2. Physics & Logic
         // StateInfo is destructured here (the assembly point): each stage receives exactly the
-        // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
-        // geometry, and its one output. See PLAN.md "Function Signature Strategy".
-        execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
-        update_meters(game);
+        // worlds it touches — mutable physical (MatchSession), client-local input read-only
+        // (const ClientInputState: stage 1 writes it, execution only reads), read-only legal
+        // (GameRulesState), geometry, and its one output. See PLAN.md "Function Signature Strategy".
+        execute_actions(game, stateInfo->clientInput, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
+        update_meters(game, stateInfo->clientInput);
         ai_update(game, rules, stateInfo->fieldPositions, rng_seed);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 

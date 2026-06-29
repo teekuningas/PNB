@@ -130,7 +130,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
                   "pitch_state,catchingAction,hasBall,"
-                  "waitBatter,waitWalk,batter_ready,batterSel,planCalc,aiPitchStage,aiEventLock,batterReadyTimer,"
+                  "waitBatter,waitWalk,batter_ready,batterSel,planCalc,pitchDeclPhase,pitchTimer,batterReadyTimer,"
                   "meterCnt,swing,wrongPitch,batStyle,batOutcome,batting_going_on\n"
         );
         o->header_written = 1;
@@ -148,10 +148,10 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.current_catching_action,
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, m->pII.batterSelectionIndex, m->aiState.planCalculated, m->aiState.pitchStage,
-        (int)m->pendingActionState.aiActionEventLock, m->aiState.batterReadyTimer, m->pendingActionState.meter_counter,
-        (int)m->aF.bTAF.swing, m->aiState.aiWrongPitch, m->aiState.battingStyle, (int)r->betweenPitchState.batOutcome,
-        m->pRAI.batting_going_on
+        m->pRAI.batter_ready, m->pII.batterSelectionIndex, m->aiState.planCalculated, (int)m->aF.cTAF.pitch.phase,
+        m->pendingActionState.pitchActualization.timer, m->aiState.batterReadyTimer,
+        m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing, m->aiState.aiWrongPitch, m->aiState.battingStyle,
+        (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
 }
 

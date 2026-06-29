@@ -30,6 +30,10 @@ StateInfo* setup_test_state()
     state->match = malloc(sizeof(MatchSession));
     memset(state->match, 0, sizeof(MatchSession));
 
+    // Client-local input memory — a sibling of match (NOT synced; see ClientInputState).
+    state->clientInput = malloc(sizeof(ClientInputState));
+    memset(state->clientInput, 0, sizeof(ClientInputState));
+
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));
 
@@ -54,6 +58,7 @@ void cleanup_test_state(StateInfo* state)
         free(state->teamData[i].players);
     }
     free(state->rules);
+    free(state->clientInput);
     free(state->match);
     free(state->fieldPositions);
     free(state->teamData);

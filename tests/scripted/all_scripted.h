@@ -7,5 +7,7 @@ int test_scripted_key_edges(void);
 int test_scripted_input_reaches_pipeline(void);
 int test_scripted_single_tap_does_not_run_batter(void);
 int test_scripted_double_tap_runs_batter(void);
+int test_scripted_pitch_three_clicks_strike(void);
+int test_scripted_pitch_dropped_aim_is_valesyotto(void);
 
 #endif /* ALL_SCRIPTED_H */

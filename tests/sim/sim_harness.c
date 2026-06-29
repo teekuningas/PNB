@@ -171,6 +171,7 @@ void sim_destroy(SimGame* g)
         free(g->state->gameConclusion);
         clean_player_data(g->state); // frees real teamData
         free(g->state->rules);
+        free(g->state->clientInput);
         free(g->state->match);
         free(g->state->fieldPositions);
         free(g->state);

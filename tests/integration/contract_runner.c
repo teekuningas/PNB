@@ -40,6 +40,10 @@ static void run_contract_tests(void)
 
     // Catching-AI intent contracts (§4.12 — drop migration)
     RUN_TEST(test_ai_declares_and_executes_tactical_drop);
+
+    // Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
+    RUN_TEST(test_pitch_aimed_releases_with_declared_velocity);
+    RUN_TEST(test_pitch_unaimed_is_valesyotto);
 }
 
 int main(int argc, char* argv[])

@@ -34,7 +34,9 @@ float throw_charge_to_power(int charge);
 // base. Lives with the movement/orientation code (next to update_controlled_player_speed) and is called
 // from execute_actions after the per-direction move handling, so it is the single orientation writer for
 // a charging thrower. Never affects the throw outcome (the direction is computed at declaration).
-void update_thrower_facing(MatchSession* match, const FieldPositions* fieldPositions);
+void update_thrower_facing(
+    MatchSession* match, const ClientInputState* clientInput, const FieldPositions* fieldPositions
+);
 
 void init_throwing_system(MatchSession* match);
 

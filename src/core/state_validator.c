@@ -209,8 +209,8 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
 
     fprintf(f, "%s\"actionState\": {\n", sp);
     fprintf(f, "%s  \"current_catching_action\": %d,\n", sp, (int)game->pendingActionState.current_catching_action);
-    fprintf(f, "%s  \"pitch_phase\": %d,\n", sp, (int)game->pendingActionState.pitch_phase);
-    fprintf(f, "%s  \"pitch\": %d,\n", sp, game->aF.cTAF.pitch);
+    fprintf(f, "%s  \"pitch_decl_phase\": %d,\n", sp, (int)game->aF.cTAF.pitch.phase);
+    fprintf(f, "%s  \"pitch_timer\": %d,\n", sp, game->pendingActionState.pitchActualization.timer);
     fprintf(f, "%s  \"drop_ball\": %d,\n", sp, game->aF.cTAF.drop_ball);
     fprintf(f, "%s  \"change_player\": %d,\n", sp, game->aF.cTAF.change_player);
     fprintf(f, "%s  \"meter_counter\": %d\n", sp, game->pendingActionState.meter_counter);
@@ -238,8 +238,7 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s\"aiState\": {\n", sp);
     fprintf(f, "%s  \"actionKeyLock\": %d,\n", sp, game->aiState.actionKeyLock);
     fprintf(f, "%s  \"battingKeyDown\": %d,\n", sp, game->aiState.battingKeyDown);
-    fprintf(f, "%s  \"planCalculated\": %d,\n", sp, game->aiState.planCalculated);
-    fprintf(f, "%s  \"pitchStage\": %d\n", sp, game->aiState.pitchStage);
+    fprintf(f, "%s  \"planCalculated\": %d\n", sp, game->aiState.planCalculated);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"players\": [\n", sp);

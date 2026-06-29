@@ -243,14 +243,25 @@ typedef enum {
     ACTION_TRIGGER_STOP = 3
 } ActionTriggerState;
 
+// The phased pitch DECLARATION (the catching team's pitch intent). The pitch↔bat dance is staggered so
+// each side reacts to the other's revealed information (unlike a throw, declared atomically): the pitcher
+// declares power first (the batter may react to the toss height), then either commits an aim (real pitch)
+// or declines (a fake). This is a small state machine; the `phase` is the SINGLE discriminator that says
+// which fields of PitchDeclaration are valid (tagged-union discipline — invalid states unrepresentable,
+// not independent per-field flags). "Existence = declared" generalizes to "the phase says what exists."
+//   IDLE   — no pitch in progress.
+//   WINDUP — dance begun (ball rising); nothing declared yet (the pitcher's "start").
+//   POWER  — power declared; aim pending. The batter may now react to the toss height. (Swing slice.)
+//   AIMED  — power + direction declared → the engine releases the real pitch.
+//   FAKE   — the pitcher declined the aim → valesyöttö (a fake; ball returns, no ball/strike counted,
+//            committed runners exposed). Distinct from a väärä (a real AIMED pitch placed off the plate).
 typedef enum {
-    PITCH_ACTION_IDLE = 0,
-    PITCH_ACTION_START = 1, // Intent: start windup
-    PITCH_ACTION_POWER_WAIT = 2, // (unused after Phase B — state lives in pitch_phase)
-    PITCH_ACTION_POWER_SET = 3, // Intent: power selected
-    PITCH_ACTION_ANGLE_WAIT = 4, // (unused after Phase B — state lives in pitch_phase)
-    PITCH_ACTION_ANGLE_SET = 5 // Intent: angle selected, release ball
-} PitchActionPhase;
+    PITCH_DECL_IDLE = 0,
+    PITCH_DECL_WINDUP,
+    PITCH_DECL_POWER,
+    PITCH_DECL_AIMED,
+    PITCH_DECL_FAKE
+} PitchDeclPhase;
 
 typedef enum {
     BAT_ACTION_IDLE = 0,
@@ -301,10 +312,9 @@ typedef struct _ThrowIntent {
 // action key (KEY_2) together with a direction key: the charge meter rises while KEY_2 is held, pressing
 // a different direction redirects (restarting the meter), and releasing KEY_2 declares ThrowIntent{ base,
 // power=charge }. Once a direction is latched it stays latched for the hold — releasing the arrow does not
-// cancel. The AI never uses this — it declares the ThrowIntent atomically. Lives here, in the synced
-// MatchSession, only as a parking spot: like `run_press_window` and the live `meter_counter`, hold-time
-// is *local to a client* and belongs in the client-local input layer carved at the pitch slice
-// (ARCHITECTURE_VISION.md §8.5; PLAN.md §8). Tracked there as the same debt.
+// cancel. The AI never uses this — it declares the ThrowIntent atomically. Lives in the client-local
+// input layer (ClientInputState, a sibling of MatchSession in StateInfo), never in the synced peer state
+// (ARCHITECTURE_VISION.md §8.5 / §9).
 //   - `base`    : the latched throw direction (BASE_NONE = gesture not started).
 //   - `power`   : charge counter [0, THROW_CHARGE_MAX]; mapped to declared power by throw_charge_to_power.
 //   - `engaged` : 1 once this KEY_2-hold has become a throw gesture (a direction was pressed), so the
@@ -314,6 +324,38 @@ typedef struct _ThrowCharge {
     int power;
     int engaged;
 } ThrowCharge;
+
+// Pitch aim — the DECLARED end-result aim for a pitch (the catching team's aim intent, §8.5). Pure values,
+// no "declared" flags: the very EXISTENCE of a PitchAim means it has been declared. The two producers
+// converge on this same end result by different routes —
+//   - AI:    decide_pitch_aim produces a complete PitchAim immediately (declares at once).
+//   - human: gathers power/direction across the dance windows in the CLIENT-LOCAL input layer (an
+//            optional, per-window accumulation that the AI never has), then RESOLVES that gathering into a
+//            PitchAim at the release boundary — substituting the VALESYÖTTÖ / no-pitch default for any
+//            window left unfilled. The partial/optional-ness lives entirely in the gathering layer and
+//            never touches this synced intent.
+// Physically this works because the launch velocity is needed only at the release instant
+// (pitch_velocity_from_aim is computed once), so the engine only ever needs a COMPLETE aim — never a
+// half-aim mid-dance.
+//   - power     : [0,1]  toss height (dy = PITCH_BASE_SPEED + power*PITCH_POWER_CONSTANT).
+//   - direction : [-1,1] placement; 0 = straight up over the plate (oikea / strike).
+//                 dx = direction*PITCH_ANGLE_CONSTANT. See pitch_velocity_from_aim.
+typedef struct _PitchAim {
+    float power;
+    float direction;
+} PitchAim;
+
+// The catching team's phased pitch declaration (intent). Producer (AI/human) drives `phase` forward
+// (WINDUP→POWER→AIMED|FAKE); the engine reads it, runs the windup clock, releases on AIMED (or fakes on
+// FAKE / a POWER timeout), then clears it back to IDLE at resolution (consumer-clears). `power` is valid
+// once phase >= POWER; `direction` only at AIMED — the phase governs validity. At AIMED, {power,
+// direction} is a complete PitchAim the engine feeds to pitch_velocity_from_aim. Persistent across the
+// dance (aim lifecycle), revisable until committed.
+typedef struct _PitchDeclaration {
+    PitchDeclPhase phase;
+    float power; // valid once phase >= POWER
+    float direction; // valid only at AIMED
+} PitchDeclaration;
 
 /*
 Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
@@ -333,7 +375,7 @@ typedef struct _CatchingTeamActionFlags {
     ActionTriggerState change_player;
     ActionTriggerState run;
     ActionTriggerState drop_ball;
-    PitchActionPhase pitch;
+    PitchDeclaration pitch; // phased pitch declaration (see PitchDeclaration) — replaces PitchActionPhase
 } CatchingTeamActionFlags;
 
 typedef struct _ActionFlags {
@@ -645,11 +687,11 @@ typedef struct _PlayerCounters {
 
 typedef enum {
     AI_NO_LOCK = -1,
-    AI_PITCH_LOCK = 0,
-    // AI_THROW_LOCK (=1) deleted with the throw intent migration (§4.12 sub-step 2) — the throw is now a
-    // declared command actualized by an engine-owned windup, gated by the real execution-side mutex
-    // (current_catching_action), so the AI's duplicate lock was redundant. AI_DROP_LOCK (=2) deleted at
-    // the drop slice. Values 1 and 2 intentionally left vacant; the whole enum dies at the pitch slice.
+    // Catching-side locks are gone: AI_PITCH_LOCK (=0, pitch slice), AI_THROW_LOCK (=1, throw slice),
+    // AI_DROP_LOCK (=2, drop slice) — all three catching actions are now declared intents actualized by
+    // the engine, gated by the real execution-side mutex (current_catching_action), so the AI's duplicate
+    // locks were redundant. Values 0/1/2 left vacant. The remaining locks are the BATTING AI's own
+    // sequencing (actionKeyLock); they die with the swing slice.
     AI_WAITING_BATTER_LOCK = 3,
     AI_WAITING_WALK_LOCK = 4,
     AI_BATTING_LOCK = 5,
@@ -684,14 +726,11 @@ typedef struct _AIState {
     int change;
     int changeHasHappened;
 
-    // Pitching AI
-    int pitchStage;
-    unsigned int pitchFirstLimit;
-    unsigned int pitchSecondLimit;
-    int pitchTime;
-    int pitchPreviousTime;
-    int batterReadyTimer;
-    int aiWrongPitch;
+    // Pitching AI. The legacy click-sim lock machine (pitchStage / pitchFirstLimit / pitchSecondLimit /
+    // pitchTime / pitchPreviousTime) is GONE — the AI now declares the pitch directly through the phased
+    // PitchDeclaration (decide_pitch_aim), exactly like the human, with no meter to puppeteer.
+    int batterReadyTimer; // delay before the AI begins a pitch (gives a human batter time to settle)
+    int aiWrongPitch; // derived predicate (kept; read by the batting AI)
 } AIState;
 
 typedef struct _GameFlowState {
@@ -708,22 +747,25 @@ typedef enum {
     CATCHING_ACTION_CHANGING
 } CatchingTeamCurrentAction;
 
-typedef enum { PITCH_PHASE_NONE = 0, PITCH_PHASE_POWER_WAIT, PITCH_PHASE_ANGLE_WAIT } PitchPhase;
+// Engine-owned pitch actualization clock — pure deterministic timing, the MASTER of the windup cadence.
+// Counts frames since the windup began; the engine uses it to time the release/valesyöttö, NOT the
+// animation. Timing dictates animation, never the reverse: this never reads animationStage, and it runs
+// identically headless (AI-vs-AI, no animation at all). See PitchDeclaration for the declaration it pairs
+// with.
+typedef struct _PitchActualization {
+    int timer;
+} PitchActualization;
 
 typedef struct _PendingActionState {
     unsigned int meter_counter;
     unsigned int meter_counter_max;
 
     CatchingTeamCurrentAction current_catching_action;
-    PitchPhase pitch_phase;
+    PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
 
     int throw_going_on;
     int run_bat_flag;
     int batter_select;
-
-    AILockType aiActionEventLock;
-    int aiLockUpdate;
-    int aiLockTimeoutCounter;
 
     // Batting related
     int batting_frame_count;
@@ -748,19 +790,38 @@ typedef struct _PendingActionState {
                        // drives the windup length (meter_counter_max) and the release velocity. Engine-owned
                        // actualization state — NOT the intent (which is consumed the frame it arrives).
 
-    // Pitching related
-    float pitch_power; // from pitching_system.c
+} PendingActionState;
 
-    // Human input interpretation: per-base countdown after a base-run key release. A second release
-    // while this is >0 is a double-press → RUN_COMMIT ("run now"); a lone press is RUN_FORWARD/RUN_BACK.
-    // Decremented each frame and read in action_invocations.c (human path only; the AI declares
-    // RUN_COMMIT directly). Not an AI click-sim — it is the human's expressive single/double press.
+// Client-local input layer (ARCHITECTURE_VISION.md §8.5 / §10 L3). Input *interpretation* memory — tap
+// windows, hold-charge, meter widgets — belongs to the input SOURCE (a client), NOT to the shared
+// physical world. It is therefore deliberately NOT part of MatchSession (the blittable peer / wire unit,
+// §9): it lives as a sibling in StateInfo, so a stage holding only MatchSession* physically cannot read
+// it, and a peer snapshot never ships one client's tap-timing to another. One instance per process (this
+// machine's local input, covering whichever team(s) this process drives). The AI never uses any of it —
+// it declares intent directly.
+// A meter the human samples to convert tap-TIMING into a declared VALUE — the client-local sampler the AI
+// never needs (it declares values from strategy directly). The counter ramps each gathering frame and
+// wraps at counter_max (a sawtooth); a click reads counter/counter_max as the chosen [0,1] level. This is
+// pure input interpretation, not engine timing — the engine's deterministic clock (PitchActualization) is
+// separate and authoritative; this only turns a human's click moment into a number.
+typedef struct _InputWidget {
+    int counter;
+    int counter_max;
+} InputWidget;
+
+typedef struct _ClientInputState {
+    // Per-base countdown after a base-run key release: a second release while >0 is a double-press
+    // (RUN_COMMIT, "run now"); a lone press is RUN_FORWARD/RUN_BACK. Decremented each frame in
+    // action_invocations.c. Human path only — the AI declares RUN_COMMIT directly.
     int run_press_window[BASE_COUNT];
 
-    // Human throw-charge gesture (see ThrowCharge). Client-local input memory, human path only; the AI
-    // declares the ThrowIntent directly. Parked here until the client-local input layer (PLAN.md §8).
+    // Human throw-charge gesture (see ThrowCharge): hold KEY_2 + a direction; hold-time → declared throw
+    // power. Human path only — the AI declares the ThrowIntent atomically.
     ThrowCharge throw_charge;
-} PendingActionState;
+
+    // The pitch meter the human samples across the 3-click dance (start → power → aim). Human path only.
+    InputWidget pitchWidget;
+} ClientInputState;
 
 typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
@@ -861,6 +922,7 @@ typedef struct _StateInfo {
     TeamData* teamData;
     FieldPositions* fieldPositions;
     MatchSession* match;
+    ClientInputState* clientInput; // client-local input memory — NOT synced (see ClientInputState)
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

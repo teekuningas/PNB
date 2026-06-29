@@ -26,6 +26,7 @@ static void applyFixture(
 static MenuData menuData;
 static StateInfo stateInfo;
 static MatchSession match;
+static ClientInputState clientInput;
 static GameRulesState rules;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
@@ -78,6 +79,7 @@ int main(int argc, char* argv[])
 
     // Initialize stateInfo structure
     stateInfo.match = &match;
+    stateInfo.clientInput = &clientInput;
     stateInfo.rules = &rules;
     stateInfo.gameConclusion = &gameConclusion;
     stateInfo.keyStates = &keyStates;

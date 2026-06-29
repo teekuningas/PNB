@@ -88,6 +88,20 @@ void move_pitcher_away(ScenarioContext* ctx);
 void give_ball_to_pitcher(ScenarioContext* ctx);
 
 /**
+ * @brief Construct a state in which a windup may legally begin (the pitch slice's preconditions).
+ *
+ * Composes give_ball_to_pitcher with the remaining can_begin_windup() conditions: the pitcher (idx 12) is
+ * the home catcher (catcherOnBaseIndex[0]) and near home, and a batter is ready. After this, declaring a
+ * PitchDeclaration and ticking execute_actions runs the engine-owned windup. The canonical way to reach a
+ * pitch-ready state — reused by the pitch (and later swing) tests rather than re-set inline.
+ *
+ * Do NOT combine with move_pitcher_away in the same test.
+ *
+ * @param ctx The scenario context
+ */
+void setup_pitcher_ready(ScenarioContext* ctx);
+
+/**
  * @brief Place the ball in the air above a location so it drops naturally
  *
  * The ball will be placed 5m above the target location with downward velocity.

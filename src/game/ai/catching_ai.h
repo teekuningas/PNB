@@ -3,8 +3,6 @@
 
 #include "globals.h"
 
-#define TIMEOUT_CONSTANT 200
-
 void init_catching_ai(AIState* aiState);
 void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsigned int* rng_seed);
 void move_controlled_player_to_location(MatchSession* match, Vector3D* target);
