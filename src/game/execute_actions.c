@@ -43,6 +43,8 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->throw_charge.engaged = 0;
     clientInput->pitchWidget.counter = 0;
     clientInput->pitchWidget.counter_max = 0;
+    clientInput->pitchWidget.dir = 0;
+    clientInput->pitchWidget.phase = PITCH_WIDGET_IDLE;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -374,9 +376,9 @@ base_run(MatchSession* match, const RefereeState* referee, const FieldPositions*
 void update_meters(MatchSession* match, const ClientInputState* clientInput)
 {
     // The pitch no longer uses the shared meter — it has its own engine clock (PitchActualization). The
-    // only meter display it needs is the human's sampling widget while gathering (WINDUP/POWER); show that.
-    const PitchDeclaration* pd = &match->aF.cTAF.pitch;
-    if ((pd->phase == PITCH_DECL_WINDUP || pd->phase == PITCH_DECL_POWER) && clientInput->pitchWidget.counter_max > 0) {
+    // only meter display it needs is the human's sampling widget (power, then aim); show it whenever the
+    // widget is active — including while it rests at an end position (aim run-out / locked aim).
+    if (clientInput->pitchWidget.phase != PITCH_WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
         match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
     } else if (match->pendingActionState.throw_going_on == 1) {
         // Engine-owned windup clock (post-declaration): the meter fills as the windup runs out.

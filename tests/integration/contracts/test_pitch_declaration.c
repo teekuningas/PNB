@@ -59,12 +59,13 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     ASSERT_EQ(12, match->pII.hasBallIndex, "ball is still in hand during the windup");
 
     // Run the windup clock to its end → release.
-    int frames = run_actualizer(ctx, PITCH_WINDUP_FRAMES + 4);
+    int windup = pitch_windup_total_frames(power);
+    int frames = run_actualizer(ctx, windup + 4);
 
     ASSERT_EQ(-1, match->pII.hasBallIndex, "the ball must leave the hand at the windup end");
     ASSERT_EQ(1, match->gameEvents.pitchReleased, "release must fire the pitchReleased event");
     ASSERT_EQ(PITCH_STAGE_AIRBORNE, (int)match->pRAI.pitch_state, "pitch_state must be AIRBORNE after release");
-    ASSERT(frames >= PITCH_WINDUP_FRAMES - 1, "release must wait for the engine windup, not fire instantly");
+    ASSERT(frames >= windup - 1, "release must wait for the engine windup, not fire instantly");
 
     // The decisive assertion: the launch velocity is a pure function of the DECLARED aim.
     Vector3D expected = pitch_velocity_from_aim(power, direction);
@@ -92,7 +93,7 @@ int test_pitch_unaimed_is_valesyotto(void)
     match->aF.cTAF.pitch.power = 0.5f;
 
     // Run well past the windup deadline.
-    run_actualizer(ctx, PITCH_WINDUP_FRAMES + 4);
+    run_actualizer(ctx, pitch_windup_total_frames(0.5f) + 4);
 
     ASSERT_EQ(12, match->pII.hasBallIndex, "valesyöttö: the pitcher keeps the ball (no pitch thrown)");
     ASSERT_EQ(0, match->gameEvents.pitchReleased, "valesyöttö must NOT fire pitchReleased");

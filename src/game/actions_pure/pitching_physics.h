@@ -6,7 +6,8 @@
 #define PITCH_BASE_SPEED 0.065f // dy at power 0 (minimum toss height)
 #define PITCH_POWER_CONSTANT 0.12f // extra dy per unit power
 #define PITCH_ANGLE_CONSTANT 0.15f // dx per unit placement (direction)
-#define PITCH_DOWN_MAX 9 // crouch animation stage count (render only)
+#define PITCH_DOWN_MAX 9 // crouch (pitch_down) frame count — render only (frames loaded 1..9)
+#define PITCH_UP_MAX 13 // rise/throw (pitch_up) frame count — render only (frames loaded 1..13)
 #define VERTICAL_ANGLE_LIMIT 5 // batting vertical-angle clamp (used by batting_system)
 
 // The pitch actualizer (end-state): convert a declared PitchAim into the ball's launch velocity.

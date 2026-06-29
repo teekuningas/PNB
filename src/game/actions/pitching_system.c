@@ -5,6 +5,15 @@
 
 #define ANIMATION_FREQUENCY 3
 
+// Total windup frames for a declared toss power: a fixed crouch + a power-scaled crouch-hold + a fixed
+// rise. Higher pitches hold the crouch longer (≈2s low → 3s high). See the header constants.
+int pitch_windup_total_frames(float power)
+{
+    if (power < 0.0f) power = 0.0f;
+    if (power > 1.0f) power = 1.0f;
+    return PITCH_WINDUP_DOWN_FRAMES + (int)(power * PITCH_WINDUP_HOLD_MAX) + PITCH_WINDUP_UP_FRAMES;
+}
+
 void reset_pitching_system(MatchSession* match)
 {
     match->pendingActionState.pitchActualization.timer = 0;
@@ -90,9 +99,15 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->aiState.aiWrongPitch = 0;
     match->cameraState.homeRunCameraFlag = 0;
     match->gameEvents.pitchReleased = 1;
-    // release animation (downstream)
+    // release animation (downstream): the windup arc (render-side, driven by the windup clock) has already
+    // played the full down→up motion and lands on the final pitch_up frame exactly now — so at release we
+    // just HOLD that follow-through pose (animationStage pinned to the last frame; update_models holds a
+    // non-loop at its end) until movement takes over. This replaces the old bug where the up-swing only
+    // fired here, after the ball had already left.
     match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_PITCH_THROW;
     match->playerInfo[pitcher].cPI.animationFrequency = ANIMATION_FREQUENCY;
+    match->playerInfo[pitcher].cPI.animationStageCount = PITCH_UP_MAX;
+    match->playerInfo[pitcher].cPI.animationStage = PITCH_UP_MAX * ANIMATION_FREQUENCY - 1;
 
     // commit any base runners that armed to break on the pitch
     for (i = 1; i < BASE_COUNT; i++) {
@@ -165,7 +180,7 @@ void update_pitch_actualization(MatchSession* match, const RefereeState* referee
 
         if (decl->phase == PITCH_DECL_FAKE) {
             fake_pitch(match); // explicit early fake (strategic — e.g. against leading runners)
-        } else if (pas->pitchActualization.timer >= PITCH_WINDUP_FRAMES) {
+        } else if (pas->pitchActualization.timer >= pitch_windup_total_frames(decl->power)) {
             if (decl->phase == PITCH_DECL_AIMED) {
                 release_pitch(match, referee, fieldPositions); // committed aim → real pitch
             } else {

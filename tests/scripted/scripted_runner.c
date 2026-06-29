@@ -15,8 +15,9 @@ int main(void)
     RUN_TEST(test_scripted_input_reaches_pipeline);
     RUN_TEST(test_scripted_single_tap_does_not_run_batter);
     RUN_TEST(test_scripted_double_tap_runs_batter);
-    RUN_TEST(test_scripted_pitch_three_clicks_strike);
+    RUN_TEST(test_scripted_pitch_two_pingpongs_strike);
     RUN_TEST(test_scripted_pitch_dropped_aim_is_valesyotto);
+    RUN_TEST(test_scripted_human_pitch_ai_hit_flies);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

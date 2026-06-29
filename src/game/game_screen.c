@@ -393,21 +393,25 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         resource_manager_get_texture(rm, "data/textures/meter.tga"), meter_screen_x, meter_y, meter_w, meter_h
     );
 
-    // Meter Markers
+    // Meter Markers. The cursor value is in [0,1]; the marker travels the full bar so its edges sit flush
+    // with the bar's left/right ends (no gap) — its travel range is (meter_w − marker_w), not meter_w.
+    float marker_w = 5.0f;
+    float marker_travel = meter_w - marker_w;
     meterX = 0.16f * stateInfo->match->pRAI.meter_value;
     swingMeterX = 0.16f * stateInfo->match->pRAI.swing_meter_value;
 
-    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * meter_w;
-    float swing_marker_x = meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * meter_w;
+    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * marker_travel;
+    float swing_marker_x =
+        meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * marker_travel;
 
     us->lastMeterX = meterX;
     us->lastSwingMeterX = swingMeterX;
 
     draw_texture_2d(
-        resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, 5.0f, 40.0f
+        resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, marker_w, 40.0f
     );
     draw_texture_2d(
-        resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, 5.0f, 40.0f
+        resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w, 40.0f
     );
 
     // BASES (Far Right)

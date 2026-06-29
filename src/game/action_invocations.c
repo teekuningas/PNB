@@ -6,15 +6,22 @@
 #include "globals.h"
 #include "action_invocations.h"
 #include "actions/throwing_system.h"
+#include "actions/pitching_system.h" // windup segment constants — the aim descent matches the engine windup
 #include "rules_pure/player_utils.h"
 #include "rules_pure/base_control.h"
 
 // How long after a base-run key release a second release still counts as a double-press (= RUN_COMMIT).
 #define RUN_DOUBLE_PRESS_WINDOW 20
 
-// Ramp length (frames) of the human pitch sampling widget — how long it takes to sweep 0→full before
-// wrapping. A pure feel knob (client-local); the engine windup clock is separate and authoritative.
-#define PITCH_WIDGET_MAX 30
+// Human pitch meter feel knobs (client-local; the engine windup clock is separate and authoritative).
+#define PITCH_POWER_WIDGET_MAX 30 // power ping-pong half-length (frames); pre-windup & untimed — right peak = max power
+#define PITCH_AIM_FOCAL                                                                                                \
+    0.31f // cursor fraction of the on-the-plate strike (the meter's warm spot ≈ legacy
+          // 4/13); direction is 0 here
+#define PITCH_AIM_SCALE 1.45f // maps the [0,1] cursor to direction [-1,1] about FOCAL (≈ 1/(1-FOCAL))
+// The aim meter is a one-way right→left descent whose length matches the pre-throw windup (crouch DOWN +
+// power-scaled HOLD), so the cursor reaches the left exactly as the throw (UP) begins — an honest aim lands
+// in time, a missed one rests at the left (valesyöttö). Derived from the engine windup, so it stays in sync.
 
 static int checkThrowCharge(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
@@ -56,6 +63,23 @@ void action_invocations(
     // Tick down the human base-run double-press windows once per frame (see checkBattingTeamRun).
     for (int b = 0; b < BASE_COUNT; b++) {
         if (clientInput->run_press_window[b] > 0) clientInput->run_press_window[b]--;
+    }
+
+    // Retire a finished pitch widget EVERY frame, not only inside checkPitch (which stops being called the
+    // instant the ball leaves the pitcher's hand). A power ping-pong that ran out cancels; an aim widget
+    // left over once the engine cleared the pitch (released or faked) resets. Without this the widget stays
+    // "active" forever after a pitch, so update_meters keeps showing it instead of advancing the batting
+    // meter — starving the batter's swing power to ~0 (the "hit ball floats at the plate" bug).
+    {
+        InputWidget* w = &clientInput->pitchWidget;
+        if (w->phase == PITCH_WIDGET_POWER && w->dir == 0) {
+            w->phase = PITCH_WIDGET_IDLE;
+            w->counter_max = 0;
+        } else if (w->phase == PITCH_WIDGET_AIM && match->aF.cTAF.pitch.phase == PITCH_DECL_IDLE) {
+            w->phase = PITCH_WIDGET_IDLE;
+            w->counter_max = 0;
+            w->dir = 0;
+        }
     }
 
     // The action key (KEY_2) is shared. Held together with a direction key it charges a throw; held
@@ -224,13 +248,31 @@ static void checkDrop(MatchSession* match, const KeyStates* key_states, int key,
     }
 }
 
-// Human pitch input — the 3-click dance, each click advancing the phased PitchDeclaration:
-//   click 1 (start) → WINDUP: begin the windup; the sampling widget starts ramping.
-//   click 2 (power) → POWER:  sample the widget → declared power [0,1]; widget restarts for the aim.
-//   click 3 (aim)   → AIMED:  sample the widget → declared direction [-1,1] (mid = on the plate / strike).
-// If the human never reaches AIMED before the engine windup elapses, it resolves to a valesyöttö (the
-// engine's job — see update_pitch_actualization). The widget is client-local input interpretation only;
-// the AI declares values directly and never touches it.
+// Advance the pitch sampling widget through ONE ping-pong (0 → counter_max → 0) then stop. Client-local
+// input interpretation only; never reads or feeds the engine clock.
+static void advance_pitch_widget(InputWidget* w)
+{
+    if (w->dir == 0) return;
+    w->counter += w->dir;
+    if (w->counter >= w->counter_max) {
+        w->counter = w->counter_max;
+        w->dir = -1; // bounce off the right edge
+    } else if (w->counter <= 0) {
+        w->counter = 0;
+        w->dir = 0; // one ping-pong complete — stop and wait (unclicked = no pitch / valesyöttö)
+    }
+}
+
+// Human pitch input — a power meter then an aim meter, one click each, advancing the phased
+// PitchDeclaration. Power selection is pre-windup and client-local (the declaration stays IDLE); the power
+// click is what STARTS the engine windup (power-as-start), so there is no separate WINDUP phase:
+//   press KEY_2 (idle)        → start the power ping-pong (0 → max → 0); nothing declared yet.
+//   click during power sweep  → power = cursor fraction (right peak = max); phase POWER (engine windup
+//                               begins); start the aim meter descending from the right.
+//   click during aim descent  → direction = (cursor − FOCAL)·SCALE (FOCAL = on the plate / strike); AIMED.
+// A meter that runs out unclicked: the power ping-pong cancels (press again to retry); the aim descent
+// rests at the left and the engine windup elapses → valesyöttö (FAKE) — see update_pitch_actualization.
+// The widget is client-local input interpretation only; the AI declares values directly and never touches it.
 static void checkPitch(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control
 )
@@ -242,31 +284,46 @@ static void checkPitch(
     InputWidget* w = &clientInput->pitchWidget;
     PitchDeclaration* decl = &match->aF.cTAF.pitch;
 
-    // Ramp the sampling widget while the human is still gathering (between clicks).
-    int gathering = (decl->phase == PITCH_DECL_WINDUP || decl->phase == PITCH_DECL_POWER);
-    if (gathering && w->counter_max > 0) {
-        w->counter++;
-        if (w->counter > w->counter_max) w->counter = 0; // sawtooth — time the click to catch the value
-    }
+    // (The widget is retired in action_invocations every frame — see the top of that function — so it
+    // frees the batting meter even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
+    advance_pitch_widget(w); // move the cursor (if running) before reading a click
 
     if (key_states->released[control][key] != 1) {
         return; // declarations happen on the click (the release edge)
     }
 
-    if (decl->phase == PITCH_DECL_IDLE && match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-        // click 1: begin the windup; start sampling.
-        decl->phase = PITCH_DECL_WINDUP;
-        w->counter = 0;
-        w->counter_max = PITCH_WIDGET_MAX;
-    } else if (decl->phase == PITCH_DECL_WINDUP) {
-        // click 2: declare power from the widget; restart the widget for the aim.
-        decl->power = (float)w->counter / (float)w->counter_max; // [0,1]
-        decl->phase = PITCH_DECL_POWER;
-        w->counter = 0;
-    } else if (decl->phase == PITCH_DECL_POWER) {
-        // click 3: declare direction from the widget (mid = on the plate → strike).
-        decl->direction = 2.0f * ((float)w->counter / (float)w->counter_max) - 1.0f; // [-1,1]
+    if (decl->phase == PITCH_DECL_IDLE) {
+        if (w->phase == PITCH_WIDGET_IDLE) {
+            // this click STARTS the power meter (client-local; the declaration stays IDLE until power is
+            // locked). Only when a pitch could legally begin.
+            if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+                w->phase = PITCH_WIDGET_POWER;
+                w->counter = 0;
+                w->counter_max = PITCH_POWER_WIDGET_MAX;
+                w->dir = 1; // ping-pong: rise first
+            }
+        } else if (w->phase == PITCH_WIDGET_POWER) {
+            // click while the power meter sweeps → lock power (right peak = max) and START the windup.
+            decl->power = (float)w->counter / (float)w->counter_max; // [0,1]
+            decl->phase = PITCH_DECL_POWER;
+            // start the aim meter: a one-way descent from the right, its length matching the pre-throw
+            // windup (crouch + power-scaled hold) so the cursor reaches the left as the throw begins.
+            int aim_len = PITCH_WINDUP_DOWN_FRAMES + (int)(decl->power * PITCH_WINDUP_HOLD_MAX);
+            if (aim_len < 1) aim_len = 1;
+            w->phase = PITCH_WIDGET_AIM;
+            w->counter = aim_len; // start fully to the right
+            w->counter_max = aim_len; // meter reads 1.0 and descends to 0.0
+            w->dir = -1; // one-way right → left
+        }
+    } else if (decl->phase == PITCH_DECL_POWER && w->phase == PITCH_WIDGET_AIM && w->dir != 0) {
+        // click while the aim meter descends → lock direction (FOCAL = on the plate → strike) → AIMED.
+        float f = (float)w->counter / (float)w->counter_max;
+        float dir = (f - PITCH_AIM_FOCAL) * PITCH_AIM_SCALE;
+        if (dir < -1.0f) dir = -1.0f;
+        if (dir > 1.0f) dir = 1.0f;
+        decl->direction = dir;
         decl->phase = PITCH_DECL_AIMED;
+        w->dir = 0; // stop the meter at the locked position; the engine releases at the windup end
     }
 }
 

@@ -1,5 +1,7 @@
 #include "player_renderer.h"
 #include "../core/render.h" // For GL-related functions and MeshObject
+#include "actions/pitching_system.h" // PITCH_WINDUP_FRAMES (windup clock → animation arc)
+#include "actions_pure/pitching_physics.h" // PITCH_DOWN_MAX / PITCH_UP_MAX (pitch frame counts)
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <stdlib.h> // For malloc
@@ -150,10 +152,31 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         );
         glCallList(resource_manager_get_model(rm, path));
         break;
-    case PLAYER_ANIM_PITCH_WINDUP:
-        sprintf(path, "data/models/pitch/pitch_down_%06d.obj", animIndex + 1);
+    case PLAYER_ANIM_PITCH_WINDUP: {
+        // Windup arc driven by the engine windup CLOCK (timing dictates animation, never the reverse), in
+        // three segments matching pitch_windup_total_frames: a fixed crouch DOWN, a power-scaled crouch
+        // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
+        // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
+        // and human (the AI declares power directly; the windup + arc are the same engine path).
+        float power = stateInfo->match->aF.cTAF.pitch.power;
+        if (power < 0.0f) power = 0.0f;
+        if (power > 1.0f) power = 1.0f;
+        int timer = stateInfo->match->pendingActionState.pitchActualization.timer;
+        int hold = (int)(power * PITCH_WINDUP_HOLD_MAX);
+        if (timer < PITCH_WINDUP_DOWN_FRAMES) {
+            int f = timer * PITCH_DOWN_MAX / PITCH_WINDUP_DOWN_FRAMES; // crouch descent 0..DOWN_MAX-1
+            if (f >= PITCH_DOWN_MAX) f = PITCH_DOWN_MAX - 1;
+            sprintf(path, "data/models/pitch/pitch_down_%06d.obj", f + 1);
+        } else if (timer < PITCH_WINDUP_DOWN_FRAMES + hold) {
+            sprintf(path, "data/models/pitch/pitch_down_%06d.obj", PITCH_DOWN_MAX); // hold the deepest crouch
+        } else {
+            int up = (timer - PITCH_WINDUP_DOWN_FRAMES - hold) * PITCH_UP_MAX / PITCH_WINDUP_UP_FRAMES;
+            if (up >= PITCH_UP_MAX) up = PITCH_UP_MAX - 1;
+            sprintf(path, "data/models/pitch/pitch_up_%06d.obj", up + 1);
+        }
         glCallList(resource_manager_get_model(rm, path));
         break;
+    }
     case PLAYER_ANIM_PITCH_THROW:
         sprintf(path, "data/models/pitch/pitch_up_%06d.obj", animIndex + 1);
         glCallList(resource_manager_get_model(rm, path));

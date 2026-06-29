@@ -249,19 +249,15 @@ typedef enum {
 // or declines (a fake). This is a small state machine; the `phase` is the SINGLE discriminator that says
 // which fields of PitchDeclaration are valid (tagged-union discipline — invalid states unrepresentable,
 // not independent per-field flags). "Existence = declared" generalizes to "the phase says what exists."
-//   IDLE   — no pitch in progress.
-//   WINDUP — dance begun (ball rising); nothing declared yet (the pitcher's "start").
-//   POWER  — power declared; aim pending. The batter may now react to the toss height. (Swing slice.)
+// Declaring POWER is what STARTS the engine windup (power-as-start); there is no separate WINDUP phase —
+// power selection happens beforehand on the client-local meter, leaving the declaration IDLE until locked.
+//   IDLE   — no pitch declared (the human may be sweeping the power meter, but that is client-local).
+//   POWER  — power declared → the engine windup begins. Aim pending; the batter may react to the toss
+//            height. (Swing slice.)
 //   AIMED  — power + direction declared → the engine releases the real pitch.
 //   FAKE   — the pitcher declined the aim → valesyöttö (a fake; ball returns, no ball/strike counted,
 //            committed runners exposed). Distinct from a väärä (a real AIMED pitch placed off the plate).
-typedef enum {
-    PITCH_DECL_IDLE = 0,
-    PITCH_DECL_WINDUP,
-    PITCH_DECL_POWER,
-    PITCH_DECL_AIMED,
-    PITCH_DECL_FAKE
-} PitchDeclPhase;
+typedef enum { PITCH_DECL_IDLE = 0, PITCH_DECL_POWER, PITCH_DECL_AIMED, PITCH_DECL_FAKE } PitchDeclPhase;
 
 typedef enum {
     BAT_ACTION_IDLE = 0,
@@ -799,14 +795,26 @@ typedef struct _PendingActionState {
 // it, and a peer snapshot never ships one client's tap-timing to another. One instance per process (this
 // machine's local input, covering whichever team(s) this process drives). The AI never uses any of it —
 // it declares intent directly.
-// A meter the human samples to convert tap-TIMING into a declared VALUE — the client-local sampler the AI
-// never needs (it declares values from strategy directly). The counter ramps each gathering frame and
-// wraps at counter_max (a sawtooth); a click reads counter/counter_max as the chosen [0,1] level. This is
-// pure input interpretation, not engine timing — the engine's deterministic clock (PitchActualization) is
-// separate and authoritative; this only turns a human's click moment into a number.
+// Which value the human pitch meter is currently sampling (so the renderer knows to show it, and the input
+// code knows how to interpret a click). The AI never uses any of this — it declares values directly.
+typedef enum {
+    PITCH_WIDGET_IDLE = 0, // not shown; ready for a start press
+    PITCH_WIDGET_POWER, // power ping-pong (0 → max → 0); a click locks power and STARTS the windup
+    PITCH_WIDGET_AIM // aim one-way descent (right → left); a click locks direction (sweet spot ≈ FOCAL)
+} PitchWidgetPhase;
+
+// A meter the human samples to convert click-TIMING into a declared VALUE — the client-local sampler the AI
+// never needs (it declares values from strategy directly). A click reads counter/counter_max as the chosen
+// [0,1] level. The two phases move differently: POWER is a ping-pong (0 → max → 0); AIM is a one-way
+// descent (starts at counter_max on the right, falls to 0 on the left), slow enough to time and resting at
+// the left (= valesyöttö pending) when it runs out. This is pure input interpretation, not engine timing —
+// the engine's deterministic clock (PitchActualization) is separate and authoritative; this only turns a
+// human's click moment into a number.
 typedef struct _InputWidget {
-    int counter;
-    int counter_max;
+    int counter; // cursor position in [0, counter_max]
+    int counter_max; // sweep length (0 = never armed)
+    int dir; // +1 rising, -1 falling, 0 = stopped (sweep finished, or not started)
+    PitchWidgetPhase phase; // what the cursor is sampling (also gates whether it is displayed)
 } InputWidget;
 
 typedef struct _ClientInputState {
