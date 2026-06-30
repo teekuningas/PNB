@@ -414,6 +414,22 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w, 40.0f
     );
 
+    // Pitch dance — a SECOND catching-team marker. While the human aims (power already locked, the aim
+    // cursor descending = field_marker above), also show a STATIC marker at the locked power, in the same
+    // catching-team marker colour. This removes the old visual "jump" (the single cursor used to teleport
+    // to the far right on power-lock) and is the first instance of the dance's multi-marker meter (each
+    // team will eventually show its own power + aim markers, same colour within a team). Shown only during
+    // the human aim phase; the AI drives no widget, so an AI pitch never shows a marker. Render-only —
+    // reads the client-local widget phase + the declared (synced) power.
+    if (stateInfo->clientInput->pitchWidget.phase == PITCH_WIDGET_AIM) {
+        float locked_power = stateInfo->match->aF.cTAF.pitch.power;
+        float power_marker_x = meter_screen_x + locked_power * marker_travel;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,
+            40.0f
+        );
+    }
+
     // BASES (Far Right)
     float bases_screen_x = CENTER_X + BASES_OFFSET_X;
     float bases_y = BASE_Y + 17.0f; // Shifted 12px down relative to old (Old was BASE_Y(-120)+25 = -95)

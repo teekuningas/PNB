@@ -9,12 +9,17 @@
 
 // Windup cadence (engine-owned, deterministic; the animation follows it — timing dictates animation, never
 // the reverse). Three segments: a fixed crouch DOWN, a power-scaled HOLD (a higher toss = the pitcher stays
-// crouched longer), and a fixed rise/throw UP. Total = DOWN + power*HOLD_MAX + UP ≈ 2s (low pitch) to 3s
-// (high pitch) at the 50Hz update. Pure FEEL/timing knobs, NOT derived from animation frame counts.
+// crouched longer), and a fixed rise/throw UP. Total = DOWN + power*HOLD_MAX + UP ≈ 1.5s (low pitch) to
+// 2s (high pitch) at the 50Hz update. Pure FEEL/timing knobs, NOT derived from animation frame counts.
 // Changing them re-times the AI — re-baseline the sim determinism hash deliberately.
-#define PITCH_WINDUP_DOWN_FRAMES 50
-#define PITCH_WINDUP_UP_FRAMES 50
-#define PITCH_WINDUP_HOLD_MAX 50
+//
+// NOTE (2026-06-30): retuned ~30% faster (was 50/50/50 ≈ 2s–3s). This did not CAUSE bugs — it only
+// reshuffles which AI-vs-AI games are played — but it exposed two latent bugs that turned the sim net red:
+// the batting-AI orphaned-lock deadlock (#5, unblocked here by the knighted §3.1 batterChangeCount
+// band-aid in batting_ai.c) and a referee outs>3 double-count (#6, fixed in referee.c). See PLAN §7.
+#define PITCH_WINDUP_DOWN_FRAMES 40
+#define PITCH_WINDUP_UP_FRAMES 35
+#define PITCH_WINDUP_HOLD_MAX 25
 
 // Total windup length for a declared toss power [0,1]: DOWN + power*HOLD_MAX + UP. The producer must
 // declare the aim within it; the ball releases (or fakes) at the end. Shared by the engine (release

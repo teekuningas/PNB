@@ -721,6 +721,13 @@ typedef struct _AIState {
     int firstIndexSelected;
     int change;
     int changeHasHappened;
+    // BAND-AID (§3.1, 2026-06-30, dies with the swing slice): bounded-cycle guard for the batter-change
+    // loop. The `firstIndex == index` circuit-breaker is fragile against change_batter's joker-skipping
+    // (a captured slot that later becomes JOKER_USED is never landed on again, so the exact re-match never
+    // re-trips → the AI cycles batters forever, never selecting → batter_ready never set → game deadlock,
+    // bug #5). There are at most JOKER_COUNT+1 distinct selectable slots, so a full cycle is bounded; force
+    // a select once we've changed more than that. Counts CHOOSE_BATTER_NEXT issues since the last select.
+    int batterChangeCount;
 
     // Pitching AI. The legacy click-sim lock machine (pitchStage / pitchFirstLimit / pitchSecondLimit /
     // pitchTime / pitchPreviousTime) is GONE — the AI now declares the pitch directly through the phased

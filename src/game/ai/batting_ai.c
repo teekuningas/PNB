@@ -32,6 +32,7 @@ void init_batting_ai(AIState* aiState)
     aiState->firstIndexSelected = 0;
     aiState->change = 0;
     aiState->changeHasHappened = 0;
+    aiState->batterChangeCount = 0;
 }
 
 void update_batting_ai(
@@ -109,10 +110,18 @@ void update_batting_ai(
         if (match->aiState.firstIndexSelected == 0) {
             match->aiState.firstIndex = index;
             match->aiState.firstIndexSelected = 1;
+            match->aiState.batterChangeCount = 0;
         } else if (match->aiState.changeHasHappened == 1) {
             if (match->aiState.firstIndex == index) {
                 match->aiState.change = 0;
             }
+        }
+        // BAND-AID (§3.1, bug #5 — dies with the swing slice): the firstIndex==index breaker above can be
+        // skipped when change_batter steps over a JOKER_USED slot, looping forever. There are only
+        // JOKER_COUNT+1 distinct selectable slots, so once we've issued more changes than that we have
+        // certainly seen them all — force a select instead of cycling on.
+        if (match->aiState.batterChangeCount > JOKER_COUNT) {
+            match->aiState.change = 0;
         }
 
         // change player
@@ -121,6 +130,7 @@ void update_batting_ai(
             match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
             match->aiState.changingKeyDown = 1;
             match->aiState.actionKeyLock = AI_CHANGE_LOCK;
+            match->aiState.batterChangeCount++;
         } else if (match->aiState.changingKeyDown == 1 && match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
             match->aiState.actionKeyLock = AI_NO_LOCK;
             match->aiState.changingKeyDown = 0;

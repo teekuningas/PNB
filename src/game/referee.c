@@ -435,6 +435,19 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
     }
 }
 
+// §28/§12: three outs ends the half-inning immediately — nothing after counts. A per-player rule loop
+// (update_force_outs / update_tuplahaava_logic) can resolve TWO runners out in the SAME frame, before the
+// end-of-inning state machine (which runs later in the frame) can stop it — pushing a normal/super inning
+// to a spurious 4th out (bug #6, seed 0xFD7261D4). This caps the count: record an out only while < 3. The
+// homerun contest (period >= 4) accumulates outs differently, so it is left uncapped. The caller still
+// sets the player's status OUT regardless — a would-be 4th out's status is harmless (the inning resets).
+static void record_out_capped(HalfInningState* halfInningState, const Scoreboard* scoreboard)
+{
+    if (scoreboard->period < 4 && halfInningState->outs >= 3) return;
+    halfInningState->outs += 1;
+    halfInningState->event = EVENT_OUT;
+}
+
 static void update_force_outs(
     const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
     BetweenPitchState* betweenPitchState
@@ -477,8 +490,7 @@ static void update_force_outs(
                 )) {
 
                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                halfInningState->outs += 1;
-                halfInningState->event = EVENT_OUT; // Global event
+                record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
 
                 // Remove safety if they had it at this base
                 if (has_safety_at_current) {
@@ -527,8 +539,7 @@ static void update_tuplahaava_logic(
                 // Exception 2: Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    halfInningState->outs += 1;
-                    halfInningState->event = EVENT_OUT;
+                    record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
                 }
                 // Exception 1: Ball at SOURCE base -> Lose Safety, become WOUNDED
@@ -561,8 +572,7 @@ static void update_tuplahaava_logic(
                 // Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    halfInningState->outs += 1;
-                    halfInningState->event = EVENT_OUT;
+                    record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                 }
             } else if (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT) {
@@ -672,7 +682,7 @@ static void update_runs(
 
                             if (someone_else_has_third_safety) {
                                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                                halfInningState->outs += 1;
+                                record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28 cap
                             }
                         }
                     }
