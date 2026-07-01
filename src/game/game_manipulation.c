@@ -803,8 +803,10 @@ static void update_models(MatchSession* match)
             break;
         case PLAYER_ANIM_PITCH_WINDUP:
         case PLAYER_ANIM_PITCH_THROW:
-        case PLAYER_ANIM_THROW_WINDUP:
             // throwing animations are not loops and they must end when the last stage is encountered.
+            // (PLAYER_ANIM_THROW_WINDUP is no longer advanced here — its gather arc is driven directly by
+            // the engine windup clock, ThrowActualization.timer, on the render side; timing dictates
+            // animation. This retires the last throw animationStage writer for the windup.)
             if (match->playerInfo[i].cPI.animationStage !=
                 match->playerInfo[i].cPI.animationStageCount * match->playerInfo[i].cPI.animationFrequency - 1) {
                 match->playerInfo[i].cPI.animationStage = (match->playerInfo[i].cPI.animationStage + 1);

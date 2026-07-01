@@ -325,7 +325,7 @@ void update_batting_ai(
     if (rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT && rules->betweenPitchState.catchHasBeenMade == 0 &&
         match->pRAI.throw_going_to_base == -1 && match->pII.hasBallIndex == -1 && match->ballInfo.moving == 1 &&
         rules->betweenPitchState.hasBallHitGround == 1 && match->ballInfo.location.z < -10.0f &&
-        checkIfBallIsOutOfBounds(&match->ballInfo, fieldPositions)) {
+        is_ball_out_of_bounds(&match->ballInfo, fieldPositions)) {
         okToAdvanceAfterHit = 1;
     }
     // Once the hit is safely loose in the field, send every eligible runner to the next base.

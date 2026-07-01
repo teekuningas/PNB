@@ -10,5 +10,6 @@ int test_scripted_double_tap_runs_batter(void);
 int test_scripted_pitch_two_pingpongs_strike(void);
 int test_scripted_pitch_dropped_aim_is_valesyotto(void);
 int test_scripted_human_pitch_ai_hit_flies(void);
+int test_scripted_throw_hold_release_to_base(void);
 
 #endif /* ALL_SCRIPTED_H */

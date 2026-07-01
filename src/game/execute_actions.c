@@ -38,9 +38,6 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     for (int i = 0; i < BASE_COUNT; i++) {
         clientInput->run_press_window[i] = 0;
     }
-    clientInput->throw_charge.base = BASE_NONE;
-    clientInput->throw_charge.power = 0;
-    clientInput->throw_charge.engaged = 0;
     clientInput->pitchWidget.counter = 0;
     clientInput->pitchWidget.counter_max = 0;
     clientInput->pitchWidget.dir = 0;
@@ -59,8 +56,7 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 }
 
 void execute_actions(
-    MatchSession* match, const ClientInputState* clientInput, const GameRulesState* rules,
-    const FieldPositions* fieldPositions, int* playSoundEffect
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, int* playSoundEffect
 )
 {
     int i;
@@ -69,64 +65,14 @@ void execute_actions(
      * CATCHING TEAM
      */
 
-    // THROW — a single parameterized command (target base + declared power). The engine owns the
-    // windup: declaring the intent starts a windup whose LENGTH scales with the declared power; the ball
-    // leaves at the end of the windup (the release block below), with a velocity read from the declared
-    // power — never a live meter. No START/STOP pair: there is one declaration, then the engine acts.
-    if (match->aF.cTAF.throw.target != BASE_NONE) {
-        BaseID base = match->aF.cTAF.throw.target;
-        float power = match->aF.cTAF.throw.power;
-        match->aF.cTAF.throw.target = BASE_NONE; // consume the intent regardless of success
-        // can throw only if someone has the ball and no other catching action is in progress (the real
-        // execution-side mutex — the AI no longer mirrors it with its own lock).
-        if (match->pII.hasBallIndex != -1 &&
-            match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-            // stop pitching if throwing (a pitch may be cancelled for a throw, never the reverse): drop
-            // the pitch declaration and the windup clock.
-            if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
-                match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
-                match->aF.cTAF.pitch.power = 0.0f;
-                match->aF.cTAF.pitch.direction = 0.0f;
-                match->pRAI.pitch_state = PITCH_STAGE_NONE;
-                match->pendingActionState.pitchActualization.timer = 0;
-                // when pitching the ball is moved to the center of the plate so now when we are terminating the
-                // pitch to throw, we must move the ball back to the player
-                match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-                match->ballInfo.location.z = match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
-            }
-            // throw_going_to_base variables are used to have better control
-            // over basemen who are wanting go out of base catching the ball.
-            // throws can be directed only towards bases.
-            prepare_throw(match, fieldPositions, base);
-            // start by loading (begins the engine-owned windup, scaled by power)
-            throw_load(match, base, power);
-            // only commit the action state if the throw actually started (throw_load refuses if the
-            // thrower is already on the target base)
-            if (match->pendingActionState.throw_going_on == 1) {
-                match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
-            }
-        }
-    }
-    // Engine-owned windup completion: when the windup clock reaches its (power-scaled) end, the ball
-    // leaves. This replaces the old human-STOP / AI-meter-watch release — release is now time-driven.
-    if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING &&
-        match->pendingActionState.throw_going_on == 1 &&
-        match->pendingActionState.meter_counter >= match->pendingActionState.meter_counter_max) {
-        throw_release(match);
-        match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    }
-    // Auto-clear (external interrupt): if the throw was interrupted externally (e.g. the ball was caught
-    // by game_manipulation, which cleared throw_going_on), reset the action state so other actions can
-    // proceed. Knighted by test_interrupted_throw_clears_action.
-    if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING &&
-        match->pendingActionState.throw_going_on == 0) {
-        match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    }
-    // (The throw_going_on/cca drift safety net is GONE — root cure, active bug #3. It existed only because
-    // the AI's duplicate pitch-lock machine could line a throw's throw_going_on=1 up with a pitch-end path
-    // clearing cca. That machine is deleted (the pitch is a declared intent now), so the drift is
-    // unrepresentable, not merely healed. The sim net — test_ai_offense_breakdown — guards against any
-    // recurrence.)
+    // THROW — the engine-owned actualizer reads the phased ThrowDeclaration (cTAF.throw), runs the
+    // deterministic windup clock (ThrowActualization), and releases: COMMITTED (AI) at the power-sized
+    // windup end; GATHERING (human) when the producer sets RELEASED, with power read from the clock — never
+    // a live meter. It also cancels a pitch for a throw (never the reverse), and auto-clears on an external
+    // interrupt (ball caught mid-throw). The same phased-declaration + engine-windup-clock shape as the
+    // pitch; the release is time-driven, not a human-STOP / AI-meter-watch. (bug #3 root-cured: the AI's
+    // duplicate lock machine that drifted throw_going_on against cca is gone with the pitch slice.)
+    update_throw_actualization(match, fieldPositions);
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction
     for (i = 0; i < DIRECTION_COUNT; i++) {
@@ -136,10 +82,9 @@ void execute_actions(
             fielder_stop_move(match, i);
         }
     }
-    // Client-visual only: a human charging a throw faces the target base. Runs right after the move
-    // handling so it is the single, authoritative orientation for a charging thrower (movement is
-    // suppressed during a charge). See update_thrower_facing — no effect on the throw outcome.
-    update_thrower_facing(match, clientInput, fieldPositions);
+    // (No charging-thrower facing pass: the throw windup begins the instant a throw is declared —
+    // begin_throw_windup faces the thrower at the target base and movement is suppressed for the whole
+    // windup — so there is no pre-windup charge window whose orientation needs a separate writer.)
 
     // if change player key has been pressed
     if (match->aF.cTAF.change_player == ACTION_TRIGGER_START) {
@@ -375,21 +320,21 @@ base_run(MatchSession* match, const RefereeState* referee, const FieldPositions*
 
 void update_meters(MatchSession* match, const ClientInputState* clientInput)
 {
-    // The pitch no longer uses the shared meter — it has its own engine clock (PitchActualization). The
-    // only meter display it needs is the human's sampling widget (power, then aim); show it whenever the
-    // widget is active — including while it rests at an end position (aim run-out / locked aim).
+    // The meter is a CLIENT display; the AI never uses one. Neither the pitch nor the throw uses the shared
+    // meter_counter anymore — each has its own engine clock (PitchActualization / ThrowActualization). The
+    // catching marker (meter_value) reflects only the LOCAL HUMAN's catching action:
+    //   - the human's pitch sampling widget (power, then aim), shown whenever active; and
+    //   - a human hold-release throw (phase GATHERING/RELEASED): the shared windup clock IS the growing
+    //     power meter (hold longer → fuller). It only READS the clock, never advances it.
+    // An AI throw (THROW_DECL_COMMITTED) drives NO meter — exactly like an AI pitch drives no pitchWidget.
+    // (meter_value is render-only: read solely by game_screen.c, never by logic and not in the checksum.)
     if (clientInput->pitchWidget.phase != PITCH_WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
         match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
-    } else if (match->pendingActionState.throw_going_on == 1) {
-        // Engine-owned windup clock (post-declaration): the meter fills as the windup runs out.
-        if (match->pendingActionState.meter_counter < match->pendingActionState.meter_counter_max) {
-            match->pendingActionState.meter_counter += 1;
-        }
-        match->pRAI.meter_value =
-            1.0f * match->pendingActionState.meter_counter / match->pendingActionState.meter_counter_max;
-    } else if (clientInput->throw_charge.engaged && clientInput->throw_charge.base != BASE_NONE) {
-        // Human is charging a throw (pre-declaration): show the declared power growing on the same meter.
-        match->pRAI.meter_value = 1.0f * clientInput->throw_charge.power / THROW_CHARGE_MAX;
+    } else if (match->aF.cTAF.throw.phase == THROW_DECL_GATHERING ||
+               match->aF.cTAF.throw.phase == THROW_DECL_RELEASED) {
+        float f = (float)match->pendingActionState.throwActualization.timer / (float)THROW_WINDUP_MAX_FRAMES;
+        if (f > 1.0f) f = 1.0f;
+        match->pRAI.meter_value = f;
     } else {
         update_batting_meter(match);
     }

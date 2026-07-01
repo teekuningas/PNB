@@ -1,6 +1,7 @@
 #include "player_renderer.h"
 #include "../core/render.h" // For GL-related functions and MeshObject
 #include "actions/pitching_system.h" // PITCH_WINDUP_FRAMES (windup clock → animation arc)
+#include "actions/throwing_system.h" // THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES (throw gather arc)
 #include "actions_pure/pitching_physics.h" // PITCH_DOWN_MAX / PITCH_UP_MAX (pitch frame counts)
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -181,10 +182,19 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         sprintf(path, "data/models/pitch/pitch_up_%06d.obj", animIndex + 1);
         glCallList(resource_manager_get_model(rm, path));
         break;
-    case PLAYER_ANIM_THROW_WINDUP:
-        sprintf(path, "data/models/throw/throw_load_%06d.obj", animIndex + 1);
+    case PLAYER_ANIM_THROW_WINDUP: {
+        // Gather arc driven by the engine windup CLOCK (timing dictates animation, never the reverse): the
+        // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
+        // hold. Mapped to the full-power windup length; animationStage is ignored (the timer is master).
+        // Works identically for AI (COMMITTED) and human (GATHERING) — the same engine clock.
+        int timer = stateInfo->match->pendingActionState.throwActualization.timer;
+        int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;
+        if (f >= THROW_LOAD_FRAMES) f = THROW_LOAD_FRAMES - 1;
+        if (f < 0) f = 0;
+        sprintf(path, "data/models/throw/throw_load_%06d.obj", f + 1);
         glCallList(resource_manager_get_model(rm, path));
         break;
+    }
     case PLAYER_ANIM_THROW_RELEASE:
         sprintf(path, "data/models/throw/throw_release_%06d.obj", animIndex + 1);
         glCallList(resource_manager_get_model(rm, path));

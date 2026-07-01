@@ -101,7 +101,7 @@ int count_active_batting_players(const PlayerInfo* players)
 
 // so a little function to check if ball's x and z coordinates indicate that ball is out of the
 // playing field.
-int checkIfBallIsOutOfBounds(const BallInfo* ballInfo, const FieldPositions* fieldPositions)
+int is_ball_out_of_bounds(const BallInfo* ballInfo, const FieldPositions* fieldPositions)
 {
     int value = 1;
     // first, is ball behind the line at the back, or too much at right or too much at left

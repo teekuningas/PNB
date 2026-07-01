@@ -179,7 +179,7 @@ static void update_foul_play_logic(
     // Out of Bounds Logic: Check ONLY on first bounce
     if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
         if (betweenPitchState->batOutcome == BAT_OUTCOME_HIT && betweenPitchState->catchHasBeenMade == 0) {
-            if (checkIfBallIsOutOfBounds(&game->ballInfo, stateInfo->fieldPositions)) {
+            if (is_ball_out_of_bounds(&game->ballInfo, stateInfo->fieldPositions)) {
 
                 // 1. Immediately apply the consequence of the foul (Strike/Out)
                 if (referee->strikesAtPitchStart == 2) {

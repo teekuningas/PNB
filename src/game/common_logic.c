@@ -807,7 +807,7 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     match->pendingActionState.pitchActualization.timer = 0;
     match->pendingActionState.throw_going_on = 0;
     match->pRAI.throw_going_to_base = -1;
-    // NOTE: client-local input (run_press_window, throw_charge — now in ClientInputState) is deliberately
+    // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
     // separation as §4.3 (physical resets never touch referee state). Client input is initialized once and
     // self-clears during play (each gesture's own guards disengage when its preconditions fail), so a

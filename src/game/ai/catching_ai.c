@@ -151,8 +151,10 @@ void throw_ball_to_base(MatchSession* match, BaseID base)
     );
 
     if (shouldThrow == 1) {
-        // Declare the throw command directly: which base + how hard. The engine actualizes it through
-        // the windup dance (execute_actions / throwing_system); the AI does not puppeteer a meter.
+        // Declare the throw COMMITTED — target + power at once. The engine sizes the windup to the power
+        // and actualizes the release (execute_actions / throwing_system); the AI plays no minigame, counts
+        // no frames. (The human path instead declares GATHERING then RELEASED, riding the same clock.)
+        match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
         match->aF.cTAF.throw.target = base;
         match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
     }

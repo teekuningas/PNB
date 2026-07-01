@@ -10,37 +10,25 @@
 
 #define DROP_BALL_CONSTANT 0.02f
 
-float throw_charge_to_power(int charge)
+#define THROW_ANIMATION_FREQUENCY 3
+
+// Round-trip between declared power and windup length (see the header). throw_windup_total_frames is the
+// AI's path (power → how long to wind up); throw_power_from_windup is the human's (hold duration → power).
+// They invert on [THROW_POWER_MIN, 1] within integer-truncation tolerance.
+int throw_windup_total_frames(float power)
 {
-    if (charge < 0) charge = 0;
-    if (charge > THROW_CHARGE_MAX) charge = THROW_CHARGE_MAX;
-    float t = (float)charge / (float)THROW_CHARGE_MAX;
-    return THROW_POWER_MIN + (1.0f - THROW_POWER_MIN) * t;
+    if (power < THROW_POWER_MIN) power = THROW_POWER_MIN;
+    if (power > 1.0f) power = 1.0f;
+    float t = (power - THROW_POWER_MIN) / (1.0f - THROW_POWER_MIN);
+    return THROW_WINDUP_MIN_FRAMES + (int)(t * (THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES));
 }
 
-static void
-orient_player_toward_base(MatchSession* match, const FieldPositions* fieldPositions, int playerIndex, BaseID base)
+float throw_power_from_windup(int timer)
 {
-    Vector3D target;
-    switch (base) {
-    case BASE_HOME:
-        target = fieldPositions->pitcher;
-        break;
-    case BASE_FIRST:
-        target = fieldPositions->firstBase;
-        break;
-    case BASE_SECOND:
-        target = fieldPositions->secondBase;
-        break;
-    case BASE_THIRD:
-        target = fieldPositions->thirdBase;
-        break;
-    default:
-        return;
-    }
-    // Same un-normalized direction vector throw_load writes; the renderer only reads its angle.
-    match->playerInfo[playerIndex].tPI.orientation.x = target.x - match->playerInfo[playerIndex].tPI.location.x;
-    match->playerInfo[playerIndex].tPI.orientation.z = target.z - match->playerInfo[playerIndex].tPI.location.z;
+    if (timer < THROW_WINDUP_MIN_FRAMES) timer = THROW_WINDUP_MIN_FRAMES;
+    if (timer > THROW_WINDUP_MAX_FRAMES) timer = THROW_WINDUP_MAX_FRAMES;
+    float t = (float)(timer - THROW_WINDUP_MIN_FRAMES) / (float)(THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES);
+    return THROW_POWER_MIN + (1.0f - THROW_POWER_MIN) * t;
 }
 
 void init_throwing_system(MatchSession* match)
@@ -49,135 +37,203 @@ void init_throwing_system(MatchSession* match)
     match->pendingActionState.throw_direction.x = 0;
     match->pendingActionState.throw_direction.y = 0;
     match->pendingActionState.throw_direction.z = 0;
+    match->pendingActionState.throwActualization.timer = 0;
 }
 
-void prepare_throw(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
+static void clear_throw_declaration(ThrowDeclaration* decl)
 {
+    decl->phase = THROW_DECL_IDLE;
+    decl->target = BASE_NONE;
+    decl->power = 0.0f;
+}
+
+// Compute the (un-normalized) throw direction from the ball-holder toward a target base, and record which
+// base the throw is going to (throw_going_to_base keeps basemen from wandering out to catch it).
+static void set_throw_direction(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
+{
+    Vector3D target;
     switch (base) {
     case BASE_HOME:
+        target = fieldPositions->pitcher;
         match->pRAI.throw_going_to_base = 0;
-        match->pendingActionState.throw_direction.x =
-            fieldPositions->pitcher.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-        match->pendingActionState.throw_direction.z =
-            fieldPositions->pitcher.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_FIRST:
+        target = fieldPositions->firstBase;
         match->pRAI.throw_going_to_base = 1;
-        match->pendingActionState.throw_direction.x =
-            fieldPositions->firstBase.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-        match->pendingActionState.throw_direction.z =
-            fieldPositions->firstBase.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_SECOND:
+        target = fieldPositions->secondBase;
         match->pRAI.throw_going_to_base = 2;
-        match->pendingActionState.throw_direction.x =
-            fieldPositions->secondBase.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-        match->pendingActionState.throw_direction.z =
-            fieldPositions->secondBase.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
         break;
     case BASE_THIRD:
+        target = fieldPositions->thirdBase;
         match->pRAI.throw_going_to_base = 3;
-        match->pendingActionState.throw_direction.x =
-            fieldPositions->thirdBase.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-        match->pendingActionState.throw_direction.z =
-            fieldPositions->thirdBase.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
         break;
     default:
-        break;
+        return;
     }
+    match->pendingActionState.throw_direction.x = target.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
+    match->pendingActionState.throw_direction.z = target.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
 }
 
-void throw_release(MatchSession* match)
+// Begin the engine-owned windup for a throw toward `base`: cancel any pitch, latch the direction/distance,
+// stop and orient the thrower, and start the deterministic clock. Returns 1 if the windup began, 0 if it
+// could not (no ball, or the thrower already stands on the target base — too close to throw). This is the
+// throw analog of the pitch's begin_windup; the gather animation follows the clock downstream.
+static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
-    if (match->pII.hasBallIndex != -1) {
-        float power;
-        // throw not going anymore, ball already flyin'
+    if (match->pII.hasBallIndex == -1) {
+        return 0;
+    }
+
+    // A pitch may be cancelled for a throw (never the reverse): drop the pitch declaration + its windup
+    // clock, and move the ball back from the plate centre to the pitcher's hand.
+    if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+        match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
+        match->aF.cTAF.pitch.power = 0.0f;
+        match->aF.cTAF.pitch.direction = 0.0f;
+        match->pRAI.pitch_state = PITCH_STAGE_NONE;
+        match->pendingActionState.pitchActualization.timer = 0;
+        match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
+        match->ballInfo.location.z = match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
+    }
+
+    set_throw_direction(match, fieldPositions, base);
+    match->pendingActionState.throw_distance = (float)sqrt(
+        match->pendingActionState.throw_direction.x * match->pendingActionState.throw_direction.x +
+        match->pendingActionState.throw_direction.z * match->pendingActionState.throw_direction.z
+    );
+    // Can't throw to a base you are already standing on.
+    if (match->pendingActionState.throw_distance <= THROW_TO_BASE_DISTANCE) {
         match->pendingActionState.throw_going_on = 0;
-        // release animation
-        match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
-        match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
-        match->playerInfo[match->pII.hasBallIndex].cPI.animationStageCount = 21;
-        match->playerInfo[match->pII.hasBallIndex].cPI.animationFrequency = 2;
-        // set flag to indicate that animation is still going on ( so no extra movement
-        // until its over ).
-        match->playerInfo[match->pII.hasBallIndex].cTPI.throwRecoil = 1;
-
-        // power is the DECLARED value carried by the intent (copied into throw_power at throw_load) —
-        // never a live meter read. The meter/clock only times the windup; it does not set the outcome.
-        power = match->pendingActionState.throw_power;
-        // update these values a bit
-        match->pendingActionState.throw_direction.x =
-            match->pendingActionState.throw_direction.x / match->pendingActionState.throw_distance;
-        match->pendingActionState.throw_direction.z =
-            match->pendingActionState.throw_direction.z / match->pendingActionState.throw_distance;
-        match->pendingActionState.throw_direction.y = 0.06f;
-        // ... and then launch the ball
-        generic_sling_ball(
-            &(match->ballInfo), match->pendingActionState.throw_direction.x * power * THROW_POWER_CONSTANT,
-            match->pendingActionState.throw_direction.y +
-                match->pendingActionState.throw_distance * THROW_DISTANCE_CONSTANT,
-            match->pendingActionState.throw_direction.z * power * THROW_POWER_CONSTANT
-        );
-        // Trigger fielder selection update after throw
-        match->pRAI.refresh_catch_and_change = 1;
-        match->pRAI.init_player_selection = 1;
-        // set lastHadBallIndex, its used for example to prevent this player of catching
-        // the ball right after throwing.
-        match->pII.lastHadBallIndex = match->pII.hasBallIndex;
-        // no player has ball anymore
-        match->pII.hasBallIndex = -1;
-        // set running flag to 0 so that orientation will change
-        match->playerInfo[match->pII.controlIndex].cPI.running = 0;
-        // set control to -1 and change_player to 0 as a precaution so that the player
-        // wouldnt be changed right away after this, as the key
-        // to do this is the same one. let the generic_sling_ball handle
-        // player changing.
-        match->pII.controlIndex = -1;
-        match->aF.cTAF.change_player = 0;
+        match->pRAI.throw_going_to_base = -1;
+        return 0;
     }
+
+    int thrower = match->pII.hasBallIndex;
+    // Stop the thrower if moving — the gather animation has no foot movement.
+    if (match->playerInfo[thrower].cPI.moving == 1) {
+        stop_movement(match->playerInfo, thrower);
+    }
+    // Gather animation (renderer-facing; downstream of the clock — the render arc maps the windup timer
+    // across the gather frames, so animationStage here is just the initial pose, not the driver).
+    match->playerInfo[thrower].cPI.model = PLAYER_ANIM_THROW_WINDUP;
+    match->playerInfo[thrower].cPI.animationStage = 0;
+    match->playerInfo[thrower].cPI.animationStageCount = THROW_LOAD_FRAMES;
+    match->playerInfo[thrower].cPI.animationFrequency = THROW_ANIMATION_FREQUENCY;
+    // Avoid twitching if a move key is still down while the thrower can't move.
+    match->playerInfo[thrower].cPI.lastLastLocationUpdate = 1;
+    // Face the target base.
+    match->playerInfo[thrower].tPI.orientation.x = match->pendingActionState.throw_direction.x;
+    match->playerInfo[thrower].tPI.orientation.z = match->pendingActionState.throw_direction.z;
+
+    match->pendingActionState.throw_going_on = 1;
+    match->pendingActionState.throwActualization.timer = 0;
+    match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
+    return 1;
 }
 
-void throw_load(MatchSession* match, BaseID base, float power)
+// Launch the ball toward the latched base with the RESOLVED power (declared by the AI, or read from the
+// windup clock for a human) — never a live meter. Preserves every legacy release side effect (recoil,
+// fielder-selection refresh, control handoff to generic_sling_ball).
+static void throw_release(MatchSession* match, float power)
 {
-    if (match->pII.hasBallIndex != -1) {
-        // throw distance is the euclidean distance from the base to player throwing.
-        match->pendingActionState.throw_distance = (float)sqrt(
-            match->pendingActionState.throw_direction.x * match->pendingActionState.throw_direction.x +
-            match->pendingActionState.throw_direction.z * match->pendingActionState.throw_direction.z
-        );
-        // if player is already on the base, cant throw.
-        if (match->pendingActionState.throw_distance > THROW_TO_BASE_DISTANCE) {
-            // stop player if he is moving, moving won't look good as the animation
-            // doesn't have foot movement
-            if (match->playerInfo[match->pII.hasBallIndex].cPI.moving == 1) {
-                stop_movement(match->playerInfo, match->pII.hasBallIndex);
+    if (match->pII.hasBallIndex == -1) {
+        return;
+    }
+    if (power < 0.0f) power = 0.0f;
+    if (power > 1.0f) power = 1.0f;
+
+    // throw not going anymore, ball already flyin'
+    match->pendingActionState.throw_going_on = 0;
+    // release animation
+    match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
+    match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
+    match->playerInfo[match->pII.hasBallIndex].cPI.animationStageCount = 21;
+    match->playerInfo[match->pII.hasBallIndex].cPI.animationFrequency = 2;
+    // flag that the recoil animation is still going (no extra movement until it is over)
+    match->playerInfo[match->pII.hasBallIndex].cTPI.throwRecoil = 1;
+
+    // normalize the latched direction and give it a small upward component
+    match->pendingActionState.throw_direction.x =
+        match->pendingActionState.throw_direction.x / match->pendingActionState.throw_distance;
+    match->pendingActionState.throw_direction.z =
+        match->pendingActionState.throw_direction.z / match->pendingActionState.throw_distance;
+    match->pendingActionState.throw_direction.y = 0.06f;
+    generic_sling_ball(
+        &(match->ballInfo), match->pendingActionState.throw_direction.x * power * THROW_POWER_CONSTANT,
+        match->pendingActionState.throw_direction.y +
+            match->pendingActionState.throw_distance * THROW_DISTANCE_CONSTANT,
+        match->pendingActionState.throw_direction.z * power * THROW_POWER_CONSTANT
+    );
+    // Trigger fielder selection update after throw
+    match->pRAI.refresh_catch_and_change = 1;
+    match->pRAI.init_player_selection = 1;
+    // prevent this player from catching the ball right after throwing
+    match->pII.lastHadBallIndex = match->pII.hasBallIndex;
+    match->pII.hasBallIndex = -1;
+    // set running flag to 0 so that orientation will change
+    match->playerInfo[match->pII.controlIndex].cPI.running = 0;
+    // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
+    // player changing.
+    match->pII.controlIndex = -1;
+    match->aF.cTAF.change_player = 0;
+}
+
+// Release and clear all throw actualization state back to idle (consumer-clears the declaration).
+static void resolve_throw(MatchSession* match, ThrowDeclaration* decl, float power)
+{
+    throw_release(match, power);
+    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
+    match->pendingActionState.throwActualization.timer = 0;
+    clear_throw_declaration(decl);
+}
+
+// The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
+// Reads the phased ThrowDeclaration, runs the deterministic windup clock, and resolves: COMMITTED (AI)
+// releases when the clock reaches throw_windup_total_frames(power); GATHERING (human) winds up until the
+// producer sets RELEASED, then releases with power read from the clock. Timing is the master; the gather
+// animation only follows.
+void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions)
+{
+    ThrowDeclaration* decl = &match->aF.cTAF.throw;
+    PendingActionState* pas = &match->pendingActionState;
+
+    // Begin a windup the first frame a throw is declared while no catching action is in progress — if it
+    // can legally begin; otherwise drop the declaration.
+    if (decl->phase != THROW_DECL_IDLE && pas->current_catching_action == CATCHING_ACTION_NONE) {
+        if (!begin_throw_windup(match, fieldPositions, decl->target)) {
+            clear_throw_declaration(decl);
+        }
+        return; // never begin and release in the same frame — the windup is at least one tick
+    }
+
+    if (pas->current_catching_action == CATCHING_ACTION_THROWING) {
+        // External interrupt: the ball was taken mid-throw (game_manipulation cleared throw_going_on).
+        // Reset so other actions can proceed. Knighted by test_interrupted_throw_clears_action.
+        if (pas->throw_going_on == 0) {
+            pas->current_catching_action = CATCHING_ACTION_NONE;
+            pas->throwActualization.timer = 0;
+            clear_throw_declaration(decl);
+            return;
+        }
+
+        pas->throwActualization.timer++;
+
+        if (decl->phase == THROW_DECL_COMMITTED) {
+            // AI: the engine sized the windup to the declared power; release at its end.
+            if (pas->throwActualization.timer >= throw_windup_total_frames(decl->power)) {
+                resolve_throw(match, decl, decl->power);
             }
-            // set the animation
-            match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_WINDUP;
-            match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
-            match->playerInfo[match->pII.hasBallIndex].cPI.animationStageCount = 11;
-            match->playerInfo[match->pII.hasBallIndex].cPI.animationFrequency = 3;
-            // Store the declared power, clamped to [0,1]. The release velocity reads this — not a meter.
-            if (power < 0.0f) power = 0.0f;
-            if (power > 1.0f) power = 1.0f;
-            match->pendingActionState.throw_power = power;
-            // The windup is an engine-owned clock: meter_counter ramps 0 → meter_counter_max, and the ball
-            // leaves when it completes (execute_actions). The windup LENGTH is FIXED (THROW_WINDUP) — the
-            // same short wait for every throw, independent of power; power only sets the release velocity
-            // (above). No game logic reads meter_counter for the outcome — only to time the windup.
-            match->pendingActionState.meter_counter = 0;
-            match->pendingActionState.meter_counter_max = THROW_WINDUP;
-            // set the flag that is used for example to determine can you move the player.
-            match->pendingActionState.throw_going_on = 1;
-            // to avoid twitching when moving key is still pressed and player cant move as hes throwing
-            match->playerInfo[match->pII.hasBallIndex].cPI.lastLastLocationUpdate = 1;
-            // and orient player to look at the base too.
-            match->playerInfo[match->pII.hasBallIndex].tPI.orientation.x = match->pendingActionState.throw_direction.x;
-            match->playerInfo[match->pII.hasBallIndex].tPI.orientation.z = match->pendingActionState.throw_direction.z;
+        } else if (decl->phase == THROW_DECL_RELEASED) {
+            // Human let go: power is the shared windup clock at the release edge.
+            resolve_throw(match, decl, throw_power_from_windup(pas->throwActualization.timer));
         } else {
-            // if too close to base, terminate throwing.
-            match->pendingActionState.throw_going_on = 0;
-            match->pRAI.throw_going_to_base = -1;
+            // GATHERING (human still holding): the gather runs; cap the clock at the full-power hold so the
+            // meter rests at full until the release edge (holding past full does not overspill).
+            if (pas->throwActualization.timer > THROW_WINDUP_MAX_FRAMES) {
+                pas->throwActualization.timer = THROW_WINDUP_MAX_FRAMES;
+            }
         }
     }
 }
@@ -308,22 +364,4 @@ void update_controlled_player_speed(MatchSession* match)
             }
         }
     }
-}
-
-// Client-visual only. While a human is charging a throw, face the ball-holder toward the latched target
-// base so they can see where the ball will go. Called from execute_actions right after the per-direction
-// move handling, so it is the single orientation writer for a charging thrower: movement is suppressed
-// during a charge (checkMove stops the fielder while the action key is held), so the two never fight, and
-// running this last makes the facing authoritative if a stale move event set an orientation that frame.
-// It never touches the throw outcome — that direction is computed fresh at declaration (prepare_throw) —
-// and is gated on the human charge gesture, which the AI never sets.
-void update_thrower_facing(
-    MatchSession* match, const ClientInputState* clientInput, const FieldPositions* fieldPositions
-)
-{
-    const ThrowCharge* tc = &clientInput->throw_charge;
-    if (!tc->engaged || tc->base == BASE_NONE || match->pII.hasBallIndex == -1) {
-        return;
-    }
-    orient_player_toward_base(match, fieldPositions, match->pII.hasBallIndex, tc->base);
 }

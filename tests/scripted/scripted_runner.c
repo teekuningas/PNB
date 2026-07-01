@@ -18,6 +18,7 @@ int main(void)
     RUN_TEST(test_scripted_pitch_two_pingpongs_strike);
     RUN_TEST(test_scripted_pitch_dropped_aim_is_valesyotto);
     RUN_TEST(test_scripted_human_pitch_ai_hit_flies);
+    RUN_TEST(test_scripted_throw_hold_release_to_base);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

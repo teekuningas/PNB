@@ -285,41 +285,34 @@ typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } 
 // Both the human (action_invocations) and the AI (batting_ai) emit this same command — no click sim.
 typedef enum { RUN_NONE = 0, RUN_FORWARD = 1, RUN_COMMIT = 2, RUN_BACK = 3 } RunIntent;
 
-// Throw command intent (catching team) — a single, parameterized command declared atomically: WHICH
-// base, and at WHAT power. Replaces the old `throw_to_base[4]` array of per-base ActionTriggerStates,
-// which could represent "throwing to two bases at once" (execute_actions had to defensively clear the
-// others). With one `target`, that invalid state is unrepresentable.
-//   - `target == BASE_NONE` means "no throw declared"; any other BaseID is the single target base.
-//   - `power` is the declared throw power in [0,1]. The engine reads THIS for the windup length and the
-//     release velocity — never a live meter (the meter is a client-local widget only). Meaningful only
-//     when target != BASE_NONE.
-// Lifecycle: single-frame, consumed-and-cleared by execute_actions (sets target back to BASE_NONE).
-// Power lives WITH the command (not in a separate persistent aim block) because a throw's power is
-// declared atomically with the trigger and never revised over a window — "lifecycle determines
-// structure." The persistent/revisable aim block arrives at the pitch/swing slices, where a level
-// genuinely is set over a window. (Refines ARCHITECTURE_VISION.md §8.5.) Both the human
-// (action_invocations) and the AI (catching_ai) emit this same command.
-typedef struct _ThrowIntent {
-    BaseID target;
-    float power;
-} ThrowIntent;
+// The phased throw DECLARATION (catching team) — the throw's intent, mirroring PitchDeclaration. A throw
+// is a phased declaration driving one engine-owned windup clock (ThrowActualization), the same shape as
+// the pitch and (later) the swing: fillable atomically by the AI or progressively by a human, with the
+// windup animation derived from the clock (timing dictates animation). The `phase` is the SINGLE
+// discriminator (tagged union — invalid states unrepresentable, not independent per-field flags):
+//   IDLE       — no throw declared.
+//   GATHERING  — human: the target is latched and the engine windup is running (the gather animation plays
+//                while held); power is PENDING, read from the shared clock at the RELEASED edge. The
+//                windup is legitimately observable (a runner may react to a fielder winding up), exactly
+//                like the pitch's shared POWER phase.
+//   COMMITTED  — AI: target + power declared at once; the engine sizes the windup to the power and
+//                auto-releases at its end. `power` is valid only in this phase.
+//   RELEASED   — human's fire-now edge: release this frame, power = throw_power_from_windup(clock).
+// Lifecycle: persistent across the windup (like PitchDeclaration, unlike a single-frame command); the
+// engine consumer-clears it back to IDLE at release / interrupt. Power is declared at an edge and never
+// revised over a window, so it lives on the declaration (not a separate persistent aim block) — "lifecycle
+// determines structure." Both producers emit this same declaration; only the input mechanism differs.
+//   - `target` : BASE_NONE = no throw; any other BaseID is the single target base.
+//   - `power`  : declared throw power [0,1]. Valid only at COMMITTED (the AI path). The engine reads it
+//                for the windup length and the release velocity — never a live meter. The human path
+//                leaves it 0 and the engine derives power from the windup clock at RELEASED.
+typedef enum { THROW_DECL_IDLE = 0, THROW_DECL_GATHERING, THROW_DECL_COMMITTED, THROW_DECL_RELEASED } ThrowDeclPhase;
 
-// Human throw-charge gesture state (client-local input memory). A human declares a throw by holding the
-// action key (KEY_2) together with a direction key: the charge meter rises while KEY_2 is held, pressing
-// a different direction redirects (restarting the meter), and releasing KEY_2 declares ThrowIntent{ base,
-// power=charge }. Once a direction is latched it stays latched for the hold — releasing the arrow does not
-// cancel. The AI never uses this — it declares the ThrowIntent atomically. Lives in the client-local
-// input layer (ClientInputState, a sibling of MatchSession in StateInfo), never in the synced peer state
-// (ARCHITECTURE_VISION.md §8.5 / §9).
-//   - `base`    : the latched throw direction (BASE_NONE = gesture not started).
-//   - `power`   : charge counter [0, THROW_CHARGE_MAX]; mapped to declared power by throw_charge_to_power.
-//   - `engaged` : 1 once this KEY_2-hold has become a throw gesture (a direction was pressed), so the
-//                 meter keeps charging even after the arrow is released and the KEY_2 release won't drop.
-typedef struct _ThrowCharge {
-    BaseID base;
-    int power;
-    int engaged;
-} ThrowCharge;
+typedef struct _ThrowDeclaration {
+    ThrowDeclPhase phase;
+    BaseID target;
+    float power; // valid only at COMMITTED
+} ThrowDeclaration;
 
 // Pitch aim — the DECLARED end-result aim for a pitch (the catching team's aim intent, §8.5). Pure values,
 // no "declared" flags: the very EXISTENCE of a PitchAim means it has been declared. The two producers
@@ -367,7 +360,7 @@ typedef struct _BattingTeamActionFlags {
 
 typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
-    ThrowIntent throw; // which base + declared power (replaces throw_to_base[4]; see ThrowIntent)
+    ThrowDeclaration throw; // phased throw declaration (see ThrowDeclaration) — replaces the atomic ThrowIntent
     ActionTriggerState change_player;
     ActionTriggerState run;
     ActionTriggerState drop_ball;
@@ -759,12 +752,23 @@ typedef struct _PitchActualization {
     int timer;
 } PitchActualization;
 
+// Engine-owned throw actualization clock — the throw analog of PitchActualization, and the MASTER of the
+// throw windup cadence. Counts frames since the windup began; the engine uses it to time the release (for
+// a COMMITTED/AI throw, releasing at throw_windup_total_frames(power)) and to derive power (for a
+// GATHERING/human throw, power = throw_power_from_windup(timer) at the release edge). The shared
+// deterministic clock IS the human's charge "meter" — there is no client-local charge state. Never reads
+// animation; runs identically headless. See ThrowDeclaration for the declaration it pairs with.
+typedef struct _ThrowActualization {
+    int timer;
+} ThrowActualization;
+
 typedef struct _PendingActionState {
     unsigned int meter_counter;
     unsigned int meter_counter_max;
 
     CatchingTeamCurrentAction current_catching_action;
     PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
+    ThrowActualization throwActualization; // engine windup clock for the throw (replaces the meter_counter windup)
 
     int throw_going_on;
     int run_bat_flag;
@@ -789,9 +793,8 @@ typedef struct _PendingActionState {
     // Throwing related
     float throw_distance; // from throwing_system.c
     Vector3D throw_direction; // from throwing_system.c
-    float throw_power; // declared power being actualized this throw (copied from the consumed ThrowIntent);
-                       // drives the windup length (meter_counter_max) and the release velocity. Engine-owned
-                       // actualization state — NOT the intent (which is consumed the frame it arrives).
+    // (throw_power is gone: the actualized power now flows as a parameter to throw_release — resolved from
+    // the declaration for the AI, or from throwActualization.timer for a human — never a pending field.)
 
 } PendingActionState;
 
@@ -830,9 +833,9 @@ typedef struct _ClientInputState {
     // action_invocations.c. Human path only — the AI declares RUN_COMMIT directly.
     int run_press_window[BASE_COUNT];
 
-    // Human throw-charge gesture (see ThrowCharge): hold KEY_2 + a direction; hold-time → declared throw
-    // power. Human path only — the AI declares the ThrowIntent atomically.
-    ThrowCharge throw_charge;
+    // (No throw-charge state: the human throw is hold-release — hold KEY_2 + a direction runs the shared
+    // engine windup clock (ThrowActualization) and reads power from it at the release edge. The clock is
+    // engine-owned; there is zero client-local throw state. The AI declares the throw COMMITTED atomically.)
 
     // The pitch meter the human samples across the 3-click dance (start → power → aim). Human path only.
     InputWidget pitchWidget;

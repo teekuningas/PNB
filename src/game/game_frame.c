@@ -72,7 +72,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // worlds it touches — mutable physical (MatchSession), client-local input read-only
         // (const ClientInputState: stage 1 writes it, execution only reads), read-only legal
         // (GameRulesState), geometry, and its one output. See PLAN.md "Function Signature Strategy".
-        execute_actions(game, stateInfo->clientInput, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
+        execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
         update_meters(game, stateInfo->clientInput);
         ai_update(game, rules, stateInfo->fieldPositions, rng_seed);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);

@@ -24,10 +24,7 @@ static int run_actualizer(ScenarioContext* ctx, int budget)
 {
     int i;
     for (i = 0; i < budget; i++) {
-        execute_actions(
-            ctx->state->match, ctx->state->clientInput, ctx->state->rules, ctx->state->fieldPositions,
-            &ctx->state->playSoundEffect
-        );
+        execute_actions(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
         if (ctx->state->match->pII.hasBallIndex == -1) break; // ball left the hand
     }
     return i;
@@ -49,9 +46,7 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     match->aF.cTAF.pitch.direction = direction;
 
     // First frame begins the windup (engine mutex), without releasing.
-    execute_actions(
-        match, ctx->state->clientInput, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect
-    );
+    execute_actions(match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
     ASSERT_EQ(
         CATCHING_ACTION_PITCHING, (int)match->pendingActionState.current_catching_action,
         "declaring a pitch must begin the engine-owned windup"

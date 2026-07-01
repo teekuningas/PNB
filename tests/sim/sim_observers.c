@@ -362,7 +362,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         pbp(o, g, r, "FOUL (out of bounds)");
     }
 
-    // Throw to a base started: throw_load began the windup (throw_going_on rising edge 0→1). This is a
+    // Throw to a base started: begin_throw_windup began the windup (throw_going_on rising edge 0→1). This is a
     // single, unambiguous source — resets clear throw_going_on to 0, so a 0→1 edge is always a real
     // throw. (A drop counter was tried here but removed: a §30 drop's post-frame state aliases a
     // half-inning / HR-pair reset that also clears a fielder's ball — see the note in sim_observers.h.)

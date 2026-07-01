@@ -35,7 +35,8 @@ int test_interrupted_throw_clears_action_state(void)
     // Place target base far enough away for throw to succeed
     // (throw_distance > THROW_TO_BASE_DISTANCE check in throw_load)
 
-    // Simulate: a throw to base 1 is declared (target base + power) — by human or AI, same intent.
+    // Simulate: a throw to base 1 is declared COMMITTED (as the AI does — target base + power at once).
+    ctx->state->match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
     ctx->state->match->aF.cTAF.throw.target = BASE_FIRST;
     ctx->state->match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
 

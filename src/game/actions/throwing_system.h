@@ -3,47 +3,47 @@
 
 #include "globals.h"
 
-// The engine-owned windup is a FIXED length (in frames), the same for every throw — NOT scaled by the
-// declared power. Rationale (owner, 2026-06-25): a powerful throw already costs the human the time spent
-// charging the meter; making the windup *also* scale with power penalized them twice ("wait to charge,
-// then wait for a long windup"). Power still drives the release velocity (throw_release), so a charged
-// throw still flies farther/faster — it just leaves the hand on a fixed, prompt cadence (~0.5 s at 30).
+// The throw windup is an engine-owned, deterministic clock (ThrowActualization) — the shared "central
+// authority" both networked peers agree on. It is the throw analog of the pitch windup, and unifies
+// pitch/throw/swing on one pattern: a phased declaration driving one engine windup clock.
 //
-// This is a pure FEEL knob — tune freely. It is NOT load-bearing for correctness: a shorter windup
-// re-times the catching relay and can provoke a throw_going_on/current_catching_action drift, but the
-// safety-net heal in execute_actions clears that drift, so no value deadlocks (verified: 30 runs the
-// 24-seed sim net clean; the drift's root cause — the AI's duplicate pitch-lock machine — is deleted at
-// the pitch slice). Changing this re-times the AI, so re-baseline the sim determinism hash deliberately.
-#define THROW_WINDUP 30
+// Hold-release feel (owner, 2026-07-01): the windup length is NOT fixed — it scales with power, and power
+// is reached by holding. A human holds KEY_2 + a direction and the gather animation plays WHILE HELD (the
+// windup clock runs); releasing reads the power off the clock. The AI declares power atomically and the
+// engine sizes the windup to it. Both ride the same clock, so "hold longer = throw harder" is symmetric.
+// This restores the pre-refactor gather-while-charging feel that the interim atomic throw lost.
+//
+// Windup length spans [MIN, MAX] frames as power spans [THROW_POWER_MIN, 1]:
+//   - a bare tap releases near MIN → floor power (THROW_POWER_MIN); a throw is never a dead 0-power throw.
+//   - a full hold caps at MAX → power 1; the clock rests at MAX until the release edge.
+// Pure FEEL knobs — tune freely. Changing them re-times the AI, so re-baseline the sim determinism hash.
+#define THROW_WINDUP_MIN_FRAMES 8 // a bare tap: quick release, floor power (~0.16s at 50Hz)
+#define THROW_WINDUP_MAX_FRAMES 45 // a full hold: max power, gather fully wound (~0.9s at 50Hz)
+#define THROW_POWER_MIN 0.2f // floor power (a tap still throws)
 
-// Default declared throw power [0,1]. The AI declares this atomically; the human grows its own power with
-// the client-local charge gesture below (action_invocations.c). Kept for the AI path.
+// Default declared throw power [0,1]. The AI declares this atomically (THROW_DECL_COMMITTED); the engine
+// sizes the windup to it. The human never uses it (power comes from the hold duration).
 #define THROW_POWER_DEFAULT (3.0f / 4.0f)
 
-// Human throw-charge gesture tuning (client-local). The charge counter rises one step per held frame up
-// to THROW_CHARGE_MAX (≈ how long a full-power hold takes, in frames), then maps to a declared power in
-// [THROW_POWER_MIN, 1]. A bare tap therefore still throws (at THROW_POWER_MIN), never a dead 0-power
-// throw. Feel constants — tune freely at the graphical pass; no game logic depends on the exact values.
-#define THROW_CHARGE_MAX 45
-#define THROW_POWER_MIN 0.2f
+// Frame count of the throw-gather (throw_load) animation mesh sequence. The render arc maps the windup
+// clock across these frames (timing dictates animation), so the gather deepens as the windup runs.
+#define THROW_LOAD_FRAMES 11
 
-// Map a held charge counter [0, THROW_CHARGE_MAX] to a declared throw power [THROW_POWER_MIN, 1].
-float throw_charge_to_power(int charge);
-
-// Client-visual only: while a human is charging a throw, face the ball-holder toward the latched target
-// base. Lives with the movement/orientation code (next to update_controlled_player_speed) and is called
-// from execute_actions after the per-direction move handling, so it is the single orientation writer for
-// a charging thrower. Never affects the throw outcome (the direction is computed at declaration).
-void update_thrower_facing(
-    MatchSession* match, const ClientInputState* clientInput, const FieldPositions* fieldPositions
-);
+// Round-trip pair between declared power and windup length (unit-tested):
+//   throw_windup_total_frames(power) — AI: how long to wind up for a declared power (COMMITTED release).
+//   throw_power_from_windup(timer)   — human: what power a hold of `timer` frames declares (RELEASED edge).
+int throw_windup_total_frames(float power);
+float throw_power_from_windup(int timer);
 
 void init_throwing_system(MatchSession* match);
 
-void prepare_throw(MatchSession* match, const FieldPositions* fieldPositions, BaseID base);
+// The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
+// Reads the phased ThrowDeclaration (cTAF.throw), runs the deterministic windup clock, and releases:
+// COMMITTED at throw_windup_total_frames(power); GATHERING when the producer sets RELEASED (power read
+// from the clock). Consumer-clears the declaration at resolution. Called once per frame from
+// execute_actions. Timing is the master; the animation only follows.
+void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions);
 
-void throw_release(MatchSession* match);
-void throw_load(MatchSession* match, BaseID base, float power);
 void fielder_move(MatchSession* match, int direction);
 void fielder_stop_move(MatchSession* match, int direction);
 void drop_ball(MatchSession* match);

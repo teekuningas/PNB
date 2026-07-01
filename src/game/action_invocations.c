@@ -23,9 +23,7 @@
 // power-scaled HOLD), so the cursor reaches the left exactly as the throw (UP) begins — an honest aim lands
 // in time, a missed one rests at the left (valesyöttö). Derived from the engine windup, so it stays in sync.
 
-static int checkThrowCharge(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
-);
+static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, TeamControlMode control);
 static void checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
 static void
 checkMove(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, int direction);
@@ -82,11 +80,11 @@ void action_invocations(
         }
     }
 
-    // The action key (KEY_2) is shared. Held together with a direction key it charges a throw; held
-    // alone it pitches / drops / changes. checkThrowCharge runs first and reports whether a throw gesture
-    // owns KEY_2 this frame — if so we suppress the others, so declaring (or cancelling) a throw never
-    // doubles as a drop/pitch on the same key edge.
-    int throw_engaged = checkThrowCharge(match, clientInput, key_states, catchingControl);
+    // The action key (KEY_2) is shared. Held together with a direction key it winds up a throw (hold to
+    // gather, release to fire); held alone it pitches / drops / changes. checkThrowGesture runs first and
+    // reports whether a throw gesture owns KEY_2 this frame — if so we suppress the others, so a throw's
+    // hold or release never doubles as a drop/pitch on the same key edge.
+    int throw_engaged = checkThrowGesture(match, key_states, catchingControl);
     if (!throw_engaged) {
         if (match->pII.hasBallIndex == -1) {
             checkChangePlayer(match, key_states, KEY_2, catchingControl);
@@ -118,84 +116,55 @@ void action_invocations(
     checkBattingTeamRun(match, clientInput, key_states, KEY_UP, battingControl, BASE_THIRD, referee);
 }
 
-// Human throw-charge gesture (client-local input → ThrowIntent). Returns 1 if a throw gesture owns the
-// action key (KEY_2) this frame — the caller then suppresses pitch/drop/change so the same key edge is
-// not consumed twice.
+// Human throw gesture (hold-release) → the phased ThrowDeclaration (cTAF.throw). Returns 1 if a throw
+// gesture owns the action key (KEY_2) this frame — the caller then suppresses pitch/drop/change so one key
+// edge is not consumed twice. There is ZERO client-local throw state: the declaration itself carries the
+// phase, and the shared engine windup clock (ThrowActualization) is the "charge meter" the human feels.
 //
-// The gesture, all driven by KEY_2 (see ThrowCharge in globals.h):
-//   - KEY_2 held + a direction key → start the gesture and latch that base; the meter charges while KEY_2
-//     is held. Pressing a different direction REDIRECTS (and restarts the meter).
-//   - Once latched, the direction stays latched for the rest of the hold — releasing the arrow does NOT
-//     cancel (you can release the arrow first, then KEY_2, and the throw still fires). There is no cancel.
-//   - KEY_2 released → declare ThrowIntent{ latched base, power=charge }.
-// The AI never charges — it declares the ThrowIntent atomically — so AI control returns early here.
-static int checkThrowCharge(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
-)
+//   KEY_2 held + exactly one direction (and a throw can begin) → declare GATHERING with that base: the
+//     engine begins the windup and the gather animation plays WHILE HELD. The direction is latched (the
+//     windup has physically begun — no redirect).
+//   KEY_2 released while GATHERING → declare RELEASED: the engine reads power off the windup clock (a
+//     longer hold = a fuller windup = a harder throw) and fires. A bare tap still throws, at floor power.
+// The AI never uses this — it declares COMMITTED directly in catching_ai.c — so AI control returns early.
+static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, TeamControlMode control)
 {
     if (control == CONTROL_AI) {
-        return 0; // AI declares the throw command directly in catching_ai.c
+        return 0; // AI declares the throw COMMITTED directly in catching_ai.c
     }
 
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
+    ThrowDeclaration* decl = &match->aF.cTAF.throw;
 
-    ThrowCharge* tc = &clientInput->throw_charge;
-    int enterDown = key_states->down[control][KEY_2];
-    int enterReleased = key_states->released[control][KEY_2];
-
-    int canThrow =
-        match->pII.hasBallIndex != -1 && match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE;
-
-    // Disengage entirely if the action key is not involved this frame, or a throw is no longer possible.
-    if ((!enterDown && !enterReleased) || !canThrow) {
-        tc->base = BASE_NONE;
-        tc->power = 0;
-        tc->engaged = 0;
-        return 0;
-    }
-
-    // Count held direction keys and remember the single one (if exactly one).
-    int arrowsHeld = 0;
-    BaseID heldBase = BASE_NONE;
-    for (BaseID b = 0; b < BASE_COUNT; b++) {
-        if (key_states->down[control][throwKeyForBase[b]]) {
-            arrowsHeld++;
-            heldBase = b;
+    // A throw is winding up (we declared GATHERING): a KEY_2 release fires it. The gesture owns KEY_2 for
+    // the whole hold, so a lone arrow release does not cancel and the KEY_2 release does not also drop.
+    if (decl->phase == THROW_DECL_GATHERING) {
+        if (key_states->released[control][KEY_2]) {
+            decl->phase = THROW_DECL_RELEASED; // the engine reads power from the windup clock and releases
         }
-    }
-
-    if (enterReleased) {
-        // Declare for the latched direction (NOT the keys held this exact frame — releasing the arrow and
-        // KEY_2 together must still throw). A cancel already cleared tc->base, so it declares nothing then.
-        if (tc->engaged && tc->base != BASE_NONE && match->aF.cTAF.throw.target == BASE_NONE) {
-            match->aF.cTAF.throw.target = tc->base;
-            match->aF.cTAF.throw.power = throw_charge_to_power(tc->power);
-        }
-        int wasEngaged = tc->engaged;
-        tc->base = BASE_NONE;
-        tc->power = 0;
-        tc->engaged = 0;
-        return wasEngaged; // a gesture-owned release must not also drop/pitch
-    }
-
-    // KEY_2 is held and a throw is possible. A single fresh direction starts the gesture or redirects it
-    // (restarting the meter); after that the direction stays LATCHED — releasing the arrow does NOT
-    // cancel, it only stops redirecting. Power keeps building from the KEY_2 hold until release.
-    if (arrowsHeld == 1 && heldBase != tc->base) {
-        tc->base = heldBase; // start, or switch direction → restart the meter
-        tc->power = 0;
-        tc->engaged = 1;
-        return 1;
-    }
-    if (tc->engaged) {
-        // Gesture in progress (same direction held, or arrow released, or an ambiguous multi-press) —
-        // keep charging the latched direction. No cancel: the throw resolves on the KEY_2 release.
-        if (tc->power < THROW_CHARGE_MAX) tc->power++;
         return 1;
     }
 
-    // KEY_2 held alone, no direction ever pressed → not a throw gesture; let the caller pitch/drop.
+    // Not gathering yet — start a throw only if the action key is held together with exactly one direction,
+    // a ball-holder is controlled, and no catching action is already in progress.
+    if (decl->phase == THROW_DECL_IDLE && key_states->down[control][KEY_2] && match->pII.hasBallIndex != -1 &&
+        match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+        int arrowsHeld = 0;
+        BaseID heldBase = BASE_NONE;
+        for (BaseID b = 0; b < BASE_COUNT; b++) {
+            if (key_states->down[control][throwKeyForBase[b]]) {
+                arrowsHeld++;
+                heldBase = b;
+            }
+        }
+        if (arrowsHeld == 1) {
+            decl->phase = THROW_DECL_GATHERING;
+            decl->target = heldBase;
+            decl->power = 0.0f;
+            return 1;
+        }
+    }
     return 0;
 }
 

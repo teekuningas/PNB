@@ -80,7 +80,7 @@ typedef struct {
 
     // box score (readable after the run)
     long pitches; // pitches released (rising edge into AIRBORNE)
-    long throws; // throws to a base started (throw_going_on rising edge 0→1 — set only by throw_load)
+    long throws; // throws to a base started (throw_going_on rising edge 0→1 — set only by begin_throw_windup)
     // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (hasBallIndex −1, ball moving,
     // pitch NONE, throw 0) is indistinguishable from a half-inning / HR-pair RESET that clears a
     // fielder's ball — so any state-based drop count aliases resets (verified via PBP). The drop is

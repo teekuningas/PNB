@@ -44,6 +44,11 @@ static void run_contract_tests(void)
     // Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
     RUN_TEST(test_pitch_aimed_releases_with_declared_velocity);
     RUN_TEST(test_pitch_unaimed_is_valesyotto);
+
+    // Throw rework contracts (§5.8 — phased throw declaration → engine-owned windup clock)
+    RUN_TEST(test_throw_windup_power_roundtrip);
+    RUN_TEST(test_throw_committed_releases_sized_to_power);
+    RUN_TEST(test_throw_gathering_reads_windup_clock_power);
 }
 
 int main(int argc, char* argv[])
