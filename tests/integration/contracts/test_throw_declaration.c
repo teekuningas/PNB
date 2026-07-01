@@ -7,12 +7,15 @@
 #include <math.h>
 
 /**
- * CONTRACT: the throw rework (PLAN.md §5.8) — a phased ThrowDeclaration is actualized by an engine-owned
- * windup clock (ThrowActualization), the same shape as the pitch. Two producer paths ride ONE clock:
- *   - COMMITTED (AI): target + power declared at once; the engine sizes the windup to the power and
- *     auto-releases at its end. Power drives the release velocity — read from the declaration, not a meter.
- *   - GATHERING → RELEASED (human): the windup runs while "held"; the throw waits for the RELEASED edge and
- *     reads power off the clock (a longer hold = more power). The engine never auto-fires a GATHERING throw.
+ * CONTRACT: the throw (PLAN.md §5.8 phased shape + §5.9 engine↔client fix) — the throw is ONE intent
+ * {direction, power} the engine actualizes over its own windup clock (ThrowActualization). Both producers
+ * declare `power` as a trusted VALUE; the ENGINE owns the release instant (release when the clock reaches
+ * windup(power)), never a client "fire now" edge, never derived from the clock:
+ *   - COMMITTED in one frame (AI): direction + power at once; the engine sizes the windup to the power and
+ *     auto-releases at its end. Higher declared power → faster launch.
+ *   - INITIATED → COMMITTED in two frames (human): INITIATED{direction} starts the windup (so the gather
+ *     runs while the human picks power on the meter); COMMITTED{power} hands the engine the value and it
+ *     releases once the windup for that power completes — immediately if it already elapsed, else it waits.
  * The throw analog of test_pitch_declaration: we construct a ball-holder away from a base and drive the
  * REAL execute_actions (no AI, no meter). Calling execute_actions directly (not the full frame) keeps the
  * thrown ball un-fielded so the launch velocity can be read at the release frame.
@@ -57,32 +60,27 @@ static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
     return -1.0f;
 }
 
-// 0. The power<->windup pair round-trips: declaring a power (AI) then reading it back off the clock
-//    (human) recovers the same power, within integer-frame truncation. This is the invariant that lets one
-//    shared clock serve both producers.
-int test_throw_windup_power_roundtrip(void)
+// 0. The AI windup sizing scales with declared power: throw_windup_total_frames maps [THROW_POWER_MIN,1] →
+//    [MIN,MAX] frames, monotonically. This is the ONLY throw↔clock relationship that survives §5.9 — the
+//    human's power is a value declared from the client charge widget (§8.7), never read back off the clock,
+//    so the old power<->windup round-trip (and throw_power_from_windup) is gone.
+int test_throw_windup_frames_scale_with_power(void)
 {
     // Endpoints exact by construction.
-    ASSERT(
-        fabsf(throw_power_from_windup(throw_windup_total_frames(THROW_POWER_MIN)) - THROW_POWER_MIN) < 0.001f,
-        "floor power round-trips"
-    );
-    ASSERT(fabsf(throw_power_from_windup(throw_windup_total_frames(1.0f)) - 1.0f) < 0.001f, "max power round-trips");
+    ASSERT_EQ(THROW_WINDUP_MIN_FRAMES, throw_windup_total_frames(THROW_POWER_MIN), "floor power → MIN windup");
+    ASSERT_EQ(THROW_WINDUP_MAX_FRAMES, throw_windup_total_frames(1.0f), "max power → MAX windup");
 
-    // Interior points within one frame's worth of power resolution.
-    float tol = (1.0f - THROW_POWER_MIN) / (float)(THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES) + 0.001f;
-    for (float p = THROW_POWER_MIN; p <= 1.0f; p += 0.1f) {
-        float rt = throw_power_from_windup(throw_windup_total_frames(p));
-        ASSERT(fabsf(rt - p) <= tol, "declared power is recovered from the windup clock within one frame");
-    }
+    // Out-of-band power clamps into the band.
+    ASSERT_EQ(THROW_WINDUP_MIN_FRAMES, throw_windup_total_frames(0.0f), "power below floor clamps to MIN windup");
+    ASSERT_EQ(THROW_WINDUP_MAX_FRAMES, throw_windup_total_frames(2.0f), "power above 1 clamps to MAX windup");
 
-    // The clock reading is monotonic in the hold duration (longer hold ⇒ at least as much power).
-    float prev = -1.0f;
-    for (int t = 0; t <= THROW_WINDUP_MAX_FRAMES + 5; t++) {
-        float pw = throw_power_from_windup(t);
-        ASSERT(pw >= prev - 0.001f, "power is non-decreasing in the hold duration");
-        ASSERT(pw >= THROW_POWER_MIN - 0.001f && pw <= 1.0f + 0.001f, "clock-read power stays in [floor,1]");
-        prev = pw;
+    // Non-decreasing and bounded across the band.
+    int prev = -1;
+    for (float p = 0.0f; p <= 1.0f; p += 0.05f) {
+        int f = throw_windup_total_frames(p);
+        ASSERT(f >= prev, "windup length is non-decreasing in declared power");
+        ASSERT(f >= THROW_WINDUP_MIN_FRAMES && f <= THROW_WINDUP_MAX_FRAMES, "windup length stays within [MIN,MAX]");
+        prev = f;
     }
     return TEST_PASSED;
 }
@@ -141,52 +139,74 @@ int test_throw_committed_releases_sized_to_power(void)
     return TEST_PASSED;
 }
 
-// 2. A GATHERING throw waits for the human's RELEASED edge (never auto-fires), the clock caps at a full
-//    hold, and the power is read from the clock — a longer hold launches the ball faster.
-int test_throw_gathering_reads_windup_clock_power(void)
+// 2. The human's two-frame intent (§5.9): INITIATED (direction) winds up but never releases while power is
+//    PENDING; COMMITTED (power) hands the engine the value, and the ENGINE owns the release instant — it
+//    fires when its clock reaches windup(power), NOT on the frame the client committed. Proven two ways:
+//    (a) a long INITIATED then a low power releases immediately (the windup already elapsed); (b) a short
+//    INITIATED then a high power makes the engine WAIT out the windup (no client "fire now" edge). Velocity
+//    tracks the DECLARED power either way — the value is trusted, not derived from the clock.
+int test_throw_initiated_then_committed_engine_times_release(void)
 {
-    // --- long hold: run well past the AI windup, prove it does NOT auto-release, then release at full ---
+    // --- long INITIATED, then LOW power → releases immediately, velocity sized to the low power ---
     ScenarioContext* ctx = create_scenario();
     setup_fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
 
-    m->aF.cTAF.throw.phase = THROW_DECL_GATHERING;
+    m->aF.cTAF.throw.phase = THROW_DECL_INITIATED;
     m->aF.cTAF.throw.target = BASE_FIRST;
 
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES + 20; i++) {
         tick(ctx);
     }
-    ASSERT_EQ(15, m->pII.hasBallIndex, "a GATHERING throw must wait for the RELEASED edge — never auto-release");
+    ASSERT_EQ(15, m->pII.hasBallIndex, "an INITIATED throw never releases while power is pending");
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action, "still winding up while held"
+        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action, "still winding up while pending"
     );
     ASSERT_EQ(
         THROW_WINDUP_MAX_FRAMES, m->pendingActionState.throwActualization.timer,
-        "the windup clock caps at the full-power hold (holding past full does not overspill)"
+        "the windup clock caps at the full-power windup (holding past full does not overspill)"
     );
 
-    // Release now → power reads the (full) clock.
-    m->aF.cTAF.throw.phase = THROW_DECL_RELEASED;
+    // Commit a LOW power. The clock (capped at MAX) is already well past windup(0.3), so the engine releases
+    // this very tick — the "second frame arrived late" case.
+    m->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
+    m->aF.cTAF.throw.power = 0.3f;
     tick(ctx);
-    ASSERT_EQ(-1, m->pII.hasBallIndex, "the RELEASED edge fires the throw");
-    float fullSpeed = horiz_speed(m);
+    ASSERT_EQ(-1, m->pII.hasBallIndex, "committing after a full windup releases immediately");
+    float longInitLowPowerSpeed = horiz_speed(m);
     ASSERT_EQ(THROW_DECL_IDLE, (int)m->aF.cTAF.throw.phase, "the declaration is cleared to IDLE at release");
     cleanup_scenario(ctx);
 
-    // --- short hold: release after just a couple of frames → floor-ish power → slower launch ---
+    // --- short INITIATED, then HIGH power → the engine WAITS out the windup (it owns the release instant) ---
     ScenarioContext* ctx2 = create_scenario();
     setup_fielder_with_ball(ctx2);
     MatchSession* m2 = ctx2->state->match;
-    m2->aF.cTAF.throw.phase = THROW_DECL_GATHERING;
+    m2->aF.cTAF.throw.phase = THROW_DECL_INITIATED;
     m2->aF.cTAF.throw.target = BASE_FIRST;
-    tick(ctx2); // frame 1: begin windup
-    tick(ctx2); // frame 2: winding (timer small)
-    m2->aF.cTAF.throw.phase = THROW_DECL_RELEASED;
-    tick(ctx2); // release with a small clock reading
-    ASSERT_EQ(-1, m2->pII.hasBallIndex, "the short-hold throw must release");
-    float shortSpeed = horiz_speed(m2);
+    tick(ctx2); // begin windup
+    tick(ctx2); // barely wound (clock ~1, well short of windup(1.0) = MAX)
 
-    ASSERT(fullSpeed > shortSpeed, "a longer hold reads more power off the shared windup clock (clock-driven power)");
+    m2->aF.cTAF.throw.power = 1.0f;
+    m2->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
+    tick(ctx2); // committing does NOT fire this frame — the windup is not done
+    ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a committed throw waits out its windup");
+    ASSERT_EQ(
+        CATCHING_ACTION_THROWING, (int)m2->pendingActionState.current_catching_action, "still winding after commit"
+    );
+
+    int budget = THROW_WINDUP_MAX_FRAMES + 10, frames = 0;
+    float shortInitHighPowerSpeed = run_until_release(ctx2, budget, &frames);
+    ASSERT(shortInitHighPowerSpeed > 0.0f, "the high-power throw eventually releases (once the windup completes)");
+    ASSERT(
+        frames >= THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES,
+        "release waited for the full-power windup, not the client's commit frame"
+    );
+
+    // The DECLARED power decides the launch speed (trusted value), independent of how long INITIATED ran.
+    ASSERT(
+        shortInitHighPowerSpeed > longInitLowPowerSpeed,
+        "launch velocity tracks the DECLARED power value, not the hold/clock (§5.9 engine↔client contract)"
+    );
     cleanup_scenario(ctx2);
     return TEST_PASSED;
 }

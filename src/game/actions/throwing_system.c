@@ -12,23 +12,15 @@
 
 #define THROW_ANIMATION_FREQUENCY 3
 
-// Round-trip between declared power and windup length (see the header). throw_windup_total_frames is the
-// AI's path (power → how long to wind up); throw_power_from_windup is the human's (hold duration → power).
-// They invert on [THROW_POWER_MIN, 1] within integer-truncation tolerance.
+// The AI's windup sizing: how long to wind up for a declared power (COMMITTED release). The human path does
+// NOT invert this — its power is declared as a value from the client charge widget (engine↔client contract
+// §8.7), and this clock is animation-only while a human gathers.
 int throw_windup_total_frames(float power)
 {
     if (power < THROW_POWER_MIN) power = THROW_POWER_MIN;
     if (power > 1.0f) power = 1.0f;
     float t = (power - THROW_POWER_MIN) / (1.0f - THROW_POWER_MIN);
     return THROW_WINDUP_MIN_FRAMES + (int)(t * (THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES));
-}
-
-float throw_power_from_windup(int timer)
-{
-    if (timer < THROW_WINDUP_MIN_FRAMES) timer = THROW_WINDUP_MIN_FRAMES;
-    if (timer > THROW_WINDUP_MAX_FRAMES) timer = THROW_WINDUP_MAX_FRAMES;
-    float t = (float)(timer - THROW_WINDUP_MIN_FRAMES) / (float)(THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES);
-    return THROW_POWER_MIN + (1.0f - THROW_POWER_MIN) * t;
 }
 
 void init_throwing_system(MatchSession* match)
@@ -190,10 +182,11 @@ static void resolve_throw(MatchSession* match, ThrowDeclaration* decl, float pow
 }
 
 // The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
-// Reads the phased ThrowDeclaration, runs the deterministic windup clock, and resolves: COMMITTED (AI)
-// releases when the clock reaches throw_windup_total_frames(power); GATHERING (human) winds up until the
-// producer sets RELEASED, then releases with power read from the clock. Timing is the master; the gather
-// animation only follows.
+// Reads the phased ThrowDeclaration, runs the deterministic windup clock, and — once the intent is COMMITTED
+// (power known) — releases when the clock reaches throw_windup_total_frames(power). ONE rule for both
+// producers: the AI declares COMMITTED at once (clock starts then); a human declares INITIATED first (clock
+// starts, gather animates while it picks power on the meter) then COMMITTED (power in), releasing at once if
+// the windup already elapsed. The client never commands the release instant (§8.7); the engine owns it.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions)
 {
     ThrowDeclaration* decl = &match->aF.cTAF.throw;
@@ -221,16 +214,18 @@ void update_throw_actualization(MatchSession* match, const FieldPositions* field
         pas->throwActualization.timer++;
 
         if (decl->phase == THROW_DECL_COMMITTED) {
-            // AI: the engine sized the windup to the declared power; release at its end.
+            // The full intent is assembled (power known — the AI at once, or the human's second frame). The
+            // ENGINE owns the release instant: fire once the physical windup for that power has elapsed. The
+            // clock has run since the throw began (INITIATED for a human, so concurrently with the human's
+            // power pick — no double-wait), so it is usually already past the target → immediate; if power
+            // arrived early it waits out the windup. One rule for both producers; no client "fire now" edge.
             if (pas->throwActualization.timer >= throw_windup_total_frames(decl->power)) {
                 resolve_throw(match, decl, decl->power);
             }
-        } else if (decl->phase == THROW_DECL_RELEASED) {
-            // Human let go: power is the shared windup clock at the release edge.
-            resolve_throw(match, decl, throw_power_from_windup(pas->throwActualization.timer));
         } else {
-            // GATHERING (human still holding): the gather runs; cap the clock at the full-power hold so the
-            // meter rests at full until the release edge (holding past full does not overspill).
+            // INITIATED (human: direction declared, power pending): keep winding to drive the render gather
+            // arc; cap at the full-power windup so it rests at full while the human is still picking power
+            // (holding past full does not overspill). Cannot release yet — the power is not known.
             if (pas->throwActualization.timer > THROW_WINDUP_MAX_FRAMES) {
                 pas->throwActualization.timer = THROW_WINDUP_MAX_FRAMES;
             }

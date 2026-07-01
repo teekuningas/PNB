@@ -41,7 +41,11 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->pitchWidget.counter = 0;
     clientInput->pitchWidget.counter_max = 0;
     clientInput->pitchWidget.dir = 0;
-    clientInput->pitchWidget.phase = PITCH_WIDGET_IDLE;
+    clientInput->pitchWidget.mode = WIDGET_IDLE;
+    clientInput->throwWidget.counter = 0;
+    clientInput->throwWidget.counter_max = 0;
+    clientInput->throwWidget.dir = 0;
+    clientInput->throwWidget.mode = WIDGET_IDLE;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -320,21 +324,16 @@ base_run(MatchSession* match, const RefereeState* referee, const FieldPositions*
 
 void update_meters(MatchSession* match, const ClientInputState* clientInput)
 {
-    // The meter is a CLIENT display; the AI never uses one. Neither the pitch nor the throw uses the shared
-    // meter_counter anymore — each has its own engine clock (PitchActualization / ThrowActualization). The
-    // catching marker (meter_value) reflects only the LOCAL HUMAN's catching action:
-    //   - the human's pitch sampling widget (power, then aim), shown whenever active; and
-    //   - a human hold-release throw (phase GATHERING/RELEASED): the shared windup clock IS the growing
-    //     power meter (hold longer → fuller). It only READS the clock, never advances it.
-    // An AI throw (THROW_DECL_COMMITTED) drives NO meter — exactly like an AI pitch drives no pitchWidget.
-    // (meter_value is render-only: read solely by game_screen.c, never by logic and not in the checksum.)
-    if (clientInput->pitchWidget.phase != PITCH_WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
+    // The catching meter (meter_value) is a CLIENT display, read from the LOCAL HUMAN's input widget — the
+    // pitch sampler (power ping-pong, then aim descent) or the throw charge widget — whichever is active.
+    // Both are self-contained client widgets (ClientInputState); neither the meter nor any input logic reads
+    // an engine actualization clock (engine↔client contract §8.7). An AI pitch/throw arms NO widget, so it
+    // drives no meter automatically — no phase-gate special-case needed. (meter_value is render-only: read
+    // solely by game_screen.c, never by logic and not in the checksum.)
+    if (clientInput->pitchWidget.mode != WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
         match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
-    } else if (match->aF.cTAF.throw.phase == THROW_DECL_GATHERING ||
-               match->aF.cTAF.throw.phase == THROW_DECL_RELEASED) {
-        float f = (float)match->pendingActionState.throwActualization.timer / (float)THROW_WINDUP_MAX_FRAMES;
-        if (f > 1.0f) f = 1.0f;
-        match->pRAI.meter_value = f;
+    } else if (clientInput->throwWidget.mode != WIDGET_IDLE && clientInput->throwWidget.counter_max > 0) {
+        match->pRAI.meter_value = (float)clientInput->throwWidget.counter / clientInput->throwWidget.counter_max;
     } else {
         update_batting_meter(match);
     }

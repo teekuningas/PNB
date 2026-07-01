@@ -21,9 +21,20 @@
 #define PITCH_AIM_SCALE 1.45f // maps the [0,1] cursor to direction [-1,1] about FOCAL (≈ 1/(1-FOCAL))
 // The aim meter is a one-way right→left descent whose length matches the pre-throw windup (crouch DOWN +
 // power-scaled HOLD), so the cursor reaches the left exactly as the throw (UP) begins — an honest aim lands
-// in time, a missed one rests at the left (valesyöttö). Derived from the engine windup, so it stays in sync.
+// in time, a missed one rests at the left (valesyöttö). Sized from the windup CONSTANTS (client-side, not the
+// live engine clock), so it stays in sync.
 
-static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, TeamControlMode control);
+// Human throw charge meter feel knob (client-local). The charge widget rises for CHARGE_FRAMES then holds
+// at full; a release samples it to a declared power in [THROW_POWER_MIN, 1]. Independent of the AI windup
+// length by design (§5.9 — the engine clock drives only the render gather animation), kept close to
+// THROW_WINDUP_MAX_FRAMES for visual coherence.
+#define THROW_CHARGE_FRAMES 45 // frames to reach full charge on a held throw (~0.9s at 50Hz)
+
+static int checkThrowGesture(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
+);
+static void advance_widget(InputWidget* w);
+static float charge_to_power(int counter, int counter_max);
 static void checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
 static void
 checkMove(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, int direction);
@@ -70,11 +81,25 @@ void action_invocations(
     // meter — starving the batter's swing power to ~0 (the "hit ball floats at the plate" bug).
     {
         InputWidget* w = &clientInput->pitchWidget;
-        if (w->phase == PITCH_WIDGET_POWER && w->dir == 0) {
-            w->phase = PITCH_WIDGET_IDLE;
+        if (w->mode == WIDGET_PING_PONG && w->dir == 0) {
+            w->mode = WIDGET_IDLE;
             w->counter_max = 0;
-        } else if (w->phase == PITCH_WIDGET_AIM && match->aF.cTAF.pitch.phase == PITCH_DECL_IDLE) {
-            w->phase = PITCH_WIDGET_IDLE;
+        } else if (w->mode == WIDGET_DESCENT && match->aF.cTAF.pitch.phase == PITCH_DECL_IDLE) {
+            w->mode = WIDGET_IDLE;
+            w->counter_max = 0;
+            w->dir = 0;
+        }
+    }
+
+    // Retire the throw charge widget once the throw is no longer live — released (handled in
+    // checkThrowGesture) or externally interrupted (the ball taken mid-gather, so the engine cleared the
+    // declaration). Same lesson as the pitch retirement (bug #4): a client-local widget gating the shared
+    // meter must be retired on a path that runs regardless of ball possession, since checkThrowGesture stops
+    // firing the moment the ball leaves the hand. An AI throw arms no widget, so this never touches it.
+    {
+        InputWidget* w = &clientInput->throwWidget;
+        if (w->mode != WIDGET_IDLE && match->aF.cTAF.throw.phase == THROW_DECL_IDLE) {
+            w->mode = WIDGET_IDLE;
             w->counter_max = 0;
             w->dir = 0;
         }
@@ -84,7 +109,7 @@ void action_invocations(
     // gather, release to fire); held alone it pitches / drops / changes. checkThrowGesture runs first and
     // reports whether a throw gesture owns KEY_2 this frame — if so we suppress the others, so a throw's
     // hold or release never doubles as a drop/pitch on the same key edge.
-    int throw_engaged = checkThrowGesture(match, key_states, catchingControl);
+    int throw_engaged = checkThrowGesture(match, clientInput, key_states, catchingControl);
     if (!throw_engaged) {
         if (match->pII.hasBallIndex == -1) {
             checkChangePlayer(match, key_states, KEY_2, catchingControl);
@@ -116,18 +141,25 @@ void action_invocations(
     checkBattingTeamRun(match, clientInput, key_states, KEY_UP, battingControl, BASE_THIRD, referee);
 }
 
-// Human throw gesture (hold-release) → the phased ThrowDeclaration (cTAF.throw). Returns 1 if a throw
-// gesture owns the action key (KEY_2) this frame — the caller then suppresses pitch/drop/change so one key
-// edge is not consumed twice. There is ZERO client-local throw state: the declaration itself carries the
-// phase, and the shared engine windup clock (ThrowActualization) is the "charge meter" the human feels.
+// Human throw gesture (hold-release) → the phased ThrowDeclaration (cTAF.throw), with the power declared as
+// a VALUE sampled from a client-local CHARGE widget (engine↔client contract §8.7 — the input NEVER reads the
+// engine windup clock; that clock drives only the render gather animation). Returns 1 if a throw gesture
+// owns the action key (KEY_2) this frame — the caller then suppresses pitch/drop/change so one key edge is
+// not consumed twice.
 //
-//   KEY_2 held + exactly one direction (and a throw can begin) → declare GATHERING with that base: the
-//     engine begins the windup and the gather animation plays WHILE HELD. The direction is latched (the
-//     windup has physically begun — no redirect).
-//   KEY_2 released while GATHERING → declare RELEASED: the engine reads power off the windup clock (a
-//     longer hold = a fuller windup = a harder throw) and fires. A bare tap still throws, at floor power.
+//   KEY_2 held + exactly one direction (and a throw can begin) → declare INITIATED with that base and START
+//     the charge widget: the engine begins the windup (its clock drives the gather animation) and the widget
+//     starts rising. The direction is latched (the windup has physically begun — no redirect).
+//   KEY_2 released while INITIATED → SAMPLE the charge widget → complete the intent as COMMITTED{target,
+//     power}: a longer hold charged the widget further = a harder throw. A bare tap still throws, at floor
+//     power. The widget is retired here (its value is now captured on the declaration). The engine — not the
+//     client — decides WHEN the ball leaves: once COMMITTED it releases when its windup clock reaches
+//     windup(power), which (having run since INITIATED, concurrently with the human's power pick) is usually
+//     already elapsed → immediate. This is the same COMMITTED the AI declares, just reached in two frames.
 // The AI never uses this — it declares COMMITTED directly in catching_ai.c — so AI control returns early.
-static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, TeamControlMode control)
+static int checkThrowGesture(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control
+)
 {
     if (control == CONTROL_AI) {
         return 0; // AI declares the throw COMMITTED directly in catching_ai.c
@@ -136,17 +168,24 @@ static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, T
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
     ThrowDeclaration* decl = &match->aF.cTAF.throw;
+    InputWidget* w = &clientInput->throwWidget;
 
-    // A throw is winding up (we declared GATHERING): a KEY_2 release fires it. The gesture owns KEY_2 for
-    // the whole hold, so a lone arrow release does not cancel and the KEY_2 release does not also drop.
-    if (decl->phase == THROW_DECL_GATHERING) {
+    // The intent is INITIATED (direction declared, power pending): keep charging the client widget while
+    // held; a KEY_2 release samples it and completes the intent (COMMITTED). The gesture owns KEY_2 for the
+    // whole hold, so a lone arrow release does not cancel and the KEY_2 release does not also drop.
+    if (decl->phase == THROW_DECL_INITIATED) {
+        advance_widget(w); // client-local charge; independent of the engine clock
         if (key_states->released[control][KEY_2]) {
-            decl->phase = THROW_DECL_RELEASED; // the engine reads power from the windup clock and releases
+            decl->power = charge_to_power(w->counter, w->counter_max); // pass the meter's value in
+            decl->phase = THROW_DECL_COMMITTED; // full intent assembled — the engine times the release
+            w->mode = WIDGET_IDLE; // captured into the declaration — retire the widget
+            w->counter_max = 0;
+            w->dir = 0;
         }
         return 1;
     }
 
-    // Not gathering yet — start a throw only if the action key is held together with exactly one direction,
+    // Not started yet — initiate a throw only if the action key is held together with exactly one direction,
     // a ball-holder is controlled, and no catching action is already in progress.
     if (decl->phase == THROW_DECL_IDLE && key_states->down[control][KEY_2] && match->pII.hasBallIndex != -1 &&
         match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
@@ -159,9 +198,14 @@ static int checkThrowGesture(MatchSession* match, const KeyStates* key_states, T
             }
         }
         if (arrowsHeld == 1) {
-            decl->phase = THROW_DECL_GATHERING;
+            decl->phase = THROW_DECL_INITIATED; // "I started, toward this base"; power pending (second frame)
             decl->target = heldBase;
             decl->power = 0.0f;
+            // Start the charge widget: rise from 0 and hold at max (sampled on release).
+            w->mode = WIDGET_CHARGE;
+            w->counter = 0;
+            w->counter_max = THROW_CHARGE_FRAMES;
+            w->dir = 1;
             return 1;
         }
     }
@@ -217,19 +261,33 @@ static void checkDrop(MatchSession* match, const KeyStates* key_states, int key,
     }
 }
 
-// Advance the pitch sampling widget through ONE ping-pong (0 → counter_max → 0) then stop. Client-local
-// input interpretation only; never reads or feeds the engine clock.
-static void advance_pitch_widget(InputWidget* w)
+// Advance a sampling widget's cursor one frame, per its mode (client-local input interpretation only; never
+// reads or feeds an engine clock). PING_PONG bounces off the top edge (0 → max → 0 then stop); DESCENT and
+// CHARGE do not bounce — DESCENT starts at the top and stops at 0, CHARGE rises and HOLDS at the top (the
+// human keeps holding until release). All reach a terminal edge and stop (dir = 0), except PING_PONG which
+// reverses at the top.
+static void advance_widget(InputWidget* w)
 {
     if (w->dir == 0) return;
     w->counter += w->dir;
     if (w->counter >= w->counter_max) {
         w->counter = w->counter_max;
-        w->dir = -1; // bounce off the right edge
+        w->dir = (w->mode == WIDGET_PING_PONG) ? -1 : 0; // ping-pong bounces; charge holds at the top
     } else if (w->counter <= 0) {
         w->counter = 0;
-        w->dir = 0; // one ping-pong complete — stop and wait (unclicked = no pitch / valesyöttö)
+        w->dir = 0; // reached the bottom — stop (a ping-pong that ran out unclicked, or a finished descent)
     }
+}
+
+// Map a throw charge widget reading to a declared power in [THROW_POWER_MIN, 1] — the client-side value the
+// human declares on release (mirroring the AI's declared power). Floored so a bare tap still throws.
+static float charge_to_power(int counter, int counter_max)
+{
+    if (counter_max <= 0) return THROW_POWER_MIN;
+    float f = (float)counter / (float)counter_max; // [0,1]
+    if (f < 0.0f) f = 0.0f;
+    if (f > 1.0f) f = 1.0f;
+    return THROW_POWER_MIN + (1.0f - THROW_POWER_MIN) * f;
 }
 
 // Human pitch input — a power meter then an aim meter, one click each, advancing the phased
@@ -255,23 +313,23 @@ static void checkPitch(
 
     // (The widget is retired in action_invocations every frame — see the top of that function — so it
     // frees the batting meter even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
-    advance_pitch_widget(w); // move the cursor (if running) before reading a click
+    advance_widget(w); // move the cursor (if running) before reading a click
 
     if (key_states->released[control][key] != 1) {
         return; // declarations happen on the click (the release edge)
     }
 
     if (decl->phase == PITCH_DECL_IDLE) {
-        if (w->phase == PITCH_WIDGET_IDLE) {
+        if (w->mode == WIDGET_IDLE) {
             // this click STARTS the power meter (client-local; the declaration stays IDLE until power is
             // locked). Only when a pitch could legally begin.
             if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-                w->phase = PITCH_WIDGET_POWER;
+                w->mode = WIDGET_PING_PONG;
                 w->counter = 0;
                 w->counter_max = PITCH_POWER_WIDGET_MAX;
                 w->dir = 1; // ping-pong: rise first
             }
-        } else if (w->phase == PITCH_WIDGET_POWER) {
+        } else if (w->mode == WIDGET_PING_PONG) {
             // click while the power meter sweeps → lock power (right peak = max) and START the windup.
             decl->power = (float)w->counter / (float)w->counter_max; // [0,1]
             decl->phase = PITCH_DECL_POWER;
@@ -279,12 +337,12 @@ static void checkPitch(
             // windup (crouch + power-scaled hold) so the cursor reaches the left as the throw begins.
             int aim_len = PITCH_WINDUP_DOWN_FRAMES + (int)(decl->power * PITCH_WINDUP_HOLD_MAX);
             if (aim_len < 1) aim_len = 1;
-            w->phase = PITCH_WIDGET_AIM;
+            w->mode = WIDGET_DESCENT;
             w->counter = aim_len; // start fully to the right
             w->counter_max = aim_len; // meter reads 1.0 and descends to 0.0
             w->dir = -1; // one-way right → left
         }
-    } else if (decl->phase == PITCH_DECL_POWER && w->phase == PITCH_WIDGET_AIM && w->dir != 0) {
+    } else if (decl->phase == PITCH_DECL_POWER && w->mode == WIDGET_DESCENT && w->dir != 0) {
         // click while the aim meter descends → lock direction (FOCAL = on the plate → strike) → AIMED.
         float f = (float)w->counter / (float)w->counter_max;
         float dir = (f - PITCH_AIM_FOCAL) * PITCH_AIM_SCALE;

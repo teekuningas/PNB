@@ -35,9 +35,9 @@ int test_ai_declares_and_executes_tactical_drop(void);
 int test_pitch_aimed_releases_with_declared_velocity(void);
 int test_pitch_unaimed_is_valesyotto(void);
 
-// Throw rework contracts (§5.8 — phased throw declaration → engine-owned windup clock)
-int test_throw_windup_power_roundtrip(void);
+// Throw contracts (§5.8 phased throw declaration → engine windup clock; §5.9 power declared as a value)
+int test_throw_windup_frames_scale_with_power(void);
 int test_throw_committed_releases_sized_to_power(void);
-int test_throw_gathering_reads_windup_clock_power(void);
+int test_throw_initiated_then_committed_engine_times_release(void);
 
 #endif // ALL_CONTRACTS_H

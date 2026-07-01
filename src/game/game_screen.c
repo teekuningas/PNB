@@ -421,7 +421,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // team will eventually show its own power + aim markers, same colour within a team). Shown only during
     // the human aim phase; the AI drives no widget, so an AI pitch never shows a marker. Render-only —
     // reads the client-local widget phase + the declared (synced) power.
-    if (stateInfo->clientInput->pitchWidget.phase == PITCH_WIDGET_AIM) {
+    if (stateInfo->clientInput->pitchWidget.mode == WIDGET_DESCENT) {
         float locked_power = stateInfo->match->aF.cTAF.pitch.power;
         float power_marker_x = meter_screen_x + locked_power * marker_travel;
         draw_texture_2d(
