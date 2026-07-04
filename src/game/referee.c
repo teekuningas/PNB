@@ -169,7 +169,6 @@ static void update_foul_play_logic(
 
                 referee->battingPlayers[i].hasPendingRun = 0;
                 referee->battingPlayers[i].hasPendingRunOfHonor = 0;
-                referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
             }
         }
         return;
@@ -286,7 +285,6 @@ static void update_wounding_logic(
                     if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) {
                         // Trigger global event
                         halfInningState->event = EVENT_WOUNDED;
-                        referee->battingPlayers[i].baseAtLastEvent = baseId;
                         referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 
                         // Check if player is at a base or running
@@ -302,9 +300,6 @@ static void update_wounding_logic(
                     else if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
                         // Trigger global event
                         halfInningState->event = EVENT_WOUNDED;
-
-                        // Snapshot current base for event tracking
-                        referee->battingPlayers[i].baseAtLastEvent = baseId;
 
                         // Tuplahaava: Keep safety, set to PENDING_DOUBLE (resolved later)
                         referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
@@ -994,8 +989,6 @@ static void clear_referee_for_inning_end(
         refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
         refereeState->battingPlayers[i].hasScored = 0;
         refereeState->battingPlayers[i].runOfHonorScored = 0;
-        refereeState->battingPlayers[i].baseAtLastEvent = BASE_NONE;
-        refereeState->battingPlayers[i].hadSafetyAtLastEvent = 0;
         refereeState->battingPlayers[i].hasPendingRun = 0;
         refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
     }
@@ -1501,8 +1494,6 @@ void initialize_referee_state(RefereeState* referee)
         referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
         referee->battingPlayers[i].hasScored = 0;
         referee->battingPlayers[i].runOfHonorScored = 0;
-        referee->battingPlayers[i].baseAtLastEvent = BASE_NONE;
-        referee->battingPlayers[i].hadSafetyAtLastEvent = 0;
         referee->battingPlayers[i].hasPendingRun = 0;
         referee->battingPlayers[i].hasPendingRunOfHonor = 0;
     }

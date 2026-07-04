@@ -153,7 +153,8 @@ void throw_ball_to_base(MatchSession* match, BaseID base)
     if (shouldThrow == 1) {
         // Declare the throw COMMITTED — target + power at once. The engine sizes the windup to the power
         // and actualizes the release (execute_actions / throwing_system); the AI plays no minigame, counts
-        // no frames. (The human path instead declares GATHERING then RELEASED, riding the same clock.)
+        // no frames. (The human reaches the same COMMITTED in two frames — INITIATED{target} then
+        // COMMITTED{power} from its charge widget; the engine owns the release instant for both, §8.7.)
         match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
         match->aF.cTAF.throw.target = base;
         match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;

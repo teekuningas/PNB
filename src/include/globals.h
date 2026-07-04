@@ -441,10 +441,6 @@ typedef struct _RefereePlayerState {
     int hasScored; // Logical scored status (decided by Referee)
     int runOfHonorScored; // Logical run of honor scored status (decided by Referee)
 
-    // === EVENT SNAPSHOTS (updated at key moments) ===
-    BaseID baseAtLastEvent; // Where they were at last important event
-    int hadSafetyAtLastEvent; // Did they have safety at last event
-
     // === PENDING RUNS (Milestone 17) ===
     int hasPendingRun; // Arrived at home while ball in air
     int hasPendingRunOfHonor; // Arrived at 3rd (homerun) while ball in air
@@ -647,8 +643,9 @@ typedef struct _FlowControl {
 
 typedef struct _CameraState {
     int homeRunCameraFlag;
-    Vector3D targetPoint; // For camera or AI focus
-    int homeRunCameraCounter;
+    Vector3D targetPoint; // the active fielder's go-to point (computed in game_manipulation, read by the
+                          // catching AI to steer, and by the camera) — a strategy fact mis-homed in camera
+                          // state; rehome to CatchingTeamState at the pII decompose (PLAN.md §6)
 
     // View vectors
     Vector3D cam, look, up;

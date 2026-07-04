@@ -70,12 +70,14 @@ void execute_actions(
      */
 
     // THROW — the engine-owned actualizer reads the phased ThrowDeclaration (cTAF.throw), runs the
-    // deterministic windup clock (ThrowActualization), and releases: COMMITTED (AI) at the power-sized
-    // windup end; GATHERING (human) when the producer sets RELEASED, with power read from the clock — never
-    // a live meter. It also cancels a pitch for a throw (never the reverse), and auto-clears on an external
-    // interrupt (ball caught mid-throw). The same phased-declaration + engine-windup-clock shape as the
-    // pitch; the release is time-driven, not a human-STOP / AI-meter-watch. (bug #3 root-cured: the AI's
-    // duplicate lock machine that drifted throw_going_on against cca is gone with the pitch slice.)
+    // deterministic windup clock (ThrowActualization), and releases once the intent is COMMITTED (power
+    // known) when the clock reaches throw_windup_total_frames(power) — ONE rule for both producers, no
+    // client "fire-now" edge (§8.7). The AI declares COMMITTED in one frame; a human streams
+    // INITIATED{target} → COMMITTED{power}, its power a trusted value from the client charge widget — never
+    // a live meter or this clock. It also cancels a pitch for a throw (never the reverse), and auto-clears
+    // on an external interrupt (ball caught mid-throw). The same phased-declaration + engine-windup-clock
+    // shape as the pitch. (bug #3 root-cured: the AI's duplicate lock machine that drifted throw_going_on
+    // against cca is gone with the pitch slice.)
     update_throw_actualization(match, fieldPositions);
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction

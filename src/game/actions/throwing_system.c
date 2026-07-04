@@ -12,9 +12,10 @@
 
 #define THROW_ANIMATION_FREQUENCY 3
 
-// The AI's windup sizing: how long to wind up for a declared power (COMMITTED release). The human path does
-// NOT invert this — its power is declared as a value from the client charge widget (engine↔client contract
-// §8.7), and this clock is animation-only while a human gathers.
+// Windup sizing: how long the physical windup for a declared power lasts. Once an intent is COMMITTED the
+// engine releases when its clock reaches this — for BOTH producers (§8.7). A human's clock starts earlier
+// (at INITIATED, running while it picks power on the client charge widget), so by its COMMITTED frame the
+// windup has usually elapsed → immediate release; the client never reads this function or the clock.
 int throw_windup_total_frames(float power)
 {
     if (power < THROW_POWER_MIN) power = THROW_POWER_MIN;
@@ -125,9 +126,10 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
     return 1;
 }
 
-// Launch the ball toward the latched base with the RESOLVED power (declared by the AI, or read from the
-// windup clock for a human) — never a live meter. Preserves every legacy release side effect (recoil,
-// fielder-selection refresh, control handoff to generic_sling_ball).
+// Launch the ball toward the latched base with the DECLARED power — a trusted client value (the AI's
+// strategy, or the human's charge-widget sample carried on the COMMITTED declaration) — never a live meter
+// or the engine clock (§8.7). Preserves every legacy release side effect (recoil, fielder-selection
+// refresh, control handoff to generic_sling_ball).
 static void throw_release(MatchSession* match, float power)
 {
     if (match->pII.hasBallIndex == -1) {
