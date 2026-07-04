@@ -7,7 +7,7 @@
 /**
  * TEST 1: Runner scores from third base to home
  */
-int test_full_runner_scores_from_third(void)
+int test_runner_scores_from_third(void)
 {
     ScenarioContext* ctx = create_scenario();
 

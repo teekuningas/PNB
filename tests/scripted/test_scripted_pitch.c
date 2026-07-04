@@ -16,15 +16,6 @@
 
 #define HUMAN_PAD CONTROL_PLAYER_1 /* the catching (pitching) team is the human */
 
-// One click = a key down frame then a release frame (the declaration fires on the release edge).
-static void click(ScriptedGame* g, int pad, int key)
-{
-    scripted_hold(g, pad, key);
-    scripted_tick(g);
-    scripted_release(g, pad, key);
-    scripted_tick(g);
-}
-
 // Tick until the human controls the pitcher, holding the ball at home, with a ready batter and no
 // catching action in progress — i.e. a windup may legally begin.
 static int tick_until_pitch_ready(ScriptedGame* g, int budget)
@@ -61,9 +52,11 @@ int test_scripted_pitch_two_pingpongs_strike(void)
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
     ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
 
-    click(g, HUMAN_PAD, KEY_2); // press: start the power meter sweeping (nothing declared yet)
+    scripted_tap(g, HUMAN_PAD, KEY_2); // press: start the power meter sweeping (nothing declared yet)
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping after the start press");
-    click(g, HUMAN_PAD, KEY_2); // click during the power sweep: lock power → POWER, windup begins, aim meter starts
+    scripted_tap(
+        g, HUMAN_PAD, KEY_2
+    ); // click during the power sweep: lock power → POWER, windup begins, aim meter starts
 
     // The aim meter descends from the right; tick until the cursor falls near the strike sweet-spot (≈FOCAL
     // from the left), then click → a strike-zone aim.
@@ -73,7 +66,7 @@ int test_scripted_pitch_two_pingpongs_strike(void)
            guard++ < 400) {
         scripted_tick(g);
     }
-    click(g, HUMAN_PAD, KEY_2); // click during the aim descent: lock aim near the plate (strike)
+    scripted_tap(g, HUMAN_PAD, KEY_2); // click during the aim descent: lock aim near the plate (strike)
 
     // Tick to the windup end → release; capture the launch the frame the ball goes airborne.
     MatchSession* m = scripted_match(g);
@@ -109,9 +102,9 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
     MatchSession* m = scripted_match(g);
     int pitcher = m->pII.catcherOnBaseIndex[0];
 
-    click(g, HUMAN_PAD, KEY_2); // press: start the power meter sweeping
+    scripted_tap(g, HUMAN_PAD, KEY_2); // press: start the power meter sweeping
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping after the start press");
-    click(g, HUMAN_PAD, KEY_2); // click during the power sweep: lock power → POWER, windup begins
+    scripted_tap(g, HUMAN_PAD, KEY_2); // click during the power sweep: lock power → POWER, windup begins
     // Deliberately never click the aim. Tick well past the (power-dependent) windup deadline.
     int wentAirborne = 0;
     for (int i = 0; i < 250; i++) {
@@ -146,20 +139,20 @@ int test_scripted_human_pitch_ai_hit_flies(void)
 
     // Pitch a medium-power, centred strike (the band the AI hits well): start the power meter, click near
     // mid-sweep for ~0.5 power, then click the aim at the sweet-spot.
-    click(g, HUMAN_PAD, KEY_2);
+    scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping");
     int guard = 0;
     while (ci->pitchWidget.dir == 1 && ci->pitchWidget.counter * 100 < ci->pitchWidget.counter_max * 50 &&
            guard++ < 200) {
         scripted_tick(g);
     }
-    click(g, HUMAN_PAD, KEY_2); // lock ~mid power → windup begins
+    scripted_tap(g, HUMAN_PAD, KEY_2); // lock ~mid power → windup begins
     guard = 0;
     while (ci->pitchWidget.dir != 0 && ci->pitchWidget.counter * 100 > ci->pitchWidget.counter_max * 35 &&
            guard++ < 400) {
         scripted_tick(g);
     }
-    click(g, HUMAN_PAD, KEY_2); // lock aim near the plate (strike)
+    scripted_tap(g, HUMAN_PAD, KEY_2); // lock aim near the plate (strike)
 
     // Wait for release, then watch the ball: a real hit sends it flying (large horizontal speed); the bug
     // leaves it floating (horizontal speed ≈ the pitch's ≈0). No one fields it (the catching team is the

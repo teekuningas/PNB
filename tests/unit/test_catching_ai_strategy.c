@@ -3,11 +3,7 @@
 #include "base_logic.h"
 #include <math.h>
 
-#ifndef PI
-#define PI 3.14159265358979323846f
-#endif
-
-int test_calculate_movement_keys_up_left()
+int test_calculate_movement_keys_up_left(void)
 {
     // Angle > 5pi/8 and <= 7pi/8
     // 6pi/8 = 3pi/4 = 135 degrees (up-left)
@@ -28,7 +24,7 @@ int test_calculate_movement_keys_up_left()
     return TEST_PASSED;
 }
 
-int test_calculate_movement_keys_right()
+int test_calculate_movement_keys_right(void)
 {
     // Angle between -pi/8 and pi/8
     // dx = 1, dz = 0
@@ -43,7 +39,7 @@ int test_calculate_movement_keys_right()
     return TEST_PASSED;
 }
 
-int test_should_ai_throw_normal()
+int test_should_ai_throw_normal(void)
 {
     PlayerIndexInfo pii = {0};
     pii.hasBallIndex = 0;
@@ -64,7 +60,7 @@ int test_should_ai_throw_normal()
     return TEST_PASSED;
 }
 
-int test_should_ai_throw_replacer()
+int test_should_ai_throw_replacer(void)
 {
     PlayerIndexInfo pii = {0};
     pii.hasBallIndex = 0;
@@ -82,7 +78,7 @@ int test_should_ai_throw_replacer()
     return TEST_PASSED;
 }
 
-int test_should_ai_drop_ball_scenario()
+int test_should_ai_drop_ball_scenario(void)
 {
     RefereeState ref = {0};
     BetweenPitchState bps;
@@ -107,7 +103,7 @@ int test_should_ai_drop_ball_scenario()
     return TEST_PASSED;
 }
 
-int test_determine_lead_base_simple()
+int test_determine_lead_base_simple(void)
 {
     CatchingRunnerInfo runners[2];
     // Runner 1: Base 1, Not leading
@@ -128,7 +124,7 @@ int test_determine_lead_base_simple()
     return TEST_PASSED;
 }
 
-int test_determine_lead_base_random()
+int test_determine_lead_base_random(void)
 {
     CatchingRunnerInfo runners[1];
     // Runner: Base 2, Leading

@@ -33,7 +33,7 @@
   The Bug: Batter is NOT wounded.
 */
 
-int test_full_fly_ball_out_and_wound(void)
+int test_fly_ball_out_and_wound(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* match = ctx->state->match;

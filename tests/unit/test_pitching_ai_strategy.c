@@ -1,4 +1,3 @@
-#include "test_pitching_ai_strategy.h"
 #include "test_helpers.h"
 #include "pitching_ai_strategy.h"
 #include "pitching_physics.h"
@@ -6,7 +5,6 @@
 
 int test_decide_pitch_aim(void)
 {
-    printf("Running test: %s\n", __func__);
 
     // Default (count 9, 0-0): rand_dir=3 -> direction exactly 0 (dead-centre strike).
     PitchAim a = decide_pitch_aim(9, 0, 0, 2, 3, 0);

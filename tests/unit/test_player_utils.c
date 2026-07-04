@@ -3,7 +3,7 @@
 #include "globals.h"
 #include <string.h>
 
-int test_get_active_batter_index()
+int test_get_active_batter_index(void)
 {
     MatchSession game;
     memset(&game, 0, sizeof(MatchSession));
@@ -27,7 +27,7 @@ int test_get_active_batter_index()
     return TEST_PASSED;
 }
 
-int test_get_batting_team_index()
+int test_get_batting_team_index(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));

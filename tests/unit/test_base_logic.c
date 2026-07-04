@@ -3,7 +3,7 @@
 #include "globals.h"
 #include <string.h>
 
-int test_base_sequence()
+int test_base_sequence(void)
 {
     ASSERT_EQ(BASE_FIRST, base_get_next(BASE_HOME), "Home -> First");
     ASSERT_EQ(BASE_SECOND, base_get_next(BASE_FIRST), "First -> Second");
@@ -20,7 +20,7 @@ int test_base_sequence()
     return TEST_PASSED;
 }
 
-int test_base_properties()
+int test_base_properties(void)
 {
     // Safe Haven (can stay there)
     ASSERT_TRUE(base_is_safe_haven(BASE_HOME), "Home is safe haven");
@@ -44,7 +44,7 @@ int test_base_properties()
     return TEST_PASSED;
 }
 
-int test_base_comparisons()
+int test_base_comparisons(void)
 {
     ASSERT_TRUE(base_is_at_least(BASE_SECOND, BASE_FIRST), "2nd >= 1st");
     ASSERT_TRUE(base_is_at_least(BASE_SECOND, BASE_SECOND), "2nd >= 2nd");
@@ -57,7 +57,7 @@ int test_base_comparisons()
     return TEST_PASSED;
 }
 
-int test_base_to_int_index()
+int test_base_to_int_index(void)
 {
     ASSERT_EQ(0, base_to_int_index(BASE_HOME), "Home is 0");
     ASSERT_EQ(1, base_to_int_index(BASE_FIRST), "First is 1");
@@ -69,7 +69,7 @@ int test_base_to_int_index()
     return TEST_PASSED;
 }
 
-int test_player_is_safe_from_fly()
+int test_player_is_safe_from_fly(void)
 {
     ASSERT_TRUE(player_is_safe_from_fly(PLAYER_STATE_ADVANCING_FREELY, BASE_SECOND, BASE_FIRST), "Free walk is safe");
     ASSERT_TRUE(!player_is_safe_from_fly(PLAYER_STATE_RUNNING, BASE_SECOND, BASE_FIRST), "Advanced runner is not safe");
@@ -80,7 +80,7 @@ int test_player_is_safe_from_fly()
     return TEST_PASSED;
 }
 
-int test_count_active_batting_players()
+int test_count_active_batting_players(void)
 {
     PlayerInfo players[PLAYERS_IN_TEAM + JOKER_COUNT];
     memset(players, 0, sizeof(players));

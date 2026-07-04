@@ -2,6 +2,7 @@
 #define TEST_HELPERS_H
 
 #include <stdio.h>
+#include <math.h>
 
 // Simple test framework macros
 #define TEST_PASSED 0
@@ -65,5 +66,16 @@ extern int tests_failed;
 
 #define ASSERT_NOT_NULL(ptr, message) ASSERT((ptr) != NULL, message)
 #define ASSERT_TRUE(condition, message) ASSERT((condition), message)
+
+#define ASSERT_FLOAT_EQ(expected, actual, epsilon, message)                                                            \
+    do {                                                                                                               \
+        if (!(fabs((double)(expected) - (double)(actual)) < (double)(epsilon))) {                                      \
+            printf(                                                                                                    \
+                "\n  Assertion failed: %s\n  Expected: %f (±%f), Got: %f\n  %s:%d\n", message, (double)(expected),     \
+                (double)(epsilon), (double)(actual), __FILE__, __LINE__                                                \
+            );                                                                                                         \
+            return TEST_FAILED;                                                                                        \
+        }                                                                                                              \
+    } while (0)
 
 #endif /* TEST_HELPERS_H */

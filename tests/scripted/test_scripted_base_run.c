@@ -17,23 +17,6 @@
 
 #define HUMAN_PAD CONTROL_PLAYER_1 /* batting team (team 0) is the human */
 
-static void press_release(ScriptedGame* g, int pad, int key)
-{
-    scripted_hold(g, pad, key);
-    scripted_tick(g); // key down (the run intent is set on the release edge, not the press)
-    scripted_release(g, pad, key);
-    scripted_tick(g); // release edge -> action_invocations sets the intent, execute_actions consumes it
-}
-
-static int tick_until_batter_decision(ScriptedGame* g, int budget)
-{
-    for (int i = 0; i < budget; i++) {
-        scripted_tick(g);
-        if (scripted_match(g)->flowControl.waitingForBatterDecision == 1) return 1;
-    }
-    return 0;
-}
-
 // Tick until the AI fielding side has put a pitch in the air (the ball is live for the batter).
 static int tick_until_ball_live(ScriptedGame* g, int budget)
 {
@@ -48,9 +31,9 @@ static int tick_until_ball_live(ScriptedGame* g, int budget)
 // Returns the active batter index, or -1 on setup failure.
 static int setup_live_batter(ScriptedGame* g)
 {
-    if (!tick_until_batter_decision(g, 1500)) return -1;
-    press_release(g, HUMAN_PAD, KEY_1); // cycle to a concrete batter
-    press_release(g, HUMAN_PAD, KEY_2); // accept it
+    if (!scripted_tick_until_batter_decision(g, 1500)) return -1;
+    scripted_tap(g, HUMAN_PAD, KEY_1); // cycle to a concrete batter
+    scripted_tap(g, HUMAN_PAD, KEY_2); // accept it
     if (!tick_until_ball_live(g, 4000)) return -1;
     return get_active_batter_index(scripted_match(g));
 }
@@ -65,7 +48,7 @@ int test_scripted_single_tap_does_not_run_batter(void)
     ASSERT(bi >= 0, "could not get a live batter (selection / AI pitch never happened)");
     ASSERT_EQ(PLAYER_STATE_AT_BAT, (int)scripted_match(g)->playerInfo[bi].bTPI.state, "batter should be AT_BAT");
 
-    press_release(g, HUMAN_PAD, KEY_DOWN); // single tap on the home/first key
+    scripted_tap(g, HUMAN_PAD, KEY_DOWN); // single tap on the home/first key
     scripted_run(g, 5);
 
     // Armed, not committed: the batter is still at bat and not going forward.
@@ -92,8 +75,8 @@ int test_scripted_double_tap_runs_batter(void)
     ASSERT(bi >= 0, "could not get a live batter (selection / AI pitch never happened)");
 
     // Double tap within the press window: first release arms, second release commits.
-    press_release(g, HUMAN_PAD, KEY_DOWN);
-    press_release(g, HUMAN_PAD, KEY_DOWN);
+    scripted_tap(g, HUMAN_PAD, KEY_DOWN);
+    scripted_tap(g, HUMAN_PAD, KEY_DOWN);
     scripted_run(g, 5);
 
     // Committed: run_to_next_base(BASE_HOME) set the batter going forward and stopped the at-bat.

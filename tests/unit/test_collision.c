@@ -1,19 +1,11 @@
 #include "test_helpers.h"
-#include "test_collision.h"
 #include "collision.h"
 #include "vector_math.h"
 #include <stdio.h>
 #include <math.h>
 
-// Helper for float comparison
-static int float_eq(float a, float b, float epsilon)
+int test_collision_resolve_boundaries_no_collision(void)
 {
-    return fabs(a - b) < epsilon;
-}
-
-int test_collision_resolve_boundaries_no_collision()
-{
-    printf("Running test: %s\n", __func__);
 
     Vector3D pos = {0.0f, 0.0f, 0.0f};
     Vector3D vel = {1.0f, 0.0f, 1.0f};
@@ -28,17 +20,16 @@ int test_collision_resolve_boundaries_no_collision()
     int result = physics_resolve_field_boundaries(&pos, &vel, front, back, left, right, damping);
 
     ASSERT_EQ(0, result, "Should return 0 for no collision");
-    ASSERT_TRUE(float_eq(0.0f, pos.x, 0.001f), "Position X unchanged");
-    ASSERT_TRUE(float_eq(0.0f, pos.z, 0.001f), "Position Z unchanged");
-    ASSERT_TRUE(float_eq(1.0f, vel.x, 0.001f), "Velocity X unchanged");
-    ASSERT_TRUE(float_eq(1.0f, vel.z, 0.001f), "Velocity Z unchanged");
+    ASSERT_FLOAT_EQ(0.0f, pos.x, 0.001f, "Position X unchanged");
+    ASSERT_FLOAT_EQ(0.0f, pos.z, 0.001f, "Position Z unchanged");
+    ASSERT_FLOAT_EQ(1.0f, vel.x, 0.001f, "Velocity X unchanged");
+    ASSERT_FLOAT_EQ(1.0f, vel.z, 0.001f, "Velocity Z unchanged");
 
     return TEST_PASSED;
 }
 
-int test_collision_resolve_boundaries_z_front()
+int test_collision_resolve_boundaries_z_front(void)
 {
-    printf("Running test: %s\n", __func__);
 
     Vector3D pos = {0.0f, 0.0f, 15.0f}; // Outside front boundary (10.0f)
     Vector3D vel = {1.0f, 0.0f, 5.0f}; // Moving towards boundary
@@ -52,15 +43,14 @@ int test_collision_resolve_boundaries_z_front()
     int result = physics_resolve_field_boundaries(&pos, &vel, front, back, left, right, damping);
 
     ASSERT_EQ(1, result, "Should return 1 for collision");
-    ASSERT_TRUE(float_eq(10.0f, pos.z, 0.001f), "Position Z clamped to front boundary");
-    ASSERT_TRUE(float_eq(-2.5f, vel.z, 0.001f), "Velocity Z reflected and damped (5.0 * -0.5 = -2.5)");
+    ASSERT_FLOAT_EQ(10.0f, pos.z, 0.001f, "Position Z clamped to front boundary");
+    ASSERT_FLOAT_EQ(-2.5f, vel.z, 0.001f, "Velocity Z reflected and damped (5.0 * -0.5 = -2.5)");
 
     return TEST_PASSED;
 }
 
-int test_collision_resolve_boundaries_z_back()
+int test_collision_resolve_boundaries_z_back(void)
 {
-    printf("Running test: %s\n", __func__);
 
     Vector3D pos = {0.0f, 0.0f, -15.0f}; // Outside back boundary (-10.0f)
     Vector3D vel = {1.0f, 0.0f, -5.0f}; // Moving backwards
@@ -74,15 +64,14 @@ int test_collision_resolve_boundaries_z_back()
     int result = physics_resolve_field_boundaries(&pos, &vel, front, back, left, right, damping);
 
     ASSERT_EQ(1, result, "Should return 1 for collision");
-    ASSERT_TRUE(float_eq(-10.0f, pos.z, 0.001f), "Position Z clamped to back boundary");
-    ASSERT_TRUE(float_eq(2.5f, vel.z, 0.001f), "Velocity Z reflected and damped (-5.0 * -0.5 = 2.5)");
+    ASSERT_FLOAT_EQ(-10.0f, pos.z, 0.001f, "Position Z clamped to back boundary");
+    ASSERT_FLOAT_EQ(2.5f, vel.z, 0.001f, "Velocity Z reflected and damped (-5.0 * -0.5 = 2.5)");
 
     return TEST_PASSED;
 }
 
-int test_collision_resolve_boundaries_x_right()
+int test_collision_resolve_boundaries_x_right(void)
 {
-    printf("Running test: %s\n", __func__);
 
     Vector3D pos = {15.0f, 0.0f, 0.0f}; // Outside right boundary (10.0f)
     Vector3D vel = {5.0f, 0.0f, 1.0f};
@@ -96,15 +85,14 @@ int test_collision_resolve_boundaries_x_right()
     int result = physics_resolve_field_boundaries(&pos, &vel, front, back, left, right, damping);
 
     ASSERT_EQ(1, result, "Should return 1 for collision");
-    ASSERT_TRUE(float_eq(10.0f, pos.x, 0.001f), "Position X clamped to right boundary");
-    ASSERT_TRUE(float_eq(-2.5f, vel.x, 0.001f), "Velocity X reflected and damped");
+    ASSERT_FLOAT_EQ(10.0f, pos.x, 0.001f, "Position X clamped to right boundary");
+    ASSERT_FLOAT_EQ(-2.5f, vel.x, 0.001f, "Velocity X reflected and damped");
 
     return TEST_PASSED;
 }
 
-int test_collision_resolve_boundaries_x_left()
+int test_collision_resolve_boundaries_x_left(void)
 {
-    printf("Running test: %s\n", __func__);
 
     Vector3D pos = {-15.0f, 0.0f, 0.0f}; // Outside left boundary (-10.0f)
     Vector3D vel = {-5.0f, 0.0f, 1.0f};
@@ -118,8 +106,8 @@ int test_collision_resolve_boundaries_x_left()
     int result = physics_resolve_field_boundaries(&pos, &vel, front, back, left, right, damping);
 
     ASSERT_EQ(1, result, "Should return 1 for collision");
-    ASSERT_TRUE(float_eq(-10.0f, pos.x, 0.001f), "Position X clamped to left boundary");
-    ASSERT_TRUE(float_eq(2.5f, vel.x, 0.001f), "Velocity X reflected and damped");
+    ASSERT_FLOAT_EQ(-10.0f, pos.x, 0.001f, "Position X clamped to left boundary");
+    ASSERT_FLOAT_EQ(2.5f, vel.x, 0.001f, "Velocity X reflected and damped");
 
     return TEST_PASSED;
 }

@@ -278,7 +278,6 @@ static void update_wounding_logic(
             // Apply wounding to marked players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-                    BaseID baseId = game->playerInfo[i].bTPI.baseId;
                     PlayerUnitState state = game->playerInfo[i].bTPI.state;
 
                     // Normal wound: WOUND_MARKED -> WOUNDED (if at base) or WOUND_PENDING (if running)

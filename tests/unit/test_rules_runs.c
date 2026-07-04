@@ -8,7 +8,7 @@
 // int is_run_of_honor(BaseID player_base, BaseID player_original_base, int player_is_wounded, int
 // has_made_run_on_third_base);
 
-int test_is_regular_run()
+int test_is_regular_run(void)
 {
     // Basic run: Player arrives at home base (BASE_HOME_SCORED), not wounded
     ASSERT_EQ(1, is_regular_run(BASE_HOME_SCORED, BASE_FIRST, 0), "Should score run when arriving at home base");
@@ -25,7 +25,7 @@ int test_is_regular_run()
     return TEST_PASSED;
 }
 
-int test_is_run_of_honor()
+int test_is_run_of_honor(void)
 {
     // Run of Honor: Batter (baseAtPitchStart BASE_HOME) arrives at 3rd base (BASE_THIRD)
     ASSERT_EQ(1, is_run_of_honor(BASE_THIRD, BASE_HOME, 0, 0), "Should score run of honor");

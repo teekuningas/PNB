@@ -16,7 +16,7 @@
  * 6. Game resets positions (Foul Play).
  * 7. Runner should be returned to 1st Base (original base at pitch start).
  */
-int test_full_out_of_bounds_reset(void)
+int test_out_of_bounds_reset(void)
 {
     ScenarioContext* ctx = create_scenario();
 

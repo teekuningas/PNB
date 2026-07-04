@@ -1,15 +1,17 @@
 #include "test_helpers.h"
 #include "rules_outs.h"
 
-int test_forced_out_at_first_base()
+int test_forced_out_at_first_base(void)
 {
-    // Runner running to 1st base, ball at 1st base -> OUT
+    // Runner running to 1st base, ball at 1st base -> OUT.
+    // (Also the regression guard for the caller bug where the loop index i was passed instead of
+    // baseIndex: when the ball is at base 1, the check must run with baseIndex=BASE_HOME (0).)
     int result = is_runner_forced_out(BASE_HOME, 0, BASE_HOME, 0, 0);
     ASSERT_EQ(1, result, "Runner running to 1st base should be out if ball is there");
     return TEST_PASSED;
 }
 
-int test_safe_on_first_base()
+int test_safe_on_first_base(void)
 {
     // Runner safe on 1st base, ball at 1st base -> SAFE
     int result = is_runner_forced_out(BASE_HOME, 1, BASE_HOME, 0, 0);
@@ -17,7 +19,7 @@ int test_safe_on_first_base()
     return TEST_PASSED;
 }
 
-int test_runner_at_different_base()
+int test_runner_at_different_base(void)
 {
     // Runner running to 2nd base, ball at 1st base -> SAFE
     int result = is_runner_forced_out(BASE_FIRST, 0, BASE_HOME, 0, 0);
@@ -25,7 +27,7 @@ int test_runner_at_different_base()
     return TEST_PASSED;
 }
 
-int test_forced_out_at_second_base()
+int test_forced_out_at_second_base(void)
 {
     // Runner running to 2nd base, ball at 2nd base -> OUT
     int result = is_runner_forced_out(BASE_FIRST, 0, BASE_FIRST, 0, 0);
@@ -33,7 +35,7 @@ int test_forced_out_at_second_base()
     return TEST_PASSED;
 }
 
-int test_free_walk_protection()
+int test_free_walk_protection(void)
 {
     // Runner running to 1st base, ball at 1st base, taking free walk -> SAFE
     int result = is_runner_forced_out(BASE_HOME, 0, BASE_HOME, 1, 0);
@@ -41,20 +43,10 @@ int test_free_walk_protection()
     return TEST_PASSED;
 }
 
-int test_out_of_bounds_protection()
+int test_out_of_bounds_protection(void)
 {
     // Runner running to 1st base, ball at 1st base, ball out of bounds -> SAFE
     int result = is_runner_forced_out(BASE_HOME, 0, BASE_HOME, 0, 1);
     ASSERT_EQ(0, result, "Runner should be safe if ball is out of bounds");
-    return TEST_PASSED;
-}
-
-int test_regression_runner_from_base_zero()
-{
-    // Regression test: Runner at base 0, running to base 1, ball at base 1 -> OUT
-    // Previously failed due to incorrect parameter passing (used loop index i instead of baseIndex)
-    // When ball is at base 1 (i=1), we check with baseIndex=BASE_HOME (0)
-    int result = is_runner_forced_out(BASE_HOME, 0, BASE_HOME, 0, 0);
-    ASSERT_EQ(1, result, "Runner from base 0 running to base 1 should be out if ball is at base 1");
     return TEST_PASSED;
 }

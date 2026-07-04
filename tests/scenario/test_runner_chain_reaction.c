@@ -9,7 +9,7 @@
  * Runner A runs to base 2 where Runner B is standing.
  * Expected: A gets safety, B loses safety and starts running.
  */
-int test_full_runner_chain_reaction_no_catch(void)
+int test_runner_chain_reaction_no_catch(void)
 {
     ScenarioContext* ctx = create_scenario();
 

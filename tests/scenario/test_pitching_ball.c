@@ -8,7 +8,7 @@
  *
  * Verifies that a pitch thrown wide of the plate results in a Ball.
  */
-int test_full_pitching_ball(void)
+int test_pitching_ball(void)
 {
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);

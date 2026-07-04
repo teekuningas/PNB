@@ -4,7 +4,7 @@
 #include "vector_math.h"
 #include <string.h>
 
-int test_get_base_controller()
+int test_get_base_controller(void)
 {
     MatchSession game;
     RefereeState referee;
@@ -57,7 +57,7 @@ int test_get_base_controller()
     return TEST_PASSED;
 }
 
-int test_get_ball_at_base_index()
+int test_get_ball_at_base_index(void)
 {
     StateInfo state;
     MatchSession game;

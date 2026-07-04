@@ -53,6 +53,23 @@ int scripted_tick(ScriptedGame* g)
     return sim_tick(g->sim);
 }
 
+void scripted_tap(ScriptedGame* g, int pad, int key)
+{
+    scripted_hold(g, pad, key);
+    scripted_tick(g); // key down (declarations fire on the release edge, not the press)
+    scripted_release(g, pad, key);
+    scripted_tick(g); // release edge -> action_invocations sets the intent, execute_actions consumes it
+}
+
+int scripted_tick_until_batter_decision(ScriptedGame* g, int budget)
+{
+    for (int i = 0; i < budget; i++) {
+        scripted_tick(g);
+        if (scripted_match(g)->flowControl.waitingForBatterDecision == 1) return 1;
+    }
+    return 0;
+}
+
 long scripted_run(ScriptedGame* g, long frames)
 {
     long ticked = 0;

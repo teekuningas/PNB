@@ -3,9 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 
-int test_batting_strategy_decision_tree()
+int test_batting_strategy_decision_tree(void)
 {
-    printf("Running test: %s\n", __func__);
 
     BattingStrategy s;
     HalfInningState gs = {0};
@@ -45,9 +44,8 @@ int test_batting_strategy_decision_tree()
     return TEST_PASSED;
 }
 
-int test_should_change_batter()
+int test_should_change_batter(void)
 {
-    printf("Running test: %s\n", __func__);
 
     // Field 0, Speed 3 -> No change
     ASSERT_EQ(0, should_change_batter(0, 0, 3), "Field 0, Fast -> 0");
@@ -65,9 +63,8 @@ int test_should_change_batter()
     return TEST_PASSED;
 }
 
-int test_is_wrong_pitch()
+int test_is_wrong_pitch(void)
 {
-    printf("Running test: %s\n", __func__);
 
     float gravity = 0.003f;
     float plate_width = 1.5f; // half is 0.75
@@ -84,9 +81,8 @@ int test_is_wrong_pitch()
     return TEST_PASSED;
 }
 
-int test_calculate_ai_batting_angle()
+int test_calculate_ai_batting_angle(void)
 {
-    printf("Running test: %s\n", __func__);
 
     // The normal swing (style 1) AND the bunt (style 0) must each produce a UNIFORM direction fan
     // within their own bound: a flat, full-width spread — no collapse to centre, no pile at an
@@ -125,7 +121,7 @@ int test_calculate_ai_batting_angle()
 
     // Style 2 (Wound): a deliberate fixed extreme angle to draw a fielder (not a uniform fan).
     float wound = calculate_ai_batting_angle(2, 0);
-    ASSERT_TRUE(fabs(wound - (-1.5f)) < 0.001f, "Wound style should hit extreme angle");
+    ASSERT_FLOAT_EQ(-1.5f, wound, 0.001f, "Wound style should hit extreme angle");
 
     return TEST_PASSED;
 }

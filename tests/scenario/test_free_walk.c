@@ -11,7 +11,7 @@
  * 2. Grants safety at the next base (Referee)
  * 3. Player physically runs and arrives at the next base
  */
-int test_full_free_walk_resolution(void)
+int test_free_walk_resolution(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* game = ctx->state->match;

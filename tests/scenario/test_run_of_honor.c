@@ -14,7 +14,7 @@
  * 4. Runner advances to each base sequentially
  * 5. Verify run of honor is scored at third base arrival
  */
-int test_full_run_of_honor(void)
+int test_run_of_honor(void)
 {
     printf("\n=== TEST: Run of Honor (Kunniajuoksu) ===\n");
     ScenarioContext* ctx = create_scenario();

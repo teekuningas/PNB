@@ -7,7 +7,7 @@
 /**
  * TEST 3: Runner wounded on fly ball
  */
-int test_full_fly_ball_runner_wounded(void)
+int test_fly_ball_runner_wounded(void)
 {
     ScenarioContext* ctx = create_scenario();
     place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f);

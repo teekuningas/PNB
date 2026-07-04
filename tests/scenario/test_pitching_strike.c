@@ -8,7 +8,7 @@
  *
  * Verifies that a pitch thrown to the center of the plate results in a Strike.
  */
-int test_full_pitching_strike(void)
+int test_pitching_strike(void)
 {
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);

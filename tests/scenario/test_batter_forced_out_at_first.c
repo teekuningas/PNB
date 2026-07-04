@@ -8,7 +8,7 @@
 /**
  * TEST 2: Batter forced out at first base
  */
-int test_full_batter_forced_out_at_first(void)
+int test_batter_forced_out_at_first(void)
 {
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);

@@ -1,11 +1,6 @@
 #include "test_helpers.h"
-#include "cup.h" // New include for the Cup API tests
-#include "test_batting_physics.h" // New include for Batting Physics tests
-#include "test_pitching_physics.h"
-#include "test_batting_ai_strategy.h"
-#include "test_catching_ai_strategy.h"
-#include "test_pitching_ai_strategy.h"
-#include "test_collision.h"
+#include "all_unit.h"
+#include "cup.h" // Cup API used by the fixture tests below
 #include "fixtures.h"
 #include "menu_types.h"
 #include "globals.h"
@@ -15,7 +10,7 @@ int tests_run = 0;
 int tests_failed = 0;
 
 // Test fixture creation
-int test_fixture_super_inning_setup()
+int test_fixture_super_inning_setup(void)
 {
     GameSetup setup;
     fixture_create_super_inning(&setup, 0, 1, 0, 1);
@@ -30,7 +25,7 @@ int test_fixture_super_inning_setup()
     return TEST_PASSED;
 }
 
-int test_fixture_homerun_contest_setup()
+int test_fixture_homerun_contest_setup(void)
 {
     GameSetup setup;
     fixture_create_homerun_contest(&setup, 0, 1, 0, 1);
@@ -48,7 +43,7 @@ int test_fixture_homerun_contest_setup()
     return TEST_PASSED;
 }
 
-int test_fixture_cup_final_super_inning_setup()
+int test_fixture_cup_final_super_inning_setup(void)
 {
     GameSetup setup;
     fixture_create_cup_final_super_inning(&setup, 0, 1, 0, 1);
@@ -59,7 +54,7 @@ int test_fixture_cup_final_super_inning_setup()
     return TEST_PASSED;
 }
 
-int test_fixture_arg_parsing()
+int test_fixture_arg_parsing(void)
 {
     char* argv[] = {"program", "--fixture", "super-inning", "--team1", "2", "--team2", "3"};
     int argc = 7;
@@ -75,52 +70,6 @@ int test_fixture_arg_parsing()
 
     return TEST_PASSED;
 }
-
-// Declare new cup tests
-extern int test_cup_creation();
-extern int test_cup_progression();
-extern int test_cup_best_of_three();
-extern int test_cup_save_load();
-extern int test_cup_day_progression();
-extern int test_cup_day_progression_best_of_three();
-
-// Declare new base logic tests
-extern int test_base_sequence();
-extern int test_base_properties();
-extern int test_base_comparisons();
-extern int test_base_to_int_index();
-extern int test_player_is_safe_from_fly();
-extern int test_count_active_batting_players();
-
-// Declare base control tests
-extern int test_get_base_controller();
-extern int test_get_ball_at_base_index();
-
-// Declare player utils tests
-extern int test_get_active_batter_index();
-extern int test_get_batting_team_index();
-
-// Declare scoring helpers tests
-extern int test_should_period_end_last_half_inning_lead(void);
-extern int test_should_period_end_last_half_inning_no_lead(void);
-extern int test_should_period_end_mid_period(void);
-extern int test_should_period_end_period1_last(void);
-extern int test_should_period_end_period0_tiebreaker(void);
-extern int test_should_period_end_super_inning(void);
-extern int test_should_period_end_homerun_contest(void);
-
-// Declare rules outs tests
-extern int test_forced_out_at_first_base();
-extern int test_safe_on_first_base();
-extern int test_runner_at_different_base();
-extern int test_forced_out_at_second_base();
-extern int test_free_walk_protection();
-extern int test_out_of_bounds_protection();
-extern int test_regression_runner_from_base_zero();
-
-// Declare rules runs tests
-extern int test_is_regular_run();
-extern int test_is_run_of_honor();
 
 int main(int argc, char* argv[])
 {
@@ -209,7 +158,6 @@ int main(int argc, char* argv[])
     RUN_TEST(test_forced_out_at_second_base);
     RUN_TEST(test_free_walk_protection);
     RUN_TEST(test_out_of_bounds_protection);
-    RUN_TEST(test_regression_runner_from_base_zero);
 
     // Rules Runs tests
     RUN_TEST(test_is_regular_run);

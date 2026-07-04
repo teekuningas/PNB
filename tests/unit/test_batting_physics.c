@@ -3,15 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 
-// Helper for float comparison
-static int float_eq(float a, float b, float epsilon)
+int test_pitch_frame_time(void)
 {
-    return fabs(a - b) < epsilon;
-}
-
-int test_pitch_frame_time()
-{
-    printf("Running test: %s\n", __func__);
 
     float vy = 0.0f; // Dropped from a height
     float gravity = 0.5f;
@@ -30,17 +23,16 @@ int test_pitch_frame_time()
     return TEST_PASSED;
 }
 
-int test_meter_values()
+int test_meter_values(void)
 {
-    printf("Running test: %s\n", __func__);
 
     // Power meter
     // Counter 0 -> 0.0
-    ASSERT_TRUE(float_eq(0.0f, calculate_power_meter_value(0, 100), 0.001f), "Power meter 0");
+    ASSERT_FLOAT_EQ(0.0f, calculate_power_meter_value(0, 100), 0.001f, "Power meter 0");
     // Counter 100 -> 1.0
-    ASSERT_TRUE(float_eq(1.0f, calculate_power_meter_value(100, 100), 0.001f), "Power meter max");
+    ASSERT_FLOAT_EQ(1.0f, calculate_power_meter_value(100, 100), 0.001f, "Power meter max");
     // Counter 50 -> 0.5
-    ASSERT_TRUE(float_eq(0.5f, calculate_power_meter_value(50, 100), 0.001f), "Power meter mid");
+    ASSERT_FLOAT_EQ(0.5f, calculate_power_meter_value(50, 100), 0.001f, "Power meter mid");
 
     // Angle meter
     // Angle meter moves down from power point
@@ -48,22 +40,19 @@ int test_meter_values()
     // Counter = 0 (start of angle selection) => should start at power level (0.8)
     // upperLimit = (80 + 0)/100 = 0.8
     // Result = 0.8 - (0/100)*(...) = 0.8
-    ASSERT_TRUE(float_eq(0.8f, calculate_angle_meter_value(0, 100, 80, 100, 100), 0.001f), "Angle meter at start (0)");
+    ASSERT_FLOAT_EQ(0.8f, calculate_angle_meter_value(0, 100, 80, 100, 100), 0.001f, "Angle meter at start (0)");
 
     // Counter = 100 (max) => should be at 0.0
-    ASSERT_TRUE(
-        float_eq(0.0f, calculate_angle_meter_value(100, 100, 80, 100, 100), 0.001f), "Angle meter at max (100)"
-    );
+    ASSERT_FLOAT_EQ(0.0f, calculate_angle_meter_value(100, 100, 80, 100, 100), 0.001f, "Angle meter at max (100)");
 
     // Counter = 50 (half) => should be halfway between 0.8 and 0.0 => 0.4
-    ASSERT_TRUE(float_eq(0.4f, calculate_angle_meter_value(50, 100, 80, 100, 100), 0.001f), "Angle meter at half");
+    ASSERT_FLOAT_EQ(0.4f, calculate_angle_meter_value(50, 100, 80, 100, 100), 0.001f, "Angle meter at half");
 
     return TEST_PASSED;
 }
 
-int test_batting_vertical_angle()
+int test_batting_vertical_angle(void)
 {
-    printf("Running test: %s\n", __func__);
 
     int power_count = 50;
     int angle_count = 50;
@@ -83,9 +72,8 @@ int test_batting_vertical_angle()
     return TEST_PASSED;
 }
 
-int test_batted_ball_velocity()
+int test_batted_ball_velocity(void)
 {
-    printf("Running test: %s\n", __func__);
 
     float v_angle = 0.785f; // Used to calculate alpha
     float h_angle = 0.0f; // Straight forward
@@ -98,7 +86,7 @@ int test_batted_ball_velocity()
     ASSERT_TRUE(vel.y > 0, "Ball should go up");
     // Forward in this engine is -Z (based on calculations: dz = -cos(alpha)*cos(theta))
     ASSERT_TRUE(vel.z < 0, "Ball should go forward (negative Z)");
-    ASSERT_TRUE(float_eq(0.0f, vel.x, 0.001f), "Ball should go straight (x=0)");
+    ASSERT_FLOAT_EQ(0.0f, vel.x, 0.001f, "Ball should go straight (x=0)");
 
     return TEST_PASSED;
 }

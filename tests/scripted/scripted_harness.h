@@ -55,6 +55,16 @@ void scripted_release_all(ScriptedGame* g);
  */
 int scripted_tick(ScriptedGame* g);
 
+/**
+ * @brief One tap = a key-down frame then a release frame (declarations fire on the release edge:
+ * action_invocations sets the intent, execute_actions consumes it).
+ */
+void scripted_tap(ScriptedGame* g, int pad, int key);
+
+/** Tick until the engine asks for a batter (flowControl.waitingForBatterDecision == 1). Returns 1 if
+ * reached within `budget` frames, 0 otherwise. */
+int scripted_tick_until_batter_decision(ScriptedGame* g, int budget);
+
 /** Tick `frames` frames with the current held state held throughout. Returns frames actually ticked. */
 long scripted_run(ScriptedGame* g, long frames);
 
