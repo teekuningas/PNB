@@ -17,7 +17,8 @@
 // the pitchTime>=100 ramp, collapsed into one clock.)
 #define AI_PITCH_DELAY 150
 
-static void update_ai_pitching(MatchSession* match, const HalfInningState* halfInningState, unsigned int* rng_seed)
+static void
+update_ai_pitching(MatchSession* match, const HalfInningState* halfInningState, AIControllerState* aiController)
 {
     int pitcherIndex = match->pII.catcherOnBaseIndex[0];
 
@@ -36,9 +37,9 @@ static void update_ai_pitching(MatchSession* match, const HalfInningState* halfI
         }
 
         if (fielders_home) {
-            int rand_power = seeded_rand(rng_seed, 5);
-            int rand_dir = seeded_rand(rng_seed, 7);
-            int rand_choice = seeded_rand(rng_seed, 10);
+            int rand_power = seeded_rand(&aiController->rngSeed, 5);
+            int rand_dir = seeded_rand(&aiController->rngSeed, 7);
+            int rand_choice = seeded_rand(&aiController->rngSeed, 10);
             PitchAim aim = decide_pitch_aim(
                 count_active_batting_players(match->playerInfo), halfInningState->strikes, halfInningState->balls,
                 rand_power, rand_dir, rand_choice
@@ -161,10 +162,10 @@ void throw_ball_to_base(MatchSession* match, BaseID base)
     }
 }
 
-void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsigned int* rng_seed)
+void update_catching_ai(MatchSession* match, const GameRulesState* rules, AIControllerState* aiController)
 {
     // Update AI pitching
-    update_ai_pitching(match, &rules->halfInningState, rng_seed);
+    update_ai_pitching(match, &rules->halfInningState, aiController);
 
     // (The throw no longer needs an AI-side "finish throwing" step: the engine owns the windup and
     // releases the ball when it completes — PLAN §4.12 sub-step 2. throwStage / AI_THROW_LOCK / the
@@ -238,7 +239,7 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, unsign
                 }
             }
 
-            int randomVal = seeded_rand(rng_seed, 500);
+            int randomVal = seeded_rand(&aiController->rngSeed, 500);
             leadBase = determine_lead_base(runners, runnerCount, randomVal);
 
             if (leadBase != BASE_NONE && base_cmp(leadBase, BASE_THIRD) < 0)

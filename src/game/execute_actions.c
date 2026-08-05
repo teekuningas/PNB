@@ -342,7 +342,8 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
 }
 
 void ai_update(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, unsigned int* rng_seed
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    AIControllerState* aiController
 )
 {
     int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
@@ -352,10 +353,10 @@ void ai_update(
     // first ai for catching team
 
     if (team_is_ai(catchingControl)) {
-        update_catching_ai(match, rules, rng_seed);
+        update_catching_ai(match, rules, aiController);
     }
     // then ai for batting team
     if (team_is_ai(battingControl)) {
-        update_batting_ai(match, rules, fieldPositions, rng_seed);
+        update_batting_ai(match, rules, fieldPositions, aiController);
     }
 }

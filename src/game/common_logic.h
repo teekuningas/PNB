@@ -33,9 +33,7 @@ void lead_from_base(
 void change_player(MatchSession* match);
 void prepare_batter(MatchSession* match);
 void calculate_free_walk(MatchSession* match, const RefereeState* referee);
-void initialize_spatial_player_information(
-    MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
-);
+void initialize_spatial_player_information(MatchSession* match, const FieldPositions* field_positions);
 void initialize_inning_permanent_player_information(
     MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
 );

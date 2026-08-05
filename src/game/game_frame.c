@@ -58,7 +58,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
     if (stateInfo->match->flowControl.pause == 0) {
         MatchSession* game = stateInfo->match;
@@ -74,7 +74,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // (GameRulesState), geometry, and its one output. See PLAN.md "Function Signature Strategy".
         execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
         update_meters(game, stateInfo->clientInput);
-        ai_update(game, rules, stateInfo->fieldPositions, rng_seed);
+        ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)
@@ -91,7 +91,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* r
         // Referee-owned state passed via GameRulesState — consolidation reads but minimally writes.
         ConsolidationOutput consolidation_output;
         consolidation_update(
-            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo, rng_seed,
+            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo,
             &consolidation_output
         );
 

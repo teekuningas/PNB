@@ -40,7 +40,7 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         break;
     case GAME_LAUNCH_RETURN_INTER_PERIOD:
         apply_batting_orders(stateInfo, gameSetup);
-        return_to_game(stateInfo, rng_seed);
+        return_to_game(stateInfo);
         break;
     case GAME_LAUNCH_RETURN_SUPER_INNING:
         // Resume the game in the super inning the referee already set up (period
@@ -48,7 +48,7 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         // leading-off team (decided fresh by hutunkeitto) are applied.
         apply_batting_orders(stateInfo, gameSetup);
         stateInfo->rules->scoreboard.playsFirst = gameSetup->playsFirst;
-        return_to_game(stateInfo, rng_seed);
+        return_to_game(stateInfo);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
         int pairCount = gameSetup->homerun_choice_count;
@@ -60,7 +60,7 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         }
         stateInfo->rules->scoreboard.pairCount = pairCount;
         stateInfo->rules->homeRunContestState.runnerBatterPairCounter = 0;
-        return_to_game(stateInfo, rng_seed);
+        return_to_game(stateInfo);
     } break;
     }
 }

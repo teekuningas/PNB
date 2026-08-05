@@ -27,6 +27,7 @@ static MenuData menuData;
 static StateInfo stateInfo;
 static MatchSession match;
 static ClientInputState clientInput;
+static AIControllerState aiController;
 static GameRulesState rules;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
@@ -50,11 +51,12 @@ int main(int argc, char* argv[])
     unsigned int accumulator = 0;
     unsigned int updateInterval = UPDATE_INTERVAL;
 
-    // Initialize the random number generator seed.
-    // This single seed is passed down through all functions that need randomness
-    // (everything routes through seeded_rand(&rng_seed, ...) in rng.c). There are no
-    // bare rand() consumers, so the global C RNG is intentionally left unseeded — this
-    // keeps the game fully reproducible from rng_seed alone (see the sim test tier).
+    // The app-level random stream: menus, hutunkeitto and cup simulation draw from it directly,
+    // and starting a match splits two independent children off it (initialize_game_from_menu) —
+    // one for the engine, which lives in MatchSession as World state, and one for the AI
+    // controller, which lives in AIControllerState. Everything routes through seeded_rand() in
+    // rng.c; there are no bare rand() consumers, so the global C RNG is intentionally left
+    // unseeded and the whole app stays reproducible from this one seed (see the sim test tier).
     unsigned int rng_seed = (unsigned int)time(NULL);
 
     // Parse command-line arguments
@@ -80,6 +82,7 @@ int main(int argc, char* argv[])
     // Initialize stateInfo structure
     stateInfo.match = &match;
     stateInfo.clientInput = &clientInput;
+    stateInfo.aiController = &aiController;
     stateInfo.rules = &rules;
     stateInfo.gameConclusion = &gameConclusion;
     stateInfo.keyStates = &keyStates;
@@ -195,7 +198,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, 
     update_sound(stateInfo);
     switch (stateInfo->screen) {
     case SCREEN_GAME:
-        update_game_screen(stateInfo, &menuInfo, rng_seed);
+        update_game_screen(stateInfo, &menuInfo);
         break;
     case SCREEN_MAIN_MENU:
         update_main_menu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);

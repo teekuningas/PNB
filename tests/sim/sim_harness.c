@@ -72,7 +72,7 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
 
     // Perform the half-inning setup that load_game_screen_settings does on entering
     // SCREEN_GAME (initialize_game_from_menu set changeScreen=1 to request it).
-    reset_for_new_half_inning(g->state->match, g->state->fieldPositions, g->state->teamData, g->state->rules, &g->seed);
+    reset_for_new_half_inning(g->state->match, g->state->fieldPositions, g->state->teamData, g->state->rules);
     referee_reset_for_new_inning(
         &g->state->rules->referee, &g->state->rules->halfInningState, &g->state->rules->betweenPitchState
     );
@@ -131,7 +131,7 @@ int sim_tick(SimGame* g)
     if (!g || g->failed) return 0;
     if (g->state->screen != SCREEN_GAME) return 0;
 
-    update_game_frame(g->state, &g->menu, &g->seed);
+    update_game_frame(g->state, &g->menu);
     g->frame++;
 
     // The production validator pauses the game on an invariant violation. Headless
@@ -172,6 +172,7 @@ void sim_destroy(SimGame* g)
         clean_player_data(g->state); // frees real teamData
         free(g->state->rules);
         free(g->state->clientInput);
+        free(g->state->aiController);
         free(g->state->match);
         free(g->state->fieldPositions);
         free(g->state);

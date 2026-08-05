@@ -241,6 +241,8 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s  \"planCalculated\": %d\n", sp, game->aiState.planCalculated);
     fprintf(f, "%s},\n", sp);
 
+    fprintf(f, "%s\"rngSeed\": %u,\n", sp, game->rngSeed);
+
     fprintf(f, "%s\"players\": [\n", sp);
     int totalPlayers = 2 * PLAYERS_IN_TEAM + JOKER_COUNT; // 21
     for (int i = 0; i < totalPlayers; i++) {

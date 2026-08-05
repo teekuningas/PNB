@@ -13,8 +13,11 @@ int main(void)
     RUN_TEST(test_ai_vs_ai_half_inning);
     RUN_TEST(test_ai_vs_ai_homerun);
     RUN_TEST(test_ai_vs_ai_determinism);
+    RUN_TEST(test_different_seeds_produce_different_games);
     RUN_TEST(test_ai_offense_breakdown);
     RUN_TEST(test_no_batter_lock_stall);
+    RUN_TEST(test_world_snapshot_retick_is_identical);
+    RUN_TEST(test_retick_diverges_when_engine_seed_is_not_restored);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

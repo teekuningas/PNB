@@ -846,6 +846,19 @@ typedef struct _ClientInputState {
     InputWidget throwWidget;
 } ClientInputState;
 
+// Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE
+// MatchSession, never crosses the wire, and is in no snapshot (ARCHITECTURE_VISION.md §8.8 law 5).
+// Today it holds only the controller's RNG stream. The AI's surviving strategy memory (AIState)
+// moves here at §5.10 slice 5.
+//
+// Why the controller's randomness cannot live on the engine's stream: a replay from a message log
+// runs no AI at all, and a networked peer never runs OUR controllers. Either way the AI's draws
+// would advance the engine's stream a different number of times, so the engines re-sequence and
+// diverge permanently — lockstep prevents divergence, it never heals it.
+typedef struct _AIControllerState {
+    unsigned int rngSeed;
+} AIControllerState;
+
 typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
 } HomeRunContestState;
@@ -916,6 +929,15 @@ typedef struct _MatchSession {
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
 
+    // The engine's random stream. This is World state, not an ambient service: under the tick
+    // equation World(T) = tick(World(T-1), messages), a snapshot that omits the seed cannot
+    // re-tick to the same world. It therefore lives in the struct whose lifetime it matches (the
+    // match) and rides every snapshot — including state_validator's memcpy of this struct, which
+    // was silently incomplete while the seed was a main.c local.
+    //
+    // Set once at match start (initialize_game_from_menu) and then advanced only by engine draws.
+    // No reset recipe clears it: it is one continuous stream for the whole match, not per-play state.
+    unsigned int rngSeed;
 } MatchSession;
 
 typedef struct _GameConclusion {
@@ -946,6 +968,7 @@ typedef struct _StateInfo {
     FieldPositions* fieldPositions;
     MatchSession* match;
     ClientInputState* clientInput; // client-local input memory — NOT synced (see ClientInputState)
+    AIControllerState* aiController; // controller-private AI memory — NOT synced (see AIControllerState)
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

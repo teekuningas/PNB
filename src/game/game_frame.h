@@ -6,7 +6,7 @@
 #include "resource_manager.h"
 
 int init_game_frame(StateInfo* stateInfo, ResourceManager* rm);
-void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed);
+void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo);
 void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm);
 int clean_game_frame(StateInfo* stateInfo);
 

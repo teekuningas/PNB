@@ -36,7 +36,8 @@ void init_batting_ai(AIState* aiState)
 }
 
 void update_batting_ai(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, unsigned int* rng_seed
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    AIControllerState* aiController
 )
 {
     int i;
@@ -235,7 +236,8 @@ void update_batting_ai(
         // a bunt
         if (match->aiState.battingStyle == 0) {
             if (match->aiState.angleDecided == 0) {
-                match->aiState.decidedAngle = calculate_ai_batting_angle(0, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.decidedAngle =
+                    calculate_ai_batting_angle(0, seeded_rand(&aiController->rngSeed, RAND_MAX));
                 match->aiState.angleDecided = 1;
             }
             if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 23 && match->aiState.battingKeyDown == 0 &&
@@ -255,11 +257,13 @@ void update_batting_ai(
         else if (match->aiState.battingStyle == 1) {
             if (match->aiState.angleDecided == 0) {
                 // Direction: randomized across the field, independent of base runners.
-                match->aiState.decidedAngle = calculate_ai_batting_angle(1, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.decidedAngle =
+                    calculate_ai_batting_angle(1, seeded_rand(&aiController->rngSeed, RAND_MAX));
                 // Power: release the swing at a random meter level so power varies between
                 // at-bats (kept in a competent mid-to-strong band — no bunts, no overflow).
                 match->aiState.decidedSwingTrigger =
-                    BAT_SWING_MAX - 4 - seeded_rand(rng_seed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
+                    BAT_SWING_MAX - 4 -
+                    seeded_rand(&aiController->rngSeed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
                 match->aiState.angleDecided = 1;
             }
             if (match->pendingActionState.meter_counter > match->aiState.decidedSwingTrigger &&
@@ -279,7 +283,8 @@ void update_batting_ai(
         // swing that tries to get oneself wounded
         else if (match->aiState.battingStyle == 2) {
             if (match->aiState.angleDecided == 0) {
-                match->aiState.decidedAngle = calculate_ai_batting_angle(2, seeded_rand(rng_seed, RAND_MAX));
+                match->aiState.decidedAngle =
+                    calculate_ai_batting_angle(2, seeded_rand(&aiController->rngSeed, RAND_MAX));
                 match->aiState.angleDecided = 1;
             }
             if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 11 && match->aiState.battingKeyDown == 0 &&
