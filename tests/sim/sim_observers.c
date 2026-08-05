@@ -207,6 +207,11 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->pendingActionState.current_catching_action);
     FOLD(h, m->pendingActionState.meter_counter);
 
+    // The engine's random stream is World state: it determines every future engine draw, so two
+    // worlds that agree on everything else but not on this do NOT have the same future. The AI
+    // controller's seed is deliberately NOT folded in — it lives outside the World by design.
+    FOLD(h, m->rngSeed);
+
     FOLD(h, r->halfInningState.outs);
     FOLD(h, r->halfInningState.balls);
     FOLD(h, r->halfInningState.strikes);

@@ -90,4 +90,9 @@ int test_out_of_bounds_protection(void);
 int test_is_regular_run(void);
 int test_is_run_of_honor(void);
 
+// RNG stream splitting (core/rng.c)
+int test_rng_split_parent_and_child_do_not_share_a_sequence(void);
+int test_rng_split_siblings_are_independent(void);
+int test_rng_split_child_stream_is_uniform(void);
+
 #endif /* ALL_UNIT_H */

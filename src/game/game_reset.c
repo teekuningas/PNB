@@ -2,13 +2,13 @@
 #include "common_logic.h"
 #include "referee.h"
 
-void reset_physical_world(MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed)
+void reset_physical_world(MatchSession* match, const FieldPositions* field_positions)
 {
     initialize_ball_info(match);
     initialize_action_info(match);
     initialize_index_information(match);
     initialize_prai_information(match);
-    initialize_spatial_player_information(match, field_positions, rng_seed);
+    initialize_spatial_player_information(match, field_positions);
     initialize_non_critical_player_information(match);
 }
 
@@ -17,11 +17,10 @@ void reset_physical_world(MatchSession* match, const FieldPositions* field_posit
 // NOTE: Referee has already cleared its own legal state at DETECTED→RESETTING.
 // This function does NOT touch referee-owned state (ownership boundary).
 void reset_for_new_half_inning(
-    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, GameRulesState* rules,
-    unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, GameRulesState* rules
 )
 {
-    reset_physical_world(match, field_positions, rng_seed);
+    reset_physical_world(match, field_positions);
     reset_flow_state(match, &rules->playerCounters);
 
     // Team setup
@@ -38,11 +37,9 @@ void reset_for_new_half_inning(
 }
 
 // Recipe 2: Foul play — referee already restored legal state from snapshot
-void reset_for_foul_play(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
-)
+void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules)
 {
-    reset_physical_world(match, field_positions, rng_seed);
+    reset_physical_world(match, field_positions);
     reset_flow_state(match, &rules->playerCounters);
 
     if (rules->scoreboard.period >= 4) {
@@ -100,10 +97,10 @@ void reset_for_foul_play(
 // Recipe 3: Next HR pair — referee already cleared per-pair state
 void reset_for_next_pair(
     MatchSession* match, const FieldPositions* field_positions, const Scoreboard* scoreboard,
-    const HomeRunContestState* hrcs, PlayerCounters* player_counters, unsigned int* rng_seed
+    const HomeRunContestState* hrcs, PlayerCounters* player_counters
 )
 {
-    reset_physical_world(match, field_positions, rng_seed);
+    reset_physical_world(match, field_positions);
     reset_flow_state(match, player_counters);
     setup_homerun_physical_state(match, scoreboard, hrcs, field_positions, 0);
 }

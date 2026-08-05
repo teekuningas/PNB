@@ -33,3 +33,19 @@ int test_ai_vs_ai_determinism(void)
     ASSERT(a == b, "same-seed AI-vs-AI runs diverged (nondeterminism)");
     return TEST_PASSED;
 }
+
+// The necessary complement to the test above. "Same seed → same game" is satisfied just as well
+// by a game with no randomness left in it at all: if a seed were zeroed on every reset, or a
+// stream were never actually advanced, the determinism test would still pass while the game
+// quietly played the identical inning forever.
+//
+// This matters directly for the engine/AI stream split: both streams are now seeded once at
+// match start and owned by different structs, so a reset recipe clearing the wrong field is a
+// real and silent hazard. Requiring different seeds to produce different games pins it.
+int test_different_seeds_produce_different_games(void)
+{
+    unsigned long long a = run_once(0x0000AAAAu);
+    unsigned long long b = run_once(0xBBBB0000u);
+    ASSERT(a != b, "two different seeds produced an identical game — randomness is not reaching the sim");
+    return TEST_PASSED;
+}

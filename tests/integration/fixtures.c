@@ -34,6 +34,10 @@ StateInfo* setup_test_state()
     state->clientInput = malloc(sizeof(ClientInputState));
     memset(state->clientInput, 0, sizeof(ClientInputState));
 
+    // Controller-private AI memory — the mirror sibling (NOT synced; see AIControllerState).
+    state->aiController = malloc(sizeof(AIControllerState));
+    memset(state->aiController, 0, sizeof(AIControllerState));
+
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));
 
@@ -59,6 +63,7 @@ void cleanup_test_state(StateInfo* state)
     }
     free(state->rules);
     free(state->clientInput);
+    free(state->aiController);
     free(state->match);
     free(state->fieldPositions);
     free(state->teamData);

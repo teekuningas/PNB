@@ -516,9 +516,7 @@ void calculate_free_walk(MatchSession* match, const RefereeState* referee)
     positions and orientations on the field and ball looks like its thrown to pitcher. Models
     are updated also. Before calling this the fielding team must have its position-attributes filled.
 */
-void initialize_spatial_player_information(
-    MatchSession* match, const FieldPositions* field_positions, unsigned int* rng_seed
-)
+void initialize_spatial_player_information(MatchSession* match, const FieldPositions* field_positions)
 {
     int i;
     const Vector3D* fieldPosition;
@@ -530,7 +528,7 @@ void initialize_spatial_player_information(
     }
     i = 0;
     while (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
-        int random = seeded_rand(rng_seed, PLAYERS_IN_TEAM + JOKER_COUNT);
+        int random = seeded_rand(&match->rngSeed, PLAYERS_IN_TEAM + JOKER_COUNT);
         if (battingTeamPlacement[random] == -1) {
             battingTeamPlacement[random] = i;
             i++;

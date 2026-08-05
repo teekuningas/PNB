@@ -28,7 +28,7 @@ static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
 static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
 static int init_lights(StateInfo* stateInfo);
 static void init_cam_settings(StateInfo* stateInfo);
-static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed);
+static void load_game_screen_settings(StateInfo* stateInfo);
 
 int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
 {
@@ -61,7 +61,7 @@ int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
     BallInfo* ballInfo = &(stateInfo->match->ballInfo);
     CameraState* cs = &(stateInfo->match->cameraState);
@@ -69,7 +69,7 @@ void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
     if (stateInfo->changeScreen == 1) {
         stateInfo->changeScreen = 0;
         stateInfo->updated = 1;
-        load_game_screen_settings(stateInfo, rng_seed);
+        load_game_screen_settings(stateInfo);
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -133,7 +133,7 @@ void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* 
     }
 
     // and here will a lot of logic code.
-    update_game_frame(stateInfo, menuInfo, rng_seed);
+    update_game_frame(stateInfo, menuInfo);
 }
 
 void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
@@ -492,15 +492,13 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     }
 }
 
-static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed)
+static void load_game_screen_settings(StateInfo* stateInfo)
 {
     stateInfo->match->uiState.gameInfoEventTimer = -1;
     // initialize cam
     init_cam_settings(stateInfo);
     // Physical world + flow + team setup
-    reset_for_new_half_inning(
-        stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules, rng_seed
-    );
+    reset_for_new_half_inning(stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
     referee_reset_for_new_inning(
         &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState

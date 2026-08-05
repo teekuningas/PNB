@@ -38,9 +38,7 @@ ScenarioContext* create_scenario(void)
     // In tests, we don't have a game loop that responds to changeScreen=1,
     // so manually call reset_for_new_half_inning to initialize physical+flow+team,
     // then referee_reset_for_new_inning to clear all referee state (from-menu init).
-    reset_for_new_half_inning(
-        ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules, &ctx->seed
-    );
+    reset_for_new_half_inning(ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
     referee_reset_for_new_inning(
         &ctx->state->rules->referee, &ctx->state->rules->halfInningState, &ctx->state->rules->betweenPitchState
     );
@@ -273,7 +271,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         ConsolidationOutput consolidation_output;
         consolidation_update(
             ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, rules,
-            &ctx->menu, &ctx->seed, &consolidation_output
+            &ctx->menu, &consolidation_output
         );
         // Handle screen transition in test context
         if (consolidation_output.request_screen_change) {

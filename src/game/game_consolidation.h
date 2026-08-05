@@ -19,8 +19,7 @@ void consolidation_init(GameFlowState* gameFlowState);
 // The GameRulesState* is passed for reset recipes that need to read/reset contest state.
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
-    ConsolidationOutput* output
+    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
 );
 
 #endif
