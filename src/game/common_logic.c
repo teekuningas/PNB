@@ -11,47 +11,6 @@
 #include "referee.h"
 #include "rules_pure/player_utils.h"
 
-// Wrapper functions for backward compatibility
-// These now call the pure vector_math functions
-int is_vector_small_enough_sphere(Vector3D* vector, float limit)
-{
-    return vec3_is_small_enough_sphere(vector, limit);
-}
-
-int is_vector_small_enough_circle_xzv(Vector3D* vector, float limit)
-{
-    return vec3_is_small_enough_circle_xz_v(vector, limit);
-}
-
-int is_vector_small_enough_circle_xz(float dx, float dz, float limit)
-{
-    return vec3_is_small_enough_circle_xz(dx, dz, limit);
-}
-
-void set_vector_xyz(Vector3D* vector, float x, float y, float z)
-{
-    vec3_set_xyz(vector, x, y, z);
-}
-
-void set_vector_v(Vector3D* vector1, Vector3D* vector2)
-{
-    vec3_set_from_vector(vector1, vector2);
-}
-
-void set_vector_xz(Vector3D* vector, float x, float z)
-{
-    vec3_set_xz(vector, x, z);
-}
-
-void add_to_vector_xz(Vector3D* vector, float x, float z)
-{
-    vec3_add_xz(vector, x, z);
-}
-
-void add_to_vector_v(Vector3D* vector1, Vector3D* vector2)
-{
-    vec3_add_vector(vector1, vector2);
-}
 /*
     Index is index of the player in the playerInfo-array.
     stop_movement stops arrow key initiated movement. Many situations
@@ -88,7 +47,7 @@ void smooth_out_movement(MatchSession* match)
     }
 }
 // this is for batting team players
-void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index)
+void stop_target_looking_player(PlayerInfo* playerInfo, int index)
 {
     playerInfo[index].cPI.moving = 0;
     playerInfo[index].cPI.running = 0;
@@ -96,7 +55,7 @@ void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* play
     playerInfo[index].cPI.lastLastLocationUpdate = 1;
 }
 
-void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
+void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i)
 {
     // simply set player to orient towards the ball
     if (i != -1) {
@@ -107,7 +66,7 @@ void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
     }
 }
 
-void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
+void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
         float dx;
@@ -129,7 +88,7 @@ void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
         // set the velocity
 
         speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED / 16) * playerInfo[index].bTPI.speed;
-        set_vector_xz(&playerInfo[index].tPI.velocity, dx * speed / norm, dz * speed / norm);
+        vec3_set_xz(&playerInfo[index].tPI.velocity, dx * speed / norm, dz * speed / norm);
         // we are running now, ( so for example our orientation wont change now unless we stop running)
         playerInfo[index].cPI.running = 1;
         // we are moving too
@@ -148,7 +107,7 @@ void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
     this function puts player with index in the argument moving to some specified
     target by walking. is used for both fielders and batting team.
 */
-void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
+void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
         // cant start this if throw is going on. when ball is thrown the
@@ -172,7 +131,7 @@ void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
             norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
 
             if (norm < EPSILON) norm = 1.0f;
-            set_vector_xz(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
+            vec3_set_xz(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
             // if the player for some reason was running before this, set that to 0.
             // could happen for example if baserunner gets out.
             playerInfo[index].cPI.running = 0;

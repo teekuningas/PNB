@@ -1,5 +1,6 @@
 #include "actions/batting_system.h"
 #include "common_logic.h"
+#include "vector_math.h"
 #include "execute_actions.h"
 #include "actions/pitching_system.h"
 #include "actions_pure/batting_physics.h"
@@ -253,14 +254,14 @@ void update_batting(
             float dx2;
             float dz2;
             // update lastLocation for smooth movement
-            set_vector_xz(
+            vec3_set_xz(
                 &(match->playerInfo[batterIndex].tPI.lastLocation), match->playerInfo[batterIndex].tPI.location.x,
                 match->playerInfo[batterIndex].tPI.location.z
             );
             // update location with sine and cosine to new location on the circle centered at pitch plate.
             // radius will be given by batter_advance relative to batting radius
             // angle is given by batter_angle and the default ZERO_BATTING_ANGLE
-            set_vector_xz(
+            vec3_set_xz(
                 &(match->playerInfo[batterIndex].tPI.location),
                 (float)(fieldPositions->pitchPlate.x +
                         cos(ZERO_BATTING_ANGLE + match->pendingActionState.batter_angle) *
@@ -275,7 +276,7 @@ void update_batting(
             dz = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].tPI.location.z;
             dx2 = (float)(cos(BATTER_ANGLE_FIX) * dx - sin(BATTER_ANGLE_FIX) * dz);
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
-            set_vector_xz(&(match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
+            vec3_set_xz(&(match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
 
             match->pendingActionState.update_batter_location_and_orientation = 0;
         }

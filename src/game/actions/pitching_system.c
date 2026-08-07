@@ -1,5 +1,6 @@
 #include "actions/pitching_system.h"
 #include "common_logic.h"
+#include "vector_math.h"
 #include "base_logic.h"
 #include "base_control.h"
 
@@ -61,7 +62,7 @@ static void begin_windup(MatchSession* match)
     match->playerInfo[pitcher].tPI.orientation.x = -1.0f;
     match->playerInfo[pitcher].tPI.orientation.z = 0.0f;
     // the ball rises from the centre of the plate
-    set_vector_xz(&(match->ballInfo.location), 0.0f, 0.0f);
+    vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
 
     match->pRAI.pitch_state = PITCH_STAGE_WINDUP;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_PITCHING;
@@ -84,7 +85,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->ballInfo.currentFlightHasHitGround = 0;
     match->ballInfo.onGround = 0;
     match->ballInfo.hitsGroundToUnWound = 0;
-    set_vector_xyz(&(match->ballInfo.velocity), v.x, v.y, v.z);
+    vec3_set_xyz(&(match->ballInfo.velocity), v.x, v.y, v.z);
 
     // nudge the pitcher aside as the ball leaves
     target.x = match->playerInfo[pitcher].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;

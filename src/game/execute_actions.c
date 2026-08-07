@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "execute_actions.h"
 #include "common_logic.h"
+#include "vector_math.h"
 #include "actions/pitching_system.h"
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"
@@ -257,7 +258,7 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
     ballInfo->moving = 1;
 
     // Set the velocity
-    set_vector_xyz(&(ballInfo->velocity), x, y, z);
+    vec3_set_xyz(&(ballInfo->velocity), x, y, z);
 }
 
 // Base running — the shared actualizer for the RunIntent command (set by the human in

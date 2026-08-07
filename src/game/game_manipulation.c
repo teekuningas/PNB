@@ -79,13 +79,13 @@ void init_game_manipulation(GameFlowState* gameFlowState)
 static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState)
 {
     if (match->ballInfo.lastLastLocationUpdate == 1) {
-        set_vector_v(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
+        vec3_set_from_vector(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
         match->ballInfo.lastLastLocationUpdate = 0;
     }
     // check first if ball's moving flag is 1, so that no overhead of doing updates on nothing.
     if (match->ballInfo.moving == 1) {
         // update lastLocation and location.
-        set_vector_v(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
+        vec3_set_from_vector(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
         physics_apply_velocity(&(match->ballInfo.location), &(match->ballInfo.velocity));
         if (match->pII.hasBallIndex == -1) {
             // if ball is free then we make sure that it stays within the play area.
@@ -125,7 +125,7 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                         match->pRAI.refresh_catch_and_change = 1;
                         // change the direction of y-velocity
                         match->ballInfo.velocity.y = -match->ballInfo.velocity.y;
-                        set_vector_xyz(
+                        vec3_set_xyz(
                             &(match->ballInfo.velocity), BALL_SLOW_FACTOR_X * match->ballInfo.velocity.x,
                             BALL_SLOW_FACTOR_Y * match->ballInfo.velocity.y,
                             BALL_SLOW_FACTOR_Z * match->ballInfo.velocity.z
@@ -149,14 +149,14 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
             } else {
                 // if we are rolling on the ground already, slow down the velocity a bit and stop ball if x and z
                 // -velocities are small enough
-                set_vector_xz(
+                vec3_set_xz(
                     &(match->ballInfo.velocity), BALL_ON_GROUND_SLOW_FACTOR * match->ballInfo.velocity.x,
                     BALL_ON_GROUND_SLOW_FACTOR * match->ballInfo.velocity.z
                 );
-                if (is_vector_small_enough_circle_xzv(&(match->ballInfo.velocity), 0.01f)) {
+                if (vec3_is_small_enough_circle_xz_v(&(match->ballInfo.velocity), 0.01f)) {
                     match->ballInfo.moving = 0;
                     match->ballInfo.lastLastLocationUpdate = 1;
-                    set_vector_xyz(&(match->ballInfo.velocity), 0.0f, 0.0f, 0.0f);
+                    vec3_set_xyz(&(match->ballInfo.velocity), 0.0f, 0.0f, 0.0f);
                 }
             }
         }
@@ -172,7 +172,7 @@ static void update_ball_to_player(MatchSession* match)
             if (match->ballInfo.needsMoveUpdate == 1) {
                 match->ballInfo.moving = 1;
                 match->ballInfo.needsMoveUpdate = 0;
-                set_vector_xyz(
+                vec3_set_xyz(
                     &(match->ballInfo.velocity), match->playerInfo[match->pII.hasBallIndex].tPI.velocity.x, 0.0f,
                     match->playerInfo[match->pII.hasBallIndex].tPI.velocity.z
                 );
@@ -183,7 +183,7 @@ static void update_ball_to_player(MatchSession* match)
             if (match->ballInfo.moving == 1) {
                 match->ballInfo.moving = 0;
                 match->ballInfo.lastLastLocationUpdate = 1;
-                set_vector_xyz(&(match->ballInfo.velocity), 0.0f, 0.0f, 0.0f);
+                vec3_set_xyz(&(match->ballInfo.velocity), 0.0f, 0.0f, 0.0f);
             }
         }
     }
@@ -212,7 +212,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                 distance.z = match->playerInfo[i].tPI.location.z - match->ballInfo.location.z;
                 distance.y = 2 * match->playerInfo[i].tPI.location.y / 5 - match->ballInfo.location.y;
                 // check if ball is close enough to this particular player.
-                if (is_vector_small_enough_sphere(&distance, limit) == 1) {
+                if (vec3_is_small_enough_sphere(&distance, limit) == 1) {
                     // weird things would happen
                     int j;
                     int baseCatcherFlag = 0;
@@ -231,7 +231,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                     // to avoid annyoing twitching we need to check that catching player is far enough
                     if (match->pII.lastHadBallIndex == -1 || match->ballInfo.currentFlightHasHitGround == 1 ||
                         baseCatcherFlag == 1 ||
-                        !is_vector_small_enough_circle_xz(p1x - p2x, p1z - p2z, PLAYER_TOO_CLOSE_TO_CATCH_LIMIT)) {
+                        !vec3_is_small_enough_circle_xz(p1x - p2x, p1z - p2z, PLAYER_TOO_CLOSE_TO_CATCH_LIMIT)) {
                         // ensure that player that previously was controlled doesnt continue his key-controlled movement
                         // when key is still down when control changes. note this could be different player than the one
                         // who caught the ball.
@@ -279,7 +279,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                         match->ballInfo.onGround = 0;
                         match->ballInfo.currentFlightHasHitGround = 0;
                         // and set ball's location to player's location (X, Z), but use proper held height (Y)
-                        set_vector_v(&(match->ballInfo.location), &(match->playerInfo[i].tPI.location));
+                        vec3_set_from_vector(&(match->ballInfo.location), &(match->playerInfo[i].tPI.location));
                         match->ballInfo.location.y = BALL_HEIGHT_WITH_PLAYER;
                     }
                 }
@@ -300,13 +300,13 @@ static void check_if_near_home_location(MatchSession* match)
             float dz = match->playerInfo[i].tPI.location.z - match->playerInfo[i].tPI.homeLocation.z;
             // if we are already close, we check if happen to have gone out.
             if (match->playerInfo[i].cTPI.isNearHomeLocation == 1) {
-                if (is_vector_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 0) {
+                if (vec3_is_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 0) {
                     match->playerInfo[i].cTPI.isNearHomeLocation = 0;
                 }
             }
             // if are out we check if happened to wander in.
             else if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
-                if (is_vector_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 1) {
+                if (vec3_is_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 1) {
                     match->playerInfo[i].cTPI.isNearHomeLocation = 1;
                 }
             }
@@ -600,7 +600,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
     for (i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         // players only moved if moving-flag is set to 1.
         if (match->playerInfo[i].cPI.moving == 1) {
-            set_vector_xz(
+            vec3_set_xz(
                 &match->playerInfo[i].tPI.lastLocation, match->playerInfo[i].tPI.location.x,
                 match->playerInfo[i].tPI.location.z
             );
@@ -623,7 +623,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                 }
             }
             // update the location by player's current velocity.
-            add_to_vector_xz(
+            vec3_add_xz(
                 &match->playerInfo[i].tPI.location, match->playerInfo[i].tPI.velocity.x,
                 match->playerInfo[i].tPI.velocity.z
             );
@@ -646,7 +646,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                 // journey up.
                 float dx = match->playerInfo[i].tPI.location.x - match->playerInfo[i].tPI.targetLocation.x;
                 float dz = match->playerInfo[i].tPI.location.z - match->playerInfo[i].tPI.targetLocation.z;
-                if (is_vector_small_enough_circle_xz(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
+                if (vec3_is_small_enough_circle_xz(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
                     int needToStop = 1;
                     if (i == activeBatterIndex && match->playerRuntime[i].goingForward == 0) {
                         prepare_batter(match);
@@ -679,7 +679,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                                 target.x = match->playerInfo[i].tPI.homeLocation.x;
                                 target.z = match->playerInfo[i].tPI.homeLocation.z;
                             } else {
-                                stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                                stop_target_looking_player(match->playerInfo, i);
                                 set_orientation(match->playerInfo, &(match->ballInfo), i);
                                 continue;
                             }
@@ -757,7 +757,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                                             match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
                                             match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
                                         }
-                                        stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                                        stop_target_looking_player(match->playerInfo, i);
                                         needToStop = 0;
                                     }
                                 }
@@ -767,7 +767,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                     // if procedures higher didnt handle stopping themselves
                     // we stop the player here.
                     if (needToStop == 1) {
-                        stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                        stop_target_looking_player(match->playerInfo, i);
                         set_orientation(match->playerInfo, &(match->ballInfo), i);
                     }
                 }
@@ -775,7 +775,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
         }
         // if we dont move, it could be that we just stopped, so lets see if we should update our lastLocation.
         if (match->playerInfo[i].cPI.lastLastLocationUpdate == 1) {
-            set_vector_xz(
+            vec3_set_xz(
                 &match->playerInfo[i].tPI.lastLocation, match->playerInfo[i].tPI.location.x,
                 match->playerInfo[i].tPI.location.z
             );
