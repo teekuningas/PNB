@@ -3,14 +3,6 @@
 
 #include "globals.h"
 
-int is_vector_small_enough_sphere(Vector3D* vector, float limit);
-int is_vector_small_enough_circle_xzv(Vector3D* vector, float limit);
-int is_vector_small_enough_circle_xz(float dx, float dz, float limit);
-void set_vector_xyz(Vector3D* vector, float x, float y, float z);
-void set_vector_v(Vector3D* vector1, Vector3D* vector2);
-void set_vector_xz(Vector3D* vector, float x, float z);
-void add_to_vector_xz(Vector3D* vector, float x, float z);
-void add_to_vector_v(Vector3D* vector1, Vector3D* vector2);
 void stop_movement(PlayerInfo* playerInfo, int index);
 void smooth_out_movement(MatchSession* match); // Still needs ActionFlags
 void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index);
