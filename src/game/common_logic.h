@@ -5,10 +5,10 @@
 
 void stop_movement(PlayerInfo* playerInfo, int index);
 void smooth_out_movement(MatchSession* match); // Still needs ActionFlags
-void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index);
-void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i);
-void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
-void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target);
+void stop_target_looking_player(PlayerInfo* playerInfo, int index);
+void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i);
+void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target);
+void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target);
 void move_player_out(
     PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
 );

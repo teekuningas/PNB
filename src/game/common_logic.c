@@ -47,7 +47,7 @@ void smooth_out_movement(MatchSession* match)
     }
 }
 // this is for batting team players
-void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, int index)
+void stop_target_looking_player(PlayerInfo* playerInfo, int index)
 {
     playerInfo[index].cPI.moving = 0;
     playerInfo[index].cPI.running = 0;
@@ -55,7 +55,7 @@ void stop_target_looking_player(PlayerInfo* playerInfo, PlayerRuntimeState* play
     playerInfo[index].cPI.lastLastLocationUpdate = 1;
 }
 
-void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
+void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i)
 {
     // simply set player to orient towards the ball
     if (i != -1) {
@@ -66,7 +66,7 @@ void set_orientation(PlayerInfo* playerInfo, BallInfo* ballInfo, int i)
     }
 }
 
-void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
+void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
         float dx;
@@ -107,7 +107,7 @@ void run_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
     this function puts player with index in the argument moving to some specified
     target by walking. is used for both fielders and batting team.
 */
-void move_to_target(PlayerInfo* playerInfo, int index, Vector3D* target)
+void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
         // cant start this if throw is going on. when ball is thrown the

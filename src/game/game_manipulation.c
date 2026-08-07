@@ -679,7 +679,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                                 target.x = match->playerInfo[i].tPI.homeLocation.x;
                                 target.z = match->playerInfo[i].tPI.homeLocation.z;
                             } else {
-                                stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                                stop_target_looking_player(match->playerInfo, i);
                                 set_orientation(match->playerInfo, &(match->ballInfo), i);
                                 continue;
                             }
@@ -757,7 +757,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                                             match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
                                             match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
                                         }
-                                        stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                                        stop_target_looking_player(match->playerInfo, i);
                                         needToStop = 0;
                                     }
                                 }
@@ -767,7 +767,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
                     // if procedures higher didnt handle stopping themselves
                     // we stop the player here.
                     if (needToStop == 1) {
-                        stop_target_looking_player(match->playerInfo, match->playerRuntime, i);
+                        stop_target_looking_player(match->playerInfo, i);
                         set_orientation(match->playerInfo, &(match->ballInfo), i);
                     }
                 }
