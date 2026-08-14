@@ -68,11 +68,6 @@ int base_cmp(BaseID a, BaseID b);
 int base_to_int_index(BaseID id);
 
 /**
- * Checks if a player is in a protected state (safe on base, at bat, or walking freely).
- * This represents general immunity from being forced out while occupying a base.
- */
-
-/**
  * Checks if a player is safe from being wounded by a fly ball catch (koppi).
  * In Pesäpallo, a runner is safe if they have not left their original base,
  * or if they are taking a free walk.
