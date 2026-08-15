@@ -442,10 +442,8 @@ static void record_out_capped(HalfInningState* halfInningState, const Scoreboard
     halfInningState->event = EVENT_OUT;
 }
 
-static void update_force_outs(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
-    BetweenPitchState* betweenPitchState
-)
+static void
+update_force_outs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase)
 {
     const MatchSession* game = stateInfo->match;
 
@@ -580,6 +578,35 @@ static void update_tuplahaava_logic(
     }
 }
 
+// §41/§42: the batting team scores one run. Every scoring path ends in exactly these three writes, and
+// they are the ONLY thing those paths share. What the run then implies is specific to the rule that
+// awarded it and deliberately stays at the call site: which player flag it sets (`hasScored` removes the
+// player; `runOfHonorScored` leaves them on third), whether it refreshes the batting pool, and the §42
+// overtaking check. Folding those in would need a mode flag per rule — four rules wearing one name.
+static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState)
+{
+    const int battingTeamIndex = get_batting_team_index(scoreboard);
+    scoreboard->teams[battingTeamIndex].runs += 1;
+    halfInningState->runsInTheInning += 1;
+    halfInningState->event = EVENT_RUN_SCORED;
+}
+
+// The period-end test that follows every award. `should_period_end` (rules_pure) is the rule itself; the
+// duplication was only ever the four scoreboard-derived arguments it always reads. Bug #1 was one of these
+// five sites missing the check entirely — a shape that is now unrepresentable.
+static void end_period_if_decided(HalfInningState* halfInningState, const Scoreboard* scoreboard)
+{
+    const int battingTeamIndex = get_batting_team_index(scoreboard);
+    const int catchingTeamIndex = (battingTeamIndex + 1) % 2;
+
+    if (should_period_end(
+            scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
+            scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+        )) {
+        halfInningState->endPeriod = 1;
+    }
+}
+
 static void update_runs(
     const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState,
     BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard
@@ -603,9 +630,7 @@ static void update_runs(
                                     (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
                     // Check for potential run
-                    int regularRun = is_regular_run(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded
-                    );
+                    int regularRun = is_regular_run(game->playerInfo[i].bTPI.baseId, isWounded);
 
                     int runOfHonor = is_run_of_honor(
                         game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
@@ -635,9 +660,7 @@ static void update_runs(
                     int isWounded = (game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) ||
                                     (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
-                    int regularRun = is_regular_run(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded
-                    );
+                    int regularRun = is_regular_run(game->playerInfo[i].bTPI.baseId, isWounded);
 
                     int runOfHonor = is_run_of_honor(
                         game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
@@ -645,10 +668,7 @@ static void update_runs(
                     );
 
                     if (regularRun) {
-                        halfInningState->event = EVENT_RUN_SCORED;
-                        int battingTeamIndex = get_batting_team_index(scoreboard);
-                        scoreboard->teams[battingTeamIndex].runs += 1;
-                        halfInningState->runsInTheInning += 1;
+                        award_run(scoreboard, halfInningState);
 
                         referee->battingPlayers[i].hasScored = 1;
 
@@ -656,10 +676,7 @@ static void update_runs(
                             playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
                         }
                     } else if (runOfHonor) {
-                        halfInningState->event = EVENT_RUN_SCORED;
-                        int battingTeamIndex = get_batting_team_index(scoreboard);
-                        scoreboard->teams[battingTeamIndex].runs += 1;
-                        halfInningState->runsInTheInning += 1;
+                        award_run(scoreboard, halfInningState);
 
                         referee->battingPlayers[i].runOfHonorScored = 1;
                         // Do NOT set hasScored=1, as that removes the player. Run of Honor players stay at 3rd.
@@ -683,20 +700,12 @@ static void update_runs(
                 }
             }
 
-            // Period End Check
-            int battingTeamIndex = get_batting_team_index(scoreboard);
-            int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-            if (should_period_end(
-                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
-                )) {
-                halfInningState->endPeriod = 1;
-            }
+            end_period_if_decided(halfInningState, scoreboard);
         }
     }
 }
 
-static void update_strikes(RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events)
+static void update_strikes(HalfInningState* halfInningState, const GameEvents* events)
 {
     // 5. Strike Management
     // The referee is the sole authority on counting strikes based on physical events.
@@ -734,8 +743,8 @@ static void update_pitch_resolution(
 }
 
 static void update_free_walk_resolution(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters,
-    Scoreboard* scoreboard, const FlowControl* flowControl, const GameEvents* events
+    RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
+    const FlowControl* flowControl, const GameEvents* events
 )
 {
     // No free walk processing once end-of-inning has been decided
@@ -745,8 +754,6 @@ static void update_free_walk_resolution(
     if (events->freeWalkAccepted && flowControl->freeWalkIndex != -1) {
         int i = flowControl->freeWalkIndex;
         BaseID sourceBase = flowControl->freeWalkBase;
-        int battingTeamIndex = get_batting_team_index(scoreboard);
-        int catchingTeamIndex = (battingTeamIndex + 1) % 2;
 
         if (scoreboard->period >= 4) {
             // Homerun Contest / Super Inning Logic
@@ -754,25 +761,15 @@ static void update_free_walk_resolution(
             referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
             referee->battingPlayers[i].hasScored = 1;
 
-            // Add run
-            scoreboard->teams[battingTeamIndex].runs += 1;
-            halfInningState->runsInTheInning += 1;
+            // Add run — a free walk on 3+ balls is worth two here
+            award_run(scoreboard, halfInningState);
 
             if (halfInningState->balls >= 3) {
-                scoreboard->teams[battingTeamIndex].runs += 1;
-                halfInningState->runsInTheInning += 1;
+                award_run(scoreboard, halfInningState);
                 halfInningState->event = EVENT_TWO_RUNS_SCORED;
-            } else {
-                halfInningState->event = EVENT_RUN_SCORED;
             }
 
-            // Period End Check
-            if (should_period_end(
-                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
-                )) {
-                halfInningState->endPeriod = 1;
-            }
+            end_period_if_decided(halfInningState, scoreboard);
 
         } else {
             // Normal Game Logic
@@ -788,23 +785,17 @@ static void update_free_walk_resolution(
                 referee->battingPlayers[i].hasScored = 1;
 
                 // Add run
-                scoreboard->teams[battingTeamIndex].runs += 1;
-                halfInningState->runsInTheInning += 1;
+                award_run(scoreboard, halfInningState);
 
+                // NOTE: this is the only pool refresh that also clears `noMorePlayers`; the three in
+                // update_runs / resolve_pending_runs do not. Left exactly as-is — whether that is a real
+                // rule difference or a gap in the others is a rules question, not a refactoring one.
                 if (halfInningState->runsInTheInning % 2 == 0) {
                     playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
                     playerCounters->noMorePlayers = 0;
                 }
-                halfInningState->event = EVENT_RUN_SCORED;
 
-                // Period End Check
-                if (should_period_end(
-                        scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-                        scoreboard->teams[battingTeamIndex].period0Runs,
-                        scoreboard->teams[catchingTeamIndex].period0Runs
-                    )) {
-                    halfInningState->endPeriod = 1;
-                }
+                end_period_if_decided(halfInningState, scoreboard);
             }
         }
 
@@ -814,8 +805,8 @@ static void update_free_walk_resolution(
 }
 
 static void resolve_pending_runs(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard
+    RefereeState* referee, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
+    PlayerCounters* playerCounters, Scoreboard* scoreboard
 )
 {
     // No run resolution once end-of-inning has been decided
@@ -834,10 +825,7 @@ static void resolve_pending_runs(
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (referee->battingPlayers[i].hasPendingRun) {
                     // Award Regular Run
-                    halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = get_batting_team_index(scoreboard);
-                    scoreboard->teams[battingTeamIndex].runs += 1;
-                    halfInningState->runsInTheInning += 1;
+                    award_run(scoreboard, halfInningState);
 
                     referee->battingPlayers[i].hasScored = 1;
                     referee->battingPlayers[i].hasPendingRun = 0;
@@ -848,25 +836,14 @@ static void resolve_pending_runs(
                 }
                 if (referee->battingPlayers[i].hasPendingRunOfHonor) {
                     // Award Run of Honor
-                    halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = get_batting_team_index(scoreboard);
-                    scoreboard->teams[battingTeamIndex].runs += 1;
-                    halfInningState->runsInTheInning += 1;
+                    award_run(scoreboard, halfInningState);
 
                     referee->battingPlayers[i].runOfHonorScored = 1;
                     referee->battingPlayers[i].hasPendingRunOfHonor = 0;
                 }
             }
 
-            // Period End Check (Bug #1 fix: was missing from resolve_pending_runs)
-            int battingTeamIndex = get_batting_team_index(scoreboard);
-            int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-            if (should_period_end(
-                    scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-                    scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
-                )) {
-                halfInningState->endPeriod = 1;
-            }
+            end_period_if_decided(halfInningState, scoreboard);
         }
     }
     // Trigger 2: Catch Confirmed (Wounding Evaluation Finished)
@@ -880,10 +857,7 @@ static void resolve_pending_runs(
                 // Only award run if player was NOT wounded by the catch
                 if (referee->battingPlayers[i].status < PLAYER_STATUS_WOUND_MARKED) {
                     // Award Regular Run
-                    halfInningState->event = EVENT_RUN_SCORED;
-                    int battingTeamIndex = get_batting_team_index(scoreboard);
-                    scoreboard->teams[battingTeamIndex].runs += 1;
-                    halfInningState->runsInTheInning += 1;
+                    award_run(scoreboard, halfInningState);
 
                     referee->battingPlayers[i].hasScored = 1;
                 } else {
@@ -903,22 +877,11 @@ static void resolve_pending_runs(
             }
         }
 
-        // Period End Check (Bug #1 fix: was missing from resolve_pending_runs)
-        int battingTeamIndex = get_batting_team_index(scoreboard);
-        int catchingTeamIndex = (battingTeamIndex + 1) % 2;
-        if (should_period_end(
-                scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-                scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
-            )) {
-            halfInningState->endPeriod = 1;
-        }
+        end_period_if_decided(halfInningState, scoreboard);
     }
 }
 
-static void update_game_state_flags(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
-    BetweenPitchState* betweenPitchState
-)
+static void update_game_state_flags(const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
     // 6. Game State Flags
 
@@ -1170,25 +1133,22 @@ void update_referee(
 
         // 3. Safety Pipeline
         update_safety_status(stateInfo, refereeState);
-        update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase, betweenPitchState);
+        update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase);
         update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase);
         update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
 
         // 3.5 Resolve Pending Runs (Milestone 17)
-        resolve_pending_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
+        resolve_pending_runs(refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
 
         // 4. Strikes
-        update_strikes(refereeState, halfInningState, &stateInfo->match->gameEvents);
+        update_strikes(halfInningState, &stateInfo->match->gameEvents);
         update_pitch_resolution(stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents);
         update_free_walk_resolution(
-            stateInfo, refereeState, halfInningState, playerCounters, scoreboard, flowControl,
-            &stateInfo->match->gameEvents
+            refereeState, halfInningState, playerCounters, scoreboard, flowControl, &stateInfo->match->gameEvents
         );
 
         // 5. Game State Flags
-        update_game_state_flags(
-            stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState
-        );
+        update_game_state_flags(&stateInfo->match->gameEvents, betweenPitchState);
     }
 
     // ========================================================================

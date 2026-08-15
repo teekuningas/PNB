@@ -1,6 +1,6 @@
 #include "rules_runs.h"
 
-int is_regular_run(BaseID player_base, BaseID player_original_base, int player_is_wounded)
+int is_regular_run(BaseID player_base, int player_is_wounded)
 {
     // §41 Juoksu (Run): safe at home base (BASE_HOME_SCORED)
     if (player_base == BASE_HOME_SCORED && player_is_wounded == 0) {
