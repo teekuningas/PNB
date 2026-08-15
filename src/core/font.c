@@ -16,6 +16,7 @@
 
 static void printCharacter(char character);
 static void printCharacter2D(char character);
+static void renderCharacter(float top, float bottom, float left, float right);
 static void renderCharacter2D(float top, float bottom, float left, float right);
 
 static GLuint fontTexture;
@@ -80,7 +81,7 @@ void print_text_2d(const char* str, unsigned int len, float x, float y, float si
     }
 }
 
-void renderCharacter(float top, float bottom, float left, float right)
+static void renderCharacter(float top, float bottom, float left, float right)
 {
     // simple immediate mode drawing.
     glBegin(GL_QUADS);
@@ -254,7 +255,7 @@ int clean_font()
     return 0;
 }
 
-void renderCharacter2D(float top, float bottom, float left, float right)
+static void renderCharacter2D(float top, float bottom, float left, float right)
 {
     // 2D immediate mode drawing for ortho projection.
     // Vertex order is Clockwise (TL -> BL -> BR -> TR) to match glFrontFace(GL_CW)

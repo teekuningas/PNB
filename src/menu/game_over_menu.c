@@ -4,11 +4,6 @@
 #include "globals.h"
 #include "input.h"
 
-void initGameOverMenu(void)
-{
-    // This menu is stateless, so nothing to do here
-}
-
 MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates)
 {
     if (any_human_released(keyStates, KEY_2)) {

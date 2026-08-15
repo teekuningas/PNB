@@ -93,6 +93,25 @@ long sim_run_until(SimGame* g, SimPredicate pred, long max_frames);
 
 void sim_destroy(SimGame* g);
 
+/* ---- World capture / restore ------------------------------------------- *
+ * Everything that can influence a future frame: the World (ARCHITECTURE_VISION.md
+ * §8.8 — MatchSession + GameRulesState) plus the controller memory that sits
+ * beside it and outside it (the human's ClientInputState, the AI's
+ * AIControllerState). Capture it, tick on, restore it, and the run resumes as if
+ * nothing had happened — which is what lets a test re-tick a stretch of play, or
+ * probe a stage with a perturbed input and then put the world back. */
+typedef struct {
+    MatchSession match;
+    GameRulesState rules;
+    ClientInputState clientInput;
+    AIControllerState aiController;
+    MenuInfo menu;
+    long frame;
+} SimWorldCapture;
+
+void sim_capture_world(SimWorldCapture* cap, const SimGame* g);
+void sim_restore_world(const SimWorldCapture* cap, SimGame* g);
+
 /* ---- Common stop predicates -------------------------------------------- */
 
 /** True once the half-inning has rolled over (scoreboard.inning advanced). */

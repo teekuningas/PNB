@@ -180,6 +180,26 @@ void sim_destroy(SimGame* g)
     free(g);
 }
 
+void sim_capture_world(SimWorldCapture* cap, const SimGame* g)
+{
+    memcpy(&cap->match, g->state->match, sizeof(MatchSession));
+    memcpy(&cap->rules, g->state->rules, sizeof(GameRulesState));
+    memcpy(&cap->clientInput, g->state->clientInput, sizeof(ClientInputState));
+    memcpy(&cap->aiController, g->state->aiController, sizeof(AIControllerState));
+    cap->menu = g->menu;
+    cap->frame = g->frame;
+}
+
+void sim_restore_world(const SimWorldCapture* cap, SimGame* g)
+{
+    memcpy(g->state->match, &cap->match, sizeof(MatchSession));
+    memcpy(g->state->rules, &cap->rules, sizeof(GameRulesState));
+    memcpy(g->state->clientInput, &cap->clientInput, sizeof(ClientInputState));
+    memcpy(g->state->aiController, &cap->aiController, sizeof(AIControllerState));
+    g->menu = cap->menu;
+    g->frame = cap->frame;
+}
+
 int sim_pred_half_inning_ended(const SimGame* g)
 {
     return g->state->rules->scoreboard.inning != g->start_inning;
