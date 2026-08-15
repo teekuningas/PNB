@@ -5,7 +5,7 @@
 
 #include "stb_image.h"
 
-void drawMesh(MeshObject* mesh)
+static void drawMesh(MeshObject* mesh)
 {
     unsigned int i;
 

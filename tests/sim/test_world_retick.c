@@ -29,34 +29,9 @@
 // becomes possible — capture the World alone and replay a recorded message log, with no
 // controller running at all.
 
-typedef struct {
-    MatchSession match;
-    GameRulesState rules;
-    ClientInputState clientInput;
-    AIControllerState aiController;
-    MenuInfo menu;
-    long frame;
-} WorldCapture;
-
-static void capture(WorldCapture* cap, const SimGame* g)
-{
-    memcpy(&cap->match, g->state->match, sizeof(MatchSession));
-    memcpy(&cap->rules, g->state->rules, sizeof(GameRulesState));
-    memcpy(&cap->clientInput, g->state->clientInput, sizeof(ClientInputState));
-    memcpy(&cap->aiController, g->state->aiController, sizeof(AIControllerState));
-    cap->menu = g->menu;
-    cap->frame = g->frame;
-}
-
-static void restore(const WorldCapture* cap, SimGame* g)
-{
-    memcpy(g->state->match, &cap->match, sizeof(MatchSession));
-    memcpy(g->state->rules, &cap->rules, sizeof(GameRulesState));
-    memcpy(g->state->clientInput, &cap->clientInput, sizeof(ClientInputState));
-    memcpy(g->state->aiController, &cap->aiController, sizeof(AIControllerState));
-    g->menu = cap->menu;
-    g->frame = cap->frame;
-}
+// The capture itself (SimWorldCapture + sim_capture_world/sim_restore_world) lives in the
+// harness, because the law-1 probe in test_ai_ignores_frame_events.c needs exactly the same
+// thing: everything that can influence a future frame, put back byte for byte.
 
 // Fold the same curated fields the checksum observer uses, so a divergence anywhere in the
 // simulated world shows up as a different number.
@@ -85,12 +60,12 @@ int test_world_snapshot_retick_is_identical(void)
         g->frame++;
     }
 
-    WorldCapture cap;
-    capture(&cap, g);
+    SimWorldCapture cap;
+    sim_capture_world(&cap, g);
 
     unsigned long long first = tick_and_hash(g, 600);
 
-    restore(&cap, g);
+    sim_restore_world(&cap, g);
     unsigned long long second = tick_and_hash(g, 600);
 
     sim_destroy(g);
@@ -123,8 +98,8 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void)
         g->frame++;
     }
 
-    WorldCapture cap;
-    capture(&cap, g);
+    SimWorldCapture cap;
+    sim_capture_world(&cap, g);
 
     // Run until an engine draw has actually happened (the seed moved), so the comparison below
     // is testing something. Record how far that took, and replay exactly that far.
@@ -153,7 +128,7 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void)
     unsigned long long first = cs.hash;
     unsigned int seed_after_first = g->state->match->rngSeed;
 
-    restore(&cap, g);
+    sim_restore_world(&cap, g);
     g->state->match->rngSeed = seed_after_first; // the one field deliberately NOT rewound
     unsigned long long second = tick_and_hash(g, frames);
 

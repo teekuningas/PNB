@@ -59,7 +59,8 @@ _OBJ_SIMS = tests/sim/sim_harness.o \
             tests/sim/test_determinism.o \
             tests/sim/test_ai_offense_breakdown.o \
             tests/sim/test_no_batter_lock_stall.o \
-            tests/sim/test_world_retick.o
+            tests/sim/test_world_retick.o \
+            tests/sim/test_ai_ignores_frame_events.o
 
 # Scripted-human test objects (headless, drive the REAL action_invocations via scripted KeyStates,
 # live in tests/scripted/). Reuses the sim harness + observers (boot, real rosters, validator).
@@ -125,15 +126,13 @@ DEPS = $(OBJ_MAIN:.o=.d) $(OBJ_SCENARIO:.o=.d) $(OBJ_CONTRACT:.o=.d) $(OBJ_SIM:.
 main: $(OBJ_MAIN)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
-.PHONY: watch_task_agent
-watch_task_agent:
-	@echo "Starting Task Agent Watcher (Gemini)..."
-	@./.dev/scripts/task_agent.py
-
-.PHONY: watch_task_agent_copilot
-watch_task_agent_copilot:
-	@echo "Starting Task Agent Watcher (Copilot)..."
-	@./.dev/scripts/task_agent_copilot.py
+# The architectural numbers that may only go down (globals.h includers, dead
+# parameters, function-quality audit coverage, ...). The script carries the floors
+# and is the definition of each measurement; IDIR is passed in so the sweep can
+# never drift from the build's own include path.
+.PHONY: guardrails
+guardrails:
+	@./tools/guardrails.sh "$(IDIR)"
 
 .PHONY: test
 test: $(TEST_OBJ) tests/unit/test_runner.c

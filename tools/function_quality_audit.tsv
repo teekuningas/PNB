@@ -1,0 +1,75 @@
+# The function-quality audit ledger — the coverage half of docs PNB/PLAN.md §3.3.
+#
+# One row per .c file in src/, no exceptions. tools/guardrails.sh checks this list
+# against the tree, so a file can never be silently skipped: a new .c file has to be
+# classified here before `make guardrails` passes again. PLAN.md §3.3 keeps the audit
+# standard and the findings register; this file keeps the coverage.
+#
+# status    meaning
+#   audited   read against the four §3.3 questions; findings recorded in PLAN.md §3.3
+#   open      not audited yet, and nothing blocks auditing it
+#   deferred  a scheduled slice rewrites or deletes the file, so auditing it now is
+#             churn — the audit is part of THAT slice's exit criteria instead
+#
+# Tab-separated: status <TAB> path <TAB> note.
+open	src/core/field_layout.c	
+open	src/core/fill_player_data.c	
+open	src/core/fixtures.c	
+open	src/core/font.c	
+open	src/core/geometry.c	
+open	src/core/input.c	
+open	src/core/loadobj.c	
+open	src/core/main.c	
+open	src/core/platform.c	
+open	src/core/render.c	
+open	src/core/resource_manager.c	
+open	src/core/rng.c	
+open	src/core/sound.c	
+open	src/core/state_validator.c	
+open	src/core/vector_math.c	
+open	src/cup/cup.c	cup_menu const-correctness already tracked in §3.1
+deferred	src/game/action_invocations.c	§5.10 slice 1b rewrites this file (the INGEST gate)
+deferred	src/game/actions/batting_system.c	§5.10 slice 4 dissolves this file
+deferred	src/game/actions/pitching_system.c	§5.10 slices 2-4 dissolve this file
+deferred	src/game/actions/throwing_system.c	§5.10 slices 2-4 dissolve this file
+open	src/game/actions_pure/batting_physics.c	
+open	src/game/actions_pure/pitching_physics.c	
+deferred	src/game/ai/batting_ai.c	§5.10 slices 3-4 dissolve this file
+deferred	src/game/ai/catching_ai.c	§5.10 slice 2 splits this file along the law-5 seam
+open	src/game/ai_pure/batting_ai_strategy.c	
+open	src/game/ai_pure/catching_ai_strategy.c	
+open	src/game/ai_pure/pitching_ai_strategy.c	
+open	src/game/ball.c	
+open	src/game/common_logic.c	the L3 god-file row (§6)
+deferred	src/game/execute_actions.c	§5.10 slice 1b rewrites this file (the INGEST gate)
+open	src/game/game_consolidation.c	
+open	src/game/game_frame.c	
+open	src/game/game_manipulation.c	the L3 god-file row (§6)
+open	src/game/game_reset.c	
+open	src/game/game_screen.c	
+open	src/game/game_setup.c	
+open	src/game/immutable_world.c	
+open	src/game/player.c	
+audited	src/game/referee.c	the pilot audit — findings F1, F2
+audited	src/game/rules_pure/base_control.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/base_logic.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/player_utils.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/rules_outs.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/rules_runs.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/rules_strikes.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/scoring_helpers.c	purity claim verified genuine — findings F3-F11
+open	src/menu/batting_order_menu.c	
+open	src/menu/cup_menu.c	
+open	src/menu/front_menu.c	
+open	src/menu/game_over_menu.c	
+open	src/menu/help_menu.c	
+open	src/menu/homerun_contest_menu.c	
+open	src/menu/hutunkeitto_menu.c	
+open	src/menu/loading_screen_menu.c	
+open	src/menu/main_menu.c	
+open	src/menu/menu_helpers.c	
+open	src/menu/team_selection_menu.c	
+open	src/physics/ball_physics.c	
+open	src/physics/collision.c	
+open	src/renderer/ball_renderer.c	
+open	src/renderer/player_renderer.c	

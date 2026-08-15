@@ -13,4 +13,7 @@ int test_no_batter_lock_stall(void);
 int test_world_snapshot_retick_is_identical(void);
 int test_retick_diverges_when_engine_seed_is_not_restored(void);
 
+// Law 1 of §8.8 — controllers may not read (or write) frame events.
+int test_ai_ignores_frame_events(void);
+
 #endif /* ALL_SIMS_H */

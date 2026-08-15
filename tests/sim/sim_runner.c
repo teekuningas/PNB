@@ -18,6 +18,7 @@ int main(void)
     RUN_TEST(test_no_batter_lock_stall);
     RUN_TEST(test_world_snapshot_retick_is_identical);
     RUN_TEST(test_retick_diverges_when_engine_seed_is_not_restored);
+    RUN_TEST(test_ai_ignores_frame_events);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);
