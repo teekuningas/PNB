@@ -16,7 +16,14 @@ nix develop --command make main      # build the game
 Tests
 -----
 
-Five tiers, runnable individually:
+**One command before you commit:**
+
+```bash
+nix develop --command make check    # build + all five test tiers + guardrails
+```
+
+It stops at the first failure and changes nothing on disk. The five tiers are also
+runnable individually:
 
 ```bash
 nix develop --command make test              # unit       — pure functions
@@ -37,13 +44,17 @@ Guardrails
 
 Some architectural numbers here are only allowed to go down — files including the
 `globals.h` monolith, parameters no function reads, files still awaiting the
-function-quality audit. `make guardrails` measures them all and fails if any has
-crept back up, so they cannot drift between sessions:
+function-quality audit. `make check` runs these as its last step; `make guardrails`
+runs them alone:
 
 ```bash
 nix develop --command make guardrails
-nix develop --command make format        # clang-format in place; run before committing
+nix develop --command make format        # the fixer: clang-format, in place
 ```
 
-The floors live in `tools/guardrails.sh`. Improving one means lowering its floor in
-the same commit; the script says so when it notices.
+The floors live in `tools/guardrails.sh`, which is also the definition of each
+measurement. Improving a number means lowering its floor in the same commit; the
+script says so when it notices, so a ratchet cannot quietly slacken.
+
+`guardrails` only ever *reports* — including the formatting row. `make format` is the
+one target that edits your files, and it is deliberately separate.

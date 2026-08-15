@@ -19,6 +19,11 @@
 
 set -u
 
+# Every path below is repo-relative, so run from the repo root whoever invoked us and
+# from wherever. (No `set -e`: `grep -c` exits 1 on a count of zero, which is the
+# normal, healthy case for most of these rows.)
+cd "$(dirname "$0")/.." || exit 2
+
 IDIR="${1:-}"
 if [ -z "$IDIR" ]; then
     echo "guardrails.sh: expected the compiler include flags as \$1 (make passes \$(IDIR))" >&2

@@ -126,6 +126,22 @@ DEPS = $(OBJ_MAIN:.o=.d) $(OBJ_SCENARIO:.o=.d) $(OBJ_CONTRACT:.o=.d) $(OBJ_SIM:.
 main: $(OBJ_MAIN)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
+# The one target to run before committing: the build, all five test tiers, and the
+# guardrails. Nothing here mutates the tree — `make format` is the separate, explicit
+# fixer, and guardrails only *reports* a formatting deviation. Steps run in order and
+# stop at the first failure, so the first thing printed after a break is the break.
+.PHONY: check
+check:
+	@$(MAKE) --no-print-directory main
+	@$(MAKE) --no-print-directory test
+	@$(MAKE) --no-print-directory integration_test
+	@$(MAKE) --no-print-directory scenario_test
+	@$(MAKE) --no-print-directory sim_test
+	@$(MAKE) --no-print-directory scripted_test
+	@$(MAKE) --no-print-directory guardrails
+	@echo
+	@echo "  make check: build + all five tiers + guardrails, all green."
+
 # The architectural numbers that may only go down (globals.h includers, dead
 # parameters, function-quality audit coverage, ...). The script carries the floors
 # and is the definition of each measurement; IDIR is passed in so the sweep can
