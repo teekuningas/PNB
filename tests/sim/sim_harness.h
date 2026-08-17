@@ -12,9 +12,10 @@
  * Unlike the scenario harness (tests/integration/scenario_builder.c), which
  * deliberately bypasses input, AI, meters and menus and injects intents by hand,
  * this harness boots a real game from a GameSetup (the same fixtures the graphical
- * client uses) and ticks the production `update_game_frame()` — including
- * action_invocations + update_meters + ai_update + referee + consolidation. With
- * both teams set to CONTROL_AI this runs a real AI-vs-AI game with zero rendering.
+ * client uses) and ticks the production `update_game_frame()` — including the whole
+ * CONTROL stage (action_invocations + ai_update) plus update_meters + referee +
+ * consolidation. With both teams set to CONTROL_AI this runs a real AI-vs-AI game
+ * with zero rendering.
  *
  * Callers "attach" observers (per-frame hooks) to watch state evolve, assert
  * invariants, and record traces. See sim_observers.h for the built-in observers.

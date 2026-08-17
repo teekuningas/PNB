@@ -48,6 +48,7 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_throw_interrupted_clears_action.o \
                  tests/integration/contracts/test_wounded_runner_cannot_score.o \
                  tests/integration/contracts/test_ai_tactical_drop.o \
+                 tests/integration/contracts/test_control_stage_ordering.o \
                  tests/integration/contracts/test_pitch_declaration.o \
                  tests/integration/contracts/test_throw_declaration.o
 

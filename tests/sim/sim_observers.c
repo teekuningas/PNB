@@ -398,6 +398,16 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
                 o->reached_third++;
                 pbp(o, g, r, "runner reached third");
             } else if (base == BASE_HOME_SCORED && prev == BASE_THIRD) {
+                // KNOWN OVERCOUNT (found 2026-08-17, PLAN.md §3.3 F14 — recorded, not fixed here).
+                // This is a PHYSICAL arrival at home, not a run: game_manipulation sets baseId to
+                // BASE_HOME_SCORED even for a runner already WOUNDED or OUT (it only preserves the
+                // state), while §41 / is_regular_run correctly denies the run to a wounded runner. So
+                // this counter — and the word "SCORED" below — can fire with no run awarded, which is
+                // exactly what slice 1a's run first surfaced (scored=1 alongside runs=0). The honest
+                // run counter is `runs_scored`, fed from the scoreboard; the bands and PLAN.md §8.2
+                // both rest on that one. Deliberately left alone in the slice that re-baselines
+                // against this net: changing the instrument and the measurement in one commit makes
+                // neither readable.
                 o->scored_from_third++;
                 pbp(o, g, r, "runner came home from third — SCORED");
             }
