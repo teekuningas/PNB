@@ -58,7 +58,8 @@ int test_ai_declares_and_executes_tactical_drop(void)
     // Simulate the caught-fly evaluation window the tactical drop lives in.
     ctx->state->rules->referee.woundingEvaluationActive = 1;
 
-    // Drive the REAL production AI dispatch (stage 2c). Because the catching team is AI, ai_update calls
+    // Drive the REAL production AI dispatch (the CONTROL stage, stage 1). Because the catching team is AI, ai_update
+    // calls
     // update_catching_ai, which—given the §30 state—declares the drop command. (The batting team is
     // human-controlled here, so no batting AI runs.) This is the function the migration changed.
     AIControllerState ai = {.rngSeed = 0xD0D0D0u};

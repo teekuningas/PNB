@@ -41,6 +41,17 @@ StateInfo* setup_test_state()
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));
 
+    // The two members the reduced pipeline never needed, and so never had: `simulate_frames` skips
+    // action_invocations entirely, and consolidation only reaches gameConclusion at a period end. A test
+    // that drives the REAL update_game_frame reaches both on frame one — a human-controlled team makes
+    // action_invocations read keyStates — so leaving them NULL made the production entry point
+    // uncallable from this tier. Both are pointer-free structs; zeroed KeyStates means "no key touched".
+    state->keyStates = malloc(sizeof(KeyStates));
+    memset(state->keyStates, 0, sizeof(KeyStates));
+
+    state->gameConclusion = malloc(sizeof(GameConclusion));
+    memset(state->gameConclusion, 0, sizeof(GameConclusion));
+
     // Initialize indices to -1
     for (int i = 0; i < 4; i++) {
         state->match->pII.catcherOnBaseIndex[i] = -1;
@@ -62,6 +73,8 @@ void cleanup_test_state(StateInfo* state)
         free(state->teamData[i].players);
     }
     free(state->rules);
+    free(state->keyStates);
+    free(state->gameConclusion);
     free(state->clientInput);
     free(state->aiController);
     free(state->match);

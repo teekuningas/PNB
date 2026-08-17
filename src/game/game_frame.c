@@ -2,8 +2,8 @@
     game_frame.c — The per-frame game pipeline.
 
     Each frame executes 7 stages in strict order:
-      1. Input           (action_invocations)
-      2. Physics & Logic (execute_actions + update_meters + ai_update + game_manipulation)
+      1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world
+      2. Physics & Logic (execute_actions + update_meters + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    PlayerCounters, Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
@@ -64,8 +64,23 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         MatchSession* game = stateInfo->match;
         GameRulesState* rules = stateInfo->rules;
 
-        // 1. Inputs
+        // 1. CONTROL — every producer, one stage, one settled world.
+        // Both controllers run here at the frame top and read the SAME end-of-previous-tick world:
+        // the human's keys through action_invocations, the AI through ai_update. Their intents are
+        // then consumed by the SAME frame's execution, so neither producer is privileged and the AI
+        // has no 1-frame input buffer (that buffer was an accident of call placement, not a design —
+        // ARCHITECTURE_VISION.md §8.8 law 1).
+        //
+        // Order within the stage is free, and deliberately so: every check* in action_invocations
+        // returns early on CONTROL_AI and ai_update dispatches per team on team_is_ai(), so the two
+        // producers write disjoint per-team channels (bTAF / cTAF) and cannot see each other's writes.
+        // Human first only because that is the order that held before this stage existed.
+        //
+        // Frame-top placement also makes one-frame transients structurally invisible: gameEvents is
+        // drained by the tick that produced it (stage 7), so a controller here can only ever read
+        // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
         action_invocations(game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee);
+        ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController);
 
         // 2. Physics & Logic
         // StateInfo is destructured here (the assembly point): each stage receives exactly the
@@ -74,7 +89,6 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // (GameRulesState), geometry, and its one output. See PLAN.md "Function Signature Strategy".
         execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
         update_meters(game, stateInfo->clientInput);
-        ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)

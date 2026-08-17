@@ -22,13 +22,13 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     memset(g, 0, sizeof(SimGame));
     g->seed = seed;
 
-    // Allocate the world (match, rules, teamData, fieldPositions). setup_test_state
-    // leaves keyStates and gameConclusion NULL — the real pipeline dereferences both
-    // (action_invocations reads keyStates; consolidation writes gameConclusion at
-    // period/game end), so allocate them here as zeroed.
+    // Allocate the world (match, rules, teamData, fieldPositions, keyStates, gameConclusion).
+    // keyStates and gameConclusion used to be allocated HERE, because setup_test_state left them
+    // NULL and the real pipeline dereferences both (action_invocations reads keyStates;
+    // consolidation writes gameConclusion at period/game end). The fixture owns them now, so this
+    // harness no longer allocates its own — one fact, one home. sim_destroy still frees them,
+    // exactly as it frees every other setup_test_state allocation.
     g->state = setup_test_state();
-    g->state->keyStates = calloc(1, sizeof(KeyStates));
-    g->state->gameConclusion = calloc(1, sizeof(GameConclusion));
 
     // Replace the dummy rosters with the real teams (data/teams.xml — team 0 is
     // vankkurit, team 1 huti, ...). setup_test_state only fills player names and

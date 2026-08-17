@@ -173,8 +173,8 @@ int test_ai_offense_breakdown(void)
     }
 
     // ---- the bands -------------------------------------------------------------------
-    // Every baseline below was measured on this branch at sim hash f2ed32587d17f4df
-    // (2026-08-15, 24 seeds × 3 half-innings).
+    // Every baseline below was measured on this branch at sim hash 70f105d26494b5d4
+    // (2026-08-17, 24 seeds × 3 half-innings — re-baselined with §5.10 slice 1a).
 
     long dir_total = 0, dir_min = -1, dir_max = -1;
     for (int b = 0; b < 5; b++) {
@@ -188,7 +188,7 @@ int test_ai_offense_breakdown(void)
 
     band_add(
         bands, &band_count,
-        (Band){"pitches thrown", (double)T_pitches, 300, 1500, "625",
+        (Band){"pitches thrown", (double)T_pitches, 300, 1500, "627",
                "the pitcher stops pitching, or at-bats never end"}
     );
     band_add(
@@ -198,7 +198,7 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"balls called", (double)T_balls, 10, 300, "59",
+        (Band){"balls called", (double)T_balls, 10, 300, "58",
                "pitch aim collapsing onto the plate — every pitch a called strike"}
     );
     band_add(
@@ -208,32 +208,32 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"batters reaching first", (double)T_reached_base, 50, 400, "135",
+        (Band){"batters reaching first", (double)T_reached_base, 50, 400, "137",
                "contact that never turns into a runner"}
     );
     band_add(
         bands, &band_count,
-        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 14, 30, "21.3",
+        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 14, 30, "21.7",
                "the swing going soft — the meter starved, as bug #4 did it"}
     );
     band_add(
         bands, &band_count,
-        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 30, "10",
+        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 30, "12",
                "direction drifting foul, or every ball dumped safely into the field"}
     );
     band_add(
         bands, &band_count,
         (Band){"meter error, style-1 swings (steps)", T_s1_swings ? (double)T_s1_err / T_s1_swings : 0.0, -1.0, 3.0,
-               "+0.95", "the AI no longer releasing at the power level it decided on"}
+               "+0.77", "the AI no longer releasing at the power level it decided on"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 4, 100, "10",
+        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 4, 100, "13",
                "the fan collapsing — the centre-bias the swing slice removes structurally"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 0, 55, "29",
+        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 0, 55, "27",
                "the fan piling into one direction"}
     );
 

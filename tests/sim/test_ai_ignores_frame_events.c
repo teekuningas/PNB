@@ -7,17 +7,18 @@
 
 // Law 1 of ARCHITECTURE_VISION.md §8.8, made mechanical.
 //
-// The settled end state runs every controller — human, AI, scripted, net proxy — in one CONTROL
-// stage at the top of the tick, reading the same settled end-of-previous-tick World. A property
-// that placement quietly depends on: GameEvents is a ONE-FRAME struct, drained by the tick that
-// produced it, so at the frame top it is structurally always empty. Any controller that reads a
-// frame event therefore reads zero after the move and something else before it — and its
-// behaviour changes without anything in the diff saying so.
+// Every controller — human, AI, scripted, net proxy — runs in one CONTROL stage at the top of the
+// tick, reading the same settled end-of-previous-tick World (PLAN.md §5.10 slice 1a, landed
+// 2026-08-17). A property that placement quietly depends on: GameEvents is a ONE-FRAME struct,
+// drained by the tick that produced it, so at the frame top it is structurally always empty. A
+// controller that reads a frame event therefore reads zero now and read something else before the
+// move — behaviour changing without anything in the diff saying so.
 //
-// PLAN.md §5.10 slice 1a is exactly that move, and it re-baselines the determinism hash by
-// design, so the hash cannot be the thing that catches this. Until now the property rested on a
-// one-time manual read of the AI code (2026-07-07). This test replaces the reading with a
-// measurement, and keeps enforcing it afterwards: at many sampled frames of a real AI-vs-AI run,
+// This test was written the session BEFORE that move, precisely because the move re-baselines the
+// determinism hash by design and the hash therefore could not be the thing that caught such a read.
+// Until then the property rested on a one-time manual read of the AI code (2026-07-07). This test
+// replaced the reading with a measurement, and keeps enforcing it now that the stage has moved: at
+// many sampled frames of a real AI-vs-AI run,
 // run the controller stage twice from the identical world — once with every frame event zeroed,
 // once with every frame event set — and require both runs to produce byte-identical controller
 // output. If a future controller ever reaches for an event edge, this goes red on the spot.
@@ -149,9 +150,9 @@ int test_ai_ignores_frame_events(void)
     if (differing != 0) {
         printf(
             "  first divergence at frame %ld: the controller read a frame event.\n"
-            "  Frame-top placement (§8.8 law 1) makes GameEvents structurally empty, so this read\n"
-            "  silently changes behaviour when ai_update moves. Re-key the decision on durable\n"
-            "  world state — a level, not an edge.\n",
+            "  Frame-top placement (§8.8 law 1) makes GameEvents structurally empty at the CONTROL\n"
+            "  stage, so this read can only ever see zero in production — the controller is keyed on\n"
+            "  something that is never there. Re-key it on durable world state: a level, not an edge.\n",
             first_difference_frame
         );
         return TEST_FAILED;
