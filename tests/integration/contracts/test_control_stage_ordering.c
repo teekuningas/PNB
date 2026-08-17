@@ -71,6 +71,14 @@ int test_control_stage_precedes_execution(void)
     );
     ASSERT_EQ(-1, match->pII.hasBallIndex, "the dropped ball must be loose (hasBallIndex → -1)");
     ASSERT_EQ(1, match->ballInfo.moving, "the dropped ball must be in motion");
+    // Guard against passing for the wrong reason: a PITCH release also sets lastHadBallIndex to the
+    // pitcher (12), empties the hand and starts the ball moving. It cannot happen on this frame — the
+    // AI's pre-pitch pause needs batterReadyTimer > AI_PITCH_DELAY — but pin it anyway, so a future
+    // change that lets a pitch fire here turns this red instead of quietly proving nothing.
+    ASSERT_EQ(
+        PITCH_STAGE_NONE, (int)match->pRAI.pitch_state,
+        "no pitch may have been released this frame — the ball must have left the hand via the DROP"
+    );
     ASSERT_EQ(
         ACTION_IDLE, (int)match->aF.cTAF.drop_ball,
         "the drop command must be consumed within the frame that declared it"
