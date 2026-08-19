@@ -63,6 +63,11 @@ int main(int argc, char* argv[])
     FixtureRequest fixtureRequest;
     fixture_parse_args(argc, argv, &fixtureRequest);
 
+    // State debugging is ON by default: one 5 KB memcpy per pitch and a 0.5 MB history ring. This
+    // default is app-level only — the test tiers set their own (the sim harness inits with no dump
+    // path), so they are unaffected either way.
+    const char* debugStatePath = "debug.log";
+
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--windowed") == 0) {
             fullscreen = 0;
@@ -70,12 +75,15 @@ int main(int argc, char* argv[])
         if (strcmp(argv[i], "--no-sound") == 0) {
             soundEnabled = 0;
         }
+        if (strcmp(argv[i], "--no-debug-state") == 0) {
+            debugStatePath = NULL;
+        }
         if (strcmp(argv[i], "--debug-state") == 0 && i + 1 < argc) {
-            state_validator_init(argv[i + 1]);
-            printf("State Validation ENABLED. Output: %s\n", argv[i + 1]);
+            debugStatePath = argv[i + 1];
             i++;
         }
     }
+    state_validator_init(debugStatePath);
 
     printf("v. 1.5 beta\n");
 

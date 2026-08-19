@@ -34,7 +34,8 @@ void reset_pitching_system(MatchSession* match)
 static int can_begin_windup(const MatchSession* match)
 {
     return match->pII.hasBallIndex == match->pII.catcherOnBaseIndex[0] && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
-           match->pRAI.batter_ready == 1 && match->pendingActionState.throw_going_on == 0 &&
+           match->pRAI.batter_ready == 1 &&
+           match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
            match->playerInfo[match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
            match->flowControl.waitingForFreeWalkDecision == 0;
 }

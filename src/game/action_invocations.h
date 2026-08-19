@@ -3,8 +3,6 @@
 
 #include "globals.h"
 
-void init_action_invocations(StateInfo* stateInfo);
-
 // Translates key inputs into ActionFlags based on team control mode.
 // Reads scoreboard (const) for team assignment and referee (const) for base ownership
 // (to interpret a base-run key as advance vs. come-back), keyStates for input.

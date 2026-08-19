@@ -62,7 +62,6 @@ int test_scripted_throw_hold_release_to_base(void)
         CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action,
         "holding KEY_2 + a direction must begin the throw windup"
     );
-    ASSERT_EQ(1, m->pendingActionState.throw_going_on, "throw_going_on is set during the gather");
     ASSERT_EQ(thrower, m->pII.hasBallIndex, "the ball is still in hand while gathering");
     ASSERT_EQ((int)WIDGET_CHARGE, (int)tw->mode, "the client charge widget must arm when the gather begins");
 

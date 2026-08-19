@@ -203,7 +203,6 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s  \"batter_ready\": %d,\n", sp, game->pRAI.batter_ready);
     fprintf(f, "%s  \"batting_going_on\": %d,\n", sp, game->pRAI.batting_going_on);
     fprintf(f, "%s  \"init_batter\": %d,\n", sp, game->pRAI.init_batter);
-    fprintf(f, "%s  \"throw_going_on\": %d,\n", sp, game->pendingActionState.throw_going_on);
     fprintf(f, "%s  \"throw_going_to_base\": %d\n", sp, game->pRAI.throw_going_to_base);
     fprintf(f, "%s},\n", sp);
 

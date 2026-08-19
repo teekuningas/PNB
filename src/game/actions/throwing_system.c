@@ -98,7 +98,6 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
     );
     // Can't throw to a base you are already standing on.
     if (match->pendingActionState.throw_distance <= THROW_TO_BASE_DISTANCE) {
-        match->pendingActionState.throw_going_on = 0;
         match->pRAI.throw_going_to_base = -1;
         return 0;
     }
@@ -120,7 +119,6 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
     match->playerInfo[thrower].tPI.orientation.x = match->pendingActionState.throw_direction.x;
     match->playerInfo[thrower].tPI.orientation.z = match->pendingActionState.throw_direction.z;
 
-    match->pendingActionState.throw_going_on = 1;
     match->pendingActionState.throwActualization.timer = 0;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
     return 1;
@@ -138,8 +136,6 @@ static void throw_release(MatchSession* match, float power)
     if (power < 0.0f) power = 0.0f;
     if (power > 1.0f) power = 1.0f;
 
-    // throw not going anymore, ball already flyin'
-    match->pendingActionState.throw_going_on = 0;
     // release animation
     match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
     match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
@@ -204,15 +200,6 @@ void update_throw_actualization(MatchSession* match, const FieldPositions* field
     }
 
     if (pas->current_catching_action == CATCHING_ACTION_THROWING) {
-        // External interrupt: the ball was taken mid-throw (game_manipulation cleared throw_going_on).
-        // Reset so other actions can proceed. Knighted by test_interrupted_throw_clears_action.
-        if (pas->throw_going_on == 0) {
-            pas->current_catching_action = CATCHING_ACTION_NONE;
-            pas->throwActualization.timer = 0;
-            clear_throw_declaration(decl);
-            return;
-        }
-
         pas->throwActualization.timer++;
 
         if (decl->phase == THROW_DECL_COMMITTED) {
@@ -239,8 +226,8 @@ void fielder_move(MatchSession* match, int direction)
 {
     // we can move if there is no throw going on and no pitch going on
     // .. and we have same player controlled
-    if (match->pendingActionState.throw_going_on == 0 && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
-        match->pII.controlIndex != -1) {
+    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
+        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->pII.controlIndex != -1) {
         // stopping only possible when moving already going on
         // so thats the reason for this value 2
         match->aF.cTAF.move[direction] = ACTION_ACTIVE;
@@ -258,8 +245,8 @@ void fielder_stop_move(MatchSession* match, int direction)
 {
     // stopping cant be done either when pitching or throwing as update_controlled_player_speed can
     // have effects on player's model
-    if (match->pendingActionState.throw_going_on == 0 && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
-        match->pII.controlIndex != -1) {
+    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
+        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->pII.controlIndex != -1) {
         match->aF.cTAF.move[direction] = ACTION_IDLE;
         match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
         update_controlled_player_speed(match);
@@ -273,7 +260,8 @@ void drop_ball(MatchSession* match)
     // there is a possibility to drop ball if to the ground if you want. it could be convenient when
     // you want a baserunner to be able to get safe from a base for some strategical reason.
     if (match->pII.hasBallIndex != -1) {
-        if (match->pendingActionState.throw_going_on == 0 && match->pRAI.pitch_state == PITCH_STAGE_NONE) {
+        if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
+            match->pRAI.pitch_state == PITCH_STAGE_NONE) {
             float norm;
             float dx;
             float dz;

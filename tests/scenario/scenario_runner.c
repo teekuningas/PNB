@@ -25,6 +25,7 @@ static void run_scenario_tests(void)
     RUN_TEST(test_run_arrival_before_catch);
     RUN_TEST(test_fly_ball_out_and_wound);
     RUN_TEST(test_fly_ball_early_arrival);
+    RUN_TEST(test_burnt_player_bats_again);
 }
 
 int main(int argc, char* argv[])

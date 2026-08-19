@@ -41,6 +41,15 @@ static void update_initialization_events(
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+
+                // Taking the bat clears the previous at-bat's verdicts. Being burnt or wounded costs
+                // the team an out or a runner, never a place in the batting order (RULES.md §3a), so
+                // these are field state with a per-play lifetime. Without it, enforce_legal_state in
+                // the next stage shoves the new batter straight back off the field: PLAN.md bug #7.
+                referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+                referee->battingPlayers[i].hasScored = 0;
+                referee->battingPlayers[i].runOfHonorScored = 0;
+
                 if (game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
                     // Regular batter: advance batting order, decrement available count
                     scoreboard->teams[battingTeamIndex].batterOrderIndex =

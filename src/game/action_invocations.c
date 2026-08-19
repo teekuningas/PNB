@@ -55,11 +55,6 @@ static void checkBattingTeamRun(
     BaseID base, const RefereeState* referee
 );
 
-void init_action_invocations(StateInfo* stateInfo)
-{
-    // Placeholder for... future?
-}
-
 void action_invocations(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
     const RefereeState* referee
@@ -91,11 +86,9 @@ void action_invocations(
         }
     }
 
-    // Retire the throw charge widget once the throw is no longer live — released (handled in
-    // checkThrowGesture) or externally interrupted (the ball taken mid-gather, so the engine cleared the
-    // declaration). Same lesson as the pitch retirement (bug #4): a client-local widget gating the shared
-    // meter must be retired on a path that runs regardless of ball possession, since checkThrowGesture stops
-    // firing the moment the ball leaves the hand. An AI throw arms no widget, so this never touches it.
+    // Retire the throw charge widget whenever the declaration is back to IDLE, whatever cleared it.
+    // Must run here rather than inside checkThrowGesture, which stops firing the moment the ball leaves
+    // the hand — the same gap that caused bug #4 on the pitch widget. An AI throw arms none of this.
     {
         InputWidget* w = &clientInput->throwWidget;
         if (w->mode != WIDGET_IDLE && match->aF.cTAF.throw.phase == THROW_DECL_IDLE) {

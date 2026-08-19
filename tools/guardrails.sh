@@ -74,7 +74,7 @@ other_warnings=$(($(printf '%s\n' "$warnings" | grep -c 'warning:') - dead_param
 
 # A signature that names a parameter it never reads over-claims its edge in the
 # dependency DAG — the mirror of the missing const (ARCHITECTURE_VISION.md §2.1).
-ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 37
+ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 36
 
 # A non-static function with no prototype in any header is an edge in the include
 # graph that no header records: nothing outside the file can see it declared, yet
@@ -121,6 +121,20 @@ fi
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
 ratchet "files awaiting the function-quality audit" "$unaudited" 53
+
+# ---------------------------------------------------------------------------
+# The refactor's own frontier (PLAN.md §5.10 / §8.0). ActionFlags is the pre-intent
+# channel: a struct of flags that producers write and execution reads. The
+# controller-symmetry redesign dissolves it into per-team value messages, and §8.0
+# defines "§5.10 complete" as `grep -r ActionFlags src/` returning nothing. Counting
+# the lines that still touch it makes that progress a build fact like every other
+# number here — and, more importantly, makes it FAIL if a new intent is ever added to
+# ActionFlags instead of to the channel. Each remaining slice lowers this floor:
+# 1b (the four pure commands + pitch/throw), 2 (cTAF.move[]), 3 (batter select,
+# free walk, swing angle), 4 (the swing) — at which point the row retires at 0.
+# ---------------------------------------------------------------------------
+action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
+ratchet "lines touching ActionFlags (§5.10)" "$action_flags_lines" 142
 
 # ---------------------------------------------------------------------------
 # Formatting is not a ratchet — it is settled, and `make format` restores it.

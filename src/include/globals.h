@@ -366,7 +366,6 @@ typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
     ThrowDeclaration throw; // phased throw declaration (see ThrowDeclaration) — replaces the atomic ThrowIntent
     ActionTriggerState change_player;
-    ActionTriggerState run;
     ActionTriggerState drop_ball;
     PitchDeclaration pitch; // phased pitch declaration (see PitchDeclaration) — replaces PitchActionPhase
 } CatchingTeamActionFlags;
@@ -772,7 +771,6 @@ typedef struct _PendingActionState {
     PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
     ThrowActualization throwActualization; // engine windup clock for the throw (replaces the meter_counter windup)
 
-    int throw_going_on;
     int run_bat_flag;
     int batter_select;
 

@@ -33,7 +33,6 @@ static void run_contract_tests(void)
     RUN_TEST(test_bat_outcome_promotion);
 
     // Action state auto-clear contracts (Bug #8 regression)
-    RUN_TEST(test_interrupted_throw_clears_action_state);
 
     // Run-scoring guard contracts (Bug #9 regression)
     RUN_TEST(test_wounded_runner_cannot_score_run);

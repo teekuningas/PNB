@@ -383,21 +383,6 @@ void change_player(MatchSession* match)
             move_ranked_to_catch(match);
             // stop player who has the selection now
             stop_movement(match->playerInfo, match->pII.controlIndex);
-            // but start moving again if movement key being held at the same time. for smooth movement.
-            // smooth_out_movement still needs StateInfo due to ActionFlags being in Local but also needing KeyStates?
-            // Wait, smooth_out_movement implementation:
-            /*
-            void smooth_out_movement(StateInfo* stateInfo)
-            {
-                int j;
-                for(j = 0; j < DIRECTION_COUNT; j++) {
-                    if(stateInfo->match->aF.cTAF.move[j] == 2) {
-                        stateInfo->match->aF.cTAF.move[j] = 1;
-                    }
-                }
-            }
-            */
-            // It only uses MatchSession! I'll narrow it later.
         }
     }
 }
@@ -710,30 +695,18 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.needsMoveUpdate = 0;
     match->ballInfo.lastLastLocationUpdate = 0;
 }
-// action flag initialization
+// Empty the intent channel. Cleared as one struct so a field added to ActionFlags is empty by
+// construction rather than by remembering to list it here — the field-by-field version this replaced
+// had silently missed two (PLAN.md §7.2 finding B). Every idle/none enumerator in the channel is 0;
+// throw.target is the one non-zero "absent" sentinel. The windup clocks empty with the declarations
+// they actualize.
 void initialize_action_info(MatchSession* match)
 {
-    int i;
+    match->aF = (ActionFlags){0};
+    match->aF.cTAF.throw.target = BASE_NONE;
 
-    for (i = 0; i < BASE_COUNT; i++) {
-        match->aF.bTAF.base_run[i] = 0;
-    }
-    match->aF.bTAF.choose_batter = 0;
-    match->aF.bTAF.take_free_walk = 0;
-    match->aF.bTAF.swing = 0;
-    match->aF.bTAF.increase_batter_angle = 0;
-    match->aF.bTAF.decrease_batter_angle = 0;
-
-    for (i = 0; i < BASE_COUNT; i++) {
-        match->aF.cTAF.move[i] = 0;
-    }
-    match->aF.cTAF.throw.target = BASE_NONE; // no throw declared
-    match->aF.cTAF.change_player = 0;
-    match->aF.cTAF.drop_ball = 0;
-    match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
-    match->aF.cTAF.pitch.power = 0.0f;
-    match->aF.cTAF.pitch.direction = 0.0f;
     match->pendingActionState.pitchActualization.timer = 0;
+    match->pendingActionState.throwActualization.timer = 0;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -758,11 +731,9 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     consolidation_init(&(match->gameFlowState));
     init_game_manipulation(&(match->gameFlowState));
 
-    // Action state
+    // Action state. The intent channel and windup clocks belong to initialize_action_info
+    // (in reset_physical_world, which every recipe runs before this) — one owner per field.
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
-    match->pendingActionState.pitchActualization.timer = 0;
-    match->pendingActionState.throw_going_on = 0;
     match->pRAI.throw_going_to_base = -1;
     // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same

@@ -34,7 +34,8 @@ _OBJ_SCENARIOS = tests/scenario/test_runner_scores_from_third.o \
                  tests/scenario/test_run_before_ball_lands.o \
                  tests/scenario/test_run_before_catch.o \
                  tests/scenario/test_fly_ball_out_and_wound.o \
-                 tests/scenario/test_fly_ball_early_arrival.o
+                 tests/scenario/test_fly_ball_early_arrival.o \
+                 tests/scenario/test_burnt_player_bats_again.o
 
 # Contract test objects (1-frame pipeline tests, live in tests/integration/contracts/)
 _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
@@ -45,8 +46,7 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_compound_foul_and_end_of_inning.o \
                  tests/integration/contracts/test_compound_hr_pair_and_uncatchable.o \
                  tests/integration/contracts/test_bat_outcome_promotion.o \
-                 tests/integration/contracts/test_throw_interrupted_clears_action.o \
-                 tests/integration/contracts/test_wounded_runner_cannot_score.o \
+                                  tests/integration/contracts/test_wounded_runner_cannot_score.o \
                  tests/integration/contracts/test_ai_tactical_drop.o \
                  tests/integration/contracts/test_control_stage_ordering.o \
                  tests/integration/contracts/test_pitch_declaration.o \

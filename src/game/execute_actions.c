@@ -25,7 +25,6 @@ static void
 take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions);
 static void
 base_run(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base);
-;
 
 void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 {
@@ -75,10 +74,8 @@ void execute_actions(
     // known) when the clock reaches throw_windup_total_frames(power) — ONE rule for both producers, no
     // client "fire-now" edge (§8.7). The AI declares COMMITTED in one frame; a human streams
     // INITIATED{target} → COMMITTED{power}, its power a trusted value from the client charge widget — never
-    // a live meter or this clock. It also cancels a pitch for a throw (never the reverse), and auto-clears
-    // on an external interrupt (ball caught mid-throw). The same phased-declaration + engine-windup-clock
-    // shape as the pitch. (bug #3 root-cured: the AI's duplicate lock machine that drifted throw_going_on
-    // against cca is gone with the pitch slice.)
+    // a live meter or this clock. It also cancels a pitch for a throw (never the reverse). The same
+    // phased-declaration + engine-windup-clock shape as the pitch.
     update_throw_actualization(match, fieldPositions);
     // if move keys have been pressed, depending on if its down or release
     // call corresponding function for every direction

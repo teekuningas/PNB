@@ -16,5 +16,6 @@ int test_run_arrival_before_ball_lands(void); // Regression test for "Lost Run" 
 int test_run_arrival_before_catch(void); // Pending run voided by catch
 int test_fly_ball_out_and_wound(void); // Fly ball OUT + wound scenario
 int test_fly_ball_early_arrival(void); // Batter arrives at base before catch
+int test_burnt_player_bats_again(void); // A burnt player keeps their place in the batting order
 
 #endif // ALL_SCENARIOS_H

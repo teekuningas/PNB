@@ -49,8 +49,11 @@ void trace_observer_init(TraceObserver* o, FILE* f, long every);
 void trace_observer_hook(const SimGame* g, void* ctx);
 
 /* ---- Checksum observer ------------------------------------------------- *
- * Folds the full MatchSession into a rolling FNV-1a hash each frame. Two runs
- * with the same seed must produce the same hash — the determinism fingerprint. */
+ * Folds a CURATED set of fields into a rolling FNV-1a hash each frame — NOT raw
+ * MatchSession bytes (player structs embed char* names whose addresses differ per
+ * run). Read checksum_observer_hook's field list before predicting whether a
+ * change moves the hash: adding or removing a struct field does not, unless that
+ * field is folded. */
 typedef struct {
     unsigned long long hash;
 } ChecksumObserver;
@@ -74,13 +77,14 @@ typedef struct {
     int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
-    int p_throwGoingOn;
+    int p_throwing; // previous frame's (current_catching_action == CATCHING_ACTION_THROWING)
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
 
     // box score (readable after the run)
     long pitches; // pitches released (rising edge into AIRBORNE)
-    long throws; // throws to a base started (throw_going_on rising edge 0→1 — set only by begin_throw_windup)
+    long throws; // throws to a base started (rising edge into CATCHING_ACTION_THROWING — only begin_throw_windup raises
+                 // it)
     // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (hasBallIndex −1, ball moving,
     // pitch NONE, throw 0) is indistinguishable from a half-inning / HR-pair RESET that clears a
     // fielder's ball — so any state-based drop count aliases resets (verified via PBP). The drop is

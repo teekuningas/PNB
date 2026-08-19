@@ -80,7 +80,8 @@ void move_controlled_player_to_location(MatchSession* match, Vector3D* target)
     float dx = tx - px;
     float dz = tz - pz;
 
-    if (!vec3_is_small_enough_circle_xz(dx, dz, 1.0f) && match->pendingActionState.throw_going_on == 0) {
+    if (!vec3_is_small_enough_circle_xz(dx, dz, 1.0f) &&
+        match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING) {
         if (match->aiState.moveCounter >= 10) {
             MovementKeys keys = calculate_movement_keys(dx, dz);
             // Set triggers only if NOT already moving in that direction to avoid unnecessary resets
