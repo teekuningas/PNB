@@ -74,7 +74,7 @@ other_warnings=$(($(printf '%s\n' "$warnings" | grep -c 'warning:') - dead_param
 
 # A signature that names a parameter it never reads over-claims its edge in the
 # dependency DAG — the mirror of the missing const (ARCHITECTURE_VISION.md §2.1).
-ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 36
+ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 34
 
 # A non-static function with no prototype in any header is an edge in the include
 # graph that no header records: nothing outside the file can see it declared, yet
@@ -91,7 +91,7 @@ ratchet "other -Wall/-Wextra warnings" "$other_warnings" 1
 # hands everything to everyone. PLAN.md §6.2 drives this number to zero.
 # ---------------------------------------------------------------------------
 globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
-ratchet "files including globals.h" "$globals_includers" 85
+ratchet "files including globals.h" "$globals_includers" 84
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage (PLAN.md §3.3). Two separate things are checked:
@@ -120,7 +120,7 @@ fi
 
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
-ratchet "files awaiting the function-quality audit" "$unaudited" 53
+ratchet "files awaiting the function-quality audit" "$unaudited" 52
 
 # ---------------------------------------------------------------------------
 # The refactor's own frontier (PLAN.md §5.10 / §8.0). ActionFlags is the pre-intent

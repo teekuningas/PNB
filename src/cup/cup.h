@@ -37,10 +37,8 @@ int cup_save(const Cup* cup, const char* filename);
 Cup* cup_load(const char* filename);
 void cup_update_match_result(Cup* cup, int match_index, TeamID winner_team_id);
 int cup_get_user_match_index(const Cup* cup);
-void cup_get_schedule_for_round(const Cup* cup, int round, int* out_match_indices, int* out_count);
 
 // Day/schedule helpers
-int cup_get_current_round(const Cup* cup);
 void cup_get_matches_for_day(const Cup* cup, int day, int* out_match_indices, int* out_count);
 void cup_advance_to_next_match_day(Cup* cup);
 

@@ -2,7 +2,7 @@
 #include "common_logic.h"
 #include "referee.h"
 
-void reset_physical_world(MatchSession* match, const FieldPositions* field_positions)
+static void reset_physical_world(MatchSession* match, const FieldPositions* field_positions)
 {
     initialize_ball_info(match);
     initialize_action_info(match);

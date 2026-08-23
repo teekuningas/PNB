@@ -60,20 +60,6 @@ int try_loading_texture_gl(GLuint* texture, const char* filename, const char* na
     return 0;
 }
 
-int try_preparing_mesh_gl(char* filename, char* objectname, MeshObject* mesh, GLuint* displayList)
-{
-    int result;
-    // load from obj file to mesh-struct
-    result = load_obj(filename, objectname, mesh);
-    if (result != 0) {
-        printf("\nError with load_obj. Error code: %d\n", result);
-        return -1;
-    }
-
-    prepare_mesh(mesh, displayList);
-    return 0;
-}
-
 void begin_3d_render(const RenderState* rs)
 {
     glMatrixMode(GL_PROJECTION);

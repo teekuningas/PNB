@@ -10,7 +10,6 @@
 #include "ball_physics.h"
 #include "collision.h"
 #include "vector_math.h"
-#include "geometry.h"
 #include "base_logic.h"
 #include "rules_strikes.h"
 #include "base_control.h"

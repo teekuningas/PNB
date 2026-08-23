@@ -6,7 +6,6 @@
 #include "base_logic.h"
 #include "rules_pure/player_utils.h"
 #include "scoring_helpers.h"
-#include "geometry.h"
 #include "vector_math.h"
 #include "base_control.h"
 #include "common_logic.h"
@@ -15,6 +14,11 @@
 // BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from globals.h
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
+
+// Clears every field of RefereeState. Used by the two entry points below —
+// initialize_referee (game setup) and referee_reset_for_new_inning — and by nothing
+// outside this file.
+static void initialize_referee_state(RefereeState* referee);
 
 static void clear_between_pitch_state(BetweenPitchState* bps)
 {
@@ -1389,16 +1393,6 @@ void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, Be
     }
 }
 
-int is_wounding_evaluation_active(const RefereeState* ref)
-{
-    return ref->woundingEvaluationActive;
-}
-
-int get_wounding_evaluation_timer(const RefereeState* ref)
-{
-    return ref->woundingEvaluationTimer;
-}
-
 void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
 {
     const MatchSession* game = stateInfo->match;
@@ -1442,18 +1436,7 @@ void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
     }
 }
 
-int is_player_marked_for_wound(const RefereeState* ref, int playerIndex)
-{
-    if (playerIndex < 0 || playerIndex >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-        return 0;
-    }
-    return (
-        ref->battingPlayers[playerIndex].status == PLAYER_STATUS_WOUND_MARKED ||
-        ref->battingPlayers[playerIndex].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE
-    );
-}
-
-void initialize_referee_state(RefereeState* referee)
+static void initialize_referee_state(RefereeState* referee)
 {
     int i;
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {

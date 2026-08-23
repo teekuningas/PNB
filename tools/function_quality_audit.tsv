@@ -16,7 +16,6 @@ open	src/core/field_layout.c
 open	src/core/fill_player_data.c	
 open	src/core/fixtures.c	
 open	src/core/font.c	
-open	src/core/geometry.c	
 open	src/core/input.c	
 open	src/core/loadobj.c	
 open	src/core/main.c	

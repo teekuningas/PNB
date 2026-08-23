@@ -26,12 +26,6 @@ void fixture_create_cup_final_super_inning(
     GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control
 );
 
-// Creates a game setup starting at period 2
-void fixture_create_period2_start(
-    GameSetup* setup, int team1, int team2, int team1_control, int team2_control, int period1_score_team1,
-    int period1_score_team2
-);
-
 // Helper to parse --fixture command line args for main.c
 // Returns 1 if fixture was parsed, 0 otherwise
 int fixture_parse_args(int argc, char* argv[], FixtureRequest* request);

@@ -11,7 +11,7 @@ LFLAGS = -lglfw -lGLEW -lX11 -lGL -lGLU -lm -lpthread -ldl -lmxml
 ODIR=obj
 
 # Object list shared by all builds
-_OBJ_COMMON = core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/geometry.o core/field_layout.o core/state_validator.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
+_OBJ_COMMON = core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/field_layout.o core/state_validator.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
 _OBJ_COMMON += game/execute_actions.o game/action_invocations.o game/ball.o game/common_logic.o game/game_consolidation.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/game_frame.o game/player.o game/game_setup.o game/game_reset.o game/actions/pitching_system.o game/actions/batting_system.o game/actions/throwing_system.o game/ai/catching_ai.o game/ai/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o
 _OBJ_COMMON += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
 _OBJ_COMMON += cup/cup.o
@@ -140,8 +140,9 @@ check:
 	@$(MAKE) --no-print-directory sim_test
 	@$(MAKE) --no-print-directory scripted_test
 	@$(MAKE) --no-print-directory guardrails
+	@$(MAKE) --no-print-directory dead_exports
 	@echo
-	@echo "  make check: build + all five tiers + guardrails, all green."
+	@echo "  make check: build + all five tiers + guardrails + the exported surface, all green."
 
 # The architectural numbers that may only go down (globals.h includers, dead
 # parameters, function-quality audit coverage, ...). The script carries the floors
@@ -150,6 +151,17 @@ check:
 .PHONY: guardrails
 guardrails:
 	@./tools/guardrails.sh "$(IDIR)"
+
+# The exported surface: functions in src/ that nothing outside their own translation
+# unit uses (dead code, or a header exporting an edge that does not exist). The
+# guardrails sweep above is the compiler front end alone and structurally cannot see
+# this — only the whole link can. The prerequisites are the same object lists the five
+# tiers link, so make itself guarantees the measurement is never taken from a stale
+# obj/; the cost of that is a build, which is why this row rides with `make check`
+# instead of with the six-second sweep.
+.PHONY: dead_exports
+dead_exports: $(OBJ_MAIN) $(OBJ_SCENARIO) $(OBJ_CONTRACT) $(OBJ_SIM) $(OBJ_SCRIPTED) $(TEST_OBJ)
+	@./tools/dead_exports.sh $^
 
 .PHONY: test
 test: $(TEST_OBJ) tests/unit/test_runner.c

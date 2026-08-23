@@ -471,7 +471,7 @@ static void applyFixture(
 
     } else {
         printf("Unknown fixture: %s\n", request->name);
-        printf("Available fixtures: super-inning, homerun-contest\n");
+        printf("Available fixtures: super-inning, homerun-contest, cup-final-super-inning\n");
         exit(-1);
     }
 

@@ -59,33 +59,6 @@ void fixture_create_homerun_contest(GameSetup* setup, int team1, int team2, int 
     }
 }
 
-void fixture_create_period2_start(
-    GameSetup* setup, int team1, int team2, int team1_control, int team2_control, int period1_score_team1,
-    int period1_score_team2
-)
-{
-    memset(setup, 0, sizeof(GameSetup));
-
-    setup->gameMode = GAME_MODE_NORMAL;
-    setup->team1 = team1;
-    setup->team2 = team2;
-    setup->team1_control = team1_control;
-    setup->team2_control = team2_control;
-    setup->halfInningsInPeriod = 4;
-    setup->playsFirst = 1; // Switch sides for period 2
-
-    // Initialize batting orders
-    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        setup->team1_batting_order[i] = i;
-        setup->team2_batting_order[i] = i;
-    }
-
-    setup->homerun_choice_count = 0;
-
-    // Note: Period 1 scores would need to be set in scoreboard after initialization
-    // This is handled by the caller
-}
-
 int fixture_parse_args(int argc, char* argv[], FixtureRequest* request)
 {
     memset(request, 0, sizeof(FixtureRequest));

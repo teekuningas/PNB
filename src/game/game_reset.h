@@ -3,7 +3,6 @@
 
 #include "globals.h"
 
-void reset_physical_world(MatchSession* match, const FieldPositions* field_positions);
 void reset_for_new_half_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, GameRulesState* rules
 );

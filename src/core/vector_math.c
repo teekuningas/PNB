@@ -1,6 +1,13 @@
 #include "vector_math.h"
 #include <math.h>
 
+float vec3_distance_xz(const Vector3D* a, const Vector3D* b)
+{
+    float dx = a->x - b->x;
+    float dz = a->z - b->z;
+    return (float)sqrt(dx * dx + dz * dz);
+}
+
 int vec3_is_small_enough_sphere(const Vector3D* vector, float limit)
 {
     if (sqrt((vector->x) * (vector->x) + (vector->y) * (vector->y) + (vector->z) * (vector->z)) < limit)

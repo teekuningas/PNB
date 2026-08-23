@@ -4,12 +4,6 @@
 #include "globals.h"
 
 /**
- * @brief Initializes the RefereeState structure.
- * Sets all bases to BASE_NONE (-1) instead of 0.
- */
-void initialize_referee_state(RefereeState* referee);
-
-/**
  * @brief Initialize referee by scanning the physical world.
  *
  * Called during game setup (from menu, return to game) to establish
@@ -22,31 +16,6 @@ void initialize_referee_state(RefereeState* referee);
  * @param referee Mutable pointer to the referee state to initialize
  */
 void initialize_referee(const StateInfo* stateInfo, RefereeState* referee);
-
-/**
- * @brief Query functions for wounding system (Milestone 15 consolidation)
- *
- * These functions provide read-only access to the wounding state,
- * following the same pattern as get_base_controller().
- */
-
-/**
- * @brief Check if wounding evaluation is currently active
- */
-int is_wounding_evaluation_active(const RefereeState* ref);
-
-/**
- * @brief Get the current wounding evaluation timer value (-1 if inactive)
- */
-int get_wounding_evaluation_timer(const RefereeState* ref);
-
-/**
- * @brief Check if a specific player is marked for wounding
- * @param ref The referee state
- * @param playerIndex The player index to check
- * @return 1 if marked for wounding, 0 otherwise
- */
-int is_player_marked_for_wound(const RefereeState* ref, int playerIndex);
 
 /**
  * @brief Updates the referee state and game state based on the current world state.

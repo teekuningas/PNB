@@ -241,25 +241,6 @@ int cup_get_user_match_index(const Cup* cup)
     return -1;
 }
 
-void cup_get_schedule_for_round(const Cup* cup, int round, int* out_match_indices, int* out_count)
-{
-    if (cup == NULL || round < 0 || round >= cup->num_rounds) {
-        *out_count = 0;
-        return;
-    }
-
-    // Fixed formula: round 0 = Final, round 1 = Semis, round 2 = Quarters, etc.
-    // For round R: matches from (2^R - 1) to (2^(R+1) - 2)
-    int round_start_index = (1 << round) - 1;
-    int round_end_index = (1 << (round + 1)) - 2;
-
-    *out_count = 0;
-    for (int i = round_start_index; i <= round_end_index; ++i) {
-        out_match_indices[*out_count] = i;
-        (*out_count)++;
-    }
-}
-
 // Helper to get the parent match index
 // In a binary tree stored as an array, the parent of node i is at floor((i-1)/2)
 static int get_parent_match_index(int child_match_index)
@@ -369,26 +350,6 @@ static int get_match_start_day(const Cup* cup, int match_index)
 
     // All matches in a round happen simultaneously (same days)
     return round_start_day;
-}
-
-int cup_get_current_round(const Cup* cup)
-{
-    if (cup == NULL) return -1;
-
-    // Find the earliest round with undecided matches
-    // Start from last round (quarters) and work backwards to final
-    for (int round = cup->num_rounds - 1; round >= 0; round--) {
-        int round_start = (1 << round) - 1;
-        int round_end = (1 << (round + 1)) - 2;
-
-        for (int i = round_start; i <= round_end; i++) {
-            if (cup->matches[i].winner_id == -1 && cup->matches[i].team_a_id != -1 && cup->matches[i].team_b_id != -1) {
-                return round;
-            }
-        }
-    }
-
-    return -1; // Tournament complete
 }
 
 void cup_get_matches_for_day(const Cup* cup, int day, int* out_match_indices, int* out_count)

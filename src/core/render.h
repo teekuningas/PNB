@@ -12,7 +12,6 @@ typedef struct {
 
 void clean_mesh(MeshObject* mesh);
 void prepare_mesh(MeshObject* mesh, GLuint* displayList);
-int try_preparing_mesh_gl(char* filename, char* objectname, MeshObject* mesh, GLuint* displayList);
 int try_loading_texture_gl(GLuint* texture, const char* filename, const char* name);
 
 // Sets up the 3D perspective projection.

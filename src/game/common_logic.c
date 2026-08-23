@@ -2,7 +2,6 @@
 #include "globals.h"
 #include "common_logic.h"
 #include "vector_math.h"
-#include "geometry.h"
 #include "rng.h"
 #include "base_logic.h"
 #include "game_consolidation.h"
@@ -66,7 +65,7 @@ void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i)
     }
 }
 
-void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
+static void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
         float dx;
@@ -82,7 +81,7 @@ void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
         dx = playerInfo[index].tPI.targetLocation.x - playerInfo[index].tPI.location.x;
         dz = playerInfo[index].tPI.targetLocation.z - playerInfo[index].tPI.location.z;
 
-        norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
+        norm = vec3_distance_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
 
         if (norm < EPSILON) norm = 1.0f;
         // set the velocity
@@ -128,7 +127,7 @@ void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
             dx = playerInfo[index].tPI.targetLocation.x - playerInfo[index].tPI.location.x;
             dz = playerInfo[index].tPI.targetLocation.z - playerInfo[index].tPI.location.z;
 
-            norm = geometry_distance_2d_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
+            norm = vec3_distance_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
 
             if (norm < EPSILON) norm = 1.0f;
             vec3_set_xz(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
