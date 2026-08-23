@@ -21,7 +21,7 @@ static int handle_foul_play_reset(MatchSession* match, const FieldPositions* fie
 static void
 update_game_flow(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo);
 
-static void check_next_batter_decision(MatchSession* match, GameRulesState* rules);
+static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
 static void handle_strikes_and_balls(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 );
@@ -191,7 +191,7 @@ update_game_flow(MatchSession* match, const FieldPositions* field_positions, Gam
     }
 }
 
-static void check_next_batter_decision(MatchSession* match, GameRulesState* rules)
+static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules)
 {
     const RefereeState* referee = &rules->referee;
     const BetweenPitchState* bps = &rules->betweenPitchState;
@@ -205,12 +205,17 @@ static void check_next_batter_decision(MatchSession* match, GameRulesState* rule
 
     // so this function's idea is to make progress in selecting a new batter if old one's gone.
     // so this will be called only once when possible.
+    const HalfInningState* his = &rules->halfInningState;
+
     if (scoreboard->period >= 4) {
 
     } else if (get_active_batter_index(match) == -1 && match->flowControl.waitingForBatterDecision == 0 &&
                referee->endOfInningState == END_INNING_STATE_NONE) {
-        // there have to be a player available
-        if (rules->playerCounters.nonJokerPlayersLeft + rules->playerCounters.jokersLeft > 0) {
+        // §12: the batting order is a cycle, so there is always a next regular batter — until the
+        // referee pronounces the turn spent, after which only an unused joker can extend it. When
+        // neither is available there is nothing to offer: the referee ends the half-inning as soon
+        // as the ball is in a home fielder's hands, which is the rule's own third conjunct.
+        if (his->lastBatter.turnExhausted == 0 || his->jokersLeft > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
             if (count_active_batting_players(match->playerInfo) < BASE_COUNT && referee->foulState == FOUL_STATE_NONE) {
@@ -221,10 +226,7 @@ static void check_next_batter_decision(MatchSession* match, GameRulesState* rule
                     int battingTeamIndex = get_batting_team_index(scoreboard);
                     // this will give work to action_invocations.c and execute_actions.c
                     match->flowControl.waitingForBatterDecision = 1;
-                    // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
-                    // just select the next batter in order there. if not, we select the first joker we find that is
-                    // still unused. one of these must be true, as we checked there is joker or non-joker left before.
-                    if (rules->playerCounters.nonJokerPlayersLeft != 0) {
+                    if (his->lastBatter.turnExhausted == 0) {
                         match->pII.batterSelectionIndex =
                             scoreboard->teams[battingTeamIndex]
                                 .batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
@@ -239,8 +241,6 @@ static void check_next_batter_decision(MatchSession* match, GameRulesState* rule
                     }
                 }
             }
-        } else {
-            rules->playerCounters.noMorePlayers = 1;
         }
     }
 }
@@ -355,9 +355,7 @@ static int check_next_pair(MatchSession* match, const FieldPositions* field_posi
             // if equality holds, ending of inning will load the settings.
             if (rules->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
                 // Physical Reset for Next Pair
-                reset_for_next_pair(
-                    match, field_positions, scoreboard, &rules->homeRunContestState, &rules->playerCounters
-                );
+                reset_for_next_pair(match, field_positions, scoreboard, &rules->homeRunContestState);
             }
             return 1; // Signal that we reset
         }

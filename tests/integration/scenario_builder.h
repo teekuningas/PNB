@@ -185,6 +185,17 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 void perform_pitch(ScenarioContext* ctx, float targetX);
 
 /**
+ * @brief Spend all three of the batting team's jokers.
+ *
+ * §12(2)/(3) only permit a side change once no jokers remain available, so any test that asserts a
+ * side change has to spend them first. The counter this touches is referee-owned bookkeeping, so it
+ * lives here rather than in the tests: when the rules model moves the count, one helper moves.
+ *
+ * @param ctx The scenario context
+ */
+void exhaust_jokers(ScenarioContext* ctx);
+
+/**
  * @brief Cleanup scenario and free resources
  */
 void cleanup_scenario(ScenarioContext* ctx);

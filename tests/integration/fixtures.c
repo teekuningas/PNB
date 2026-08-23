@@ -2,6 +2,7 @@
 #include "field_layout.h"
 #include "fill_player_data.h"
 #include "game_setup.h"
+#include "referee.h"
 #include "game_frame.h"
 #include "common_logic.h"
 #include "game_consolidation.h"
@@ -40,6 +41,15 @@ StateInfo* setup_test_state()
 
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));
+
+    // Zero is not a legal referee state, and some of its fields mean something wrong when zeroed —
+    // notably §12's last-batter indices, where 0 is a real player and the "nobody yet" value is -1.
+    // Rather than re-list those defaults here (two copies of one recipe drift), hand the job to the
+    // owner: the referee's own new-inning reset. create_scenario already ran it; the contract tier
+    // now starts from the same legal ground instead of raw zeroes.
+    referee_reset_for_new_inning(
+        &state->rules->referee, &state->rules->halfInningState, &state->rules->betweenPitchState
+    );
 
     // The two members the reduced pipeline never needed, and so never had: `simulate_frames` skips
     // action_invocations entirely, and consolidation only reaches gameConclusion at a period end. A test

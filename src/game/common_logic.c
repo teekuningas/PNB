@@ -709,7 +709,7 @@ void initialize_action_info(MatchSession* match)
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
-void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
+void reset_flow_state(MatchSession* match)
 {
     // Flow control
     match->flowControl.pause = 0;
@@ -720,7 +720,6 @@ void reset_flow_state(MatchSession* match, PlayerCounters* player_counters)
     match->flowControl.freeWalkBase = BASE_NONE;
 
     // Flow state
-    player_counters->noMorePlayers = 0;
     match->gameFlowState.ballHome = 0;
 
     // Frame events (cleared every frame, but ensure clean start)
@@ -770,12 +769,10 @@ void clear_frame_events(GameEvents* events)
 }
 
 // these should be kept when foul play
-void initialize_critical_game_info(MatchSession* match, PlayerCounters* player_counters, const Scoreboard* scoreboard)
+void initialize_critical_game_info(MatchSession* match, const Scoreboard* scoreboard)
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
 
-    player_counters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-    player_counters->jokersLeft = 3;
     match->pII.batterSelectionIndex =
         scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
 }

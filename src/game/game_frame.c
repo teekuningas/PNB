@@ -5,7 +5,7 @@
       1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world
       2. Physics & Logic (execute_actions + update_meters + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
-   PlayerCounters, Scoreboard
+   Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
    WRITES: PlayerInfo, FlowControl, pRAI, GameFlowState
       5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
@@ -93,8 +93,8 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // 3. Referee (Legal State Authority)
         // Runs AFTER physics to ensure legal state matches physical events
         update_referee(
-            stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->playerCounters,
-            &rules->scoreboard, &rules->homeRunContestState
+            stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
+            &rules->homeRunContestState
         );
 
         // 4. Consolidation (Reaction Phase)

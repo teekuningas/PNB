@@ -54,7 +54,8 @@ audited	src/game/rules_pure/base_control.c	purity claim verified genuine — fin
 audited	src/game/rules_pure/base_logic.c	purity claim verified genuine — findings F3-F11
 audited	src/game/rules_pure/player_utils.c	purity claim verified genuine — findings F3-F11
 audited	src/game/rules_pure/rules_outs.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/rules_runs.c	purity claim verified genuine — findings F3-F11
+audited	src/game/rules_pure/rules_runs.c
+audited	src/game/rules_pure/rules_side_change.c	written to the §3.3 standard by the §12 last-batter slice	purity claim verified genuine — findings F3-F11
 audited	src/game/rules_pure/rules_strikes.c	purity claim verified genuine — findings F3-F11
 audited	src/game/rules_pure/scoring_helpers.c	purity claim verified genuine — findings F3-F11
 open	src/menu/batting_order_menu.c	

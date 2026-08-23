@@ -27,7 +27,6 @@ void initialize_referee(const StateInfo* stateInfo, RefereeState* referee);
  * @param refereeState Mutable pointer to the referee state.
  * @param halfInningState Mutable pointer to the game state (for outs/runs).
  * @param betweenPitchState Mutable pointer to between-pitch sticky flags.
- * @param playerCounters Mutable pointer to player counters.
  * @param scoreboard Mutable pointer to global game info (teams/runs).
  */
 void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps);
@@ -46,8 +45,7 @@ void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, Be
 
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
-    HomeRunContestState* homeRunContestState
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState
 );
 
 #endif // REFEREE_H

@@ -9,7 +9,7 @@ void reset_for_new_half_inning(
 void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules);
 void reset_for_next_pair(
     MatchSession* match, const FieldPositions* field_positions, const Scoreboard* scoreboard,
-    const HomeRunContestState* hrcs, PlayerCounters* player_counters
+    const HomeRunContestState* hrcs
 );
 
 #endif // GAME_RESET_H

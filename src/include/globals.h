@@ -583,6 +583,17 @@ typedef struct _PlayerIndexInfo {
     int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
 } PlayerIndexInfo;
 
+// §12 Vuoronvaihto — the designation that decides when a batting turn is spent.
+// Lifetime: one half-inning, which is exactly the rule's own lifetime: the designation is re-made on
+// every even-numbered run and dies with the inning. Referee-owned; the decisions themselves are the
+// pure predicates in rules_pure/rules_side_change.h.
+typedef struct _LastBatterState {
+    int designatedIndex; // the viimeinen lyöjä; -1 until the half-inning's first batter takes the bat
+    int lastRegularIndex; // most recent REGULAR player to take the bat; -1 if none yet (jokers don't count)
+    int hasBattedAgain; // the designated player has taken the bat since being designated
+    int turnExhausted; // §12(2)/(3)'s batting-order clause holds: only a joker can extend the turn
+} LastBatterState;
+
 // MILESTONE 7.5 - Focused Structs
 typedef struct _HalfInningState {
     int outs;
@@ -591,6 +602,10 @@ typedef struct _HalfInningState {
     int runsInTheInning;
     GameEventType event;
     int endPeriod; // Rule state: period should end
+    // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."
+    // A genuinely consumable resource, and per half-inning — so it lives with the half-inning.
+    int jokersLeft;
+    LastBatterState lastBatter;
 } HalfInningState;
 
 // MILESTONE 16 (Phase 1): Transient event notifications
@@ -667,12 +682,6 @@ typedef struct _UIState {
     float lastMeterX;
     float lastSwingMeterX;
 } UIState;
-
-typedef struct _PlayerCounters {
-    int nonJokerPlayersLeft;
-    int jokersLeft;
-    int noMorePlayers;
-} PlayerCounters;
 
 typedef enum {
     AI_NO_LOCK = -1,
@@ -906,7 +915,6 @@ typedef struct _GameRulesState {
     RefereeState referee;
     HalfInningState halfInningState;
     BetweenPitchState betweenPitchState;
-    PlayerCounters playerCounters;
     HomeRunContestState homeRunContestState;
     Scoreboard scoreboard;
 } GameRulesState;

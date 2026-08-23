@@ -173,7 +173,7 @@ int test_ai_offense_breakdown(void)
     }
 
     // ---- the bands -------------------------------------------------------------------
-    // Every baseline below was measured on this branch at sim hash 70f105d26494b5d4
+    // Every baseline below was measured on this branch at sim hash 204f50ffa89e8b0a
     // (2026-08-17, 24 seeds × 3 half-innings — re-baselined with §5.10 slice 1a).
 
     long dir_total = 0, dir_min = -1, dir_max = -1;

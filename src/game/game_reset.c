@@ -21,10 +21,10 @@ void reset_for_new_half_inning(
 )
 {
     reset_physical_world(match, field_positions);
-    reset_flow_state(match, &rules->playerCounters);
+    reset_flow_state(match);
 
     // Team setup
-    initialize_critical_game_info(match, &rules->playerCounters, &rules->scoreboard);
+    initialize_critical_game_info(match, &rules->scoreboard);
     initialize_inning_permanent_player_information(match, &rules->scoreboard, team_data);
 
     if (rules->scoreboard.period >= 4) {
@@ -40,7 +40,7 @@ void reset_for_new_half_inning(
 void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules)
 {
     reset_physical_world(match, field_positions);
-    reset_flow_state(match, &rules->playerCounters);
+    reset_flow_state(match);
 
     if (rules->scoreboard.period >= 4) {
         // Homerun Contest: same batter resumes after a foul/out-of-bounds, so keep them at the plate.
@@ -97,10 +97,10 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 // Recipe 3: Next HR pair — referee already cleared per-pair state
 void reset_for_next_pair(
     MatchSession* match, const FieldPositions* field_positions, const Scoreboard* scoreboard,
-    const HomeRunContestState* hrcs, PlayerCounters* player_counters
+    const HomeRunContestState* hrcs
 )
 {
     reset_physical_world(match, field_positions);
-    reset_flow_state(match, player_counters);
+    reset_flow_state(match);
     setup_homerun_physical_state(match, scoreboard, hrcs, field_positions, 0);
 }

@@ -124,7 +124,7 @@ void select_batter(MatchSession* match, const RefereeState* referee, const Field
         match->playerRuntime[index].passedPathPoint = 0;
         match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
         // if he is a (unused) joker player, mark him as used.
-        // The referee handles playerCounters decrements on batterEntered event.
+        // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
         if (match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
             match->playerInfo[index].bTPI.joker = JOKER_USED;
         }

@@ -8,6 +8,7 @@
 #include "scoring_helpers.h"
 #include "vector_math.h"
 #include "base_control.h"
+#include "rules_side_change.h"
 #include "common_logic.h"
 
 // Referee-specific timing thresholds (in frames)
@@ -34,7 +35,7 @@ static void clear_between_pitch_state(BetweenPitchState* bps)
 
 static void update_initialization_events(
     const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState,
-    HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard
+    HalfInningState* halfInningState, Scoreboard* scoreboard
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -54,14 +55,26 @@ static void update_initialization_events(
                 referee->battingPlayers[i].hasScored = 0;
                 referee->battingPlayers[i].runOfHonorScored = 0;
 
+                // §12 bookkeeping. The half-inning's FIRST batter is its opening designation — they
+                // are §12(2)'s "vuoron aloittanut pelaaja" — and every later entry by whoever is
+                // designated is the "uudestaan lyöntivuoroon" the rule waits for.
+                if (halfInningState->lastBatter.designatedIndex == -1) {
+                    halfInningState->lastBatter.designatedIndex = i;
+                    halfInningState->lastBatter.hasBattedAgain = 0;
+                } else if (i == halfInningState->lastBatter.designatedIndex) {
+                    halfInningState->lastBatter.hasBattedAgain = 1;
+                }
+
                 if (game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
-                    // Regular batter: advance batting order, decrement available count
+                    // Regular batter: the order advances and wraps. §27: it is a cycle, and it is
+                    // followed for the whole match — nothing is consumed by batting.
                     scoreboard->teams[battingTeamIndex].batterOrderIndex =
                         (scoreboard->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
-                    playerCounters->nonJokerPlayersLeft--;
+                    halfInningState->lastBatter.lastRegularIndex = i;
                 } else {
-                    // Joker batter (already marked JOKER_USED by batting_system)
-                    playerCounters->jokersLeft--;
+                    // §7: a joker is spent, and takes nobody's batting turn ("Jokeripelaaja ei vie
+                    // kenenkään lyöntivuoroa") — so the order index deliberately does not move.
+                    halfInningState->jokersLeft--;
                 }
             }
         }
@@ -602,6 +615,19 @@ static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState)
     scoreboard->teams[battingTeamIndex].runs += 1;
     halfInningState->runsInTheInning += 1;
     halfInningState->event = EVENT_RUN_SCORED;
+
+    // §12: "kahden saadun juoksun ja kunkin kahden lisäjuoksun jälkeen" — every EVEN-numbered run of
+    // the half-inning re-designates the last batter, and the official interpretation says exactly
+    // that ("aina sisävuoron parillisen juoksun lyöjä"). Runs of honour count, so this belongs here,
+    // in the one place every run passes through, and not at the three call sites. The homerun
+    // contest (period 4+) ends by its own pair counter, so §12 has nothing to say there.
+    if (scoreboard->period < 4 && halfInningState->runsInTheInning % 2 == 0) {
+        halfInningState->lastBatter.designatedIndex = designate_last_batter(
+            halfInningState->lastBatter.lastRegularIndex, halfInningState->lastBatter.designatedIndex
+        );
+        halfInningState->lastBatter.hasBattedAgain = 0;
+        halfInningState->lastBatter.turnExhausted = 0;
+    }
 }
 
 // The period-end test that follows every award. `should_period_end` (rules_pure) is the rule itself; the
@@ -622,7 +648,7 @@ static void end_period_if_decided(HalfInningState* halfInningState, const Scoreb
 
 static void update_runs(
     const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -684,10 +710,6 @@ static void update_runs(
                         award_run(scoreboard, halfInningState);
 
                         referee->battingPlayers[i].hasScored = 1;
-
-                        if (halfInningState->runsInTheInning % 2 == 0) {
-                            playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-                        }
                     } else if (runOfHonor) {
                         award_run(scoreboard, halfInningState);
 
@@ -756,8 +778,8 @@ static void update_pitch_resolution(
 }
 
 static void update_free_walk_resolution(
-    RefereeState* referee, HalfInningState* halfInningState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
-    const FlowControl* flowControl, const GameEvents* events
+    RefereeState* referee, HalfInningState* halfInningState, Scoreboard* scoreboard, const FlowControl* flowControl,
+    const GameEvents* events
 )
 {
     // No free walk processing once end-of-inning has been decided
@@ -800,14 +822,6 @@ static void update_free_walk_resolution(
                 // Add run
                 award_run(scoreboard, halfInningState);
 
-                // NOTE: this is the only pool refresh that also clears `noMorePlayers`; the three in
-                // update_runs / resolve_pending_runs do not. Left exactly as-is — whether that is a real
-                // rule difference or a gap in the others is a rules question, not a refactoring one.
-                if (halfInningState->runsInTheInning % 2 == 0) {
-                    playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-                    playerCounters->noMorePlayers = 0;
-                }
-
                 end_period_if_decided(halfInningState, scoreboard);
             }
         }
@@ -819,7 +833,7 @@ static void update_free_walk_resolution(
 
 static void resolve_pending_runs(
     RefereeState* referee, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
-    PlayerCounters* playerCounters, Scoreboard* scoreboard
+    Scoreboard* scoreboard
 )
 {
     // No run resolution once end-of-inning has been decided
@@ -842,10 +856,6 @@ static void resolve_pending_runs(
 
                     referee->battingPlayers[i].hasScored = 1;
                     referee->battingPlayers[i].hasPendingRun = 0;
-
-                    if (halfInningState->runsInTheInning % 2 == 0) {
-                        playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-                    }
                 }
                 if (referee->battingPlayers[i].hasPendingRunOfHonor) {
                     // Award Run of Honor
@@ -878,10 +888,6 @@ static void resolve_pending_runs(
                     // Run voided.
                 }
                 referee->battingPlayers[i].hasPendingRun = 0;
-
-                if (halfInningState->runsInTheInning % 2 == 0) {
-                    playerCounters->nonJokerPlayersLeft = PLAYERS_IN_TEAM;
-                }
             }
 
             if (referee->battingPlayers[i].hasPendingRunOfHonor) {
@@ -892,6 +898,42 @@ static void resolve_pending_runs(
 
         end_period_if_decided(halfInningState, scoreboard);
     }
+}
+
+// §12(2)/(3), the batting-order clause. Pronounced every frame as a LEVEL, never latched: the referee
+// re-states whether the order has run its course, and the verdict must never outlive the moment it
+// describes.
+//
+// "…kun edellinen lyöjä on muuttunut LOPULLISESTI etenijäksi" (§27). In this engine's own vocabulary
+// that sentence has an exact reading: the player who was at home when the pitch was released has lost
+// their safety there. While they still hold home — set at the plate, or off and running but not yet
+// resolved — the batting turn has not passed on, and `get_base_controller(BASE_HOME)` is the codebase's
+// single source of truth for exactly that question (it is what `select_batter` consults before seating
+// anyone, so the referee and the seating path cannot disagree about whose turn it is).
+//
+// A foul looks like it needs guarding too — during one, a batter who had reached first has lost home,
+// so the turn reads as concluded until the reset puts them back. It does not, and the rule says why:
+// §12 also requires the ball to be in a home fielder's hands, and a ball that has just been judged out
+// of bounds is by definition not. The two conjuncts exclude each other, so no guard is added here — an
+// unreachable defence is a claim, not a fact (docs PNB/RULES.md §8b records the reasoning).
+static void update_side_change_readiness(
+    const StateInfo* stateInfo, const RefereeState* referee, HalfInningState* halfInningState,
+    const Scoreboard* scoreboard
+)
+{
+    if (scoreboard->period >= 4) return; // the homerun contest ends on its pair counter (§8)
+
+    const int turn_concluded = get_base_controller(stateInfo->match, referee, BASE_HOME) == -1;
+
+    const int battingTeamIndex = get_batting_team_index(scoreboard);
+    const int nextInOrder =
+        scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
+
+    halfInningState->lastBatter.turnExhausted =
+        turn_concluded && is_last_batter_turn_reached(
+                              halfInningState->lastBatter.designatedIndex, halfInningState->lastBatter.hasBattedAgain,
+                              halfInningState->runsInTheInning, nextInOrder
+                          );
 }
 
 static void update_game_state_flags(const GameEvents* events, BetweenPitchState* betweenPitchState)
@@ -953,6 +995,8 @@ static void clear_referee_for_inning_end(
     halfInningState->runsInTheInning = 0;
     halfInningState->event = EVENT_NONE;
     halfInningState->endPeriod = 0;
+    halfInningState->jokersLeft = JOKER_COUNT;
+    halfInningState->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
 
     // BetweenPitchState
     clear_between_pitch_state(betweenPitchState);
@@ -995,6 +1039,8 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     his->runsInTheInning = 0;
     his->event = EVENT_NONE;
     his->endPeriod = 0;
+    his->jokersLeft = JOKER_COUNT;
+    his->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
 
     clear_between_pitch_state(bps);
 }
@@ -1108,8 +1154,7 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
 
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, PlayerCounters* playerCounters, Scoreboard* scoreboard,
-    HomeRunContestState* homeRunContestState
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -1117,8 +1162,7 @@ void update_referee(
 
     // 0. Initialization Events (Milestone 17)
     update_initialization_events(
-        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, playerCounters,
-        scoreboard
+        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, scoreboard
     );
 
     // 1. Where is the ball?
@@ -1148,20 +1192,23 @@ void update_referee(
         update_safety_status(stateInfo, refereeState);
         update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase);
         update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase);
-        update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
+        update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, scoreboard);
 
         // 3.5 Resolve Pending Runs (Milestone 17)
-        resolve_pending_runs(refereeState, halfInningState, betweenPitchState, playerCounters, scoreboard);
+        resolve_pending_runs(refereeState, halfInningState, betweenPitchState, scoreboard);
 
         // 4. Strikes
         update_strikes(halfInningState, &stateInfo->match->gameEvents);
         update_pitch_resolution(stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents);
         update_free_walk_resolution(
-            refereeState, halfInningState, playerCounters, scoreboard, flowControl, &stateInfo->match->gameEvents
+            refereeState, halfInningState, scoreboard, flowControl, &stateInfo->match->gameEvents
         );
 
         // 5. Game State Flags
         update_game_state_flags(&stateInfo->match->gameEvents, betweenPitchState);
+
+        // 6. §12 — is the batting turn spent? Last, so it reads this frame's settled runs and outs.
+        update_side_change_readiness(stateInfo, refereeState, halfInningState, scoreboard);
     }
 
     // ========================================================================
@@ -1237,8 +1284,12 @@ void update_referee(
             wants_inning_end = (halfInningState->endPeriod == 1) ||
                                (homeRunContestState->runnerBatterPairCounter >= scoreboard->pairCount);
         } else {
+            // §12. (1) three burns. (2)/(3) the batting order has run its course AND the ball is in
+            // a home fielder's hands AND no jokers remain — all three conjuncts, as written. The
+            // engine used to collapse this into "the phantom pool and the jokers are both spent".
             wants_inning_end = (halfInningState->outs >= 3) ||
-                               (playerCounters->noMorePlayers == 1 && game->gameFlowState.ballHome == 1) ||
+                               (halfInningState->lastBatter.turnExhausted && halfInningState->jokersLeft == 0 &&
+                                game->gameFlowState.ballHome == 1) ||
                                (halfInningState->endPeriod == 1);
         }
     }

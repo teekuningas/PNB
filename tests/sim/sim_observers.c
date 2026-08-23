@@ -58,6 +58,29 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         sim_fail((SimGame*)g, "invariant: negative run total");
         return;
     }
+    if (sb->period < 4 && (h->jokersLeft < 0 || h->jokersLeft > JOKER_COUNT)) {
+        sim_fail((SimGame*)g, "invariant: jokers left out of [0, JOKER_COUNT]");
+        return;
+    }
+
+    // §12: once the referee has pronounced the batting turn spent, only a joker may extend it. A
+    // regular batter appearing here is bug #7's shape — somebody handed the bat that the rules had
+    // already finished with.
+    //
+    // MEASURED 2026-08-23 and kept anyway: today this branch is never entered. A probe that failed
+    // the sim on `turnExhausted` alone did not fire on any seed, because AI-vs-AI half-innings end
+    // on three burns every single time — the same blindness PLAN.md §8.2 records for the scoring
+    // half of the rules, now known to cover the side change as well. So this is a net for the
+    // future, not a net today, and the honest place to say so is here rather than in a doc.
+    if (sb->period < 4 && h->lastBatter.turnExhausted) {
+        for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+            const PlayerInfo* p = &g->state->match->playerInfo[i];
+            if (p->bTPI.state == PLAYER_STATE_AT_BAT && p->bTPI.joker == JOKER_REGULAR) {
+                sim_fail((SimGame*)g, "invariant: a regular batter took the bat after §12 spent the turn");
+                return;
+            }
+        }
+    }
 
     if (!o->initialized) {
         o->initialized = 1;
@@ -221,6 +244,16 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, r->scoreboard.teams[1].runs);
     FOLD(h, r->scoreboard.teams[0].batterOrderIndex);
     FOLD(h, r->scoreboard.teams[1].batterOrderIndex);
+
+    // §12's own state. The batting order alone does not say when the turn ends: the designation, the
+    // joker count and the pronounced verdict each determine a different future, so a checksum that
+    // omitted them would call two genuinely different half-innings identical. (The counters this
+    // replaced were never folded — the omission is being closed, not inherited.)
+    FOLD(h, r->halfInningState.jokersLeft);
+    FOLD(h, r->halfInningState.lastBatter.designatedIndex);
+    FOLD(h, r->halfInningState.lastBatter.lastRegularIndex);
+    FOLD(h, r->halfInningState.lastBatter.hasBattedAgain);
+    FOLD(h, r->halfInningState.lastBatter.turnExhausted);
 
     o->hash = h;
 }

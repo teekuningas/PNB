@@ -32,6 +32,16 @@ ScenarioContext* create_scenario(void)
     setup.team2_control = 2;
     setup.halfInningsInPeriod = 4;
     setup.playsFirst = 0;
+    // The batting order is not decoration: it is what gives players their jersey numbers and their
+    // JOKER_REGULAR / JOKER_AVAILABLE status (game_setup.c → initialize_inning_permanent_player_information),
+    // and §12's side change is defined on it. Left zeroed — as it was until 2026-08-23 — every slot named
+    // player 0, so nine "regulars" and three "jokers" were all the same person and no scenario test could
+    // say anything true about the order. The sim and the fixture factories have always used this identity
+    // order; the scenario tier now matches them.
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        setup.team1_batting_order[i] = i;
+        setup.team2_batting_order[i] = i;
+    }
 
     initialize_game_from_menu(ctx->state, &setup, &ctx->seed);
 
@@ -129,6 +139,17 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     game->playerRuntime[playerIndex].hasMadeRunOnThirdBase = 0;
 
     // DO NOT touch referee state - let referee infer it from events
+}
+
+void exhaust_jokers(ScenarioContext* ctx)
+{
+    if (!ctx || !ctx->state) return;
+
+    MatchSession* game = ctx->state->match;
+    for (int i = 0; i < JOKER_COUNT; i++) {
+        game->playerInfo[game->pII.jokerIndices[i]].bTPI.joker = JOKER_USED;
+    }
+    ctx->state->rules->halfInningState.jokersLeft = 0;
 }
 
 void move_pitcher_away(ScenarioContext* ctx)
@@ -265,8 +286,8 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // Milestone 14: Rules engine must run after physics to reconcile state
         GameRulesState* rules = ctx->state->rules;
         update_referee(
-            ctx->state, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->playerCounters,
-            &rules->scoreboard, &rules->homeRunContestState
+            ctx->state, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
+            &rules->homeRunContestState
         );
         ConsolidationOutput consolidation_output;
         consolidation_update(

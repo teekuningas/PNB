@@ -90,6 +90,10 @@ int test_out_of_bounds_protection(void);
 int test_is_regular_run(void);
 int test_is_run_of_honor(void);
 
+// Rules: the §12 side change (rules_pure/rules_side_change.c)
+int test_designate_last_batter(void);
+int test_is_last_batter_turn_reached(void);
+
 // RNG stream splitting (core/rng.c)
 int test_rng_split_parent_and_child_do_not_share_a_sequence(void);
 int test_rng_split_siblings_are_independent(void);

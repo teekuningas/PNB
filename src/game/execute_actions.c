@@ -20,7 +20,7 @@
 
 #define ANIMATION_FREQUENCY 3
 
-static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const PlayerCounters* playerCounters);
+static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* his);
 static void
 take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions);
 static void
@@ -121,7 +121,7 @@ void execute_actions(
      */
     // when there's no batter, user is prompted to select the next batter
     if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_NEXT) {
-        change_batter(match, &rules->scoreboard, &rules->playerCounters);
+        change_batter(match, &rules->scoreboard, &rules->halfInningState);
     } else if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_SELECT) {
         select_batter(match, &rules->referee, fieldPositions);
     }
@@ -196,7 +196,7 @@ take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
-static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const PlayerCounters* playerCounters)
+static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* his)
 {
     int done = 0;
     int counter = 0;
@@ -210,18 +210,19 @@ static void change_batter(MatchSession* match, const Scoreboard* scoreboard, con
     match->pendingActionState.batter_select++;
     // here we have a loop that basically just searches through the possible players and selects
     // the next one. batter_select == 0 indicates that it is a normal player, batter_select != 0 indicates
-    // it is a joker player.
+    // it is a joker player. §12: the regular slot is always on offer until the referee has pronounced
+    // the batting turn spent (halfInningState.lastBatter.turnExhausted), after which only jokers are.
     // there must be at least one player as this function cannot get called without
     // waitingForBatterDecision-flag, and that can flag cant be true if
     // there is not at least one player.
     while (done == 0) {
         if (match->pendingActionState.batter_select == 0) {
-            if (playerCounters->nonJokerPlayersLeft != 0)
+            if (his->lastBatter.turnExhausted == 0)
                 done = 1;
             else
                 match->pendingActionState.batter_select = 1;
         } else if (match->pendingActionState.batter_select == 4) {
-            if (playerCounters->nonJokerPlayersLeft != 0) {
+            if (his->lastBatter.turnExhausted == 0) {
                 match->pendingActionState.batter_select = 0;
                 done = 1;
             } else
