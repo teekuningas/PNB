@@ -38,6 +38,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_wounded_runner_cannot_score_run);
 
     // Catching-AI intent contracts (the drop migration)
+    RUN_TEST(test_reset_clears_declared_intent);
     RUN_TEST(test_ai_declares_and_executes_tactical_drop);
 
     // Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)

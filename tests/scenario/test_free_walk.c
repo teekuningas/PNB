@@ -2,6 +2,7 @@
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
+#include "execute_actions.h" // intent_push
 
 /**
  * TEST: Free Walk Resolution
@@ -39,8 +40,11 @@ int test_free_walk_resolution(void)
     // 3b. Wait a frame (simulate UI showing the offer before player responds)
     simulate_frames(ctx, 1);
 
-    // 4. Action: Accept Free Walk
-    game->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
+    // 4. Action: Accept Free Walk — declared as a message on the batting team's channel, the same way
+    // a human's key or the AI's decision reaches the engine.
+    intent_push(
+        &ctx->state->channels.batting, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}}
+    );
 
     // 5. Process acceptance (1 frame to trigger event and start movement)
     simulate_frames(ctx, 1);

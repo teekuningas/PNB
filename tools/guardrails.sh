@@ -92,7 +92,11 @@ ratchet "other -Wall/-Wextra warnings" "$other_warnings" 1
 # hands everything to everyone. The planned foundation.h split drives this to zero.
 # ---------------------------------------------------------------------------
 globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
-ratchet "files including globals.h" "$globals_includers" 84
+# 84 → 85 on 2026-08-24, deliberately: a new contract test that names MatchSession and a declaration
+# type. Every new file naming a World type costs one here until the foundation.h split lands, and the
+# honest options are to pay it or to hide the dependency behind a transitive include — which would
+# leave the number looking better while the coupling stayed exactly the same. Paid, not hidden.
+ratchet "files including globals.h" "$globals_includers" 85
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:
@@ -131,11 +135,12 @@ ratchet "files awaiting the function-quality audit" "$unaudited" 52
 # the lines that still touch it makes that progress a build fact like every other
 # number here — and, more importantly, makes it FAIL if a new intent is ever added to
 # ActionFlags instead of to the channel. Each remaining slice lowers this floor:
-# 1b (the four pure commands + pitch/throw), 2 (cTAF.move[]), 3 (batter select,
-# free walk, swing angle), 4 (the swing) — at which point the row retires at 0.
+# the rest of the channel slice (the pitch and throw declarations), the
+# fielder-movement slice (cTAF.move[]), the batter-selection slice (choose_batter and
+# the swing angle) and the swing slice — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 142
+ratchet "lines touching ActionFlags" "$action_flags_lines" 88
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

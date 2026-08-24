@@ -20,7 +20,7 @@
  * slice 1a and it goes red again the moment anyone moves the call back down the pipeline.
  *
  * The probe is the §30 tactical drop, because it is the one AI intent that is a pure consume-on-read
- * command reachable in a constructed state: `cTAF.drop_ball` is declared by `update_catching_ai` and
+ * command reachable in a constructed state: the drop is declared by `update_catching_ai` and
  * fully actualized inside `execute_actions` in the same breath. ONE production `update_game_frame` is
  * therefore enough to separate "control before execution" from "control after execution".
  *
@@ -55,7 +55,9 @@ int test_control_stage_precedes_execution(void)
     ctx->state->rules->referee.woundingEvaluationActive = 1;
 
     // Nothing is declared yet — so the frame below cannot pass on a leftover intent.
-    ASSERT_EQ(ACTION_IDLE, (int)match->aF.cTAF.drop_ball, "no drop may be declared before the frame under test runs");
+    ASSERT_EQ(
+        0, ctx->state->channels.catching.count, "no intent may be on the channel before the frame under test runs"
+    );
     ASSERT_EQ(0, ctx->state->match->flowControl.pause, "update_game_frame no-ops while paused");
 
     // ---- exactly ONE frame of the real production pipeline. No stage is called by hand.
@@ -80,8 +82,9 @@ int test_control_stage_precedes_execution(void)
         "no pitch may have been released this frame — the ball must have left the hand via the DROP"
     );
     ASSERT_EQ(
-        ACTION_IDLE, (int)match->aF.cTAF.drop_ball,
-        "the drop command must be consumed within the frame that declared it"
+        0, ctx->state->channels.catching.count,
+        "the drop command must be consumed within the frame that declared it — the channel is empty at "
+        "every frame boundary"
     );
 
     cleanup_scenario(ctx);

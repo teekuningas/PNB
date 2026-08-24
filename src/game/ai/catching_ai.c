@@ -17,8 +17,9 @@
 // the pitchTime>=100 ramp, collapsed into one clock.)
 #define AI_PITCH_DELAY 150
 
-static void
-update_ai_pitching(MatchSession* match, const HalfInningState* halfInningState, AIControllerState* aiController)
+static void update_ai_pitching(
+    MatchSession* match, const HalfInningState* halfInningState, AIControllerState* aiController, IntentChannel* channel
+)
 {
     int pitcherIndex = match->pII.catcherOnBaseIndex[0];
 
@@ -45,10 +46,9 @@ update_ai_pitching(MatchSession* match, const HalfInningState* halfInningState, 
                 rand_power, rand_dir, rand_choice
             );
             // Commit the complete aim at once (the staggered reveal the batter reacts to comes with the
-            // swing slice). The engine actualizes from here.
-            match->aF.cTAF.pitch.phase = PITCH_DECL_AIMED;
-            match->aF.cTAF.pitch.power = aim.power;
-            match->aF.cTAF.pitch.direction = aim.direction;
+            // swing slice). One message, complete: the engine actualizes from there.
+            PitchDeclaration declared = {.phase = PITCH_DECL_AIMED, .power = aim.power, .direction = aim.direction};
+            intent_push(channel, (IntentMessage){.kind = INTENT_PITCH, .as.pitch = declared});
         }
     }
 
@@ -123,7 +123,7 @@ void move_controlled_player_to_location(MatchSession* match, Vector3D* target)
     match->aiState.moveCounter++;
 }
 
-void throw_ball_to_base(MatchSession* match, BaseID base)
+void throw_ball_to_base(MatchSession* match, BaseID base, IntentChannel* channel)
 {
     // Don't start a throw if any catching action is already in progress. We read the real
     // execution-side mutex (current_catching_action) directly — the AI no longer keeps a duplicate
@@ -157,16 +157,17 @@ void throw_ball_to_base(MatchSession* match, BaseID base)
         // and actualizes the release (execute_actions / throwing_system); the AI plays no minigame, counts
         // no frames. (The human reaches the same COMMITTED in two frames — INITIATED{target} then
         // COMMITTED{power} from its charge widget; the engine owns the release instant for both.)
-        match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
-        match->aF.cTAF.throw.target = base;
-        match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
+        ThrowDeclaration declared = {.phase = THROW_DECL_COMMITTED, .target = base, .power = THROW_POWER_DEFAULT};
+        intent_push(channel, (IntentMessage){.kind = INTENT_THROW, .as.throw = declared});
     }
 }
 
-void update_catching_ai(MatchSession* match, const GameRulesState* rules, AIControllerState* aiController)
+void update_catching_ai(
+    MatchSession* match, const GameRulesState* rules, AIControllerState* aiController, IntentChannel* channel
+)
 {
     // Update AI pitching
-    update_ai_pitching(match, &rules->halfInningState, aiController);
+    update_ai_pitching(match, &rules->halfInningState, aiController, channel);
 
     // (The throw no longer needs an AI-side "finish throwing" step: the engine owns the windup and
     // releases the ball when it completes. throwStage / AI_THROW_LOCK / the meter-watch / the
@@ -209,13 +210,12 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, AICont
                 &(rules->referee), &(rules->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
                 r2IsOnBase, catcherHomeIndex, hasBallIndex
             )) {
-            // Declare the drop command directly (intent). drop_ball() in throwing_system.c is
-            // instantaneous and self-guarded — it no-ops unless this catcher still holds the ball and
-            // no throw/pitch is in flight — so the old AI_DROP_LOCK / dropStage wrapper around it was
-            // pure redundancy of the execution-side state — a duplicate state machine that can only drift. The
-            // execution-side `hasBallIndex` flips to -1 the frame the drop is consumed, preventing any
-            // re-issue on its own.
-            match->aF.cTAF.drop_ball = ACTION_TRIGGER_START;
+            // Declare the drop and stop there. Whether it is allowed — this catcher still holding
+            // the ball, no throw or pitch with a claim on it — is the gate's decision, made once for
+            // every producer, so the old AI_DROP_LOCK / dropStage wrapper has nothing left to guard
+            // against and no execution-side state left to mirror. `hasBallIndex` flips to -1 the
+            // frame the drop is actualized, which stops any re-issue on its own.
+            intent_push(channel, (IntentMessage){.kind = INTENT_DROP_BALL});
         }
         // otherwise we throw or move towards a base where lead_from_base player is going. if lead_from_base player is
         // going nowhere we take ball to home base.
@@ -254,7 +254,7 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, AICont
                 target.z = match->playerInfo[match->pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.z;
                 move_controlled_player_to_location(match, &target);
             }
-            throw_ball_to_base(match, (BaseID)throwBase);
+            throw_ball_to_base(match, (BaseID)throwBase, channel);
         }
     }
 }

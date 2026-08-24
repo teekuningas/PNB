@@ -34,7 +34,10 @@ static void setup_fielder_with_ball(ScenarioContext* ctx)
 
 static void tick(ScenarioContext* ctx)
 {
-    execute_actions(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+    execute_actions(
+        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
+        &ctx->state->playSoundEffect
+    );
 }
 
 static float horiz_speed(const MatchSession* m)
@@ -95,9 +98,9 @@ int test_throw_committed_releases_sized_to_power(void)
     MatchSession* m = ctx->state->match;
 
     const float lowPower = 0.3f;
-    m->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
-    m->aF.cTAF.throw.target = BASE_FIRST;
-    m->aF.cTAF.throw.power = lowPower;
+    m->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
+    m->pendingActionState.throwDeclaration.target = BASE_FIRST;
+    m->pendingActionState.throwDeclaration.power = lowPower;
 
     // First frame begins the windup (engine mutex), without releasing.
     tick(ctx);
@@ -115,7 +118,10 @@ int test_throw_committed_releases_sized_to_power(void)
     ASSERT(lowSpeed > 0.0f, "a released throw has a horizontal launch velocity");
     // frames counts from the SECOND frame onward (the first began the windup); release near the windup end.
     ASSERT(frames + 1 >= windup - 1, "release must wait for the engine windup, not fire instantly");
-    ASSERT_EQ(THROW_DECL_IDLE, (int)m->aF.cTAF.throw.phase, "the declaration is consumer-cleared to IDLE at release");
+    ASSERT_EQ(
+        THROW_DECL_IDLE, (int)m->pendingActionState.throwDeclaration.phase,
+        "the declaration is consumer-cleared to IDLE at release"
+    );
     ASSERT_EQ(
         CATCHING_ACTION_NONE, (int)m->pendingActionState.current_catching_action,
         "the catching action clears at release"
@@ -125,9 +131,9 @@ int test_throw_committed_releases_sized_to_power(void)
     // --- high power: same geometry → the only difference is the declared power ---
     ScenarioContext* ctx2 = create_scenario();
     setup_fielder_with_ball(ctx2);
-    ctx2->state->match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
-    ctx2->state->match->aF.cTAF.throw.target = BASE_FIRST;
-    ctx2->state->match->aF.cTAF.throw.power = 1.0f;
+    ctx2->state->match->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
+    ctx2->state->match->pendingActionState.throwDeclaration.target = BASE_FIRST;
+    ctx2->state->match->pendingActionState.throwDeclaration.power = 1.0f;
     float highSpeed = run_until_release(ctx2, throw_windup_total_frames(1.0f) + 6, NULL);
     ASSERT(highSpeed > 0.0f, "the high-power throw must release");
 
@@ -152,8 +158,8 @@ int test_throw_initiated_then_committed_engine_times_release(void)
     setup_fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
 
-    m->aF.cTAF.throw.phase = THROW_DECL_INITIATED;
-    m->aF.cTAF.throw.target = BASE_FIRST;
+    m->pendingActionState.throwDeclaration.phase = THROW_DECL_INITIATED;
+    m->pendingActionState.throwDeclaration.target = BASE_FIRST;
 
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES + 20; i++) {
         tick(ctx);
@@ -169,25 +175,28 @@ int test_throw_initiated_then_committed_engine_times_release(void)
 
     // Commit a LOW power. The clock (capped at MAX) is already well past windup(0.3), so the engine releases
     // this very tick — the "second frame arrived late" case.
-    m->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
-    m->aF.cTAF.throw.power = 0.3f;
+    m->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
+    m->pendingActionState.throwDeclaration.power = 0.3f;
     tick(ctx);
     ASSERT_EQ(-1, m->pII.hasBallIndex, "committing after a full windup releases immediately");
     float longInitLowPowerSpeed = horiz_speed(m);
-    ASSERT_EQ(THROW_DECL_IDLE, (int)m->aF.cTAF.throw.phase, "the declaration is cleared to IDLE at release");
+    ASSERT_EQ(
+        THROW_DECL_IDLE, (int)m->pendingActionState.throwDeclaration.phase,
+        "the declaration is cleared to IDLE at release"
+    );
     cleanup_scenario(ctx);
 
     // --- short INITIATED, then HIGH power → the engine WAITS out the windup (it owns the release instant) ---
     ScenarioContext* ctx2 = create_scenario();
     setup_fielder_with_ball(ctx2);
     MatchSession* m2 = ctx2->state->match;
-    m2->aF.cTAF.throw.phase = THROW_DECL_INITIATED;
-    m2->aF.cTAF.throw.target = BASE_FIRST;
+    m2->pendingActionState.throwDeclaration.phase = THROW_DECL_INITIATED;
+    m2->pendingActionState.throwDeclaration.target = BASE_FIRST;
     tick(ctx2); // begin windup
     tick(ctx2); // barely wound (clock ~1, well short of windup(1.0) = MAX)
 
-    m2->aF.cTAF.throw.power = 1.0f;
-    m2->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
+    m2->pendingActionState.throwDeclaration.power = 1.0f;
+    m2->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
     tick(ctx2); // committing does NOT fire this frame — the windup is not done
     ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a committed throw waits out its windup");
     ASSERT_EQ(

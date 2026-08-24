@@ -35,9 +35,16 @@ void init_batting_ai(AIState* aiState)
     aiState->batterChangeCount = 0;
 }
 
+// The batting controller's one-line way of saying "this base, this command". Every run this AI
+// declares goes through here, so the message shape is written once rather than at five call sites.
+static void declare_run(IntentChannel* channel, BaseID base, RunIntent command)
+{
+    intent_push(channel, (IntentMessage){.kind = INTENT_BASE_RUN, .as.base_run = {.base = base, .command = command}});
+}
+
 void update_batting_ai(
     MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
-    AIControllerState* aiController
+    AIControllerState* aiController, IntentChannel* channel
 )
 {
     int i;
@@ -76,7 +83,7 @@ void update_batting_ai(
     if (match->flowControl.waitingForFreeWalkDecision == 1) {
         if (match->aiState.battingKeyDown == 0) {
             if (match->aiState.actionKeyLock == AI_NO_LOCK) {
-                match->aF.bTAF.take_free_walk = FREE_WALK_ACCEPT;
+                intent_push(channel, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}});
                 match->aiState.battingKeyDown = 1;
                 match->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
             }
@@ -184,7 +191,7 @@ void update_batting_ai(
         // command's actualization sets will_start_running[BASE_HOME], which makes the guard
         // below false next frame (no click bookkeeping needed).
         if (match->aiState.runningBatter == 1 && match->pRAI.will_start_running[BASE_HOME] == 0) {
-            match->aF.bTAF.base_run[BASE_HOME] = RUN_FORWARD;
+            declare_run(channel, BASE_HOME, RUN_FORWARD);
         }
         // Arm on-base runners to advance on the pitch. Same self-limiting: once a runner is
         // armed (and, on 1st/2nd, leads off) it is no longer ON_BASE-and-unarmed, so it is not
@@ -194,7 +201,7 @@ void update_batting_ai(
                 int index = get_base_controller(match, &rules->referee, (BaseID)i);
                 if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE &&
                     match->pRAI.will_start_running[i] == 0) {
-                    match->aF.bTAF.base_run[i] = RUN_FORWARD;
+                    declare_run(channel, (BaseID)i, RUN_FORWARD);
                 }
             }
         }
@@ -209,7 +216,7 @@ void update_batting_ai(
             for (i = 1; i < 3; i++) {
                 int index = get_base_controller(match, &rules->referee, (BaseID)i);
                 if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_LEADING) {
-                    match->aF.bTAF.base_run[i] = RUN_BACK;
+                    declare_run(channel, (BaseID)i, RUN_BACK);
                 }
             }
         }
@@ -229,7 +236,7 @@ void update_batting_ai(
             for (i = 1; i < BASE_COUNT; i++) {
                 int index = get_base_controller(match, &rules->referee, (BaseID)i);
                 if (index != -1 && match->playerRuntime[index].goingForward == 1) {
-                    match->aF.bTAF.base_run[i] = RUN_BACK;
+                    declare_run(channel, (BaseID)i, RUN_BACK);
                 }
             }
         }
@@ -352,7 +359,7 @@ void update_batting_ai(
                 }
             }
             if (shouldRun) {
-                match->aF.bTAF.base_run[i] = RUN_COMMIT;
+                declare_run(channel, (BaseID)i, RUN_COMMIT);
             }
         }
     }

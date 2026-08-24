@@ -82,9 +82,9 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
     // A pitch may be cancelled for a throw (never the reverse): drop the pitch declaration + its windup
     // clock, and move the ball back from the plate centre to the pitcher's hand.
     if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
-        match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
-        match->aF.cTAF.pitch.power = 0.0f;
-        match->aF.cTAF.pitch.direction = 0.0f;
+        match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_IDLE;
+        match->pendingActionState.pitchDeclaration.power = 0.0f;
+        match->pendingActionState.pitchDeclaration.direction = 0.0f;
         match->pRAI.pitch_state = PITCH_STAGE_NONE;
         match->pendingActionState.pitchActualization.timer = 0;
         match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
@@ -167,7 +167,6 @@ static void throw_release(MatchSession* match, float power)
     // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
     // player changing.
     match->pII.controlIndex = -1;
-    match->aF.cTAF.change_player = 0;
 }
 
 // Release and clear all throw actualization state back to idle (consumer-clears the declaration).
@@ -187,7 +186,7 @@ static void resolve_throw(MatchSession* match, ThrowDeclaration* decl, float pow
 // the windup already elapsed. The client never commands the release instant; the engine owns it.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions)
 {
-    ThrowDeclaration* decl = &match->aF.cTAF.throw;
+    ThrowDeclaration* decl = &match->pendingActionState.throwDeclaration;
     PendingActionState* pas = &match->pendingActionState;
 
     // Begin a windup the first frame a throw is declared while no catching action is in progress — if it
@@ -259,40 +258,38 @@ void drop_ball(MatchSession* match)
 {
     // there is a possibility to drop ball if to the ground if you want. it could be convenient when
     // you want a baserunner to be able to get safe from a base for some strategical reason.
-    if (match->pII.hasBallIndex != -1) {
-        if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
-            match->pRAI.pitch_state == PITCH_STAGE_NONE) {
-            float norm;
-            float dx;
-            float dz;
+    //
+    // This is the actualization only. Whether the drop was allowed at all — somebody is holding the
+    // ball, and neither a throw nor a pitch has a claim on it — was decided once, at the INGEST gate,
+    // against the world at the top of this tick; nothing between there and here can have taken the
+    // ball away, since that would need the very throw the gate refuses to drop through. Re-asking the
+    // question here would be a second home for one rule, and the two homes drift.
+    float norm;
+    float dx;
+    float dz;
 
-            // players' movement will be stopped when doing this, similar to throwing.
-            if (match->playerInfo[match->pII.hasBallIndex].cPI.moving == 1) {
-                stop_movement(match->playerInfo, match->pII.hasBallIndex);
-            }
-            // model is set to be the basic standing without ball model.
-            match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
-            // and then just set a little upward-forward -directed value for ball so that we'll see the dropping
-            dx = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.x;
-            dz = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.z;
-            norm = (float)sqrt(dx * dx + dz * dz);
-            if (norm < EPSILON) norm = 1.0f;
-            dx = dx / norm;
-            dz = dz / norm;
-            // and use generic_sling_ball again to get the ball to the world.
-            generic_sling_ball(
-                &(match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT
-            );
-            // Trigger fielder selection update after drop
-            match->pRAI.refresh_catch_and_change = 1;
-            match->pRAI.init_player_selection = 1;
-            // and set the lastHadBallIndex so that this player cannot catch it before it hits ground
-            match->pII.lastHadBallIndex = match->pII.hasBallIndex;
-            // and no player has the ball anymore.
-            match->pII.hasBallIndex = -1;
-        }
+    // players' movement will be stopped when doing this, similar to throwing.
+    if (match->playerInfo[match->pII.hasBallIndex].cPI.moving == 1) {
+        stop_movement(match->playerInfo, match->pII.hasBallIndex);
     }
-    match->aF.cTAF.drop_ball = ACTION_IDLE;
+    // model is set to be the basic standing without ball model.
+    match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+    // and then just set a little upward-forward -directed value for ball so that we'll see the dropping
+    dx = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.x;
+    dz = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.z;
+    norm = (float)sqrt(dx * dx + dz * dz);
+    if (norm < EPSILON) norm = 1.0f;
+    dx = dx / norm;
+    dz = dz / norm;
+    // and use generic_sling_ball again to get the ball to the world.
+    generic_sling_ball(&(match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT);
+    // Trigger fielder selection update after drop
+    match->pRAI.refresh_catch_and_change = 1;
+    match->pRAI.init_player_selection = 1;
+    // and set the lastHadBallIndex so that this player cannot catch it before it hits ground
+    match->pII.lastHadBallIndex = match->pII.hasBallIndex;
+    // and no player has the ball anymore.
+    match->pII.hasBallIndex = -1;
 }
 
 void update_controlled_player_speed(MatchSession* match)

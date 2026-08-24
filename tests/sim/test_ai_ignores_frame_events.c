@@ -57,6 +57,7 @@ _Static_assert(sizeof(GameEvents) == 9 * sizeof(int), "GameEvents changed — ex
 typedef struct {
     MatchSession match;
     AIControllerState aiController;
+    IntentChannels channels; // the controller's real output: the messages it declared
     int wrote_an_event; // the controller posted a frame event — a law violation in itself
 } ControllerOutput;
 
@@ -66,10 +67,15 @@ static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents
     sim_restore_world(cap, g);
     g->state->match->gameEvents = events;
 
-    ai_update(g->state->match, g->state->rules, g->state->fieldPositions, g->state->aiController);
+    // Each probe starts from an empty channel, so what it holds afterwards is this probe's
+    // declarations and nothing carried over from the previous one.
+    g->state->channels = (IntentChannels){0};
+
+    ai_update(g->state->match, g->state->rules, g->state->fieldPositions, g->state->aiController, &g->state->channels);
 
     memcpy(&out->match, g->state->match, sizeof(MatchSession));
     memcpy(&out->aiController, g->state->aiController, sizeof(AIControllerState));
+    out->channels = g->state->channels;
 
     out->wrote_an_event = memcmp(&out->match.gameEvents, &events, sizeof(GameEvents)) != 0;
 
@@ -113,18 +119,25 @@ int test_ai_ignores_frame_events(void)
             // A sample only proves something if the controller actually did something on it.
             // Comparing the world before the stage with the world after tells us that.
             if (memcmp(&cap.match, &quiet.match, sizeof(MatchSession)) != 0 ||
-                memcmp(&cap.aiController, &quiet.aiController, sizeof(AIControllerState)) != 0) {
+                memcmp(&cap.aiController, &quiet.aiController, sizeof(AIControllerState)) != 0 ||
+                quiet.channels.batting.count != 0 || quiet.channels.catching.count != 0) {
                 active_samples++;
             }
 
+            // Declared messages are compared as the controller's output, not just its side effects on
+            // the world: an event-dependent controller would most naturally reveal itself by declaring
+            // a DIFFERENT message, and a comparison blind to the channel would not see it.
             if (memcmp(&quiet.match, &noisy.match, sizeof(MatchSession)) != 0 ||
-                memcmp(&quiet.aiController, &noisy.aiController, sizeof(AIControllerState)) != 0) {
+                memcmp(&quiet.aiController, &noisy.aiController, sizeof(AIControllerState)) != 0 ||
+                memcmp(&quiet.channels, &noisy.channels, sizeof(IntentChannels)) != 0) {
                 differing++;
                 if (first_difference_frame < 0) first_difference_frame = g->frame;
             }
 
-            // Put the world back exactly as it was, so the probes leave no trace on the run.
+            // Put the world back exactly as it was, so the probes leave no trace on the run — the
+            // channel included, or the next real frame would ingest a probe's declarations.
             sim_restore_world(&cap, g);
+            g->state->channels = (IntentChannels){0};
         }
 
         update_game_frame(g->state, &g->menu);

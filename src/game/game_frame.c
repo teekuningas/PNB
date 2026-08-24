@@ -2,8 +2,9 @@
     game_frame.c — The per-frame game pipeline.
 
     Each frame executes 7 stages in strict order:
-      1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world
-      2. Physics & Logic (execute_actions + update_meters + game_manipulation)
+      1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world,
+                         writing nothing but value messages into its own team's intent channel
+      2. Physics & Logic (execute_actions: INGEST the channels, then actualize; + update_meters + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
@@ -72,21 +73,24 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         //
         // Order within the stage is free, and deliberately so: every check* in action_invocations
         // returns early on CONTROL_AI and ai_update dispatches per team on team_is_ai(), so the two
-        // producers write disjoint per-team channels (bTAF / cTAF) and cannot see each other's writes.
-        // Human first only because that is the order that held before this stage existed.
+        // producers write disjoint per-team channels and cannot see each other's writes. Human first
+        // only because that is the order that held before this stage existed.
         //
         // Frame-top placement also makes one-frame transients structurally invisible: gameEvents is
         // drained by the tick that produced it (stage 7), so a controller here can only ever read
         // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
-        action_invocations(game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee);
-        ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController);
+        action_invocations(
+            game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee,
+            &stateInfo->channels
+        );
+        ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController, &stateInfo->channels);
 
         // 2. Physics & Logic
         // StateInfo is destructured here (the assembly point): each stage receives exactly the
         // worlds it touches — mutable physical (MatchSession), client-local input read-only
         // (const ClientInputState: stage 1 writes it, execution only reads), read-only legal
         // (GameRulesState), geometry, and its one output — a signature is its complete edge list.
-        execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
+        execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->channels, &stateInfo->playSoundEffect);
         update_meters(game, stateInfo->clientInput);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 

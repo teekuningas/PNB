@@ -210,10 +210,11 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
 
     fprintf(f, "%s\"actionState\": {\n", sp);
     fprintf(f, "%s  \"current_catching_action\": %d,\n", sp, (int)game->pendingActionState.current_catching_action);
-    fprintf(f, "%s  \"pitch_decl_phase\": %d,\n", sp, (int)game->aF.cTAF.pitch.phase);
+    fprintf(f, "%s  \"pitch_decl_phase\": %d,\n", sp, (int)game->pendingActionState.pitchDeclaration.phase);
     fprintf(f, "%s  \"pitch_timer\": %d,\n", sp, game->pendingActionState.pitchActualization.timer);
-    fprintf(f, "%s  \"drop_ball\": %d,\n", sp, game->aF.cTAF.drop_ball);
-    fprintf(f, "%s  \"change_player\": %d,\n", sp, game->aF.cTAF.change_player);
+    // The drop / change-player commands used to be dumped here as persistent flags. They are messages
+    // now: declared and consumed inside one tick, so at the frame boundary this dump is taken there is
+    // nothing left of them to print — what a reader wants instead is the world they produced.
     fprintf(f, "%s  \"meter_counter\": %d\n", sp, game->pendingActionState.meter_counter);
     fprintf(f, "%s},\n", sp);
 
@@ -407,6 +408,30 @@ int state_validator_check(StateInfo* state)
             );
             return 0;
         }
+    }
+
+    // Invariant 4: the intent channels are empty at the frame boundary.
+    //
+    // This is what makes "the channel is a parameter of the tick, not state" a fact instead of an
+    // intention. Every message a controller declares is drained by the INGEST gate of the same tick;
+    // if any survives to here, intent has started to accumulate somewhere it can outlive the frame
+    // that produced it, be snapshot, and make two machines that agreed on everything else disagree.
+    // Overflow counts as the same failure from the other end: a message that never made it into the
+    // channel is one the gate never judged.
+    if (state->channels.batting.count != 0 || state->channels.catching.count != 0) {
+        printf(
+            "\n[STATE ERROR] FATAL: intent left in a channel at the frame boundary (batting=%d, catching=%d)\n",
+            state->channels.batting.count, state->channels.catching.count
+        );
+        return 0;
+    }
+    if (state->channels.batting.overflowed || state->channels.catching.overflowed) {
+        printf("\n[STATE ERROR] FATAL: an intent channel overflowed — a declared intent was dropped unjudged\n");
+        return 0;
+    }
+    if (state->channels.batting.malformed || state->channels.catching.malformed) {
+        printf("\n[STATE ERROR] FATAL: a malformed intent reached a channel — no kind, or the other team's\n");
+        return 0;
     }
 
     return 1; // Valid

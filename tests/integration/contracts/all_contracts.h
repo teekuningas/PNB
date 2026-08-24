@@ -27,6 +27,9 @@ int test_bat_outcome_promotion(void);
 // Run-scoring guard contracts (Bug #9 regression)
 int test_wounded_runner_cannot_score_run(void);
 
+// Reset-recipe contracts (nothing a producer declared survives a reset)
+int test_reset_clears_declared_intent(void);
+
 // Catching-AI intent contracts (the drop migration)
 int test_ai_declares_and_executes_tactical_drop(void);
 

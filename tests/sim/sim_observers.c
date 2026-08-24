@@ -171,10 +171,10 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.current_catching_action,
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, m->pII.batterSelectionIndex, m->aiState.planCalculated, (int)m->aF.cTAF.pitch.phase,
-        m->pendingActionState.pitchActualization.timer, m->aiState.batterReadyTimer,
-        m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing, m->aiState.aiWrongPitch, m->aiState.battingStyle,
-        (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
+        m->pRAI.batter_ready, m->pII.batterSelectionIndex, m->aiState.planCalculated,
+        (int)m->pendingActionState.pitchDeclaration.phase, m->pendingActionState.pitchActualization.timer,
+        m->aiState.batterReadyTimer, m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing,
+        m->aiState.aiWrongPitch, m->aiState.battingStyle, (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
 }
 

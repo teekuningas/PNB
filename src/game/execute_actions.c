@@ -1,8 +1,21 @@
 /*
-    execute_actions.c — Intent execution.
+    execute_actions.c — the INGEST gate, and intent execution.
 
-    Translates ActionFlags (set by human input or AI) into physical state changes:
-    throwing, pitching, batting, base running, player selection.
+    Two jobs, in this order, once per tick:
+
+    1. INGEST. Drain both teams' intent channels — everything the controllers declared during the
+       CONTROL stage at the frame top — decide what each message is PERMITTED to do against the world
+       as it stands at the top of this tick, and interpret the survivors into engine-shaped commands.
+       Nothing intent-shaped survives ingestion: what comes out is a plain per-tick command block, and
+       the channels are empty from here to the end of the frame.
+
+    2. ACTUALIZE. Run the engine's own fixed order of actualization — throw windup, fielder movement,
+       control changes, drops, the pitch clock, batting, base running — reading those commands. The
+       order here is the engine's, never the order messages happened to arrive in, so which producer
+       spoke first can never change the simulation.
+
+    Actions not yet moved onto the channel are still read from the persistent ActionFlags struct
+    (globals.h) further down this file; they convert one slice at a time.
 */
 
 #include "globals.h"
@@ -21,10 +34,27 @@
 #define ANIMATION_FREQUENCY 3
 
 static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* his);
-static void
-take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions);
-static void
-base_run(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base);
+static void take_free_walk_decision(
+    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
+);
+static void base_run(
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base, RunIntent cmd
+);
+
+// What ingestion leaves behind: this tick's commands, in engine terms. It is a local of
+// execute_actions, so it cannot outlive the tick, cannot be snapshot, and cannot be read by a
+// controller — the same guarantees the channel itself has, carried through the interpretation step.
+// Only actions whose whole content is "do this, now" appear here; a phased declaration (pitch, throw)
+// is engine state with a lifetime and lives in the World.
+typedef struct _IngestedCommands {
+    int change_player; // hand control to the next fielder
+    int drop_ball; // put the held ball down
+    FreeWalkAction take_free_walk; // FREE_WALK_IDLE when no answer was given this tick
+    RunIntent base_run[BASE_COUNT]; // per base, RUN_NONE where nothing was commanded
+} IngestedCommands;
+
+static Permission permit(const MatchSession* match, const IntentMessage* message);
+static IngestedCommands ingest_intents(MatchSession* match, IntentChannels* channels);
 
 void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 {
@@ -59,17 +89,186 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     init_batting_ai(&(match->aiState));
 }
 
+// The channel's producer-side operation. It lives beside the gate that drains it because the channel
+// has exactly two operations and no other owner yet; when the intent types stop needing the whole
+// globals.h monolith they get a file of their own.
+//
+// A full channel raises `overflowed` rather than growing or wrapping. Dropping the oldest message
+// would be the same bug with better manners: an intent silently lost is a divergence between two
+// machines that agreed on everything else.
+void intent_push(IntentChannel* channel, IntentMessage message)
+{
+    if (channel->count >= INTENT_CHANNEL_CAPACITY) {
+        channel->overflowed = 1;
+        return;
+    }
+    channel->message[channel->count] = message;
+    channel->count++;
+}
+
+// The permission rules — the one place a declared intent is told no.
+//
+// Each answer carries the rule that refused it, not just a bool. Nothing consumes the reason yet; the
+// point is that the refusal is not thrown away at the moment it is made, because every later consumer
+// (an on-screen hint, a replay that reads back, a rule set that can be asked what it still forbids)
+// needs the rule identity and cannot recover it afterwards.
+//
+// These read the world as it stands at the TOP of the tick, which is the whole reason ingestion runs
+// before actualization: every producer's messages are judged against the same settled world, so no
+// producer can be advantaged by the engine's internal ordering. Where that reading is not yet
+// provably the same as the one the old flag-consumption site made, the check stays at its site for
+// now and moves in the slice that rewrites it — see base running below.
+static Permission permit(const MatchSession* match, const IntentMessage* message)
+{
+    switch (message->kind) {
+    case INTENT_CHANGE_PLAYER:
+        // Control follows the ball: while somebody holds it, it is theirs.
+        if (match->pII.hasBallIndex != -1) {
+            return (Permission){0, RULE_CHANGE_PLAYER_NEEDS_EMPTY_HANDS};
+        }
+        return (Permission){1, RULE_NONE};
+
+    case INTENT_DROP_BALL:
+        if (match->pII.hasBallIndex == -1) {
+            return (Permission){0, RULE_DROP_NEEDS_BALL_IN_HAND};
+        }
+        // A gathered throw owns the ball until the engine releases it. Both the declaration and the
+        // engine's own throwing mutex are checked: the declaration covers a throw declared THIS tick
+        // (whose windup has not started yet at this point in the frame), the mutex covers one already
+        // running. Together they are exactly the window in which the ball is spoken for.
+        if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING ||
+            match->pendingActionState.throwDeclaration.phase != THROW_DECL_IDLE) {
+            return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
+        }
+        if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+            return (Permission){0, RULE_DROP_NOT_WHILE_PITCHING};
+        }
+        return (Permission){1, RULE_NONE};
+
+    case INTENT_TAKE_FREE_WALK:
+        // §26: an answer means nothing unless the referee has offered the walk.
+        if (match->flowControl.waitingForFreeWalkDecision != 1) {
+            return (Permission){0, RULE_FREE_WALK_NEEDS_AN_OFFER};
+        }
+        return (Permission){1, RULE_NONE};
+
+    case INTENT_PITCH:
+    case INTENT_THROW:
+        // Deliberately unrestricted here, for now. Whether a pitch or a throw may begin is asked today
+        // by the producer before it declares and by the actualizer before it acts, and those two
+        // readings are not yet provably the same as one taken here — they will be when the
+        // declarations merge into the actualizations and the phase stops being something a producer
+        // names at all. That merge is where these rules move, in one piece.
+        return (Permission){1, RULE_NONE};
+
+    case INTENT_BASE_RUN:
+        // Deliberately unrestricted here. Who may run is decided by which player controls the base,
+        // and that reading can still change inside a tick (a batter taken to the plate, a free walk
+        // started) between this gate and the moment the command is actualized. Moving it here would
+        // be a behaviour change wearing a refactor's clothes, so it stays at the actualization site
+        // until the slice that rewrites base running can move it honestly.
+        return (Permission){1, RULE_NONE};
+
+    case INTENT_NONE:
+    default:
+        // Unreachable: the drain rejects a kindless message as malformed before asking permission.
+        return (Permission){0, RULE_NONE};
+    }
+}
+
+// Which team may command what. Not a rule of pesäpallo and not a permission the gate can refuse — it
+// is the authority boundary: a controller speaks for its own team and for nothing else. Today the
+// worst a violation could do is act on the wrong team's behalf; the moment a channel arrives over a
+// wire it is the difference between a peer playing its team and a peer playing yours.
+static int intent_belongs_to_batting_team(IntentKind kind)
+{
+    return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK;
+}
+
+// Drain one channel into the command block. Same-kind duplicates are last-write-wins — a controller
+// that changes its mind within a tick means the later value, and per-base commands never collide
+// because each writes its own slot.
+static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_batting_channel, IngestedCommands* out)
+{
+    for (int m = 0; m < channel->count; m++) {
+        const IntentMessage* message = &channel->message[m];
+
+        // A kindless message and a message on the wrong team's channel are the same class of thing:
+        // not a rule refusing an action, but a producer that is broken. Neither is "denied" — both
+        // fail the frame through the state validator, because a rule refusing you is ordinary play
+        // and a malformed message never is.
+        int belongs_to_batting = intent_belongs_to_batting_team(message->kind) ? 1 : 0;
+        if (message->kind == INTENT_NONE || belongs_to_batting != is_batting_channel) {
+            channel->malformed = 1;
+            continue;
+        }
+
+        Permission permission = permit(match, message);
+        if (!permission.allowed) {
+            continue; // the reason dies here for now — the hint system is where it will be read
+        }
+
+        switch (message->kind) {
+        case INTENT_CHANGE_PLAYER:
+            out->change_player = 1;
+            break;
+        case INTENT_DROP_BALL:
+            out->drop_ball = 1;
+            break;
+        case INTENT_TAKE_FREE_WALK:
+            out->take_free_walk = message->as.free_walk.accept ? FREE_WALK_ACCEPT : FREE_WALK_REJECT;
+            break;
+        case INTENT_BASE_RUN:
+            if (message->as.base_run.base >= 0 && message->as.base_run.base < BASE_COUNT) {
+                out->base_run[message->as.base_run.base] = message->as.base_run.command;
+            }
+            break;
+        case INTENT_PITCH:
+            // A declaration has a lifetime, so it is not a command in the block above: it is written
+            // straight into the engine state that owns it, and the engine clears it when it resolves.
+            // Ingestion is the ONLY place a controller's declaration reaches that state.
+            match->pendingActionState.pitchDeclaration = message->as.pitch;
+            break;
+        case INTENT_THROW:
+            match->pendingActionState.throwDeclaration = message->as.throw;
+            break;
+        case INTENT_NONE:
+        default:
+            break;
+        }
+    }
+    channel->count = 0;
+}
+
+// THE INGEST GATE. Both channels are drained here and nowhere else, and they are left empty — which
+// is what makes the channel a parameter of the tick rather than a place intent can accumulate. The
+// state validator checks that emptiness at the end of every frame.
+static IngestedCommands ingest_intents(MatchSession* match, IntentChannels* channels)
+{
+    IngestedCommands commands = {0};
+
+    ingest_channel(match, &channels->batting, 1, &commands);
+    ingest_channel(match, &channels->catching, 0, &commands);
+
+    return commands;
+}
+
 void execute_actions(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, int* playSoundEffect
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels,
+    int* playSoundEffect
 )
 {
     int i;
+
+    // INGEST first: every controller's declarations for this tick, judged against one settled world,
+    // become engine commands here. After this line no intent-shaped thing is left to read.
+    IngestedCommands commands = ingest_intents(match, channels);
 
     /*
      * CATCHING TEAM
      */
 
-    // THROW — the engine-owned actualizer reads the phased ThrowDeclaration (cTAF.throw), runs the
+    // THROW — the engine-owned actualizer reads the phased ThrowDeclaration the gate stored, runs the
     // deterministic windup clock (ThrowActualization), and releases once the intent is COMMITTED (power
     // known) when the clock reaches throw_windup_total_frames(power) — ONE rule for both producers, no
     // client "fire-now" edge. The AI declares COMMITTED in one frame; a human streams
@@ -90,28 +289,27 @@ void execute_actions(
     // begin_throw_windup faces the thrower at the target base and movement is suppressed for the whole
     // windup — so there is no pre-windup charge window whose orientation needs a separate writer.)
 
-    // if change player key has been pressed
-    if (match->aF.cTAF.change_player == ACTION_TRIGGER_START) {
-        // no one must have the ball
-        if (match->pII.hasBallIndex == -1) {
-            // we go to next element in changePlayerArray.
+    // Hand control to the next fielder. The gate has already established that nobody holds the ball,
+    // so this is the move itself and nothing else.
+    if (commands.change_player) {
+        // we go to next element in changePlayerArray.
+        match->pII.changePlayerArrayIndex = (match->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
+        // and try to ensure that there is difference. we dont want to end up in a endless loop
+        // though so we do it only once.
+        if (match->pII.controlIndex == match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex]) {
             match->pII.changePlayerArrayIndex = (match->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
-            // and try to ensure that there is difference. we dont want to end up in a endless loop
-            // though so we do it only once.
-            if (match->pII.controlIndex == match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex]) {
-                match->pII.changePlayerArrayIndex = (match->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
-            }
-            // and then set the flag, so that other parts of code can handle
-            // the job
-            change_player(match);
         }
-        match->aF.cTAF.change_player = ACTION_IDLE;
+        // and then set the flag, so that other parts of code can handle
+        // the job
+        change_player(match);
     }
-    // if drop ball key has been pressed, try dropping
-    if (match->aF.cTAF.drop_ball == ACTION_TRIGGER_START) {
+    // Put the held ball on the ground. Permission (someone is holding it, and no throw or pitch has a
+    // claim on it) was settled at the gate; nothing between there and here can have taken the ball
+    // away, because a release requires exactly the throw the gate refuses to drop through.
+    if (commands.drop_ball) {
         drop_ball(match);
     }
-    // pitching — the engine-owned actualizer reads the phased declaration (cTAF.pitch), runs the
+    // pitching — the engine-owned actualizer reads the phased declaration the gate stored, runs the
     // deterministic windup clock, and releases on AIMED (or fakes / valesyöttö otherwise). No meter read,
     // no lock machine, no stuck-state auto-clear: the declaration is consumer-cleared at resolution.
     update_pitch_actualization(match, &rules->referee, fieldPositions);
@@ -125,10 +323,10 @@ void execute_actions(
     } else if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_SELECT) {
         select_batter(match, &rules->referee, fieldPositions);
     }
-    // free walk decisions, take_free_walk can be 0, 1 or 2. if its 2
-    // takeFreeWalkDecision() is called but will basically just set take_free_walk to 0.
-    if (match->aF.bTAF.take_free_walk > FREE_WALK_IDLE) {
-        take_free_walk_decision(match, &rules->scoreboard, fieldPositions);
+    // The offered free walk was answered this tick — taking it starts the run, declining it just
+    // closes the offer. Either answer ends the prompt.
+    if (commands.take_free_walk != FREE_WALK_IDLE) {
+        take_free_walk_decision(match, &rules->scoreboard, fieldPositions, commands.take_free_walk == FREE_WALK_ACCEPT);
     }
     // batter angles
     if (match->aF.bTAF.increase_batter_angle == ACTION_TRIGGER_START) {
@@ -149,16 +347,17 @@ void execute_actions(
     }
     // baserunners must be able to run!
     for (i = 0; i < BASE_COUNT; i++) {
-        base_run(match, &rules->referee, fieldPositions, i);
+        base_run(match, &rules->referee, fieldPositions, i, commands.base_run[i]);
     }
     // this is used to handle a lot of stuff happening between and after the decisions.
     update_batting(match, &rules->referee, &rules->betweenPitchState, fieldPositions, playSoundEffect);
 }
 
-static void
-take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions)
+static void take_free_walk_decision(
+    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
+)
 {
-    if (match->aF.bTAF.take_free_walk == FREE_WALK_ACCEPT) {
+    if (accepted) {
         int index = match->flowControl.freeWalkIndex;
         BaseID base = match->flowControl.freeWalkBase;
         if (index != -1) {
@@ -192,7 +391,6 @@ take_free_walk_decision(MatchSession* match, const Scoreboard* scoreboard, const
     }
     // no more decision to make.
     match->flowControl.waitingForFreeWalkDecision = 0;
-    match->aF.bTAF.take_free_walk = FREE_WALK_IDLE;
 }
 // so when there is no batter and few other conditions hold
 // we can select the batter from one player from the normal ordering of players and three joker players
@@ -284,12 +482,11 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 //
 // The command is single-frame and consumed here; it encodes no timing (the old AI double-click sim
 // is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
-static void
-base_run(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base)
+static void base_run(
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base, RunIntent cmd
+)
 {
     int index = get_base_controller(match, referee, base);
-    RunIntent cmd = match->aF.bTAF.base_run[base];
-    match->aF.bTAF.base_run[base] = RUN_NONE; // consume
 
     if (index == -1 || cmd == RUN_NONE) return;
 
@@ -342,20 +539,19 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
 
 void ai_update(
     MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
-    AIControllerState* aiController
+    AIControllerState* aiController, IntentChannels* channels
 )
 {
     int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
     TeamControlMode battingControl = rules->scoreboard.teams[battingTeamIndex].control;
     TeamControlMode catchingControl = rules->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
 
-    // first ai for catching team
-
+    // Each controller is handed ONLY its own team's channel — not both. A controller that cannot name
+    // the other team's channel cannot write it, whatever it intends.
     if (team_is_ai(catchingControl)) {
-        update_catching_ai(match, rules, aiController);
+        update_catching_ai(match, rules, aiController, &channels->catching);
     }
-    // then ai for batting team
     if (team_is_ai(battingControl)) {
-        update_batting_ai(match, rules, fieldPositions, aiController);
+        update_batting_ai(match, rules, fieldPositions, aiController, &channels->batting);
     }
 }

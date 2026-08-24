@@ -422,7 +422,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // the human aim phase; the AI drives no widget, so an AI pitch never shows a marker. Render-only —
     // reads the client-local widget phase + the declared (synced) power.
     if (stateInfo->clientInput->pitchWidget.mode == WIDGET_DESCENT) {
-        float locked_power = stateInfo->match->aF.cTAF.pitch.power;
+        float locked_power = stateInfo->match->pendingActionState.pitchDeclaration.power;
         float power_marker_x = meter_screen_x + locked_power * marker_travel;
         draw_texture_2d(
             resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,

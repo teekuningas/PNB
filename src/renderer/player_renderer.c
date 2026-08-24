@@ -159,7 +159,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
         // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
         // and human (the AI declares power directly; the windup + arc are the same engine path).
-        float power = stateInfo->match->aF.cTAF.pitch.power;
+        float power = stateInfo->match->pendingActionState.pitchDeclaration.power;
         if (power < 0.0f) power = 0.0f;
         if (power > 1.0f) power = 1.0f;
         int timer = stateInfo->match->pendingActionState.pitchActualization.timer;

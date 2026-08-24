@@ -350,13 +350,111 @@ typedef struct _PitchDeclaration {
     float direction; // valid only at AIMED
 } PitchDeclaration;
 
+// ---------------------------------------------------------------------------
+// THE INTENT CHANNEL — one per team, a PARAMETER of the tick, never World state.
+//
+// A controller (human input, AI, a scripted test, one day a remote peer) produces nothing but value
+// messages into its own team's channel during the CONTROL stage at the frame top. The INGEST gate at
+// the head of execute_actions drains both channels in the same tick, decides what each message is
+// PERMITTED to do, and interprets it into engine-shaped form. The channel is therefore filled and
+// emptied inside one tick and is empty at every frame boundary — the state validator checks exactly
+// that, every frame, so "a parameter, not state" is a fact rather than an intention.
+//
+// Two properties this shape buys, both load-bearing later:
+//   - It never enters a snapshot. Intent that outlived its tick would make two peers' worlds diverge
+//     on nothing more than when a key was pressed.
+//   - It is blittable — no pointers, fixed capacity, no heap. This struct is the future wire unit, so
+//     it has to be something you can memcpy onto a socket without walking it.
+//
+// A message is a complete, timeless VALUE ("run forward from second"), never an engine-relative edge
+// ("release now"). Duplicates of one kind within a tick are last-write-wins, and ingestion writes
+// disjoint engine state per kind, so the order messages happen to sit in the ring can never become a
+// hidden input to the simulation.
+//
+// Migration in progress: the actions NOT listed in IntentKind below are still the pre-intent
+// ActionFlags struct further down — persistent flags a producer sets and execution reads. They move
+// here one slice at a time, and ActionFlags dies when the last one has.
+typedef enum {
+    INTENT_NONE = 0,
+    INTENT_BASE_RUN, // batting: {base, command} — run/arm/come back, for the runner controlling `base`
+    INTENT_TAKE_FREE_WALK, // batting: {accept} — answer an offered free walk (§26)
+    INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
+    INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
+    INTENT_PITCH, // catching: the pitch declaration as it now stands
+    INTENT_THROW // catching: the throw declaration as it now stands
+} IntentKind;
+
+typedef struct _BaseRunIntent {
+    BaseID base;
+    RunIntent command;
+} BaseRunIntent;
+
+typedef struct _FreeWalkIntent {
+    int accept; // 1 = take the walk, 0 = decline it
+} FreeWalkIntent;
+
+// The pitch and the throw are the two actions a producer assembles over several frames rather than in
+// one, so what they send is the declaration in full, every time it changes — a complete value, not a
+// "now add the power" edge. The gate stores it; the engine actualizes and clears it. That the payload
+// is the engine's own declaration type, phase and all, is the transitional part: once the declarations
+// merge into the actualizations these two carry a finished pitch and throw instead, and the phase goes
+// back to being purely the engine's business.
+typedef struct _IntentMessage {
+    IntentKind kind;
+    union {
+        BaseRunIntent base_run;
+        FreeWalkIntent free_walk;
+        PitchDeclaration pitch;
+        ThrowDeclaration throw;
+    } as;
+} IntentMessage;
+
+// Capacity is the worst honest frame, not a guess at an average. The batting AI is the demanding
+// producer: it can arm the batter and every occupied base in one tick and then, after a hit, commit
+// all four again, with a free-walk answer alongside — nine messages, before any of the actions still
+// to move here arrive. Measured against real play, a full AI-vs-AI half-inning never exceeds four per
+// team per tick, so the number below is headroom over the structural worst case rather than a guess
+// tuned to the average. A full channel drops the message and raises `overflowed`, which the state
+// validator treats as a violation: silently losing an intent is exactly the kind of divergence that
+// would be undiagnosable once two machines are involved.
+#define INTENT_CHANNEL_CAPACITY 16
+
+typedef struct _IntentChannel {
+    IntentMessage message[INTENT_CHANNEL_CAPACITY];
+    int count;
+    int overflowed;
+    int malformed; // a kindless message, or one belonging to the other team — see the gate
+} IntentChannel;
+
+typedef struct _IntentChannels {
+    IntentChannel batting;
+    IntentChannel catching;
+} IntentChannels;
+
+// A refusal from the INGEST gate, with its reason. A bool would be a one-way door: the moment an
+// intent is dropped silently the reason is gone, and anything that wants it later — an on-screen hint
+// saying why the pitch would not go, a legible replay, a rule set that can be asked which refusals it
+// still makes — has to re-derive the rule somewhere else, which is two homes for one rule.
+typedef enum {
+    RULE_NONE = 0,
+    RULE_CHANGE_PLAYER_NEEDS_EMPTY_HANDS, // control passes only while nobody holds the ball
+    RULE_DROP_NEEDS_BALL_IN_HAND, // you cannot drop what you are not holding
+    RULE_DROP_NOT_WHILE_THROWING, // a gathered throw owns the ball until it is released
+    RULE_DROP_NOT_WHILE_PITCHING, // likewise a pitch in progress
+    RULE_FREE_WALK_NEEDS_AN_OFFER // §26: there is nothing to answer unless one was offered
+} RuleId;
+
+typedef struct _Permission {
+    int allowed;
+    RuleId denied_by; // RULE_NONE when allowed
+} Permission;
+
 /*
-Action flags. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
+Action flags — the pre-intent channel, being dissolved into the message channel above, one slice at a
+time. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
 typedef struct _BattingTeamActionFlags {
-    RunIntent base_run[4];
     ChooseBatterAction choose_batter;
-    FreeWalkAction take_free_walk;
     BatActionPhase swing;
     ActionTriggerState increase_batter_angle;
     ActionTriggerState decrease_batter_angle;
@@ -364,10 +462,6 @@ typedef struct _BattingTeamActionFlags {
 
 typedef struct _CatchingTeamActionFlags {
     ActionTriggerState move[4];
-    ThrowDeclaration throw; // phased throw declaration (see ThrowDeclaration) — replaces the atomic ThrowIntent
-    ActionTriggerState change_player;
-    ActionTriggerState drop_ball;
-    PitchDeclaration pitch; // phased pitch declaration (see PitchDeclaration) — replaces PitchActionPhase
 } CatchingTeamActionFlags;
 
 typedef struct _ActionFlags {
@@ -777,6 +871,12 @@ typedef struct _PendingActionState {
     unsigned int meter_counter_max;
 
     CatchingTeamCurrentAction current_catching_action;
+    // The two phased declarations and the clocks that actualize them. The declarations are ENGINE
+    // state, not intent storage: a controller declares by sending a message, the INGEST gate is the
+    // only thing that writes what a controller declared, and the engine clears each one when it
+    // resolves. They sit beside their clocks because that is what they will merge into.
+    PitchDeclaration pitchDeclaration;
+    ThrowDeclaration throwDeclaration;
     PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
     ThrowActualization throwActualization; // engine windup clock for the throw (replaces the meter_counter windup)
 
@@ -975,6 +1075,11 @@ typedef struct _StateInfo {
     MatchSession* match;
     ClientInputState* clientInput; // client-local input memory — NOT synced (see ClientInputState)
     AIControllerState* aiController; // controller-private AI memory — NOT synced (see AIControllerState)
+    // The per-team intent channels — held BY VALUE, because they are neither a world nor a memory:
+    // they are the tick's input, alive only between the CONTROL stage and the INGEST gate of the same
+    // frame. Storing them here just gives that per-tick value a place to sit on this machine; the
+    // state validator holds them to being empty at every frame boundary.
+    IntentChannels channels;
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

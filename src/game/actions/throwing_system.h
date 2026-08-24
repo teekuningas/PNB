@@ -41,7 +41,7 @@ int throw_windup_total_frames(float power);
 void init_throwing_system(MatchSession* match);
 
 // The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
-// Reads the phased ThrowDeclaration (cTAF.throw), runs the deterministic windup clock, and releases:
+// Reads the phased ThrowDeclaration the INGEST gate stored, runs the deterministic windup clock, and releases:
 // COMMITTED at throw_windup_total_frames(power); RELEASED (the human's fire edge) with the power declared on
 // the declaration (sampled client-side from the charge widget — never read off this clock).
 // Consumer-clears the declaration at resolution. Called once per frame from execute_actions. Timing is the

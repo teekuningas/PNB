@@ -6,7 +6,7 @@
 void init_batting_ai(AIState* aiState);
 void update_batting_ai(
     MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
-    AIControllerState* aiController
+    AIControllerState* aiController, IntentChannel* channel
 );
 
 #endif

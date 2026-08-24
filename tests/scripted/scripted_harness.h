@@ -12,8 +12,8 @@
  *   2. Scripted human — THIS tier: a human-controlled team fed scripted key presses.
  *   3. Live human    — the graphical client.
  *
- * Unlike the scenario tier (tests/integration/scenario_builder.c), which injects ActionFlags /
- * machinery calls directly and *bypasses* action_invocations, this harness writes a scripted
+ * Unlike the scenario tier (tests/integration/scenario_builder.c), which declares intent straight onto
+ * the channel and calls engine machinery directly, *bypassing* action_invocations, this harness writes a scripted
  * `KeyStates` and ticks the production `update_game_frame()`, so the **real action_invocations**
  * translates keys → intent every frame. It is the one tier that exercises the human input path
  * headless — the path with zero coverage before now.

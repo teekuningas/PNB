@@ -694,15 +694,21 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.needsMoveUpdate = 0;
     match->ballInfo.lastLastLocationUpdate = 0;
 }
-// Empty the intent channel. Cleared as one struct so a field added to ActionFlags is empty by
-// construction rather than by remembering to list it here — the field-by-field version this replaced
-// had silently missed two. Every idle/none enumerator in the channel is 0;
-// throw.target is the one non-zero "absent" sentinel. The windup clocks empty with the declarations
-// they actualize.
+// Empty everything a producer can have set that is not physics: the actions still held as persistent
+// flags, and the two phased declarations. Each is cleared as a WHOLE STRUCT, never field by field —
+// the field-by-field version this replaced had silently missed two, and a struct assignment cannot
+// miss a field that gets added later. Every idle/none enumerator is 0; throw.target is the one
+// non-zero "absent" sentinel. The windup clocks empty with the declarations they actualize.
+//
+// The message channel needs no counterpart here: it is drained to empty inside every tick, so a
+// reset has nothing of it to clean up.
 void initialize_action_info(MatchSession* match)
 {
     match->aF = (ActionFlags){0};
-    match->aF.cTAF.throw.target = BASE_NONE;
+
+    match->pendingActionState.pitchDeclaration = (PitchDeclaration){0};
+    match->pendingActionState.throwDeclaration = (ThrowDeclaration){0};
+    match->pendingActionState.throwDeclaration.target = BASE_NONE;
 
     match->pendingActionState.pitchActualization.timer = 0;
     match->pendingActionState.throwActualization.timer = 0;
@@ -729,8 +735,9 @@ void reset_flow_state(MatchSession* match)
     consolidation_init(&(match->gameFlowState));
     init_game_manipulation(&(match->gameFlowState));
 
-    // Action state. The intent channel and windup clocks belong to initialize_action_info
-    // (in reset_physical_world, which every recipe runs before this) — one owner per field.
+    // Action state. The persistent flags, the declarations and the windup clocks belong to
+    // initialize_action_info (in reset_physical_world, which every recipe runs before this) — one
+    // owner per field.
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     match->pRAI.throw_going_to_base = -1;
     // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately

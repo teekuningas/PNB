@@ -18,9 +18,9 @@ int pitch_windup_total_frames(float power)
 void reset_pitching_system(MatchSession* match)
 {
     match->pendingActionState.pitchActualization.timer = 0;
-    match->aF.cTAF.pitch.phase = PITCH_DECL_IDLE;
-    match->aF.cTAF.pitch.power = 0.0f;
-    match->aF.cTAF.pitch.direction = 0.0f;
+    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_IDLE;
+    match->pendingActionState.pitchDeclaration.power = 0.0f;
+    match->pendingActionState.pitchDeclaration.direction = 0.0f;
     match->aiState.batterReadyTimer = -1;
 }
 
@@ -76,7 +76,7 @@ static void begin_windup(MatchSession* match)
 static void release_pitch(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
     int pitcher = match->pII.hasBallIndex;
-    PitchDeclaration* decl = &match->aF.cTAF.pitch;
+    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
     Vector3D v = pitch_velocity_from_aim(decl->power, decl->direction);
     Vector3D target;
     int i;
@@ -136,7 +136,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
 static void fake_pitch(MatchSession* match)
 {
     int pitcher = match->pII.hasBallIndex;
-    PitchDeclaration* decl = &match->aF.cTAF.pitch;
+    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
 
     match->pRAI.pitch_state = PITCH_STAGE_NONE;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
@@ -157,7 +157,7 @@ static void fake_pitch(MatchSession* match)
 // valesyöttö. Timing is the master; the animation only follows.
 void update_pitch_actualization(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
-    PitchDeclaration* decl = &match->aF.cTAF.pitch;
+    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
     PendingActionState* pas = &match->pendingActionState;
 
     // Begin a windup the first frame a producer has declared anything (phase left IDLE) while no catching

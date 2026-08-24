@@ -14,6 +14,7 @@ int main(void)
     RUN_TEST(test_ai_vs_ai_homerun);
     RUN_TEST(test_ai_vs_ai_determinism);
     RUN_TEST(test_different_seeds_produce_different_games);
+    RUN_TEST(test_sim_hash_matches_recorded_baseline);
     RUN_TEST(test_ai_offense_breakdown);
     RUN_TEST(test_no_batter_lock_stall);
     RUN_TEST(test_world_snapshot_retick_is_identical);

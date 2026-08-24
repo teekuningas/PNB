@@ -26,6 +26,18 @@ static unsigned long long run_once(unsigned int seed)
     return h;
 }
 
+// The recorded behaviour baseline for the AI-vs-AI half-inning at seed 0x1234ABCD. This is a
+// FINGERPRINT OF BEHAVIOUR, not of the struct layout: the checksum observer folds curated
+// game-meaningful fields (positions, base ids, player states, ball, the engine seed, the legal
+// counters), so adding or removing an unrelated field cannot move it — only the game playing out
+// differently can.
+//
+// What it is for: a slice that claims to be behaviour-preserving can say so as a fact instead of a
+// hope. A moved hash is then a leak to investigate, never something to re-baseline over. When a
+// slice changes timing or the RNG on purpose, this constant is re-recorded DELIBERATELY, in that
+// slice's own commit, alongside the argument for why the new behaviour is the intended one.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x204f50ffa89e8b0aULL
+
 int test_ai_vs_ai_determinism(void)
 {
     unsigned long long a = run_once(0x1234ABCDu);
@@ -47,5 +59,21 @@ int test_different_seeds_produce_different_games(void)
     unsigned long long a = run_once(0x0000AAAAu);
     unsigned long long b = run_once(0xBBBB0000u);
     ASSERT(a != b, "two different seeds produced an identical game — randomness is not reaching the sim");
+    return TEST_PASSED;
+}
+
+// Determinism (above) proves the machine repeats ITSELF; this proves the machine still plays the
+// SAME GAME it played before. The two are independent: a refactor that quietly changes when a
+// fielder starts moving keeps every determinism property intact and still fails here.
+//
+// If this goes red, the question is never "what is the new number" — it is "what did I change about
+// the game". The tests/sim box-score and offense-breakdown tests are the tools for answering it.
+int test_sim_hash_matches_recorded_baseline(void)
+{
+    unsigned long long h = run_once(0x1234ABCDu);
+    ASSERT(
+        h == SIM_BEHAVIOUR_BASELINE_HASH,
+        "the AI-vs-AI half-inning no longer plays out the same game (see the baseline constant above)"
+    );
     return TEST_PASSED;
 }

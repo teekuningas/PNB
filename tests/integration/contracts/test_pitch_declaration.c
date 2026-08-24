@@ -24,7 +24,10 @@ static int run_actualizer(ScenarioContext* ctx, int budget)
 {
     int i;
     for (i = 0; i < budget; i++) {
-        execute_actions(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+        execute_actions(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
+            &ctx->state->playSoundEffect
+        );
         if (ctx->state->match->pII.hasBallIndex == -1) break; // ball left the hand
     }
     return i;
@@ -41,12 +44,14 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     const float direction = 0.0f; // straight up over the plate (a strike)
 
     // Declare a complete aim (as the AI does at once, or a human at the 3rd click).
-    match->aF.cTAF.pitch.phase = PITCH_DECL_AIMED;
-    match->aF.cTAF.pitch.power = power;
-    match->aF.cTAF.pitch.direction = direction;
+    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_AIMED;
+    match->pendingActionState.pitchDeclaration.power = power;
+    match->pendingActionState.pitchDeclaration.direction = direction;
 
     // First frame begins the windup (engine mutex), without releasing.
-    execute_actions(match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+    execute_actions(
+        match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels, &ctx->state->playSoundEffect
+    );
     ASSERT_EQ(
         CATCHING_ACTION_PITCHING, (int)match->pendingActionState.current_catching_action,
         "declaring a pitch must begin the engine-owned windup"
@@ -69,7 +74,10 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     ASSERT(fabs(expected.z - match->ballInfo.velocity.z) < 0.0001f, "ball vz == pitch_velocity_from_aim.z");
 
     // The declaration is consumer-cleared at resolution.
-    ASSERT_EQ(PITCH_DECL_IDLE, (int)match->aF.cTAF.pitch.phase, "declaration cleared to IDLE at resolution");
+    ASSERT_EQ(
+        PITCH_DECL_IDLE, (int)match->pendingActionState.pitchDeclaration.phase,
+        "declaration cleared to IDLE at resolution"
+    );
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -84,8 +92,8 @@ int test_pitch_unaimed_is_valesyotto(void)
 
     // Declare power only — the aim window is never filled (a human who ran out of clicks, or an AI that
     // declined). The phase stays at POWER through the windup.
-    match->aF.cTAF.pitch.phase = PITCH_DECL_POWER;
-    match->aF.cTAF.pitch.power = 0.5f;
+    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_POWER;
+    match->pendingActionState.pitchDeclaration.power = 0.5f;
 
     // Run well past the windup deadline.
     run_actualizer(ctx, pitch_windup_total_frames(0.5f) + 4);
@@ -97,7 +105,10 @@ int test_pitch_unaimed_is_valesyotto(void)
         CATCHING_ACTION_NONE, (int)match->pendingActionState.current_catching_action,
         "valesyöttö clears the catching action"
     );
-    ASSERT_EQ(PITCH_DECL_IDLE, (int)match->aF.cTAF.pitch.phase, "declaration cleared to IDLE at resolution");
+    ASSERT_EQ(
+        PITCH_DECL_IDLE, (int)match->pendingActionState.pitchDeclaration.phase,
+        "declaration cleared to IDLE at resolution"
+    );
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
