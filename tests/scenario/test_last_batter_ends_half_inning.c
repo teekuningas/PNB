@@ -5,13 +5,13 @@
 
 /*
  * §12 Vuoronvaihto — the half-inning ends on the designated last batter, not on a pool of nine.
- * Rule and worked example: docs PNB/RULES.md §3a, from reference/RULES_OFFICIAL.md §12.
+ * Rule and worked example: the official pesäpallo rulebook, §12 (Vuoronvaihto).
  *
  * These are scenario-tier tests, so everything below goes through a real mechanism: batters take the
  * bat by declaring the `choose_batter` intent that a human key or the AI controller declares, and they
  * leave it by running through the engine's own base-running machinery. Nothing sets `bTPI.state` or
  * emits a `gameEvents` flag by hand — a test that manufactures the state it is checking knights
- * nothing (PLAN.md §7.2). The one thing these tests do set directly is referee-owned LEGAL state
+ * nothing. The one thing these tests do set directly is referee-owned LEGAL state
  * (a burn), which is this tier's stated power and what `test_burnt_player_bats_again` already does.
  */
 
@@ -99,7 +99,7 @@ static void score_a_run_from_third(ScenarioContext* ctx, int runnerIndex)
 /**
  * §12(3) — after two runs, the side change waits for the designated last batter.
  *
- * Written RED on purpose (PLAN.md §7.1): before the last-batter slice the engine refilled a phantom
+ * Written RED on purpose: before the last-batter slice the engine refilled a phantom
  * pool of nine batters on every second run and ended the half-inning only when that pool AND the
  * jokers were spent, so the state built below produced no side change at all. The assertions are all
  * in the old vocabulary — a designation the engine makes, and a side change it does or does not

@@ -7,7 +7,7 @@
 #include <math.h>
 
 /**
- * CONTRACT: the throw (PLAN.md §5.8 phased shape + §5.9 engine↔client fix) — the throw is ONE intent
+ * CONTRACT: the throw (the phased shape plus the engine↔client fix) — the throw is ONE intent
  * {direction, power} the engine actualizes over its own windup clock (ThrowActualization). Both producers
  * declare `power` as a trusted VALUE; the ENGINE owns the release instant (release when the clock reaches
  * windup(power)), never a client "fire now" edge, never derived from the clock:
@@ -61,8 +61,8 @@ static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
 }
 
 // 0. The AI windup sizing scales with declared power: throw_windup_total_frames maps [THROW_POWER_MIN,1] →
-//    [MIN,MAX] frames, monotonically. This is the ONLY throw↔clock relationship that survives §5.9 — the
-//    human's power is a value declared from the client charge widget (§8.7), never read back off the clock,
+//    [MIN,MAX] frames, monotonically. This is the ONLY throw↔clock relationship that survives — the
+//    human's power is a value declared from the client charge widget, never read back off the clock,
 //    so the old power<->windup round-trip (and throw_power_from_windup) is gone.
 int test_throw_windup_frames_scale_with_power(void)
 {
@@ -139,7 +139,7 @@ int test_throw_committed_releases_sized_to_power(void)
     return TEST_PASSED;
 }
 
-// 2. The human's two-frame intent (§5.9): INITIATED (direction) winds up but never releases while power is
+// 2. The human's two-frame intent: INITIATED (direction) winds up but never releases while power is
 //    PENDING; COMMITTED (power) hands the engine the value, and the ENGINE owns the release instant — it
 //    fires when its clock reaches windup(power), NOT on the frame the client committed. Proven two ways:
 //    (a) a long INITIATED then a low power releases immediately (the windup already elapsed); (b) a short
@@ -205,7 +205,7 @@ int test_throw_initiated_then_committed_engine_times_release(void)
     // The DECLARED power decides the launch speed (trusted value), independent of how long INITIATED ran.
     ASSERT(
         shortInitHighPowerSpeed > longInitLowPowerSpeed,
-        "launch velocity tracks the DECLARED power value, not the hold/clock (§5.9 engine↔client contract)"
+        "launch velocity tracks the DECLARED power value, not the hold/clock (the engine↔client contract)"
     );
     cleanup_scenario(ctx2);
     return TEST_PASSED;

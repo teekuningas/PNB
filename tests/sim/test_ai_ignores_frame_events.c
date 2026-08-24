@@ -5,10 +5,10 @@
 
 #include <string.h>
 
-// Law 1 of ARCHITECTURE_VISION.md §8.8, made mechanical.
+// Controller symmetry, law 1, made mechanical.
 //
 // Every controller — human, AI, scripted, net proxy — runs in one CONTROL stage at the top of the
-// tick, reading the same settled end-of-previous-tick World (PLAN.md §5.10 slice 1a, landed
+// tick, reading the same settled end-of-previous-tick World (the control-stage slice, landed
 // 2026-08-17). A property that placement quietly depends on: GameEvents is a ONE-FRAME struct,
 // drained by the tick that produced it, so at the frame top it is structurally always empty. A
 // controller that reads a frame event therefore reads zero now and read something else before the
@@ -150,7 +150,7 @@ int test_ai_ignores_frame_events(void)
     if (differing != 0) {
         printf(
             "  first divergence at frame %ld: the controller read a frame event.\n"
-            "  Frame-top placement (§8.8 law 1) makes GameEvents structurally empty at the CONTROL\n"
+            "  Frame-top placement makes GameEvents structurally empty at the CONTROL\n"
             "  stage, so this read can only ever see zero in production — the controller is keyed on\n"
             "  something that is never there. Re-key it on durable world state: a level, not an edge.\n",
             first_difference_frame

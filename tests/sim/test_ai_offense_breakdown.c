@@ -13,11 +13,11 @@
 //
 // The bands below fix both halves of that: the currently-measured value sits beside each band
 // in the table, so the baseline lives in the repo, and the band is wide enough to survive a
-// legitimate re-baseline while still catching degradation. They exist because PLAN.md §5.10
+// legitimate re-baseline while still catching degradation. They exist because the
 // slice 1a moves when the AI observes the world and therefore re-baselines the determinism hash
 // BY DESIGN — the hash cannot gate that change, so this net has to.
 //
-// WHAT THIS TEST CANNOT SEE (PLAN.md §8.2). The net reports runs=0. The batter is weak by
+// WHAT THIS TEST CANNOT SEE. The net reports runs=0. The batter is weak by
 // design until the swing slice, so no run is ever scored here, and nothing downstream of a run
 // — the award paths, should_period_end, the pool refresh, period transitions — is covered by
 // these bands, by the box score, or by the determinism hash. For referee scoring and flow work,
@@ -174,7 +174,7 @@ int test_ai_offense_breakdown(void)
 
     // ---- the bands -------------------------------------------------------------------
     // Every baseline below was measured on this branch at sim hash 204f50ffa89e8b0a
-    // (2026-08-17, 24 seeds × 3 half-innings — re-baselined with §5.10 slice 1a).
+    // (2026-08-17, 24 seeds × 3 half-innings — re-baselined with the control-stage slice).
 
     long dir_total = 0, dir_min = -1, dir_max = -1;
     for (int b = 0; b < 5; b++) {

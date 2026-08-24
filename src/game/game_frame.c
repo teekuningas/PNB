@@ -67,8 +67,8 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // Both controllers run here at the frame top and read the SAME end-of-previous-tick world:
         // the human's keys through action_invocations, the AI through ai_update. Their intents are
         // then consumed by the SAME frame's execution, so neither producer is privileged and the AI
-        // has no 1-frame input buffer (that buffer was an accident of call placement, not a design —
-        // ARCHITECTURE_VISION.md §8.8 law 1).
+        // has no 1-frame input buffer (that buffer was an accident of call placement, not a design).
+        // This is controller symmetry: the engine cannot tell the producers apart by when they ran.
         //
         // Order within the stage is free, and deliberately so: every check* in action_invocations
         // returns early on CONTROL_AI and ai_update dispatches per team on team_is_ai(), so the two
@@ -85,7 +85,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // StateInfo is destructured here (the assembly point): each stage receives exactly the
         // worlds it touches — mutable physical (MatchSession), client-local input read-only
         // (const ClientInputState: stage 1 writes it, execution only reads), read-only legal
-        // (GameRulesState), geometry, and its one output. See PLAN.md "Function Signature Strategy".
+        // (GameRulesState), geometry, and its one output — a signature is its complete edge list.
         execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->playSoundEffect);
         update_meters(game, stateInfo->clientInput);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);

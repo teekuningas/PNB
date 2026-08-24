@@ -156,7 +156,7 @@ void throw_ball_to_base(MatchSession* match, BaseID base)
         // Declare the throw COMMITTED — target + power at once. The engine sizes the windup to the power
         // and actualizes the release (execute_actions / throwing_system); the AI plays no minigame, counts
         // no frames. (The human reaches the same COMMITTED in two frames — INITIATED{target} then
-        // COMMITTED{power} from its charge widget; the engine owns the release instant for both, §8.7.)
+        // COMMITTED{power} from its charge widget; the engine owns the release instant for both.)
         match->aF.cTAF.throw.phase = THROW_DECL_COMMITTED;
         match->aF.cTAF.throw.target = base;
         match->aF.cTAF.throw.power = THROW_POWER_DEFAULT;
@@ -169,8 +169,8 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, AICont
     update_ai_pitching(match, &rules->halfInningState, aiController);
 
     // (The throw no longer needs an AI-side "finish throwing" step: the engine owns the windup and
-    // releases the ball when it completes — PLAN §4.12 sub-step 2. throwStage / AI_THROW_LOCK / the
-    // meter-watch / the timeout-abort fallback all deleted with it.)
+    // releases the ball when it completes. throwStage / AI_THROW_LOCK / the meter-watch / the
+    // timeout-abort fallback all deleted with it.)
 
     // if noone has ball and someone is controlled, ai will try to move towards the target point calculated
     // in game_manipulation.
@@ -212,7 +212,7 @@ void update_catching_ai(MatchSession* match, const GameRulesState* rules, AICont
             // Declare the drop command directly (intent). drop_ball() in throwing_system.c is
             // instantaneous and self-guarded — it no-ops unless this catcher still holds the ball and
             // no throw/pitch is in flight — so the old AI_DROP_LOCK / dropStage wrapper around it was
-            // pure redundancy of the execution-side state (the §8.1 duplicate-state-machine smell). The
+            // pure redundancy of the execution-side state — a duplicate state machine that can only drift. The
             // execution-side `hasBallIndex` flips to -1 the frame the drop is consumed, preventing any
             // re-issue on its own.
             match->aF.cTAF.drop_ball = ACTION_TRIGGER_START;

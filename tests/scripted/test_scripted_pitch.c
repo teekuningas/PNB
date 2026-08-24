@@ -4,7 +4,7 @@
 #include <math.h>
 
 /*
- * Scripted-human PITCH test — the human input→intent path for the pitch slice (PLAN.md §5/§5.7), driven
+ * Scripted-human PITCH test — the human input→intent path for the pitch slice, driven
  * entirely through the real action_invocations via scripted KeyStates (no AI, no direct state pokes).
  *
  * It proves the two-ping-pong meter dance: press → start the power meter sweeping; click during the sweep

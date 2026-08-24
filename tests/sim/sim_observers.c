@@ -69,7 +69,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     //
     // MEASURED 2026-08-23 and kept anyway: today this branch is never entered. A probe that failed
     // the sim on `turnExhausted` alone did not fire on any seed, because AI-vs-AI half-innings end
-    // on three burns every single time — the same blindness PLAN.md §8.2 records for the scoring
+    // on three burns every single time — the same blindness that hides the scoring
     // half of the rules, now known to cover the side change as well. So this is a net for the
     // future, not a net today, and the honest place to say so is here rather than in a doc.
     if (sb->period < 4 && h->lastBatter.turnExhausted) {
@@ -430,13 +430,13 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
                 o->reached_third++;
                 pbp(o, g, r, "runner reached third");
             } else if (base == BASE_HOME_SCORED && prev == BASE_THIRD) {
-                // KNOWN OVERCOUNT (found 2026-08-17, PLAN.md §3.3 F14 — recorded, not fixed here).
+                // KNOWN OVERCOUNT (found 2026-08-17 — recorded, not fixed here).
                 // This is a PHYSICAL arrival at home, not a run: game_manipulation sets baseId to
                 // BASE_HOME_SCORED even for a runner already WOUNDED or OUT (it only preserves the
                 // state), while §41 / is_regular_run correctly denies the run to a wounded runner. So
                 // this counter — and the word "SCORED" below — can fire with no run awarded, which is
                 // exactly what slice 1a's run first surfaced (scored=1 alongside runs=0). The honest
-                // run counter is `runs_scored`, fed from the scoreboard; the bands and PLAN.md §8.2
+                // run counter is `runs_scored`, fed from the scoreboard; the bands and the
                 // both rest on that one. Deliberately left alone in the slice that re-baselines
                 // against this net: changing the instrument and the measurement in one commit makes
                 // neither readable.

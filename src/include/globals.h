@@ -169,7 +169,7 @@ typedef struct _GroundUnit {
 // writes — an AI-controlled team reading down[CONTROL_AI][...] always sees
 // zeros. Callers guard reads with `if (control != CONTROL_AI)` and the AI
 // writes ActionFlags directly instead. Overloading TeamControlMode as an array
-// index is a known minor smell (see PLAN.md "Known Minor Violations"); prefer
+// index is a known minor smell (tracked as debt); prefer
 // HUMAN_PAD_COUNT when iterating real devices so watcher-facing code (e.g. the
 // pause key, the game-over screen) never touches the phantom slot.
 //
@@ -302,8 +302,8 @@ typedef enum { RUN_NONE = 0, RUN_FORWARD = 1, RUN_COMMIT = 2, RUN_BACK = 3 } Run
 // Engine owns the release instant (never the client): once COMMITTED, release when the windup clock ≥
 // throw_windup_total_frames(power). Because the human's clock started at INITIATED (running concurrently
 // with power selection), it is usually already past → immediate release (no double-wait); if power arrives
-// early the engine waits out the physical windup. There is no "fire now" client edge (engine↔client contract
-// §8.7). Values are client-TRUSTED — the engine actualizes `power`/`target`, it does not validate them (same
+// early the engine waits out the physical windup. There is no "fire now" client edge (the engine↔client
+// contract). Values are client-TRUSTED — the engine actualizes `power`/`target`, it does not validate them (same
 // trust as the AI). Lifecycle: persistent across the windup; the engine consumer-clears it to IDLE at
 // release / interrupt. Both producers emit this same declaration; only how many frames it takes differs.
 //   - `target` : BASE_NONE = no throw; any other BaseID is the single target base.
@@ -318,7 +318,7 @@ typedef struct _ThrowDeclaration {
     float power; // valid at COMMITTED (both producers)
 } ThrowDeclaration;
 
-// Pitch aim — the DECLARED end-result aim for a pitch (the catching team's aim intent, §8.5). Pure values,
+// Pitch aim — the DECLARED end-result aim for a pitch (the catching team's aim intent). Pure values,
 // no "declared" flags: the very EXISTENCE of a PitchAim means it has been declared. The two producers
 // converge on this same end result by different routes —
 //   - AI:    decide_pitch_aim produces a complete PitchAim immediately (declares at once).
@@ -659,7 +659,7 @@ typedef struct _CameraState {
     int homeRunCameraFlag;
     Vector3D targetPoint; // the active fielder's go-to point (computed in game_manipulation, read by the
                           // catching AI to steer, and by the camera) — a strategy fact mis-homed in camera
-                          // state; rehome to CatchingTeamState at the pII decompose (PLAN.md §6)
+                          // state; rehome to CatchingTeamState at the scheduled pII decompose
 
     // View vectors
     Vector3D cam, look, up;
@@ -723,8 +723,8 @@ typedef struct _AIState {
     int firstIndexSelected;
     int change;
     int changeHasHappened;
-    // BAND-AID (§3.1, 2026-06-30, dies with the swing slice): bounded-cycle guard for the batter-change
-    // loop. The `firstIndex == index` circuit-breaker is fragile against change_batter's joker-skipping
+    // BAND-AID (tracked debt, 2026-06-30, dies with the batter-selection slice): bounded-cycle guard for the
+    // batter-change loop. The `firstIndex == index` circuit-breaker is fragile against change_batter's joker-skipping
     // (a captured slot that later becomes JOKER_USED is never landed on again, so the exact re-match never
     // re-trips → the AI cycles batters forever, never selecting → batter_ready never set → game deadlock,
     // bug #5). There are at most JOKER_COUNT+1 distinct selectable slots, so a full cycle is bounded; force
@@ -766,7 +766,7 @@ typedef struct _PitchActualization {
 // human, at COMMITTED for the AI). Once the intent is COMMITTED (power known), the engine releases when this
 // clock reaches throw_windup_total_frames(power) — for BOTH producers, one rule. It also drives the render
 // gather arc. The client never reads it: the human's power comes from its own client charge widget, not this
-// clock (engine↔client contract §8.7 — input logic never reads the actualization clock). Runs identically
+// clock (the engine↔client contract — input logic never reads the actualization clock). Runs identically
 // headless. See ThrowDeclaration.
 typedef struct _ThrowActualization {
     int timer;
@@ -807,7 +807,7 @@ typedef struct _PendingActionState {
 
 } PendingActionState;
 
-// Client-local input layer (ARCHITECTURE_VISION.md §8.5 / §10 L3). Input *interpretation* memory — tap
+// Client-local input layer. Input *interpretation* memory — tap
 // windows, hold-charge, meter widgets — belongs to the input SOURCE (a client), NOT to the shared
 // physical world. It is therefore deliberately NOT part of MatchSession (the blittable peer / wire unit,
 // §9): it lives as a sibling in StateInfo, so a stage holding only MatchSession* physically cannot read
@@ -829,7 +829,7 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE 
 // interpretation, NOT engine timing — the engine's deterministic clocks (PitchActualization /
 // ThrowActualization) are separate and authoritative; this only turns a human's input moment into a number.
 // The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power), and the
-// swing to come — one general input widget, per the engine↔client contract (ARCHITECTURE_VISION.md §8.7).
+// swing to come — one general input widget, per the engine↔client contract.
 typedef struct _InputWidget {
     int counter; // cursor position in [0, counter_max]
     int counter_max; // sweep length (0 = never armed)
@@ -847,16 +847,16 @@ typedef struct _ClientInputState {
     InputWidget pitchWidget;
 
     // The throw charge meter — a CHARGE widget that rises while the human holds KEY_2 and is sampled on
-    // release to declare the throw power as a VALUE (engine↔client contract §8.7). Self-contained: it runs
+    // release to declare the throw power as a VALUE (the engine↔client contract). Self-contained: it runs
     // its own timing and never reads ThrowActualization (the engine clock drives only the render animation).
     // Human path only — the AI declares the throw COMMITTED with power directly, using no widget.
     InputWidget throwWidget;
 } ClientInputState;
 
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE
-// MatchSession, never crosses the wire, and is in no snapshot (ARCHITECTURE_VISION.md §8.8 law 5).
+// MatchSession, never crosses the wire, and is in no snapshot — controller memory is controller-private.
 // Today it holds only the controller's RNG stream. The AI's surviving strategy memory (AIState)
-// moves here at §5.10 slice 5.
+// moves here at the controller-eviction slice.
 //
 // Why the controller's randomness cannot live on the engine's stream: a replay from a message log
 // runs no AI at all, and a networked peer never runs OUR controllers. Either way the AI's draws

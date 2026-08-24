@@ -26,7 +26,7 @@
 
 // Human throw charge meter feel knob (client-local). The charge widget rises for CHARGE_FRAMES then holds
 // at full; a release samples it to a declared power in [THROW_POWER_MIN, 1]. Independent of the AI windup
-// length by design (§5.9 — the engine clock drives only the render gather animation), kept close to
+// length by design — the engine clock drives only the render gather animation — kept close to
 // THROW_WINDUP_MAX_FRAMES for visual coherence.
 #define THROW_CHARGE_FRAMES 45 // frames to reach full charge on a held throw (~0.9s at 50Hz)
 
@@ -135,7 +135,7 @@ void action_invocations(
 }
 
 // Human throw gesture (hold-release) → the phased ThrowDeclaration (cTAF.throw), with the power declared as
-// a VALUE sampled from a client-local CHARGE widget (engine↔client contract §8.7 — the input NEVER reads the
+// a VALUE sampled from a client-local CHARGE widget (the engine↔client contract — input NEVER reads the
 // engine windup clock; that clock drives only the render gather animation). Returns 1 if a throw gesture
 // owns the action key (KEY_2) this frame — the caller then suppresses pitch/drop/change so one key edge is
 // not consumed twice.

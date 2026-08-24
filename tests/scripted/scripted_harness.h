@@ -7,7 +7,7 @@
  * @file scripted_harness.h
  * @brief Headless "scripted human" harness — drives the *real* input path.
  *
- * The three headless drivers that converge on one actualizer (ARCHITECTURE_VISION.md §8.5, §4.10):
+ * The three headless drivers that converge on one actualizer:
  *   1. AI            — the sim tier (tests/sim/): both teams CONTROL_AI.
  *   2. Scripted human — THIS tier: a human-controlled team fed scripted key presses.
  *   3. Live human    — the graphical client.

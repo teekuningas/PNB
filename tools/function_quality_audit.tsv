@@ -1,63 +1,78 @@
-# The function-quality audit ledger — the coverage half of docs PNB/PLAN.md §3.3.
+# The function-quality audit ledger — coverage AND open findings, one row per .c file
+# in src/. No exceptions: tools/guardrails.sh checks this list against the tree in both
+# directions, so a file can never be silently skipped — a new .c file has to be
+# classified here before `make guardrails` passes again.
 #
-# One row per .c file in src/, no exceptions. tools/guardrails.sh checks this list
-# against the tree, so a file can never be silently skipped: a new .c file has to be
-# classified here before `make guardrails` passes again. PLAN.md §3.3 keeps the audit
-# standard and the findings register; this file keeps the coverage.
+# THE STANDARD — four questions per function, asked when a file is audited:
+#   1. Does it name one real domain concept? (Not "these lines appeared together twice.")
+#   2. Is its signature minimal and honest? No dead parameters — a signature that names
+#      a parameter it never reads over-claims its edges, the mirror of a missing const.
+#      Broad-and-const is fine; broad-and-mutable is not. The write set drives the count.
+#   3. Is claimed purity real? For anything under a *_pure/ directory: no static mutable
+#      state, no I/O, no RNG, no clock, every pointer const. The directory name is a
+#      claim the code must honour.
+#   4. Is the duplication genuine? Extract only where a real, nameable concept exists —
+#      if merging two similar blocks needs a mode flag to keep them apart, they were two
+#      rules that happened to look alike, and merging makes the code less tractable.
 #
 # status    meaning
-#   audited   read against the four §3.3 questions; findings recorded in PLAN.md §3.3
+#   audited   read against the four questions above
 #   open      not audited yet, and nothing blocks auditing it
 #   deferred  a scheduled slice rewrites or deletes the file, so auditing it now is
 #             churn — the audit is part of THAT slice's exit criteria instead
+#
+# THE NOTE COLUMN carries open findings — things a read turned up that were not fixed
+# on the spot, marked "OPEN FINDING:". They live here rather than in prose so they sit
+# next to the file they are about and cannot drift away from the tree. A finding that
+# gets fixed leaves this file; what it taught goes to the docs' history instead.
 #
 # Tab-separated: status <TAB> path <TAB> note.
 open	src/core/field_layout.c	
 open	src/core/fill_player_data.c	
 open	src/core/fixtures.c	
-open	src/core/font.c	
+open	src/core/font.c	OPEN FINDING: clean_font is an empty return-0 hook — main.c calls it at shutdown and a future font resource may want the place, but a function that does nothing is its own small lie
 open	src/core/input.c	
 open	src/core/loadobj.c	
 open	src/core/main.c	
 open	src/core/platform.c	
 open	src/core/render.c	
-open	src/core/resource_manager.c	
+open	src/core/resource_manager.c	OPEN FINDING: open-codes load_obj + prepare_mesh inline — the body of a helper deleted as dead in 2026-08-23; historical duplication, not genuine
 open	src/core/rng.c	
 open	src/core/sound.c	
 open	src/core/state_validator.c	
 open	src/core/vector_math.c	
-open	src/cup/cup.c	cup_menu const-correctness already tracked in §3.1
-deferred	src/game/action_invocations.c	§5.10 slice 1b rewrites this file (the INGEST gate)
-deferred	src/game/actions/batting_system.c	§5.10 slice 4 dissolves this file
-deferred	src/game/actions/pitching_system.c	§5.10 slices 2-4 dissolve this file
-deferred	src/game/actions/throwing_system.c	§5.10 slices 2-4 dissolve this file
+open	src/cup/cup.c	cup_menu const-correctness is tracked as known debt
+deferred	src/game/action_invocations.c	the channel slice rewrites this file into the INGEST gate
+deferred	src/game/actions/batting_system.c	the swing slice dissolves this file
+deferred	src/game/actions/pitching_system.c	the fielder-movement through swing slices dissolve this file
+deferred	src/game/actions/throwing_system.c	the fielder-movement through swing slices dissolve this file
 open	src/game/actions_pure/batting_physics.c	
 open	src/game/actions_pure/pitching_physics.c	
-deferred	src/game/ai/batting_ai.c	§5.10 slices 3-4 dissolve this file
-deferred	src/game/ai/catching_ai.c	§5.10 slice 2 splits this file along the law-5 seam
+deferred	src/game/ai/batting_ai.c	the batter-selection and swing slices dissolve this file
+deferred	src/game/ai/catching_ai.c	the fielder-movement slice splits this file along the controller/engine-behavior seam
 open	src/game/ai_pure/batting_ai_strategy.c	
 open	src/game/ai_pure/catching_ai_strategy.c	
 open	src/game/ai_pure/pitching_ai_strategy.c	
 open	src/game/ball.c	
-open	src/game/common_logic.c	the L3 god-file row (§6)
-deferred	src/game/execute_actions.c	§5.10 slice 1b rewrites this file (the INGEST gate)
+open	src/game/common_logic.c	known debt: a god-file bundling four unrelated owners
+deferred	src/game/execute_actions.c	the channel slice rewrites this file into the INGEST gate
 open	src/game/game_consolidation.c	
 open	src/game/game_frame.c	
-open	src/game/game_manipulation.c	the L3 god-file row (§6)
+open	src/game/game_manipulation.c	known debt: a god-file bundling four unrelated owners
 open	src/game/game_reset.c	
 open	src/game/game_screen.c	
 open	src/game/game_setup.c	
 open	src/game/immutable_world.c	
 open	src/game/player.c	
-audited	src/game/referee.c	the pilot audit — findings F1, F2
-audited	src/game/rules_pure/base_control.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/base_logic.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/player_utils.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/rules_outs.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/rules_runs.c
-audited	src/game/rules_pure/rules_side_change.c	written to the §3.3 standard by the §12 last-batter slice	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/rules_strikes.c	purity claim verified genuine — findings F3-F11
-audited	src/game/rules_pure/scoring_helpers.c	purity claim verified genuine — findings F3-F11
+audited	src/game/referee.c	the pilot audit — run-award and period-end dedup landed; the free-walk pool-refresh finding was resolved when the last-batter slice deleted the pool
+audited	src/game/rules_pure/base_control.c	purity verified. OPEN FINDINGS: get_ball_at_base_index carries an unresolved design question in a comment (catcher position or ball position?) — decide and delete it; get_base_controller returns -1 for both 'invalid base' and 'nobody controls it', two meanings on one sentinel
+audited	src/game/rules_pure/base_logic.c	purity verified. OPEN FINDINGS: base_is_safe_haven and base_is_index are byte-identical but deliberately NOT merged — two different questions that coincide today, and merging would erase a distinction a future enum change may separate; player_is_safe_from_fly carries archaeology comments explaining its history rather than its behaviour — settle the rule against the reference, then write one honest comment
+audited	src/game/rules_pure/player_utils.c	purity verified
+audited	src/game/rules_pure/rules_outs.c	purity verified. OPEN FINDING: the header says player_base is 'the base they are running FROM' while the .c body comment says ball_at_base_index is the FROM base — the two contradict each other about a rule 33 detail; one is wrong and needs a test pinning the real contract
+audited	src/game/rules_pure/rules_runs.c	purity verified
+audited	src/game/rules_pure/rules_side_change.c	written to the audit standard by the last-batter slice; includes nothing — the first proof-of-concept for the planned foundation.h split
+audited	src/game/rules_pure/rules_strikes.c	purity verified
+audited	src/game/rules_pure/scoring_helpers.c	purity verified
 open	src/menu/batting_order_menu.c	
 open	src/menu/cup_menu.c	
 open	src/menu/front_menu.c	

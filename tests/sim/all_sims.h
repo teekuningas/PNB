@@ -9,11 +9,11 @@ int test_different_seeds_produce_different_games(void);
 int test_ai_offense_breakdown(void);
 int test_no_batter_lock_stall(void);
 
-// The tick equation made executable (ARCHITECTURE_VISION.md §8.8).
+// The tick equation made executable: World(T) = tick(World(T-1), messages).
 int test_world_snapshot_retick_is_identical(void);
 int test_retick_diverges_when_engine_seed_is_not_restored(void);
 
-// Law 1 of §8.8 — controllers may not read (or write) frame events.
+// Controller symmetry, law 1 — controllers may not read (or write) frame events.
 int test_ai_ignores_frame_events(void);
 
 #endif /* ALL_SIMS_H */

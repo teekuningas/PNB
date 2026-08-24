@@ -8,7 +8,7 @@
 /**
  * CONTRACT: the catching AI's tactical-drop intent (§30 taktinen pudotus), end to end.
  *
- * This knights the DROP intent migration (PLAN.md §4.12 sub-step 1): the AI now *declares*
+ * This knights the DROP intent migration: the AI now *declares*
  * `cTAF.drop_ball` directly instead of driving it through the deleted `dropStage` / `AI_DROP_LOCK`
  * click-sim. The pure decision (`should_ai_drop_ball`) already has a unit test; this proves the two
  * uncovered halves the migration actually touched: (1) `update_catching_ai` acts on that decision by

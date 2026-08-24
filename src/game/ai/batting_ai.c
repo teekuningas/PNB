@@ -117,7 +117,7 @@ void update_batting_ai(
                 match->aiState.change = 0;
             }
         }
-        // BAND-AID (§3.1, bug #5 — dies with the swing slice): the firstIndex==index breaker above can be
+        // BAND-AID (tracked debt — dies with the batter-selection slice): the firstIndex==index breaker above can be
         // skipped when change_batter steps over a JOKER_USED slot, looping forever. There are only
         // JOKER_COUNT+1 distinct selectable slots, so once we've issued more changes than that we have
         // certainly seen them all — force a select instead of cycling on.

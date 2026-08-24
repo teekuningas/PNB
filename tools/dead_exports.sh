@@ -23,14 +23,13 @@
 # six-second sweep.
 #
 # Why it exists at all: -Wmissing-prototypes already fails a function no header
-# declares (PLAN.md §3.3 F12). This is the mirror defect — a header that declares
-# a function nobody outside calls — and until now nothing could see it. Both F12 and
-# F15 were found by hand, F15 after `core/geometry.c` had spent an unknown length of
+# declares. This is the mirror defect — a header that declares a function nobody
+# outside calls — and until this script nothing could see it. Both defects were
+# found by hand before that, and late: `core/geometry.c` spent an unknown length of
 # time four-fifths dead behind its own header, and three dead accessors survived the
 # referee.c pilot audit. A signature that names a parameter it never reads
-# over-claims its edges (ARCHITECTURE_VISION.md §2.1); a header that exports a
-# function nothing imports over-claims its module's interface. Same principle, one
-# level up.
+# over-claims its edges; a header that exports a function nothing imports
+# over-claims its module's interface. Same principle, one level up.
 #
 # Usage: tools/dead_exports.sh <object files...>
 

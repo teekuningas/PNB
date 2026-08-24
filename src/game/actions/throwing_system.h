@@ -11,7 +11,7 @@
 // {direction, power}: the AI declares it in one frame; the human streams it in two (INITIATED{direction}
 // then COMMITTED{power}) purely so the windup can run WHILE it picks power on the meter — no double-wait. The
 // power is a client value (AI strategy, or a client-local CHARGE widget for the human — the input never reads
-// this clock; engine↔client contract §8.7). Once COMMITTED, the ENGINE owns the release instant: it fires
+// this clock — the engine↔client contract). Once COMMITTED, the ENGINE owns the release instant: it fires
 // when this clock reaches throw_windup_total_frames(power) — for BOTH producers.
 //
 // The windup length spans [MIN, MAX] frames as declared power spans [THROW_POWER_MIN, 1]:
@@ -35,7 +35,7 @@
 #define THROW_LOAD_FRAMES 11
 
 // AI windup sizing (unit-tested): how long to wind up for a declared power (COMMITTED release). The human
-// path does not use this — its power is a value declared from the client charge widget (§8.7).
+// path does not use this — its power is a value declared from the client charge widget.
 int throw_windup_total_frames(float power);
 
 void init_throwing_system(MatchSession* match);
@@ -43,7 +43,7 @@ void init_throwing_system(MatchSession* match);
 // The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
 // Reads the phased ThrowDeclaration (cTAF.throw), runs the deterministic windup clock, and releases:
 // COMMITTED at throw_windup_total_frames(power); RELEASED (the human's fire edge) with the power declared on
-// the declaration (sampled client-side from the charge widget — never read off this clock, §8.7).
+// the declaration (sampled client-side from the charge widget — never read off this clock).
 // Consumer-clears the declaration at resolution. Called once per frame from execute_actions. Timing is the
 // master; the animation only follows.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions);

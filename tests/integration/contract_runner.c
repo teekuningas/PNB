@@ -37,17 +37,17 @@ static void run_contract_tests(void)
     // Run-scoring guard contracts (Bug #9 regression)
     RUN_TEST(test_wounded_runner_cannot_score_run);
 
-    // Catching-AI intent contracts (§4.12 — drop migration)
+    // Catching-AI intent contracts (the drop migration)
     RUN_TEST(test_ai_declares_and_executes_tactical_drop);
 
-    // Pipeline ordering contracts (§5.10 slice 1a — the CONTROL stage at the frame top)
+    // Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)
     RUN_TEST(test_control_stage_precedes_execution);
 
     // Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
     RUN_TEST(test_pitch_aimed_releases_with_declared_velocity);
     RUN_TEST(test_pitch_unaimed_is_valesyotto);
 
-    // Throw contracts (§5.8 phased throw declaration → engine windup clock; §5.9 power declared as a value)
+    // Throw contracts (phased throw declaration → engine windup clock; power declared as a value)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
     RUN_TEST(test_throw_committed_releases_sized_to_power);
     RUN_TEST(test_throw_initiated_then_committed_engine_times_release);

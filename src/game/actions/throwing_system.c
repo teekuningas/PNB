@@ -13,7 +13,7 @@
 #define THROW_ANIMATION_FREQUENCY 3
 
 // Windup sizing: how long the physical windup for a declared power lasts. Once an intent is COMMITTED the
-// engine releases when its clock reaches this — for BOTH producers (§8.7). A human's clock starts earlier
+// engine releases when its clock reaches this — for BOTH producers. A human's clock starts earlier
 // (at INITIATED, running while it picks power on the client charge widget), so by its COMMITTED frame the
 // windup has usually elapsed → immediate release; the client never reads this function or the clock.
 int throw_windup_total_frames(float power)
@@ -126,7 +126,7 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
 
 // Launch the ball toward the latched base with the DECLARED power — a trusted client value (the AI's
 // strategy, or the human's charge-widget sample carried on the COMMITTED declaration) — never a live meter
-// or the engine clock (§8.7). Preserves every legacy release side effect (recoil, fielder-selection
+// or the engine clock. Preserves every legacy release side effect (recoil, fielder-selection
 // refresh, control handoff to generic_sling_ball).
 static void throw_release(MatchSession* match, float power)
 {
@@ -184,7 +184,7 @@ static void resolve_throw(MatchSession* match, ThrowDeclaration* decl, float pow
 // (power known) — releases when the clock reaches throw_windup_total_frames(power). ONE rule for both
 // producers: the AI declares COMMITTED at once (clock starts then); a human declares INITIATED first (clock
 // starts, gather animates while it picks power on the meter) then COMMITTED (power in), releasing at once if
-// the windup already elapsed. The client never commands the release instant (§8.7); the engine owns it.
+// the windup already elapsed. The client never commands the release instant; the engine owns it.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions)
 {
     ThrowDeclaration* decl = &match->aF.cTAF.throw;

@@ -95,8 +95,8 @@ long sim_run_until(SimGame* g, SimPredicate pred, long max_frames);
 void sim_destroy(SimGame* g);
 
 /* ---- World capture / restore ------------------------------------------- *
- * Everything that can influence a future frame: the World (ARCHITECTURE_VISION.md
- * §8.8 — MatchSession + GameRulesState) plus the controller memory that sits
+ * Everything that can influence a future frame: the World (MatchSession +
+ * GameRulesState) plus the controller memory that sits
  * beside it and outside it (the human's ClientInputState, the AI's
  * AIControllerState). Capture it, tick on, restore it, and the run resumes as if
  * nothing had happened — which is what lets a test re-tick a stretch of play, or

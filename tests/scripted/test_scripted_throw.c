@@ -5,14 +5,14 @@
 #include <math.h>
 
 /*
- * Scripted-human THROW test — the human input→intent path for the throw (PLAN.md §5.8 phased shape, §5.9
+ * Scripted-human THROW test — the human input→intent path for the throw (the phased shape and the
  * engine↔client fix), driven entirely through the real action_invocations via scripted KeyStates (no AI, no
  * direct state pokes).
  *
  * It proves the two-frame gesture: holding KEY_2 + a direction declares INITIATED (direction) and STARTS a
  * client-local CHARGE widget; the widget builds while the key is held; releasing KEY_2 SAMPLES the widget and
  * completes the intent as COMMITTED with power as a VALUE. The power comes from the client widget, never the
- * engine clock (§8.7); the ENGINE then releases the ball once its windup for that power completes. The human
+ * engine clock; the ENGINE then releases the ball once its windup for that power completes. The human
  * here is the catching team, holding the ball at home; it throws a pickoff to first (home→first is far enough
  * to throw) instead of pitching.
  */

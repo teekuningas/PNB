@@ -11,7 +11,7 @@
  * CONTRACT: the pitch slice — a DECLARED phased pitch is actualized by the engine-owned windup, and the
  * released ball's velocity is a pure function of the declared aim (never a live meter).
  *
- * This knights the pitch migration (PLAN.md §5): the producer declares a PitchDeclaration; the engine
+ * This knights the pitch migration: the producer declares a PitchDeclaration; the engine
  * runs its own deterministic windup clock (PitchActualization) and resolves — AIMED → a real pitch whose
  * velocity == pitch_velocity_from_aim(power, direction); never aimed in time → valesyöttö (a fake, the
  * pitcher keeps the ball). The pitch analog of test_ai_tactical_drop: we construct the ready state and

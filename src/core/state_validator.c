@@ -388,7 +388,7 @@ int state_validator_check(StateInfo* state)
 
     // Invariant 3: a player at the plate is legally entitled to be there (§12, §27).
     //
-    // This is the invariant PLAN.md §2 asked for and could not yet state: "legally available" had no
+    // This is the invariant the debug-logging work asked for and could not yet state: "legally available" had no
     // precise meaning while the engine counted down a batting pool the rules do not have. It does
     // now. The batting order is a cycle, so a REGULAR player is always entitled — until the referee
     // pronounces the turn spent, after which only a joker may extend it ("Jos joukkueella on

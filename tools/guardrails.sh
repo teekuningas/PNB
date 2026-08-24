@@ -7,9 +7,9 @@
 # and says so — a number that improved is a floor that should be lowered in the
 # same commit, so the ratchet cannot silently slacken again later.
 #
-# Why this exists: docs PNB/PLAN.md tracks each of these as a figure in prose, and a
-# figure in prose relies on someone remembering to re-measure it. §3 rule 6 asks that
-# violating a principle fail loudly instead. This turns the figures into build facts.
+# Why this exists: a figure quoted in prose relies on someone remembering to
+# re-measure it. The project's working rule is that violating a principle should fail
+# loudly instead of relying on vigilance. This turns the figures into build facts.
 #
 # The commands here are the DEFINITION of each number. When a doc quotes one, it is
 # quoting this script, so "the number changed" can always be re-derived rather than
@@ -73,7 +73,8 @@ no_prototype=$(count_warning '\[-Wmissing-prototypes\]')
 other_warnings=$(($(printf '%s\n' "$warnings" | grep -c 'warning:') - dead_params - no_prototype))
 
 # A signature that names a parameter it never reads over-claims its edge in the
-# dependency DAG — the mirror of the missing const (ARCHITECTURE_VISION.md §2.1).
+# dependency DAG — the mirror of the missing const. A signature is meant to be the
+# function's complete, honest edge list.
 ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 34
 
 # A non-static function with no prototype in any header is an edge in the include
@@ -88,13 +89,13 @@ ratchet "other -Wall/-Wextra warnings" "$other_warnings" 1
 # ---------------------------------------------------------------------------
 # The include graph should become the ownership graph: a file that includes only
 # what it owns physically cannot name RefereeState. Today one 977-line header
-# hands everything to everyone. PLAN.md §6.2 drives this number to zero.
+# hands everything to everyone. The planned foundation.h split drives this to zero.
 # ---------------------------------------------------------------------------
 globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 ratchet "files including globals.h" "$globals_includers" 84
 
 # ---------------------------------------------------------------------------
-# Function-quality audit coverage (PLAN.md §3.3). Two separate things are checked:
+# Function-quality audit coverage. Two separate things are checked:
 # the ledger must describe the tree exactly (a hard error — this is what stops a
 # file being silently skipped), and the unaudited count is the ratchet.
 # ---------------------------------------------------------------------------
@@ -123,10 +124,10 @@ unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
 ratchet "files awaiting the function-quality audit" "$unaudited" 52
 
 # ---------------------------------------------------------------------------
-# The refactor's own frontier (PLAN.md §5.10 / §8.0). ActionFlags is the pre-intent
-# channel: a struct of flags that producers write and execution reads. The
-# controller-symmetry redesign dissolves it into per-team value messages, and §8.0
-# defines "§5.10 complete" as `grep -r ActionFlags src/` returning nothing. Counting
+# The refactor's own frontier. ActionFlags is the pre-intent channel: a struct of
+# flags that producers write and execution reads. The controller-symmetry redesign
+# dissolves it into per-team value messages, and that redesign is defined as complete
+# exactly when `grep -r ActionFlags src/` returns nothing. Counting
 # the lines that still touch it makes that progress a build fact like every other
 # number here — and, more importantly, makes it FAIL if a new intent is ever added to
 # ActionFlags instead of to the channel. Each remaining slice lowers this floor:
@@ -134,7 +135,28 @@ ratchet "files awaiting the function-quality audit" "$unaudited" 52
 # free walk, swing angle), 4 (the swing) — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags (§5.10)" "$action_flags_lines" 142
+ratchet "lines touching ActionFlags" "$action_flags_lines" 142
+
+# ---------------------------------------------------------------------------
+# The docs depend on the code; the code must NOT depend on the docs. That edge is
+# one-way on purpose — the code is the thing that is true, and the docs describe it.
+# A comment citing a doc file or a doc section number is a back-edge, and it rots
+# silently: the docs get restructured, the citation still reads like live guidance,
+# and it now points at nothing. That is not hypothetical — a 2026-08-24 sweep found
+# 102 such references across 36 files, some of which had been dangling for months
+# because nothing could see them.
+#
+# So: a comment must SAY the thing, not cite where the thing is written. Rulebook
+# sections (a bare `§12`, `§24`) are exempt and always fine — those are pesäpallo's
+# own stable identifiers and are domain knowledge, not a dependency on our prose.
+# What is forbidden is a doc FILENAME or a dotted `§N.M` section number.
+# ---------------------------------------------------------------------------
+doc_backrefs=$(
+    grep -rEn 'ARCHITECTURE\.md|ARCHITECTURE_VISION\.md|PLAN\.md|RULES\.md|HISTORY\.md|README\.md|§[0-9]+\.[0-9]+' \
+        src tests tools Makefile --include='*.c' --include='*.h' --include='*.sh' --include='*.tsv' 2>/dev/null |
+        grep -v 'RULES_OFFICIAL\.md' | wc -l
+)
+ratchet "references from code into the docs" "$doc_backrefs" 0
 
 # ---------------------------------------------------------------------------
 # Formatting is not a ratchet — it is settled, and `make format` restores it.

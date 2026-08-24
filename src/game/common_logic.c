@@ -696,7 +696,7 @@ void initialize_ball_info(MatchSession* match)
 }
 // Empty the intent channel. Cleared as one struct so a field added to ActionFlags is empty by
 // construction rather than by remembering to list it here — the field-by-field version this replaced
-// had silently missed two (PLAN.md §7.2 finding B). Every idle/none enumerator in the channel is 0;
+// had silently missed two. Every idle/none enumerator in the channel is 0;
 // throw.target is the one non-zero "absent" sentinel. The windup clocks empty with the declarations
 // they actualize.
 void initialize_action_info(MatchSession* match)
@@ -735,9 +735,9 @@ void reset_flow_state(MatchSession* match)
     match->pRAI.throw_going_to_base = -1;
     // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
-    // separation as §4.3 (physical resets never touch referee state). Client input is initialized once and
-    // self-clears during play (each gesture's own guards disengage when its preconditions fail), so a
-    // foul/inning reset needs to do nothing to it.
+    // separation as the reset-recipe rule: physical resets never touch referee state. Client input is initialized once
+    // and self-clears during play (each gesture's own guards disengage when its preconditions fail), so a foul/inning
+    // reset needs to do nothing to it.
 
     // AI batting state: force re-planning on next pitch cycle.
     // Without this, after foul play the AI's planCalculated stays 1 (the batter_ready 0→1

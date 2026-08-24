@@ -6,10 +6,10 @@
 /**
  * REGRESSION (owner playtest, 2026-08-19): after a half-inning in which the batting team scored,
  * every newly picked batter walked to the out marker and came back, and the half-inning could never
- * progress. The batting order is a CYCLE and being burnt never costs a place in it (RULES.md §3a),
+ * progress. The batting order is a CYCLE and being burnt never costs a place in it (§12),
  * so the order is right to come round to a burnt player — what was wrong is that the previous
  * at-bat's verdict was still attached when it did, and enforce_legal_state acted on it. Full trace:
- * PLAN.md bug #7.
+ * the batter-reselection deadlock.
  */
 int test_burnt_player_bats_again(void)
 {

@@ -1,7 +1,7 @@
 #include "test_helpers.h"
 #include "rules_side_change.h"
 
-// §12 Vuoronvaihto — docs PNB/RULES.md §3a, from reference/RULES_OFFICIAL.md §12.
+// §12 Vuoronvaihto — the official pesäpallo rulebook.
 
 int test_designate_last_batter(void)
 {

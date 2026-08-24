@@ -48,9 +48,10 @@ static void update_initialization_events(
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
 
                 // Taking the bat clears the previous at-bat's verdicts. Being burnt or wounded costs
-                // the team an out or a runner, never a place in the batting order (RULES.md §3a), so
-                // these are field state with a per-play lifetime. Without it, enforce_legal_state in
-                // the next stage shoves the new batter straight back off the field: PLAN.md bug #7.
+                // the team an out or a runner, never a place in the batting order (§12), so these
+                // are field state with a per-play lifetime. Without it, enforce_legal_state in the
+                // next stage shoves the new batter straight back off the field — the batter-
+                // reselection deadlock.
                 referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
                 referee->battingPlayers[i].hasScored = 0;
                 referee->battingPlayers[i].runOfHonorScored = 0;
@@ -915,7 +916,7 @@ static void resolve_pending_runs(
 // so the turn reads as concluded until the reset puts them back. It does not, and the rule says why:
 // §12 also requires the ball to be in a home fielder's hands, and a ball that has just been judged out
 // of bounds is by definition not. The two conjuncts exclude each other, so no guard is added here — an
-// unreachable defence is a claim, not a fact (docs PNB/RULES.md §8b records the reasoning).
+// unreachable defence is a claim, not a fact.
 static void update_side_change_readiness(
     const StateInfo* stateInfo, const RefereeState* referee, HalfInningState* halfInningState,
     const Scoreboard* scoreboard

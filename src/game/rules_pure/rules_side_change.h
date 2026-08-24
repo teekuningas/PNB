@@ -10,7 +10,7 @@
  * physical in §12 — "pallo tulee kotipesässä olevan ulkopelaajan haltuun" — and the joker conjunct
  * are the referee's to conjoin at the call site, where that state actually lives.
  *
- * Rule text: docs PNB/RULES.md §3a, verbatim from reference/RULES_OFFICIAL.md §12.
+ * Rule text: the official pesäpallo rulebook, §12 (Vuoronvaihto).
  */
 
 /**

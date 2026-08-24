@@ -72,7 +72,7 @@ void execute_actions(
     // THROW — the engine-owned actualizer reads the phased ThrowDeclaration (cTAF.throw), runs the
     // deterministic windup clock (ThrowActualization), and releases once the intent is COMMITTED (power
     // known) when the clock reaches throw_windup_total_frames(power) — ONE rule for both producers, no
-    // client "fire-now" edge (§8.7). The AI declares COMMITTED in one frame; a human streams
+    // client "fire-now" edge. The AI declares COMMITTED in one frame; a human streams
     // INITIATED{target} → COMMITTED{power}, its power a trusted value from the client charge widget — never
     // a live meter or this clock. It also cancels a pitch for a throw (never the reverse). The same
     // phased-declaration + engine-windup-clock shape as the pitch.
@@ -328,7 +328,7 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
     // The catching meter (meter_value) is a CLIENT display, read from the LOCAL HUMAN's input widget — the
     // pitch sampler (power ping-pong, then aim descent) or the throw charge widget — whichever is active.
     // Both are self-contained client widgets (ClientInputState); neither the meter nor any input logic reads
-    // an engine actualization clock (engine↔client contract §8.7). An AI pitch/throw arms NO widget, so it
+    // an engine actualization clock (the engine↔client contract). An AI pitch/throw arms NO widget, so it
     // drives no meter automatically — no phase-gate special-case needed. (meter_value is render-only: read
     // solely by game_screen.c, never by logic and not in the checksum.)
     if (clientInput->pitchWidget.mode != WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {

@@ -7,10 +7,10 @@
 /**
  * CONTRACT: the CONTROL stage runs BEFORE execution, in the same tick.
  *
- * This knights PLAN.md §5.10 slice 1a. `ai_update` used to sit third inside stage 2, *after*
+ * This knights the control-stage slice. `ai_update` used to sit third inside stage 2, *after*
  * `execute_actions` had already run, so an intent the AI declared on frame N was not consumed until
  * frame N+1 — a one-frame input buffer that was an accident of call placement, never a design
- * (ARCHITECTURE_VISION.md §8.8 law 1). Slice 1a moved it into a CONTROL stage at the frame top beside
+ * (controller symmetry, law 1). That slice moved it into a CONTROL stage at the frame top beside
  * `action_invocations`, so both producers declare into the same settled end-of-previous-tick world and
  * both are consumed by the same frame's execution.
  *
@@ -27,7 +27,7 @@
  * The state is built inline rather than shared with test_ai_tactical_drop.c on purpose: that test asks
  * whether the AI *decides* to drop and whether execution *can* actualize it (it calls the two stages by
  * hand, in the order it wants). This one asks whether the production pipeline puts them in that order.
- * Same construction, two genuinely different questions — see the §3.3 anti-rule.
+ * Same construction, two genuinely different questions — extract only where a real concept exists.
  */
 int test_control_stage_precedes_execution(void)
 {

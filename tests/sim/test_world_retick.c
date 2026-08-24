@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-// The tick equation (ARCHITECTURE_VISION.md §8.8) says the whole game is
+// The tick equation says the whole game is
 //
 //     World(T) = tick( World(T-1), messages_batting(T), messages_catching(T) )
 //
@@ -25,9 +25,9 @@
 //
 // The controller memory (AIControllerState) is captured alongside the World, not inside it, and
 // that is the correct shape: a controller's memory is private and outside the World by design
-// (§8.8 law 5). Once the intent channel exists (§5.10 slice 1b) the stronger form of this test
-// becomes possible — capture the World alone and replay a recorded message log, with no
-// controller running at all.
+// (controller memory is controller-private). Once the intent channel exists — the channel slice — the stronger form of
+// this test becomes possible — capture the World alone and replay a recorded message log, with no controller running at
+// all.
 
 // The capture itself (SimWorldCapture + sim_capture_world/sim_restore_world) lives in the
 // harness, because the law-1 probe in test_ai_ignores_frame_events.c needs exactly the same
