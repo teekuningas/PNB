@@ -126,6 +126,52 @@ typedef struct {
     long dir_bins[5];
 } BoxScoreObserver;
 
+/* ---- Fielding observer ------------------------------------------------- *
+ * Watches the catching side do its job. Every band in the offense breakdown is
+ * batting- or pitching-side, so a fielding regression — a fielder that moves at
+ * half speed, one that stops short of where it was sent, one that never sets off
+ * at all — does not move a single one of them. These are the numbers that see it:
+ *
+ *   recovery       frames from bat contact until a fielder holds the ball again.
+ *                  The end-to-end "how good is the defence" number.
+ *   chase distance |controlled fielder - targetPoint| each frame the ball is loose.
+ *                  targetPoint is the engine's own prediction of where the ball can
+ *                  be met, so this is literally "did the fielder go where it was
+ *                  sent". Falls when tracking improves; rises when it degrades.
+ *   step           the controlled fielder's realized displacement per moving frame.
+ *                  A pure speed probe: it pins the movement path to the speed it is
+ *                  supposed to run at, and nothing else in the suite would notice a
+ *                  fielder quietly switched onto a walk.
+ *
+ * A window opens at contact and closes on possession; one that never closes (foul,
+ * out of bounds, a reset) is discarded rather than counted, so only real recoveries
+ * reach the mean. */
+typedef struct {
+    // internal edge-detection state (do not set)
+    int initialized;
+    int p_batOutcome;
+    int p_controlIndex;
+    Vector3D p_controlLocation;
+
+    int chasing; // a batted ball is loose right now
+    long chase_start_frame;
+
+    // observed (readable after the run)
+    long recoveries; // batted balls that came back into a fielder's hand
+    long recovery_frames_sum;
+    long recovery_frames_max;
+    long abandoned; // windows that ended without a recovery (foul / reset)
+
+    long chase_samples; // frames sampled while a batted ball was loose
+    double chase_dist_sum; // sum of |controlled fielder - targetPoint| over those frames
+
+    long step_frames; // frames the controlled fielder moved without control changing
+    double step_sum; // sum of its per-frame displacement -> mean = realized speed
+} FieldingObserver;
+
+void fielding_observer_init(FieldingObserver* o);
+void fielding_observer_hook(const SimGame* g, void* ctx);
+
 void box_score_observer_init(BoxScoreObserver* o, FILE* log);
 void box_score_observer_hook(const SimGame* g, void* ctx);
 

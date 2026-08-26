@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int sim_runners_on_base(const SimGame* g)
 {
@@ -477,4 +478,70 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     o->p_runs1 = sb->teams[1].runs;
     o->p_inning = sb->inning;
     o->p_period = sb->period;
+}
+
+/* ---- Fielding observer ------------------------------------------------- */
+
+#define FIELDING_WINDOW_CAP_FRAMES 3000L
+
+void fielding_observer_init(FieldingObserver* o)
+{
+    memset(o, 0, sizeof(*o));
+}
+
+void fielding_observer_hook(const SimGame* g, void* ctx)
+{
+    FieldingObserver* o = (FieldingObserver*)ctx;
+    const MatchSession* m = g->state->match;
+    const GameRulesState* r = g->state->rules;
+
+    int batOutcome = (int)r->betweenPitchState.batOutcome;
+    int control = m->pII.controlIndex;
+
+    if (!o->initialized) {
+        o->initialized = 1;
+        o->p_batOutcome = batOutcome;
+        o->p_controlIndex = control;
+        if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
+        return;
+    }
+
+    if (control != -1 && control == o->p_controlIndex && m->playerInfo[control].cPI.moving == 1) {
+        float dx = m->playerInfo[control].tPI.location.x - o->p_controlLocation.x;
+        float dz = m->playerInfo[control].tPI.location.z - o->p_controlLocation.z;
+        double step = sqrt((double)(dx * dx + dz * dz));
+        if (step < 1.0) {
+            o->step_frames++;
+            o->step_sum += step;
+        }
+    }
+
+    if (batOutcome == BAT_OUTCOME_HIT && o->p_batOutcome != BAT_OUTCOME_HIT) {
+        o->chasing = 1;
+        o->chase_start_frame = g->frame;
+    }
+
+    if (o->chasing) {
+        if (control != -1) {
+            float dx = m->playerInfo[control].tPI.location.x - m->cameraState.targetPoint.x;
+            float dz = m->playerInfo[control].tPI.location.z - m->cameraState.targetPoint.z;
+            o->chase_samples++;
+            o->chase_dist_sum += sqrt((double)(dx * dx + dz * dz));
+        }
+
+        long elapsed = g->frame - o->chase_start_frame;
+        if (m->pII.hasBallIndex != -1) {
+            o->recoveries++;
+            o->recovery_frames_sum += elapsed;
+            if (elapsed > o->recovery_frames_max) o->recovery_frames_max = elapsed;
+            o->chasing = 0;
+        } else if (elapsed > FIELDING_WINDOW_CAP_FRAMES || batOutcome != BAT_OUTCOME_HIT) {
+            o->abandoned++;
+            o->chasing = 0;
+        }
+    }
+
+    o->p_batOutcome = batOutcome;
+    o->p_controlIndex = control;
+    if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
 }
