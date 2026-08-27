@@ -156,10 +156,11 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # exactly when `grep -r ActionFlags src/` returns nothing. Counting
 # the lines that still touch it makes that progress a build fact like every other
 # number here — and, more importantly, makes it FAIL if a new intent is ever added to
-# ActionFlags instead of to the channel. Each remaining slice lowers this floor:
-# the rest of the channel slice (the pitch and throw declarations), the
-# fielder-movement slice (cTAF.move[]), the batter-selection slice (choose_batter and
-# the swing angle) and the swing slice — at which point the row retires at 0.
+# ActionFlags instead of to the channel. The fielder-movement slice took cTAF.move[]
+# and with it the whole catching half, so what is left is batting-only. Each remaining
+# slice lowers this floor further: the rest of the channel slice (the pitch and throw
+# declarations), the batter-selection slice (choose_batter and the swing angle) and the
+# swing slice — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
 ratchet "lines touching ActionFlags" "$action_flags_lines" 63

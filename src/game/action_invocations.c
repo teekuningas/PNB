@@ -227,10 +227,10 @@ static int checkThrowGesture(
 // How far the computed destination may drift before it is worth restating. Normally zero work: a
 // fielder walking along its heading recomputes the SAME fence point every frame, because the far end
 // of a ray does not move as you travel along it. What this catches is the fielder being put somewhere
-// else without the keys changing — a reset moving it home, or control passing to another player mid-
-// press — where the old destination now means a different journey. It is the human's counterpart to
-// the AI's blind heartbeat, and like it, it observes only the client's own inputs and the physical
-// world, never what the engine did with the last message.
+// else without the keys changing — a reset moving it home — where the old destination now describes a
+// different journey. (Control passing to another player is caught by its own clause below, which is
+// exact rather than distance-based.) Like the heartbeat, it reads only the client's own inputs and
+// the physical world, never what the engine did with the last message.
 #define MOVE_REDECLARE_DRIFT 1.0f
 
 // The blind heartbeat: restate the destination at least this often even when nothing changed.
