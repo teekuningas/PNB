@@ -44,4 +44,12 @@ int test_throw_windup_frames_scale_with_power(void);
 int test_throw_committed_releases_sized_to_power(void);
 int test_throw_initiated_then_committed_engine_times_release(void);
 
+// Fielder-movement contracts (the destination message and the engine mover)
+int test_move_target_sets_velocity_toward_the_point(void);
+int test_move_target_at_the_fielder_is_a_no_op(void);
+int test_move_target_stops_on_arrival(void);
+int test_restating_the_move_target_changes_nothing(void);
+int test_duplicate_messages_in_one_frame_equal_one(void);
+int test_move_target_refused_without_a_controlled_fielder(void);
+
 #endif // ALL_CONTRACTS_H

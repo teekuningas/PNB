@@ -53,6 +53,14 @@ static void run_contract_tests(void)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
     RUN_TEST(test_throw_committed_releases_sized_to_power);
     RUN_TEST(test_throw_initiated_then_committed_engine_times_release);
+
+    printf("\n--- Fielder movement (the destination message and the engine mover) ---\n");
+    RUN_TEST(test_move_target_sets_velocity_toward_the_point);
+    RUN_TEST(test_move_target_at_the_fielder_is_a_no_op);
+    RUN_TEST(test_move_target_stops_on_arrival);
+    RUN_TEST(test_restating_the_move_target_changes_nothing);
+    RUN_TEST(test_duplicate_messages_in_one_frame_equal_one);
+    RUN_TEST(test_move_target_refused_without_a_controlled_fielder);
 }
 
 int main(int argc, char* argv[])

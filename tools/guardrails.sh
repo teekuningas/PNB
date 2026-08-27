@@ -97,7 +97,14 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 # type. Every new file naming a World type costs one here until the foundation.h split lands, and the
 # honest options are to pay it or to hide the dependency behind a transitive include — which would
 # leave the number looking better while the coupling stayed exactly the same. Paid, not hidden.
-ratchet "files including globals.h" "$globals_includers" 85
+#
+# 85 → 87 on 2026-08-27, deliberately, for the fielder-movement slice: the engine mover's header
+# (it takes a MatchSession) and the contract test that drives it. The alternative was to leave the
+# mover inside throwing_system.c, where the key-driven version lived — a file about the throw
+# holding the walk, which is what made the movement code hard to find in the first place. The .c
+# takes globals.h through its own header, as every other file under src/game/actions does, so the
+# cost here is the honest one and not one include padded onto it.
+ratchet "files including globals.h" "$globals_includers" 87
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:

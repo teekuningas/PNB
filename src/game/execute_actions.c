@@ -25,6 +25,7 @@
 #include "actions/pitching_system.h"
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"
+#include "actions/fielder_movement.h"
 #include "ai/catching_ai.h"
 #include "ai/batting_ai.h"
 #include "base_logic.h"
@@ -145,6 +146,17 @@ static Permission permit(const MatchSession* match, const IntentMessage* message
         }
         return (Permission){1, RULE_NONE};
 
+    case INTENT_MOVE_TARGET:
+        // The one question about this message that the gate can answer: is there anybody to send?
+        // Everything else that stops a fielder moving — a throw gathering, a pitch in progress, a
+        // throw's recoil still playing — is a physical claim on the fielder's feet that holds no
+        // matter who declared what, so it lives with the walking (fielder_movement.c) and is asked
+        // once, there. The point itself is never validated: values are trusted, state is checked.
+        if (match->pII.controlIndex == -1) {
+            return (Permission){0, RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER};
+        }
+        return (Permission){1, RULE_NONE};
+
     case INTENT_TAKE_FREE_WALK:
         // §26: an answer means nothing unless the referee has offered the walk.
         if (match->flowControl.waitingForFreeWalkDecision != 1) {
@@ -223,6 +235,15 @@ static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_b
                 out->base_run[message->as.base_run.base] = message->as.base_run.command;
             }
             break;
+        case INTENT_MOVE_TARGET:
+            // A destination has a lifetime too, so like the declarations it is written straight into
+            // the engine state that owns it rather than into this tick's command block — and unlike
+            // them it is never consumed: it is held until a producer replaces it. That is what lets
+            // the fielder resume by itself after the engine interrupts its walk, and what makes
+            // re-delivering the same message (a rollback repeating its last input) a no-op.
+            match->catchingState.controlledMoveTarget = message->as.move_target.point;
+            match->catchingState.controlledMoveTargetActive = 1;
+            break;
         case INTENT_PITCH:
             // A declaration has a lifetime, so it is not a command in the block above: it is written
             // straight into the engine state that owns it, and the engine clears it when it resolves.
@@ -285,6 +306,12 @@ void execute_actions(
             fielder_stop_move(match, i);
         }
     }
+    // MOVE — the engine walks the controlled fielder toward the destination the gate stored. One
+    // behaviour for every producer, idempotent, and the thing the four key flags above are being
+    // dissolved into: while a producer still steers by key stream its destination is never set, so
+    // this is inert for it. It runs after the throw actualizer on purpose — a throw declared this
+    // tick has already claimed the fielder's feet by the time we get here.
+    update_controlled_fielder_movement(match);
     // (No charging-thrower facing pass: the throw windup begins the instant a throw is declared —
     // begin_throw_windup faces the thrower at the target base and movement is suppressed for the whole
     // windup — so there is no pre-windup charge window whose orientation needs a separate writer.)

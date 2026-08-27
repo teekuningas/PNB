@@ -705,6 +705,7 @@ void initialize_ball_info(MatchSession* match)
 void initialize_action_info(MatchSession* match)
 {
     match->aF = (ActionFlags){0};
+    match->catchingState = (CatchingTeamState){0};
 
     match->pendingActionState.pitchDeclaration = (PitchDeclaration){0};
     match->pendingActionState.throwDeclaration = (ThrowDeclaration){0};

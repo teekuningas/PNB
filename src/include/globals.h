@@ -380,6 +380,7 @@ typedef enum {
     INTENT_TAKE_FREE_WALK, // batting: {accept} — answer an offered free walk (§26)
     INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
     INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
+    INTENT_MOVE_TARGET, // catching: {point} — where the controlled fielder is headed
     INTENT_PITCH, // catching: the pitch declaration as it now stands
     INTENT_THROW // catching: the throw declaration as it now stands
 } IntentKind;
@@ -393,6 +394,19 @@ typedef struct _FreeWalkIntent {
     int accept; // 1 = take the walk, 0 = decline it
 } FreeWalkIntent;
 
+// Where the controlled fielder is going: an absolute point on the field, held until replaced.
+//
+// Absolute rather than a direction or a key edge, and that is the whole point of the shape. A
+// direction means something different when applied twice and nothing at all when applied to a world
+// one tick further on; a destination means the same thing however often it arrives and whenever it
+// arrives. That is what makes "declare only when it changes" a lossless compression of a per-tick
+// value stream rather than a different design, and what keeps rollback (which repeats the last input
+// it has) correct by construction. It also bounds the damage of a message that never lands: the
+// fielder walks to a stale point and stops, instead of running forever in a stale direction.
+typedef struct _MoveTargetIntent {
+    Vector3D point;
+} MoveTargetIntent;
+
 // The pitch and the throw are the two actions a producer assembles over several frames rather than in
 // one, so what they send is the declaration in full, every time it changes — a complete value, not a
 // "now add the power" edge. The gate stores it; the engine actualizes and clears it. That the payload
@@ -404,6 +418,7 @@ typedef struct _IntentMessage {
     union {
         BaseRunIntent base_run;
         FreeWalkIntent free_walk;
+        MoveTargetIntent move_target;
         PitchDeclaration pitch;
         ThrowDeclaration throw;
     } as;
@@ -441,7 +456,8 @@ typedef enum {
     RULE_DROP_NEEDS_BALL_IN_HAND, // you cannot drop what you are not holding
     RULE_DROP_NOT_WHILE_THROWING, // a gathered throw owns the ball until it is released
     RULE_DROP_NOT_WHILE_PITCHING, // likewise a pitch in progress
-    RULE_FREE_WALK_NEEDS_AN_OFFER // §26: there is nothing to answer unless one was offered
+    RULE_FREE_WALK_NEEDS_AN_OFFER, // §26: there is nothing to answer unless one was offered
+    RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER // there is nobody to send anywhere
 } RuleId;
 
 typedef struct _Permission {
@@ -468,6 +484,19 @@ typedef struct _ActionFlags {
     BattingTeamActionFlags bTAF;
     CatchingTeamActionFlags cTAF;
 } ActionFlags;
+
+// The catching team's own engine state — facts about fielding, owned by the engine, written by
+// ingestion and by the engine's own behaviours, read by both.
+//
+// `controlledMoveTarget` is what an INTENT_MOVE_TARGET becomes: nothing intent-shaped survives the
+// gate, so the message is gone by the end of ingestion and only this destination remains. The
+// `Active` flag is load-bearing rather than tidiness — a zeroed Vector3D is a real point on the
+// field (the middle of the home area), so "nobody has said where yet" has to be representable as
+// something other than the origin, or every reset would quietly send the fielder home.
+typedef struct _CatchingTeamState {
+    Vector3D controlledMoveTarget;
+    int controlledMoveTargetActive; // 0 = no destination declared (fresh match, or after a reset)
+} CatchingTeamState;
 // spatial data for every player
 typedef struct _TechnicalPlayerInfo {
     Vector3D location;
@@ -1023,6 +1052,7 @@ typedef struct _MatchSession {
     PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
     ActionFlags aF;
+    CatchingTeamState catchingState;
     PlayerIndexInfo pII;
     PlayerRelatedActionInfo pRAI;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)

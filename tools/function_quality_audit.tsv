@@ -44,6 +44,7 @@ open	src/core/vector_math.c
 open	src/cup/cup.c	cup_menu const-correctness is tracked as known debt
 deferred	src/game/action_invocations.c	the channel slice rewrites this file into the INGEST gate
 deferred	src/game/actions/batting_system.c	the swing slice dissolves this file
+audited	src/game/actions/fielder_movement.c	audited on arrival, which is the cheapest moment: one concept (the controlled fielder walks to its destination), no dead parameters, and the idempotence it claims is proved by contract test rather than asserted in a comment
 deferred	src/game/actions/pitching_system.c	the fielder-movement through swing slices dissolve this file
 deferred	src/game/actions/throwing_system.c	the fielder-movement through swing slices dissolve this file
 open	src/game/actions_pure/batting_physics.c	
