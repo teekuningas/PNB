@@ -1,4 +1,5 @@
 #include "field_layout.h"
+#include <math.h>
 
 void field_init_positions(FieldPositions* positions)
 {
@@ -81,4 +82,35 @@ void field_init_positions(FieldPositions* positions)
     positions->homeRunPoint.x = positions->pitchPlate.x - HOME_RADIUS;
     positions->homeRunPoint.y = BALL_HEIGHT_WITH_PLAYER;
     positions->homeRunPoint.z = HOME_LINE_Z;
+}
+
+Vector3D field_boundary_point_along(const Vector3D* from, float dirX, float dirZ)
+{
+    Vector3D out = *from;
+
+    float norm = (float)sqrt(dirX * dirX + dirZ * dirZ);
+    if (norm < EPSILON) return out;
+    dirX /= norm;
+    dirZ /= norm;
+
+    const float minX = FIELD_LEFT + FENCE_OFFSET;
+    const float maxX = FIELD_RIGHT - FENCE_OFFSET;
+    const float minZ = FIELD_BACK + FENCE_OFFSET;
+    const float maxZ = FIELD_FRONT - FENCE_OFFSET;
+
+    // Walk to whichever wall the heading meets first. The starting bound is longer than any
+    // traversal of the field, so it only survives when the heading meets no wall at all.
+    float t = (maxX - minX) + (maxZ - minZ);
+    if (dirX > EPSILON && (maxX - from->x) / dirX < t) t = (maxX - from->x) / dirX;
+    if (dirX < -EPSILON && (minX - from->x) / dirX < t) t = (minX - from->x) / dirX;
+    if (dirZ > EPSILON && (maxZ - from->z) / dirZ < t) t = (maxZ - from->z) / dirZ;
+    if (dirZ < -EPSILON && (minZ - from->z) / dirZ < t) t = (minZ - from->z) / dirZ;
+
+    // Already at (or past) the fence and still pushing into it: the destination is where you stand,
+    // which the engine reads as "stop" — the same nothing the fence would have given anyway.
+    if (t < 0.0f) t = 0.0f;
+
+    out.x = from->x + dirX * t;
+    out.z = from->z + dirZ * t;
+    return out;
 }

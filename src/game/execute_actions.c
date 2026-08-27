@@ -77,6 +77,10 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->throwWidget.counter_max = 0;
     clientInput->throwWidget.dir = 0;
     clientInput->throwWidget.mode = WIDGET_IDLE;
+    clientInput->moveWidget.held = 0;
+    clientInput->moveWidget.controlIndex = -1;
+    clientInput->moveWidget.declared = 0;
+    clientInput->moveWidget.point = (Vector3D){0};
 
     reset_pitching_system(match);
     init_batting_system(match);

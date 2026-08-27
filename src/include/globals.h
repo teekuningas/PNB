@@ -981,6 +981,25 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE 
 // ThrowActualization) are separate and authoritative; this only turns a human's input moment into a number.
 // The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power), and the
 // swing to come — one general input widget, per the engine↔client contract.
+// The human's steering memory: which direction keys were held when it last spoke, and for whom.
+// Client-local like the pitch and throw widgets — it never crosses the wire and is in no snapshot.
+//
+// It exists because the engine is told a destination and the human presses directions: something has
+// to notice that the held set CHANGED, and that something is the client, not the engine. Holding a
+// key is not a stream of events, so a producer that re-sent its destination every frame would be
+// spending messages to say what the engine already knows.
+#define MOVE_HELD_UP 1
+#define MOVE_HELD_RIGHT 2
+#define MOVE_HELD_DOWN 4
+#define MOVE_HELD_LEFT 8
+
+typedef struct _MoveWidget {
+    int held; // the held direction set as last declared (MOVE_HELD_* bits)
+    int controlIndex; // the fielder it was declared for; a different one needs telling afresh
+    int declared; // 0 until the first declaration
+    Vector3D point; // the destination last sent
+} MoveWidget;
+
 typedef struct _InputWidget {
     int counter; // cursor position in [0, counter_max]
     int counter_max; // sweep length (0 = never armed)
@@ -1002,6 +1021,10 @@ typedef struct _ClientInputState {
     // its own timing and never reads ThrowActualization (the engine clock drives only the render animation).
     // Human path only — the AI declares the throw COMMITTED with power directly, using no widget.
     InputWidget throwWidget;
+
+    // The steering widget — held arrows in, a destination out. Human path only; the AI keeps the
+    // same memory on its own side of the boundary, in AIControllerState.
+    MoveWidget moveWidget;
 } ClientInputState;
 
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE

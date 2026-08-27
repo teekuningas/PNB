@@ -9,6 +9,8 @@
 #include "actions/throwing_system.h"
 #include "actions/pitching_system.h" // windup segment constants — the aim descent matches the engine windup
 #include "rules_pure/player_utils.h"
+#include "field_layout.h"
+#include "vector_math.h"
 #include "rules_pure/base_control.h"
 
 // How long after a base-run key release a second release still counts as a double-press (= RUN_COMMIT).
@@ -39,8 +41,10 @@ static void advance_widget(InputWidget* w);
 static float charge_to_power(int counter, int counter_max);
 static void
 checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel);
-static void
-checkMove(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, int direction);
+static void checkMove(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    IntentChannel* channel
+);
 static void checkChangePlayer(
     MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 );
@@ -119,10 +123,7 @@ void action_invocations(
         }
     }
 
-    checkMove(match, key_states, KEY_UP, catchingControl, 0);
-    checkMove(match, key_states, KEY_RIGHT, catchingControl, 1);
-    checkMove(match, key_states, KEY_DOWN, catchingControl, 2);
-    checkMove(match, key_states, KEY_LEFT, catchingControl, 3);
+    checkMove(match, clientInput, key_states, catchingControl, &channels->catching);
 
     // check these only if necessary. also if it happened to be so that
     // they are both asked the same time, choose the free walk first
@@ -223,23 +224,75 @@ static int checkThrowGesture(
     return 0;
 }
 
-static void checkMove(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, int direction)
+// How far the computed destination may drift before it is worth restating. Normally zero work: a
+// fielder walking along its heading recomputes the SAME fence point every frame, because the far end
+// of a ray does not move as you travel along it. What this catches is the fielder being put somewhere
+// else without the keys changing — a reset moving it home, or control passing to another player mid-
+// press — where the old destination now means a different journey. It is the human's counterpart to
+// the AI's blind heartbeat, and like it, it observes only the client's own inputs and the physical
+// world, never what the engine did with the last message.
+#define MOVE_REDECLARE_DRIFT 1.0f
+
+// The move widget: held arrows in, a destination out.
+//
+// The producer never sends "north", "start" or "stop". It sends WHERE — the far end of the heading
+// the keys describe, or, when nothing is held, the point the fielder is standing on, which is what
+// "stop" means to an engine that only knows destinations. The velocity that comes out is identical to
+// the one the four key flags used to produce, because the destination lies along the same vector.
+//
+// It speaks only when something changed: the held set, the fielder being steered, or the destination
+// itself. Holding a key is a state, not a stream of events, so a widget that re-declared every frame
+// would be paying messages to tell the engine what it already holds.
+static void checkMove(
+    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    IntentChannel* channel
+)
 {
-    if (control != CONTROL_AI) {
-        if (key_states->down[control][key] == 1 && key_states->down[control][KEY_2] == 0) {
-            if (match->aF.cTAF.move[direction] == ACTION_IDLE) {
-                match->aF.cTAF.move[direction] = ACTION_TRIGGER_START;
-            }
-        } else if (key_states->released[control][key] == 1 ||
-                   (key_states->down[control][key] == 1 && key_states->down[control][KEY_2] == 1)) {
-            if (match->aF.cTAF.move[direction] !=
-                ACTION_IDLE) { // to avoid something weird when this is changed to 1 when ball is catched
-                match->aF.cTAF.move[direction] = ACTION_TRIGGER_STOP;
-            }
-        }
-    } else {
-        // AI sets flags directly
+    if (control == CONTROL_AI) return;
+
+    MoveWidget* w = &clientInput->moveWidget;
+
+    // KEY_2 held means the throw gesture owns the direction keys this frame, so nothing is being
+    // steered — the same suppression the key path had, kept because it is an input-binding rule and
+    // input bindings are the client's business.
+    int held = 0;
+    if (key_states->down[control][KEY_2] == 0) {
+        if (key_states->down[control][KEY_UP]) held |= MOVE_HELD_UP;
+        if (key_states->down[control][KEY_RIGHT]) held |= MOVE_HELD_RIGHT;
+        if (key_states->down[control][KEY_DOWN]) held |= MOVE_HELD_DOWN;
+        if (key_states->down[control][KEY_LEFT]) held |= MOVE_HELD_LEFT;
     }
+
+    int index = match->pII.controlIndex;
+    if (index == -1) {
+        // Nobody to steer: forget what was said, so whoever is handed control next is told afresh.
+        w->declared = 0;
+        w->held = held;
+        w->controlIndex = -1;
+        return;
+    }
+
+    Vector3D from = match->playerInfo[index].tPI.location;
+    Vector3D point;
+    if (held == 0) {
+        point = from;
+    } else {
+        // The same axes the key flags fed: x is right minus left, z is down minus up.
+        float dirX = ((held & MOVE_HELD_RIGHT) ? 1.0f : 0.0f) - ((held & MOVE_HELD_LEFT) ? 1.0f : 0.0f);
+        float dirZ = ((held & MOVE_HELD_DOWN) ? 1.0f : 0.0f) - ((held & MOVE_HELD_UP) ? 1.0f : 0.0f);
+        point = field_boundary_point_along(&from, dirX, dirZ);
+    }
+
+    int worth_saying =
+        !w->declared || w->held != held || w->controlIndex != index ||
+        !vec3_is_small_enough_circle_xz(point.x - w->point.x, point.z - w->point.z, MOVE_REDECLARE_DRIFT);
+    if (!worth_saying) return;
+
+    intent_push(channel, (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target.point = point});
+    w->declared = 1;
+    w->held = held;
+    w->controlIndex = index;
+    w->point = point;
 }
 
 // Both of these declare a one-shot command on the same key edge. The producer's own check — that no

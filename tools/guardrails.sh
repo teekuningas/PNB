@@ -104,7 +104,10 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 # holding the walk, which is what made the movement code hard to find in the first place. The .c
 # takes globals.h through its own header, as every other file under src/game/actions does, so the
 # cost here is the honest one and not one include padded onto it.
-ratchet "files including globals.h" "$globals_includers" 87
+#
+# 87 → 88 the same day: the scripted-human test for movement, which names MatchSession exactly as
+# every other file in that tier does.
+ratchet "files including globals.h" "$globals_includers" 88
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:
@@ -159,7 +162,7 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # the swing angle) and the swing slice — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 78
+ratchet "lines touching ActionFlags" "$action_flags_lines" 74
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

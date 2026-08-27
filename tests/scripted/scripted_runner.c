@@ -19,6 +19,9 @@ int main(void)
     RUN_TEST(test_scripted_pitch_dropped_aim_is_valesyotto);
     RUN_TEST(test_scripted_human_pitch_ai_hit_flies);
     RUN_TEST(test_scripted_throw_hold_release_to_base);
+    RUN_TEST(test_scripted_move_held_key_runs_at_run_speed);
+    RUN_TEST(test_scripted_move_release_stops_within_a_frame);
+    RUN_TEST(test_scripted_move_declared_during_a_pitch_resumes_after_it);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);
