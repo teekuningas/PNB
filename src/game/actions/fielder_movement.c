@@ -41,6 +41,9 @@ void update_controlled_fielder_movement(MatchSession* match)
 {
     if (match->catchingState.controlledMoveTargetActive == 0) return;
     if (!controlled_fielder_may_walk(match)) return;
+    // A destination belongs to the fielder it was given to. Control can pass mid-walk — a catch
+    // hands it to whoever took the ball — and the newcomer has not been told anything yet.
+    if (match->catchingState.controlledMoveTargetFor != match->pII.controlIndex) return;
 
     int index = match->pII.controlIndex;
     PlayerInfo* player = &match->playerInfo[index];

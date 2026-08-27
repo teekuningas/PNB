@@ -1,6 +1,7 @@
 #include "test_helpers.h"
 #include "scripted_harness.h"
 #include "globals.h"
+#include "common_logic.h"
 #include <math.h>
 
 /*
@@ -168,6 +169,54 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     ASSERT_EQ(
         1, m->catchingState.controlledMoveTargetActive,
         "the destination declared during the pitch was kept, not discarded"
+    );
+
+    scripted_destroy(g);
+    return TEST_PASSED;
+}
+
+// 4. A held key survives the engine losing the destination it was told.
+//
+//    Every reset recipe empties the catching team's state — a destination from a play that no longer
+//    exists must not be acted on. But the human's finger is still on the key, and the widget speaks
+//    only when something changes, so from its point of view nothing has: same key, same heading, and
+//    if the reset happened to move the fielder ALONG that heading, the same far end of it. The blind
+//    heartbeat closes that, and closes it without the client ever asking the engine what it holds —
+//    an observation that would be stale under input delay and would make two peers correct
+//    themselves differently.
+//
+//    Only the destination is taken away here, with initialize_action_info — the production function
+//    every reset recipe uses to do exactly that. Stopping and repositioning the fielder is the rest
+//    of the recipe's job, not this mechanism's, so it is deliberately left out: what is under test is
+//    that the engine ends up holding a destination again with no new input, and nothing else.
+int test_scripted_move_held_key_survives_a_reset(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE04u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
+
+    MatchSession* m = scripted_match(g);
+    int fielder = m->pII.controlIndex;
+
+    scripted_hold(g, HUMAN_PAD, KEY_UP);
+    scripted_run(g, 20);
+    ASSERT_EQ(1, m->playerInfo[fielder].cPI.moving, "the fielder is under way");
+    ASSERT_EQ(1, m->catchingState.controlledMoveTargetActive, "and the engine is holding a destination");
+
+    // The engine forgets where it was sending him, exactly as every reset recipe does.
+    initialize_action_info(m);
+    ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "the destination really is gone");
+
+    // Nothing about the input changes — the key is still down and the widget has nothing new to
+    // say. The destination comes back anyway, because the heartbeat does not need anything to say.
+    int restored = 0;
+    for (int i = 0; i < MOVE_TEST_FRAMES && !restored; i++) {
+        scripted_tick(g);
+        restored = (m->catchingState.controlledMoveTargetActive == 1);
+    }
+    ASSERT(restored, "a still-held key puts the destination back without a second press");
+    ASSERT_EQ(
+        fielder, m->catchingState.controlledMoveTargetFor, "and it is bound to the fielder that is actually steered"
     );
 
     scripted_destroy(g);

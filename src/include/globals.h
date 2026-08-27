@@ -497,6 +497,17 @@ typedef struct _CatchingTeamState {
     Vector3D controlledMoveTarget;
     int controlledMoveTargetActive; // 0 = no destination declared (fresh match, or after a reset)
 
+    // WHO the destination was given to. A message says "the fielder I am steering goes here", and
+    // the gate binds that to whoever is controlled at the top of the tick — the interpretation step
+    // doing its job, turning a producer's sentence into engine terms.
+    //
+    // Without it a destination outlives the fielder it was meant for: control passes at the catch,
+    // and the newcomer inherits a point that meant something for somebody standing somewhere else.
+    // One frame, and small — but a destination that belongs to nobody in particular is an invalid
+    // state left representable, and the producer re-declares on the very next frame anyway, so the
+    // cost of being exact is a single frame of standing still.
+    int controlledMoveTargetFor;
+
     // Where the engine reckons the ball can next be met: the prediction it ranks fielders against
     // and walks the auto-chasers to, and the point a catching controller aims its fielder at.
     // Computed each frame in game_manipulation from the ball's flight.
@@ -995,6 +1006,7 @@ typedef struct _MoveWidget {
     int held; // the held direction set as last declared (MOVE_HELD_* bits)
     int controlIndex; // the fielder it was declared for; a different one needs telling afresh
     int declared; // 0 until the first declaration
+    int framesSinceDeclared; // drives the blind heartbeat below
     Vector3D point; // the destination last sent
 } MoveWidget;
 

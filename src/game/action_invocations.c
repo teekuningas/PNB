@@ -233,6 +233,19 @@ static int checkThrowGesture(
 // world, never what the engine did with the last message.
 #define MOVE_REDECLARE_DRIFT 1.0f
 
+// The blind heartbeat: restate the destination at least this often even when nothing changed.
+//
+// The drift clause cannot see every way the engine can lose a destination. A reset clears it and
+// moves the fielder — and if that move happens to be ALONG the held heading, the far end of the
+// heading is the same point it always was, so nothing looks different from here and the fielder
+// would stand there with the key held down. This closes that without the widget ever asking the
+// engine what it currently holds, which is the part that matters: a client that watches the world
+// and corrects itself is deriving intent from actualization, stale under input delay, and two peers
+// watching slightly different worlds would correct themselves differently. A heartbeat watches
+// nothing. Re-sending a value the engine already has is a no-op by construction, so it can cost a
+// message and never a behaviour. The AI carries the same mechanism on its own side of the boundary.
+#define MOVE_HEARTBEAT_FRAMES 30
+
 // The move widget: held arrows in, a destination out.
 //
 // The producer never sends "north", "start" or "stop". It sends WHERE — the far end of the heading
@@ -263,6 +276,8 @@ static void checkMove(
         if (key_states->down[control][KEY_LEFT]) held |= MOVE_HELD_LEFT;
     }
 
+    w->framesSinceDeclared++;
+
     int index = match->pII.controlIndex;
     if (index == -1) {
         // Nobody to steer: forget what was said, so whoever is handed control next is told afresh.
@@ -285,6 +300,7 @@ static void checkMove(
 
     int worth_saying =
         !w->declared || w->held != held || w->controlIndex != index ||
+        w->framesSinceDeclared >= MOVE_HEARTBEAT_FRAMES ||
         !vec3_is_small_enough_circle_xz(point.x - w->point.x, point.z - w->point.z, MOVE_REDECLARE_DRIFT);
     if (!worth_saying) return;
 
@@ -293,6 +309,7 @@ static void checkMove(
     w->held = held;
     w->controlIndex = index;
     w->point = point;
+    w->framesSinceDeclared = 0;
 }
 
 // Both of these declare a one-shot command on the same key edge. The producer's own check — that no

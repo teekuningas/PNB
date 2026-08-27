@@ -43,7 +43,12 @@ static unsigned long long run_once(unsigned int seed)
 // the fielding bands in test_ai_offense_breakdown, which were recorded on the OLD behaviour before
 // any of this landed and all fifteen of which hold — with the defence measurably better
 // (mean recovery 102.4 -> 101.1 frames, worst case 800 -> 558).
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x1411c0a41f2064f8ULL
+// Moved again within the same slice, deliberately, when the destination became bound to the fielder
+// it was declared for: control passing mid-walk no longer hands the newcomer a point that meant
+// something for somebody standing somewhere else. One frame of standing still instead of one frame
+// walking the wrong way — and the fielding bands say the exactness pays for itself twice over
+// (mean recovery 101.1 -> 99.0 frames, worst case 558 -> 324).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x18c88a450139f97bULL
 
 int test_ai_vs_ai_determinism(void)
 {

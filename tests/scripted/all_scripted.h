@@ -16,5 +16,6 @@ int test_scripted_throw_hold_release_to_base(void);
 int test_scripted_move_held_key_runs_at_run_speed(void);
 int test_scripted_move_release_stops_within_a_frame(void);
 int test_scripted_move_declared_during_a_pitch_resumes_after_it(void);
+int test_scripted_move_held_key_survives_a_reset(void);
 
 #endif /* ALL_SCRIPTED_H */

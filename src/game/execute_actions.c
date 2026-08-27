@@ -80,6 +80,7 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->moveWidget.held = 0;
     clientInput->moveWidget.controlIndex = -1;
     clientInput->moveWidget.declared = 0;
+    clientInput->moveWidget.framesSinceDeclared = 0;
     clientInput->moveWidget.point = (Vector3D){0};
 
     reset_pitching_system(match);
@@ -245,6 +246,7 @@ static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_b
             // re-delivering the same message (a rollback repeating its last input) a no-op.
             match->catchingState.controlledMoveTarget = message->as.move_target.point;
             match->catchingState.controlledMoveTargetActive = 1;
+            match->catchingState.controlledMoveTargetFor = match->pII.controlIndex;
             break;
         case INTENT_PITCH:
             // A declaration has a lifetime, so it is not a command in the block above: it is written
