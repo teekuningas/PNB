@@ -12,6 +12,7 @@ int main(void)
 
     RUN_TEST(test_ai_vs_ai_half_inning);
     RUN_TEST(test_ai_vs_ai_homerun);
+    RUN_TEST(test_homerun_contest_seed_sweep);
     RUN_TEST(test_ai_vs_ai_determinism);
     RUN_TEST(test_different_seeds_produce_different_games);
     RUN_TEST(test_sim_hash_matches_recorded_baseline);

@@ -5,6 +5,7 @@
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
+#include "rules_pure/rules_strikes.h"
 #include "execute_actions.h"
 #include "game_reset.h"
 #include "referee.h"
@@ -22,9 +23,10 @@ static void
 update_game_flow(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo);
 
 static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
-static void handle_strikes_and_balls(
+static void apply_batter_becomes_runner(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 );
+static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee);
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
     GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
@@ -182,12 +184,17 @@ update_game_flow(MatchSession* match, const FieldPositions* field_positions, Gam
 
     check_next_batter_decision(match, rules);
 
-    // Strikes/balls consequences (force-run on 3 strikes, free-walk offers) only exist in
-    // normal play. The homerun contest has no walks and its own pair/runner machinery, so
-    // running this here would force the batter to run and offer free walks mid-contest,
-    // corrupting the pair state. (check_next_batter_decision already self-guards period >= 4.)
+    // §18(1) holds in every mode: a batter who has received his three correct pitches is permanently a
+    // runner, whatever else is being played. The homerun contest used to be exempt from this along with
+    // the free walks, and that exemption was bug #8 — nothing closed the batting turn, so the lukkari
+    // pitched a fourth time to a batter who had none left.
+    apply_batter_becomes_runner(match, field_positions, &rules->halfInningState, &rules->referee);
+
+    // §26's free walks are normal play only. The contest answers wrong pitches its own way (§8: two wrong
+    // gives the runner the free-walk right, three wrong gives the team two runs) and neither is built yet,
+    // so offering the normal-play walk here would be the wrong rule rather than a missing one.
     if (rules->scoreboard.period < 4) {
-        handle_strikes_and_balls(match, field_positions, &rules->halfInningState, &rules->referee);
+        handle_free_walk_offers(match, &rules->halfInningState, &rules->referee);
     }
 }
 
@@ -245,14 +252,14 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
     }
 }
 
-// Here we handle strikes and balls related consequences. Batter can't have more than 3 strikes,
-// so something must be done, and if pitcher pitches balls, compensation is needed.
-static void handle_strikes_and_balls(
+// §18(1): the batter who has spent his three correct pitches has permanently become a runner. He is no
+// longer in the batting turn and no longer safe at home, so he sets off for first — where the outside
+// team may burn him at once, exactly as the rule's own note says.
+static void apply_batter_becomes_runner(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 )
 {
-    // if there are three strikes
-    if (his->strikes >= 3) {
+    if (batter_has_become_runner_permanently(his->strikes)) {
         // We restore automatic force running to resolve control ambiguity.
         // The batter is now "forced" to run by the rules.
         int index = get_base_controller(match, referee, BASE_HOME);
@@ -264,6 +271,10 @@ static void handle_strikes_and_balls(
             run_to_next_base(match, field_positions, index, BASE_HOME);
         }
     }
+}
+
+static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee)
+{
     // we calculate the player and the base he has right to go freely only once, and that is when
     // the ball happens. if player moves to next base and user after that decides to make the free walk
     // that wont have any effect.

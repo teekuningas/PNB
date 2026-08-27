@@ -1,4 +1,5 @@
 #include "actions/pitching_system.h"
+#include "rules_pure/rules_strikes.h"
 #include "common_logic.h"
 #include "vector_math.h"
 #include "base_logic.h"
@@ -31,9 +32,13 @@ void reset_pitching_system(MatchSession* match)
 //   iv)  no throw is going on (a pitch may be cancelled for a throw, never the reverse)
 //   v)   the pitcher is close enough to the pitching plate
 //   vi)  no free-walk decision is pending
-static int can_begin_windup(const MatchSession* match)
+//   vii) §18(1): the batter has not already spent his three correct pitches. A batter who has is
+//        permanently a runner — "ei ole enää lyöntivuorossa" — so there is nobody to pitch to. Stated
+//        here rather than left to the side effect of the forced run, which held only for period < 4.
+static int can_begin_windup(const MatchSession* match, int correct_pitches_received)
 {
-    return match->pII.hasBallIndex == match->pII.catcherOnBaseIndex[0] && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
+    return !batter_has_become_runner_permanently(correct_pitches_received) &&
+           match->pII.hasBallIndex == match->pII.catcherOnBaseIndex[0] && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
            match->pRAI.batter_ready == 1 &&
            match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
            match->playerInfo[match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
@@ -155,7 +160,9 @@ static void fake_pitch(MatchSession* match)
 // release_pitch / update_pitching_meter). Reads the producer's phased declaration, runs the deterministic
 // windup clock, and resolves: AIMED at the windup end → real pitch; FAKE (or never aimed in time) →
 // valesyöttö. Timing is the master; the animation only follows.
-void update_pitch_actualization(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
+void update_pitch_actualization(
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int correct_pitches_received
+)
 {
     PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
     PendingActionState* pas = &match->pendingActionState;
@@ -163,7 +170,7 @@ void update_pitch_actualization(MatchSession* match, const RefereeState* referee
     // Begin a windup the first frame a producer has declared anything (phase left IDLE) while no catching
     // action is in progress — if it is legal; otherwise drop the declaration.
     if (decl->phase != PITCH_DECL_IDLE && pas->current_catching_action == CATCHING_ACTION_NONE) {
-        if (can_begin_windup(match)) {
+        if (can_begin_windup(match, correct_pitches_received)) {
             begin_windup(match);
         } else {
             decl->phase = PITCH_DECL_IDLE;

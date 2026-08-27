@@ -40,7 +40,7 @@
 15	proxy		a fielder is at a base			get_ball_at_base_index / cTPI.isNearHomeLocation, proximity-based
 16	proxy		the ball is in a fielder's possession	pII.hasBallIndex, set by proximity capture rather than by the rulebook's "in his hand"
 17	partial	batter vs runner			PLAYER_STATE_AT_BAT vs the runner states; the transition is implicit in state writes, not a predicate
-18	absent		batter becomes PERMANENTLY a runner	QUOTED BY §12, §24, §40 AND THE CONTEST. Its only enforcement is accidental: run_to_next_base happens to clear pRAI.batter_ready, which happens to close can_begin_windup — and only for period < 4. This is bug #8's root
+18	partial		batter becomes PERMANENTLY a runner	QUOTED BY §12, §24, §40 AND THE CONTEST. Clause (1) — three correct pitches — is now batter_has_become_runner_permanently in rules_pure/, joined onto the pitch permission and applied in every mode: that was bug #8's cure. Clauses (2)-(6) are still improvised at their own sites, so the definition is written down but not whole
 19	partial	a runner arrives legally		playerRuntime.passedPathPoint covers the turning marker; pesärikko (§34) not modelled
 20	partial	base safety and its three losses	referee.battingPlayers[i].currentSafetyBase + update_safety_status; correct, but referee-internal rather than a quotable predicate
 21	absent		a player has reached FINAL RESOLUTION	QUOTED BY THE CONTEST'S PAIR-END RULE AND §40. Split today across PLAYER_STATUS_OUT/WOUNDED and PLAYER_STATE_SCORED, with "advance voided" nowhere. Bug #8's second half

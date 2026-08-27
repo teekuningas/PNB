@@ -113,3 +113,57 @@ int test_pitch_unaimed_is_valesyotto(void)
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }
+
+// 4. §18(1) as a permission: no pitch may begin to a batter who has already received his three correct
+//    pitches. "Lyöjä muuttuu lopullisesti etenijäksi, kun hän saa kolme oikeaa syöttöä" — he is out of the
+//    batting turn, so there is nobody to pitch to.
+//
+//    This is stated at the permission rather than left to the engine's forced run, which used to be the
+//    only thing closing the pitch: it cleared batter_ready as a side effect, and only in normal play.
+//    The home-run contest skipped it and got a fourth pitch (bug #8). The conjunct makes the fourth pitch
+//    unrepresentable in every mode instead of merely unreached in one.
+int test_no_pitch_after_three_correct_pitches(void)
+{
+    // Control: with tries left, the same declaration DOES begin a windup. Without this half, the test
+    // would still pass if the fixture were simply too broken to pitch at all.
+    ScenarioContext* allowed = create_scenario();
+    setup_pitcher_ready(allowed);
+    allowed->state->rules->halfInningState.strikes = 2;
+    allowed->state->match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_AIMED;
+    allowed->state->match->pendingActionState.pitchDeclaration.power = 0.5f;
+    execute_actions(
+        allowed->state->match, allowed->state->rules, allowed->state->fieldPositions, &allowed->state->channels,
+        &allowed->state->playSoundEffect
+    );
+    ASSERT_EQ(
+        CATCHING_ACTION_PITCHING, (int)allowed->state->match->pendingActionState.current_catching_action,
+        "with a correct pitch still owed, the windup must begin"
+    );
+    cleanup_scenario(allowed);
+
+    // The rule: the third correct pitch has been spent, so the windup must be refused.
+    ScenarioContext* ctx = create_scenario();
+    setup_pitcher_ready(ctx);
+    MatchSession* match = ctx->state->match;
+    ctx->state->rules->halfInningState.strikes = 3;
+
+    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_AIMED;
+    match->pendingActionState.pitchDeclaration.power = 0.5f;
+
+    execute_actions(
+        match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels, &ctx->state->playSoundEffect
+    );
+
+    ASSERT_EQ(
+        CATCHING_ACTION_NONE, (int)match->pendingActionState.current_catching_action,
+        "a batter who has spent his three correct pitches may not be pitched to"
+    );
+    ASSERT_EQ(12, match->pII.hasBallIndex, "the refused pitch leaves the ball in the pitcher's hand");
+    ASSERT_EQ(
+        PITCH_DECL_IDLE, (int)match->pendingActionState.pitchDeclaration.phase,
+        "a refused declaration is dropped, not left pending to fire later"
+    );
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}

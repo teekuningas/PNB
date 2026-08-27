@@ -312,7 +312,7 @@ void execute_actions(
     // pitching — the engine-owned actualizer reads the phased declaration the gate stored, runs the
     // deterministic windup clock, and releases on AIMED (or fakes / valesyöttö otherwise). No meter read,
     // no lock machine, no stuck-state auto-clear: the declaration is consumer-cleared at resolution.
-    update_pitch_actualization(match, &rules->referee, fieldPositions);
+    update_pitch_actualization(match, &rules->referee, fieldPositions, rules->halfInningState.strikes);
 
     /*
      * BATTING TEAM

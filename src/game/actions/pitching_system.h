@@ -29,6 +29,8 @@ int pitch_windup_total_frames(float power);
 void reset_pitching_system(MatchSession* match);
 // The pitch actualizer: read the phased PitchDeclaration, run the windup clock, release on AIMED / fake
 // otherwise. Called once per frame from execute_actions.
-void update_pitch_actualization(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions);
+void update_pitch_actualization(
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int correct_pitches_received
+);
 
 #endif

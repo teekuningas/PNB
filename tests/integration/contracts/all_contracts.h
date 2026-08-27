@@ -22,9 +22,7 @@ int test_compound_hr_pair_and_uncatchable(void);
 // Event→Decision promotion contracts
 int test_bat_outcome_promotion(void);
 
-// Action state auto-clear contracts (Bug #8 regression)
-
-// Run-scoring guard contracts (Bug #9 regression)
+// Run-scoring guard contracts (a wounded runner must not be awarded a run)
 int test_wounded_runner_cannot_score_run(void);
 
 // Reset-recipe contracts (nothing a producer declared survives a reset)
@@ -39,6 +37,7 @@ int test_control_stage_precedes_execution(void);
 // Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
 int test_pitch_aimed_releases_with_declared_velocity(void);
 int test_pitch_unaimed_is_valesyotto(void);
+int test_no_pitch_after_three_correct_pitches(void);
 
 // Throw contracts (phased throw declaration → engine windup clock; power declared as a value)
 int test_throw_windup_frames_scale_with_power(void);
