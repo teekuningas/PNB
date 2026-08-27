@@ -62,6 +62,14 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         sim_fail((SimGame*)g, "invariant: jokers left out of [0, JOKER_COUNT]");
         return;
     }
+    // The contest names its pairs up front, so the pair counter is an index into that list and may
+    // reach pairCount (the turn is over) but never pass it. It used to climb into the hundreds while
+    // the inning-end handshake ran.
+    if (sb->period >= 4 && (r->homeRunContestState.runnerBatterPairCounter < 0 ||
+                            r->homeRunContestState.runnerBatterPairCounter > sb->pairCount)) {
+        sim_fail((SimGame*)g, "invariant: homerun pair counter out of [0, pairCount]");
+        return;
+    }
 
     // §12: once the referee has pronounced the batting turn spent, only a joker may extend it. A
     // regular batter appearing here is bug #7's shape — somebody handed the bat that the rules had

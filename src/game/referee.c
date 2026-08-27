@@ -1299,8 +1299,12 @@ void update_referee(
     // PHASE B: DECIDE (Priority & Upgrades)
     // ========================================================================
 
-    // Upgrade 1: Uncatchable HR Pair OR Last Pair -> Inning End
-    if (wants_pair_end) {
+    // Upgrade 1: Uncatchable HR Pair OR Last Pair -> Inning End.
+    // Only while no inning-end handshake is already running. Once one is, this pair end has already
+    // been decided and acted on; re-deciding it every frame of the handshake advanced the pair counter
+    // every frame with it, so a five-pair contest ended with a counter reading in the hundreds — past
+    // the pairCount it is compared against in three other files.
+    if (wants_pair_end && refereeState->endOfInningState == END_INNING_STATE_NONE) {
         int nextPairCounter = homeRunContestState->runnerBatterPairCounter + 1;
         int pairsLeft = scoreboard->pairCount - nextPairCounter;
 
