@@ -36,7 +36,14 @@ static unsigned long long run_once(unsigned int seed)
 // hope. A moved hash is then a leak to investigate, never something to re-baseline over. When a
 // slice changes timing or the RNG on purpose, this constant is re-recorded DELIBERATELY, in that
 // slice's own commit, alongside the argument for why the new behaviour is the intended one.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x204f50ffa89e8b0aULL
+// Re-recorded 2026-08-27 by the fielder-movement slice, deliberately. The catching AI stopped
+// puppeteering arrow keys and now declares a destination, so every fielder path in the game is
+// walked by the engine instead of quantised to eight directions and re-aimed every tenth frame.
+// Timing moves everywhere as a result; the argument that the new behaviour is the intended one is
+// the fielding bands in test_ai_offense_breakdown, which were recorded on the OLD behaviour before
+// any of this landed and all fifteen of which hold — with the defence measurably better
+// (mean recovery 102.4 -> 101.1 frames, worst case 800 -> 558).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x1411c0a41f2064f8ULL
 
 int test_ai_vs_ai_determinism(void)
 {

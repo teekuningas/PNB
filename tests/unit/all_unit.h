@@ -67,8 +67,13 @@ int test_is_wrong_pitch(void);
 int test_calculate_ai_batting_angle(void);
 
 // Catching AI strategy (ai_pure/catching_ai_strategy.c)
-int test_calculate_movement_keys_up_left(void);
-int test_calculate_movement_keys_right(void);
+int test_chase_point_outside_the_dead_zone_is_the_prediction(void);
+int test_chase_point_inside_the_dead_zone_is_a_stop(void);
+int test_carry_to_throw_point_walks_in_from_far_away(void);
+int test_carry_to_throw_point_backs_out_when_too_close(void);
+int test_carry_to_throw_point_standing_on_the_base_still_yields_a_throwable_spot(void);
+int test_move_declaration_speaks_first_time_and_on_a_real_drift(void);
+int test_move_declaration_heartbeat_restates_an_unchanged_destination(void);
 int test_should_ai_throw_normal(void);
 int test_should_ai_throw_replacer(void);
 int test_should_ai_drop_ball_scenario(void);

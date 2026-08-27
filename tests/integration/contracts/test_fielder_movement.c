@@ -5,6 +5,8 @@
 #include "globals.h"
 #include <math.h>
 #include <string.h>
+#include "base_control.h"
+#include "rules_pure/player_utils.h"
 
 /**
  * CONTRACT: the controlled fielder's movement is a DESTINATION, and the engine owns the walk.
@@ -249,6 +251,83 @@ int test_move_target_refused_without_a_controlled_fielder(void)
         0, m->catchingState.controlledMoveTargetActive, "a refused message leaves no destination behind in the engine"
     );
     ASSERT_EQ(0, ctx->state->channels.catching.count, "and the gate still drained it — a refusal is not a leak");
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+/**
+ * CONTRACT: §12 — once the batting order has come round to the designated last batter, the batter
+ * put ON OFFER is a joker, and it is a joker the FIRST time the offer is made.
+ *
+ * This lives in the contract tier and not in the movement tests above because it is a rules
+ * contract; it is written here because the movement slice is what made it reachable in AI play, and
+ * the seed that found it is recorded with the bug.
+ *
+ * The state it builds is the one that used to break: nobody is standing at the plate, but the batter
+ * who just set off still holds safety at home. §12(2)'s batting-order clause is satisfied — the order
+ * has come round to the designated player — while §12(3)'s "muuttuu lopullisesti etenijäksi" is not,
+ * because home is still owned. Asking the second question here is what put a REGULAR on offer, and
+ * the rulebook's own worked example under §12 calls a regular coming to bat in that situation an
+ * error: his actions are voided and the side change is whistled, because coming to bat spends the
+ * team's right to use a joker. So the engine must never offer him at all.
+ */
+int test_spent_order_offers_a_joker_while_home_is_still_owned(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    move_pitcher_away(ctx);
+    initialize_referee_from_physical_state(ctx);
+
+    MatchSession* m = ctx->state->match;
+    GameRulesState* r = ctx->state->rules;
+    HalfInningState* his = &r->halfInningState;
+    Scoreboard* sb = &r->scoreboard;
+
+    // A batter who set off and is still unresolved: not at the plate, but home is his until he is
+    // established somewhere else. This is the 54-frame window the bad offer was made in.
+    const int runner = 5;
+    m->playerInfo[runner].bTPI.baseId = BASE_HOME;
+    m->playerInfo[runner].bTPI.state = PLAYER_STATE_RUNNING;
+    r->referee.battingPlayers[runner].currentSafetyBase = BASE_HOME;
+    r->referee.battingPlayers[runner].baseAtPitchStart = BASE_HOME;
+    r->referee.battingPlayers[runner].status = PLAYER_STATUS_ACTIVE;
+
+    // §12(2): the order has come round to the designated last batter, with jokers still available.
+    int battingTeamIndex = get_batting_team_index(sb);
+    his->lastBatter.designatedIndex =
+        sb->teams[battingTeamIndex].batterOrder[sb->teams[battingTeamIndex].batterOrderIndex];
+    his->lastBatter.hasBattedAgain = 0;
+    his->runsInTheInning = 0;
+    his->jokersLeft = JOKER_COUNT;
+    for (int i = 0; i < JOKER_COUNT; i++) {
+        m->playerInfo[m->pII.jokerIndices[i]].bTPI.joker = JOKER_AVAILABLE;
+    }
+
+    // The play has settled, so the engine may ask for the next batter.
+    r->betweenPitchState.hasBallHitGround = 1;
+    r->referee.foulState = FOUL_STATE_NONE;
+    r->referee.endOfInningState = END_INNING_STATE_NONE;
+
+    // Step one frame at a time and catch the offer on the frame it is RAISED. That is the claim:
+    // not that a bad offer is withdrawn again, but that it is never made. On the raising frame only
+    // the prompt has run — the withdrawal below it is an else-branch that needs a decision already
+    // pending — so what is read here is the prompt's own first answer.
+    int raised = 0;
+    for (int f = 0; f < 40 && !raised; f++) {
+        simulate_frames(ctx, 1);
+        raised = (m->flowControl.waitingForBatterDecision == 1);
+    }
+    ASSERT(raised, "the engine must ask for the next batter within the budget");
+
+    ASSERT(
+        get_base_controller(m, &r->referee, BASE_HOME) != -1,
+        "the setup must keep home OWNED — otherwise this is not the window under test"
+    );
+    ASSERT(m->pII.batterSelectionIndex != -1, "and it offers somebody");
+    ASSERT_EQ(
+        (int)JOKER_AVAILABLE, (int)m->playerInfo[m->pII.batterSelectionIndex].bTPI.joker,
+        "the batter on offer must be a joker: the order has come round, so no regular may be seated"
+    );
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

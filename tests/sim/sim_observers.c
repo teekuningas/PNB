@@ -72,22 +72,19 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         return;
     }
 
-    // §12: once the referee has pronounced the batting turn spent, only a joker may extend it. A
-    // regular batter appearing here is bug #7's shape — somebody handed the bat that the rules had
-    // already finished with.
-    //
-    // MEASURED 2026-08-23 and kept anyway: today this branch is never entered. A probe that failed
-    // the sim on `turnExhausted` alone did not fire on any seed, because AI-vs-AI half-innings end
-    // on three burns every single time — the same blindness that hides the scoring
-    // half of the rules, now known to cover the side change as well. So this is a net for the
-    // future, not a net today, and the honest place to say so is here rather than in a doc.
-    if (sb->period < 4 && h->lastBatter.turnExhausted) {
-        for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            const PlayerInfo* p = &g->state->match->playerInfo[i];
-            if (p->bTPI.state == PLAYER_STATE_AT_BAT && p->bTPI.joker == JOKER_REGULAR) {
-                sim_fail((SimGame*)g, "invariant: a regular batter took the bat after §12 spent the turn");
-                return;
-            }
+    // §12: only a joker may extend a half-inning once the regular order is spent — so a REGULAR on
+    // offer as the next batter is bug #7's shape, somebody handed the bat the rules had finished
+    // with. Asked of the OFFER, while the decision is pending and nobody is at the plate, because
+    // that is the moment the choice is actually made. It reads `regularOrderSpent` — the batting-
+    // order clause alone — not `turnExhausted`, which also carries §12(3)'s transient "has finally
+    // become a runner" and reads 0 in exactly the window where the bad offer used to be made.
+    if (sb->period < 4 && h->lastBatter.regularOrderSpent &&
+        g->state->match->flowControl.waitingForBatterDecision == 1) {
+        int offered = g->state->match->pII.batterSelectionIndex;
+        if (offered >= 0 && offered < PLAYERS_IN_TEAM + JOKER_COUNT &&
+            g->state->match->playerInfo[offered].bTPI.joker == JOKER_REGULAR) {
+            sim_fail((SimGame*)g, "invariant: a regular batter was offered after §12 spent the regular order");
+            return;
         }
     }
 

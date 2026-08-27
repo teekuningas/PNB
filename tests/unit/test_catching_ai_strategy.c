@@ -3,39 +3,121 @@
 #include "base_logic.h"
 #include <math.h>
 
-int test_calculate_movement_keys_up_left(void)
+static Vector3D at(float x, float z)
 {
-    // Angle > 5pi/8 and <= 7pi/8
-    // 6pi/8 = 3pi/4 = 135 degrees (up-left)
-    // dx = -1, dz = -1 (down-left? No wait)
-    // atan2(-dz, dx) -> atan2(1, -1) -> 135 deg = 3pi/4
+    Vector3D v = {0};
+    v.x = x;
+    v.z = z;
+    return v;
+}
 
-    // dx = -1, dz = -1
-    // angle = atan2(1, -1) = 3pi/4 = 2.356
-    // 5pi/8 = 1.96, 7pi/8 = 2.74
-    // Should be UP + LEFT
+static float dist_xz(Vector3D a, Vector3D b)
+{
+    float dx = a.x - b.x, dz = a.z - b.z;
+    return sqrtf(dx * dx + dz * dz);
+}
 
-    MovementKeys keys = calculate_movement_keys(-1.0f, -1.0f);
-    ASSERT_EQ(1, keys.up, "Should be UP");
-    ASSERT_EQ(1, keys.left, "Should be LEFT");
-    ASSERT_EQ(0, keys.down, "Should not be DOWN");
-    ASSERT_EQ(0, keys.right, "Should not be RIGHT");
+// The chase: far from the predicted meeting point, go to it; near it, "go" where you already are,
+// which is this controller's way of saying stop without there being a stop message to send.
+int test_chase_point_outside_the_dead_zone_is_the_prediction(void)
+{
+    Vector3D fielder = at(0.0f, 0.0f);
+    Vector3D predicted = at(10.0f, 4.0f);
 
+    Vector3D target = chase_point(&fielder, &predicted);
+
+    ASSERT_FLOAT_EQ(predicted.x, target.x, 1e-6f, "a distant prediction is the destination, unmodified");
+    ASSERT_FLOAT_EQ(predicted.z, target.z, 1e-6f, "a distant prediction is the destination, unmodified");
     return TEST_PASSED;
 }
 
-int test_calculate_movement_keys_right(void)
+int test_chase_point_inside_the_dead_zone_is_a_stop(void)
 {
-    // Angle between -pi/8 and pi/8
-    // dx = 1, dz = 0
-    // angle = atan2(0, 1) = 0
+    Vector3D fielder = at(3.0f, -2.0f);
+    Vector3D predicted = at(3.0f + AI_MOVE_DEAD_ZONE * 0.5f, -2.0f);
 
-    MovementKeys keys = calculate_movement_keys(1.0f, 0.0f);
-    ASSERT_EQ(0, keys.up, "Should not be UP");
-    ASSERT_EQ(0, keys.left, "Should not be LEFT");
-    ASSERT_EQ(0, keys.down, "Should not be DOWN");
-    ASSERT_EQ(1, keys.right, "Should be RIGHT");
+    Vector3D target = chase_point(&fielder, &predicted);
 
+    ASSERT_FLOAT_EQ(fielder.x, target.x, 1e-6f, "close enough means stop where you stand");
+    ASSERT_FLOAT_EQ(fielder.z, target.z, 1e-6f, "close enough means stop where you stand");
+    return TEST_PASSED;
+}
+
+// The carry. The stand-off is two-sided on purpose: walking IN when the carrier is far, and back
+// OUT when it picked the ball up on top of the base. Inside THROW_TO_BASE_DISTANCE the engine
+// refuses the throw and there is no hand-over, so a carrier that stays put holds the ball forever.
+int test_carry_to_throw_point_walks_in_from_far_away(void)
+{
+    Vector3D base = at(0.0f, 0.0f);
+    Vector3D carrier = at(30.0f, 0.0f);
+
+    Vector3D target = carry_to_throw_point(&carrier, &base);
+
+    ASSERT_FLOAT_EQ(AI_THROW_STANDOFF, dist_xz(target, base), 1e-4f, "it stops exactly at the stand-off");
+    ASSERT(target.x > 0.0f, "and on the carrier's side of the base, not through it");
+    return TEST_PASSED;
+}
+
+int test_carry_to_throw_point_backs_out_when_too_close(void)
+{
+    Vector3D base = at(0.0f, 0.0f);
+    Vector3D carrier = at(0.4f, 0.0f); // inside the refusal radius: no throw, no hand-over
+
+    Vector3D target = carry_to_throw_point(&carrier, &base);
+
+    ASSERT_FLOAT_EQ(AI_THROW_STANDOFF, dist_xz(target, base), 1e-4f, "it steps back out to a throwable range");
+    ASSERT(dist_xz(target, base) > THROW_TO_BASE_DISTANCE, "which is the whole point: the throw must be possible");
+    ASSERT(target.x > 0.0f, "and it backs away along the line it came in on");
+    return TEST_PASSED;
+}
+
+int test_carry_to_throw_point_standing_on_the_base_still_yields_a_throwable_spot(void)
+{
+    Vector3D base = at(-12.0f, 7.0f);
+    Vector3D carrier = base; // no direction to step back along
+
+    Vector3D target = carry_to_throw_point(&carrier, &base);
+
+    ASSERT_FLOAT_EQ(AI_THROW_STANDOFF, dist_xz(target, base), 1e-4f, "a fixed fallback direction, but a real one");
+    return TEST_PASSED;
+}
+
+// The cadence. Saying nothing is the normal case: the engine already holds a value that close, and
+// re-sending it would change nothing.
+int test_move_declaration_speaks_first_time_and_on_a_real_drift(void)
+{
+    Vector3D want = at(5.0f, 5.0f);
+    Vector3D last = at(5.0f, 5.0f);
+
+    MoveDeclaration first = decide_move_declaration(&want, 0, &last, 0);
+    ASSERT_EQ(1, first.declare, "nothing said yet, so say it");
+
+    MoveDeclaration unchanged = decide_move_declaration(&want, 1, &last, 0);
+    ASSERT_EQ(0, unchanged.declare, "the engine already holds this exact value");
+
+    Vector3D nudged = at(5.0f + AI_MOVE_DECLARE_THRESHOLD * 0.5f, 5.0f);
+    MoveDeclaration small = decide_move_declaration(&nudged, 1, &last, 0);
+    ASSERT_EQ(0, small.declare, "a drift under the threshold is not worth a message");
+
+    Vector3D moved = at(5.0f + AI_MOVE_DECLARE_THRESHOLD * 2.0f, 5.0f);
+    MoveDeclaration big = decide_move_declaration(&moved, 1, &last, 0);
+    ASSERT_EQ(1, big.declare, "a real drift is");
+    ASSERT_FLOAT_EQ(moved.x, big.point.x, 1e-6f, "and what it says is the destination it was given");
+    return TEST_PASSED;
+}
+
+// The blind heartbeat: it observes nothing, so it cannot become a divergence source, and it is what
+// gets the fielder moving again after a reset emptied the engine's destination.
+int test_move_declaration_heartbeat_restates_an_unchanged_destination(void)
+{
+    Vector3D want = at(-3.0f, 8.0f);
+    Vector3D last = at(-3.0f, 8.0f);
+
+    MoveDeclaration quiet = decide_move_declaration(&want, 1, &last, AI_MOVE_HEARTBEAT_FRAMES - 1);
+    ASSERT_EQ(0, quiet.declare, "not due yet");
+
+    MoveDeclaration due = decide_move_declaration(&want, 1, &last, AI_MOVE_HEARTBEAT_FRAMES);
+    ASSERT_EQ(1, due.declare, "due: restate it, having looked at nothing to decide so");
     return TEST_PASSED;
 }
 

@@ -387,27 +387,36 @@ int state_validator_check(StateInfo* state)
         return 0;
     }
 
-    // Invariant 3: a player at the plate is legally entitled to be there (§12, §27).
+    // Invariant 3: the batter ON OFFER is one the rules allow (§12, §27).
     //
-    // This is the invariant the debug-logging work asked for and could not yet state: "legally available" had no
-    // precise meaning while the engine counted down a batting pool the rules do not have. It does
-    // now. The batting order is a cycle, so a REGULAR player is always entitled — until the referee
-    // pronounces the turn spent, after which only a joker may extend it ("Jos joukkueella on
+    // The batting order is a cycle, so a REGULAR player is always entitled — until the referee
+    // pronounces the regular order spent, after which only a joker may extend it ("Jos joukkueella on
     // tilanteessa jokerinkäyttömahdollisuus, paloa ei tuomita, mikäli jokeripelaaja otetaan
-    // lyömään", §27). A regular batter appearing after that is the shape bug #7 had: somebody was
-    // handed the bat that the rules had already finished with.
-    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (game->playerInfo[i].bTPI.state != PLAYER_STATE_AT_BAT) continue;
-        if (rules->scoreboard.period >= 4) continue; // the homerun contest picks its batters by pair
-
-        if (rules->halfInningState.lastBatter.turnExhausted && game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
-            printf(
-                "\n[STATE ERROR] FATAL: Player %d is AT_BAT as a regular batter, but §12 has already "
-                "spent the batting turn (designated=%d, jokersLeft=%d)\n",
-                i, rules->halfInningState.lastBatter.designatedIndex, rules->halfInningState.jokersLeft
-            );
-            return 0;
-        }
+    // lyömään", §27). Offering a regular after that is the shape bug #7 had: somebody handed the bat
+    // that the rules had already finished with.
+    //
+    // It asks about the OFFER and not about who is standing at the plate, and that is the whole
+    // point. The previous version checked "no regular may be AT_BAT while turnExhausted", which
+    // sounds stronger and is in fact unfirable: turnExhausted is `nobody controls home` AND `the
+    // order has come round`, so the instant a regular legitimately takes the plate he controls home
+    // and the flag drops. The only way to see a regular at bat with the flag up is a batter who lost
+    // home and was then RESTORED to the plate — a foul reset, which is legal play. Measured: that is
+    // the only firing it ever produced, and it froze the game on a legal state.
+    //
+    // It asks `regularOrderSpent` — the batting-order clause alone, which settles the instant the
+    // previous batter enters. `turnExhausted` additionally carries §12(3)'s "has finally become a
+    // runner", which is transient: it is 0 while the previous batter is still running with home
+    // safety, and that is precisely the window in which a regular used to be put on offer.
+    if (rules->scoreboard.period < 4 && game->flowControl.waitingForBatterDecision == 1 &&
+        rules->halfInningState.lastBatter.regularOrderSpent && game->pII.batterSelectionIndex != -1 &&
+        game->playerInfo[game->pII.batterSelectionIndex].bTPI.joker == JOKER_REGULAR) {
+        printf(
+            "\n[STATE ERROR] FATAL: player %d is on offer as the next batter, but §12 has spent the "
+            "regular order (designated=%d, jokersLeft=%d) — only a joker may extend it\n",
+            game->pII.batterSelectionIndex, rules->halfInningState.lastBatter.designatedIndex,
+            rules->halfInningState.jokersLeft
+        );
+        return 0;
     }
 
     // Invariant 4: the intent channels are empty at the frame boundary.

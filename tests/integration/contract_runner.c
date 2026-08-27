@@ -61,6 +61,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_restating_the_move_target_changes_nothing);
     RUN_TEST(test_duplicate_messages_in_one_frame_equal_one);
     RUN_TEST(test_move_target_refused_without_a_controlled_fielder);
+    RUN_TEST(test_spent_order_offers_a_joker_while_home_is_still_owned);
 }
 
 int main(int argc, char* argv[])

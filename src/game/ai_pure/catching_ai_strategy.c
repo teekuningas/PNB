@@ -2,42 +2,55 @@
 #include "base_logic.h"
 #include <math.h>
 
-#ifndef PI
-#define PI 3.14159265358979323846f
-#endif
-
-MovementKeys calculate_movement_keys(float dx, float dz)
+static float distance_xz(const Vector3D* a, const Vector3D* b)
 {
-    MovementKeys keys = {0, 0, 0, 0};
+    float dx = a->x - b->x;
+    float dz = a->z - b->z;
+    return (float)sqrt(dx * dx + dz * dz);
+}
 
-    // Original logic: angle = atan2(-(tz-pz), (tx-px))
-    // dx = tx - px
-    // dz = tz - pz
-    float angle = (float)atan2(-dz, dx);
+Vector3D chase_point(const Vector3D* fielder, const Vector3D* predicted)
+{
+    return (distance_xz(predicted, fielder) <= AI_MOVE_DEAD_ZONE) ? *fielder : *predicted;
+}
 
-    if (angle > 7 * PI / 8 || angle <= -7 * PI / 8) {
-        keys.left = 1;
-    } else if (angle <= 7 * PI / 8 && angle > 5 * PI / 8) {
-        keys.left = 1;
-        keys.up = 1;
-    } else if (angle <= 5 * PI / 8 && angle > 3 * PI / 8) {
-        keys.up = 1;
-    } else if (angle <= 3 * PI / 8 && angle > PI / 8) {
-        keys.up = 1;
-        keys.right = 1;
-    } else if (angle <= PI / 8 && angle > -PI / 8) {
-        keys.right = 1;
-    } else if (angle <= -PI / 8 && angle > -3 * PI / 8) {
-        keys.right = 1;
-        keys.down = 1;
-    } else if (angle <= -3 * PI / 8 && angle > -5 * PI / 8) {
-        keys.down = 1;
-    } else if (angle <= -5 * PI / 8 && angle > -7 * PI / 8) {
-        keys.down = 1;
-        keys.left = 1;
+Vector3D carry_to_throw_point(const Vector3D* carrier, const Vector3D* base)
+{
+    float dx = carrier->x - base->x;
+    float dz = carrier->z - base->z;
+    float d = (float)sqrt(dx * dx + dz * dz);
+
+    // Standing exactly on the base leaves no direction to step back along. Any fixed one will do as
+    // long as it is the same every time — a controller that picked a direction from the world here
+    // would be inventing state, and one that picked at random would break replay.
+    if (d < EPSILON) {
+        dx = 0.0f;
+        dz = 1.0f;
+        d = 1.0f;
     }
 
-    return keys;
+    float t = AI_THROW_STANDOFF / d;
+    Vector3D out = *carrier;
+    out.x = base->x + dx * t;
+    out.z = base->z + dz * t;
+    return out;
+}
+
+MoveDeclaration
+decide_move_declaration(const Vector3D* desired, int hasDeclared, const Vector3D* lastDeclared, int framesSinceDeclared)
+{
+    MoveDeclaration out;
+    out.point = *desired;
+
+    if (!hasDeclared) {
+        out.declare = 1;
+    } else if (distance_xz(desired, lastDeclared) > AI_MOVE_DECLARE_THRESHOLD) {
+        out.declare = 1;
+    } else {
+        out.declare = (framesSinceDeclared >= AI_MOVE_HEARTBEAT_FRAMES);
+    }
+
+    return out;
 }
 
 int should_ai_throw(

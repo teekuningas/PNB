@@ -139,8 +139,13 @@ int main(int argc, char* argv[])
     RUN_TEST(test_calculate_ai_batting_angle);
 
     // Catching AI Strategy tests
-    RUN_TEST(test_calculate_movement_keys_up_left);
-    RUN_TEST(test_calculate_movement_keys_right);
+    RUN_TEST(test_chase_point_outside_the_dead_zone_is_the_prediction);
+    RUN_TEST(test_chase_point_inside_the_dead_zone_is_a_stop);
+    RUN_TEST(test_carry_to_throw_point_walks_in_from_far_away);
+    RUN_TEST(test_carry_to_throw_point_backs_out_when_too_close);
+    RUN_TEST(test_carry_to_throw_point_standing_on_the_base_still_yields_a_throwable_spot);
+    RUN_TEST(test_move_declaration_speaks_first_time_and_on_a_real_drift);
+    RUN_TEST(test_move_declaration_heartbeat_restates_an_unchanged_destination);
     RUN_TEST(test_should_ai_throw_normal);
     RUN_TEST(test_should_ai_throw_replacer);
     RUN_TEST(test_should_ai_drop_ball_scenario);

@@ -85,8 +85,6 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 
     // ai uses a few flags..
 
-    init_catching_ai(&(match->aiState));
-
     init_batting_ai(&(match->aiState));
 }
 
@@ -435,19 +433,21 @@ static void change_batter(MatchSession* match, const Scoreboard* scoreboard, con
     match->pendingActionState.batter_select++;
     // here we have a loop that basically just searches through the possible players and selects
     // the next one. batter_select == 0 indicates that it is a normal player, batter_select != 0 indicates
-    // it is a joker player. §12: the regular slot is always on offer until the referee has pronounced
-    // the batting turn spent (halfInningState.lastBatter.turnExhausted), after which only jokers are.
+    // it is a joker player. §12: the regular slot is always on offer until the batting order has come
+    // round to the designated last batter (halfInningState.lastBatter.regularOrderSpent), after which
+    // only jokers are. That flag and not turnExhausted: the latter also carries §12(3)'s "has finally
+    // become a runner", which is transient and says nothing about who may be seated.
     // there must be at least one player as this function cannot get called without
     // waitingForBatterDecision-flag, and that can flag cant be true if
     // there is not at least one player.
     while (done == 0) {
         if (match->pendingActionState.batter_select == 0) {
-            if (his->lastBatter.turnExhausted == 0)
+            if (his->lastBatter.regularOrderSpent == 0)
                 done = 1;
             else
                 match->pendingActionState.batter_select = 1;
         } else if (match->pendingActionState.batter_select == 4) {
-            if (his->lastBatter.turnExhausted == 0) {
+            if (his->lastBatter.regularOrderSpent == 0) {
                 match->pendingActionState.batter_select = 0;
                 done = 1;
             } else
@@ -576,7 +576,7 @@ void ai_update(
     // Each controller is handed ONLY its own team's channel — not both. A controller that cannot name
     // the other team's channel cannot write it, whatever it intends.
     if (team_is_ai(catchingControl)) {
-        update_catching_ai(match, rules, aiController, &channels->catching);
+        update_catching_ai(match, rules, fieldPositions, aiController, &channels->catching);
     }
     if (team_is_ai(battingControl)) {
         update_batting_ai(match, rules, fieldPositions, aiController, &channels->batting);

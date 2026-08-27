@@ -4,7 +4,6 @@
 #include "vector_math.h"
 #include <math.h>
 
-#define THROW_TO_BASE_DISTANCE 1.0f
 #define THROW_POWER_CONSTANT 0.65f
 #define THROW_DISTANCE_CONSTANT 0.0012f
 
@@ -42,29 +41,27 @@ static void clear_throw_declaration(ThrowDeclaration* decl)
 
 // Compute the (un-normalized) throw direction from the ball-holder toward a target base, and record which
 // base the throw is going to (throw_going_to_base keeps basemen from wandering out to catch it).
+Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
+{
+    switch (base) {
+    case BASE_FIRST:
+        return fieldPositions->firstBase;
+    case BASE_SECOND:
+        return fieldPositions->secondBase;
+    case BASE_THIRD:
+        return fieldPositions->thirdBase;
+    case BASE_HOME:
+    default:
+        return fieldPositions->pitcher;
+    }
+}
+
 static void set_throw_direction(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
-    Vector3D target;
-    switch (base) {
-    case BASE_HOME:
-        target = fieldPositions->pitcher;
-        match->pRAI.throw_going_to_base = 0;
-        break;
-    case BASE_FIRST:
-        target = fieldPositions->firstBase;
-        match->pRAI.throw_going_to_base = 1;
-        break;
-    case BASE_SECOND:
-        target = fieldPositions->secondBase;
-        match->pRAI.throw_going_to_base = 2;
-        break;
-    case BASE_THIRD:
-        target = fieldPositions->thirdBase;
-        match->pRAI.throw_going_to_base = 3;
-        break;
-    default:
-        return;
-    }
+    if (base < BASE_HOME || base >= BASE_COUNT) return;
+
+    Vector3D target = throw_target_point(fieldPositions, base);
+    match->pRAI.throw_going_to_base = (int)base;
     match->pendingActionState.throw_direction.x = target.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
     match->pendingActionState.throw_direction.z = target.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
 }

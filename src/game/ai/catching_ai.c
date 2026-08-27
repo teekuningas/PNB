@@ -65,62 +65,37 @@ static void update_ai_pitching(
     }
 }
 
-void init_catching_ai(AIState* aiState)
+// Steer the controlled fielder by saying where it should be, and say it only when saying it means
+// something. The controller decides WHAT is worth declaring — the dead zone, the drift threshold,
+// the heartbeat — and the engine decides how the walk happens. Nothing here simulates a keypress,
+// counts a throttle, or reads back what it said last time.
+static void
+steer_controlled_fielder(MatchSession* match, AIControllerState* ai, const Vector3D* desired, IntentChannel* channel)
 {
-    aiState->moveCounter = 0;
-}
+    int index = match->pII.controlIndex;
+    if (index == -1) return;
 
-// we move towards the target position by simulating movement intent directly.
-void move_controlled_player_to_location(MatchSession* match, Vector3D* target)
-{
-    float px = match->playerInfo[match->pII.controlIndex].tPI.location.x;
-    float pz = match->playerInfo[match->pII.controlIndex].tPI.location.z;
-    float tx = target->x;
-    float tz = target->z;
-    float dx = tx - px;
-    float dz = tz - pz;
-
-    if (!vec3_is_small_enough_circle_xz(dx, dz, 1.0f) &&
-        match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING) {
-        if (match->aiState.moveCounter >= 10) {
-            MovementKeys keys = calculate_movement_keys(dx, dz);
-            // Set triggers only if NOT already moving in that direction to avoid unnecessary resets
-            if (keys.up) {
-                if (match->aF.cTAF.move[0] == ACTION_IDLE) match->aF.cTAF.move[0] = ACTION_TRIGGER_START;
-            } else {
-                if (match->aF.cTAF.move[0] != ACTION_IDLE) match->aF.cTAF.move[0] = ACTION_TRIGGER_STOP;
-            }
-
-            if (keys.right) {
-                if (match->aF.cTAF.move[1] == ACTION_IDLE) match->aF.cTAF.move[1] = ACTION_TRIGGER_START;
-            } else {
-                if (match->aF.cTAF.move[1] != ACTION_IDLE) match->aF.cTAF.move[1] = ACTION_TRIGGER_STOP;
-            }
-
-            if (keys.down) {
-                if (match->aF.cTAF.move[2] == ACTION_IDLE) match->aF.cTAF.move[2] = ACTION_TRIGGER_START;
-            } else {
-                if (match->aF.cTAF.move[2] != ACTION_IDLE) match->aF.cTAF.move[2] = ACTION_TRIGGER_STOP;
-            }
-
-            if (keys.left) {
-                if (match->aF.cTAF.move[3] == ACTION_IDLE) match->aF.cTAF.move[3] = ACTION_TRIGGER_START;
-            } else {
-                if (match->aF.cTAF.move[3] != ACTION_IDLE) match->aF.cTAF.move[3] = ACTION_TRIGGER_STOP;
-            }
-
-            match->aiState.moveCounter = 0;
-        }
-    } else {
-        int i;
-        for (i = 0; i < 4; i++) {
-            if (match->aF.cTAF.move[i] != ACTION_IDLE) {
-                match->aF.cTAF.move[i] = ACTION_TRIGGER_STOP;
-            }
-        }
-        match->aiState.moveCounter = 0;
+    // A different fielder is a different conversation: whatever was said about the last one says
+    // nothing about this one. controlIndex is durable world state, so noticing this is observation,
+    // not read-back.
+    if (ai->lastSteeredFielder != index) {
+        ai->hasDeclaredMoveTarget = 0;
+        ai->lastSteeredFielder = index;
     }
-    match->aiState.moveCounter++;
+
+    MoveDeclaration decision = decide_move_declaration(
+        desired, ai->hasDeclaredMoveTarget, &ai->lastDeclaredMoveTarget, ai->framesSinceMoveDeclared
+    );
+
+    if (!decision.declare) {
+        ai->framesSinceMoveDeclared++;
+        return;
+    }
+
+    intent_push(channel, (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target.point = decision.point});
+    ai->lastDeclaredMoveTarget = decision.point;
+    ai->hasDeclaredMoveTarget = 1;
+    ai->framesSinceMoveDeclared = 0;
 }
 
 void throw_ball_to_base(MatchSession* match, BaseID base, IntentChannel* channel)
@@ -163,7 +138,8 @@ void throw_ball_to_base(MatchSession* match, BaseID base, IntentChannel* channel
 }
 
 void update_catching_ai(
-    MatchSession* match, const GameRulesState* rules, AIControllerState* aiController, IntentChannel* channel
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    AIControllerState* aiController, IntentChannel* channel
 )
 {
     // Update AI pitching
@@ -180,7 +156,10 @@ void update_catching_ai(
         // aiActionEventLock/aiLockUpdate is gone.
         if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
             if (match->pRAI.throw_going_to_base == -1 || match->ballInfo.currentFlightHasHitGround == 1) {
-                move_controlled_player_to_location(match, &(match->cameraState.targetPoint));
+                Vector3D target = chase_point(
+                    &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->cameraState.targetPoint)
+                );
+                steer_controlled_fielder(match, aiController, &target, channel);
             }
         }
     }
@@ -249,10 +228,28 @@ void update_catching_ai(
                 throwBase = 0;
 
             if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
-                Vector3D target;
-                target.x = match->playerInfo[match->pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.x;
-                target.z = match->playerInfo[match->pII.catcherOnBaseIndex[throwBase]].tPI.homeLocation.z;
-                move_controlled_player_to_location(match, &target);
+                // Two different jobs share this move, and telling them apart is what keeps the
+                // game alive.
+                //
+                // If the player we are steering IS the catcher of that base, this is "go back to
+                // your post" — and for the pitcher it is load-bearing: the AI refuses to pitch
+                // until every fielder is home, so a pitcher that caught a throw off its spot has
+                // to walk back or the half-inning never resumes.
+                //
+                // If it is anybody else, this is "bring the ball in so you can throw it" — and
+                // then it must stop SHORT. Walk a carrier inside the engine's too-close-to-throw
+                // radius and it can neither throw the ball nor hand it over: a deadlock, measured
+                // on six of 264 sweep seeds before the stand-off went in.
+                int baseman = match->pII.catcherOnBaseIndex[throwBase];
+                if (match->pII.controlIndex != -1 && baseman != -1) {
+                    Vector3D target = match->playerInfo[baseman].tPI.homeLocation;
+                    if (match->pII.controlIndex != baseman) {
+                        Vector3D baseTarget = throw_target_point(fieldPositions, (BaseID)throwBase);
+                        target =
+                            carry_to_throw_point(&match->playerInfo[match->pII.controlIndex].tPI.location, &baseTarget);
+                    }
+                    steer_controlled_fielder(match, aiController, &target, channel);
+                }
             }
             throw_ball_to_base(match, (BaseID)throwBase, channel);
         }

@@ -99,6 +99,12 @@ typedef enum {
 
 #define HOME_RADIUS 6.0f
 #define BASE_RADIUS 2.0f
+// How close is too close to throw: a thrower already standing on the base it means to throw to has
+// nothing to throw, and the engine refuses the windup. It lives here with the other distances rather
+// than inside the throw because a controller walking a ball-carrier toward a base has to know where
+// the engine starts refusing — walk inside this radius and the carrier is left holding the ball with
+// no way to deliver it.
+#define THROW_TO_BASE_DISTANCE 1.0f
 #define HOME_LINE_Z -0.65f
 #define BATTING_RADIUS 3.5f
 
@@ -714,7 +720,24 @@ typedef struct _LastBatterState {
     int designatedIndex; // the viimeinen lyöjä; -1 until the half-inning's first batter takes the bat
     int lastRegularIndex; // most recent REGULAR player to take the bat; -1 if none yet (jokers don't count)
     int hasBattedAgain; // the designated player has taken the bat since being designated
-    int turnExhausted; // §12(2)/(3)'s batting-order clause holds: only a joker can extend the turn
+
+    // Two different questions, and conflating them was a real §12 defect. Both are §12(2)/(3), but
+    // they are answered at different moments and by different amounts of the rule.
+    //
+    // WHO MAY BAT NEXT. `regularOrderSpent` is the batting-order clause on its own: the order has
+    // come round to the designated last batter, so no further REGULAR may be seated and only a
+    // joker can extend the turn (§27: "paloa ei tuomita, mikäli jokeripelaaja otetaan lyömään").
+    // It settles the instant the previous batter enters and never wobbles afterwards, which is what
+    // makes it safe to ask at the moment a new batter is chosen.
+    //
+    // DOES THE HALF-INNING END. `turnExhausted` adds the rule's other trigger — that the batter has
+    // "muuttunut lopullisesti etenijäksi", read here as having lost safety at home. That one is
+    // genuinely transient: a batter stops standing at the plate the moment he sets off but keeps
+    // home until he is established elsewhere, and during a foul he is restored to the plate and
+    // takes home back. It belongs to the verdict (with the ball home and no jokers left), never to
+    // the choice of batter.
+    int regularOrderSpent;
+    int turnExhausted;
 } LastBatterState;
 
 // MILESTONE 7.5 - Focused Structs
@@ -827,7 +850,6 @@ typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP 
 
 typedef struct _AIState {
     // Catching AI
-    int moveCounter;
 
     // Batting AI
     int battingKeyDown;
@@ -993,6 +1015,16 @@ typedef struct _ClientInputState {
 // diverge permanently — lockstep prevents divergence, it never heals it.
 typedef struct _AIControllerState {
     unsigned int rngSeed;
+
+    // What the catching controller last told the engine about where its fielder is going, and how
+    // long ago. Controller memory, so it lives here and not in the World: a replay from a message
+    // log runs no controller at all, and a peer never runs ours. It is also the reason the
+    // controller never has to read its declaration back — it remembers what it said instead of
+    // asking the engine, which is the no-read-back law made practical rather than merely obeyed.
+    Vector3D lastDeclaredMoveTarget;
+    int hasDeclaredMoveTarget;
+    int framesSinceMoveDeclared;
+    int lastSteeredFielder; // controlIndex when it last spoke; a new fielder needs telling afresh
 } AIControllerState;
 
 typedef struct _HomeRunContestState {

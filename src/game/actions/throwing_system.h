@@ -38,6 +38,10 @@
 // path does not use this — its power is a value declared from the client charge widget.
 int throw_windup_total_frames(float power);
 
+// The point a throw to `base` is aimed at. One definition, used by the throw itself and by any
+// controller reasoning about where a throw could go from where.
+Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base);
+
 void init_throwing_system(MatchSession* match);
 
 // The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).

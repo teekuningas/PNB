@@ -628,6 +628,7 @@ static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState)
         );
         halfInningState->lastBatter.hasBattedAgain = 0;
         halfInningState->lastBatter.turnExhausted = 0;
+        halfInningState->lastBatter.regularOrderSpent = 0;
     }
 }
 
@@ -930,11 +931,17 @@ static void update_side_change_readiness(
     const int nextInOrder =
         scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
 
-    halfInningState->lastBatter.turnExhausted =
-        turn_concluded && is_last_batter_turn_reached(
-                              halfInningState->lastBatter.designatedIndex, halfInningState->lastBatter.hasBattedAgain,
-                              halfInningState->runsInTheInning, nextInOrder
-                          );
+    // The batting-order clause on its own: who may still be seated. Settled, and asked wherever a
+    // batter is chosen.
+    halfInningState->lastBatter.regularOrderSpent = is_last_batter_turn_reached(
+        halfInningState->lastBatter.designatedIndex, halfInningState->lastBatter.hasBattedAgain,
+        halfInningState->runsInTheInning, nextInOrder
+    );
+
+    // The side-change readiness: the same clause plus §12(3)'s "muuttuu lopullisesti etenijäksi".
+    // Transient by nature, and read only by the inning-end verdict, which ANDs the ball being home
+    // and the jokers being gone.
+    halfInningState->lastBatter.turnExhausted = turn_concluded && halfInningState->lastBatter.regularOrderSpent;
 }
 
 static void update_game_state_flags(const GameEvents* events, BetweenPitchState* betweenPitchState)

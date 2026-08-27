@@ -159,7 +159,7 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # the swing angle) and the swing slice — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 88
+ratchet "lines touching ActionFlags" "$action_flags_lines" 78
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is
