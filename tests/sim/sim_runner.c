@@ -11,6 +11,7 @@ int main(void)
     printf("========================================\n\n");
 
     RUN_TEST(test_ai_vs_ai_half_inning);
+    RUN_TEST(test_half_inning_seed_sweep);
     RUN_TEST(test_ai_vs_ai_homerun);
     RUN_TEST(test_homerun_contest_seed_sweep);
     RUN_TEST(test_ai_vs_ai_determinism);

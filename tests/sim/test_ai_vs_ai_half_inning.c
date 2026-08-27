@@ -79,3 +79,68 @@ int test_ai_vs_ai_half_inning(void)
     sim_destroy(g);
     return ok ? TEST_PASSED : TEST_FAILED;
 }
+
+// ---------------------------------------------------------------------------
+// The half-inning across many seeds — the other half of the lesson bug #8 taught.
+//
+// The single run above proves a half-inning plays. It cannot prove one is *sound*. Bug #8 broke
+// roughly one contest turn in twenty and hid for as long as the contest had existed, because the
+// tier ran exactly one seed; a 24-seed sample was still not enough to tell whether it was new, and
+// 400 settled it. The contest got its sweep with the fix (test_homerun_contest_seed_sweep). This is
+// the same net over ordinary play, and it is the one the movement slice needs: movement is the
+// catching side of every batted ball, so a rare illegal state it could reach would be reachable
+// here and nowhere else in the suite.
+//
+// What each seed asserts is the invariant observer's whole bounds set — outs in range for the mode,
+// strikes in [0,3], balls and run totals non-negative, jokers in range, run totals monotone outside
+// a period rollover, no §12 breach, no stall — plus the half-inning actually ending.
+//
+// WHAT THIS CANNOT SEE: everything the tier is blind to. The AI-vs-AI net scores no runs and every
+// half-inning ends on three burns, so no seed here exercises the scoring rules or the last-batter
+// side change. It is a soundness net, not a quality one; the quality bands live in
+// test_ai_offense_breakdown.
+#define HALF_INNING_SEED_COUNT 120
+
+int test_half_inning_seed_sweep(void)
+{
+    int failures = 0, incomplete = 0;
+    long total_frames = 0;
+
+    for (int i = 0; i < HALF_INNING_SEED_COUNT; i++) {
+        // Golden-ratio stride from a fixed base: a spread, reproducible seed set. A different base
+        // from the contest sweep's, so the two nets do not sample the same RNG neighbourhood.
+        unsigned int seed = 0x5A000u + (unsigned int)i * 2654435761u;
+
+        GameSetup setup;
+        sim_make_normal_setup(&setup, 0, 1, CONTROL_AI, CONTROL_AI);
+        SimGame* g = sim_create(&setup, seed);
+        ASSERT_NOT_NULL(g, "sim_create returned NULL");
+
+        InvariantObserver inv;
+        invariant_observer_init(&inv, STALL_LIMIT);
+        sim_attach(g, invariant_observer_hook, &inv);
+
+        long frames = sim_run_until(g, sim_pred_half_inning_ended, HALF_INNING_MAX_FRAMES);
+
+        if (g->failed) {
+            printf("  seed 0x%08X failed at frame %ld: %s\n", seed, g->frame, g->fail_reason);
+            failures++;
+        } else if (frames < 0) {
+            printf("  seed 0x%08X did not finish its half-inning within %ld frames\n", seed, HALF_INNING_MAX_FRAMES);
+            incomplete++;
+        } else {
+            total_frames += frames;
+        }
+
+        sim_destroy(g);
+    }
+
+    int completed = HALF_INNING_SEED_COUNT - failures - incomplete;
+    printf(
+        "\n  [half-inning sweep] %d seeds: %d clean, %d invariant failures, %d unfinished, mean %ld frames\n",
+        HALF_INNING_SEED_COUNT, completed, failures, incomplete, completed ? total_frames / completed : 0L
+    );
+
+    if (failures != 0 || incomplete != 0) return TEST_FAILED;
+    return TEST_PASSED;
+}

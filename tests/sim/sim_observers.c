@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int sim_runners_on_base(const SimGame* g)
 {
@@ -111,9 +112,24 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     }
 
     // --- Monotonicity (runs/inning never go backwards) ---
+    //
+    // With ONE carve-out, which is a rule of pesäpallo rather than a concession: teams[].runs is the
+    // count for the CURRENT period, and the referee zeroes both teams' counts as it rolls the inning
+    // over into a new one (advance_scoreboard_for_inning_end — every reset there sits after the
+    // inning++ in the same call, and every one of them zeroes BOTH teams). So a decrease is legal
+    // only when it is a decrease to zero, for both teams, on the very frame the inning moved.
+    // Anything else — one team's total falling, a fall to a non-zero number, a fall mid-inning — is
+    // still the defect this invariant was written to catch.
+    //
+    // Without the carve-out this fired on any game long enough to reach a period boundary, and
+    // reported it as a stall: a slow-defence probe (a fielder walking instead of running) surfaced
+    // as "invariant: run total decreased" in four seeds, which reads as a deadlock and is not one.
+    int inning_advanced = (inning != o->p_inning);
     if (runs0 < o->p_runs0 || runs1 < o->p_runs1) {
-        sim_fail((SimGame*)g, "invariant: run total decreased");
-        return;
+        if (!inning_advanced || runs0 != 0 || runs1 != 0) {
+            sim_fail((SimGame*)g, "invariant: run total decreased outside a period rollover");
+            return;
+        }
     }
     if (inning < o->p_inning) {
         sim_fail((SimGame*)g, "invariant: inning counter decreased");
@@ -485,4 +501,80 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     o->p_runs1 = sb->teams[1].runs;
     o->p_inning = sb->inning;
     o->p_period = sb->period;
+}
+
+/* ---- Fielding observer ------------------------------------------------- */
+
+// A chase that has run this long without possession was never going to end in one — a foul that
+// nobody picked up, a ball parked out of bounds waiting for the reset. Counting it would drag the
+// recovery mean toward the length of the timeout rather than the length of a chase.
+#define FIELDING_WINDOW_CAP_FRAMES 3000L
+
+// A per-frame displacement this large is not a step: it is a teleport — a reset placing players at
+// their home locations, or a substitution. Folding those into the speed probe would swamp it.
+#define FIELDING_MAX_HONEST_STEP 1.0
+
+void fielding_observer_init(FieldingObserver* o)
+{
+    memset(o, 0, sizeof(*o));
+}
+
+void fielding_observer_hook(const SimGame* g, void* ctx)
+{
+    FieldingObserver* o = (FieldingObserver*)ctx;
+    const MatchSession* m = g->state->match;
+    const GameRulesState* r = g->state->rules;
+
+    int batOutcome = (int)r->betweenPitchState.batOutcome;
+    int control = m->pII.controlIndex;
+
+    if (!o->initialized) {
+        o->initialized = 1;
+        o->p_batOutcome = batOutcome;
+        o->p_controlIndex = control;
+        if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
+        return;
+    }
+
+    // The speed probe. Only frames where the SAME player stayed controlled and was moving count —
+    // a control change is a different player's position, not a step this one took.
+    if (control != -1 && control == o->p_controlIndex && m->playerInfo[control].cPI.moving == 1) {
+        float dx = m->playerInfo[control].tPI.location.x - o->p_controlLocation.x;
+        float dz = m->playerInfo[control].tPI.location.z - o->p_controlLocation.z;
+        double step = sqrt((double)(dx * dx + dz * dz));
+        if (step < FIELDING_MAX_HONEST_STEP) {
+            o->step_frames++;
+            o->step_sum += step;
+        }
+    }
+
+    // A chase window opens the frame the referee promotes the bat outcome to HIT.
+    if (batOutcome == BAT_OUTCOME_HIT && o->p_batOutcome != BAT_OUTCOME_HIT) {
+        o->chasing = 1;
+        o->chase_start_frame = g->frame;
+    }
+
+    if (o->chasing) {
+        if (control != -1) {
+            float dx = m->playerInfo[control].tPI.location.x - m->cameraState.targetPoint.x;
+            float dz = m->playerInfo[control].tPI.location.z - m->cameraState.targetPoint.z;
+            o->chase_samples++;
+            o->chase_dist_sum += sqrt((double)(dx * dx + dz * dz));
+        }
+
+        long elapsed = g->frame - o->chase_start_frame;
+        if (m->pII.hasBallIndex != -1) {
+            o->recoveries++;
+            o->recovery_frames_sum += elapsed;
+            if (elapsed > o->recovery_frames_max) o->recovery_frames_max = elapsed;
+            o->chasing = 0;
+        } else if (elapsed > FIELDING_WINDOW_CAP_FRAMES || batOutcome != BAT_OUTCOME_HIT) {
+            o->abandoned++;
+            o->chasing = 0;
+        }
+    }
+
+    o->p_batOutcome = batOutcome;
+    o->p_controlIndex = control;
+    if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
 }

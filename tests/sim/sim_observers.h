@@ -129,6 +129,56 @@ typedef struct {
 void box_score_observer_init(BoxScoreObserver* o, FILE* log);
 void box_score_observer_hook(const SimGame* g, void* ctx);
 
+/* ---- Fielding observer ------------------------------------------------- *
+ * Watches the catching side do its job. Every band in the offense breakdown is
+ * batting- or pitching-side, so a fielding regression — a fielder that moves at
+ * half speed, one that stops short of where it was sent, one that never sets off
+ * at all — does not move a single one of them. These are the numbers that see it:
+ *
+ *   recovery       frames from bat contact until a fielder holds the ball again.
+ *                  The end-to-end "how good is the defence" number.
+ *   chase distance |controlled fielder - the engine's ball target point| each frame
+ *                  the ball is loose. That point is the engine's own prediction of
+ *                  where the ball can be met, so this is literally "did the fielder
+ *                  go where it was sent". Falls when tracking improves.
+ *   step           the controlled fielder's realized displacement per moving frame.
+ *                  A pure speed probe: it pins the movement path to the speed it is
+ *                  supposed to run at, and nothing else in the suite would notice a
+ *                  fielder quietly switched onto a walk.
+ *
+ * A window opens at bat contact and closes on possession; one that never closes (a
+ * foul, an out of bounds, a reset) is discarded rather than counted, so only real
+ * recoveries reach the mean.
+ *
+ * Both position probes are deliberately about the CONTROLLED fielder — the one player
+ * a controller steers, and the only one the movement slice changes. The auto-chasing
+ * ranked fielders are engine behaviour and were never on the key stream. */
+typedef struct {
+    // internal edge-detection state (do not set)
+    int initialized;
+    int p_batOutcome;
+    int p_controlIndex;
+    Vector3D p_controlLocation;
+
+    int chasing; // a batted ball is loose right now
+    long chase_start_frame;
+
+    // observed (readable after the run)
+    long recoveries; // batted balls that came back into a fielder's hand
+    long recovery_frames_sum;
+    long recovery_frames_max;
+    long abandoned; // windows that ended without a recovery (foul / reset)
+
+    long chase_samples; // frames sampled while a batted ball was loose
+    double chase_dist_sum; // sum of |controlled fielder - ball target point| over those frames
+
+    long step_frames; // frames the controlled fielder moved without control changing
+    double step_sum; // sum of its per-frame displacement -> mean = realized speed
+} FieldingObserver;
+
+void fielding_observer_init(FieldingObserver* o);
+void fielding_observer_hook(const SimGame* g, void* ctx);
+
 /* ---- shared helper ----------------------------------------------------- */
 
 /** Count batting-team players currently standing on 1st/2nd/3rd base. */

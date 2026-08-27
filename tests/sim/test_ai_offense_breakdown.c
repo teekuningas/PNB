@@ -30,7 +30,7 @@
 #define SEED_COUNT 24
 #define PERIOD_MAX_FRAMES 120000L
 #define STALL_LIMIT 20000L
-#define BAND_MAX 12
+#define BAND_MAX 16
 
 // Stay strictly inside the first period: it ends at inning == halfInningsInPeriod (4), and the
 // period boundary hands off to a menu the single-phase sim harness does not yet autopilot
@@ -71,6 +71,9 @@ int test_ai_offense_breakdown(void)
     long T_fouls = 0, T_power_sum = 0, T_power_n = 0, T_dir[5] = {0};
     int T_power_min = 9999, T_power_max = -9999;
     int seeds_reached_third = 0, seeds_ran_third = 0, seeds_incomplete = 0, seeds_stalled = 0;
+    long T_recoveries = 0, T_recovery_frames = 0, T_recovery_max = 0, T_abandoned = 0;
+    long T_chase_samples = 0, T_step_frames = 0;
+    double T_chase_dist = 0.0, T_step_sum = 0.0;
 
     for (int s = 0; s < SEED_COUNT; s++) {
         unsigned int seed = 0xA11CE000u + (unsigned int)s * 0x9E3779B1u;
@@ -87,6 +90,10 @@ int test_ai_offense_breakdown(void)
         BoxScoreObserver box;
         box_score_observer_init(&box, getenv("SIM_PBP") ? stdout : NULL);
         sim_attach(g, box_score_observer_hook, &box);
+
+        FieldingObserver fld;
+        fielding_observer_init(&fld);
+        sim_attach(g, fielding_observer_hook, &fld);
 
         long frames = sim_run_until(g, three_half_innings_done, PERIOD_MAX_FRAMES);
         if (frames < 0) seeds_incomplete++; // budget hit or failure; counters still valid
@@ -122,6 +129,15 @@ int test_ai_offense_breakdown(void)
         }
         for (int b = 0; b < 5; b++)
             T_dir[b] += box.dir_bins[b];
+
+        T_recoveries += fld.recoveries;
+        T_recovery_frames += fld.recovery_frames_sum;
+        if (fld.recovery_frames_max > T_recovery_max) T_recovery_max = fld.recovery_frames_max;
+        T_abandoned += fld.abandoned;
+        T_chase_samples += fld.chase_samples;
+        T_chase_dist += fld.chase_dist_sum;
+        T_step_frames += fld.step_frames;
+        T_step_sum += fld.step_sum;
 
         if (box.reached_third > 0) seeds_reached_third++;
         if (box.ran_from_third > 0) seeds_ran_third++;
@@ -164,6 +180,12 @@ int test_ai_offense_breakdown(void)
     // Normal-swing (style-1) direction spread (realized launch angle, right→left, 5 equal buckets):
     // should be a broad, roughly uniform fan — NOT collapsed to center, NOT piled at the extremes.
     printf("    style-1 direction R→L: [%ld %ld %ld %ld %ld]\n", T_dir[0], T_dir[1], T_dir[2], T_dir[3], T_dir[4]);
+    printf(
+        "    fielding: recoveries=%ld abandoned=%ld meanFrames=%.2f maxFrames=%ld meanChase=%.3f meanStep=%.5f\n",
+        T_recoveries, T_abandoned, T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0,
+        T_recovery_max, T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0,
+        T_step_frames ? T_step_sum / (double)T_step_frames : 0.0
+    );
 
     // A stall IS a hard defect (an AI-vs-AI deadlock), distinct from the quality bands below:
     // the sim tier is the regression net, so a silent stall must not pass green.
@@ -235,6 +257,43 @@ int test_ai_offense_breakdown(void)
         bands, &band_count,
         (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 0, 55, "27",
                "the fan piling into one direction"}
+    );
+
+    // ---- the fielding bands ----------------------------------------------------------
+    // The ten bands above are every one of them batting- or pitching-side, so until these
+    // arrived the whole catching half of the game could regress without a single number
+    // moving. They were baselined 2026-08-27 on UNCHANGED code, before the movement slice
+    // touched anything — recording them first is what lets the slice argue from them
+    // afterwards, since the slice re-baselines the determinism hash by design and cannot
+    // lean on it.
+    band_add(
+        bands, &band_count,
+        (Band){"mean frames to recover a batted ball",
+               T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0, 60, 150, "102.4",
+               "the defence getting slower end to end — a fielder that sets off late, or not at all"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"worst frames to recover", (double)T_recovery_max, 0, 2000, "800",
+               "one chase that never converges, hidden inside a healthy mean"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"chases that ended in possession %", percent(T_recoveries, T_recoveries + T_abandoned), 70, 100, "87.6",
+               "balls the catching side simply never brings back"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 10, 22, "15.12",
+               "the controlled fielder not going where the engine sent it"}
+    );
+    // The floor here is the load-bearing one: RUN_SPEED is 0.12 and WALK_SPEED is 0.06, so a
+    // controlled fielder quietly moved onto the auto-fielders' walk — exactly what reusing
+    // move_to_target would have done — cannot stay inside this band.
+    band_add(
+        bands, &band_count,
+        (Band){"mean step per moving frame", T_step_frames ? T_step_sum / (double)T_step_frames : 0.0, 0.09, 0.125,
+               "0.1073", "the controlled fielder silently switched to a different speed"}
     );
 
     int breached = 0;
