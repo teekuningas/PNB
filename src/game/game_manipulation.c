@@ -255,8 +255,10 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                         }
                         // stop the guy who caught the ball
                         stop_movement(match->playerInfo, i);
-                        // but start moving again if movement key being held at the same time. for smooth movement.
-                        smooth_out_movement(match);
+                        // (No re-trigger here any more: a controller's destination is held until it
+                        // replaces it, so a fielder stopped by the catch walks on by itself next
+                        // tick. That is what smooth_out_movement used to fake by turning the held
+                        // key flags back on.)
                         // set the has ball model.
                         match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
 
@@ -497,27 +499,27 @@ static void rank_players_and_move_them(MatchSession* match)
             else
                 multiplier = (multiplier - 0.35f) * 0.6f / 0.25f;
 
-            match->cameraState.targetPoint.x = (1 - multiplier) * ballDropX + multiplier * finalPointXApprox;
-            match->cameraState.targetPoint.z = (1 - multiplier) * ballDropZ + multiplier * finalPointZApprox;
+            match->catchingState.ballTargetPoint.x = (1 - multiplier) * ballDropX + multiplier * finalPointXApprox;
+            match->catchingState.ballTargetPoint.z = (1 - multiplier) * ballDropZ + multiplier * finalPointZApprox;
 
             evalBallX = ballDropX + match->ballInfo.velocity.x * BALL_DROP_EVAL_CONSTANT * 0.25f / (time * 0.01f);
             evalBallZ = ballDropZ + match->ballInfo.velocity.z * BALL_DROP_EVAL_CONSTANT * 0.25f / (time * 0.01f);
         } else if (match->ballInfo.currentFlightHasHitGround == 1 && match->ballInfo.onGround == 0) {
-            match->cameraState.targetPoint.x =
+            match->catchingState.ballTargetPoint.x =
                 ballDropX + match->ballInfo.velocity.x * BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
-            match->cameraState.targetPoint.z =
+            match->catchingState.ballTargetPoint.z =
                 ballDropZ + match->ballInfo.velocity.z * BALL_DROP_TO_FINAL_POINT_APPROXIMATION_CONSTANT;
 
-            evalBallX = match->cameraState.targetPoint.x;
-            evalBallZ = match->cameraState.targetPoint.z;
+            evalBallX = match->catchingState.ballTargetPoint.x;
+            evalBallZ = match->catchingState.ballTargetPoint.z;
         } else {
-            match->cameraState.targetPoint.x =
+            match->catchingState.ballTargetPoint.x =
                 ballDropX + match->ballInfo.velocity.x * BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
-            match->cameraState.targetPoint.z =
+            match->catchingState.ballTargetPoint.z =
                 ballDropZ + match->ballInfo.velocity.z * BALL_FINAL_POINT_APPROXIMATION_CONSTANT;
 
-            evalBallX = match->cameraState.targetPoint.x;
-            evalBallZ = match->cameraState.targetPoint.z;
+            evalBallX = match->catchingState.ballTargetPoint.x;
+            evalBallZ = match->catchingState.ballTargetPoint.z;
         }
 
         // check only catching team players

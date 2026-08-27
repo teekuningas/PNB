@@ -157,7 +157,7 @@ void update_catching_ai(
         if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
             if (match->pRAI.throw_going_to_base == -1 || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
-                    &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->cameraState.targetPoint)
+                    &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->catchingState.ballTargetPoint)
                 );
                 steer_controlled_fielder(match, aiController, &target, channel);
             }

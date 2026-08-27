@@ -139,7 +139,6 @@ typedef struct _GroundUnit {
 #define RANKED_FIELDERS_COUNT 5
 #define CHANGE_PLAYER_COUNT 3
 #define BASE_COUNT 4
-#define DIRECTION_COUNT 4
 #define MAX_HOMERUN_PAIRS 5
 
 // Menu slots
@@ -482,13 +481,8 @@ typedef struct _BattingTeamActionFlags {
     ActionTriggerState decrease_batter_angle;
 } BattingTeamActionFlags;
 
-typedef struct _CatchingTeamActionFlags {
-    ActionTriggerState move[4];
-} CatchingTeamActionFlags;
-
 typedef struct _ActionFlags {
     BattingTeamActionFlags bTAF;
-    CatchingTeamActionFlags cTAF;
 } ActionFlags;
 
 // The catching team's own engine state — facts about fielding, owned by the engine, written by
@@ -502,6 +496,15 @@ typedef struct _ActionFlags {
 typedef struct _CatchingTeamState {
     Vector3D controlledMoveTarget;
     int controlledMoveTargetActive; // 0 = no destination declared (fresh match, or after a reset)
+
+    // Where the engine reckons the ball can next be met: the prediction it ranks fielders against
+    // and walks the auto-chasers to, and the point a catching controller aims its fielder at.
+    // Computed each frame in game_manipulation from the ball's flight.
+    //
+    // It lived in CameraState until the movement slice, which was simply the wrong drawer — a
+    // fielding fact filed with the view vectors. Nothing about the camera ever read it; the comment
+    // that said so was false, and the compiler had no way to notice.
+    Vector3D ballTargetPoint;
 } CatchingTeamState;
 // spatial data for every player
 typedef struct _TechnicalPlayerInfo {
@@ -668,7 +671,6 @@ typedef struct _CommonPlayerInfo {
 
 typedef struct _CatchingTeamPlayerInfo {
     int position; // pitcher, catcher, 1st baseman..
-    int movesToDirection[4]; // does player move to direction x ( north, east, south, west )
     int isNearHomeLocation; // used to do base replacing stuff.
     ReplacementState
         replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
@@ -803,10 +805,6 @@ typedef struct _FlowControl {
 
 typedef struct _CameraState {
     int homeRunCameraFlag;
-    Vector3D targetPoint; // the active fielder's go-to point (computed in game_manipulation, read by the
-                          // catching AI to steer, and by the camera) — a strategy fact mis-homed in camera
-                          // state; rehome to CatchingTeamState at the scheduled pII decompose
-
     // View vectors
     Vector3D cam, look, up;
     Vector3D statCam, statLook, statUp;

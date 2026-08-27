@@ -4,7 +4,6 @@
 #include "globals.h"
 
 void stop_movement(PlayerInfo* playerInfo, int index);
-void smooth_out_movement(MatchSession* match);
 void stop_target_looking_player(PlayerInfo* playerInfo, int index);
 void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i);
 void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target);

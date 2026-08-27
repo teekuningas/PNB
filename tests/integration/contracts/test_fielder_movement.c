@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string.h>
 #include "base_control.h"
+#include "game_reset.h"
 #include "rules_pure/player_utils.h"
 
 /**
@@ -328,6 +329,65 @@ int test_spent_order_offers_a_joker_while_home_is_still_owned(void)
         (int)JOKER_AVAILABLE, (int)m->playerInfo[m->pII.batterSelectionIndex].bTPI.joker,
         "the batter on offer must be a joker: the order has come round, so no regular may be seated"
     );
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+/**
+ * CONTRACT: no fielding state survives a reset recipe.
+ *
+ * The reset recipes put the physical world back between plays. A destination that outlived one is a
+ * controller's intent from a play that no longer exists, and the engine would act on it — walking the
+ * fielder off toward a point that meant something in a world that has been taken away. The engine's
+ * own ball prediction is the same kind of stale.
+ *
+ * It asserts the CLAIM ("nothing a fielder was told survives") against the REAL recipes rather than
+ * against the one function that happens to clear it today. That distinction is not academic here:
+ * the last field to move house — the ball target point, which came out of camera state in this slice
+ * — was cleared by a different recipe from the one that clears the destination, and a whole-struct
+ * clear in the wrong recipe would have left it standing with all five tiers green. The channel slice
+ * lost two declarations to exactly that shape.
+ */
+int test_reset_recipes_leave_no_fielding_state(void)
+{
+    ScenarioContext* ctx = fielder_scenario();
+    MatchSession* m = ctx->state->match;
+
+    // Everything a play can leave behind on the catching side.
+    m->catchingState.controlledMoveTarget.x = 17.0f;
+    m->catchingState.controlledMoveTarget.z = -23.0f;
+    m->catchingState.controlledMoveTargetActive = 1;
+    m->catchingState.ballTargetPoint.x = -9.0f;
+    m->catchingState.ballTargetPoint.z = 31.0f;
+
+    reset_for_foul_play(m, ctx->state->fieldPositions, ctx->state->rules);
+
+    ASSERT_EQ(
+        0, m->catchingState.controlledMoveTargetActive,
+        "a foul reset leaves the controlled fielder with nowhere it was told to go"
+    );
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.controlledMoveTarget.x, 1e-6f, "and no coordinates of it either");
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.controlledMoveTarget.z, 1e-6f, "and no coordinates of it either");
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.x, 1e-6f, "nor a prediction about a ball that is gone");
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "nor a prediction about a ball that is gone");
+
+    // The other two recipes, on the same claim.
+    m->catchingState.controlledMoveTarget.x = 5.0f;
+    m->catchingState.controlledMoveTargetActive = 1;
+    m->catchingState.ballTargetPoint.z = 12.0f;
+    reset_for_new_half_inning(m, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
+    ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a half-inning reset leaves no destination");
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a half-inning reset leaves no prediction");
+
+    m->catchingState.controlledMoveTarget.x = 5.0f;
+    m->catchingState.controlledMoveTargetActive = 1;
+    m->catchingState.ballTargetPoint.z = 12.0f;
+    reset_for_next_pair(
+        m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homeRunContestState
+    );
+    ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a contest-pair reset leaves no destination");
+    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a contest-pair reset leaves no prediction");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

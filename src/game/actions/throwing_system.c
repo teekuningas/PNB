@@ -218,39 +218,6 @@ void update_throw_actualization(MatchSession* match, const FieldPositions* field
     }
 }
 
-void fielder_move(MatchSession* match, int direction)
-{
-    // we can move if there is no throw going on and no pitch going on
-    // .. and we have same player controlled
-    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
-        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->pII.controlIndex != -1) {
-        // stopping only possible when moving already going on
-        // so thats the reason for this value 2
-        match->aF.cTAF.move[direction] = ACTION_ACTIVE;
-
-        match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[direction] = 1;
-        // and we call this generic function that utilizes this movesToDirection to select
-        // velocity and orientation for the player
-        update_controlled_player_speed(match);
-    } else {
-        match->aF.cTAF.move[direction] = 0;
-    }
-}
-
-void fielder_stop_move(MatchSession* match, int direction)
-{
-    // stopping cant be done either when pitching or throwing as update_controlled_player_speed can
-    // have effects on player's model
-    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
-        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->pII.controlIndex != -1) {
-        match->aF.cTAF.move[direction] = ACTION_IDLE;
-        match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[direction] = 0;
-        update_controlled_player_speed(match);
-    } else {
-        match->aF.cTAF.move[direction] = 0;
-    }
-}
-
 void drop_ball(MatchSession* match)
 {
     // there is a possibility to drop ball if to the ground if you want. it could be convenient when
@@ -287,60 +254,4 @@ void drop_ball(MatchSession* match)
     match->pII.lastHadBallIndex = match->pII.hasBallIndex;
     // and no player has the ball anymore.
     match->pII.hasBallIndex = -1;
-}
-
-void update_controlled_player_speed(MatchSession* match)
-{
-    if (match->pII.controlIndex != -1) {
-        // cant move when throw recoil going on.
-        if (match->playerInfo[match->pII.controlIndex].cTPI.throwRecoil == 0) {
-            float norm;
-            // we select the direction by taking the difference of moves in x direction and moves in z direction
-            // moves are 0 or 1, so as a net result we will get the direction where the player really should be going on
-            int directionX = match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[1] -
-                             match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[3];
-            int directionZ = -match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[0] +
-                             match->playerInfo[match->pII.controlIndex].cTPI.movesToDirection[2];
-            // always when player's velocity changes, ball's velocity must change too.
-            match->ballInfo.needsMoveUpdate = 1;
-            // if every component vanishes
-            if (directionX * directionX + directionZ * directionZ == 0) {
-                // set moving to zero
-                match->playerInfo[match->pII.controlIndex].cPI.moving = 0;
-                // if controlled player has also ball, set corresponding model
-                // otherwise set model without ball
-                if (match->pII.hasBallIndex == match->pII.controlIndex)
-                    match->playerInfo[match->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
-                else
-                    match->playerInfo[match->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
-                // when stopping movement, need to update last location.
-                match->playerInfo[match->pII.controlIndex].cPI.lastLastLocationUpdate = 1;
-            } else {
-                // if there is a non-zero component in x or z direction
-                // moving is to be 1 and we are going to have walking or running animation
-                match->playerInfo[match->pII.controlIndex].cPI.moving = 1;
-                match->playerInfo[match->pII.controlIndex].cPI.animationFrequency = 3;
-                match->playerInfo[match->pII.controlIndex].cPI.animationStage = 0;
-                // set player's orientation so that player faces the direction he's moving to
-                match->playerInfo[match->pII.controlIndex].tPI.orientation.x = (float)directionX;
-                match->playerInfo[match->pII.controlIndex].tPI.orientation.z = (float)directionZ;
-
-                // Find norm
-                norm = (float)sqrt(directionX * directionX + directionZ * directionZ);
-                if (norm < EPSILON) norm = 1.0f;
-
-                // running
-                match->playerInfo[match->pII.controlIndex].tPI.velocity.x = (float)directionX * RUN_SPEED / norm;
-                match->playerInfo[match->pII.controlIndex].tPI.velocity.z = (float)directionZ * RUN_SPEED / norm;
-                match->playerInfo[match->pII.controlIndex].cPI.animationStageCount = 20;
-                // if has ball, then running with ball model, otherwise running without ball
-                if (match->pII.hasBallIndex == match->pII.controlIndex) {
-                    match->playerInfo[match->pII.controlIndex].cPI.model = PLAYER_ANIM_RUN_WITH_BALL;
-
-                } else {
-                    match->playerInfo[match->pII.controlIndex].cPI.model = PLAYER_ANIM_RUN_NO_BALL;
-                }
-            }
-        }
-    }
 }

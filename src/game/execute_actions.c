@@ -299,20 +299,11 @@ void execute_actions(
     // a live meter or this clock. It also cancels a pitch for a throw (never the reverse). The same
     // phased-declaration + engine-windup-clock shape as the pitch.
     update_throw_actualization(match, fieldPositions);
-    // if move keys have been pressed, depending on if its down or release
-    // call corresponding function for every direction
-    for (i = 0; i < DIRECTION_COUNT; i++) {
-        if (match->aF.cTAF.move[i] == ACTION_TRIGGER_START) {
-            fielder_move(match, i);
-        } else if (match->aF.cTAF.move[i] == ACTION_TRIGGER_STOP) {
-            fielder_stop_move(match, i);
-        }
-    }
     // MOVE — the engine walks the controlled fielder toward the destination the gate stored. One
-    // behaviour for every producer, idempotent, and the thing the four key flags above are being
-    // dissolved into: while a producer still steers by key stream its destination is never set, so
-    // this is inert for it. It runs after the throw actualizer on purpose — a throw declared this
-    // tick has already claimed the fielder's feet by the time we get here.
+    // behaviour for every producer: the four per-direction key flags that used to be read here are
+    // gone, and with them the last thing about movement that was shaped like an input device. It
+    // runs after the throw actualizer on purpose — a throw declared this tick has already claimed
+    // the fielder's feet by the time we get here.
     update_controlled_fielder_movement(match);
     // (No charging-thrower facing pass: the throw windup begins the instant a throw is declared —
     // begin_throw_windup faces the thrower at the target base and movement is suppressed for the whole

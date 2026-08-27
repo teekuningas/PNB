@@ -40,13 +40,12 @@ cd "$(dirname "$0")/.." || exit 2
 # The floor. Lower it in the same commit that improves the number — see guardrails.sh
 # for why an improvement is also a failure.
 #
-# 3 -> 2 when the fielder-movement slice deleted move_controlled_player_to_location
-# along with the AI's key puppeteering. The two that remain still live in files a
-# scheduled slice rewrites: catching_ai.c splits further along the law-5 seam, and
-# throwing_system.c dissolves across the rest of the movement work and the swing slice
-# (update_controlled_player_speed dies with the human key path). Making them static now
-# is churn on code that is about to move, so they stay as the row's live examples.
-FLOOR=2
+# 3 -> 1 across the fielder-movement slice: move_controlled_player_to_location went with
+# the AI's key puppeteering, and update_controlled_player_speed with the human's. The one
+# that remains lives in a file a scheduled slice rewrites — catching_ai.c splits further
+# along the law-5 seam at the controller-eviction slice — so making it static now is churn
+# on code that is about to move, and it stays as the row's live example.
+FLOOR=1
 
 # `main` is referenced by the C runtime, not by any object we compile.
 EXEMPT_SYMBOLS=" main "

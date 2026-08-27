@@ -18,11 +18,7 @@
 */
 void stop_movement(PlayerInfo* playerInfo, int index)
 {
-    int j;
     if (index != -1) {
-        for (j = 0; j < DIRECTION_COUNT; j++) {
-            playerInfo[index].cTPI.movesToDirection[j] = 0;
-        }
         // and after stopping movement, also ensure that no animation stays.
         if (playerInfo[index].cTPI.throwRecoil == 0) {
             playerInfo[index].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
@@ -31,18 +27,6 @@ void stop_movement(PlayerInfo* playerInfo, int index)
         playerInfo[index].cPI.moving = 0;
 
         playerInfo[index].cPI.lastLastLocationUpdate = 1;
-    }
-}
-// sometimes for example after a catch, we stop the the player, so that it wouldnt continue
-// on its own. but it should still continue, as if player has the key presse down all the time.
-// then we call this to start the movement again if there has been no release of the key inbetween
-void smooth_out_movement(MatchSession* match)
-{
-    int j;
-    for (j = 0; j < DIRECTION_COUNT; j++) {
-        if (match->aF.cTAF.move[j] == 2) {
-            match->aF.cTAF.move[j] = 1;
-        }
     }
 }
 // this is for batting team players
@@ -200,7 +184,7 @@ void move_ranked_to_catch(MatchSession* match)
                     // set busycatching flag, and move player towards the target point
                     // that has been specified beforehand.
                     match->playerInfo[match->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
-                    move_to_target(match->playerInfo, index, &match->cameraState.targetPoint);
+                    move_to_target(match->playerInfo, index, &match->catchingState.ballTargetPoint);
                 }
             }
         }
@@ -642,7 +626,7 @@ void initialize_inning_permanent_player_information(
 // information that can be flushed
 void initialize_non_critical_player_information(MatchSession* match)
 {
-    int i, j;
+    int i;
     for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         // MILESTONE 7.5: Initialize control state
         match->playerRuntime[i].arrivedToBase = 0;
@@ -673,10 +657,6 @@ void initialize_non_critical_player_information(MatchSession* match)
             if (i - 12 < RANKED_FIELDERS_COUNT) {
                 match->pII.fielderRankedIndices[i - 12] = i;
             }
-
-            for (j = 0; j < DIRECTION_COUNT; j++) {
-                match->playerInfo[i].cTPI.movesToDirection[j] = 0;
-            }
         } else {
             match->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
             match->playerInfo[i].bTPI.baseId = BASE_NONE;
@@ -694,8 +674,12 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.needsMoveUpdate = 0;
     match->ballInfo.lastLastLocationUpdate = 0;
 }
-// Empty everything a producer can have set that is not physics: the actions still held as persistent
-// flags, and the two phased declarations. Each is cleared as a WHOLE STRUCT, never field by field —
+// Empty everything a play can have left on the table that is not physics: the actions still held as
+// persistent flags, the two phased declarations, and the catching team's own state — where the
+// controlled fielder was told to go, and the engine's prediction of where the ball can next be met.
+// The last of those is not producer-set, but it is just as stale after a reset and it is cleared here
+// so that ONE recipe owns the whole struct; the alternative was two recipes clearing two fields of
+// it, which is how the channel slice lost a declaration. Each is cleared as a WHOLE STRUCT, never field by field —
 // the field-by-field version this replaced had silently missed two, and a struct assignment cannot
 // miss a field that gets added later. Every idle/none enumerator is 0; throw.target is the one
 // non-zero "absent" sentinel. The windup clocks empty with the declarations they actualize.
@@ -757,9 +741,6 @@ void reset_flow_state(MatchSession* match)
 
     // Camera
     match->cameraState.homeRunCameraFlag = 0;
-    match->cameraState.targetPoint.x = 0.0f;
-    match->cameraState.targetPoint.y = 0.0f;
-    match->cameraState.targetPoint.z = 0.0f;
 }
 
 void clear_frame_events(GameEvents* events)

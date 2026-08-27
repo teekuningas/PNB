@@ -553,8 +553,8 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
 
     if (o->chasing) {
         if (control != -1) {
-            float dx = m->playerInfo[control].tPI.location.x - m->cameraState.targetPoint.x;
-            float dz = m->playerInfo[control].tPI.location.z - m->cameraState.targetPoint.z;
+            float dx = m->playerInfo[control].tPI.location.x - m->catchingState.ballTargetPoint.x;
+            float dz = m->playerInfo[control].tPI.location.z - m->catchingState.ballTargetPoint.z;
             o->chase_samples++;
             o->chase_dist_sum += sqrt((double)(dx * dx + dz * dz));
         }

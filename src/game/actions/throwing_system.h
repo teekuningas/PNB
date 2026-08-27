@@ -52,9 +52,6 @@ void init_throwing_system(MatchSession* match);
 // master; the animation only follows.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions);
 
-void fielder_move(MatchSession* match, int direction);
-void fielder_stop_move(MatchSession* match, int direction);
 void drop_ball(MatchSession* match);
-void update_controlled_player_speed(MatchSession* match);
 
 #endif

@@ -51,6 +51,7 @@ int test_move_target_stops_on_arrival(void);
 int test_restating_the_move_target_changes_nothing(void);
 int test_duplicate_messages_in_one_frame_equal_one(void);
 int test_move_target_refused_without_a_controlled_fielder(void);
+int test_reset_recipes_leave_no_fielding_state(void);
 
 // §12 batter-offer contract — only a joker may be seated once the order has come round
 int test_spent_order_offers_a_joker_while_home_is_still_owned(void);
