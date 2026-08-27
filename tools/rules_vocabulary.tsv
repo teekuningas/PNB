@@ -1,0 +1,50 @@
+# The rules-vocabulary ledger — one row per DEFINITION rule in the pesäpallo rulebook.
+#
+# WHY THIS FILE EXISTS. The rulebook is a numbered list, but the rules are not siblings.
+# A handful of sections define no consequence at all — they define the WORDS the other
+# rules are written in ("is safe", "arrives legally", "is in possession", "has reached a
+# final resolution"). Every consequence rule quotes them. §18 alone is quoted by §12, §24,
+# §40 and the home-run contest.
+#
+# That vocabulary layer is the thinnest part of this codebase, and the place bugs
+# concentrate: when a definition is not written down, each caller improvises a proxy, the
+# proxies disagree, and one of them is wrong somewhere nobody looked. Bug #8 is exactly
+# that — §18(1) was never written down, so its only enforcement was an accidental side
+# effect on one code path, and the home-run contest, which needed the same definition for
+# a different consequence, had nothing to reuse.
+#
+# THE TARGET SHAPE. A definition should be a PURE PREDICATE in src/game/rules_pure/, taking
+# the state it reads and returning the answer — nothing else. Then a consequence rule reads
+# as its § does: quote the definition, state the consequence. §41 (`is_regular_run`) is what
+# this looks like when it is right.
+#
+# STATUS values:
+#   predicate — a pure function in rules_pure/ that answers the definition directly
+#   partial   — represented, but as engine state or an inline branch rather than a predicate
+#   proxy     — a physical approximation stands in for the rulebook's test (often a
+#               deliberate simplification; the row says so, and whether the simplification
+#               is legitimate is a question for the rules summary, not for this file)
+#   absent    — no representation at all
+#
+# `make guardrails` counts the rows that are NOT `predicate`. That number may only fall.
+# Falling it is not a refactor for its own sake: convert a definition when you are already
+# touching the rule that needs it, and let the conversion carry that rule's fix.
+#
+# THIS IS NOT A CORRECTNESS LIST. The rules summary asks "does the engine play pesäpallo
+# correctly?". This file asks a different question: "is the rule written down once, or
+# improvised per caller?" A rule can be perfectly correct and still be improvised, and a
+# rule can be a faithful single predicate for behaviour we have deliberately simplified.
+#
+# §	status		concept					where it lives now / note
+14	proxy		arrival at a base is by TOUCH		distance test (TARGET_ACHIEVED_THRESHOLD) + playerRuntime.arrivedToBase; no touch model. A deliberate simplification, not an oversight
+15	proxy		a fielder is at a base			get_ball_at_base_index / cTPI.isNearHomeLocation, proximity-based
+16	proxy		the ball is in a fielder's possession	pII.hasBallIndex, set by proximity capture rather than by the rulebook's "in his hand"
+17	partial	batter vs runner			PLAYER_STATE_AT_BAT vs the runner states; the transition is implicit in state writes, not a predicate
+18	absent		batter becomes PERMANENTLY a runner	QUOTED BY §12, §24, §40 AND THE CONTEST. Its only enforcement is accidental: run_to_next_base happens to clear pRAI.batter_ready, which happens to close can_begin_windup — and only for period < 4. This is bug #8's root
+19	partial	a runner arrives legally		playerRuntime.passedPathPoint covers the turning marker; pesärikko (§34) not modelled
+20	partial	base safety and its three losses	referee.battingPlayers[i].currentSafetyBase + update_safety_status; correct, but referee-internal rather than a quotable predicate
+21	absent		a player has reached FINAL RESOLUTION	QUOTED BY THE CONTEST'S PAIR-END RULE AND §40. Split today across PLAYER_STATUS_OUT/WOUNDED and PLAYER_STATE_SCORED, with "advance voided" nowhere. Bug #8's second half
+23	partial	a pitch is correct / wrong / void	determine_pitch_result is pure but tests plate position only; mitätön (void) is not modelled at all
+29	partial	a hit is legal or illegal		only the out-of-bounds subtype exists; §29's other five subtypes are absent
+30	partial	a catch, vs a deliberate tactical drop	both behaviours exist; the DEFINITION that separates them (immediacy of the drop) is implicit in timing
+41	predicate	a run					is_regular_run — the reference implementation for every row above

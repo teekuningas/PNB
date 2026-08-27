@@ -31,6 +31,7 @@ if [ -z "$IDIR" ]; then
 fi
 
 AUDIT_LEDGER="tools/function_quality_audit.tsv"
+VOCAB_LEDGER="tools/rules_vocabulary.tsv"
 
 failures=0
 rows=""
@@ -126,6 +127,17 @@ fi
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
 ratchet "files awaiting the function-quality audit" "$unaudited" 52
+
+# ---------------------------------------------------------------------------
+# The rules-vocabulary ledger. A handful of rulebook sections define no consequence —
+# they define the WORDS every other rule is written in. When one of those is not written
+# down as a predicate, each caller improvises a proxy, the proxies disagree, and one of
+# them is wrong somewhere nobody looked. That is bug #8 exactly. This counts the
+# definitions not yet represented as a pure predicate in rules_pure/; it may only fall,
+# and the way to fall it is to convert a definition while fixing the rule that needs it.
+# ---------------------------------------------------------------------------
+vocab_pending=$(awk -F'\t' '!/^#/ && NF > 1 && $2 != "predicate"' "$VOCAB_LEDGER" 2>/dev/null | wc -l)
+ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 
 # ---------------------------------------------------------------------------
 # The refactor's own frontier. ActionFlags is the pre-intent channel: a struct of
