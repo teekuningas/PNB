@@ -167,9 +167,13 @@ ratchet "lines touching ActionFlags" "$action_flags_lines" 88
 # sections (a bare `§12`, `§24`) are exempt and always fine — those are pesäpallo's
 # own stable identifiers and are domain knowledge, not a dependency on our prose.
 # What is forbidden is a doc FILENAME or a dotted `§N.M` section number.
+#
+# The pattern is ANY `*.md`, not a list of the docs we happen to have. A hardcoded list
+# only sees back-edges to files someone remembered to add: it sat at zero while
+# `sim_observers.h` cited an AI-notes markdown file that has never existed in this repo.
 # ---------------------------------------------------------------------------
 doc_backrefs=$(
-    grep -rEn 'ARCHITECTURE\.md|ARCHITECTURE_VISION\.md|PLAN\.md|RULES\.md|HISTORY\.md|README\.md|§[0-9]+\.[0-9]+' \
+    grep -rEn '[A-Za-z0-9_]+\.md|§[0-9]+\.[0-9]+' \
         src tests tools Makefile --include='*.c' --include='*.h' --include='*.sh' --include='*.tsv' 2>/dev/null |
         grep -v 'RULES_OFFICIAL\.md' | wc -l
 )

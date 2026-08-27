@@ -109,7 +109,7 @@ typedef struct {
     // Batting meter, STYLE-1 swings only. decidedSwingTrigger is the AI's real power intent only
     // for batting style 1 ("normal swing"); styles 0 (bunt) and 2 leave it stale, so their power
     // is NOT measurable this way and is deliberately excluded. Direction (decidedAngle vs the
-    // realized batter_angle) is not measured yet — see AI_NOTES.md §2 for the proper redo.
+    // realized batter_angle) is not measured here at all; measuring it wants an instrument of its own.
     long s1_swings; // style-1 swings measured
     long s1_power_err_sum; // Σ (actual − intent) in meter steps; ≈ +1 means the AI hit its target
 
