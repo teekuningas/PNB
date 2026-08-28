@@ -18,4 +18,8 @@ int test_scripted_move_release_stops_within_a_frame(void);
 int test_scripted_move_declared_during_a_pitch_resumes_after_it(void);
 int test_scripted_move_held_key_survives_a_reset(void);
 
+// Batting: the human's cursor over the legal batters, and held keys that become an aim.
+int test_scripted_aim_key_walks_the_batter_and_release_stops_him(void);
+int test_scripted_batter_cursor_offers_only_legal_players(void);
+
 #endif /* ALL_SCRIPTED_H */

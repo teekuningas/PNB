@@ -23,6 +23,8 @@ int main(void)
     RUN_TEST(test_scripted_move_release_stops_within_a_frame);
     RUN_TEST(test_scripted_move_declared_during_a_pitch_resumes_after_it);
     RUN_TEST(test_scripted_move_held_key_survives_a_reset);
+    RUN_TEST(test_scripted_aim_key_walks_the_batter_and_release_stops_him);
+    RUN_TEST(test_scripted_batter_cursor_offers_only_legal_players);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

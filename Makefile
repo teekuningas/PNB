@@ -75,7 +75,7 @@ _OBJ_SCRIPTED = tests/sim/sim_harness.o \
                 tests/scripted/test_scripted_base_run.o \
                 tests/scripted/test_scripted_pitch.o \
                 tests/scripted/test_scripted_throw.o \
-                tests/scripted/test_scripted_move.o
+                tests/scripted/test_scripted_move.o tests/scripted/test_scripted_batter_aim.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))
