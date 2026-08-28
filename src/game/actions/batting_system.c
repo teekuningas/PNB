@@ -9,9 +9,8 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
-// Macros moved from execute_actions.c
-#define BATTER_ANGLE_SPEED_CONSTANT 0.02f
-#define BATTER_ANGLE_LIMIT PI / 7
+// Macros moved from execute_actions.c (the arc constants live in the header — the aim widget
+// nudges its cursor across the same arc at the same rate).
 #define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f
 
 #define PITCH_FRAME_TIME_TWEAK 3
@@ -34,7 +33,6 @@ void init_batting_system(MatchSession* match)
     match->pendingActionState.selected_batting_power_count = 0;
     match->pendingActionState.selected_batting_angle_count = 0;
     match->pendingActionState.batter_angle = 0;
-    match->pendingActionState.batter_angle_speed = 0;
     match->pendingActionState.batter_advance_speed = 0;
     match->pendingActionState.batter_advance = 0;
     match->pendingActionState.batting_mode = BATTING_MODE_SWING;
@@ -43,44 +41,6 @@ void init_batting_system(MatchSession* match)
     match->pendingActionState.batter_moving = 0;
     match->pendingActionState.update_batter_location_and_orientation = 0;
     match->pendingActionState.pitch_frame_time = 0;
-}
-
-void start_increase_batter_angle(MatchSession* match)
-{
-    match->aF.bTAF.increase_batter_angle = ACTION_ACTIVE;
-    // set batter_angle_speed to 1 to indicate that the direction of the movement is cw
-    match->pendingActionState.batter_angle_speed = 1;
-}
-void stop_increase_batter_angle(MatchSession* match)
-{
-    match->aF.bTAF.increase_batter_angle = ACTION_IDLE;
-    // when stopping the increasing of the angle, we want not to interrupt an ongoing decreasing of the angle
-    if (match->pendingActionState.batter_angle_speed != -1) {
-        match->pendingActionState.batter_angle_speed = 0;
-    }
-    int batterIndex = get_active_batter_index(match);
-    if (batterIndex != -1) {
-        match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
-    }
-}
-
-void start_decrease_batter_angle(MatchSession* match)
-{
-    match->aF.bTAF.decrease_batter_angle = ACTION_ACTIVE;
-    // set batter_angle_speed to 1 to indicate that the direction of the movement is ccw
-    match->pendingActionState.batter_angle_speed = -1;
-}
-void stop_decrease_batter_angle(MatchSession* match)
-{
-    match->aF.bTAF.decrease_batter_angle = ACTION_IDLE;
-    // when stopping the decreasing of the angle, we want not to interrupt an ongoing increasing of the angle
-    if (match->pendingActionState.batter_angle_speed != 1) {
-        match->pendingActionState.batter_angle_speed = 0;
-    }
-    int batterIndex = get_active_batter_index(match);
-    if (batterIndex != -1) {
-        match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
-    }
 }
 
 // §27 — a named player takes the bat ("asettuu lyömään"), if the seat is free.
@@ -178,7 +138,7 @@ void select_angle(MatchSession* match)
 
 void update_batting(
     MatchSession* match, const RefereeState* referee, const BetweenPitchState* betweenPitchState,
-    const FieldPositions* fieldPositions, int* playSoundEffect
+    const FieldPositions* fieldPositions, int aimDeclared, float aim, int* playSoundEffect
 )
 {
     int batterIndex = get_active_batter_index(match);
@@ -200,7 +160,6 @@ void update_batting(
             match->pendingActionState.batter_advance_limit = SWING_ADVANCE;
             // we start with natural speeds and positions
             match->pendingActionState.batter_angle = 0.0f;
-            match->pendingActionState.batter_angle_speed = 0;
             match->pendingActionState.batter_advance = 0.0f;
             match->pendingActionState.batter_advance_speed = 0.0f;
             // aren't moving yet
@@ -225,26 +184,42 @@ void update_batting(
         // is nonzero. moving is 0 so location wont be updated with other players in different parts of code
         // and orientation is not updated elsewhere either as in the other part of code it is checked
         // if player's index is batterIndex before updating orientation. so its done here exclusively.
-        if (match->pendingActionState.batter_angle_speed != 0 || match->pendingActionState.batter_advance_speed != 0) {
-            // if the updated angle would be within limits, we can proceed updating the speed.
-            // batter_angle_speed is just 1, 0 or -1 and speed is really given by BATTER_ANGLE_SPEED_CONSTANT.
-            if (match->pendingActionState.batter_angle +
-                        match->pendingActionState.batter_angle_speed * BATTER_ANGLE_SPEED_CONSTANT <
-                    BATTER_ANGLE_LIMIT &&
-                match->pendingActionState.batter_angle +
-                        match->pendingActionState.batter_angle_speed * BATTER_ANGLE_SPEED_CONSTANT >
-                    -BATTER_ANGLE_LIMIT) {
-                match->pendingActionState.batter_angle +=
-                    match->pendingActionState.batter_angle_speed * BATTER_ANGLE_SPEED_CONSTANT;
+        // AIM — an engine behaviour, not a controller and not "AI". A producer says WHERE on the arc
+        // it wants to stand and this walks the body there, identically for every producer, exactly
+        // as the fielder's mover walks to a destination. It is idempotent by construction: the step
+        // is a function of (where he is, where he was sent), so restating the same angle changes
+        // nothing and a batter standing on his aim is left alone.
+        //
+        // The arc's ends are enforced here rather than refused at the gate, because they are a fact
+        // about the arc and not a rule of pesäpallo — a producer may ask for anything and simply
+        // walks to the end and stands there. Arrival is EXACT: the old key-driven version added a
+        // fixed step only while the result stayed strictly inside the limit, so it stopped a step
+        // short of the end and, with the AI holding its key down to a target, overshot it by up to a
+        // full step. Both of those are the slop the fielder-movement slice found and removed on the
+        // other side of the field, and both are doubled by the launch heading.
+        if (aimDeclared) {
+            float target = aim;
+            if (target > BATTER_ANGLE_LIMIT) target = BATTER_ANGLE_LIMIT;
+            if (target < -BATTER_ANGLE_LIMIT) target = -BATTER_ANGLE_LIMIT;
+
+            float delta = target - match->pendingActionState.batter_angle;
+            if (delta > BATTER_ANGLE_SPEED_CONSTANT) {
+                delta = BATTER_ANGLE_SPEED_CONSTANT;
+            } else if (delta < -BATTER_ANGLE_SPEED_CONSTANT) {
+                delta = -BATTER_ANGLE_SPEED_CONSTANT;
+            }
+            if (delta != 0.0f) {
+                match->pendingActionState.batter_angle += delta;
                 match->pendingActionState.update_batter_location_and_orientation = 1;
             }
-            // if updated advanced location would be within limit that is originally SWING_ADVANCE but could
-            // be changed to BUNT_ADVANCE given small power, then can proceed updating.
-            if (match->pendingActionState.batter_advance + match->pendingActionState.batter_advance_speed <
+        }
+        // if updated advanced location would be within limit that is originally SWING_ADVANCE but could
+        // be changed to BUNT_ADVANCE given small power, then can proceed updating.
+        if (match->pendingActionState.batter_advance_speed != 0 &&
+            match->pendingActionState.batter_advance + match->pendingActionState.batter_advance_speed <
                 match->pendingActionState.batter_advance_limit) {
-                match->pendingActionState.batter_advance += match->pendingActionState.batter_advance_speed;
-                match->pendingActionState.update_batter_location_and_orientation = 1;
-            }
+            match->pendingActionState.batter_advance += match->pendingActionState.batter_advance_speed;
+            match->pendingActionState.update_batter_location_and_orientation = 1;
         }
         // if need for update of location and orientation
         if (match->pendingActionState.update_batter_location_and_orientation == 1 && batterIndex != -1) {

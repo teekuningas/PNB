@@ -20,8 +20,6 @@ void init_batting_ai(AIState* aiState)
     aiState->runningBatter = 0;
     aiState->runningBaseRunners = 0;
 
-    aiState->increaseKeyDown = 0;
-    aiState->decreaseKeyDown = 0;
     aiState->angleDecided = 0;
     aiState->decidedAngle = 0.0f;
     aiState->decidedSwingTrigger = BAT_SWING_MAX - 10;
@@ -272,24 +270,19 @@ void update_batting_ai(
                 }
             }
         }
-        if (match->aiState.decidedAngle >= 0 && match->pendingActionState.batter_angle < match->aiState.decidedAngle &&
-            match->aiState.increaseKeyDown == 0) {
-            match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_START;
-            match->aiState.increaseKeyDown = 1;
-        } else if (match->pendingActionState.batter_angle >= match->aiState.decidedAngle &&
-                   match->aiState.increaseKeyDown == 1) {
-            match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_STOP;
-            match->aiState.increaseKeyDown = 0;
-        }
-
-        if (match->aiState.decidedAngle < 0 && match->pendingActionState.batter_angle > match->aiState.decidedAngle &&
-            match->aiState.decreaseKeyDown == 0) {
-            match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_START;
-            match->aiState.decreaseKeyDown = 1;
-        } else if (match->pendingActionState.batter_angle <= match->aiState.decidedAngle &&
-                   match->aiState.decreaseKeyDown == 1) {
-            match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_STOP;
-            match->aiState.decreaseKeyDown = 0;
+        // AIM — declared as the angle itself, restated every frame the pitch is in the air.
+        //
+        // What was here held a key down until the body reached the decided angle and then released
+        // it: a controller reading the world back to decide whether to keep pressing, which meant it
+        // could only ever approach from the side it started on and always stopped a step past. The
+        // engine now walks the body to the declared angle and arrives on it exactly. The wounding
+        // swing's deliberately-unreachable angle still means "as far as this batter can go" — the
+        // arc's end is enforced by the walk, so an impossible aim is a bounded one.
+        if (match->aiState.angleDecided == 1) {
+            intent_push(
+                channel,
+                (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = match->aiState.decidedAngle}}
+            );
         }
     }
     if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && match->aiState.angleDecided == 1) {

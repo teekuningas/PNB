@@ -48,16 +48,31 @@ static unsigned long long run_once(unsigned int seed)
 // something for somebody standing somewhere else. One frame of standing still instead of one frame
 // walking the wrong way — and the fielding bands say the exactness pays for itself twice over
 // (mean recovery 101.1 -> 99.0 frames, worst case 558 -> 324).
-// HELD, not re-recorded, through the batter-selection slice — and the reason is a warning about
-// what this constant can and cannot tell you. The slice deleted the AI's click-simulation walk, so
-// a selection that wants a candidate other than the first is now made in one frame instead of two
-// per step along the cycle. It is measurably faster in play (mean prompt→seat 158.5 → 155.1 frames)
-// and two of the three seeds this file runs DID move. This one did not, because in its single
-// hashed half-inning the AI wants the FIRST candidate all three times it is asked — and the old
-// walk also selected immediately in that case, having no cycle step to spend. Measured, not
-// assumed. A green hash across a producer-side rewrite is evidence about the seed's coverage
-// before it is evidence about the change.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x18c88a450139f97bULL
+// The batter-selection slice HELD this hash and then moved it, and both halves are worth reading.
+//
+// Its first step deleted the AI's click-simulation walk through the batter offer, so a selection
+// that wants a candidate other than the first is made in one frame instead of two per cycle step.
+// Two of the three seeds this file runs moved; this one did not, because in its single hashed
+// half-inning the AI wants the FIRST candidate all three times it is asked — and the old walk also
+// selected immediately in that case, having no cycle step to spend. Measured, not assumed, and worth
+// keeping: a green hash across a producer-side rewrite is evidence about the seed's coverage before
+// it is evidence about the change.
+//
+// Re-recorded here by the slice's second step, deliberately. The batter's aim stopped being a held
+// key and became a declared ANGLE that an engine behaviour walks the body to — the batting-side
+// mirror of the fielder's destination. Timing moves because arrival is now exact: the key-driven
+// version added a step only while the result stayed strictly inside the arc, so it stopped a step
+// short of the end, and the AI, holding its key toward a target, overshot it by up to a full step.
+// Both errors are doubled by the launch heading (theta = -batter_angle*2), so this is aim.
+//
+// The argument that the new behaviour is the intended one is the twenty bands in
+// test_ai_offense_breakdown, recorded before any of this landed and all twenty holding — including
+// the batting-selection bands added for this slice and the direction fan, which is what an aim
+// change would break first. One further piece of evidence the bands do not assert: the AI-vs-AI net
+// scored a RUN, which it has never done in this configuration. One run over 24 seeds is not a
+// balance claim; it is a hint that being exact paid on this side of the field too, exactly as it did
+// on the fielding side.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0xf35f0486e6f32f25ULL
 
 int test_ai_vs_ai_determinism(void)
 {

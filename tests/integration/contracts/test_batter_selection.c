@@ -5,6 +5,7 @@
 #include "rules_pure/player_utils.h"
 #include "rules_pure/base_control.h"
 #include "globals.h"
+#include "actions/batting_system.h" // the batter arc constants the aim walks across
 
 /**
  * CONTRACT: §27/§12/§7 decide who may take the bat, and the INGEST gate is where they are asked.
@@ -283,6 +284,159 @@ int test_seat_refuses_when_no_decision_is_open(void)
     tick_ingest(ctx);
 
     ASSERT_EQ(-1, get_active_batter_index(m), "nobody was asked to take the bat, so nobody may");
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+/* ---- the batter's aim ---------------------------------------------------------------------- *
+ *
+ * INTENT_SWING_ANGLE is the batting-side mirror of the fielder's destination: a producer says where
+ * on the arc it wants to stand, and an engine behaviour walks the body there, identically for every
+ * producer. These knight the walk's three properties — it converges, it arrives EXACTLY, and it is
+ * idempotent — because all three are what the key-driven version got wrong, and the error is doubled
+ * on its way to the launch heading (theta = -batter_angle*2).
+ */
+
+// A batter mid-at-bat with the batting phase running, which is when aim is live.
+static void setup_batter_aiming(ScenarioContext* ctx)
+{
+    MatchSession* m = ctx->state->match;
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+    m->pRAI.batting_going_on = 1;
+    m->pRAI.init_batter = 0;
+    m->pendingActionState.batter_angle = 0.0f;
+    m->pendingActionState.batter_advance_speed = 0.0f;
+}
+
+static void declare_aim(ScenarioContext* ctx, float angle)
+{
+    intent_push(
+        &ctx->state->channels.batting, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = angle}}
+    );
+}
+
+// 7. The body walks toward a declared angle, one arc step per frame, and lands ON it.
+//
+// "Lands on it" is the claim that matters. The old version added a fixed step only while the result
+// stayed strictly inside the arc, and the AI drove it by holding a key until the body passed its
+// target — so the batter reliably finished up to a full step PAST where the strategy had aimed.
+int test_declared_aim_walks_the_batter_and_arrives_exactly(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    setup_batter_aiming(ctx);
+    MatchSession* m = ctx->state->match;
+
+    const float target = 5.5f * BATTER_ANGLE_SPEED_CONSTANT; // deliberately not a whole number of steps
+
+    declare_aim(ctx, target);
+    tick_ingest(ctx);
+    ASSERT(
+        m->pendingActionState.batter_angle > 0.0f && m->pendingActionState.batter_angle <= BATTER_ANGLE_SPEED_CONSTANT,
+        "one frame moves the batter by at most one arc step, toward the aim"
+    );
+
+    for (int f = 0; f < 20; f++) {
+        declare_aim(ctx, target);
+        tick_ingest(ctx);
+    }
+
+    ASSERT(
+        m->pendingActionState.batter_angle > target - 0.0001f && m->pendingActionState.batter_angle < target + 0.0001f,
+        "the batter must come to rest exactly on the declared aim, not a step past it"
+    );
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 8. An aim outside the arc walks to the arc's end and stands there.
+//
+// Values are trusted and never validated, so the arc's ends are held by the walk rather than refused
+// at the gate — they are a fact about the arc, not a rule of pesäpallo. The batting AI depends on
+// this: its wounding swing declares an angle far outside the arc, meaning "as far as this batter can
+// go". The old version stopped one step short of the end instead, because its guard was a strict
+// inequality on the result.
+int test_aim_beyond_the_arc_stands_at_its_end(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    setup_batter_aiming(ctx);
+    MatchSession* m = ctx->state->match;
+
+    for (int f = 0; f < 200; f++) {
+        declare_aim(ctx, -1.5f); // the AI's own "as far as I can go"
+        tick_ingest(ctx);
+    }
+
+    ASSERT(
+        m->pendingActionState.batter_angle > -BATTER_ANGLE_LIMIT - 0.0001f &&
+            m->pendingActionState.batter_angle < -BATTER_ANGLE_LIMIT + 0.0001f,
+        "an unreachable aim must leave the batter exactly at the end of the arc"
+    );
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 9. Restating the aim a batter is already standing on changes nothing, three copies in one frame
+//    included.
+//
+// The idempotence the whole message shape rests on. Without it a restated aim makes the body
+// oscillate about its target, and "declare only when it changes" stops being a lossless compression
+// of a per-tick value stream — which is the property rollback's re-delivery of inputs depends on.
+int test_restating_the_aim_changes_nothing(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    setup_batter_aiming(ctx);
+    MatchSession* m = ctx->state->match;
+
+    const float target = 3.0f * BATTER_ANGLE_SPEED_CONSTANT;
+    for (int f = 0; f < 20; f++) {
+        declare_aim(ctx, target);
+        tick_ingest(ctx);
+    }
+    const float settled = m->pendingActionState.batter_angle;
+
+    for (int f = 0; f < 5; f++) {
+        declare_aim(ctx, target);
+        declare_aim(ctx, target);
+        declare_aim(ctx, target);
+        tick_ingest(ctx);
+        ASSERT(
+            m->pendingActionState.batter_angle == settled,
+            "a batter standing on his aim must be left exactly where he is, however often he is told"
+        );
+    }
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 10. A frame with no aim declared leaves the batter where he stands.
+//
+// The complement of the three above: nothing about the aim is held in the World, so silence is not
+// "carry on walking" — it is "stay". That is what bounds a lost message, and it is the difference
+// between an angle and the key edges it replaced, where a lost release left the batter walking.
+int test_silence_leaves_the_aim_alone(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    setup_batter_aiming(ctx);
+    MatchSession* m = ctx->state->match;
+
+    declare_aim(ctx, BATTER_ANGLE_LIMIT);
+    tick_ingest(ctx);
+    const float afterOneStep = m->pendingActionState.batter_angle;
+    ASSERT(afterOneStep > 0.0f, "setup: the batter should have taken a step toward the aim");
+
+    for (int f = 0; f < 10; f++) {
+        tick_ingest(ctx); // nobody says anything
+    }
+
+    ASSERT(
+        m->pendingActionState.batter_angle == afterOneStep,
+        "with nothing declared the batter stands still — silence is not a stale instruction"
+    );
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

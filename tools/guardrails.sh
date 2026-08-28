@@ -162,12 +162,12 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # number here — and, more importantly, makes it FAIL if a new intent is ever added to
 # ActionFlags instead of to the channel. The fielder-movement slice took cTAF.move[]
 # and with it the whole catching half, so what is left is batting-only. Each remaining
-# slice lowers this floor further. The batter-selection slice took choose_batter (63 → 53);
-# what remains is the swing and the two batter-angle triggers, which go with the swing
-# slice and the angle step — at which point the row retires at 0.
+# slice lowers this floor further. The batter-selection slice took choose_batter
+# (63 → 53) and then the two batter-angle triggers (53 → 33). What is left is the swing
+# phase alone, and it retires the row at 0 with the swing slice.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 53
+ratchet "lines touching ActionFlags" "$action_flags_lines" 33
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

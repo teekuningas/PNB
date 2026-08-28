@@ -7,7 +7,8 @@
 #include "action_invocations.h"
 #include "execute_actions.h" // intent_push — the channel op lives with the gate that drains it
 #include "actions/throwing_system.h"
-#include "actions/pitching_system.h" // windup segment constants — the aim descent matches the engine windup
+#include "actions/pitching_system.h"
+#include "actions/batting_system.h" // the batter arc constants — the aim cursor moves across the same arc // windup segment constants — the aim descent matches the engine windup
 #include "rules_pure/player_utils.h"
 #include "field_layout.h"
 #include "vector_math.h"
@@ -60,8 +61,10 @@ static void checkBatterSelection(
 static void checkFreeWalkDecision(
     const KeyStates* key_states, int accept, int reject, TeamControlMode control, IntentChannel* channel
 );
-static void
-checkBatterAngle(MatchSession* match, const KeyStates* key_states, int increase, int decrease, TeamControlMode control);
+static void checkBatterAngle(
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int increase, int decrease,
+    TeamControlMode control, IntentChannel* channel
+);
 static void checkSwing(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control);
 static void checkBattingTeamRun(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
@@ -143,7 +146,7 @@ void action_invocations(
         clientInput->batterWidget.selected = 0;
         clientInput->batterWidget.highlight = 0;
     }
-    checkBatterAngle(match, key_states, KEY_PLUS, KEY_MINUS, battingControl);
+    checkBatterAngle(match, clientInput, key_states, KEY_PLUS, KEY_MINUS, battingControl, &channels->batting);
     checkSwing(match, key_states, KEY_2, battingControl);
 
     checkBattingTeamRun(
@@ -518,39 +521,42 @@ static void checkFreeWalkDecision(
     }
 }
 
-static void
-checkBatterAngle(MatchSession* match, const KeyStates* key_states, int increase, int decrease, TeamControlMode control)
+// The human's aim: held keys in, an ANGLE out.
+//
+// The cursor moves at the same rate the engine walks the body, so the batter tracks the keys exactly
+// as before — the difference is what crosses the boundary. A key edge used to be the message, which
+// meant the engine had to be told when the human started AND stopped pressing, and a lost "stop"
+// left the batter walking. An angle is a complete value: the worst a lost message can do is leave
+// the aim where it was.
+//
+// The cursor lives here rather than in the World because it is a gesture, and it self-clears when
+// there is no batting to aim — the same rule every other client-local widget follows, and the reason
+// a physical-world reset never has to reach into this file.
+static void checkBatterAngle(
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int increase, int decrease,
+    TeamControlMode control, IntentChannel* channel
+)
 {
-    if (control != CONTROL_AI) {
-        if (key_states->down[control][increase] == 1) {
-            if (match->pRAI.batting_going_on == 1) {
-                if (match->aF.bTAF.increase_batter_angle == ACTION_IDLE) {
-                    match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_START;
-                }
-            }
-        } else if (key_states->released[control][increase] == 1) {
-            if (match->pRAI.batting_going_on == 1) {
-                if (match->aF.bTAF.increase_batter_angle != ACTION_IDLE) {
-                    match->aF.bTAF.increase_batter_angle = ACTION_TRIGGER_STOP;
-                }
-            }
-        }
-        if (key_states->down[control][decrease] == 1) {
-            if (match->pRAI.batting_going_on == 1) {
-                if (match->aF.bTAF.decrease_batter_angle == ACTION_IDLE) {
-                    match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_START;
-                }
-            }
-        } else if (key_states->released[control][decrease] == 1) {
-            if (match->pRAI.batting_going_on == 1) {
-                if (match->aF.bTAF.decrease_batter_angle != ACTION_IDLE) {
-                    match->aF.bTAF.decrease_batter_angle = ACTION_TRIGGER_STOP;
-                }
-            }
-        }
-    } else {
-        // AI sets flags directly
+    if (control == CONTROL_AI) return; // the AI declares its aim in batting_ai.c
+
+    if (match->pRAI.batting_going_on != 1) {
+        // Between at-bats the engine puts the batter back at zero (init_batter), so the cursor goes
+        // with it. Without this the next batter would start walking toward the last one's aim.
+        clientInput->batterAim = 0.0f;
+        return;
     }
+
+    if (key_states->down[control][increase] == 1) {
+        clientInput->batterAim += BATTER_ANGLE_SPEED_CONSTANT;
+    } else if (key_states->down[control][decrease] == 1) {
+        clientInput->batterAim -= BATTER_ANGLE_SPEED_CONSTANT;
+    }
+    if (clientInput->batterAim > BATTER_ANGLE_LIMIT) clientInput->batterAim = BATTER_ANGLE_LIMIT;
+    if (clientInput->batterAim < -BATTER_ANGLE_LIMIT) clientInput->batterAim = -BATTER_ANGLE_LIMIT;
+
+    intent_push(
+        channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = clientInput->batterAim}}
+    );
 }
 
 static void checkSwing(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control)

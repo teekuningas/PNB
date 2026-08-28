@@ -61,5 +61,9 @@ int test_seat_refuses_a_regular_out_of_turn(void);
 int test_seat_waits_for_home_then_seats_the_named_joker(void);
 int test_repeated_seat_requests_seat_once(void);
 int test_seat_refuses_when_no_decision_is_open(void);
+int test_declared_aim_walks_the_batter_and_arrives_exactly(void);
+int test_aim_beyond_the_arc_stands_at_its_end(void);
+int test_restating_the_aim_changes_nothing(void);
+int test_silence_leaves_the_aim_alone(void);
 
 #endif // ALL_CONTRACTS_H

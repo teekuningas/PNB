@@ -68,6 +68,10 @@ static void run_contract_tests(void)
     RUN_TEST(test_seat_waits_for_home_then_seats_the_named_joker);
     RUN_TEST(test_repeated_seat_requests_seat_once);
     RUN_TEST(test_seat_refuses_when_no_decision_is_open);
+    RUN_TEST(test_declared_aim_walks_the_batter_and_arrives_exactly);
+    RUN_TEST(test_aim_beyond_the_arc_stands_at_its_end);
+    RUN_TEST(test_restating_the_aim_changes_nothing);
+    RUN_TEST(test_silence_leaves_the_aim_alone);
 }
 
 int main(int argc, char* argv[])

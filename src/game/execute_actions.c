@@ -53,6 +53,8 @@ typedef struct _IngestedCommands {
     FreeWalkAction take_free_walk; // FREE_WALK_IDLE when no answer was given this tick
     RunIntent base_run[BASE_COUNT]; // per base, RUN_NONE where nothing was commanded
     int seat_batter_index; // who to seat as the next batter; -1 when nobody was named this tick
+    int swing_angle_declared; // 0 when the batting side said nothing about its aim this tick
+    float swing_angle;
 } IngestedCommands;
 
 static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
@@ -83,6 +85,9 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->moveWidget.declared = 0;
     clientInput->moveWidget.framesSinceDeclared = 0;
     clientInput->moveWidget.point = (Vector3D){0};
+    clientInput->batterWidget.highlight = 0;
+    clientInput->batterWidget.selected = 0;
+    clientInput->batterAim = 0.0f;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -208,6 +213,13 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
         }
     }
 
+    case INTENT_SWING_ANGLE:
+        // Nothing to refuse. Where a batter may stand on his own arc is not a rule of pesäpallo, and
+        // the arc's ends are physical rather than legal — the walk holds them, the way the fielder's
+        // mover holds a fence. Whether there is a batter to aim at all is likewise a claim on a body
+        // and is asked once, where the walking happens.
+        return (Permission){1, RULE_NONE};
+
     case INTENT_PITCH:
     case INTENT_THROW:
         // Deliberately unrestricted here, for now. Whether a pitch or a throw may begin is asked today
@@ -238,7 +250,8 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
 // wire it is the difference between a peer playing its team and a peer playing yours.
 static int intent_belongs_to_batting_team(IntentKind kind)
 {
-    return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK || kind == INTENT_SELECT_BATTER;
+    return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK || kind == INTENT_SELECT_BATTER ||
+           kind == INTENT_SWING_ANGLE;
 }
 
 // Drain one channel into the command block. Same-kind duplicates are last-write-wins — a controller
@@ -276,6 +289,10 @@ static void ingest_channel(
             break;
         case INTENT_TAKE_FREE_WALK:
             out->take_free_walk = message->as.free_walk.accept ? FREE_WALK_ACCEPT : FREE_WALK_REJECT;
+            break;
+        case INTENT_SWING_ANGLE:
+            out->swing_angle_declared = 1;
+            out->swing_angle = message->as.swing_angle.angle;
             break;
         case INTENT_SELECT_BATTER:
             // A per-tick command and not held engine state, unlike the destination below. It can be,
@@ -404,17 +421,7 @@ void execute_actions(
     if (commands.take_free_walk != FREE_WALK_IDLE) {
         take_free_walk_decision(match, &rules->scoreboard, fieldPositions, commands.take_free_walk == FREE_WALK_ACCEPT);
     }
-    // batter angles
-    if (match->aF.bTAF.increase_batter_angle == ACTION_TRIGGER_START) {
-        start_increase_batter_angle(match);
-    } else if (match->aF.bTAF.increase_batter_angle == ACTION_TRIGGER_STOP) {
-        stop_increase_batter_angle(match);
-    }
-    if (match->aF.bTAF.decrease_batter_angle == ACTION_TRIGGER_START) {
-        start_decrease_batter_angle(match);
-    } else if (match->aF.bTAF.decrease_batter_angle == ACTION_TRIGGER_STOP) {
-        stop_decrease_batter_angle(match);
-    }
+
     // batting
     if (match->aF.bTAF.swing == BAT_ACTION_POWER_SET) {
         select_power(match);
@@ -426,7 +433,10 @@ void execute_actions(
         base_run(match, &rules->referee, fieldPositions, i, commands.base_run[i]);
     }
     // this is used to handle a lot of stuff happening between and after the decisions.
-    update_batting(match, &rules->referee, &rules->betweenPitchState, fieldPositions, playSoundEffect);
+    update_batting(
+        match, &rules->referee, &rules->betweenPitchState, fieldPositions, commands.swing_angle_declared,
+        commands.swing_angle, playSoundEffect
+    );
 }
 
 static void take_free_walk_decision(

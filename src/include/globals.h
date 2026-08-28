@@ -382,6 +382,7 @@ typedef enum {
     INTENT_BASE_RUN, // batting: {base, command} — run/arm/come back, for the runner controlling `base`
     INTENT_TAKE_FREE_WALK, // batting: {accept} — answer an offered free walk (§26)
     INTENT_SELECT_BATTER, // batting: {index} — seat this player as the next batter (§27)
+    INTENT_SWING_ANGLE, // batting: {angle} — where on the arc the batter aims from
     INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
     INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
     INTENT_MOVE_TARGET, // catching: {point} — where the controlled fielder is headed
@@ -412,6 +413,21 @@ typedef struct _SelectBatterIntent {
     int index; // a playerInfo slot in the batting side's 0..PLAYERS_IN_TEAM+JOKER_COUNT range
 } SelectBatterIntent;
 
+// Where on the arc around the pitching plate the batter aims from. The batting physics doubles this
+// into the launch heading, so it is the batting side's aim — the exact mirror of the fielder's
+// destination, and absolute for the same reason: an angle means the same thing however often it
+// arrives, where "nudge left" means something different every time and nothing at all applied to a
+// world one tick further on.
+//
+// The value is never validated — the arc's ends are a physical property the engine's walk enforces,
+// so a producer that declares something unreachable walks to the end of the arc and stands there.
+// That is the bounded failure the whole message shape is chosen for, and the batting AI uses it
+// deliberately: its "wounding swing" declares an angle far outside the arc, meaning as far as this
+// batter can go.
+typedef struct _SwingAngleIntent {
+    float angle; // radians about the batter's zero, clamped to the arc by the engine
+} SwingAngleIntent;
+
 // Where the controlled fielder is going: an absolute point on the field, held until replaced.
 //
 // Absolute rather than a direction or a key edge, and that is the whole point of the shape. A
@@ -437,6 +453,7 @@ typedef struct _IntentMessage {
         BaseRunIntent base_run;
         FreeWalkIntent free_walk;
         SelectBatterIntent select_batter;
+        SwingAngleIntent swing_angle;
         MoveTargetIntent move_target;
         PitchDeclaration pitch;
         ThrowDeclaration throw;
@@ -494,8 +511,6 @@ time. Set in action_invocations.c (human input) or AI, consumed by execute_actio
 */
 typedef struct _BattingTeamActionFlags {
     BatActionPhase swing;
-    ActionTriggerState increase_batter_angle;
-    ActionTriggerState decrease_batter_angle;
 } BattingTeamActionFlags;
 
 typedef struct _ActionFlags {
@@ -881,8 +896,6 @@ typedef struct _AIState {
     // Batting AI
     int battingKeyDown;
     AILockType actionKeyLock;
-    int increaseKeyDown;
-    int decreaseKeyDown;
     int angleDecided;
     float decidedAngle;
     int decidedSwingTrigger; // meter_counter level at which the AI releases its swing (randomizes power)
@@ -954,7 +967,6 @@ typedef struct _PendingActionState {
     int selected_batting_power_count;
     int selected_batting_angle_count;
     float batter_angle;
-    int batter_angle_speed;
     float batter_advance_speed;
     float batter_advance;
     BattingMode batting_mode;
@@ -1064,6 +1076,11 @@ typedef struct _ClientInputState {
     // The batter cursor — a list to scroll and a choice to make. Human path only; the AI needs no
     // widget because it has no gesture, it just picks.
     BatterSelectWidget batterWidget;
+
+    // The aim cursor: where on the batter's arc the held +/- keys have walked to. Human path only —
+    // the AI decides an angle outright and declares it. Cleared whenever there is no batting going
+    // on, so one at-bat's aim never leaks into the next.
+    float batterAim;
 } ClientInputState;
 
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE
