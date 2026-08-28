@@ -30,7 +30,7 @@
 #define SEED_COUNT 24
 #define PERIOD_MAX_FRAMES 120000L
 #define STALL_LIMIT 20000L
-#define BAND_MAX 16
+#define BAND_MAX 24
 
 // Stay strictly inside the first period: it ends at inning == halfInningsInPeriod (4), and the
 // period boundary hands off to a menu the single-phase sim harness does not yet autopilot
@@ -74,6 +74,9 @@ int test_ai_offense_breakdown(void)
     long T_recoveries = 0, T_recovery_frames = 0, T_recovery_max = 0, T_abandoned = 0;
     long T_chase_samples = 0, T_step_frames = 0;
     double T_chase_dist = 0.0, T_step_sum = 0.0;
+    long T_at_bats = 0, T_joker_at_bats = 0, T_restorations = 0, T_prompts = 0;
+    long T_cancelled = 0, T_sel_abandoned = 0, T_answer_frames = 0, T_answer_max = 0;
+    long T_designations = 0, T_joker_designations = 0;
 
     for (int s = 0; s < SEED_COUNT; s++) {
         unsigned int seed = 0xA11CE000u + (unsigned int)s * 0x9E3779B1u;
@@ -94,6 +97,10 @@ int test_ai_offense_breakdown(void)
         FieldingObserver fld;
         fielding_observer_init(&fld);
         sim_attach(g, fielding_observer_hook, &fld);
+
+        BattingSelectionObserver sel;
+        batting_selection_observer_init(&sel);
+        sim_attach(g, batting_selection_observer_hook, &sel);
 
         long frames = sim_run_until(g, three_half_innings_done, PERIOD_MAX_FRAMES);
         if (frames < 0) seeds_incomplete++; // budget hit or failure; counters still valid
@@ -138,6 +145,17 @@ int test_ai_offense_breakdown(void)
         T_chase_dist += fld.chase_dist_sum;
         T_step_frames += fld.step_frames;
         T_step_sum += fld.step_sum;
+
+        T_at_bats += sel.at_bats;
+        T_joker_at_bats += sel.joker_at_bats;
+        T_restorations += sel.restorations;
+        T_prompts += sel.prompts;
+        T_cancelled += sel.cancelled;
+        T_sel_abandoned += sel.abandoned;
+        T_answer_frames += sel.answer_frames_sum;
+        if (sel.answer_frames_max > T_answer_max) T_answer_max = sel.answer_frames_max;
+        T_designations += sel.designations;
+        T_joker_designations += sel.joker_designations;
 
         if (box.reached_third > 0) seeds_reached_third++;
         if (box.ran_from_third > 0) seeds_ran_third++;
@@ -185,6 +203,20 @@ int test_ai_offense_breakdown(void)
         T_recoveries, T_abandoned, T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0,
         T_recovery_max, T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0,
         T_step_frames ? T_step_sum / (double)T_step_frames : 0.0
+    );
+
+    printf(
+        "    selection: seated=%ld (jokers=%ld, %.0f%%) restored=%ld | prompts=%ld cancelled=%ld abandoned=%ld\n",
+        T_at_bats, T_joker_at_bats, percent(T_joker_at_bats, T_at_bats), T_restorations, T_prompts, T_cancelled,
+        T_sel_abandoned
+    );
+    printf(
+        "    prompt→seat: mean=%.1f frames max=%ld\n", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0,
+        T_answer_max
+    );
+    printf(
+        "    §12 opening designations: %ld, of which JOKER: %ld (%.1f%%)\n", T_designations, T_joker_designations,
+        percent(T_joker_designations, T_designations)
     );
 
     // A stall IS a hard defect (an AI-vs-AI deadlock), distinct from the quality bands below:
@@ -294,6 +326,49 @@ int test_ai_offense_breakdown(void)
         bands, &band_count,
         (Band){"mean step per moving frame", T_step_frames ? T_step_sum / (double)T_step_frames : 0.0, 0.09, 0.125,
                "0.1073", "the controlled fielder silently switched to a different speed"}
+    );
+
+    // ---- the batting-selection bands -------------------------------------------------
+    // WHO takes the bat, and how quickly. Every band above is about what a batter DOES once
+    // seated; none of them moves if the batting side starts seating a different player, or
+    // stops being offered one. Baselined on UNCHANGED code before the batter-selection
+    // slice, for the same reason the fielding bands were: the slice re-baselines the
+    // determinism hash by design, so the hash cannot be the net for it.
+    band_add(
+        bands, &band_count,
+        (Band){"batters seated", (double)T_at_bats, 200, 360, "272",
+               "the selection path stalling, double-seating, or ending half-innings early"}
+    );
+    // The policy probe. The batting controller walks the offer today and chooses outright
+    // afterwards; if the preference order survives that rewrite, this number does not move.
+    band_add(
+        bands, &band_count,
+        (Band){"joker at-bats %", percent(T_joker_at_bats, T_at_bats), 15, 45, "29.0",
+               "the batting controller's joker preference silently changing"}
+    );
+    // Not "prompts answered %": a prompt overtaken by the third burn is ordinary play and made
+    // that number read 84% on healthy code. What is never ordinary is a prompt that closes with
+    // nobody seated and no inning ending to explain it, so the band is an absolute floor of zero
+    // on exactly that — the batter-selection deadlock family (bug #5), stated as a number.
+    band_add(
+        bands, &band_count,
+        (Band){"prompts abandoned mid-play", (double)T_sel_abandoned, 0, 0, "0",
+               "a prompt the batting side never answers while play continues — the deadlock family"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 20,
+               260, "158.5", "the batting side taking longer to answer, or retrying blindly"}
+    );
+    // §7: "Jokeripelaaja ei vie kenenkään lyöntivuoroa", so §12(2)'s "vuoron aloittanut pelaaja"
+    // is the regular whose turn it is, never the joker that happened to swing first. When the
+    // designation lands on a joker, §12(2) can never fire again that half-inning: the comparison
+    // it makes is against the batting-order index, which only ever names a regular slot. The band
+    // is written wide here because it is the number on UNCHANGED code; the fix tightens it to zero.
+    band_add(
+        bands, &band_count,
+        (Band){"§12 openings designated to a joker %", percent(T_joker_designations, T_designations), 0, 40, "33.3",
+               "§12(2) becoming unfirable for a whole half-inning"}
     );
 
     int breached = 0;

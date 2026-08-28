@@ -1,5 +1,6 @@
 #include "sim_observers.h"
 #include "actions/batting_system.h" // BAT_SWING_MAX / BAT_LOAD_MAX for power intent units
+#include "rules_pure/player_utils.h" // get_active_batter_index — who is at the plate
 
 #include <stdlib.h>
 #include <string.h>
@@ -574,4 +575,82 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
     o->p_batOutcome = batOutcome;
     o->p_controlIndex = control;
     if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
+}
+
+void batting_selection_observer_init(BattingSelectionObserver* o)
+{
+    memset(o, 0, sizeof(*o));
+    o->p_batter = -1;
+    o->p_designated = -1;
+}
+
+void batting_selection_observer_hook(const SimGame* g, void* ctx)
+{
+    BattingSelectionObserver* o = (BattingSelectionObserver*)ctx;
+    const MatchSession* m = g->state->match;
+    const GameRulesState* r = g->state->rules;
+
+    const int waiting = m->flowControl.waitingForBatterDecision;
+    const int batter = get_active_batter_index(m);
+    const int designated = r->halfInningState.lastBatter.designatedIndex;
+    const int inning = r->scoreboard.inning;
+
+    if (!o->initialized) {
+        o->initialized = 1;
+        o->p_waiting = waiting;
+        o->p_batter = batter;
+        o->p_designated = designated;
+        o->p_inning = inning;
+        return;
+    }
+
+    if (inning != o->p_inning) o->half_innings++;
+
+    // A plate entry is the rising edge of somebody being at the plate. Reading it off the plate
+    // rather than off gameEvents.batterEntered is deliberate: frame events are cleared before
+    // observers run, and the plate is the durable fact the event was about.
+    //
+    // Only an entry that answered an open prompt is a SEATING. A foul reset puts the previous
+    // batter back at the plate with no decision made anywhere, and folding those in would move
+    // the selection bands for a reason that has nothing to do with selection — measured at 65 of
+    // 337 entries on the code this observer was written against.
+    if (batter != -1 && o->p_batter == -1) {
+        if (o->p_waiting == 1) {
+            long frames = g->frame - o->prompt_frame;
+            o->at_bats++;
+            if (m->playerInfo[batter].bTPI.joker != JOKER_REGULAR) o->joker_at_bats++;
+            o->answer_frames_sum += frames;
+            if (frames > o->answer_frames_max) o->answer_frames_max = frames;
+        } else {
+            o->restorations++;
+        }
+    }
+
+    // A prompt that closes with nobody at the plate was either overtaken by the half-inning
+    // ending — which is ordinary play, the question was still on the table when the third burn
+    // landed — or it evaporated mid-play, which is the deadlock family. Only the second is a
+    // finding, so they are never added together.
+    if (waiting == 0 && o->p_waiting == 1 && batter == -1) {
+        if (r->referee.endOfInningState != END_INNING_STATE_NONE) {
+            o->cancelled++;
+        } else {
+            o->abandoned++;
+        }
+    }
+
+    if (waiting == 1 && o->p_waiting == 0) {
+        o->prompts++;
+        o->prompt_frame = g->frame;
+    }
+
+    // §12's opening designation, sampled the frame it is first made.
+    if (designated != -1 && o->p_designated == -1) {
+        o->designations++;
+        if (m->playerInfo[designated].bTPI.joker != JOKER_REGULAR) o->joker_designations++;
+    }
+
+    o->p_waiting = waiting;
+    o->p_batter = batter;
+    o->p_designated = designated;
+    o->p_inning = inning;
 }

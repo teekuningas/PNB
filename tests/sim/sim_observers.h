@@ -179,6 +179,67 @@ typedef struct {
 void fielding_observer_init(FieldingObserver* o);
 void fielding_observer_hook(const SimGame* g, void* ctx);
 
+/* ---- Batting-selection observer ---------------------------------------- *
+ * Watches WHO takes the bat and WHEN — the half of §12/§27 that no existing band
+ * touches. The offense breakdown counts pitches, contacts and bases; none of it
+ * moves if the batting side starts choosing a different player, takes longer to
+ * answer, or stops being offered a batter at all.
+ *
+ *   at-bats        seatings that ANSWERED a prompt. Not every plate entry is one: a
+ *                  foul reset restores the previous batter to the plate with no
+ *                  decision involved, and counting those would put ~20% noise into
+ *                  the selection numbers. Restorations are counted separately so the
+ *                  difference is readable rather than mysterious.
+ *   joker entries  seatings of a joker per half-inning. The batting controller's
+ *                  joker appetite. It is a POLICY probe: when the controller stops
+ *                  walking the offer and starts choosing outright, this is the band
+ *                  that says whether the preference order survived the rewrite.
+ *   offer→seat     frames from the prompt being raised to a batter being seated.
+ *                  Measures the answer latency of whichever producer is batting —
+ *                  and the window in which a select can be declared but not yet
+ *                  actionable, because the previous batter still holds home.
+ *   abandoned      prompts that closed with nobody seated AND no half-inning ending
+ *                  to explain it. A prompt cancelled by the inning ending is ordinary
+ *                  play (three outs land while the question is on the table); one
+ *                  that simply evaporates mid-play is the batter-selection deadlock
+ *                  family, so the two are counted apart rather than together.
+ *   joker openings half-innings whose §12 opening designation landed on a JOKER.
+ *                  §7 says a joker takes nobody's batting turn, so the designation
+ *                  belongs to the regular in turn; when it lands on a joker,
+ *                  §12(2)'s "next in order == designated" can never come true,
+ *                  because the order index only ever names a regular slot. Kept as
+ *                  a band rather than an invariant so the number is readable on
+ *                  both sides of the fix.
+ *
+ * Every count is taken on a rising edge (seatings from batterEntered's own effect,
+ * prompts from waitingForBatterDecision), so a frame held open never double-counts. */
+typedef struct {
+    // internal edge-detection state (do not set)
+    int initialized;
+    int p_waiting;
+    int p_batter; // previous frame's active batter index (-1 = nobody at the plate)
+    int p_designated;
+    int p_inning;
+    long prompt_frame; // frame the open prompt was raised on
+
+    // observed (readable after the run)
+    long half_innings;
+    long at_bats; // seatings that answered an open prompt
+    long joker_at_bats; // ...of which were jokers
+    long restorations; // plate entries with no prompt open (a foul reset putting the batter back)
+    long prompts; // batter prompts raised
+    long cancelled; // prompts closed by the half-inning ending — ordinary play
+    long abandoned; // prompts closed with nobody seated and no inning end to explain it
+    long answer_frames_sum;
+    long answer_frames_max;
+
+    long designations; // half-innings that reached an opening §12 designation
+    long joker_designations; // ...where the designation landed on a joker
+} BattingSelectionObserver;
+
+void batting_selection_observer_init(BattingSelectionObserver* o);
+void batting_selection_observer_hook(const SimGame* g, void* ctx);
+
 /* ---- shared helper ----------------------------------------------------- */
 
 /** Count batting-team players currently standing on 1st/2nd/3rd base. */
