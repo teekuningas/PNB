@@ -236,7 +236,14 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
         // safety at home for a while yet (measured: 54 frames). `turnExhausted` includes that, so
         // asked here it still reads 0 — which is why the question of WHO belongs at the seating and
         // not here (bug #9).
-        if (his->lastBatter.regularOrderSpent == 0 || his->jokersLeft > 0) {
+        // Asked of the candidate list itself, which is the same function the gate refuses with and
+        // the client offers from. It used to be `regularOrderSpent == 0 || jokersLeft > 0`, which is
+        // the same rule read a second way — and the two can disagree, because jokersLeft and the
+        // per-player joker statuses are reset by different owners at different moments (see the
+        // period-boundary window the state validator tolerates). Reading the list makes a prompt
+        // nobody could answer unraisable rather than merely unlikely.
+        int candidates[BATTER_CANDIDATE_MAX];
+        if (list_batter_candidates(match, scoreboard, his, candidates) > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
             if (count_active_batting_players(match->playerInfo) < BASE_COUNT && referee->foulState == FOUL_STATE_NONE) {

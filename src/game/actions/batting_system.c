@@ -59,7 +59,9 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 {
     if (match->flowControl.waitingForBatterDecision != 1) return;
     if (get_base_controller(match, referee, BASE_HOME) != -1) return;
-    if (index < 0 || index >= PLAYERS_IN_TEAM + JOKER_COUNT) return;
+    // No range check: an index that is not a player never reaches here, because the drain treats one
+    // as a malformed message and fails the frame. A guard here could not fire, and a guard that
+    // cannot fire reads exactly like a guard that never has (bug #9).
 
     Vector3D target;
     // The decision is made and, per §27, is not revisited: "Lyömään asettunutta pelaajaa ei voi

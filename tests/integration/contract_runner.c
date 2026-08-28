@@ -72,6 +72,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_aim_beyond_the_arc_stands_at_its_end);
     RUN_TEST(test_restating_the_aim_changes_nothing);
     RUN_TEST(test_silence_leaves_the_aim_alone);
+    RUN_TEST(test_seat_naming_a_non_player_is_malformed);
 }
 
 int main(int argc, char* argv[])

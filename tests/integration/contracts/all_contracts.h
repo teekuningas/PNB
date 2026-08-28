@@ -65,5 +65,6 @@ int test_declared_aim_walks_the_batter_and_arrives_exactly(void);
 int test_aim_beyond_the_arc_stands_at_its_end(void);
 int test_restating_the_aim_changes_nothing(void);
 int test_silence_leaves_the_aim_alone(void);
+int test_seat_naming_a_non_player_is_malformed(void);
 
 #endif // ALL_CONTRACTS_H

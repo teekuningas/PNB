@@ -140,9 +140,12 @@ void action_invocations(
             match, scoreboard, halfInningState, clientInput, key_states, KEY_1, KEY_2, battingControl,
             &channels->batting
         );
-    } else {
-        // No question on the table, so no answer is being held. The widget self-clears the way every
-        // other client-local gesture does — a physical-world reset never reaches in here.
+    }
+    // No batter question on the table, so no answer is being held. Keyed on the QUESTION and not on
+    // which branch above ran: a free walk offered in the same frame must not leave a stale choice
+    // behind it. The widget self-clears the way every other client-local gesture does, which is why
+    // a physical-world reset never has to reach in here.
+    if (match->flowControl.waitingForBatterDecision != 1) {
         clientInput->batterWidget.selected = 0;
         clientInput->batterWidget.highlight = 0;
     }

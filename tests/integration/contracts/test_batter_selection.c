@@ -441,3 +441,34 @@ int test_silence_leaves_the_aim_alone(void)
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }
+
+/**
+ * 11. A request naming somebody who is not a player is MALFORMED, not refused.
+ *
+ * The two look identical from the outside and mean opposite things. A rule refusing an action is
+ * ordinary play — the free walk with no offer, the joker already spent — and the game carries on. A
+ * message naming a number that is not a player is a broken producer, and carrying on is exactly
+ * wrong: on a wire it is the difference between "your team may not do that" and "we are no longer
+ * running the same game". So it raises `malformed`, which the state validator fails the frame on,
+ * the same as a kindless message or one on the other team's channel.
+ *
+ * It is checked in the drain rather than in permit() for a second reason as well: everything
+ * downstream, the gate's own §27 lookup included, subscripts playerInfo with this index.
+ */
+int test_seat_naming_a_non_player_is_malformed(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    int inTurnRegular;
+    setup_order_spent_with_jokers(ctx, &inTurnRegular);
+    MatchSession* m = ctx->state->match;
+
+    declare_seat(ctx, PLAYERS_IN_TEAM + JOKER_COUNT); // one past the last batting-side slot
+    tick_ingest(ctx);
+
+    ASSERT_EQ(1, ctx->state->channels.batting.malformed, "a message naming a non-player must be flagged, not denied");
+    ASSERT_EQ(-1, get_active_batter_index(m), "and nobody may be seated by it");
+    ASSERT_EQ(0, ctx->state->channels.batting.count, "the channel is still drained within the tick");
+
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}

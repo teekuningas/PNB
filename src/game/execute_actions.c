@@ -190,11 +190,6 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
             return (Permission){0, RULE_BATTER_SEAT_NEEDS_AN_OFFER};
         }
         const int index = message->as.select_batter.index;
-        if (index < 0 || index >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-            // Not a rule refusing an action: a message naming somebody who is not on the batting
-            // side is a broken producer, which is the malformed class rather than the denied one.
-            return (Permission){0, RULE_NONE};
-        }
         const int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
         const int inTurn = rules->scoreboard.teams[battingTeamIndex]
                                .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
@@ -271,6 +266,16 @@ static void ingest_channel(
         // and a malformed message never is.
         int belongs_to_batting = intent_belongs_to_batting_team(message->kind) ? 1 : 0;
         if (message->kind == INTENT_NONE || belongs_to_batting != is_batting_channel) {
+            channel->malformed = 1;
+            continue;
+        }
+        // A SELECT_BATTER naming somebody who is not on the batting side is the same class again: a
+        // rule can refuse a player, but it cannot refuse a number that is not a player. Flagged here
+        // rather than quietly denied in permit() — the two look identical from the outside and mean
+        // opposite things — and checked before permission so everything downstream, the gate's own
+        // §27 lookup included, can subscript playerInfo without asking twice.
+        if (message->kind == INTENT_SELECT_BATTER &&
+            (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
             channel->malformed = 1;
             continue;
         }
