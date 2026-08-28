@@ -48,6 +48,15 @@ static unsigned long long run_once(unsigned int seed)
 // something for somebody standing somewhere else. One frame of standing still instead of one frame
 // walking the wrong way — and the fielding bands say the exactness pays for itself twice over
 // (mean recovery 101.1 -> 99.0 frames, worst case 558 -> 324).
+// HELD, not re-recorded, through the batter-selection slice — and the reason is a warning about
+// what this constant can and cannot tell you. The slice deleted the AI's click-simulation walk, so
+// a selection that wants a candidate other than the first is now made in one frame instead of two
+// per step along the cycle. It is measurably faster in play (mean prompt→seat 158.5 → 155.1 frames)
+// and two of the three seeds this file runs DID move. This one did not, because in its single
+// hashed half-inning the AI wants the FIRST candidate all three times it is asked — and the old
+// walk also selected immediately in that case, having no cycle step to spend. Measured, not
+// assumed. A green hash across a producer-side rewrite is evidence about the seed's coverage
+// before it is evidence about the change.
 #define SIM_BEHAVIOUR_BASELINE_HASH 0x18c88a450139f97bULL
 
 int test_ai_vs_ai_determinism(void)

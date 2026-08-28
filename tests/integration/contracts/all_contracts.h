@@ -54,6 +54,12 @@ int test_move_target_refused_without_a_controlled_fielder(void);
 int test_reset_recipes_leave_no_fielding_state(void);
 
 // §12 batter-offer contract — only a joker may be seated once the order has come round
-int test_spent_order_offers_a_joker_while_home_is_still_owned(void);
+// §27/§12/§7 — who may take the bat, refused at the INGEST gate (tests/.../test_batter_selection.c)
+int test_seat_refuses_regular_when_order_spent(void);
+int test_seat_refuses_a_spent_joker(void);
+int test_seat_refuses_a_regular_out_of_turn(void);
+int test_seat_waits_for_home_then_seats_the_named_joker(void);
+int test_repeated_seat_requests_seat_once(void);
+int test_seat_refuses_when_no_decision_is_open(void);
 
 #endif // ALL_CONTRACTS_H

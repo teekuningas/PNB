@@ -15,7 +15,6 @@
 void init_batting_ai(AIState* aiState)
 {
     aiState->battingKeyDown = 0;
-    aiState->changingKeyDown = 0;
     aiState->actionKeyLock = AI_NO_LOCK;
     aiState->battingStyle = 0;
     aiState->runningBatter = 0;
@@ -28,11 +27,6 @@ void init_batting_ai(AIState* aiState)
     aiState->decidedSwingTrigger = BAT_SWING_MAX - 10;
     aiState->aiWrongPitch = 0;
     aiState->planCalculated = 0;
-    aiState->firstIndex = -1;
-    aiState->firstIndexSelected = 0;
-    aiState->change = 0;
-    aiState->changeHasHappened = 0;
-    aiState->batterChangeCount = 0;
 }
 
 // The batting controller's one-line way of saying "this base, this command". Every run this AI
@@ -51,13 +45,7 @@ void update_batting_ai(
     int okToAdvanceAfterHit = 0;
 
     // Cleanup dangling locks if state changed externally
-    if (match->flowControl.waitingForBatterDecision == 0) {
-        if (match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK || match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
-            match->aiState.actionKeyLock = AI_NO_LOCK;
-            match->aiState.battingKeyDown = 0;
-            match->aiState.changingKeyDown = 0;
-        }
-    } else if (match->aiState.actionKeyLock == AI_BATTING_LOCK) {
+    if (match->flowControl.waitingForBatterDecision == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
         // A swing lock is only valid while a ready batter is mid-swing. Once a new batter
         // decision has begun, a lingering AI_BATTING_LOCK is orphaned: the at-bat ended (e.g.
         // a 3rd-strike forced run) before the swing's release path — which lives inside the
@@ -95,67 +83,44 @@ void update_batting_ai(
     // we decide batter only after ball is at home so that in normal situation ai will have more information
     // to make its strategy decisions
     if (match->flowControl.waitingForBatterDecision == 1 && match->gameFlowState.ballHome == 1) {
-        // we do this by brute force, we change player until we find a fit one or we are back to non joker.
-        // plan is that if there is a man on first base and current batter would not have a great power,
-        // we would try to find a joker that has power instead.
-        // and if field is empty we would change a joker with speed instead.
-        int firstBaseIndex = get_base_controller(match, &rules->referee, (BaseID)1);
-        int secondBaseIndex = get_base_controller(match, &rules->referee, (BaseID)2);
-        int thirdBaseIndex = get_base_controller(match, &rules->referee, (BaseID)3);
-        int fieldStatus;
-        int index = match->pII.batterSelectionIndex;
+        // §27 gives the list, the strategy picks from it, and the pick is declared as a value. What
+        // used to be here was a walk: evaluate whoever the engine was showing, and if unhappy, push
+        // it along one and look again — deliberation carried out IN the world, two frames per step
+        // through a pair of click-simulation locks, guarded by a cycle detector that a skipped joker
+        // slot could slip past (bug #5) and a counter to catch it when it did. None of that has
+        // anything to say now: there is no cursor to walk and no loop to bound.
+        //
+        // Restated every frame the decision is open rather than sent once. It costs nothing to
+        // repeat — the value means the same thing however often it arrives — and it means the AI
+        // never has to know that the seat is not free until the previous batter has lost home.
+        int candidates[BATTER_CANDIDATE_MAX];
+        const int count = list_batter_candidates(match, &rules->scoreboard, &rules->halfInningState, candidates);
+        if (count > 0) {
+            int firstBaseIndex = get_base_controller(match, &rules->referee, (BaseID)1);
+            int secondBaseIndex = get_base_controller(match, &rules->referee, (BaseID)2);
+            int thirdBaseIndex = get_base_controller(match, &rules->referee, (BaseID)3);
+            int fieldStatus;
 
-        if (firstBaseIndex != -1)
-            fieldStatus = 2;
-        else if (secondBaseIndex != -1 || thirdBaseIndex != -1)
-            fieldStatus = 1;
-        else
-            fieldStatus = 0;
+            if (firstBaseIndex != -1)
+                fieldStatus = 2;
+            else if (secondBaseIndex != -1 || thirdBaseIndex != -1)
+                fieldStatus = 1;
+            else
+                fieldStatus = 0;
 
-        match->aiState.change =
-            should_change_batter(fieldStatus, match->playerInfo[index].bTPI.power, match->playerInfo[index].bTPI.speed);
-
-        if (match->aiState.firstIndexSelected == 0) {
-            match->aiState.firstIndex = index;
-            match->aiState.firstIndexSelected = 1;
-            match->aiState.batterChangeCount = 0;
-        } else if (match->aiState.changeHasHappened == 1) {
-            if (match->aiState.firstIndex == index) {
-                match->aiState.change = 0;
+            BatterCandidate scored[BATTER_CANDIDATE_MAX];
+            for (int c = 0; c < count; c++) {
+                scored[c].index = candidates[c];
+                scored[c].power = match->playerInfo[candidates[c]].bTPI.power;
+                scored[c].speed = match->playerInfo[candidates[c]].bTPI.speed;
             }
-        }
-        // BAND-AID (tracked debt — dies with the batter-selection slice): the firstIndex==index breaker above can be
-        // skipped when change_batter steps over a JOKER_USED slot, looping forever. There are only
-        // JOKER_COUNT+1 distinct selectable slots, so once we've issued more changes than that we have
-        // certainly seen them all — force a select instead of cycling on.
-        if (match->aiState.batterChangeCount > JOKER_COUNT) {
-            match->aiState.change = 0;
-        }
 
-        // change player
-        if (match->aiState.change == 1 && match->aiState.changingKeyDown == 0 &&
-            match->aiState.actionKeyLock == AI_NO_LOCK) {
-            match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
-            match->aiState.changingKeyDown = 1;
-            match->aiState.actionKeyLock = AI_CHANGE_LOCK;
-            match->aiState.batterChangeCount++;
-        } else if (match->aiState.changingKeyDown == 1 && match->aiState.actionKeyLock == AI_CHANGE_LOCK) {
-            match->aiState.actionKeyLock = AI_NO_LOCK;
-            match->aiState.changingKeyDown = 0;
-            match->aiState.changeHasHappened = 1;
-        }
-        // select best batter.
-        if (match->aiState.change == 0 && match->aiState.battingKeyDown == 0 &&
-            match->aiState.actionKeyLock == AI_NO_LOCK) {
-            match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
-            match->aiState.battingKeyDown = 1;
-            match->aiState.actionKeyLock = AI_WAITING_BATTER_LOCK;
-        } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_WAITING_BATTER_LOCK) {
-            match->aiState.actionKeyLock = AI_NO_LOCK;
-            match->aiState.battingKeyDown = 0;
-            match->aiState.firstIndex = -1;
-            match->aiState.firstIndexSelected = 0;
-            match->aiState.changeHasHappened = 0;
+            const int choice = choose_batter(scored, count, fieldStatus);
+            if (choice != -1) {
+                intent_push(
+                    channel, (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = choice}}
+                );
+            }
         }
 
     } else if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&

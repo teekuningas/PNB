@@ -73,22 +73,6 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         return;
     }
 
-    // §12: only a joker may extend a half-inning once the regular order is spent — so a REGULAR on
-    // offer as the next batter is bug #7's shape, somebody handed the bat the rules had finished
-    // with. Asked of the OFFER, while the decision is pending and nobody is at the plate, because
-    // that is the moment the choice is actually made. It reads `regularOrderSpent` — the batting-
-    // order clause alone — not `turnExhausted`, which also carries §12(3)'s transient "has finally
-    // become a runner" and reads 0 in exactly the window where the bad offer used to be made.
-    if (sb->period < 4 && h->lastBatter.regularOrderSpent &&
-        g->state->match->flowControl.waitingForBatterDecision == 1) {
-        int offered = g->state->match->pII.batterSelectionIndex;
-        if (offered >= 0 && offered < PLAYERS_IN_TEAM + JOKER_COUNT &&
-            g->state->match->playerInfo[offered].bTPI.joker == JOKER_REGULAR) {
-            sim_fail((SimGame*)g, "invariant: a regular batter was offered after §12 spent the regular order");
-            return;
-        }
-    }
-
     if (!o->initialized) {
         o->initialized = 1;
         o->last_progress_frame = g->frame;
@@ -175,7 +159,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
                   "pitch_state,catchingAction,hasBall,"
-                  "waitBatter,waitWalk,batter_ready,batterSel,planCalc,pitchDeclPhase,pitchTimer,batterReadyTimer,"
+                  "waitBatter,waitWalk,batter_ready,planCalc,pitchDeclPhase,pitchTimer,batterReadyTimer,"
                   "meterCnt,swing,wrongPitch,batStyle,batOutcome,batting_going_on\n"
         );
         o->header_written = 1;
@@ -188,15 +172,15 @@ void trace_observer_hook(const SimGame* g, void* ctx)
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
     fprintf(
-        o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
+        o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.current_catching_action,
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, m->pII.batterSelectionIndex, m->aiState.planCalculated,
-        (int)m->pendingActionState.pitchDeclaration.phase, m->pendingActionState.pitchActualization.timer,
-        m->aiState.batterReadyTimer, m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing,
-        m->aiState.aiWrongPitch, m->aiState.battingStyle, (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
+        m->pRAI.batter_ready, m->aiState.planCalculated, (int)m->pendingActionState.pitchDeclaration.phase,
+        m->pendingActionState.pitchActualization.timer, m->aiState.batterReadyTimer,
+        m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing, m->aiState.aiWrongPitch, m->aiState.battingStyle,
+        (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
 }
 

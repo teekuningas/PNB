@@ -81,7 +81,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
         action_invocations(
             game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee,
-            &stateInfo->channels
+            &rules->halfInningState, &stateInfo->channels
         );
         ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController, &stateInfo->channels);
 

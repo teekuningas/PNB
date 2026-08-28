@@ -2,6 +2,7 @@
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include "rules_pure/player_utils.h"
+#include "execute_actions.h" // intent_push — these tests declare the seating as a producer does
 
 /*
  * §12 Vuoronvaihto — the half-inning ends on the designated last batter, not on a pool of nine.
@@ -25,17 +26,45 @@
 // what to wait on rather than a frame count guessed from nothing.
 static int take_the_bat(ScenarioContext* ctx, int playerIndex)
 {
-    ctx->state->match->pII.batterSelectionIndex = playerIndex;
     ctx->state->match->flowControl.waitingForBatterDecision = 1;
-    ctx->state->match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
 
     for (int i = 0; i < 600; i++) {
+        // The producer's half of §27, restated every frame exactly as a real one does: the seat may
+        // not be free yet, and saying the same true thing again is how a producer waits without
+        // knowing that it is waiting.
+        intent_push(
+            &ctx->state->channels.batting,
+            (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = playerIndex}}
+        );
         simulate_frames(ctx, 1);
         if (ctx->state->match->pRAI.batter_ready == 1 && get_active_batter_index(ctx->state->match) == playerIndex) {
             return 1;
         }
     }
     return 0;
+}
+
+// Bring the batting order round so `playerIndex` is the lyöntivuoroinen player.
+//
+// §27 is a cycle followed for the whole match, so a regular may only be seated when the order
+// reaches them — and the INGEST gate now refuses anything else. Walking eight intervening at-bats to
+// prove a §12(3) claim would make the test about the lap rather than about the last batter, so the
+// order index is set directly instead. That is scoreboard LEGAL state, the same class this file
+// already constructs a burn in, and the setup declares "the order has come round" rather than
+// pretending to have played it.
+//
+// Worth recording that this helper only exists because the gate found the old version illegal: the
+// test used to hand the bat to whoever it liked, because nothing could refuse it.
+static void bring_the_order_round_to(ScenarioContext* ctx, int playerIndex)
+{
+    Scoreboard* sb = &ctx->state->rules->scoreboard;
+    TeamInfo* team = &sb->teams[get_batting_team_index(sb)];
+    for (int i = 0; i < PLAYERS_IN_TEAM; i++) {
+        if (team->batterOrder[i] == playerIndex) {
+            team->batterOrderIndex = i;
+            return;
+        }
+    }
 }
 
 // End the at-bat the way §27 means it: the batter must become *lopullisesti* a runner, which means
@@ -143,6 +172,7 @@ int test_last_batter_ends_half_inning(void)
     // The order comes round and they take the bat again. While they are AT THE PLATE the turn is being
     // taken, not spent — ball home and no jokers must not end the half-inning under a batter's feet.
     wound_the_runner(ctx, designated);
+    bring_the_order_round_to(ctx, designated);
     ASSERT(take_the_bat(ctx, designated), "setup: the last batter should be back at the plate");
     return_the_ball_home(ctx);
     ASSERT_EQ(

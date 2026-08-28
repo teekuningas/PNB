@@ -757,14 +757,6 @@ void clear_frame_events(GameEvents* events)
     // gameInitialized removed in M18.0
 }
 
-// these should be kept when foul play
-void initialize_critical_game_info(MatchSession* match, const Scoreboard* scoreboard)
-{
-    int battingTeamIndex = get_batting_team_index(scoreboard);
-
-    match->pII.batterSelectionIndex =
-        scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
-}
 // index information initialization, can be called when out of bounds
 void initialize_index_information(MatchSession* match)
 {

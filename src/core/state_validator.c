@@ -190,7 +190,6 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
 
     fprintf(f, "%s\"pII\": {\n", sp);
     fprintf(f, "%s  \"batterIndex\": %d,\n", sp, get_active_batter_index(game));
-    fprintf(f, "%s  \"batterSelectionIndex\": %d,\n", sp, game->pII.batterSelectionIndex);
     fprintf(f, "%s  \"hasBallIndex\": %d,\n", sp, game->pII.hasBallIndex);
     fprintf(f, "%s  \"controlIndex\": %d,\n", sp, game->pII.controlIndex);
     fprintf(f, "%s  \"catcherOnBaseIndex0\": %d,\n", sp, game->pII.catcherOnBaseIndex[0]);
@@ -387,36 +386,50 @@ int state_validator_check(StateInfo* state)
         return 0;
     }
 
-    // Invariant 3: the batter ON OFFER is one the rules allow (§12, §27).
+    // Invariant 3: §7 — a joker the engine will still let you seat must be one the count still has
+    // room for.
     //
-    // The batting order is a cycle, so a REGULAR player is always entitled — until the referee
-    // pronounces the regular order spent, after which only a joker may extend it ("Jos joukkueella on
-    // tilanteessa jokerinkäyttömahdollisuus, paloa ei tuomita, mikäli jokeripelaaja otetaan
-    // lyömään", §27). Offering a regular after that is the shape bug #7 had: somebody handed the bat
-    // that the rules had already finished with.
+    // "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin" is held
+    // in two places: each joker's own JOKER_USED, which the seating sets, and
+    // `halfInningState.jokersLeft`, which the referee decrements on the batterEntered event. Two
+    // writers, one rule, in two different stages of the frame.
     //
-    // It asks about the OFFER and not about who is standing at the plate, and that is the whole
-    // point. The previous version checked "no regular may be AT_BAT while turnExhausted", which
-    // sounds stronger and is in fact unfirable: turnExhausted is `nobody controls home` AND `the
-    // order has come round`, so the instant a regular legitimately takes the plate he controls home
-    // and the flag drops. The only way to see a regular at bat with the flag up is a batter who lost
-    // home and was then RESTORED to the plate — a foul reset, which is legal play. Measured: that is
-    // the only firing it ever produced, and it froze the game on a legal state.
+    // The direction is the load-bearing part. More AVAILABLE jokers than the count admits is the
+    // failure that matters, and it is §12's third conjunct going wrong: the half-inning ends when
+    // `jokersLeft` hits zero, but the candidate list a producer chooses from is built from the
+    // per-player statuses — so a joker still marked available when the count has forgotten it means
+    // a turn that ends with a batter the rules say the team may still use. Seating an already-spent
+    // joker produces exactly that, because the status has nothing left to change while the referee
+    // decrements regardless.
     //
-    // It asks `regularOrderSpent` — the batting-order clause alone, which settles the instant the
-    // previous batter enters. `turnExhausted` additionally carries §12(3)'s "has finally become a
-    // runner", which is transient: it is 0 while the previous batter is still running with home
-    // safety, and that is precisely the window in which a regular used to be put on offer.
-    if (rules->scoreboard.period < 4 && game->flowControl.waitingForBatterDecision == 1 &&
-        rules->halfInningState.lastBatter.regularOrderSpent && game->pII.batterSelectionIndex != -1 &&
-        game->playerInfo[game->pII.batterSelectionIndex].bTPI.joker == JOKER_REGULAR) {
-        printf(
-            "\n[STATE ERROR] FATAL: player %d is on offer as the next batter, but §12 has spent the "
-            "regular order (designated=%d, jokersLeft=%d) — only a joker may extend it\n",
-            game->pII.batterSelectionIndex, rules->halfInningState.lastBatter.designatedIndex,
-            rules->halfInningState.jokersLeft
-        );
-        return 0;
+    // The other direction is deliberately tolerated, because it is a real state and not a defect: at
+    // a PERIOD boundary the referee clears jokersLeft to JOKER_COUNT, but the physical reset that
+    // re-marks the players never runs — consolidation routes to a menu instead. So between periods
+    // the count leads the statuses. Nothing reads either while that lasts. Recorded rather than
+    // asserted away: it is the same two-representations hazard from the harmless side.
+    //
+    // This replaces the invariant that used to live here, which asked whether the engine's OFFER of
+    // a next batter was legal. There is no offer any more: a producer names a player and the INGEST
+    // gate refuses an illegal one (§27/§12/§7), which is a stronger place to hold the rule than an
+    // end-of-frame assertion. Re-pointing that assertion at "no regular is SEATED while the order is
+    // spent" was considered and rejected — it would repeat bug #9's mistake exactly, because seating
+    // a regular advances the batting order, which clears `regularOrderSpent` in the same frame. The
+    // assertion would be looking at a state that erases itself at the moment of the violation.
+    // Ablated at the gate instead, in the contract tier, where the refusal actually happens.
+    if (rules->scoreboard.period < 4) {
+        int unusedJokers = 0;
+        for (int i = 0; i < JOKER_COUNT; i++) {
+            if (game->playerInfo[game->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) unusedJokers++;
+        }
+        if (unusedJokers > rules->halfInningState.jokersLeft) {
+            printf(
+                "\n[STATE ERROR] FATAL: §7 — %d jokers are still marked available, but "
+                "halfInningState.jokersLeft says only %d remain: a half-inning could end with a joker "
+                "the team may still use\n",
+                unusedJokers, rules->halfInningState.jokersLeft
+            );
+            return 0;
+        }
     }
 
     // Invariant 4: the intent channels are empty at the frame boundary.

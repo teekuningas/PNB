@@ -1,6 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
+#include "execute_actions.h" // intent_push — the seating is declared, not written
 #include "rules_pure/player_utils.h"
 
 /**
@@ -33,12 +34,16 @@ int test_burnt_player_bats_again(void)
         "setup: the burnt player should have been physically moved out"
     );
 
-    // The order comes round to them again and they are handed the bat.
-    st->match->pII.batterSelectionIndex = outPlayer;
+    // The order comes round to them again and they are handed the bat — declared as a producer
+    // declares it, restated each frame because the seat is not always free on the first.
     st->match->flowControl.waitingForBatterDecision = 1;
-    st->match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
-
-    simulate_frames(ctx, 5);
+    for (int i = 0; i < 5; i++) {
+        intent_push(
+            &ctx->state->channels.batting,
+            (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = outPlayer}}
+        );
+        simulate_frames(ctx, 1);
+    }
 
     PlayerUnitState state = st->match->playerInfo[outPlayer].bTPI.state;
     RefereePlayerStatus status = rules->referee.battingPlayers[outPlayer].status;

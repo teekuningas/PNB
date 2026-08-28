@@ -216,46 +216,26 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
 
     if (scoreboard->period >= 4) {
 
-    } else if (match->flowControl.waitingForBatterDecision == 1) {
-        // An offer already on the table can become illegal while it sits there. `regularOrderSpent`
-        // is settled at the moment the prompt is raised, so the offer starts out right — but a run
-        // scored while the decision is pending re-designates the last batter, and the order can come
-        // round on the new designation with a regular still showing.
-        //
-        // Withdrawing it here closes that to zero frames rather than to "rare": consolidation is
-        // stage 4 and a producer's confirmation is actualized at stage 2, so the earliest a stale
-        // offer could be seated is the following frame, and this has already run by then. Cycling
-        // stays the producer's business — change_batter enforces the same rule — and a joker already
-        // on offer is left alone.
-        int offered = match->pII.batterSelectionIndex;
-        if (his->lastBatter.regularOrderSpent && offered != -1 &&
-            match->playerInfo[offered].bTPI.joker == JOKER_REGULAR) {
-            for (int i = 0; i < JOKER_COUNT; i++) {
-                if (match->playerInfo[match->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) {
-                    match->pII.batterSelectionIndex = match->pII.jokerIndices[i];
-                    break;
-                }
-            }
-            // No joker to swap in means the turn is over, not that a regular may bat: the referee
-            // ends the half-inning on §12's own remaining conjuncts as soon as the ball is in a home
-            // fielder's hands, and the offer dies with it (the endOfInningState branch above).
-        }
     } else if (get_active_batter_index(match) == -1 && match->flowControl.waitingForBatterDecision == 0 &&
                referee->endOfInningState == END_INNING_STATE_NONE) {
         // §12: the batting order is a cycle, so there is always a next regular batter — until the
         // order comes round to the designated last batter, after which only an unused joker can
-        // extend the turn. When neither is available there is nothing to offer: the referee ends the
+        // extend the turn. When neither is available there is nothing to ASK: the referee ends the
         // half-inning as soon as the ball is in a home fielder's hands, which is the rule's own
         // third conjunct.
+        //
+        // This raises the QUESTION and no longer carries an answer with it. There used to be an
+        // engine-side "offer" here — a cursor a producer nudged along and the engine had to keep
+        // legal, including withdrawing it when a run re-designated the last batter under a decision
+        // already on the table. It is gone: a producer names the player it wants and the INGEST gate
+        // asks §27/§12/§7 at the moment of seating, which is the moment the choice is actually made.
+        // An answer that cannot go stale needs nobody to withdraw it.
         //
         // It asks `regularOrderSpent`, NOT `turnExhausted`. The difference is the whole point: this
         // prompt fires when nobody is standing at the plate, and the batter who just set off keeps
         // safety at home for a while yet (measured: 54 frames). `turnExhausted` includes that, so
-        // asked here it still reads 0 and a REGULAR goes on offer — which the rulebook's own worked
-        // example under §12 calls an error outright ("numero 7 tulee lyömään … peliteot mitätöidään
-        // ja vihelletään vuoronvaihto, koska tullessaan lyömään numero 7 vei joukkueelta jokereiden
-        // käyttömahdollisuuden"). Coming to bat IS the offence, because it spends the team's right
-        // to a joker — so the fix is that the offer is never made, not that it is withdrawn later.
+        // asked here it still reads 0 — which is why the question of WHO belongs at the seating and
+        // not here (bug #9).
         if (his->lastBatter.regularOrderSpent == 0 || his->jokersLeft > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
@@ -264,22 +244,8 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
                 // land in some way.
                 if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
                     // if that happens we can now start.
-                    int battingTeamIndex = get_batting_team_index(scoreboard);
                     // this will give work to action_invocations.c and execute_actions.c
                     match->flowControl.waitingForBatterDecision = 1;
-                    if (his->lastBatter.regularOrderSpent == 0) {
-                        match->pII.batterSelectionIndex =
-                            scoreboard->teams[battingTeamIndex]
-                                .batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
-                    } else {
-                        int i;
-                        for (i = 0; i < JOKER_COUNT; i++) {
-                            if (match->playerInfo[match->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) {
-                                match->pII.batterSelectionIndex = match->pII.jokerIndices[i];
-                                break;
-                            }
-                        }
-                    }
                 }
             }
         }

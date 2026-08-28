@@ -62,7 +62,12 @@ static void run_contract_tests(void)
     RUN_TEST(test_duplicate_messages_in_one_frame_equal_one);
     RUN_TEST(test_move_target_refused_without_a_controlled_fielder);
     RUN_TEST(test_reset_recipes_leave_no_fielding_state);
-    RUN_TEST(test_spent_order_offers_a_joker_while_home_is_still_owned);
+    RUN_TEST(test_seat_refuses_regular_when_order_spent);
+    RUN_TEST(test_seat_refuses_a_spent_joker);
+    RUN_TEST(test_seat_refuses_a_regular_out_of_turn);
+    RUN_TEST(test_seat_waits_for_home_then_seats_the_named_joker);
+    RUN_TEST(test_repeated_seat_requests_seat_once);
+    RUN_TEST(test_seat_refuses_when_no_decision_is_open);
 }
 
 int main(int argc, char* argv[])

@@ -152,6 +152,30 @@ int should_change_batter(int fieldStatus, int power, int speed)
     }
 }
 
+// Which of the players allowed to bat this controller wants, given the field.
+//
+// This is the same preference `should_change_batter` has always expressed, said outright instead of
+// walked. The old shape asked "am I happy with the one being shown?" and, when the answer was no,
+// mutated engine state to be shown the next one — so the deliberation happened IN the world, took a
+// frame or two per step for the click-simulation locks, and needed a cycle-detection guard plus a
+// band-aid counter to stop it looping forever over a joker slot it kept skipping (bug #5). Choosing
+// from a list needs none of that: there is nothing to loop.
+//
+// The preference order is preserved exactly. The old walk started at the engine's offer and stepped
+// through the cycle, stopping at the first candidate it did not want to change away from, and
+// falling back to where it started when it had seen them all. So: the first acceptable candidate in
+// the caller's order, else the first candidate.
+int choose_batter(const BatterCandidate* candidates, int count, int fieldStatus)
+{
+    if (count <= 0) return -1;
+    for (int i = 0; i < count; i++) {
+        if (!should_change_batter(fieldStatus, candidates[i].power, candidates[i].speed)) {
+            return candidates[i].index;
+        }
+    }
+    return candidates[0].index;
+}
+
 int is_wrong_pitch(float vx, float vy, float gravity, float plate_width)
 {
     float v_x_abs = fabsf(vx);

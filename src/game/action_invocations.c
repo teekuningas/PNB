@@ -52,8 +52,11 @@ static void checkPitch(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
     IntentChannel* channel
 );
-static void
-checkBatterSelection(MatchSession* match, const KeyStates* key_states, int change, int select, TeamControlMode control);
+static void checkBatterSelection(
+    const MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* halfInningState,
+    ClientInputState* clientInput, const KeyStates* key_states, int change, int select, TeamControlMode control,
+    IntentChannel* channel
+);
 static void checkFreeWalkDecision(
     const KeyStates* key_states, int accept, int reject, TeamControlMode control, IntentChannel* channel
 );
@@ -67,7 +70,7 @@ static void checkBattingTeamRun(
 
 void action_invocations(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
-    const RefereeState* referee, IntentChannels* channels
+    const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 )
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
@@ -130,7 +133,15 @@ void action_invocations(
     if (match->flowControl.waitingForFreeWalkDecision == 1) {
         checkFreeWalkDecision(key_states, KEY_2, KEY_1, battingControl, &channels->batting);
     } else if (match->flowControl.waitingForBatterDecision == 1) {
-        checkBatterSelection(match, key_states, KEY_1, KEY_2, battingControl);
+        checkBatterSelection(
+            match, scoreboard, halfInningState, clientInput, key_states, KEY_1, KEY_2, battingControl,
+            &channels->batting
+        );
+    } else {
+        // No question on the table, so no answer is being held. The widget self-clears the way every
+        // other client-local gesture does — a physical-world reset never reaches in here.
+        clientInput->batterWidget.selected = 0;
+        clientInput->batterWidget.highlight = 0;
     }
     checkBatterAngle(match, key_states, KEY_PLUS, KEY_MINUS, battingControl);
     checkSwing(match, key_states, KEY_2, battingControl);
@@ -444,22 +455,49 @@ static void checkPitch(
     }
 }
 
-static void
-checkBatterSelection(MatchSession* match, const KeyStates* key_states, int change, int select, TeamControlMode control)
+// §27's choice, made by a human: a cursor over the legal candidates, and a key that accepts one.
+//
+// The candidate list is rebuilt from the world every frame rather than remembered, which is what
+// makes the cursor unable to go stale — and it is the same function the INGEST gate will judge the
+// answer with, so the client can be helpful without owning a second copy of the rule. If a run
+// scored mid-decision takes the regular out of the list, the list shortens and the cursor comes with
+// it; there is nothing to withdraw, because nothing was stored. Consolidation used to carry that
+// withdrawal, because the cursor was engine state.
+//
+// Once accepted, the choice is restated every frame the decision is open. That is not a retry: the
+// seat may not be free yet — the previous batter can hold safety at home for some frames after
+// leaving the plate — and a producer that says the same true thing every tick never has to know it.
+static void checkBatterSelection(
+    const MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* halfInningState,
+    ClientInputState* clientInput, const KeyStates* key_states, int change, int select, TeamControlMode control,
+    IntentChannel* channel
+)
 {
-    if (control != CONTROL_AI) {
-        if (key_states->released[control][change] == 1) {
+    if (control == CONTROL_AI) return; // the AI declares its choice in batting_ai.c
 
-            if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_IDLE) {
-                match->aF.bTAF.choose_batter = CHOOSE_BATTER_NEXT;
-            }
-        } else if (key_states->released[control][select] == 1) {
-            if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_IDLE) {
-                match->aF.bTAF.choose_batter = CHOOSE_BATTER_SELECT;
-            }
-        }
-    } else {
-        // AI sets flags directly
+    BatterSelectWidget* w = &clientInput->batterWidget;
+
+    int candidates[BATTER_CANDIDATE_MAX];
+    const int count = list_batter_candidates(match, scoreboard, halfInningState, candidates);
+    if (count <= 0) return; // §12: nobody may bat — the half-inning is ending, not waiting
+
+    if (w->highlight < 0 || w->highlight >= count) w->highlight = 0;
+
+    if (key_states->released[control][change] == 1) {
+        // Cycling is now purely a change of view. It used to be an engine action — a flag that moved
+        // the engine's offer — so a human merely browsing the list was mutating state the rules then
+        // had to be kept true of.
+        w->highlight = (w->highlight + 1) % count;
+        w->selected = 0;
+    } else if (key_states->released[control][select] == 1) {
+        w->selected = 1;
+    }
+
+    if (w->selected) {
+        intent_push(
+            channel,
+            (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = candidates[w->highlight]}}
+        );
     }
 }
 

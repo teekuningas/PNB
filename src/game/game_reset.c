@@ -24,7 +24,6 @@ void reset_for_new_half_inning(
     reset_flow_state(match);
 
     // Team setup
-    initialize_critical_game_info(match, &rules->scoreboard);
     initialize_inning_permanent_player_information(match, &rules->scoreboard, team_data);
 
     if (rules->scoreboard.period >= 4) {

@@ -309,14 +309,30 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     } else if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
         print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
     } else {
-        // Player selection info
+        // Who the panel is about: the candidate the human is looking at while a decision is open,
+        // and otherwise the player actually at the plate.
+        //
+        // It used to read pII.batterSelectionIndex for both, which worked by accident — the field
+        // was the engine's offer, and nothing cleared it after a seating, so between decisions it
+        // happened to name the batter. With the offer gone the two questions are asked separately,
+        // and the second is asked of the plate, which is the fact it was always really about.
         int index;
         int shouldContinue = 1;
         if (stateInfo->rules->scoreboard.period < 4) {
-            if (stateInfo->match->pII.batterSelectionIndex == -1)
-                shouldContinue = 0;
-            else
-                index = stateInfo->match->pII.batterSelectionIndex;
+            if (stateInfo->match->flowControl.waitingForBatterDecision == 1) {
+                int candidates[BATTER_CANDIDATE_MAX];
+                int count = list_batter_candidates(
+                    stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->halfInningState, candidates
+                );
+                int cursor = stateInfo->clientInput->batterWidget.highlight;
+                if (count <= 0)
+                    shouldContinue = 0;
+                else
+                    index = candidates[(cursor >= 0 && cursor < count) ? cursor : 0];
+            } else {
+                index = get_active_batter_index(stateInfo->match);
+                if (index == -1) shouldContinue = 0;
+            }
         } else {
             int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
             int pairIdx = stateInfo->rules->homeRunContestState.runnerBatterPairCounter;

@@ -31,10 +31,10 @@
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
+#include "rules_pure/rules_batting_order.h"
 
 #define ANIMATION_FREQUENCY 3
 
-static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* his);
 static void take_free_walk_decision(
     MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
 );
@@ -52,10 +52,11 @@ typedef struct _IngestedCommands {
     int drop_ball; // put the held ball down
     FreeWalkAction take_free_walk; // FREE_WALK_IDLE when no answer was given this tick
     RunIntent base_run[BASE_COUNT]; // per base, RUN_NONE where nothing was commanded
+    int seat_batter_index; // who to seat as the next batter; -1 when nobody was named this tick
 } IngestedCommands;
 
-static Permission permit(const MatchSession* match, const IntentMessage* message);
-static IngestedCommands ingest_intents(MatchSession* match, IntentChannels* channels);
+static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
+static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels);
 
 void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 {
@@ -122,7 +123,7 @@ void intent_push(IntentChannel* channel, IntentMessage message)
 // producer can be advantaged by the engine's internal ordering. Where that reading is not yet
 // provably the same as the one the old flag-consumption site made, the check stays at its site for
 // now and moves in the slice that rewrites it — see base running below.
-static Permission permit(const MatchSession* match, const IntentMessage* message)
+static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message)
 {
     switch (message->kind) {
     case INTENT_CHANGE_PLAYER:
@@ -167,6 +168,46 @@ static Permission permit(const MatchSession* match, const IntentMessage* message
         }
         return (Permission){1, RULE_NONE};
 
+    case INTENT_SELECT_BATTER: {
+        // §27, §12, §7 — who may take the bat. The rule itself is batter_seat_verdict, and a client
+        // asks the same function to build the list it offers a human; this is the side that does not
+        // trust the answer. The gate can hold all of it because every input is settled at the top of
+        // the tick: the batting order index and regularOrderSpent are referee-written (a later stage
+        // entirely), and a joker's status changes only when one is seated, which is this rule's own
+        // consequence.
+        //
+        // What is NOT here is the seat being physically free — the previous batter can still hold
+        // home for some frames after leaving the plate. That is a claim on a body rather than a fact
+        // about the message: it holds whether or not anyone declared anything, so it lives with the
+        // seating and is asked once, there. Splitting it the other way would have the gate asking a
+        // question the actualizer must ask again anyway, and two homes for one rule drift.
+        if (match->flowControl.waitingForBatterDecision != 1) {
+            return (Permission){0, RULE_BATTER_SEAT_NEEDS_AN_OFFER};
+        }
+        const int index = message->as.select_batter.index;
+        if (index < 0 || index >= PLAYERS_IN_TEAM + JOKER_COUNT) {
+            // Not a rule refusing an action: a message naming somebody who is not on the batting
+            // side is a broken producer, which is the malformed class rather than the denied one.
+            return (Permission){0, RULE_NONE};
+        }
+        const int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
+        const int inTurn = rules->scoreboard.teams[battingTeamIndex]
+                               .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+        switch (batter_seat_verdict(
+            index, inTurn, rules->halfInningState.lastBatter.regularOrderSpent, (int)match->playerInfo[index].bTPI.joker
+        )) {
+        case SEAT_NOT_IN_BATTING_TURN:
+            return (Permission){0, RULE_BATTER_NOT_IN_BATTING_TURN};
+        case SEAT_REGULAR_ORDER_SPENT:
+            return (Permission){0, RULE_BATTER_ORDER_SPENT};
+        case SEAT_JOKER_ALREADY_USED:
+            return (Permission){0, RULE_BATTER_JOKER_ALREADY_USED};
+        case SEAT_ALLOWED:
+        default:
+            return (Permission){1, RULE_NONE};
+        }
+    }
+
     case INTENT_PITCH:
     case INTENT_THROW:
         // Deliberately unrestricted here, for now. Whether a pitch or a throw may begin is asked today
@@ -197,13 +238,16 @@ static Permission permit(const MatchSession* match, const IntentMessage* message
 // wire it is the difference between a peer playing its team and a peer playing yours.
 static int intent_belongs_to_batting_team(IntentKind kind)
 {
-    return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK;
+    return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK || kind == INTENT_SELECT_BATTER;
 }
 
 // Drain one channel into the command block. Same-kind duplicates are last-write-wins — a controller
 // that changes its mind within a tick means the later value, and per-base commands never collide
 // because each writes its own slot.
-static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_batting_channel, IngestedCommands* out)
+static void ingest_channel(
+    MatchSession* match, const GameRulesState* rules, IntentChannel* channel, int is_batting_channel,
+    IngestedCommands* out
+)
 {
     for (int m = 0; m < channel->count; m++) {
         const IntentMessage* message = &channel->message[m];
@@ -218,7 +262,7 @@ static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_b
             continue;
         }
 
-        Permission permission = permit(match, message);
+        Permission permission = permit(match, rules, message);
         if (!permission.allowed) {
             continue; // the reason dies here for now — the hint system is where it will be read
         }
@@ -232,6 +276,15 @@ static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_b
             break;
         case INTENT_TAKE_FREE_WALK:
             out->take_free_walk = message->as.free_walk.accept ? FREE_WALK_ACCEPT : FREE_WALK_REJECT;
+            break;
+        case INTENT_SELECT_BATTER:
+            // A per-tick command and not held engine state, unlike the destination below. It can be,
+            // because a producer that has chosen restates the choice every frame the decision is
+            // open — so "the seat was not free this tick" needs no memory anywhere in the World to
+            // survive: the same answer arrives again next tick. The producer's unfinished gesture
+            // lives in the producer, which is where §27 puts it too ("Lyömään asettunutta pelaajaa
+            // ei voi vaihtaa pois lyömästä" — the choice is the team's until the bat is taken).
+            out->seat_batter_index = message->as.select_batter.index;
             break;
         case INTENT_BASE_RUN:
             if (message->as.base_run.base >= 0 && message->as.base_run.base < BASE_COUNT) {
@@ -268,12 +321,13 @@ static void ingest_channel(MatchSession* match, IntentChannel* channel, int is_b
 // THE INGEST GATE. Both channels are drained here and nowhere else, and they are left empty — which
 // is what makes the channel a parameter of the tick rather than a place intent can accumulate. The
 // state validator checks that emptiness at the end of every frame.
-static IngestedCommands ingest_intents(MatchSession* match, IntentChannels* channels)
+static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels)
 {
     IngestedCommands commands = {0};
+    commands.seat_batter_index = -1; // "nobody was named" is not player 0
 
-    ingest_channel(match, &channels->batting, 1, &commands);
-    ingest_channel(match, &channels->catching, 0, &commands);
+    ingest_channel(match, rules, &channels->batting, 1, &commands);
+    ingest_channel(match, rules, &channels->catching, 0, &commands);
 
     return commands;
 }
@@ -287,7 +341,7 @@ void execute_actions(
 
     // INGEST first: every controller's declarations for this tick, judged against one settled world,
     // become engine commands here. After this line no intent-shaped thing is left to read.
-    IngestedCommands commands = ingest_intents(match, channels);
+    IngestedCommands commands = ingest_intents(match, rules, channels);
 
     /*
      * CATCHING TEAM
@@ -339,11 +393,11 @@ void execute_actions(
     /*
      * BATTING TEAM
      */
-    // when there's no batter, user is prompted to select the next batter
-    if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_NEXT) {
-        change_batter(match, &rules->scoreboard, &rules->halfInningState);
-    } else if (match->aF.bTAF.choose_batter == CHOOSE_BATTER_SELECT) {
-        select_batter(match, &rules->referee, fieldPositions);
+    // §27: somebody was named to take the bat. The seating owns the one question the gate left it —
+    // whether the seat is physically free — because a batter who has left the plate keeps safety at
+    // home for a while yet, and that is true of the body whoever asked for what.
+    if (commands.seat_batter_index != -1) {
+        seat_batter(match, &rules->referee, fieldPositions, commands.seat_batter_index);
     }
     // The offered free walk was answered this tick — taking it starts the run, declining it just
     // closes the offer. Either answer ends the prompt.
@@ -414,63 +468,6 @@ static void take_free_walk_decision(
     // no more decision to make.
     match->flowControl.waitingForFreeWalkDecision = 0;
 }
-// so when there is no batter and few other conditions hold
-// we can select the batter from one player from the normal ordering of players and three joker players
-static void change_batter(MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* his)
-{
-    int done = 0;
-    int counter = 0;
-    // index in a teams[] array
-    int battingTeamIndex = get_batting_team_index(scoreboard);
-    int index;
-
-    match->aF.bTAF.choose_batter = 0;
-    // batter_select variable will point to the current player in selection
-    // and now as we are changing the selection, we add one to it.
-    match->pendingActionState.batter_select++;
-    // here we have a loop that basically just searches through the possible players and selects
-    // the next one. batter_select == 0 indicates that it is a normal player, batter_select != 0 indicates
-    // it is a joker player. §12: the regular slot is always on offer until the batting order has come
-    // round to the designated last batter (halfInningState.lastBatter.regularOrderSpent), after which
-    // only jokers are. That flag and not turnExhausted: the latter also carries §12(3)'s "has finally
-    // become a runner", which is transient and says nothing about who may be seated.
-    // there must be at least one player as this function cannot get called without
-    // waitingForBatterDecision-flag, and that can flag cant be true if
-    // there is not at least one player.
-    while (done == 0) {
-        if (match->pendingActionState.batter_select == 0) {
-            if (his->lastBatter.regularOrderSpent == 0)
-                done = 1;
-            else
-                match->pendingActionState.batter_select = 1;
-        } else if (match->pendingActionState.batter_select == 4) {
-            if (his->lastBatter.regularOrderSpent == 0) {
-                match->pendingActionState.batter_select = 0;
-                done = 1;
-            } else
-                match->pendingActionState.batter_select = 1;
-
-        } else {
-            if (match->playerInfo[match->pII.jokerIndices[match->pendingActionState.batter_select - 1]].bTPI.joker ==
-                JOKER_USED)
-                match->pendingActionState.batter_select++;
-            else
-                done = 1;
-        }
-        if (counter == 4) done = 1;
-        counter++;
-    }
-    // now we have the batter_select value and we just need to find a corresponding index for that
-    // player.
-    if (match->pendingActionState.batter_select == 0) {
-        index = scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
-    } else {
-        index = match->pII.jokerIndices[match->pendingActionState.batter_select - 1];
-    }
-    // and set it here.
-    match->pII.batterSelectionIndex = index;
-}
-
 void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 {
     // Make ball visible and moving

@@ -71,6 +71,7 @@ audited	src/game/rules_pure/base_logic.c	purity verified. OPEN FINDINGS: base_is
 audited	src/game/rules_pure/player_utils.c	purity verified
 audited	src/game/rules_pure/rules_outs.c	purity verified. OPEN FINDING: the header says player_base is 'the base they are running FROM' while the .c body comment says ball_at_base_index is the FROM base — the two contradict each other about a rule 33 detail; one is wrong and needs a test pinning the real contract. OPEN FINDING: is_runner_forced_out is MISNAMED — it implements the base race (pesakilpa), but 'force out' is baseball's fielding concept about a forced advance, a different thing. The name is not inert: it attracted a different rule onto the same row in the rules summary, where a wrong entry then survived. Rename to something like is_runner_burnt_in_base_race, with the whole terminology pass
 audited	src/game/rules_pure/rules_runs.c	purity verified
+audited	src/game/rules_pure/rules_batting_order.c	written to the audit standard by the batter-selection slice; includes nothing — §27/§12/§7's candidate rule, called by both the INGEST gate and the client cursor
 audited	src/game/rules_pure/rules_side_change.c	written to the audit standard by the last-batter slice; includes nothing — the first proof-of-concept for the planned foundation.h split
 audited	src/game/rules_pure/rules_strikes.c	purity verified
 audited	src/game/rules_pure/scoring_helpers.c	purity verified

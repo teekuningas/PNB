@@ -29,7 +29,6 @@
 
 void init_batting_system(MatchSession* match)
 {
-    match->pendingActionState.batter_select = 0;
     match->pendingActionState.batting_frame_count = 0;
     match->pendingActionState.increase_batting_frame_count = 0;
     match->pendingActionState.selected_batting_power_count = 0;
@@ -84,56 +83,56 @@ void stop_decrease_batter_angle(MatchSession* match)
     }
 }
 
-// here is where the accepting selected player happens.
-void select_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
+// §27 — a named player takes the bat ("asettuu lyömään"), if the seat is free.
+//
+// WHO may be seated was already settled by the INGEST gate against §27, §12 and §7. What is left
+// here is the one thing the gate deliberately did not ask: whether the seat is physically free. A
+// batter who has set off keeps safety at home until he is established elsewhere or the ball comes
+// home, so for some frames — measured at 54 in bug #9 — the plate is empty while its safety is not.
+// Seating over that produced a base controlled by one player and occupied by another.
+//
+// It is a claim on a body, not a fact about the message: it holds whether or not anyone declared
+// anything this tick, so putting it at the gate would only mean the same question asked twice. The
+// producer is not told to wait and does not need to be — it restates its choice while the decision
+// is open, so the seating simply happens on the first tick it can.
+void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int index)
 {
-    // ARCHITECTURE ENFORCEMENT:
-    // We cannot select a new batter if someone else still holds safety at Home Base.
-    // The Referee is the single source of truth. If it says Home is occupied, we must wait.
-    if (get_base_controller(match, referee, BASE_HOME) != -1) {
-        // Optional: We could log this or provide feedback, but for now we just prevent the illegal action.
-        // This prevents the "Player 3 SAFE vs Controller 2" crash.
-        return;
+    if (match->flowControl.waitingForBatterDecision != 1) return;
+    if (get_base_controller(match, referee, BASE_HOME) != -1) return;
+    if (index < 0 || index >= PLAYERS_IN_TEAM + JOKER_COUNT) return;
+
+    Vector3D target;
+    // The decision is made and, per §27, is not revisited: "Lyömään asettunutta pelaajaa ei voi
+    // vaihtaa pois lyömästä."
+    match->flowControl.waitingForBatterDecision = 0;
+
+    // new batting team player on the field.
+    // has base of zero, is on base and original base is zero too.
+    match->playerInfo[index].bTPI.baseId = BASE_HOME;
+    match->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
+
+    // Event-driven: Signal referee that a new batter has entered
+    // This triggers strike/ball reset and safety initialization (referee.c)
+    match->gameEvents.batterEntered = 1;
+
+    // and they are safe on home base
+    // cant advance yet
+    match->pRAI.batter_can_advance = 0;
+    // just set default values so that the player can have a fresh start at
+    // the field.
+    match->playerRuntime[index].goingForward = 0;
+    match->playerRuntime[index].passedPathPoint = 0;
+    match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
+    // if he is a (unused) joker player, mark him as used.
+    // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
+    if (match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
+        match->playerInfo[index].bTPI.joker = JOKER_USED;
     }
-
-    // index cannot be -1 as we couldn't have got this far if it was
-    int index = match->pII.batterSelectionIndex;
-    if (index != -1) {
-        Vector3D target;
-        // we set the batter_select to be 0 so that it will be correct one next time we have the decision
-        match->pendingActionState.batter_select = 0;
-        // and set these to 0 as decision made.
-        match->flowControl.waitingForBatterDecision = 0;
-        match->aF.bTAF.choose_batter = CHOOSE_BATTER_IDLE;
-
-        // new batting team player on the field.
-        // has base of zero, is on base and original base is zero too.
-        match->playerInfo[index].bTPI.baseId = BASE_HOME;
-        match->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
-
-        // Event-driven: Signal referee that a new batter has entered
-        // This triggers strike/ball reset and safety initialization (referee.c)
-        match->gameEvents.batterEntered = 1;
-
-        // and they are safe on home base
-        // cant advance yet
-        match->pRAI.batter_can_advance = 0;
-        // just set default values so that the player can have a fresh start at
-        // the field.
-        match->playerRuntime[index].goingForward = 0;
-        match->playerRuntime[index].passedPathPoint = 0;
-        match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
-        // if he is a (unused) joker player, mark him as used.
-        // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
-        if (match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
-            match->playerInfo[index].bTPI.joker = JOKER_USED;
-        }
-        // move player to default batter ready position
-        target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-        target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-        // move to target can take care of the rest.
-        move_to_target(match->playerInfo, index, &target);
-    }
+    // move player to default batter ready position
+    target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+    target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+    // move to target can take care of the rest.
+    move_to_target(match->playerInfo, index, &target);
 }
 
 // so this function is called when we decide the power

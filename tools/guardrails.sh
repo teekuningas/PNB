@@ -107,7 +107,11 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 #
 # 87 → 88 the same day: the scripted-human test for movement, which names MatchSession exactly as
 # every other file in that tier does.
-ratchet "files including globals.h" "$globals_includers" 88
+#
+# 88 → 89 on 2026-08-28: the batter-selection contract tests, which build the §12 window and name
+# MatchSession, IntentMessage and JokerStatus to do it. The rule they exercise, rules_batting_order.c,
+# includes NOTHING and costs zero here — the price is the test that drives the engine, not the rule.
+ratchet "files including globals.h" "$globals_includers" 89
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:
@@ -158,12 +162,12 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # number here — and, more importantly, makes it FAIL if a new intent is ever added to
 # ActionFlags instead of to the channel. The fielder-movement slice took cTAF.move[]
 # and with it the whole catching half, so what is left is batting-only. Each remaining
-# slice lowers this floor further: the rest of the channel slice (the pitch and throw
-# declarations), the batter-selection slice (choose_batter and the swing angle) and the
-# swing slice — at which point the row retires at 0.
+# slice lowers this floor further. The batter-selection slice took choose_batter (63 → 53);
+# what remains is the swing and the two batter-angle triggers, which go with the swing
+# slice and the angle step — at which point the row retires at 0.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 63
+ratchet "lines touching ActionFlags" "$action_flags_lines" 53
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

@@ -273,8 +273,6 @@ typedef enum {
     BAT_ACTION_DONE = 5 // Active: animation finishing
 } BatActionPhase;
 
-typedef enum { CHOOSE_BATTER_IDLE = 0, CHOOSE_BATTER_NEXT = 1, CHOOSE_BATTER_SELECT = 2 } ChooseBatterAction;
-
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
 // Base-running command intent (single-frame, consumed by execute_actions::base_run).
@@ -383,6 +381,7 @@ typedef enum {
     INTENT_NONE = 0,
     INTENT_BASE_RUN, // batting: {base, command} — run/arm/come back, for the runner controlling `base`
     INTENT_TAKE_FREE_WALK, // batting: {accept} — answer an offered free walk (§26)
+    INTENT_SELECT_BATTER, // batting: {index} — seat this player as the next batter (§27)
     INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
     INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
     INTENT_MOVE_TARGET, // catching: {point} — where the controlled fielder is headed
@@ -398,6 +397,20 @@ typedef struct _BaseRunIntent {
 typedef struct _FreeWalkIntent {
     int accept; // 1 = take the walk, 0 = decline it
 } FreeWalkIntent;
+
+// Who takes the bat next: a player, named. §12 and §27 name players too ("numero 7 tulee lyömään"),
+// and naming one is what makes the message mean the same thing however often it arrives — a "cycle
+// to the next candidate" edge means something different every time it is applied, and nothing at all
+// when it is applied to a world one tick further on.
+//
+// The producer restates it every frame while the decision is open rather than sending it once. That
+// is not chatter: the per-tick value stream is the ground truth this design is built on, and
+// declaring only on change is the compression of it, not the other way round. Restating also makes
+// the engine's own timing invisible to the producer — the seat is not free until the previous batter
+// has lost home, and nobody has to know that to be answered correctly.
+typedef struct _SelectBatterIntent {
+    int index; // a playerInfo slot in the batting side's 0..PLAYERS_IN_TEAM+JOKER_COUNT range
+} SelectBatterIntent;
 
 // Where the controlled fielder is going: an absolute point on the field, held until replaced.
 //
@@ -423,6 +436,7 @@ typedef struct _IntentMessage {
     union {
         BaseRunIntent base_run;
         FreeWalkIntent free_walk;
+        SelectBatterIntent select_batter;
         MoveTargetIntent move_target;
         PitchDeclaration pitch;
         ThrowDeclaration throw;
@@ -462,7 +476,11 @@ typedef enum {
     RULE_DROP_NOT_WHILE_THROWING, // a gathered throw owns the ball until it is released
     RULE_DROP_NOT_WHILE_PITCHING, // likewise a pitch in progress
     RULE_FREE_WALK_NEEDS_AN_OFFER, // §26: there is nothing to answer unless one was offered
-    RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER // there is nobody to send anywhere
+    RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER, // there is nobody to send anywhere
+    RULE_BATTER_SEAT_NEEDS_AN_OFFER, // §27: nobody was asked to take the bat
+    RULE_BATTER_NOT_IN_BATTING_TURN, // §27: a regular whose turn in the order it is not
+    RULE_BATTER_ORDER_SPENT, // §12: the order has come round; only a joker may extend the turn
+    RULE_BATTER_JOKER_ALREADY_USED // §7: three jokers per half-inning, each once
 } RuleId;
 
 typedef struct _Permission {
@@ -475,7 +493,6 @@ Action flags — the pre-intent channel, being dissolved into the message channe
 time. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
 */
 typedef struct _BattingTeamActionFlags {
-    ChooseBatterAction choose_batter;
     BatActionPhase swing;
     ActionTriggerState increase_batter_angle;
     ActionTriggerState decrease_batter_angle;
@@ -717,7 +734,6 @@ typedef struct _PlayerIndexInfo {
     int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
     // these, and these are also used to select players for busyCatching.
     int jokerIndices[3]; // indices of all jokers.
-    int batterSelectionIndex; // index of the batter that would be selected if there was decision available
     int hasBallIndex; // who has the ball
     int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
     // set to -1 when someone catches.
@@ -845,10 +861,12 @@ typedef enum {
     // the engine, gated by the real execution-side mutex (current_catching_action), so the AI's duplicate
     // locks were redundant. Values 0/1/2 left vacant. The remaining locks are the BATTING AI's own
     // sequencing (actionKeyLock); they die with the swing slice.
-    AI_WAITING_BATTER_LOCK = 3,
+    //
+    // AI_WAITING_BATTER_LOCK (=3) and AI_CHANGE_LOCK (=6) went with the batter-selection slice: the
+    // AI no longer walks the engine's offer one click at a time, so there is no click to sequence.
+    // Values left vacant beside 0/1/2.
     AI_WAITING_WALK_LOCK = 4,
     AI_BATTING_LOCK = 5,
-    AI_CHANGE_LOCK = 6,
     AI_CLICK_LOCK = 7,
     AI_DOUBLE_CLICK_LOCK = 8,
     AI_COME_BACK_LOCK = 9,
@@ -863,7 +881,6 @@ typedef struct _AIState {
     // Batting AI
     int battingKeyDown;
     AILockType actionKeyLock;
-    int changingKeyDown;
     int increaseKeyDown;
     int decreaseKeyDown;
     int angleDecided;
@@ -873,17 +890,6 @@ typedef struct _AIState {
     int runningBatter;
     int runningBaseRunners;
     int planCalculated;
-    int firstIndex;
-    int firstIndexSelected;
-    int change;
-    int changeHasHappened;
-    // BAND-AID (tracked debt, 2026-06-30, dies with the batter-selection slice): bounded-cycle guard for the
-    // batter-change loop. The `firstIndex == index` circuit-breaker is fragile against change_batter's joker-skipping
-    // (a captured slot that later becomes JOKER_USED is never landed on again, so the exact re-match never
-    // re-trips → the AI cycles batters forever, never selecting → batter_ready never set → game deadlock,
-    // bug #5). There are at most JOKER_COUNT+1 distinct selectable slots, so a full cycle is bounded; force
-    // a select once we've changed more than that. Counts CHOOSE_BATTER_NEXT issues since the last select.
-    int batterChangeCount;
 
     // Pitching AI. The legacy click-sim lock machine (pitchStage / pitchFirstLimit / pitchSecondLimit /
     // pitchTime / pitchPreviousTime) is GONE — the AI now declares the pitch directly through the phased
@@ -941,7 +947,6 @@ typedef struct _PendingActionState {
     ThrowActualization throwActualization; // engine windup clock for the throw (replaces the meter_counter windup)
 
     int run_bat_flag;
-    int batter_select;
 
     // Batting related
     int batting_frame_count;
@@ -1017,6 +1022,26 @@ typedef struct _InputWidget {
     WidgetMode mode; // how the cursor moves (also gates whether it is displayed)
 } InputWidget;
 
+// The human's batter cursor: which of the legal candidates is highlighted, and whether a choice has
+// been made. Client-local, like the pitch gesture and the steering widget — the engine never learns
+// that a human was scrolling through a list, only which player was finally named.
+//
+// `highlight` is an INDEX INTO THE CANDIDATE LIST, not a player, and that is what keeps it from
+// going stale. The list is rebuilt from the world every frame (list_batter_candidates), so a run
+// scored mid-decision that re-designates the last batter simply shortens the list, and the cursor is
+// clamped back into it — where the engine's old offer had to be actively withdrawn by consolidation
+// when the same thing happened.
+//
+// `selected` is the gesture, held here because §27 holds it here too: the choice is the team's until
+// the bat is taken ("Lyömään asettunutta pelaajaa ei voi vaihtaa pois lyömästä"), and until then it
+// is nobody else's business. It makes the human restate the choice every frame the decision is open,
+// which is what lets the engine seat the batter on the first tick the seat is free without the
+// producer knowing anything about home safety.
+typedef struct _BatterSelectWidget {
+    int highlight; // cursor position within the current candidate list
+    int selected; // 1 once the human has accepted the highlighted candidate
+} BatterSelectWidget;
+
 typedef struct _ClientInputState {
     // Per-base countdown after a base-run key release: a second release while >0 is a double-press
     // (RUN_COMMIT, "run now"); a lone press is RUN_FORWARD/RUN_BACK. Decremented each frame in
@@ -1035,6 +1060,10 @@ typedef struct _ClientInputState {
     // The steering widget — held arrows in, a destination out. Human path only; the AI keeps the
     // same memory on its own side of the boundary, in AIControllerState.
     MoveWidget moveWidget;
+
+    // The batter cursor — a list to scroll and a choice to make. Human path only; the AI needs no
+    // widget because it has no gesture, it just picks.
+    BatterSelectWidget batterWidget;
 } ClientInputState;
 
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE

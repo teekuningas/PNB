@@ -35,7 +35,6 @@ int test_fly_ball_early_arrival(void)
 
     // 1. Setup PHYSICAL state: Only batter at Home, no other runners
     setup_batter_at_home(ctx, 0);
-    match->pII.batterSelectionIndex = 0;
 
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);

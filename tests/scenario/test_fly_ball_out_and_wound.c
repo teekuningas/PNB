@@ -50,7 +50,6 @@ int test_fly_ball_out_and_wound(void)
     // 1. Setup PHYSICAL state: Runner A at 1st, Batter B at Home
     place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f); // Runner A
     setup_batter_at_home(ctx, 1); // Batter B
-    match->pII.batterSelectionIndex = 1;
 
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);

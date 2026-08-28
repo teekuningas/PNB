@@ -8,7 +8,7 @@
 
 void init_batting_system(MatchSession* match);
 
-void select_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions);
+void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int index);
 void start_increase_batter_angle(MatchSession* match);
 void stop_increase_batter_angle(MatchSession* match);
 void start_decrease_batter_angle(MatchSession* match);
