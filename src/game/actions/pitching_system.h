@@ -15,8 +15,9 @@
 //
 // NOTE (2026-06-30): retuned ~30% faster (was 50/50/50 ≈ 2s–3s). This did not CAUSE bugs — it only
 // reshuffles which AI-vs-AI games are played — but it exposed two latent bugs that turned the sim net red:
-// the batting-AI orphaned-lock deadlock (unblocked here by the knighted batterChangeCount
-// band-aid in batting_ai.c) and a referee outs>3 double-count (#6, fixed in referee.c). See PLAN §7.
+// the batting-AI orphaned-lock deadlock and a referee outs>3 double-count (#6, fixed in referee.c).
+// The deadlock's band-aid is gone: the batter-selection slice deleted the cycle it guarded, so the
+// AI no longer walks the offer and there is no loop left to bound.
 #define PITCH_WINDUP_DOWN_FRAMES 40
 #define PITCH_WINDUP_UP_FRAMES 35
 #define PITCH_WINDUP_HOLD_MAX 25

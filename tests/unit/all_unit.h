@@ -63,6 +63,10 @@ int test_collision_resolve_boundaries_x_left(void);
 // Batting AI strategy (ai_pure/batting_ai_strategy.c)
 int test_batting_strategy_decision_tree(void);
 int test_should_change_batter(void);
+int test_batter_seat_verdict_regular_in_turn(void);
+int test_batter_seat_verdict_spent_order(void);
+int test_batter_seat_verdict_jokers(void);
+int test_choose_batter_preference(void);
 int test_is_wrong_pitch(void);
 int test_calculate_ai_batting_angle(void);
 

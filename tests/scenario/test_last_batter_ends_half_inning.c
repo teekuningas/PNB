@@ -9,7 +9,7 @@
  * Rule and worked example: the official pesäpallo rulebook, §12 (Vuoronvaihto).
  *
  * These are scenario-tier tests, so everything below goes through a real mechanism: batters take the
- * bat by declaring the `choose_batter` intent that a human key or the AI controller declares, and they
+ * bat by declaring the INTENT_SELECT_BATTER a human key or the AI controller declares, and they
  * leave it by running through the engine's own base-running machinery. Nothing sets `bTPI.state` or
  * emits a `gameEvents` flag by hand — a test that manufactures the state it is checking knights
  * nothing. The one thing these tests do set directly is referee-owned LEGAL state
@@ -19,7 +19,7 @@
 // Offer the bat through the real selection path: the intent, the flow gate, and batting_system's
 // seating — which is what actually emits batterEntered.
 //
-// Then WAIT for the player to physically arrive. `select_batter` only sets a walk target, so the
+// Then WAIT for the player to physically arrive. `seat_batter` only sets a walk target, so the
 // legal seating is instant while the body is still crossing the field — and a test that starts the
 // at-bat before the body lands is measuring a batter who is standing somewhere else entirely. The
 // engine's own "in place with the bat" signal is `batter_ready` (§27's *asettuu lyömään*), so that is

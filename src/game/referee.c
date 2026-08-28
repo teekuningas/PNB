@@ -924,7 +924,7 @@ static void resolve_pending_runs(
 // that sentence has an exact reading: the player who was at home when the pitch was released has lost
 // their safety there. While they still hold home — set at the plate, or off and running but not yet
 // resolved — the batting turn has not passed on, and `get_base_controller(BASE_HOME)` is the codebase's
-// single source of truth for exactly that question (it is what `select_batter` consults before seating
+// single source of truth for exactly that question (it is what `seat_batter` consults before seating
 // anyone, so the referee and the seating path cannot disagree about whose turn it is).
 //
 // A foul looks like it needs guarding too — during one, a batter who had reached first has lost home,

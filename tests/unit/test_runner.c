@@ -135,6 +135,10 @@ int main(int argc, char* argv[])
     // Batting AI Strategy tests
     RUN_TEST(test_batting_strategy_decision_tree);
     RUN_TEST(test_should_change_batter);
+    RUN_TEST(test_batter_seat_verdict_regular_in_turn);
+    RUN_TEST(test_batter_seat_verdict_spent_order);
+    RUN_TEST(test_batter_seat_verdict_jokers);
+    RUN_TEST(test_choose_batter_preference);
     RUN_TEST(test_is_wrong_pitch);
     RUN_TEST(test_calculate_ai_batting_angle);
 
