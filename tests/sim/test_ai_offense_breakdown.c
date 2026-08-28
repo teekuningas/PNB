@@ -363,11 +363,12 @@ int test_ai_offense_breakdown(void)
     // §7: "Jokeripelaaja ei vie kenenkään lyöntivuoroa", so §12(2)'s "vuoron aloittanut pelaaja"
     // is the regular whose turn it is, never the joker that happened to swing first. When the
     // designation lands on a joker, §12(2) can never fire again that half-inning: the comparison
-    // it makes is against the batting-order index, which only ever names a regular slot. The band
-    // is written wide here because it is the number on UNCHANGED code; the fix tightens it to zero.
+    // it makes is against the batting-order index, which only ever names a regular slot. This
+    // read 33.3% before the referee stopped designating jokers, and an absolute zero is the only
+    // honest band for it — there is no rate of this that is acceptable.
     band_add(
         bands, &band_count,
-        (Band){"§12 openings designated to a joker %", percent(T_joker_designations, T_designations), 0, 40, "33.3",
+        (Band){"§12 openings designated to a joker %", percent(T_joker_designations, T_designations), 0, 0, "0.0",
                "§12(2) becoming unfirable for a whole half-inning"}
     );
 

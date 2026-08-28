@@ -56,17 +56,31 @@ static void update_initialization_events(
                 referee->battingPlayers[i].hasScored = 0;
                 referee->battingPlayers[i].runOfHonorScored = 0;
 
-                // §12 bookkeeping. The half-inning's FIRST batter is its opening designation — they
-                // are §12(2)'s "vuoron aloittanut pelaaja" — and every later entry by whoever is
-                // designated is the "uudestaan lyöntivuoroon" the rule waits for.
+                // §12 bookkeeping. The half-inning's first REGULAR batter is its opening
+                // designation — they are §12(2)'s "vuoron aloittanut pelaaja" — and every later
+                // entry by whoever is designated is the "uudestaan lyöntivuoroon" the rule waits
+                // for.
+                //
+                // A joker can bat first (§27 lets one in before the in-turn player has taken the
+                // bat) and still is not that opener: §7's "Jokeripelaaja ei vie kenenkään
+                // lyöntivuoroa" means it batted beside the order, not inside it, and the regular
+                // whose turn it was still has that turn. Designating the joker is not merely the
+                // wrong name — §12(2) is decided by comparing the designation against
+                // batterOrderIndex, which only ever names one of the nine regular slots, so a
+                // designation sitting on a joker can never equal it and the clause becomes
+                // unfirable for the whole half-inning. Measured before the fix: a third of
+                // AI-vs-AI half-innings designated a joker.
+                const int isRegular = (game->playerInfo[i].bTPI.joker == JOKER_REGULAR);
                 if (halfInningState->lastBatter.designatedIndex == -1) {
-                    halfInningState->lastBatter.designatedIndex = i;
-                    halfInningState->lastBatter.hasBattedAgain = 0;
+                    if (isRegular) {
+                        halfInningState->lastBatter.designatedIndex = i;
+                        halfInningState->lastBatter.hasBattedAgain = 0;
+                    }
                 } else if (i == halfInningState->lastBatter.designatedIndex) {
                     halfInningState->lastBatter.hasBattedAgain = 1;
                 }
 
-                if (game->playerInfo[i].bTPI.joker == JOKER_REGULAR) {
+                if (isRegular) {
                     // Regular batter: the order advances and wraps. §27: it is a cycle, and it is
                     // followed for the whole match — nothing is consumed by batting.
                     scoreboard->teams[battingTeamIndex].batterOrderIndex =

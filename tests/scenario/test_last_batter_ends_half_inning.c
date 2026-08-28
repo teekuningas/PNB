@@ -222,3 +222,89 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void)
     );
     return TEST_PASSED;
 }
+
+/**
+ * §12(2) again, with a joker opening the half-inning — and §7 deciding what that means.
+ *
+ * §27 lets a team put a joker in before the in-turn player has taken the bat ("Jokeripelaajan voi
+ * asettaa lyömään, ellei lyöntivuoroinen pelaaja ole asettunut lyömään"), so a half-inning really
+ * can open with one. §7 then says what it does NOT do: "Jokeripelaaja ei vie kenenkään
+ * lyöntivuoroa." The joker takes nobody's turn, so §12(2)'s *vuoron aloittanut pelaaja* is still
+ * the regular whose turn it was — the joker batted beside the order, not inside it.
+ *
+ * Why this is a defect and not a nicety: §12(2) is decided by comparing the designation against
+ * `batterOrderIndex`, which only ever names one of the nine regular slots. A designation sitting on
+ * a joker can therefore never be equal to it, so the clause is not merely wrong for one at-bat —
+ * it is unfirable for the whole half-inning, which can then only end on three burns. The sim tier
+ * reaches this state in a third of its half-innings and cannot see the consequence, because no
+ * half-inning there ends by §12 at all.
+ *
+ * The sibling test above deliberately spends the jokers before the first at-bat, which is exactly
+ * why it never covered this: with no joker available, the half-inning cannot open with one.
+ */
+int test_joker_opening_does_not_take_the_turn(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    StateInfo* st = ctx->state;
+    GameRulesState* rules = st->rules;
+    int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
+
+    initialize_referee_from_physical_state(ctx);
+
+    // The regular whose turn it is. Nothing below may take this away from them.
+    int opener = rules->scoreboard.teams[battingTeamIndex]
+                     .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+
+    // A joker opens the half-inning, which is legal and which the batting AI does routinely.
+    int joker = st->match->pII.jokerIndices[0];
+    ASSERT(take_the_bat(ctx, joker), "setup: a joker should be able to open the half-inning");
+    ASSERT_EQ(
+        opener,
+        rules->scoreboard.teams[battingTeamIndex]
+            .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex],
+        "§7: a joker taking the bat must not advance the batting order"
+    );
+    ASSERT_NE(
+        joker, rules->halfInningState.lastBatter.designatedIndex,
+        "§7/§12(2): a joker takes nobody's batting turn, so it cannot be the vuoron aloittanut pelaaja"
+    );
+
+    ASSERT(reach_first_base(ctx, joker), "setup: the joker should reach first base");
+    return_the_ball_home(ctx);
+    wound_the_runner(ctx, joker);
+
+    // Now the order runs its lap. The remaining jokers go before the last at-bat concludes, since
+    // §12(2)'s third conjunct is "eikä jokeripelaajia ole enää käytettävissä".
+    exhaust_jokers(ctx);
+
+    for (int atBat = 0; atBat < PLAYERS_IN_TEAM; atBat++) {
+        int next = rules->scoreboard.teams[battingTeamIndex]
+                       .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+        ASSERT(take_the_bat(ctx, next), "each player in the order should take the plate in turn");
+        ASSERT(reach_first_base(ctx, next), "each batter should reach first base");
+        return_the_ball_home(ctx);
+
+        if (atBat < PLAYERS_IN_TEAM - 1) {
+            ASSERT_EQ(
+                END_INNING_STATE_NONE, rules->referee.endOfInningState,
+                "the order has not come round yet — the half-inning must continue"
+            );
+            wound_the_runner(ctx, next);
+        }
+    }
+
+    int designated = rules->halfInningState.lastBatter.designatedIndex;
+    EndOfInningTransitionState endState = rules->referee.endOfInningState;
+    int runs = rules->halfInningState.runsInTheInning;
+    int outs = rules->halfInningState.outs;
+    cleanup_scenario(ctx);
+
+    ASSERT_EQ(0, runs, "setup: this clause is about a half-inning with fewer than two runs");
+    ASSERT(outs < 3, "the side change under test must be §12(2)'s, not three burns");
+    ASSERT_EQ(opener, designated, "the opening designation belongs to the regular whose turn it was");
+    ASSERT_NE(
+        END_INNING_STATE_NONE, endState,
+        "a half-inning opened by a joker must still end when the order comes round to its opener"
+    );
+    return TEST_PASSED;
+}

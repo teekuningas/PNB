@@ -19,5 +19,6 @@ int test_fly_ball_early_arrival(void); // Batter arrives at base before catch
 int test_burnt_player_bats_again(void); // A burnt player keeps their place in the batting order
 int test_last_batter_ends_half_inning(void); // §12(3) — the side change keys on the viimeinen lyöjä
 int test_scoreless_lap_of_the_order_ends_half_inning(void); // §12(2) — one lap of the order, not a pool
+int test_joker_opening_does_not_take_the_turn(void); // §7/§12(2) — a joker opener is not the turn's opener
 
 #endif // ALL_SCENARIOS_H

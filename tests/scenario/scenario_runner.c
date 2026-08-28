@@ -28,6 +28,7 @@ static void run_scenario_tests(void)
     RUN_TEST(test_burnt_player_bats_again);
     RUN_TEST(test_last_batter_ends_half_inning);
     RUN_TEST(test_scoreless_lap_of_the_order_ends_half_inning);
+    RUN_TEST(test_joker_opening_does_not_take_the_turn);
 }
 
 int main(int argc, char* argv[])
