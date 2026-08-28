@@ -432,7 +432,30 @@ int state_validator_check(StateInfo* state)
         }
     }
 
-    // Invariant 4: the intent channels are empty at the frame boundary.
+    // Invariant 4: an open free-walk offer names a real player.
+    //
+    // §26 gives the walk to the lead runner, so the offer and the player it belongs to are one fact
+    // and must be set together. They were not: the offer was raised whenever the ball count reached
+    // the threshold, while calculate_free_walk leaves freeWalkIndex at -1 when the whole inner side
+    // is off the field. That put a prompt on screen belonging to nobody, made the withdrawal beside
+    // it read playerInfo[-1] every frame, and — because the lukkari may not pitch while an offer is
+    // open — left the game waiting for an answer to a question about no one. Found by the owner in
+    // play, 2026-08-28.
+    //
+    // Asserted here rather than defended at the read, because this is a resting state: it is true
+    // between frames or it is not, and an assertion on it fires at the frame a future change breaks
+    // the pairing rather than quietly papering over it.
+    if (game->flowControl.waitingForFreeWalkDecision == 1 &&
+        (game->flowControl.freeWalkIndex < 0 || game->flowControl.freeWalkIndex >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
+        printf(
+            "\n[STATE ERROR] FATAL: a free walk is being offered, but freeWalkIndex is %d — §26's walk "
+            "belongs to a player, so an offer that names nobody is not an offer\n",
+            game->flowControl.freeWalkIndex
+        );
+        return 0;
+    }
+
+    // Invariant 5: the intent channels are empty at the frame boundary.
     //
     // This is what makes "the channel is a parameter of the tick, not state" a fact instead of an
     // intention. Every message a controller declares is drained by the INGEST gate of the same tick;

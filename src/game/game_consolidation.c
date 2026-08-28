@@ -286,25 +286,41 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
     // the ball happens. if player moves to next base and user after that decides to make the free walk
     // that wont have any effect.
     if (match->flowControl.freeWalkCalculationMade == 0) {
+        // §26 gives the walk to a PLAYER — the lead runner — so the offer only exists if there is
+        // somebody to give it to. calculate_free_walk leaves freeWalkIndex at -1 when it finds
+        // nobody, which happens when the whole inner side is off the field: the batter is burnt and
+        // no runner is left. Raising the question anyway put a prompt on screen that belonged to
+        // nobody, and one that nothing could withdraw, because the cancellation below asks about the
+        // player it names — playerInfo[-1]. Only a human answering it cleared it, and the lukkari
+        // may not pitch while an offer is open, so the game waited for an answer to a question about
+        // no one.
         if (count_active_batting_players(match->playerInfo) == 1) {
             // if only one player on the field, thats the batter, and then free walks can be made after one pitch.
             if (his->balls >= 1) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = 1;
+                match->flowControl.waitingForFreeWalkDecision = (match->flowControl.freeWalkIndex != -1);
             }
         } else {
             // otherwise there is some non-batter leadrunner and he can have free walks after two balls.
             if (his->balls >= 2) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = 1;
+                match->flowControl.waitingForFreeWalkDecision = (match->flowControl.freeWalkIndex != -1);
             }
         }
         match->flowControl.freeWalkCalculationMade = 1;
     } else {
         // so that if player just ran without taking his free walk, and got wounded or out, then stop asking
         if (match->flowControl.waitingForFreeWalkDecision == 1) {
-            if (match->playerInfo[match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
-                match->playerInfo[match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
+            // No -1 guard, and that is a claim rather than an oversight: an open offer always names a
+            // real player now, because the only site that raises one raises it from the calculation's
+            // own answer. The two ways freeWalkIndex goes back to -1 both take the offer with them —
+            // the wrong-pitch reset clears freeWalkCalculationMade too, so the branch above runs
+            // instead of this one, and reset_flow_state clears the offer outright. The state
+            // validator asserts the pairing rather than this defending against it, because a guard
+            // that cannot fire reads exactly like one that never has.
+            const int offered = match->flowControl.freeWalkIndex;
+            if (match->playerInfo[offered].bTPI.state == PLAYER_STATE_WOUNDED ||
+                match->playerInfo[offered].bTPI.state == PLAYER_STATE_OUT) {
                 match->flowControl.waitingForFreeWalkDecision = 0;
             }
         }

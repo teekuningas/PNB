@@ -11,6 +11,7 @@ int test_out_of_bounds_reset(void);
 int test_pitching_strike(void);
 int test_pitching_ball(void);
 int test_free_walk_resolution(void);
+int test_free_walk_is_not_offered_to_nobody(void); // §26 — an offer names a player, or there is none
 int test_run_of_honor(void); // §42 Kunniajuoksu (Run of Honor)
 int test_run_arrival_before_ball_lands(void); // Regression test for "Lost Run" bug
 int test_run_arrival_before_catch(void); // Pending run voided by catch

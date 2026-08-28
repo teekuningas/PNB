@@ -20,6 +20,7 @@ static void run_scenario_tests(void)
     RUN_TEST(test_pitching_strike);
     RUN_TEST(test_pitching_ball);
     RUN_TEST(test_free_walk_resolution);
+    RUN_TEST(test_free_walk_is_not_offered_to_nobody);
     RUN_TEST(test_run_of_honor);
     RUN_TEST(test_run_arrival_before_ball_lands);
     RUN_TEST(test_run_arrival_before_catch);

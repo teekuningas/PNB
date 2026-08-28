@@ -223,6 +223,22 @@ void update_batting(
             match->pendingActionState.batter_advance += match->pendingActionState.batter_advance_speed;
             match->pendingActionState.update_batter_location_and_orientation = 1;
         }
+        // A batter standing still must have lastLocation caught up to location, or the renderer goes
+        // on interpolating across the last step he took — for ever, since nothing moves him again
+        // until the next aim. Drawn, that is a body vibrating between two points one arc step apart.
+        //
+        // Keyed on "he did not move this frame" rather than on a producer's stop, which is what the
+        // deleted stop_increase_batter_angle/stop_decrease_batter_angle used to be keyed on. Those
+        // fired on a KEY RELEASE, so they missed the case where the key was held into the end of the
+        // arc and the angle simply stopped changing — the batting side's version of the fielder
+        // running on the spot at a fence. Asking the body instead of the producer covers that, the
+        // release, and a producer that just stops declaring (the AI, once the pitch is over).
+        //
+        // Idempotent: when the two are already equal the catch-up is a copy of a value onto itself.
+        // fielder_movement.c does the same thing at its own arrival, for the same reason.
+        if (match->pendingActionState.update_batter_location_and_orientation == 0 && batterIndex != -1) {
+            match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
+        }
         // if need for update of location and orientation
         if (match->pendingActionState.update_batter_location_and_orientation == 1 && batterIndex != -1) {
             float dx;

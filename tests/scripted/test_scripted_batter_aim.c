@@ -127,3 +127,49 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
     ASSERT_NE(-1, seated, "accepting a candidate must seat a batter");
     return TEST_PASSED;
 }
+
+/**
+ * A batter who has stopped aiming is drawn where he stands, not between where he stands and where he
+ * was.
+ *
+ * `tPI.lastLocation` is the previous frame's position and the renderer interpolates from it, so a
+ * body that stops moving must have the two brought level. Nothing does that on its own: the batting
+ * system writes location only on the frames the batter actually moves, so the last step he took stays
+ * described by the pair for ever, and he is drawn vibrating between its two ends — an arc step apart,
+ * which is small enough to read as a tremble rather than as a bug.
+ *
+ * The old key path cured this in the STOP handler, and so missed it whenever the angle stopped for a
+ * reason other than a key release: held into the end of the arc, or a producer that simply stops
+ * declaring, as the AI does once the pitch is over. Asking the body rather than the producer covers
+ * all three, which is why the assertion below is about standing still and not about a key.
+ */
+int test_scripted_aim_leaves_no_interpolation_gap_when_it_stops(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, HUMAN_PAD, CONTROL_AI, 0x5A1F00Du);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
+
+    MatchSession* m = scripted_match(g);
+
+    scripted_hold(g, HUMAN_PAD, KEY_PLUS);
+    scripted_run(g, 5);
+    scripted_release(g, HUMAN_PAD, KEY_PLUS);
+    scripted_run(g, 5);
+
+    const int b = get_active_batter_index(m);
+    ASSERT_NE(-1, b, "setup: somebody must be at the plate");
+    const float dx = m->playerInfo[b].tPI.location.x - m->playerInfo[b].tPI.lastLocation.x;
+    const float dz = m->playerInfo[b].tPI.location.z - m->playerInfo[b].tPI.lastLocation.z;
+
+    int failed = scripted_failed(g);
+    char reason[SIM_FAIL_REASON_LEN];
+    snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
+    scripted_destroy(g);
+
+    ASSERT(!failed, reason);
+    ASSERT(
+        fabsf(dx) < 0.0001f && fabsf(dz) < 0.0001f,
+        "a batter standing still must have lastLocation level with location, or he is drawn trembling"
+    );
+    return TEST_PASSED;
+}

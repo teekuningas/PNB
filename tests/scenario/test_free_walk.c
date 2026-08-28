@@ -87,3 +87,64 @@ int test_free_walk_resolution(void)
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }
+
+/**
+ * §26 — a free walk is offered to a PLAYER, so when there is nobody to offer it to there is no offer.
+ *
+ * Found by the owner in play: get burnt while a walk is on the table and the prompt stays up, with
+ * the game refusing to continue until it is answered. The mechanism is that consolidation clears
+ * `freeWalkIndex` on every wrong pitch so the walk is re-evaluated, and does NOT clear the offer
+ * along with it — so if the re-evaluation then finds nobody (the batter burnt, no runner left), the
+ * offer was raised again anyway. It named nobody, nothing could withdraw it because the withdrawal
+ * asks about the player it names, and the lukkari may not pitch while an offer is open. Only a human
+ * answering a question about no one got the game moving again.
+ *
+ * The fix has two halves — an offer is not RAISED when the walk belongs to nobody, and an offer
+ * already open is CLOSED when the player it belongs to is taken out from under it — and the test has
+ * to be able to tell them apart. Asserting the end state cannot: the cancellation alone makes the
+ * final reading correct while the invalid state was still entered. So this asserts on every frame,
+ * and each half of the fix has been ablated against it separately.
+ */
+int test_free_walk_is_not_offered_to_nobody(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    StateInfo* st = ctx->state;
+    MatchSession* m = st->match;
+    GameRulesState* r = st->rules;
+
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+    simulate_frames(ctx, 2);
+
+    // The whole inner side is off the field: the batter has been burnt and no runner is left.
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        m->playerInfo[i].bTPI.baseId = BASE_NONE;
+        m->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
+        r->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+    }
+
+    // A wrong pitch lands, which is what re-runs the calculation.
+    r->halfInningState.balls = 2;
+    m->flowControl.freeWalkCalculationMade = 0;
+    m->flowControl.freeWalkIndex = -1;
+
+    // Stepped one frame at a time, and asserting on EVERY frame rather than at the end. Checking
+    // only the final state cannot tell the two halves of the fix apart: with the offer raised and
+    // then withdrawn a frame later, an end-state assertion is green while the invalid state was
+    // still reachable. Measured — that is exactly what this test did before it was written this way,
+    // and ablating the raise half left it passing.
+    int ever_offered = 0;
+    for (int f = 0; f < 10; f++) {
+        simulate_frames(ctx, 1);
+        if (m->flowControl.waitingForFreeWalkDecision == 1) ever_offered = 1;
+    }
+
+    int waiting = m->flowControl.waitingForFreeWalkDecision;
+    int index = m->flowControl.freeWalkIndex;
+    cleanup_scenario(ctx);
+
+    ASSERT_EQ(-1, index, "setup: this is the case where §26 has nobody to give the walk to");
+    ASSERT_EQ(0, ever_offered, "a free walk that belongs to nobody must never be offered, not even for a frame");
+    ASSERT_EQ(0, waiting, "and no offer may be left standing");
+    return TEST_PASSED;
+}

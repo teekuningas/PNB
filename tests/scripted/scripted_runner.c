@@ -25,6 +25,7 @@ int main(void)
     RUN_TEST(test_scripted_move_held_key_survives_a_reset);
     RUN_TEST(test_scripted_aim_key_walks_the_batter_and_release_stops_him);
     RUN_TEST(test_scripted_batter_cursor_offers_only_legal_players);
+    RUN_TEST(test_scripted_aim_leaves_no_interpolation_gap_when_it_stops);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);
