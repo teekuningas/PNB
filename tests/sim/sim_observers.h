@@ -240,6 +240,65 @@ typedef struct {
 void batting_selection_observer_init(BattingSelectionObserver* o);
 void batting_selection_observer_hook(const SimGame* g, void* ctx);
 
+/* ---- Swing observer ---------------------------------------------------- *
+ * Watches the SWING's timing, which no existing band can see. The offense
+ * breakdown counts contacts and measures batted-ball power and direction; none
+ * of it moves if the batter starts meeting the ball at the wrong point of its
+ * arc, or if a producer starts cutting its declaration closer to the contact
+ * frame than it used to.
+ *
+ *   elevation error  |V| at contact, where V is the launch elevation the swing
+ *                    actually produced. V == 0 is a swing met dead centre; the
+ *                    physics misses at |V| > VERTICAL_ANGLE_LIMIT. So the mean
+ *                    says how central the timing is, and it is the ONE number
+ *                    that reads the same before and after a rewrite that changes
+ *                    how the value is expressed — because it is the physics,
+ *                    not the representation.
+ *   near misses      swings whose |V| passed half the limit: still hits, but the
+ *                    margin is gone. A geometry that gets harder shows up here
+ *                    before it shows up in the contact rate.
+ *   miss causes      a whiff is either bad timing (|V| over the limit) or a ball
+ *                    too far off the plate to reach (BALL_MAX_OFFSET). They are
+ *                    counted apart because only the first is the swing's fault,
+ *                    and a band that adds them cannot tell a timing regression
+ *                    from a pitching change.
+ *   lead frames      frames between the swing's LAST declared value and contact.
+ *                    The margin the producer leaves the engine — and, later, the
+ *                    margin a message has to cross a wire in. A mean that falls
+ *                    is a producer cutting it finer; a MINIMUM at zero is one
+ *                    that has already been late once.
+ *   passes           at-bats where the batter carried no swing through at all.
+ *
+ * Everything is sampled on the batOutcome rising edge, using the PREVIOUS frame's
+ * ball state: observers run after the whole frame, by which time a contact has
+ * already replaced the ball's velocity with the batted one. */
+typedef struct {
+    // internal edge-detection state (do not set)
+    int initialized;
+    int p_batOutcome;
+    float p_ball_vy; // last frame's ball vertical speed (the one the hit test used)
+    float p_ball_x; // last frame's ball offset across the plate
+    int p_swing_done; // last frame's "the swing's values are all in" reading
+    long decided_frame; // frame the last value landed on; -1 = nothing declared this pitch
+    int p_batterReady;
+    int p_stopped; // last frame's batting_stopped — a pass is its rising edge
+
+    // observed (readable after the run)
+    long swings; // swings carried through to contact (hits + whiffs)
+    long passes; // at-bats that declined to swing
+    long miss_elevation; // whiffs caused by timing
+    long miss_offplate; // whiffs caused by an unreachable ball
+    double elev_abs_sum; // Σ |V| over swings that connected
+    long elev_n;
+    long near_misses; // ...of which |V| was past half the limit
+    long lead_frames_sum;
+    long lead_frames_n;
+    long lead_frames_min; // the tightest margin any producer left
+} SwingObserver;
+
+void swing_observer_init(SwingObserver* o);
+void swing_observer_hook(const SimGame* g, void* ctx);
+
 /* ---- shared helper ----------------------------------------------------- */
 
 /** Count batting-team players currently standing on 1st/2nd/3rd base. */

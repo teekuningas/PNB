@@ -1,5 +1,7 @@
 #include "sim_observers.h"
 #include "actions/batting_system.h" // BAT_SWING_MAX / BAT_LOAD_MAX for power intent units
+#include "actions_pure/batting_physics.h" // the launch-elevation law the swing observer re-derives
+#include "actions_pure/pitching_physics.h" // VERTICAL_ANGLE_LIMIT — where the physics starts missing
 #include "rules_pure/player_utils.h" // get_active_batter_index — who is at the plate
 
 #include <stdlib.h>
@@ -637,4 +639,94 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     o->p_batter = batter;
     o->p_designated = designated;
     o->p_inning = inning;
+}
+
+/* ---- Swing observer ---------------------------------------------------- */
+
+void swing_observer_init(SwingObserver* o)
+{
+    memset(o, 0, sizeof(*o));
+    o->decided_frame = -1;
+    o->lead_frames_min = -1; // "nothing seen yet", distinct from a real margin of zero
+}
+
+void swing_observer_hook(const SimGame* g, void* ctx)
+{
+    SwingObserver* o = (SwingObserver*)ctx;
+    const MatchSession* m = g->state->match;
+    const GameRulesState* r = g->state->rules;
+
+    const int outcome = (int)r->betweenPitchState.batOutcome;
+    // "Every value this swing needs is now in." Read here off the phase the producer drives, which
+    // is what the slice replaces; the QUANTITY — how many frames of margin the producer left — is
+    // what the band is about and survives the change of representation.
+    const int swing_done = (m->aF.bTAF.swing == BAT_ACTION_DONE);
+    const int batter_ready = m->pRAI.batter_ready;
+
+    if (!o->initialized) {
+        o->initialized = 1;
+        o->p_batOutcome = outcome;
+        o->p_swing_done = swing_done;
+        o->p_batterReady = batter_ready;
+        o->p_ball_vy = m->ballInfo.velocity.y;
+        o->p_ball_x = m->ballInfo.location.x;
+        o->p_stopped = m->pendingActionState.batting_stopped;
+        return;
+    }
+
+    // A fresh batter clears the decision mark: a margin is only meaningful within one pitch.
+    if (batter_ready == 1 && o->p_batterReady == 0) o->decided_frame = -1;
+
+    if (swing_done && !o->p_swing_done) o->decided_frame = g->frame;
+
+    // The outcome edge is the contact frame. Read the ball from LAST frame: by the time observers
+    // run, a contact has already replaced the velocity with the batted one.
+    if (outcome != o->p_batOutcome && o->p_batOutcome == (int)BAT_OUTCOME_NONE) {
+        const int off_plate = (o->p_ball_x >= BALL_MAX_OFFSET || o->p_ball_x <= -BALL_MAX_OFFSET);
+        o->swings++;
+
+        if (o->decided_frame >= 0) {
+            long lead = g->frame - o->decided_frame;
+            o->lead_frames_sum += lead;
+            o->lead_frames_n++;
+            if (o->lead_frames_min < 0 || lead < o->lead_frames_min) o->lead_frames_min = lead;
+        }
+
+        if (outcome == (int)BAT_OUTCOME_MISSED) {
+            // The two causes are asked in the engine's own order: the plate check gates the
+            // elevation check, so a ball out of reach is never also blamed on timing.
+            if (off_plate) {
+                o->miss_offplate++;
+            } else {
+                o->miss_elevation++;
+            }
+        }
+        if (!off_plate) {
+            // The elevation the swing actually produced, re-derived through the production law from
+            // the values the engine used. Zero is dead centre.
+            float v = calculate_batting_vertical_angle(
+                m->pendingActionState.selected_batting_power_count, m->pendingActionState.selected_batting_angle_count,
+                o->p_ball_vy, BAT_SWING_MAX, BAT_LOAD_MAX
+            );
+            float av = v < 0.0f ? -v : v;
+            o->elev_abs_sum += av;
+            o->elev_n++;
+            if (av > VERTICAL_ANGLE_LIMIT / 2.0f) o->near_misses++;
+        }
+    }
+
+    // A declined swing: the engine stopped the batting before contact and no outcome was ever
+    // promoted. Counted on batting_stopped's own rising edge — the first version read the batter
+    // going un-ready instead, which reads ZERO, because batter_ready drops when the swing STARTS
+    // and not when it ends. An instrument's first reading is worth distrusting as much as a test's
+    // first pass.
+    const int stopped = m->pendingActionState.batting_stopped;
+    if (stopped == 1 && o->p_stopped == 0) o->passes++;
+    o->p_stopped = stopped;
+
+    o->p_batOutcome = outcome;
+    o->p_swing_done = swing_done;
+    o->p_batterReady = batter_ready;
+    o->p_ball_vy = m->ballInfo.velocity.y;
+    o->p_ball_x = m->ballInfo.location.x;
 }

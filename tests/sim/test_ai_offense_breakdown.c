@@ -30,7 +30,7 @@
 #define SEED_COUNT 24
 #define PERIOD_MAX_FRAMES 120000L
 #define STALL_LIMIT 20000L
-#define BAND_MAX 24
+#define BAND_MAX 28
 
 // Stay strictly inside the first period: it ends at inning == halfInningsInPeriod (4), and the
 // period boundary hands off to a menu the single-phase sim harness does not yet autopilot
@@ -77,6 +77,10 @@ int test_ai_offense_breakdown(void)
     long T_at_bats = 0, T_joker_at_bats = 0, T_restorations = 0, T_prompts = 0;
     long T_cancelled = 0, T_sel_abandoned = 0, T_answer_frames = 0, T_answer_max = 0;
     long T_designations = 0, T_joker_designations = 0;
+    long T_sw_swings = 0, T_sw_passes = 0, T_sw_miss_elev = 0, T_sw_miss_plate = 0;
+    long T_sw_elev_n = 0, T_sw_near = 0, T_sw_lead_sum = 0, T_sw_lead_n = 0;
+    long T_sw_lead_min = -1;
+    double T_sw_elev_sum = 0.0;
 
     for (int s = 0; s < SEED_COUNT; s++) {
         unsigned int seed = 0xA11CE000u + (unsigned int)s * 0x9E3779B1u;
@@ -101,6 +105,10 @@ int test_ai_offense_breakdown(void)
         BattingSelectionObserver sel;
         batting_selection_observer_init(&sel);
         sim_attach(g, batting_selection_observer_hook, &sel);
+
+        SwingObserver sw;
+        swing_observer_init(&sw);
+        sim_attach(g, swing_observer_hook, &sw);
 
         long frames = sim_run_until(g, three_half_innings_done, PERIOD_MAX_FRAMES);
         if (frames < 0) seeds_incomplete++; // budget hit or failure; counters still valid
@@ -157,6 +165,18 @@ int test_ai_offense_breakdown(void)
         T_designations += sel.designations;
         T_joker_designations += sel.joker_designations;
 
+        T_sw_swings += sw.swings;
+        T_sw_passes += sw.passes;
+        T_sw_miss_elev += sw.miss_elevation;
+        T_sw_miss_plate += sw.miss_offplate;
+        T_sw_elev_sum += sw.elev_abs_sum;
+        T_sw_elev_n += sw.elev_n;
+        T_sw_near += sw.near_misses;
+        T_sw_lead_sum += sw.lead_frames_sum;
+        T_sw_lead_n += sw.lead_frames_n;
+        if (sw.lead_frames_min >= 0 && (T_sw_lead_min < 0 || sw.lead_frames_min < T_sw_lead_min))
+            T_sw_lead_min = sw.lead_frames_min;
+
         if (box.reached_third > 0) seeds_reached_third++;
         if (box.ran_from_third > 0) seeds_ran_third++;
 
@@ -205,6 +225,13 @@ int test_ai_offense_breakdown(void)
         T_step_frames ? T_step_sum / (double)T_step_frames : 0.0
     );
 
+    printf(
+        "    swing: swings=%ld passes=%ld | miss timing=%ld offplate=%ld | |V| mean=%.2f near=%.0f%% | "
+        "lead mean=%.1f min=%ld\n",
+        T_sw_swings, T_sw_passes, T_sw_miss_elev, T_sw_miss_plate,
+        T_sw_elev_n ? T_sw_elev_sum / (double)T_sw_elev_n : 0.0, percent(T_sw_near, T_sw_elev_n),
+        T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, T_sw_lead_min
+    );
     printf(
         "    selection: seated=%ld (jokers=%ld, %.0f%%) restored=%ld | prompts=%ld cancelled=%ld abandoned=%ld\n",
         T_at_bats, T_joker_at_bats, percent(T_joker_at_bats, T_at_bats), T_restorations, T_prompts, T_cancelled,
@@ -326,6 +353,44 @@ int test_ai_offense_breakdown(void)
         bands, &band_count,
         (Band){"mean step per moving frame", T_step_frames ? T_step_sum / (double)T_step_frames : 0.0, 0.09, 0.125,
                "0.1073", "the controlled fielder silently switched to a different speed"}
+    );
+
+    // ---- the swing bands -------------------------------------------------------------
+    // The SWING's timing, which nothing above can see. Baselined on UNCHANGED code on
+    // 2026-09-02, before the swing slice moved anything — and the measurement immediately
+    // showed why they were needed: of 550 AI swings, ZERO whiffs were caused by timing (all
+    // four were balls too far off the plate to reach). So `contact rate %` is not a timing
+    // band, and a slice that rewrites the swing's timing would have had no net at all.
+    band_add(
+        bands, &band_count,
+        (Band){"swing elevation |V| mean (limit 5)", T_sw_elev_n ? T_sw_elev_sum / (double)T_sw_elev_n : 0.0, 0.5, 3.5,
+               "1.91", "swings drifting off the centre of the ball — the miss the contact rate cannot see"}
+    );
+    // The early-warning band: margin goes before contact does. A geometry that got harder
+    // moves this well before it moves anything downstream.
+    band_add(
+        bands, &band_count,
+        (Band){"swings past half the elevation limit %", percent(T_sw_near, T_sw_elev_n), 5, 55, "23",
+               "the timing margin collapsing while every swing still technically connects"}
+    );
+    // Not a floor at zero: after the sensitivity fix a batter that NEVER mistimes is its own
+    // defect. The band is "some, not many".
+    band_add(
+        bands, &band_count,
+        (Band){"whiffs caused by timing", (double)T_sw_miss_elev, 0, 90, "0",
+               "a swing that stops connecting for timing reasons, or an AI made unrealistically perfect"}
+    );
+    // How much margin the producer leaves the engine before the value is consumed — and, on a
+    // wire one day, how much a late message could eat. The minimum seen today is 2 frames.
+    band_add(
+        bands, &band_count,
+        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 8, 80,
+               "35.0", "a producer cutting its declaration closer and closer to the contact frame"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"declined swings %", percent(T_sw_passes, T_sw_swings + T_sw_passes), 1, 45, "9.4",
+               "the batter swinging at everything, or refusing to swing at all"}
     );
 
     // ---- the batting-selection bands -------------------------------------------------

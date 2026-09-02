@@ -18,6 +18,11 @@
 #define BATTER_ANGLE_SPEED_CONSTANT 0.02f
 #define BATTER_ANGLE_LIMIT (PI / 7)
 
+// How far off the centre of the plate the ball may be and still be reachable by the bat. A swing at
+// a ball outside this is a miss whatever the timing was — which is why it is the OTHER miss cause,
+// and why an instrument that cannot tell the two apart cannot say whether a timing change helped.
+#define BALL_MAX_OFFSET 1.0f
+
 void init_batting_system(MatchSession* match);
 
 void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int index);
