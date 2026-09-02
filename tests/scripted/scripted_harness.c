@@ -46,6 +46,7 @@ int scripted_tick(ScriptedGame* g)
             int down = g->held[pad][key];
             ks->down[pad][key] = down;
             ks->released[pad][key] = (g->prev_down[pad][key] && !down) ? 1 : 0;
+            ks->pressed[pad][key] = (!g->prev_down[pad][key] && down) ? 1 : 0;
             g->prev_down[pad][key] = down;
         }
     }

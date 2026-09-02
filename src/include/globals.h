@@ -179,8 +179,18 @@ typedef struct _GroundUnit {
 // pause key, the game-over screen) never touches the phantom slot.
 //
 // down[i][j] is 1 when key is down; released[i][j] is 1 for one frame on release.
+// The three readings of a key, and they are not interchangeable — which one a gesture uses is a
+// design decision about that gesture:
+//   down     — held, every frame it is held. For gestures whose meaning IS the holding (a throw
+//              gathers while KEY_2 is down).
+//   pressed  — the one frame it went down. The EARLY-caught click: what a meter sampler wants,
+//              because waiting for the release spends a frame the swing's hit window cannot spare.
+//   released — the one frame after it came up. The LATE-caught click: what a discrete ANSWER wants
+//              (press and think), what a hold gesture is completed by, and what the base-run
+//              double-press window is measured between.
 typedef struct _KeyStates {
     int released[3][KEY_COUNT];
+    int pressed[3][KEY_COUNT];
     int down[3][KEY_COUNT];
 } KeyStates;
 // simple struct to keep spatial information

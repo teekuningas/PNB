@@ -92,7 +92,16 @@ void action_invocations(
     // meter — starving the batter's swing power to ~0 (the "hit ball floats at the plate" bug).
     {
         InputWidget* w = &clientInput->pitchWidget;
-        if (w->mode == WIDGET_PING_PONG && w->dir == 0) {
+        // A power sweep abandoned to a throw. KEY_2 is shared, and sampling the pitch on the press
+        // edge means a press followed by a direction key arms this meter one frame before the throw
+        // claims the key — where waiting for the release used to hide the overlap, since the throw
+        // suppressed the pitch before any release arrived. Nothing was declared (the sweep is
+        // client-local), so retiring it is all that is owed.
+        if (w->mode == WIDGET_PING_PONG && match->pendingActionState.throwDeclaration.phase != THROW_DECL_IDLE) {
+            w->mode = WIDGET_IDLE;
+            w->counter_max = 0;
+            w->dir = 0;
+        } else if (w->mode == WIDGET_PING_PONG && w->dir == 0) {
             w->mode = WIDGET_IDLE;
             w->counter_max = 0;
         } else if (w->mode == WIDGET_DESCENT && match->pendingActionState.pitchDeclaration.phase == PITCH_DECL_IDLE) {
@@ -392,8 +401,15 @@ static float charge_to_power(int counter, int counter_max)
 }
 
 // Human pitch input — a power meter then an aim meter, one click each, advancing the phased
-// PitchDeclaration. Power selection is pre-windup and client-local (the declaration stays IDLE); the power
-// click is what STARTS the engine windup (power-as-start), so there is no separate WINDUP phase:
+// PitchDeclaration.
+//
+// Sampled on the PRESS edge, not the release. A meter reading is a value the human is aiming at with
+// their timing, so every frame between intending and declaring is error added to that value — and
+// waiting for the release adds one systematically, in one direction. That is a whole frame out of a
+// hit window that is single-digit frames wide at its tightest. A hold gesture (the throw) is the
+// opposite case and keeps its release, because there the holding IS the meaning. Power selection is pre-windup and
+// client-local (the declaration stays IDLE); the power click is what STARTS the engine windup (power-as-start), so
+// there is no separate WINDUP phase:
 //   press KEY_2 (idle)        → start the power ping-pong (0 → max → 0); nothing declared yet.
 //   click during power sweep  → power = cursor fraction (right peak = max); phase POWER (engine windup
 //                               begins); start the aim meter descending from the right.
@@ -418,8 +434,8 @@ static void checkPitch(
     // frees the batting meter even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
     advance_widget(w); // move the cursor (if running) before reading a click
 
-    if (key_states->released[control][key] != 1) {
-        return; // declarations happen on the click (the release edge)
+    if (key_states->pressed[control][key] != 1) {
+        return; // a meter is sampled on the PRESS edge — see below
     }
 
     if (decl->phase == PITCH_DECL_IDLE) {
