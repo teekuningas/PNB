@@ -1005,7 +1005,7 @@ typedef struct _PendingActionState {
 // machine's local input, covering whichever team(s) this process drives). The AI never uses any of it —
 // it declares intent directly.
 // How a widget's cursor moves — the client-local INPUT MECHANISM, shared by every minigame (pitch, throw,
-// and the coming swing). The AI never uses any of this; it declares values directly (producer symmetry).
+// and the swing). The AI never uses any of this; it declares values directly (producer symmetry).
 // The mode governs advance_widget's motion and gates whether the meter is displayed (IDLE = not shown):
 //   PING_PONG — 0 → max → 0 then stop        (pitch power; a click samples the level, right peak = max).
 //   DESCENT   — starts at max, → 0 then stop  (pitch aim; slow and aimable, resting at 0 when it runs out
@@ -1021,8 +1021,9 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE,
 // [0,1] level: a click samples it (pitch), or a key-release samples it (throw charge). This is pure input
 // interpretation, NOT engine timing — the engine's deterministic clocks (PitchActualization /
 // ThrowActualization) are separate and authoritative; this only turns a human's input moment into a number.
-// The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power), and the
-// swing to come — one general input widget, per the engine↔client contract.
+// The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power) and the
+// swing (PING_PONG_LOOP power then DESCENT elevation) — one general input widget, per the
+// engine↔client contract.
 // The human's steering memory: which direction keys were held when it last spoke, and for whom.
 // Client-local like the pitch and throw widgets — it never crosses the wire and is in no snapshot.
 //

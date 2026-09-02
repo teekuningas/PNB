@@ -94,8 +94,9 @@ void action_invocations(
     // Retire a finished pitch widget EVERY frame, not only inside checkPitch (which stops being called the
     // instant the ball leaves the pitcher's hand). A power ping-pong that ran out cancels; an aim widget
     // left over once the engine cleared the pitch (released or faked) resets. Without this the widget stays
-    // "active" forever after a pitch, so update_meters keeps showing it instead of advancing the batting
-    // meter — starving the batter's swing power to ~0 (the "hit ball floats at the plate" bug).
+    // "active" forever after a pitch (bug #4, which starved the batter's meter back when one display value
+    // was shared between the two sides; the sides have their own now, but a widget stuck active is still a
+    // widget drawn over a gesture that is over).
     {
         InputWidget* w = &clientInput->pitchWidget;
         // A power sweep abandoned to a throw. KEY_2 is shared, and sampling the pitch on the press
@@ -441,7 +442,7 @@ static void checkPitch(
     const PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
 
     // (The widget is retired in action_invocations every frame — see the top of that function — so it
-    // frees the batting meter even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
+    // stops being drawn even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
     advance_widget(w); // move the cursor (if running) before reading a click
 
     if (key_states->pressed[control][key] != 1) {

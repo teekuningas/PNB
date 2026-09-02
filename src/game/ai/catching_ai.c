@@ -45,8 +45,9 @@ static void update_ai_pitching(
                 count_active_batting_players(match->playerInfo), halfInningState->strikes, halfInningState->balls,
                 rand_power, rand_dir, rand_choice
             );
-            // Commit the complete aim at once (the staggered reveal the batter reacts to comes with the
-            // swing slice). One message, complete: the engine actualizes from there.
+            // Commit the complete aim at once. One message, complete: the engine actualizes from there.
+            // The staggered reveal the batter reacts to is real now — the windup's length scales with
+            // the toss, so a batter loading during the crouch is reading this decision physically.
             PitchDeclaration declared = {.phase = PITCH_DECL_AIMED, .power = aim.power, .direction = aim.direction};
             intent_push(channel, (IntentMessage){.kind = INTENT_PITCH, .as.pitch = declared});
         }

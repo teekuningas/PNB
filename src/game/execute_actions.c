@@ -28,7 +28,7 @@
 #include "actions/fielder_movement.h"
 #include "ai/catching_ai.h"
 #include "ai/batting_ai.h"
-#include "action_invocations.h" // swing_widget_display — the batting meter is the client widget it draws
+#include "action_invocations.h" // swing_widget_display — the batter's meter is a client widget now
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
