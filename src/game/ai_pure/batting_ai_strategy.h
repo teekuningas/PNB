@@ -29,4 +29,25 @@ int is_wrong_pitch(float vx, float vy, float gravity, float plate_width);
 
 float calculate_ai_batting_angle(int battingStyle, int randomValue);
 
+/* The swing itself, as two declared values — the batting side's answer to decide_pitch_aim, and
+ * symmetric with it in every way that matters: a pure function of the situation plus RNG draws the
+ * caller supplies, producing a COMPLETE intent at once. The controller has no meter to time and no
+ * gesture to assemble, so there is nothing to sequence and no lock to hold.
+ *
+ *   power    : [0,1]. Which style is being played decides the band — a bunt is soft by definition, a
+ *              normal swing varies across a competent mid-to-strong range so at-bats differ, and the
+ *              wounding swing is firm.
+ *   vertical : [0,1], scattered about SWING_VERTICAL_FOCAL. The scatter IS the difficulty: the AI
+ *              used to inherit its timing error by accident, from releasing at a fixed meter level
+ *              while the sweet spot moved with power. Making it deliberate is what turns "how good is
+ *              the batter" into a number that can be tuned, and eventually a difficulty setting.
+ *
+ * rand_power in [0, 19), rand_vertical in [0, 201). */
+typedef struct {
+    float power;
+    float vertical;
+} SwingDecision;
+
+SwingDecision decide_swing(int battingStyle, int rand_power, int rand_vertical);
+
 #endif

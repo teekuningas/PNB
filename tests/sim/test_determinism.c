@@ -72,7 +72,28 @@ static unsigned long long run_once(unsigned int seed)
 // scored a RUN, which it has never done in this configuration. One run over 24 seeds is not a
 // balance claim; it is a hint that being exact paid on this side of the field too, exactly as it did
 // on the fielding side.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0xf35f0486e6f32f25ULL
+// Re-recorded again by the SWING slice, deliberately, and this one could not have been held. Three
+// things move the fingerprint at once, and each is the point of the slice rather than a side effect:
+//
+//   1. The checksum's own field list changed. It used to fold the shared meter's counter; there is no
+//      meter, so it folds the declared power and elevation instead. A fingerprint that tracks what a
+//      producer DECLARED rather than what a meter had reached is the better instrument, and it cannot
+//      agree with the old one by construction.
+//   2. The AI's swing is no longer timed. It declared by releasing at a meter threshold, one lock
+//      cycle late; it now declares two values the frame the ball is up. Reproducing the old timing
+//      exactly would mean reproducing the lock cycle the slice exists to delete.
+//   3. Power and elevation are independent now. The old elevation was read off a meter whose scale
+//      moved with power, so the two were accidentally correlated — which is visible in the bands as
+//      out-of-bounds falling from 12% to 4%, the extreme high-power-high-loft combinations having
+//      stopped happening.
+//
+// The argument that the new behaviour is the intended one is the bands in test_ai_offense_breakdown,
+// including five recorded on UNCHANGED code before this slice moved anything. The one that matters
+// most: `swing elevation |V| mean` was 1.91 of a limit of 5 before and is 1.85 after — the batter
+// meets the ball as centrally as it ever did, having got there by declaring a number instead of by
+// timing a keypress. `whiffs caused by timing` is still zero, and the declaration margin the sim
+// leaves before contact went from a mean of 35 frames (minimum 2) to a mean of 86 (minimum 73).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0xceac9839ffbf060cULL
 
 int test_ai_vs_ai_determinism(void)
 {

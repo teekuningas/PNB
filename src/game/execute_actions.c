@@ -14,8 +14,8 @@
        order here is the engine's, never the order messages happened to arrive in, so which producer
        spoke first can never change the simulation.
 
-    Actions not yet moved onto the channel are still read from the persistent ActionFlags struct
-    (globals.h) further down this file; they convert one slice at a time.
+    Every action now arrives on the channel. The persistent flag struct that stages used to read
+    instead is gone: its last field was the swing's phase, and the swing became two declared values.
 */
 
 #include "globals.h"
@@ -28,6 +28,7 @@
 #include "actions/fielder_movement.h"
 #include "ai/catching_ai.h"
 #include "ai/batting_ai.h"
+#include "action_invocations.h" // swing_widget_display — the batting meter is the client widget it draws
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
@@ -55,6 +56,7 @@ typedef struct _IngestedCommands {
     int seat_batter_index; // who to seat as the next batter; -1 when nobody was named this tick
     int swing_angle_declared; // 0 when the batting side said nothing about its aim this tick
     float swing_angle;
+    int swing_pass; // the batting side withdrew its swing this tick
 } IngestedCommands;
 
 static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
@@ -62,9 +64,6 @@ static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState
 
 void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
 {
-    // just initialize everyone of these static variables to zero
-    match->pendingActionState.meter_counter = 0;
-    match->pendingActionState.meter_counter_max = 0;
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
 
     // Client-local input memory: initialized once here, self-clears during play (a physical-world reset
@@ -88,6 +87,12 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->batterWidget.highlight = 0;
     clientInput->batterWidget.selected = 0;
     clientInput->batterAim = 0.0f;
+    clientInput->swingWidget.meter.counter = 0;
+    clientInput->swingWidget.meter.counter_max = 0;
+    clientInput->swingWidget.meter.dir = 0;
+    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
+    clientInput->swingWidget.framesAirborne = -1;
+    clientInput->swingWidget.power = 0.0f;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -208,6 +213,27 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
         }
     }
 
+    case INTENT_SWING_POWER:
+    case INTENT_SWING_VERTICAL:
+    case INTENT_SWING_PASS:
+        // The whole of the ordering the deleted phase machine used to carry, in one question asked
+        // once against the settled world: is there a pitch to swing at, and is this swing still open?
+        //
+        // That is the trade the slice is built on. A phased GESTURE is fine; a phase-shaped MESSAGE
+        // is not. "Advance my swing to AIMED" means something different applied to a different world,
+        // so a producer has to read its own declaration back before daring to send one. A power and
+        // an elevation mean the same thing in every world, so what may follow what stops being
+        // carried by the messages at all — it becomes state legality, which is what this gate is for.
+        //
+        // Notice what is NOT asked: whether a power was declared before an elevation. They are
+        // independent — the physics says so, power having cancelled out of the elevation law
+        // entirely — so an elevation declared alone is a held value that never gets used, not an
+        // error. Refusing it would be inventing a rule the game does not have.
+        if (!swing_may_be_declared(match, &rules->betweenPitchState)) {
+            return (Permission){0, RULE_SWING_NEEDS_A_PITCH};
+        }
+        return (Permission){1, RULE_NONE};
+
     case INTENT_SWING_ANGLE:
         // Nothing to refuse. Where a batter may stand on his own arc is not a rule of pesäpallo, and
         // the arc's ends are physical rather than legal — the walk holds them, the way the fielder's
@@ -246,7 +272,8 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
 static int intent_belongs_to_batting_team(IntentKind kind)
 {
     return kind == INTENT_BASE_RUN || kind == INTENT_TAKE_FREE_WALK || kind == INTENT_SELECT_BATTER ||
-           kind == INTENT_SWING_ANGLE;
+           kind == INTENT_SWING_ANGLE || kind == INTENT_SWING_POWER || kind == INTENT_SWING_VERTICAL ||
+           kind == INTENT_SWING_PASS;
 }
 
 // Drain one channel into the command block. Same-kind duplicates are last-write-wins — a controller
@@ -298,6 +325,23 @@ static void ingest_channel(
         case INTENT_SWING_ANGLE:
             out->swing_angle_declared = 1;
             out->swing_angle = message->as.swing_angle.angle;
+            break;
+        case INTENT_SWING_POWER:
+            // A held value, like a destination and unlike a command: written straight into the engine
+            // state that owns it, and kept until the contact frame consumes it or the next batter
+            // clears it. That is what makes re-delivering it a no-op — the property rollback needs,
+            // and the reason a producer never has to learn whether its last message landed.
+            match->pendingActionState.swing.power = message->as.swing_power.power;
+            match->pendingActionState.swing.powerActive = 1;
+            break;
+        case INTENT_SWING_VERTICAL:
+            match->pendingActionState.swing.vertical = message->as.swing_vertical.vertical;
+            match->pendingActionState.swing.verticalActive = 1;
+            break;
+        case INTENT_SWING_PASS:
+            // A per-tick command and not held state: withdrawing is a thing that HAPPENS, and what it
+            // leaves behind (batting_stopped) is the engine's own conclusion rather than the message.
+            out->swing_pass = 1;
             break;
         case INTENT_SELECT_BATTER:
             // A per-tick command and not held engine state, unlike the destination below. It can be,
@@ -427,20 +471,17 @@ void execute_actions(
         take_free_walk_decision(match, &rules->scoreboard, fieldPositions, commands.take_free_walk == FREE_WALK_ACCEPT);
     }
 
-    // batting
-    if (match->aF.bTAF.swing == BAT_ACTION_POWER_SET) {
-        select_power(match);
-    } else if (match->aF.bTAF.swing == BAT_ACTION_ANGLE_SET) {
-        select_angle(match);
-    }
     // baserunners must be able to run!
     for (i = 0; i < BASE_COUNT; i++) {
         base_run(match, &rules->referee, fieldPositions, i, commands.base_run[i]);
     }
-    // this is used to handle a lot of stuff happening between and after the decisions.
+    // SWING — the batter's frame. The two declared VALUES are not passed: the gate wrote them into
+    // pendingActionState.swing, where they are held until the contact frame consumes them. Only the
+    // aim and the withdrawal come through as per-tick commands, because only they are things that
+    // HAPPEN; a power and an elevation are things that ARE.
     update_batting(
         match, &rules->referee, &rules->betweenPitchState, fieldPositions, commands.swing_angle_declared,
-        commands.swing_angle, playSoundEffect
+        commands.swing_angle, commands.swing_pass, playSoundEffect
     );
 }
 
@@ -569,8 +610,15 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
     } else if (clientInput->throwWidget.mode != WIDGET_IDLE && clientInput->throwWidget.counter_max > 0) {
         match->pRAI.meter_value = (float)clientInput->throwWidget.counter / clientInput->throwWidget.counter_max;
     } else {
-        update_batting_meter(match);
+        match->pRAI.meter_value = 0.0f;
     }
+
+    // The batting meter is the batting side's own, and it is set HERE rather than in an else-branch
+    // of the chain above. That chain used to end in the engine's batting meter, so while a human's
+    // pitch widget was sweeping the batter's meter did not advance at all — invisible while one side
+    // is an AI, and wrong the moment two humans play. Both sides now read their own widget, and the
+    // engine has no meter of its own left to advance.
+    match->pRAI.swing_meter_value = swing_widget_display(&clientInput->swingWidget);
 }
 
 void ai_update(

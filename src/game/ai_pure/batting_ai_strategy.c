@@ -1,4 +1,5 @@
 #include "batting_ai_strategy.h"
+#include "actions_pure/swing_geometry.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -203,4 +204,45 @@ float calculate_ai_batting_angle(int battingStyle, int randomValue)
     }
     float maxAngle = (battingStyle == 0) ? AI_BUNT_BATTING_ANGLE : AI_MAX_BATTING_ANGLE;
     return t * (2.0f * maxAngle) - maxAngle; // uniform in [-maxAngle, +maxAngle]
+}
+
+// How far the AI's declared elevation scatters either side of the sweet spot, in declared units.
+// Calibrated, not guessed: the batting AI's realised scatter on the code this replaced was about
+// three frames of meter travel, which is this width as a uniform draw. Widening it makes a worse
+// batter and narrowing it a better one, and unlike the accident it replaces, either is a decision.
+#define SWING_AI_VERTICAL_SPREAD 0.077f
+
+// Power bands per style, in declared units. These are the levels the old meter thresholds actually
+// realised, carried across so the batting side keeps the character it had: a bunt soft, a normal
+// swing spread across a competent band, a wounding swing firm.
+#define SWING_AI_BUNT_POWER 0.389f
+#define SWING_AI_WOUND_POWER 0.722f
+#define SWING_AI_NORMAL_POWER_MAX 0.917f
+#define SWING_AI_NORMAL_POWER_STEP 0.0278f // one meter step, in declared units
+
+SwingDecision decide_swing(int battingStyle, int rand_power, int rand_vertical)
+{
+    SwingDecision decision;
+
+    if (battingStyle == 0) {
+        decision.power = SWING_AI_BUNT_POWER;
+    } else if (battingStyle == 2) {
+        decision.power = SWING_AI_WOUND_POWER;
+    } else {
+        decision.power = SWING_AI_NORMAL_POWER_MAX - (float)rand_power * SWING_AI_NORMAL_POWER_STEP;
+    }
+    if (decision.power < 0.0f) decision.power = 0.0f;
+    if (decision.power > 1.0f) decision.power = 1.0f;
+
+    // Aim at the sweet spot and miss it by a little, deliberately. [0,201) -> [-1,1].
+    float offset = ((float)rand_vertical - 100.0f) / 100.0f;
+    decision.vertical = SWING_VERTICAL_FOCAL + offset * SWING_AI_VERTICAL_SPREAD;
+
+    // Stay inside the meter a human would have been reading: above its top is a place no gesture
+    // could reach, and the engine trusts values rather than clamping them.
+    float top = swing_marker_top(decision.power);
+    if (decision.vertical > top) decision.vertical = top;
+    if (decision.vertical < 0.0f) decision.vertical = 0.0f;
+
+    return decision;
 }

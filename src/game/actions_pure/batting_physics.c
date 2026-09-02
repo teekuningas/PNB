@@ -17,34 +17,6 @@ int calculate_pitch_frame_time(float velocity_y, float gravity, float start_heig
     return (int)t + tweak_frames;
 }
 
-float calculate_batting_vertical_angle(int power_count, int angle_count, float ball_vy, int swing_max, int load_max)
-{
-    float scaleNumber = (float)(power_count + (swing_max - load_max));
-    if (fabs(scaleNumber) < 0.00001f) return 0.0f;
-
-    float zeroNumber = swing_max * (1.0f * power_count / scaleNumber);
-
-    float verticalAngle = 7.0f * ball_vy * (angle_count - zeroNumber) * (scaleNumber / swing_max);
-
-    return verticalAngle;
-}
-
-float calculate_power_meter_value(int counter, int max)
-{
-    if (max == 0) return 0.0f;
-    return 1.0f * counter / max;
-}
-
-float calculate_angle_meter_value(int counter, int max, int power_count, int swing_max, int load_max)
-{
-    if (swing_max == 0 || max == 0) return 0.0f;
-
-    float upperLimit = (float)(power_count + (swing_max - load_max)) / swing_max;
-    float lowerLimit = 0.0f;
-
-    return upperLimit - (1.0f * counter / max) * (upperLimit - lowerLimit);
-}
-
 Vector3D calculate_batted_ball_velocity(
     float vertical_angle, float horizontal_angle, float power, int power_factor, float ball_offset_x
 )

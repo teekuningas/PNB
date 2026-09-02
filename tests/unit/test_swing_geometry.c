@@ -19,10 +19,29 @@
  *    screen, once, months later.
  */
 
-// The legacy meter lengths the equivalence is pinned to. Deliberately literals and not an include:
-// the claim is about these historical numbers, and it stays true whatever the meters become.
+// The law this replaced, kept HERE and not in the tree. It is the reference an equivalence is
+// measured against, which makes it a test fixture — production carries only the law it actually uses,
+// and the historical one lives with the claim it exists to support. The meter lengths are literals
+// for the same reason: the claim is about these numbers, whatever the meters later become.
 #define LEGACY_SWING_MAX 52
 #define LEGACY_LOAD_MAX 36
+
+// What the batter's meter displayed while the elevation was being chosen: a marker starting at a
+// power-dependent top and falling to zero.
+static float legacy_angle_meter_value(int counter, int max, int power_count)
+{
+    float upper = (float)(power_count + (LEGACY_SWING_MAX - LEGACY_LOAD_MAX)) / (float)LEGACY_SWING_MAX;
+    return upper - (1.0f * counter / max) * upper;
+}
+
+// And the elevation it produced from the two meter counts.
+static float legacy_vertical_angle(int power_count, int angle_count, float ball_vy)
+{
+    float scale = (float)(power_count + (LEGACY_SWING_MAX - LEGACY_LOAD_MAX));
+    if (scale < 0.00001f && scale > -0.00001f) return 0.0f;
+    float zero = LEGACY_SWING_MAX * (1.0f * power_count / scale);
+    return 7.0f * ball_vy * (angle_count - zero) * (scale / LEGACY_SWING_MAX);
+}
 
 // 1. The collapsed law IS the legacy law, at every reachable (power, vertical) pair.
 int test_swing_vertical_angle_matches_the_legacy_meter_law(void)
@@ -36,14 +55,10 @@ int test_swing_vertical_angle_matches_the_legacy_meter_law(void)
 
         for (int power_count = 0; power_count <= LEGACY_LOAD_MAX; power_count += 4) {
             for (int angle_count = 0; angle_count <= LEGACY_SWING_MAX; angle_count += 4) {
-                float legacy = calculate_batting_vertical_angle(
-                    power_count, angle_count, ball_vy, LEGACY_SWING_MAX, LEGACY_LOAD_MAX
-                );
+                float legacy = legacy_vertical_angle(power_count, angle_count, ball_vy);
                 // What the human was reading off the screen all along — the value that is now
                 // declared outright instead of being inferred from when a key was pressed.
-                float declared = calculate_angle_meter_value(
-                    angle_count, LEGACY_SWING_MAX, power_count, LEGACY_SWING_MAX, LEGACY_LOAD_MAX
-                );
+                float declared = legacy_angle_meter_value(angle_count, LEGACY_SWING_MAX, power_count);
                 float collapsed = swing_vertical_angle(declared, ball_vy);
 
                 ASSERT(

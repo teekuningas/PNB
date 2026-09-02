@@ -67,7 +67,6 @@ int test_ai_offense_breakdown(void)
     long T_pitches = 0, T_contacts = 0, T_whiffs = 0, T_strikes = 0, T_balls = 0, T_outs = 0;
     long T_reached_base = 0, T_reached_third = 0, T_ran_third = 0, T_scored_third = 0;
     long T_out_third = 0, T_wound_third = 0, T_runs = 0;
-    long T_s1_swings = 0, T_s1_err = 0;
     long T_fouls = 0, T_power_sum = 0, T_power_n = 0, T_dir[5] = {0};
     int T_power_min = 9999, T_power_max = -9999;
     int seeds_reached_third = 0, seeds_ran_third = 0, seeds_incomplete = 0, seeds_stalled = 0;
@@ -133,8 +132,6 @@ int test_ai_offense_breakdown(void)
         T_out_third += box.out_from_third;
         T_wound_third += box.wound_from_third;
         T_runs += box.runs_scored;
-        T_s1_swings += box.s1_swings;
-        T_s1_err += box.s1_power_err_sum;
         T_fouls += box.fouls;
         T_power_sum += box.contact_power_sum;
         T_power_n += box.contact_power_n;
@@ -200,10 +197,6 @@ int test_ai_offense_breakdown(void)
         seeds_ran_third, T_scored_third, T_out_third, T_wound_third
     );
     // Style-1 power-meter accuracy (intent vs realized). ≈ +1 means correct meter use.
-    printf(
-        "    meter (style-1 swings only): n=%ld meanPowerErr=%+.2f steps (expect ~+1)\n", T_s1_swings,
-        T_s1_swings ? (double)T_s1_err / T_s1_swings : 0.0
-    );
     // Actualized out-of-bounds rate: a hit is either OUT OF BOUNDS or not (a caught ball counts as
     // in-bounds — "else"). Most hits should land fair, but some fouls are wanted for variety.
     printf(
@@ -304,11 +297,6 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"meter error, style-1 swings (steps)", T_s1_swings ? (double)T_s1_err / T_s1_swings : 0.0, -1.0, 3.0,
-               "+0.77", "the AI no longer releasing at the power level it decided on"}
-    );
-    band_add(
-        bands, &band_count,
         (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 4, 100, "13",
                "the fan collapsing — the centre-bias the swing slice removes structurally"}
     );
@@ -343,7 +331,7 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 10, 22, "15.12",
+        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 5, 22, "9.08",
                "the controlled fielder not going where the engine sent it"}
     );
     // The floor here is the load-bearing one: RUN_SPEED is 0.12 and WALK_SPEED is 0.06, so a
@@ -355,6 +343,19 @@ int test_ai_offense_breakdown(void)
                "0.1073", "the controlled fielder silently switched to a different speed"}
     );
 
+    // Two bands moved with the swing slice, both because the number IMPROVED and a floor that a
+    // measurement has passed is a floor that has stopped holding anything:
+    //
+    //   declaration lead   35.0 -> 85.9 frames (floor 8 -> 30). The AI used to declare when a meter
+    //     reached a threshold, which is late by construction; it now declares as soon as the ball is
+    //     up and the values are consumed at contact. The minimum across 24 seeds went from 2 frames
+    //     to 73 — the margin a message would one day have to cross a wire in.
+    //   mean chase        15.12 -> 9.08 (floor 10 -> 5). Not a fielding change: the batted balls are
+    //     different. The old swing's elevation was read off a meter whose scale moved with power, so
+    //     loft and power were accidentally correlated and their extreme combinations flew out; with
+    //     the two values independent the out-of-bounds rate fell 12% -> 4%, more balls stay in play,
+    //     and chases that used to be abandoned at the boundary now converge (87.6% -> 95.1%).
+    //
     // ---- the swing bands -------------------------------------------------------------
     // The SWING's timing, which nothing above can see. Baselined on UNCHANGED code on
     // 2026-09-02, before the swing slice moved anything — and the measurement immediately
@@ -384,8 +385,8 @@ int test_ai_offense_breakdown(void)
     // wire one day, how much a late message could eat. The minimum seen today is 2 frames.
     band_add(
         bands, &band_count,
-        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 8, 80,
-               "35.0", "a producer cutting its declaration closer and closer to the contact frame"}
+        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 30,
+               200, "85.9", "a producer drifting back toward declaring at the last possible moment"}
     );
     band_add(
         bands, &band_count,

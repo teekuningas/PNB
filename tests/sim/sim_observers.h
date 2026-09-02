@@ -106,16 +106,10 @@ typedef struct {
     long out_from_third; // a 3rd-base runner went OUT while heading home
     long wound_from_third; // a 3rd-base runner was WOUNDED while heading home
 
-    // Batting meter, STYLE-1 swings only. decidedSwingTrigger is the AI's real power intent only
-    // for batting style 1 ("normal swing"); styles 0 (bunt) and 2 leave it stale, so their power
-    // is NOT measurable this way and is deliberately excluded. Direction (decidedAngle vs the
-    // realized batter_angle) is not measured here at all; measuring it wants an instrument of its own.
-    long s1_swings; // style-1 swings measured
-    long s1_power_err_sum; // Σ (actual − intent) in meter steps; ≈ +1 means the AI hit its target
-
     // Actualized batted-ball power and direction, over every contact (all styles). These answer the
     // two tuning questions directly: "are hits powerful enough?" and "is the direction a uniform
-    // spread that lands fair most of the time?". Power is `selected_batting_power_count` (0..36).
+    // spread that lands fair most of the time?". Power is the DECLARED power in the batted-ball
+    // velocity's own units (0..36) — the same scale the meter count used to arrive on.
     // Direction is the realized horizontal launch angle (= -batter_angle*2, the production formula);
     // dir_bins splits the reachable span [-1.0, +1.0] rad into 5 equal buckets (right→left) so a
     // collapse-to-center or a lopsided pull is visible at a glance.

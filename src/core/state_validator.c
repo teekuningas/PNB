@@ -214,7 +214,11 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     // The drop / change-player commands used to be dumped here as persistent flags. They are messages
     // now: declared and consumed inside one tick, so at the frame boundary this dump is taken there is
     // nothing left of them to print — what a reader wants instead is the world they produced.
-    fprintf(f, "%s  \"meter_counter\": %d\n", sp, game->pendingActionState.meter_counter);
+    // The swing, as the engine holds it: what has been declared and the frame it will be used on.
+    // No phase and no meter — there is nothing here a producer drives forward.
+    fprintf(f, "%s  \"swing_contact_frame\": %d,\n", sp, game->pendingActionState.swing.contactFrame);
+    fprintf(f, "%s  \"swing_power\": %s,\n", sp, game->pendingActionState.swing.powerActive ? "true" : "false");
+    fprintf(f, "%s  \"swing_vertical\": %s\n", sp, game->pendingActionState.swing.verticalActive ? "true" : "false");
     fprintf(f, "%s},\n", sp);
 
     if (rules) {
@@ -237,8 +241,7 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"aiState\": {\n", sp);
-    fprintf(f, "%s  \"actionKeyLock\": %d,\n", sp, game->aiState.actionKeyLock);
-    fprintf(f, "%s  \"battingKeyDown\": %d,\n", sp, game->aiState.battingKeyDown);
+    fprintf(f, "%s  \"swingDecided\": %d,\n", sp, game->aiState.swingDecided);
     fprintf(f, "%s  \"planCalculated\": %d\n", sp, game->aiState.planCalculated);
     fprintf(f, "%s},\n", sp);
 

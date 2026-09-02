@@ -378,8 +378,6 @@ void prepare_batter(MatchSession* match)
         match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
         // can pitch now
         match->pRAI.batter_ready = 1;
-        // waiting for pitch to go in air before starting the batting movement
-        match->aF.bTAF.swing = 0;
         // batterIndex has been selected before calling this function
 
         // and initialize batter so that everything is ready to go.
@@ -688,7 +686,6 @@ void initialize_ball_info(MatchSession* match)
 // reset has nothing of it to clean up.
 void initialize_action_info(MatchSession* match)
 {
-    match->aF = (ActionFlags){0};
     match->catchingState = (CatchingTeamState){0};
 
     match->pendingActionState.pitchDeclaration = (PitchDeclaration){0};
@@ -697,6 +694,9 @@ void initialize_action_info(MatchSession* match)
 
     match->pendingActionState.pitchActualization.timer = 0;
     match->pendingActionState.throwActualization.timer = 0;
+
+    match->pendingActionState.swing = (SwingActualization){0};
+    match->pendingActionState.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).

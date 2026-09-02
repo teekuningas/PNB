@@ -46,8 +46,6 @@ int test_cup_day_progression_best_of_three(void);
 
 // Batting physics (actions_pure/batting_physics.c)
 int test_pitch_frame_time(void);
-int test_meter_values(void);
-int test_batting_vertical_angle(void);
 int test_batted_ball_velocity(void);
 
 // Pitching physics (actions_pure/pitching_physics.c)

@@ -6,6 +6,7 @@
 #include "batting_ai_strategy.h"
 #include "execute_actions.h"
 #include "actions/batting_system.h"
+#include "actions_pure/swing_geometry.h"
 #include "game_manipulation.h"
 #include "rng.h"
 #include "base_logic.h"
@@ -14,15 +15,14 @@
 
 void init_batting_ai(AIState* aiState)
 {
-    aiState->battingKeyDown = 0;
-    aiState->actionKeyLock = AI_NO_LOCK;
     aiState->battingStyle = 0;
     aiState->runningBatter = 0;
     aiState->runningBaseRunners = 0;
 
-    aiState->angleDecided = 0;
+    aiState->swingDecided = 0;
     aiState->decidedAngle = 0.0f;
-    aiState->decidedSwingTrigger = BAT_SWING_MAX - 10;
+    aiState->decidedPower = 0.0f;
+    aiState->decidedVertical = SWING_VERTICAL_FOCAL;
     aiState->aiWrongPitch = 0;
     aiState->planCalculated = 0;
 }
@@ -42,22 +42,11 @@ void update_batting_ai(
     int i;
     int okToAdvanceAfterHit = 0;
 
-    // Cleanup dangling locks if state changed externally
-    if (match->flowControl.waitingForBatterDecision == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-        // A swing lock is only valid while a ready batter is mid-swing. Once a new batter
-        // decision has begun, a lingering AI_BATTING_LOCK is orphaned: the at-bat ended (e.g.
-        // a 3rd-strike forced run) before the swing's release path — which lives inside the
-        // batter_ready block below — could clear it. The selection branch requires AI_NO_LOCK,
-        // so without this self-heal the AI batting team deadlocks the entire game.
-        match->aiState.actionKeyLock = AI_NO_LOCK;
-        match->aiState.battingKeyDown = 0;
-    }
-    if (match->flowControl.waitingForFreeWalkDecision == 0) {
-        if (match->aiState.actionKeyLock == AI_WAITING_WALK_LOCK) {
-            match->aiState.actionKeyLock = AI_NO_LOCK;
-            match->aiState.battingKeyDown = 0;
-        }
-    }
+    // No lock cleanup, because there are no locks. Both self-heals that used to stand here existed
+    // to unstick a click simulation from a state it had been carried out of — an at-bat that ended
+    // mid-swing, a free-walk offer that closed while the answer was being "held". Without the first
+    // of them the AI batting team deadlocked the whole game. A controller that declares values and
+    // restates them has nothing that can be left half-done, so there is nothing to unstick.
 
     // A fresh pitch cycle forces the swing plan to be recomputed. The per-base run decisions
     // need no bookkeeping reset: the AI re-derives them every frame from live game state
@@ -66,17 +55,11 @@ void update_batting_ai(
         match->aiState.planCalculated = 0;
     }
     // make free walk decision == accept
+    // Take the walk, restated for as long as it is offered. The click simulation that used to wrap
+    // this — press, hold a lock, release — outlived the slice that made the answer a message: an
+    // answer that means the same thing every time it arrives needs no edge and no memory.
     if (match->flowControl.waitingForFreeWalkDecision == 1) {
-        if (match->aiState.battingKeyDown == 0) {
-            if (match->aiState.actionKeyLock == AI_NO_LOCK) {
-                intent_push(channel, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}});
-                match->aiState.battingKeyDown = 1;
-                match->aiState.actionKeyLock = AI_WAITING_WALK_LOCK;
-            }
-        } else {
-            match->aiState.actionKeyLock = AI_NO_LOCK;
-            match->aiState.battingKeyDown = 0;
-        }
+        intent_push(channel, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}});
     }
     // we decide batter only after ball is at home so that in normal situation ai will have more information
     // to make its strategy decisions
@@ -203,73 +186,45 @@ void update_batting_ai(
                 }
             }
         }
-        // a bunt
-        if (match->aiState.battingStyle == 0) {
-            if (match->aiState.angleDecided == 0) {
-                match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(0, seeded_rand(&aiController->rngSeed, RAND_MAX));
-                match->aiState.angleDecided = 1;
+        // THE SWING — three complete values, decided once and restated for as long as the pitch
+        // lasts. What stood here was a click simulation: three copies of the same press-hold-release
+        // sequence, one per batting style, each timed against the engine's live meter and each
+        // sequenced by a lock. That meter read was the last one in the game, and the reason the
+        // engine had to keep a meter at all.
+        //
+        // Restating costs nothing and buys the property the whole design turns on: a value means the
+        // same thing however often it arrives, so a duplicate is a no-op and a message that goes
+        // missing is repaired by the next tick rather than by a retry.
+        if (match->aiState.aiWrongPitch == 1) {
+            // Väärä. Withdraw if a power was already committed — worth a ball, where swinging and
+            // missing would be worth a strike — and otherwise simply say nothing, which is already a
+            // complete answer.
+            if (match->pendingActionState.swing.powerActive) {
+                intent_push(channel, (IntentMessage){.kind = INTENT_SWING_PASS});
             }
-            if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 23 && match->aiState.battingKeyDown == 0 &&
-                match->aiState.actionKeyLock == AI_NO_LOCK && match->aiState.aiWrongPitch == 0) {
-                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                match->aiState.battingKeyDown = 1;
-                match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 9) {
-                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    match->aiState.battingKeyDown = 0;
-                    match->aiState.actionKeyLock = AI_NO_LOCK;
-                }
+        } else {
+            if (match->aiState.swingDecided == 0) {
+                SwingDecision decision = decide_swing(
+                    match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, 19),
+                    seeded_rand(&aiController->rngSeed, 201)
+                );
+                match->aiState.decidedPower = decision.power;
+                match->aiState.decidedVertical = decision.vertical;
+                match->aiState.decidedAngle = calculate_ai_batting_angle(
+                    match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, RAND_MAX)
+                );
+                match->aiState.swingDecided = 1;
             }
+            intent_push(
+                channel,
+                (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = match->aiState.decidedPower}}
+            );
+            intent_push(
+                channel, (IntentMessage){.kind = INTENT_SWING_VERTICAL,
+                                         .as.swing_vertical = {.vertical = match->aiState.decidedVertical}}
+            );
         }
-        // a normal swing
-        else if (match->aiState.battingStyle == 1) {
-            if (match->aiState.angleDecided == 0) {
-                // Direction: randomized across the field, independent of base runners.
-                match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(1, seeded_rand(&aiController->rngSeed, RAND_MAX));
-                // Power: release the swing at a random meter level so power varies between
-                // at-bats (kept in a competent mid-to-strong band — no bunts, no overflow).
-                match->aiState.decidedSwingTrigger =
-                    BAT_SWING_MAX - 4 -
-                    seeded_rand(&aiController->rngSeed, 19); // ~[BAT_SWING_MAX-22 .. BAT_SWING_MAX-4]
-                match->aiState.angleDecided = 1;
-            }
-            if (match->pendingActionState.meter_counter > match->aiState.decidedSwingTrigger &&
-                match->aiState.battingKeyDown == 0 && match->aiState.actionKeyLock == AI_NO_LOCK &&
-                match->aiState.aiWrongPitch == 0) {
-                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                match->aiState.battingKeyDown = 1;
-                match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 6) {
-                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    match->aiState.battingKeyDown = 0;
-                    match->aiState.actionKeyLock = AI_NO_LOCK;
-                }
-            }
-        }
-        // swing that tries to get oneself wounded
-        else if (match->aiState.battingStyle == 2) {
-            if (match->aiState.angleDecided == 0) {
-                match->aiState.decidedAngle =
-                    calculate_ai_batting_angle(2, seeded_rand(&aiController->rngSeed, RAND_MAX));
-                match->aiState.angleDecided = 1;
-            }
-            if (match->pendingActionState.meter_counter > BAT_SWING_MAX - 11 && match->aiState.battingKeyDown == 0 &&
-                match->aiState.actionKeyLock == AI_NO_LOCK && match->aiState.aiWrongPitch == 0) {
-                match->aF.bTAF.swing = BAT_ACTION_POWER_SET;
-                match->aiState.battingKeyDown = 1;
-                match->aiState.actionKeyLock = AI_BATTING_LOCK;
-            } else if (match->aiState.battingKeyDown == 1 && match->aiState.actionKeyLock == AI_BATTING_LOCK) {
-                if (match->pendingActionState.meter_counter > BAT_LOAD_MAX - 8) {
-                    match->aF.bTAF.swing = BAT_ACTION_ANGLE_SET;
-                    match->aiState.battingKeyDown = 0;
-                    match->aiState.actionKeyLock = AI_NO_LOCK;
-                }
-            }
-        }
+
         // AIM — declared as the angle itself, restated every frame the pitch is in the air.
         //
         // What was here held a key down until the body reached the decided angle and then released
@@ -278,15 +233,17 @@ void update_batting_ai(
         // engine now walks the body to the declared angle and arrives on it exactly. The wounding
         // swing's deliberately-unreachable angle still means "as far as this batter can go" — the
         // arc's end is enforced by the walk, so an impossible aim is a bounded one.
-        if (match->aiState.angleDecided == 1) {
+        if (match->aiState.swingDecided == 1) {
             intent_push(
                 channel,
                 (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = match->aiState.decidedAngle}}
             );
         }
     }
-    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && match->aiState.angleDecided == 1) {
-        match->aiState.angleDecided = 0;
+    // The plan belongs to one pitch. Cleared when the ball is no longer on its way, so the next
+    // pitch is decided afresh rather than inheriting this one's swing.
+    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && match->aiState.swingDecided == 1) {
+        match->aiState.swingDecided = 0;
     }
     // AI: Check if it's safe to advance runners
     // Ball was hit, not caught, no one has it, no throw in progress, and ball is physically outside field

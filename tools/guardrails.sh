@@ -85,7 +85,7 @@ ratchet "functions with no prototype (src/)" "$no_prototype" 0
 
 # Everything else -Wextra reports. Held at its current level so a new class of
 # warning cannot arrive unnoticed under cover of the two counted above.
-ratchet "other -Wall/-Wextra warnings" "$other_warnings" 1
+ratchet "other -Wall/-Wextra warnings" "$other_warnings" 0
 
 # ---------------------------------------------------------------------------
 # The include graph should become the ownership graph: a file that includes only
@@ -154,20 +154,21 @@ vocab_pending=$(awk -F'\t' '!/^#/ && NF > 1 && $2 != "predicate"' "$VOCAB_LEDGER
 ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 
 # ---------------------------------------------------------------------------
-# The refactor's own frontier. ActionFlags is the pre-intent channel: a struct of
-# flags that producers write and execution reads. The controller-symmetry redesign
-# dissolves it into per-team value messages, and that redesign is defined as complete
-# exactly when `grep -r ActionFlags src/` returns nothing. Counting
-# the lines that still touch it makes that progress a build fact like every other
-# number here — and, more importantly, makes it FAIL if a new intent is ever added to
-# ActionFlags instead of to the channel. The fielder-movement slice took cTAF.move[]
-# and with it the whole catching half, so what is left is batting-only. Each remaining
-# slice lowers this floor further. The batter-selection slice took choose_batter
-# (63 → 53) and then the two batter-angle triggers (53 → 33). What is left is the swing
-# phase alone, and it retires the row at 0 with the swing slice.
+# The refactor's own frontier, and it is now AT ZERO. ActionFlags was the pre-intent
+# channel: a struct of flags that producers wrote and execution read. The
+# controller-symmetry redesign dissolved it into per-team value messages, slice by
+# slice — the fielder-movement slice took the whole catching half (cTAF.move[]), the
+# batter-selection slice took choose_batter (63 → 53) and the two batter-angle triggers
+# (53 → 33), and the swing slice took the last field there was, the swing's phase, when
+# the swing became a declared power and a declared elevation (33 → 0).
+#
+# The row does NOT retire with the struct. It stays at zero as a floor, because what it
+# has really been measuring all along is "a producer writes engine state directly", and
+# that is the thing that must not come back. A future action added as a flag instead of
+# a message fails the build on this line.
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
-ratchet "lines touching ActionFlags" "$action_flags_lines" 33
+ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

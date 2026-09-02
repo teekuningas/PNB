@@ -172,13 +172,12 @@ typedef struct _GroundUnit {
 // index, so the array is sized to CONTROL_AI + 1 = 3 rows. Slots 0 and 1 are
 // the human pads; slot 2 (CONTROL_AI) is a PHANTOM row that input.c never
 // writes — an AI-controlled team reading down[CONTROL_AI][...] always sees
-// zeros. Callers guard reads with `if (control != CONTROL_AI)` and the AI
-// writes ActionFlags directly instead. Overloading TeamControlMode as an array
+// zeros. Callers guard reads with `if (control != CONTROL_AI)`; the AI has no
+// keys at all and declares its intent directly. Overloading TeamControlMode as an array
 // index is a known minor smell (tracked as debt); prefer
 // HUMAN_PAD_COUNT when iterating real devices so watcher-facing code (e.g. the
 // pause key, the game-over screen) never touches the phantom slot.
 //
-// down[i][j] is 1 when key is down; released[i][j] is 1 for one frame on release.
 // The three readings of a key, and they are not interchangeable — which one a gesture uses is a
 // design decision about that gesture:
 //   down     — held, every frame it is held. For gestures whose meaning IS the holding (a throw
@@ -273,15 +272,6 @@ typedef enum {
 //   FAKE   — the pitcher declined the aim → valesyöttö (a fake; ball returns, no ball/strike counted,
 //            committed runners exposed). Distinct from a väärä (a real AIMED pitch placed off the plate).
 typedef enum { PITCH_DECL_IDLE = 0, PITCH_DECL_POWER, PITCH_DECL_AIMED, PITCH_DECL_FAKE } PitchDeclPhase;
-
-typedef enum {
-    BAT_ACTION_IDLE = 0,
-    BAT_ACTION_WAIT_FOR_BALL = 1, // Active: batter ready, ball in air
-    BAT_ACTION_POWER_SET = 2, // Trigger: swing button pressed (select power)
-    BAT_ACTION_ANGLE_WAIT = 3, // Active: swinging, waiting for angle select
-    BAT_ACTION_ANGLE_SET = 4, // Trigger: angle selected
-    BAT_ACTION_DONE = 5 // Active: animation finishing
-} BatActionPhase;
 
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
@@ -384,15 +374,18 @@ typedef struct _PitchDeclaration {
 // disjoint engine state per kind, so the order messages happen to sit in the ring can never become a
 // hidden input to the simulation.
 //
-// Migration in progress: the actions NOT listed in IntentKind below are still the pre-intent
-// ActionFlags struct further down — persistent flags a producer sets and execution reads. They move
-// here one slice at a time, and ActionFlags dies when the last one has.
+// Every action a producer can take is listed below. Nothing reaches the engine any other way: the
+// persistent flag struct these grew out of held its last field, the swing's phase, until the swing
+// became two declared values and there was nothing left for it to hold.
 typedef enum {
     INTENT_NONE = 0,
     INTENT_BASE_RUN, // batting: {base, command} — run/arm/come back, for the runner controlling `base`
     INTENT_TAKE_FREE_WALK, // batting: {accept} — answer an offered free walk (§26)
     INTENT_SELECT_BATTER, // batting: {index} — seat this player as the next batter (§27)
     INTENT_SWING_ANGLE, // batting: {angle} — where on the arc the batter aims from
+    INTENT_SWING_POWER, // batting: {power} — how hard this swing is, [0,1]
+    INTENT_SWING_VERTICAL, // batting: {vertical} — the swing's elevation, [0,1] about the sweet spot
+    INTENT_SWING_PASS, // batting: this batter declines to swing at the pitch
     INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
     INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
     INTENT_MOVE_TARGET, // catching: {point} — where the controlled fielder is headed
@@ -438,6 +431,25 @@ typedef struct _SwingAngleIntent {
     float angle; // radians about the batter's zero, clamped to the arc by the engine
 } SwingAngleIntent;
 
+// The swing's two declared values, each its own message and each a complete value — never a phase.
+//
+// A phase-shaped message ("advance my swing from POWER to AIMED") means something different applied
+// to a different world, which is what forces a producer to read its own declaration back before it
+// dares send one. These say the same thing in every world, so re-delivering one is a no-op and a
+// producer never has to ask the engine where it had got to. What ORDER they may arrive in is not
+// carried by the messages at all: it is one state-legality question, asked once at the gate.
+//
+// They are independent, and that is a fact about the physics rather than a convenience: substituting
+// the meter's displayed position into the old launch-elevation expression cancels power out of it
+// completely (see swing_geometry.h). Power sets how far the ball goes; vertical sets how high.
+typedef struct _SwingPowerIntent {
+    float power; // [0,1]; below SWING_BUNT_MAX_POWER the body bunts instead of swinging
+} SwingPowerIntent;
+
+typedef struct _SwingVerticalIntent {
+    float vertical; // [0,1]; SWING_VERTICAL_FOCAL is a level hit, away from it lofts or drives down
+} SwingVerticalIntent;
+
 // Where the controlled fielder is going: an absolute point on the field, held until replaced.
 //
 // Absolute rather than a direction or a key edge, and that is the whole point of the shape. A
@@ -464,6 +476,8 @@ typedef struct _IntentMessage {
         FreeWalkIntent free_walk;
         SelectBatterIntent select_batter;
         SwingAngleIntent swing_angle;
+        SwingPowerIntent swing_power;
+        SwingVerticalIntent swing_vertical;
         MoveTargetIntent move_target;
         PitchDeclaration pitch;
         ThrowDeclaration throw;
@@ -507,25 +521,14 @@ typedef enum {
     RULE_BATTER_SEAT_NEEDS_AN_OFFER, // §27: nobody was asked to take the bat
     RULE_BATTER_NOT_IN_BATTING_TURN, // §27: a regular whose turn in the order it is not
     RULE_BATTER_ORDER_SPENT, // §12: the order has come round; only a joker may extend the turn
-    RULE_BATTER_JOKER_ALREADY_USED // §7: three jokers per half-inning, each once
+    RULE_BATTER_JOKER_ALREADY_USED, // §7: three jokers per half-inning, each once
+    RULE_SWING_NEEDS_A_PITCH // there is no pitch to swing at, or this batter's swing is already over
 } RuleId;
 
 typedef struct _Permission {
     int allowed;
     RuleId denied_by; // RULE_NONE when allowed
 } Permission;
-
-/*
-Action flags — the pre-intent channel, being dissolved into the message channel above, one slice at a
-time. Set in action_invocations.c (human input) or AI, consumed by execute_actions.c.
-*/
-typedef struct _BattingTeamActionFlags {
-    BatActionPhase swing;
-} BattingTeamActionFlags;
-
-typedef struct _ActionFlags {
-    BattingTeamActionFlags bTAF;
-} ActionFlags;
 
 // The catching team's own engine state — facts about fielding, owned by the engine, written by
 // ingestion and by the engine's own behaviours, read by both.
@@ -879,36 +882,17 @@ typedef struct _UIState {
     float lastSwingMeterX;
 } UIState;
 
-typedef enum {
-    AI_NO_LOCK = -1,
-    // Catching-side locks are gone: AI_PITCH_LOCK (=0, pitch slice), AI_THROW_LOCK (=1, throw slice),
-    // AI_DROP_LOCK (=2, drop slice) — all three catching actions are now declared intents actualized by
-    // the engine, gated by the real execution-side mutex (current_catching_action), so the AI's duplicate
-    // locks were redundant. Values 0/1/2 left vacant. The remaining locks are the BATTING AI's own
-    // sequencing (actionKeyLock); they die with the swing slice.
-    //
-    // AI_WAITING_BATTER_LOCK (=3) and AI_CHANGE_LOCK (=6) went with the batter-selection slice: the
-    // AI no longer walks the engine's offer one click at a time, so there is no click to sequence.
-    // Values left vacant beside 0/1/2.
-    AI_WAITING_WALK_LOCK = 4,
-    AI_BATTING_LOCK = 5,
-    AI_CLICK_LOCK = 7,
-    AI_DOUBLE_CLICK_LOCK = 8,
-    AI_COME_BACK_LOCK = 9,
-    AI_COME_BACK_WRONG_PITCH_LOCK = 10
-} AILockType;
-
 typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
 
 typedef struct _AIState {
     // Catching AI
 
-    // Batting AI
-    int battingKeyDown;
-    AILockType actionKeyLock;
-    int angleDecided;
+    // Batting AI. There is no lock machine and no key-down bookkeeping: the controller decides a
+    // swing once per pitch and declares it as values, so there is nothing to sequence.
+    int swingDecided; // 1 once this pitch's swing has been planned
     float decidedAngle;
-    int decidedSwingTrigger; // meter_counter level at which the AI releases its swing (randomizes power)
+    float decidedPower; // [0,1], the power this at-bat's swing is aimed at
+    float decidedVertical; // [0,1], where on the sweep it means to meet the ball
     int battingStyle;
     int runningBatter;
     int runningBaseRunners;
@@ -955,10 +939,31 @@ typedef struct _ThrowActualization {
     int timer;
 } ThrowActualization;
 
-typedef struct _PendingActionState {
-    unsigned int meter_counter;
-    unsigned int meter_counter_max;
+// The swing, as the engine owns it — the values a producer has declared and the clock that consumes
+// them, in ONE struct because they are one fact: "is a swing being assembled, with what, and how long
+// until it is used". The pitch and the throw still keep those two halves apart, in a declaration a
+// producer writes and an actualization the engine writes; this is the shape they are heading for, so
+// it is built here rather than copied later.
+//
+// The `Active` flags are load-bearing, not tidiness — the same argument `controlledMoveTargetActive`
+// carries on the fielding side. Zero is a real power (the softest bunt) and a real vertical (the
+// bottom of the sweep), so "nobody has declared one yet" cannot be represented by the value alone.
+// Reading a value nobody set is not hypothetical here: the count the old code read at contact was
+// reset by neither the per-at-bat init nor the power selection, so a batter who never clicked could
+// swing on the PREVIOUS at-bat's number.
+//
+// There is no `phase` and no "window open" flag. How far along a swing is, is not a thing a producer
+// tells the engine; and whether one may be declared at all is derived from durable world state at the
+// gate (swing_may_be_declared), so there is no second copy of it to keep true.
+typedef struct _SwingActualization {
+    int contactFrame; // batting_frame_count at which the bat meets the ball; from the ball, at release
+    int powerActive;
+    float power;
+    int verticalActive;
+    float vertical;
+} SwingActualization;
 
+typedef struct _PendingActionState {
     CatchingTeamCurrentAction current_catching_action;
     // The two phased declarations and the clocks that actualize them. The declarations are ENGINE
     // state, not intent storage: a controller declares by sending a message, the INGEST gate is the
@@ -967,15 +972,14 @@ typedef struct _PendingActionState {
     PitchDeclaration pitchDeclaration;
     ThrowDeclaration throwDeclaration;
     PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
-    ThrowActualization throwActualization; // engine windup clock for the throw (replaces the meter_counter windup)
+    ThrowActualization throwActualization; // engine windup clock for the throw
+    SwingActualization swing; // the batter's declared values and the frame they are consumed on
 
     int run_bat_flag;
 
     // Batting related
     int batting_frame_count;
     int increase_batting_frame_count;
-    int selected_batting_power_count;
-    int selected_batting_angle_count;
     float batter_angle;
     float batter_advance_speed;
     float batter_advance;
@@ -984,7 +988,6 @@ typedef struct _PendingActionState {
     int batting_stopped;
     int batter_moving;
     int update_batter_location_and_orientation;
-    int pitch_frame_time; // from batting_system.c
 
     // Throwing related
     float throw_distance; // from throwing_system.c
@@ -1008,7 +1011,10 @@ typedef struct _PendingActionState {
 //   DESCENT   — starts at max, → 0 then stop  (pitch aim; slow and aimable, resting at 0 when it runs out
 //               unclicked = valesyöttö pending).
 //   CHARGE    — 0 → max then HOLD at max      (throw power; hold-release — the level is sampled on release).
-typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE } WidgetMode;
+//   PING_PONG_LOOP — 0 -> max -> 0 -> max ... forever (swing power; it has no deadline of its own,
+//               because silence is already a complete answer: a batter who never declares a power has
+//               not swung, and the engine needs no message to know that).
+typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE, WIDGET_PING_PONG_LOOP } WidgetMode;
 
 // A meter the human samples to convert input TIMING into a declared VALUE — the client-local sampler the AI
 // never needs (it declares values from strategy directly). A read takes counter/counter_max as the chosen
@@ -1059,6 +1065,24 @@ typedef struct _InputWidget {
 // is nobody else's business. It makes the human restate the choice every frame the decision is open,
 // which is what lets the engine seat the batter on the first tick the seat is free without the
 // producer knowing anything about home safety.
+// The human's swing gesture: one cursor that is a looping power ping-pong during the windup and a
+// one-way vertical descent once the ball is in the air, plus the two things the client must remember
+// on its own side of the boundary.
+//
+// `power` is the client's OWN copy of what it declared, and it has to be: reading the engine's copy
+// back to scale the descent is exactly the read-back the fourth law forbids, and exactly what the
+// pitch still does. The producer's unfinished gesture lives in the producer.
+//
+// `framesAirborne` is the client's own clock, started when it SAW the ball leave the hand. It exists
+// so the descent can be sized to the flight the batter actually has left without reading the engine's
+// contact frame — the same reason the pitch's aim meter is sized from the windup constants instead of
+// from the engine's windup clock.
+typedef struct _SwingWidget {
+    InputWidget meter;
+    int framesAirborne; // -1 while no ball is in the air
+    float power; // the power this gesture declared; only meaningful once one has been
+} SwingWidget;
+
 typedef struct _BatterSelectWidget {
     int highlight; // cursor position within the current candidate list
     int selected; // 1 once the human has accepted the highlighted candidate
@@ -1086,6 +1110,10 @@ typedef struct _ClientInputState {
     // The batter cursor — a list to scroll and a choice to make. Human path only; the AI needs no
     // widget because it has no gesture, it just picks.
     BatterSelectWidget batterWidget;
+
+    // The swing gesture — power during the windup, elevation during the flight. Human path only; the
+    // AI needs no widget because it has no gesture, it decides two numbers and says them.
+    SwingWidget swingWidget;
 
     // The aim cursor: where on the batter's arc the held +/- keys have walked to. Human path only —
     // the AI decides an angle outright and declares it. Cleared whenever there is no batting going
@@ -1172,7 +1200,6 @@ typedef struct _GameRulesState {
 typedef struct _MatchSession {
     PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
-    ActionFlags aF;
     CatchingTeamState catchingState;
     PlayerIndexInfo pII;
     PlayerRelatedActionInfo pRAI;

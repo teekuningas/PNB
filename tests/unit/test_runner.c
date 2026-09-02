@@ -118,8 +118,6 @@ int main(int argc, char* argv[])
 
     // Batting Physics tests
     RUN_TEST(test_pitch_frame_time);
-    RUN_TEST(test_meter_values);
-    RUN_TEST(test_batting_vertical_angle);
     RUN_TEST(test_swing_vertical_angle_matches_the_legacy_meter_law);
     RUN_TEST(test_swing_marker_top_matches_the_legacy_meter_top);
     RUN_TEST(test_swing_geometry_stays_inside_its_acceptance_bands);

@@ -1,6 +1,6 @@
 #include "sim_observers.h"
-#include "actions/batting_system.h" // BAT_SWING_MAX / BAT_LOAD_MAX for power intent units
-#include "actions_pure/batting_physics.h" // the launch-elevation law the swing observer re-derives
+#include "actions/batting_system.h" // BALL_MAX_OFFSET and SWING_POWER_UNITS
+#include "actions_pure/swing_geometry.h" // the launch-elevation law the swing observer re-derives
 #include "actions_pure/pitching_physics.h" // VERTICAL_ANGLE_LIMIT — where the physics starts missing
 #include "rules_pure/player_utils.h" // get_active_batter_index — who is at the plate
 
@@ -162,7 +162,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
                   "pitch_state,catchingAction,hasBall,"
                   "waitBatter,waitWalk,batter_ready,planCalc,pitchDeclPhase,pitchTimer,batterReadyTimer,"
-                  "meterCnt,swing,wrongPitch,batStyle,batOutcome,batting_going_on\n"
+                  "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,batting_going_on\n"
         );
         o->header_written = 1;
     }
@@ -181,7 +181,8 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
         m->pRAI.batter_ready, m->aiState.planCalculated, (int)m->pendingActionState.pitchDeclaration.phase,
         m->pendingActionState.pitchActualization.timer, m->aiState.batterReadyTimer,
-        m->pendingActionState.meter_counter, (int)m->aF.bTAF.swing, m->aiState.aiWrongPitch, m->aiState.battingStyle,
+        m->pendingActionState.swing.contactFrame, m->pendingActionState.swing.powerActive,
+        m->pendingActionState.swing.verticalActive, m->aiState.aiWrongPitch, m->aiState.battingStyle,
         (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
 }
@@ -236,7 +237,14 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->pII.controlIndex);
     FOLD(h, m->pRAI.pitch_state);
     FOLD(h, m->pendingActionState.current_catching_action);
-    FOLD(h, m->pendingActionState.meter_counter);
+    // The swing, as declared. This replaces the meter counter that used to be folded here — and the
+    // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
+    // now tracks the VALUES a producer declared rather than the level a shared meter had reached.
+    FOLD(h, m->pendingActionState.swing.contactFrame);
+    FOLD(h, m->pendingActionState.swing.powerActive);
+    FOLD(h, m->pendingActionState.swing.power);
+    FOLD(h, m->pendingActionState.swing.verticalActive);
+    FOLD(h, m->pendingActionState.swing.vertical);
 
     // The engine's random stream is World state: it determines every future engine draw, so two
     // worlds that agree on everything else but not on this do NOT have the same future. The AI
@@ -340,7 +348,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             // Contact only — fair/foul is the referee's later call (a foul shows up as a STRIKE).
             pbp(o, g, r, "contact (bat meets ball)");
             // Actualized power and direction of THIS batted ball (all styles), for AI tuning.
-            int power = m->pendingActionState.selected_batting_power_count;
+            int power = (int)(m->pendingActionState.swing.power * SWING_POWER_UNITS + 0.5f);
             o->contact_power_sum += power;
             o->contact_power_n++;
             if (power < o->contact_power_min) o->contact_power_min = power;
@@ -362,23 +370,11 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             o->whiffs++;
             pbp(o, g, r, "swing and a miss");
         }
-        // A swing just resolved — measure how well the AI hit its intended power, but ONLY for
-        // batting style 1: that is the only style where `decidedSwingTrigger` is a real intent
-        // (styles 0/2 leave it stale, so measuring them here would be meaningless). The AI aims to
-        // release at meter level `decidedSwingTrigger`; realized power (same units, shifted by the
-        // load offset) is `selected_batting_power_count`. err should be ≈ +1 (releases one tick late).
-        if ((batOutcome == BAT_OUTCOME_HIT || batOutcome == BAT_OUTCOME_MISSED) && m->aiState.battingStyle == 1) {
-            int intent = m->aiState.decidedSwingTrigger - (BAT_SWING_MAX - BAT_LOAD_MAX);
-            int actual = m->pendingActionState.selected_batting_power_count;
-            int err = actual - intent;
-            o->s1_swings++;
-            o->s1_power_err_sum += err;
-            if (o->log) {
-                char buf[96];
-                snprintf(buf, sizeof(buf), "  style-1 swing power: intent=%d actual=%d (err %+d)", intent, actual, err);
-                pbp(o, g, r, buf);
-            }
-        }
+        // The style-1 "meter error" measurement stood here: the gap between the power the AI meant
+        // to release at and the level the meter had actually reached when its click got through a
+        // lock cycle. It is gone because the gap is: the controller declares a power and the engine
+        // uses that number. A band whose value is structurally zero measures nothing, and keeping it
+        // would read as coverage.
     }
 
     // Count deltas (only increments are real events; resets to 0 are bookkeeping).
@@ -657,10 +653,10 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     const GameRulesState* r = g->state->rules;
 
     const int outcome = (int)r->betweenPitchState.batOutcome;
-    // "Every value this swing needs is now in." Read here off the phase the producer drives, which
-    // is what the slice replaces; the QUANTITY — how many frames of margin the producer left — is
-    // what the band is about and survives the change of representation.
-    const int swing_done = (m->aF.bTAF.swing == BAT_ACTION_DONE);
+    // "Every value this swing needs is now in" — the last declaration landing. Read off the declared
+    // values now, where it used to be read off a phase a producer drove forward; the QUANTITY the
+    // band is about, how many frames of margin the producer left, is unchanged by that.
+    const int swing_done = (m->pendingActionState.swing.powerActive && m->pendingActionState.swing.verticalActive);
     const int batter_ready = m->pRAI.batter_ready;
 
     if (!o->initialized) {
@@ -704,9 +700,8 @@ void swing_observer_hook(const SimGame* g, void* ctx)
         if (!off_plate) {
             // The elevation the swing actually produced, re-derived through the production law from
             // the values the engine used. Zero is dead centre.
-            float v = calculate_batting_vertical_angle(
-                m->pendingActionState.selected_batting_power_count, m->pendingActionState.selected_batting_angle_count,
-                o->p_ball_vy, BAT_SWING_MAX, BAT_LOAD_MAX
+            float v = swing_vertical_angle(
+                m->pendingActionState.swing.verticalActive ? m->pendingActionState.swing.vertical : 0.0f, o->p_ball_vy
             );
             float av = v < 0.0f ? -v : v;
             o->elev_abs_sum += av;
