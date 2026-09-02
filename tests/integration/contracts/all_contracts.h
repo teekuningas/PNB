@@ -67,4 +67,11 @@ int test_restating_the_aim_changes_nothing(void);
 int test_silence_leaves_the_aim_alone(void);
 int test_seat_naming_a_non_player_is_malformed(void);
 
+// The swing slice — declared values, repeat-safety, silence, withdrawal, and the gate's refusal.
+int test_swing_declared_values_drive_the_contact(void);
+int test_swing_declarations_are_repeat_safe(void);
+int test_a_swing_never_declared_is_not_a_miss(void);
+int test_a_withdrawn_swing_does_not_reach_the_ball(void);
+int test_a_swing_declared_with_no_pitch_is_refused(void);
+
 #endif // ALL_CONTRACTS_H

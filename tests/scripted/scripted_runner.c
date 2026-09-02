@@ -24,6 +24,10 @@ int main(void)
     RUN_TEST(test_scripted_move_declared_during_a_pitch_resumes_after_it);
     RUN_TEST(test_scripted_move_held_key_survives_a_reset);
     RUN_TEST(test_scripted_aim_key_walks_the_batter_and_release_stops_him);
+    RUN_TEST(test_scripted_swing_power_meter_arms_on_the_windup);
+    RUN_TEST(test_scripted_swing_elevation_meter_fits_inside_the_flight);
+    RUN_TEST(test_scripted_swing_can_be_withdrawn_after_the_power_is_committed);
+    RUN_TEST(test_scripted_swing_silence_is_not_a_miss);
     RUN_TEST(test_scripted_batter_cursor_offers_only_legal_players);
     RUN_TEST(test_scripted_aim_leaves_no_interpolation_gap_when_it_stops);
 

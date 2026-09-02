@@ -23,4 +23,11 @@ int test_scripted_aim_key_walks_the_batter_and_release_stops_him(void);
 int test_scripted_batter_cursor_offers_only_legal_players(void);
 int test_scripted_aim_leaves_no_interpolation_gap_when_it_stops(void);
 
+// The human swing: the meter that arms on the windup, the one that fits inside the flight, the
+// withdrawal, and silence.
+int test_scripted_swing_power_meter_arms_on_the_windup(void);
+int test_scripted_swing_elevation_meter_fits_inside_the_flight(void);
+int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void);
+int test_scripted_swing_silence_is_not_a_miss(void);
+
 #endif /* ALL_SCRIPTED_H */

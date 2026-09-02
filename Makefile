@@ -51,7 +51,7 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                                   tests/integration/contracts/test_wounded_runner_cannot_score.o \
                  tests/integration/contracts/test_ai_tactical_drop.o \
                  tests/integration/contracts/test_control_stage_ordering.o \
-                 tests/integration/contracts/test_pitch_declaration.o \
+                 tests/integration/contracts/test_pitch_declaration.o tests/integration/contracts/test_swing_declaration.o \
                  tests/integration/contracts/test_throw_declaration.o \
                  tests/integration/contracts/test_fielder_movement.o tests/integration/contracts/test_batter_selection.o
 
@@ -75,7 +75,7 @@ _OBJ_SCRIPTED = tests/sim/sim_harness.o \
                 tests/scripted/test_scripted_base_run.o \
                 tests/scripted/test_scripted_pitch.o \
                 tests/scripted/test_scripted_throw.o \
-                tests/scripted/test_scripted_move.o tests/scripted/test_scripted_batter_aim.o
+                tests/scripted/test_scripted_move.o tests/scripted/test_scripted_batter_aim.o tests/scripted/test_scripted_swing.o
 
 OBJ_MAIN     = $(patsubst %,$(ODIR)/main/%,core/main.o $(_OBJ_COMMON))
 OBJ_SCENARIO = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCENARIOS))
