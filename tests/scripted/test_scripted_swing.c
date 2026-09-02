@@ -66,7 +66,7 @@ int test_scripted_swing_power_meter_arms_on_the_windup(void)
     ClientInputState* ci = scripted_state(g)->clientInput;
     scripted_tick(g);
     ASSERT_EQ(
-        (int)WIDGET_PING_PONG_LOOP, (int)ci->swingWidget.meter.mode,
+        (int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode,
         "the power meter must arm itself on the windup, with no key pressed"
     );
     ASSERT(ci->swingWidget.meter.dir != 0, "an armed power meter must be sweeping");

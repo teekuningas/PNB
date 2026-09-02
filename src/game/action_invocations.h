@@ -16,8 +16,7 @@ float swing_widget_display(const SwingWidget* w);
 
 void action_invocations(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
-    const RefereeState* referee, const HalfInningState* halfInningState, const BetweenPitchState* betweenPitchState,
-    IntentChannels* channels
+    const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 );
 
 #endif /* ACTION_INVOCATIONS_H */

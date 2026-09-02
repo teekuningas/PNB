@@ -57,7 +57,7 @@ static int reach_a_live_pitch(ScenarioContext* ctx)
 {
     stand_a_batter_ready(ctx);
     put_a_pitch_in_the_air(ctx);
-    return swing_may_be_declared(ctx->state->match, &ctx->state->rules->betweenPitchState);
+    return swing_may_be_declared(ctx->state->match);
 }
 
 static void tick(ScenarioContext* ctx)
@@ -219,10 +219,7 @@ int test_a_swing_declared_with_no_pitch_is_refused(void)
     MatchSession* match = ctx->state->match;
     stand_a_batter_ready(ctx); // ...but no pitch is put in the air
 
-    ASSERT_EQ(
-        0, swing_may_be_declared(match, &ctx->state->rules->betweenPitchState),
-        "with no pitch on its way there is nothing to swing at"
-    );
+    ASSERT_EQ(0, swing_may_be_declared(match), "with no pitch on its way there is nothing to swing at");
 
     declare_swing(ctx, 0.9f, SWING_VERTICAL_FOCAL);
     tick(ctx);

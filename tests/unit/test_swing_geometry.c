@@ -133,10 +133,18 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
             "the vertical sweep must finish a lead's worth of frames before contact"
         );
 
-        // A batter who wants a particular power needs the ping-pong to offer it more than once
-        // inside the windup, or picking a level is luck rather than a decision.
-        float cycles = (float)pitch_windup_total_frames(pitch_powers[i]) / (float)(2 * SWING_POWER_SWEEP_FRAMES);
-        ASSERT(cycles >= 1.5f, "the power ping-pong must offer at least one and a half cycles inside the windup");
+        // The power sweep runs ONCE and must finish inside the windup, on every pitch including the
+        // shortest — otherwise the batter is still choosing a power when the ball is already gone,
+        // and the beat the four-beat dance puts before the release does not exist.
+        //
+        // This replaced a band asking for at least one and a half CYCLES, written when the meter
+        // looped. Playing it showed why looping was wrong: a meter that never runs out gives the
+        // batter unlimited time, which is not a decision, and shows nothing at stake, so the natural
+        // moment to press ends up after the release instead of during the windup.
+        ASSERT(
+            2 * SWING_POWER_SWEEP_FRAMES <= pitch_windup_total_frames(pitch_powers[i]),
+            "one full power sweep must fit inside the windup, at every toss height"
+        );
 
         for (int j = 0; j < 3; j++) {
             // Reachability: the sweet spot must lie on the sweep, or that power could never connect.
@@ -150,10 +158,13 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
         }
     }
 
-    // 5 frames is 100 ms at the 50Hz update: below that it stops being a skill test and becomes a
-    // coin flip. 30 frames is 600 ms: above that it stops being a decision.
-    ASSERT(hardest >= 5.0f, "the hardest swing must still be humanly timeable");
-    ASSERT(easiest <= 30.0f, "the easiest swing must still be a decision rather than a formality");
+    // Both ends were re-set on 2026-09-02 from the first play session, which is the only evidence
+    // that can set them: the original 5 frames (100 ms) was a guess, and at 154 ms the hardest swing
+    // was reported unhittable. 12 frames is 240 ms, and 55 is 1.1 s — generous at the bunt end, where
+    // a bunt should be generous. A band calibrated against a person beats one calibrated against
+    // nothing, and this is the number to move again if the next session says so.
+    ASSERT(hardest >= 12.0f, "the hardest swing must still be humanly timeable");
+    ASSERT(easiest <= 55.0f, "the easiest swing must still be a decision rather than a formality");
 
     // The gradient has to EXIST (or the pitcher's power choice means nothing to the batter) and stay
     // bounded (or the easy end is free and the hard end is hopeless).

@@ -1011,10 +1011,10 @@ typedef struct _PendingActionState {
 //   DESCENT   — starts at max, → 0 then stop  (pitch aim; slow and aimable, resting at 0 when it runs out
 //               unclicked = valesyöttö pending).
 //   CHARGE    — 0 → max then HOLD at max      (throw power; hold-release — the level is sampled on release).
-//   PING_PONG_LOOP — 0 -> max -> 0 -> max ... forever (swing power; it has no deadline of its own,
-//               because silence is already a complete answer: a batter who never declares a power has
-//               not swung, and the engine needs no message to know that).
-typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE, WIDGET_PING_PONG_LOOP } WidgetMode;
+// The swing uses PING_PONG then DESCENT, the same two the pitch uses. A looping ping-pong was tried
+// for the swing's power and removed: a meter that never runs out gives the batter unlimited time,
+// which is not a decision, and it shows nothing at stake so there is no cue to press.
+typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE } WidgetMode;
 
 // A meter the human samples to convert input TIMING into a declared VALUE — the client-local sampler the AI
 // never needs (it declares values from strategy directly). A read takes counter/counter_max as the chosen
@@ -1022,7 +1022,7 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE,
 // interpretation, NOT engine timing — the engine's deterministic clocks (PitchActualization /
 // ThrowActualization) are separate and authoritative; this only turns a human's input moment into a number.
 // The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power) and the
-// swing (PING_PONG_LOOP power then DESCENT elevation) — one general input widget, per the
+// swing (PING_PONG power then DESCENT elevation) — one general input widget, per the
 // engine↔client contract.
 // The human's steering memory: which direction keys were held when it last spoke, and for whom.
 // Client-local like the pitch and throw widgets — it never crosses the wire and is in no snapshot.
@@ -1074,13 +1074,16 @@ typedef struct _InputWidget {
 // back to scale the descent is exactly the read-back the fourth law forbids, and exactly what the
 // pitch still does. The producer's unfinished gesture lives in the producer.
 //
-// `framesAirborne` is the client's own clock, started when it SAW the ball leave the hand. It exists
-// so the descent can be sized to the flight the batter actually has left without reading the engine's
-// contact frame — the same reason the pitch's aim meter is sized from the windup constants instead of
-// from the engine's windup clock.
+// `flightFrames` is solved ONCE, on the frame the client saw the ball leave the hand, and from the
+// LAUNCH velocity. That is not an optimisation, it is the whole correctness of the descent: the
+// ball's vertical speed decays toward zero as it rises, so a flight time recomputed from the current
+// velocity shrinks as the pitch climbs, and a batter who commits late gets a sweep of a frame or two
+// — a marker that drops like a stone. The engine solves its contact frame exactly once for the same
+// reason, and the two agree because they use the same pure solution on the same launch.
 typedef struct _SwingWidget {
     InputWidget meter;
-    int framesAirborne; // -1 while no ball is in the air
+    int flightFrames; // -1 while no ball is in the air; solved once at release, from the launch
+    int powerSweepSpent; // the one power sweep this pitch offered is over — there is not another
     float power; // the power this gesture declared; only meaningful once one has been
 } SwingWidget;
 

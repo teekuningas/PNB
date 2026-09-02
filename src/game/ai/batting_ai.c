@@ -167,6 +167,16 @@ void update_batting_ai(
             }
         }
     }
+    // COMMIT THE POWER while the pitcher is still crouching — the batter's beat of the dance, and the
+    // AI takes it on the same terms a human does. What it may read here is the windup itself, which
+    // lengthens with the toss: the pitcher's decision made physical. It cannot read the pitch,
+    // because there is no ball yet, so committing is a real commitment — which is what gives a
+    // valesyöttö something to cost the batter.
+    //
+    // Its own beat, deliberately, and not a rider on the planning branch above. That branch is
+    // guarded on the ball being HOME, which stops holding the moment the windup lifts the ball onto
+    // the plate — so a power declared from inside it was declared for a frame or two and then never
+    // again, and eleven pitches in twelve went unswung at.
     // and here we bat
     else if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         int i;
@@ -196,29 +206,15 @@ void update_batting_ai(
         // same thing however often it arrives, so a duplicate is a no-op and a message that goes
         // missing is repaired by the next tick rather than by a retry.
         if (match->aiState.aiWrongPitch == 1) {
-            // Väärä. Withdraw if a power was already committed — worth a ball, where swinging and
-            // missing would be worth a strike — and otherwise simply say nothing, which is already a
-            // complete answer.
+            // Väärä — and nobody can say so until the ball is in the air, which is exactly why the
+            // withdrawal exists. The power was committed during the windup; taking it back now is
+            // worth a ball, where swinging and missing would be worth a strike.
             if (match->pendingActionState.swing.powerActive) {
                 intent_push(channel, (IntentMessage){.kind = INTENT_SWING_PASS});
             }
-        } else {
-            if (match->aiState.swingDecided == 0) {
-                SwingDecision decision = decide_swing(
-                    match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, 19),
-                    seeded_rand(&aiController->rngSeed, 201)
-                );
-                match->aiState.decidedPower = decision.power;
-                match->aiState.decidedVertical = decision.vertical;
-                match->aiState.decidedAngle = calculate_ai_batting_angle(
-                    match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, RAND_MAX)
-                );
-                match->aiState.swingDecided = 1;
-            }
-            intent_push(
-                channel,
-                (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = match->aiState.decidedPower}}
-            );
+        } else if (match->aiState.swingDecided == 1) {
+            // The elevation is the flight's beat: where on the ball the bat meets it, which is a
+            // question the batter answers while watching the pitch rather than before it exists.
             intent_push(
                 channel, (IntentMessage){.kind = INTENT_SWING_VERTICAL,
                                          .as.swing_vertical = {.vertical = match->aiState.decidedVertical}}
@@ -240,9 +236,34 @@ void update_batting_ai(
             );
         }
     }
-    // The plan belongs to one pitch. Cleared when the ball is no longer on its way, so the next
-    // pitch is decided afresh rather than inheriting this one's swing.
-    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && match->aiState.swingDecided == 1) {
+    // "As early as it legally can", not "only during the windup". Normally that IS the windup — the
+    // crouch is long and the batter's cycle is open throughout it, which is the beat the dance wants.
+    // But a windup can begin while the previous swing is still following through, and a batter who
+    // insisted on the windup simply never committed on those pitches: a third of them went unswung
+    // at, and it read as a batting problem rather than a missed window.
+    if (swing_may_be_declared(match)) {
+        if (match->aiState.swingDecided == 0) {
+            SwingDecision decision = decide_swing(
+                match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, 19),
+                seeded_rand(&aiController->rngSeed, 201)
+            );
+            match->aiState.decidedPower = decision.power;
+            match->aiState.decidedVertical = decision.vertical;
+            match->aiState.decidedAngle =
+                calculate_ai_batting_angle(match->aiState.battingStyle, seeded_rand(&aiController->rngSeed, RAND_MAX));
+            match->aiState.swingDecided = 1;
+        }
+        intent_push(
+            channel,
+            (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = match->aiState.decidedPower}}
+        );
+    }
+
+    // The plan belongs to one pitch, and a pitch now spans the WINDUP as well as the flight — the
+    // power is committed during the crouch and the elevation while the ball is up. So it is cleared
+    // when there is no pitch at all, not merely when the ball is not in the air: the earlier reading
+    // wiped the plan on the very frame it was made, and the elevation never arrived.
+    if (match->pRAI.pitch_state == PITCH_STAGE_NONE && match->aiState.swingDecided == 1) {
         match->aiState.swingDecided = 0;
     }
     // AI: Check if it's safe to advance runners

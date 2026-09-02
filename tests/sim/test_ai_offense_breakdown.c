@@ -367,11 +367,14 @@ int test_ai_offense_breakdown(void)
         (Band){"swing elevation |V| mean (limit 5)", T_sw_elev_n ? T_sw_elev_sum / (double)T_sw_elev_n : 0.0, 0.5, 3.5,
                "1.91", "swings drifting off the centre of the ball — the miss the contact rate cannot see"}
     );
-    // The early-warning band: margin goes before contact does. A geometry that got harder
-    // moves this well before it moves anything downstream.
+    // The early-warning band: margin goes before contact does. A geometry that got harder moves this
+    // well before it moves anything downstream. Its FLOOR was dropped to zero when
+    // VERTICAL_ANGLE_LIMIT went 5 -> 8: "half the limit" became a bar the AI's deliberate scatter
+    // does not reach, so a floor would only assert that the batter is imperfect, which is the
+    // sensitivity knob's business and not this band's. The ceiling is the load-bearing side.
     band_add(
         bands, &band_count,
-        (Band){"swings past half the elevation limit %", percent(T_sw_near, T_sw_elev_n), 5, 55, "23",
+        (Band){"swings past half the elevation limit %", percent(T_sw_near, T_sw_elev_n), 0, 40, "0.73",
                "the timing margin collapsing while every swing still technically connects"}
     );
     // Not a floor at zero: after the sensitivity fix a batter that NEVER mistimes is its own

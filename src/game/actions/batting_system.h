@@ -40,7 +40,7 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 // It is derived, never stored. "How far along is this swing" is not something a producer tells the
 // engine, and a stored "window open" flag would be a second copy of facts that are already durable:
 // a batter is batting, a pitch is on its way, and this swing has not already been resolved.
-int swing_may_be_declared(const MatchSession* match, const BetweenPitchState* betweenPitchState);
+int swing_may_be_declared(const MatchSession* match);
 
 // The batter's frame. `aimDeclared`/`aim` is this tick's INTENT_SWING_ANGLE, ingested: the batting
 // side's aim as an absolute angle on the arc, which the engine walks the body toward at

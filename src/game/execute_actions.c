@@ -91,7 +91,8 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->swingWidget.meter.counter_max = 0;
     clientInput->swingWidget.meter.dir = 0;
     clientInput->swingWidget.meter.mode = WIDGET_IDLE;
-    clientInput->swingWidget.framesAirborne = -1;
+    clientInput->swingWidget.flightFrames = -1;
+    clientInput->swingWidget.powerSweepSpent = 0;
     clientInput->swingWidget.power = 0.0f;
 
     reset_pitching_system(match);
@@ -229,7 +230,7 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
         // independent — the physics says so, power having cancelled out of the elevation law
         // entirely — so an elevation declared alone is a held value that never gets used, not an
         // error. Refusing it would be inventing a rule the game does not have.
-        if (!swing_may_be_declared(match, &rules->betweenPitchState)) {
+        if (!swing_may_be_declared(match)) {
             return (Permission){0, RULE_SWING_NEEDS_A_PITCH};
         }
         return (Permission){1, RULE_NONE};

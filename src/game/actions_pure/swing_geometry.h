@@ -35,15 +35,23 @@
 // How steeply elevation grows as the declared vertical leaves the sweet spot, per unit of ball speed.
 #define SWING_ELEVATION_GAIN 364.0f
 
-// The power ping-pong's half-length, in frames (a full there-and-back cycle is twice this). It alone
-// decides how freely a power can be picked: the batter needs enough cycles inside the pitcher's
-// windup to reach the level it wants, and nothing else depends on it.
-#define SWING_POWER_SWEEP_FRAMES 20
+// The power ping-pong's half-length, in frames: the marker rises for this many frames and falls for
+// the same, ONCE, and that is the whole power decision — exactly the pitch's gesture. Sized so a full
+// there-and-back fits inside the SHORTEST windup any pitcher can throw, so the beat always completes
+// before the ball is released whatever the toss. It alone decides how freely a power can be picked.
+//
+// A looping sweep was tried first and is wrong: it gives the batter unlimited time to pick a level,
+// which is not a decision, and it leaves a meter oscillating on screen with nothing at stake.
+#define SWING_POWER_SWEEP_FRAMES 36
 
-// The vertical descent's length, in frames, when the flight is long enough to hold it. It alone
-// decides the hit window: a longer sweep moves the marker slower past the sweet spot. This is the
-// knob to turn if the swing feels too tight — the bands allow up to 70.
-#define SWING_VERTICAL_SWEEP_FRAMES 52
+// The vertical descent's length, in frames, when the flight is long enough to hold it. It sets how
+// fast the marker travels — but NOT, mostly, how hard the swing is, and that surprise is worth
+// recording. Because the sweep clamps to the flight, stretching it past about 100 stops widening the
+// hit window (52 -> 120 buys only 154ms -> 304ms at the hard end) and flattens the difficulty
+// gradient on the way, since a sweep proportional to the flight cancels the ball speed out of the
+// tolerance. If the swing needs to be MORE FORGIVING, VERTICAL_ANGLE_LIMIT is the knob; this one is
+// for how the meter reads.
+#define SWING_VERTICAL_SWEEP_FRAMES 70
 
 // How many frames before contact the descent must be finished. Two jobs: it guarantees the value is
 // in the world BEFORE the frame that consumes it (the margin a late message will one day need), and

@@ -68,8 +68,8 @@ static void checkBatterAngle(
     TeamControlMode control, IntentChannel* channel
 );
 static void checkSwing(
-    const MatchSession* match, const BetweenPitchState* betweenPitchState, ClientInputState* clientInput,
-    const KeyStates* key_states, int swingKey, int withdrawKey, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int swingKey,
+    int withdrawKey, TeamControlMode control, IntentChannel* channel
 );
 static void checkBattingTeamRun(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
@@ -78,8 +78,7 @@ static void checkBattingTeamRun(
 
 void action_invocations(
     MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
-    const RefereeState* referee, const HalfInningState* halfInningState, const BetweenPitchState* betweenPitchState,
-    IntentChannels* channels
+    const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 )
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
@@ -166,7 +165,7 @@ void action_invocations(
         clientInput->batterWidget.highlight = 0;
     }
     checkBatterAngle(match, clientInput, key_states, KEY_PLUS, KEY_MINUS, battingControl, &channels->batting);
-    checkSwing(match, betweenPitchState, clientInput, key_states, KEY_2, KEY_1, battingControl, &channels->batting);
+    checkSwing(match, clientInput, key_states, KEY_2, KEY_1, battingControl, &channels->batting);
 
     checkBattingTeamRun(
         match, clientInput, key_states, KEY_DOWN, battingControl, BASE_HOME, referee, &channels->batting
@@ -389,14 +388,10 @@ static void advance_widget(InputWidget* w)
     w->counter += w->dir;
     if (w->counter >= w->counter_max) {
         w->counter = w->counter_max;
-        // a ping-pong bounces; a charge holds at the top; a descent has already stopped by here
-        w->dir = (w->mode == WIDGET_PING_PONG || w->mode == WIDGET_PING_PONG_LOOP) ? -1 : 0;
+        w->dir = (w->mode == WIDGET_PING_PONG) ? -1 : 0; // a ping-pong bounces; a charge holds
     } else if (w->counter <= 0) {
         w->counter = 0;
-        // A looping ping-pong turns round instead of stopping. It is the swing's power meter, and it
-        // needs no deadline of its own: a batter who never presses has not swung, which the engine
-        // concludes from silence. Every other mode is finished at the bottom.
-        w->dir = (w->mode == WIDGET_PING_PONG_LOOP) ? 1 : 0;
+        w->dir = 0; // a ping-pong that ran out unclicked, or a descent that reached the bottom
     }
 }
 
@@ -623,8 +618,8 @@ float swing_widget_display(const SwingWidget* w)
 // engine's contact frame — the pitch's aim meter sizes itself from the windup constants for the same
 // reason.
 static void checkSwing(
-    const MatchSession* match, const BetweenPitchState* betweenPitchState, ClientInputState* clientInput,
-    const KeyStates* key_states, int swingKey, int withdrawKey, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int swingKey,
+    int withdrawKey, TeamControlMode control, IntentChannel* channel
 )
 {
     if (control == CONTROL_AI) return; // the AI decides two numbers and says them; it has no gesture
@@ -636,31 +631,39 @@ static void checkSwing(
     // The gesture is over when there is no swing to declare into. Asked of the physical world, never
     // of what the engine has stored from us — so a swing cut short by a batter forced to run, a foul
     // reset or the end of an at-bat retires this widget without anything having to reach into it.
-    if (!swing_may_be_declared(match, betweenPitchState)) {
+    if (!swing_may_be_declared(match)) {
         w->meter.mode = WIDGET_IDLE;
         w->meter.counter_max = 0;
         w->meter.dir = 0;
-        w->framesAirborne = -1;
+        w->flightFrames = -1;
+        w->powerSweepSpent = 0;
         w->power = 0.0f;
         return;
     }
 
-    if (airborne) {
-        w->framesAirborne = (w->framesAirborne < 0) ? 0 : w->framesAirborne + 1;
+    // Solve the flight ONCE, on the frame the ball leaves the hand, from the launch velocity — see
+    // SwingWidget. Recomputing it later reads a vertical speed that has been decaying since release.
+    if (airborne && w->flightFrames < 0) {
+        w->flightFrames =
+            calculate_pitch_frame_time(match->ballInfo.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
     }
 
-    // Arm the right meter for the beat we are on. The power sweep loops for as long as the batter has
-    // not committed; the descent starts the moment he has AND the ball is up, so its length can be
-    // the flight he actually has left.
-    if (!swing->powerActive && w->meter.mode != WIDGET_PING_PONG_LOOP) {
-        w->meter.mode = WIDGET_PING_PONG_LOOP;
+    // Arm the meter for the beat we are on. Power sweeps ONCE, during the windup, and is then spent:
+    // that is what makes it a decision and what puts the batter's commitment before the release,
+    // where the four beats need it. The descent arms when the ball is up and a power has been chosen.
+    if (!swing->powerActive && !w->powerSweepSpent && w->meter.mode != WIDGET_PING_PONG) {
+        w->meter.mode = WIDGET_PING_PONG;
         w->meter.counter = 0;
         w->meter.counter_max = SWING_POWER_SWEEP_FRAMES;
         w->meter.dir = 1;
-    } else if (swing->powerActive && airborne && w->meter.mode != WIDGET_DESCENT) {
-        int flight = calculate_pitch_frame_time(match->ballInfo.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
-        int remaining = flight - w->framesAirborne;
-        int sweep = swing_vertical_sweep_frames(remaining);
+    } else if (!swing->powerActive && w->meter.mode == WIDGET_PING_PONG && w->meter.dir == 0) {
+        // The sweep ran out unpressed. There is not another: this batter is not swinging, and the
+        // engine needs no message to know it.
+        w->powerSweepSpent = 1;
+        w->meter.mode = WIDGET_IDLE;
+        w->meter.counter_max = 0;
+    } else if (swing->powerActive && airborne && w->meter.mode != WIDGET_DESCENT && !swing->verticalActive) {
+        int sweep = swing_vertical_sweep_frames(w->flightFrames);
         w->meter.mode = WIDGET_DESCENT;
         w->meter.counter = sweep; // starts at the marker's top and falls
         w->meter.counter_max = sweep;

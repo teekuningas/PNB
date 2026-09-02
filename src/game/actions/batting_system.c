@@ -102,12 +102,21 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 // dance legal: the batter loads while the pitcher is still crouching, reading the crouch and nothing
 // else. That is information the actualized world makes physical, never a message — the pitcher's
 // declared power is not readable from here and must not become so.
-int swing_may_be_declared(const MatchSession* match, const BetweenPitchState* betweenPitchState)
+int swing_may_be_declared(const MatchSession* match)
 {
     if (match->pRAI.batting_going_on != 1) return 0; // nobody is at the plate swinging
     if (match->pRAI.pitch_state != PITCH_STAGE_WINDUP && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE) return 0;
-    if (match->pendingActionState.batting_stopped == 1) return 0; // already withdrawn
-    if (betweenPitchState->batOutcome != BAT_OUTCOME_NONE) return 0; // already hit or missed
+    if (match->pendingActionState.batting_stopped == 1) return 0; // withdrawn, or never begun
+    // Spent: the bat has already met the ball, or gone past it. Asked of THIS swing's own clock and
+    // not of the referee's batOutcome, which is the correction the sim caught. batOutcome is sticky
+    // and survives into the next pitch's windup, so a gate consulting it refused every power a
+    // batter tried to commit during a crouch — and let the elevation through once the flight had
+    // cleared it. Eleven pitches in twelve went unswung at, and the eleven looked like a batting
+    // problem rather than a stale read.
+    if (match->pendingActionState.swing.contactFrame >= 0 &&
+        match->pendingActionState.batting_frame_count > match->pendingActionState.swing.contactFrame) {
+        return 0;
+    }
     return 1;
 }
 
@@ -153,6 +162,21 @@ void update_batting(
 )
 {
     int batterIndex = get_active_batter_index(match);
+
+    // ONE SWING PER PITCH, cleared at the START of each batting cycle — before the cycle opens, so
+    // before anything can legally be declared into it (the gate requires batting_going_on).
+    //
+    // Keyed here rather than on init_batter, and that is a correction the sim caught: a batter is
+    // re-initialised whenever he is put back at the plate, which can happen after a windup has
+    // already begun, so a power committed during that windup was wiped by a batter-side reset that
+    // had nothing to do with it — eleven pitches in twelve went unswung at. Keying it on "no pitch
+    // in progress" instead was worse: it cleared the swing mid-follow-through, and the at-bat never
+    // ended. The swing belongs to the batting cycle, so the cycle's own start is where it clears.
+    if (match->pRAI.batting_going_on == 0) {
+        match->pendingActionState.swing = (SwingActualization){0};
+        match->pendingActionState.swing.contactFrame = -1;
+    }
+
     if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
         match->pRAI.batting_going_on == 0) {
         match->pRAI.batting_going_on = 1;
@@ -183,12 +207,6 @@ void update_batting(
             match->pendingActionState.batter_moving = 0;
             // swinging mode
             match->pendingActionState.batting_mode = BATTING_MODE_SWING;
-            // Nothing has been declared for this swing, and no contact frame is known until the ball
-            // is actually in the air. Clearing the whole struct is what makes "nobody said yet"
-            // true again for the next batter — the count this replaced was cleared by nothing, so a
-            // batter who never declared a vertical read the previous at-bat's number at contact.
-            match->pendingActionState.swing = (SwingActualization){0};
-            match->pendingActionState.swing.contactFrame = -1;
             // animation is yet to start
             match->pendingActionState.batting_frame_count = 0;
             // starting of the animation is yet to start

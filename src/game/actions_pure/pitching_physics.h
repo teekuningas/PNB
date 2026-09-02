@@ -8,7 +8,16 @@
 #define PITCH_ANGLE_CONSTANT 0.15f // dx per unit placement (direction)
 #define PITCH_DOWN_MAX 9 // crouch (pitch_down) frame count — render only (frames loaded 1..9)
 #define PITCH_UP_MAX 13 // rise/throw (pitch_up) frame count — render only (frames loaded 1..13)
-#define VERTICAL_ANGLE_LIMIT 5 // batting vertical-angle clamp (used by batting_system)
+// How far off level a swing's launch elevation may be and still be a hit. It is the swing minigame's
+// real difficulty knob: the timing tolerance is LIMIT/(GAIN*ball_vy), so this scales every hit window
+// by the same factor and leaves the difficulty GRADIENT between low and high pitches untouched —
+// which is what the sweep length cannot do.
+//
+// Raised 5 -> 8 on 2026-09-02 after the first play session: the windows were 154ms at the hard end
+// and unhittable. What the extra room buys is not just forgiveness — a swing that used to whiff now
+// makes bad contact, a pop-up or a ball driven into the ground, which is what mistiming a pitch
+// actually does and gives the fielding side something to field.
+#define VERTICAL_ANGLE_LIMIT 8
 
 // The windup's three segments, in frames: a fixed crouch DOWN, a power-scaled HOLD, a fixed rise UP.
 // Engine-owned and deterministic; the animation follows the clock, never the reverse. A higher toss

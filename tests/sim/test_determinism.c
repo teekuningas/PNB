@@ -93,7 +93,27 @@ static unsigned long long run_once(unsigned int seed)
 // meets the ball as centrally as it ever did, having got there by declaring a number instead of by
 // timing a keypress. `whiffs caused by timing` is still zero, and the declaration margin the sim
 // leaves before contact went from a mean of 35 frames (minimum 2) to a mean of 86 (minimum 73).
-#define SIM_BEHAVIOUR_BASELINE_HASH 0xceac9839ffbf060cULL
+// Re-recorded once more by the swing slice's FEEL pass (2026-09-02), after the first play session
+// reported the elevation meter unhittable. Three deliberate changes move it, and the bands argue for
+// all three:
+//
+//   1. VERTICAL_ANGLE_LIMIT 5 -> 8. The timing tolerance is LIMIT/(GAIN*ball_vy), so this is the one
+//      knob that widens every hit window without touching the difficulty GRADIENT between low and
+//      high pitches — which lengthening the sweep cannot do, because the sweep clamps to the flight
+//      and the ball speed then cancels out. The hardest swing goes 154ms -> 333ms.
+//   2. The power meter sweeps ONCE and is then spent, instead of looping. A meter that never runs
+//      out is not a decision, and it gave no cue to press during the windup.
+//   3. The batting AI commits its power as early as it legally can, which is normally during the
+//      pitcher's crouch. That is the batter's beat of the four-beat dance, and the AI now takes it
+//      on the same terms a human does.
+//
+// Two stale reads were found on the way and are fixed here, both of which had been suppressing the
+// offense: the gate consulted the referee's sticky batOutcome, which survives into the next pitch's
+// windup and refused every power committed during a crouch; and the client sized its elevation sweep
+// from the ball's CURRENT vertical speed, which decays as the pitch rises, so a late commitment got a
+// sweep of one or two frames. Contact went 88% -> 92%, and the AI-vs-AI net scores 3 runs where it
+// has scored 0 or 1 for the whole refactor.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0xa0d339d08a516f85ULL
 
 int test_ai_vs_ai_determinism(void)
 {
