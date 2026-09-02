@@ -49,6 +49,7 @@ deferred	src/game/actions/pitching_system.c	the fielder-movement through swing s
 deferred	src/game/actions/throwing_system.c	the fielder-movement through swing slices dissolve this file
 open	src/game/actions_pure/batting_physics.c	
 open	src/game/actions_pure/pitching_physics.c	
+audited	src/game/actions_pure/swing_geometry.c	purity verified — three total functions of their arguments, no state, no branch on anything but the arguments' own ranges. Written and audited in the same commit, which is the only honest moment: a file whose whole content is one derivation is read completely by whoever derived it, and reading it again later proves less. The clamps are the only conditionals and each has a named reason at its use site (a sweep of zero frames would be an unrepresentable state; a power outside [0,1] must clamp rather than invert the meter).
 deferred	src/game/ai/batting_ai.c	the batter-selection and swing slices dissolve this file
 deferred	src/game/ai/catching_ai.c	the fielder-movement slice splits this file along the controller/engine-behavior seam
 open	src/game/ai_pure/batting_ai_strategy.c	

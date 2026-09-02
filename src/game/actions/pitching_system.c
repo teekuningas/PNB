@@ -7,15 +7,6 @@
 
 #define ANIMATION_FREQUENCY 3
 
-// Total windup frames for a declared toss power: a fixed crouch + a power-scaled crouch-hold + a fixed
-// rise. Higher pitches hold the crouch longer (≈2s low → 3s high). See the header constants.
-int pitch_windup_total_frames(float power)
-{
-    if (power < 0.0f) power = 0.0f;
-    if (power > 1.0f) power = 1.0f;
-    return PITCH_WINDUP_DOWN_FRAMES + (int)(power * PITCH_WINDUP_HOLD_MAX) + PITCH_WINDUP_UP_FRAMES;
-}
-
 void reset_pitching_system(MatchSession* match)
 {
     match->pendingActionState.pitchActualization.timer = 0;
