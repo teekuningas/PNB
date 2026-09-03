@@ -17,8 +17,13 @@
  * This replaces a four-term expression over two meter counts. Substituting the meter's DISPLAYED
  * position into the old form cancels its `scaleNumber`/`zeroNumber` apparatus completely, and POWER
  * DROPS OUT: that apparatus existed only to undo a meter whose scale depended on power. So the two
- * values a batter declares are independent in the physics — power sets magnitude, `d` sets
- * elevation — and only the WIDGET couples them, through the marker's top below.
+ * values a batter declares are independent — power sets magnitude, `d` sets elevation — and since
+ * 2026-09-03 nothing couples them anywhere. The widget used to, through a marker whose top rose with
+ * the declared power; that was the last trace of the old apparatus, and it made the sweet spot fall
+ * at a different moment for every power, so no rhythm could be learned. The marker now crosses the
+ * whole bar whatever was declared, which puts the sweet spot at a fixed 1 - FOCAL of the way down —
+ * the SAME fraction, in the same direction, as the pitcher's aim descent. The two minigames were
+ * always the same shape; now they are also the same gesture.
  *
  * WHY THE KNOBS ARE HERE AND NOT SPREAD OUT. Each one alone controls a different property, and their
  * joint effect on how hard the game is has a closed form. That form is asserted by the unit tier
@@ -29,7 +34,8 @@
 
 // The sweet spot: the declared vertical that produces a level hit, whatever the power. Historically
 // the meter's "4/13" mark, and — not by coincidence — the same value the pitch's aim meter settled on
-// as PITCH_AIM_FOCAL: the two minigames have always been the same shape.
+// as PITCH_AIM_FOCAL. Since the marker crosses the whole bar it is also a POSITION and not only a
+// value: the marker falls from 1 and the level hit is at this mark, every pitch, every power.
 #define SWING_VERTICAL_FOCAL 0.30769231f
 
 // How steeply elevation grows as the declared vertical leaves the sweet spot, per unit of ball speed.
@@ -68,12 +74,14 @@
 // negative vy, so a vertical above the focal lofts and one below drives it down).
 float swing_vertical_angle(float vertical, float ball_vy);
 
-// Where the vertical marker starts for a given declared power [0,1] — the SECOND difficulty axis, and
-// a client-side concern only (the engine never asks). It runs from exactly the sweet spot at zero
-// power, where the top IS a level hit and a bunt cannot be mistimed into loft, up to 1.0 at full
-// power, where the marker must travel three times as far and moves three times as fast. That is what
-// makes a bunt the safe option and a full swing the risky one, without either costing a rule.
-float swing_marker_top(float power);
+// (There is no marker_top any more, and its absence is the point. It used to start the descent at a
+// power-dependent height, which meant a bunt's marker began ON the sweet spot and a full swing's
+// began three times above it — so the moment to press moved with a decision the batter had already
+// made, and the two gestures looked coupled where the physics says they are not. The declared
+// vertical is now simply where the marker is: the widget maps the bar to [0,1] and there is nothing
+// left here to ask. What it cost is a second difficulty axis; what the game keeps is the physical
+// one — a faster ball demands a more exact d — which is the pitcher's lever, so the duel now has one
+// lever each rather than one of them doubled.)
 
 // How long the vertical descent may run given the frames remaining until contact: the full sweep
 // where the flight can hold it, clamped by the lead where it cannot. Never zero — a sweep of one

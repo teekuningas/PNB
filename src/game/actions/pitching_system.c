@@ -36,6 +36,12 @@ static int can_begin_windup(const MatchSession* match, int correct_pitches_recei
            match->flowControl.waitingForFreeWalkDecision == 0;
 }
 
+int pitch_is_being_delivered(const MatchSession* match)
+{
+    return match->pendingActionState.current_catching_action == CATCHING_ACTION_PITCHING ||
+           match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
+}
+
 // Begin the engine-owned windup: set up the pitcher and the ball, start the deterministic clock. This is
 // pure timing setup — the animation model is set downstream for the renderer, but nothing here (or later)
 // reads animation to drive timing.

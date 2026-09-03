@@ -50,8 +50,8 @@ int swing_may_be_declared(const MatchSession* match);
 // The swing's two VALUES are not parameters: they are held engine state with a lifetime, written by
 // the gate into pendingActionState.swing, exactly as a destination or a declaration is.
 void update_batting(
-    MatchSession* match, const RefereeState* referee, const BetweenPitchState* betweenPitchState,
-    const FieldPositions* fieldPositions, int aimDeclared, float aim, int passDeclared, int* playSoundEffect
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int aimDeclared, float aim,
+    int passDeclared, int* playSoundEffect
 );
 
 #endif

@@ -34,7 +34,6 @@ void init_batting_system(MatchSession* match)
     match->pendingActionState.batter_angle = 0;
     match->pendingActionState.batter_advance_speed = 0;
     match->pendingActionState.batter_advance = 0;
-    match->pendingActionState.batting_mode = BATTING_MODE_SWING;
     match->pendingActionState.batter_advance_limit = 0;
     match->pendingActionState.batting_stopped = 0;
     match->pendingActionState.batter_moving = 0;
@@ -105,30 +104,49 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 int swing_may_be_declared(const MatchSession* match)
 {
     if (match->pRAI.batting_going_on != 1) return 0; // nobody is at the plate swinging
-    if (match->pRAI.pitch_state != PITCH_STAGE_WINDUP && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE) return 0;
+    // There has to be a pitch on its way. Asked of pitch_is_being_delivered and NOT of `pitch_state
+    // == WINDUP`, which is the correction the two-human soak caught: that read was wrong from the
+    // second pitch of every half-inning onward, and it cost the batter his entire power beat.
+    // Measured: declarable in 87 of the first windup's 87 frames, and in 0 of 87 on every windup
+    // after it.
+    if (!pitch_is_being_delivered(match)) return 0;
     if (match->pendingActionState.batting_stopped == 1) return 0; // withdrawn, or never begun
-    // Spent: the bat has already met the ball, or gone past it. Asked of THIS swing's own clock and
-    // not of the referee's batOutcome, which is the correction the sim caught. batOutcome is sticky
-    // and survives into the next pitch's windup, so a gate consulting it refused every power a
-    // batter tried to commit during a crouch — and let the elevation through once the flight had
-    // cleared it. Eleven pitches in twelve went unswung at, and the eleven looked like a batting
-    // problem rather than a stale read.
-    if (match->pendingActionState.swing.contactFrame >= 0 &&
-        match->pendingActionState.batting_frame_count > match->pendingActionState.swing.contactFrame) {
-        return 0;
-    }
+    // Spent: the bat has already met the ball. Asked of THIS swing's own record of it and not of the
+    // referee's batOutcome, which is the correction the sim caught. batOutcome is sticky and
+    // survives into the next pitch's windup, so a gate consulting it refused every power a batter
+    // tried to commit during a crouch — and let the elevation through once the flight had cleared
+    // it. Eleven pitches in twelve went unswung at, and the eleven looked like a batting problem
+    // rather than a stale read. The rule that came out of that: a producer-facing gate must not
+    // consult state that outlives the play it describes.
+    //
+    // The actualizer sets this at the instant it fires and reads the same field to refuse a second
+    // firing, so the question has ONE answer rather than two that happen to agree.
+    if (match->pendingActionState.swing.consumed) return 0;
     return 1;
 }
 
 // The shape the body should be making, given what has been declared so far. Called every frame while
 // the batter is live, so a power that arrives after the animation has visibly begun re-shapes it
 // mid-motion rather than being ignored — the animation follows the declaration, never gates it.
+//
+// NOTHING DECLARED IS ITS OWN SHAPE, and it is spread hands rather than a swing. The default used to
+// be a full swing, so a batter who had said nothing wound up and swung at the ball anyway, and only
+// on the contact frame — after the motion was already committed — did the engine's backstop conclude
+// there had been no swing and spread his hands. Read as a gesture it was a lie: the body claimed a
+// decision the producer had never made. Read against this function's own first line, it was simply
+// wrong — the shape is supposed to follow what has been declared, and what had been declared was
+// nothing.
+//
+// It costs nothing to say so, because this is re-asked every frame: a batter stands ready, and the
+// instant a power arrives — during the crouch, or late in the flight — he takes the swing or the
+// bunt. The backstop at contact still records the DECISION (batting_stopped, so the referee judges
+// the pitch on where it landed rather than on a swing that never came); this only decides what the
+// body does while the decision is still open, which is a different question with a different owner.
 static BattingMode swing_shape(const MatchSession* match)
 {
     if (match->pendingActionState.batting_stopped == 1) return BATTING_MODE_STOP;
-    if (match->pendingActionState.swing.powerActive && match->pendingActionState.swing.power < SWING_BUNT_MAX_POWER) {
-        return BATTING_MODE_BUNT;
-    }
+    if (!match->pendingActionState.swing.powerActive) return BATTING_MODE_STOP;
+    if (match->pendingActionState.swing.power < SWING_BUNT_MAX_POWER) return BATTING_MODE_BUNT;
     return BATTING_MODE_SWING;
 }
 
@@ -146,19 +164,40 @@ static float advance_for_shape(BattingMode shape)
     return SWING_ADVANCE;
 }
 
+// Put the body into a shape: the mode, how far it may step in, and the animation it plays. Three
+// values that are all functions of the same one, so they are set in ONE place and never apart.
+//
+// They used to be set in three, and the third only set two of them — which is how a withdrawal came
+// to stop the swing everywhere except on screen. There was a `batting_mode` field holding the shape,
+// stop_the_swing assigned it directly, and the re-shape below applied the model only
+// `if (shape != batting_mode)` — so it found them already equal and left the bat swinging. The state
+// was right, the rules were right, and the player watched himself swing at a ball he had just called
+// off.
+//
+// The field is gone. Nothing ever read it except that guard, so it was a cache of a pure function of
+// the declaration that could disagree with the declaration — and the one time it did, it cost the
+// withdrawal its whole visible effect. The shape is derived where it is needed and stored nowhere.
+static void apply_shape(MatchSession* match, int batterIndex, BattingMode shape)
+{
+    match->pendingActionState.batter_advance_limit = advance_for_shape(shape);
+    if (batterIndex != -1) match->playerInfo[batterIndex].cPI.model = animation_for_shape(shape);
+}
+
 // Withdraw the swing: the bat is not coming, so there is nothing to miss with. Reached by an explicit
 // INTENT_SWING_PASS — the "väärä!" call, which is worth a ball where a swing and a miss is worth a
 // strike — or by the engine's own backstop at contact when a producer simply never declared a power.
+//
+// It records the FACT and nothing else. Everything the body does about it is derived from that fact
+// by swing_shape/apply_shape, on this frame and every frame after, which is what stops the two from
+// disagreeing about whose job the animation was.
 static void stop_the_swing(MatchSession* match)
 {
     match->pendingActionState.batting_stopped = 1;
-    match->pendingActionState.batting_mode = BATTING_MODE_STOP;
-    match->pendingActionState.batter_advance_limit = SPREAD_ADVANCE;
 }
 
 void update_batting(
-    MatchSession* match, const RefereeState* referee, const BetweenPitchState* betweenPitchState,
-    const FieldPositions* fieldPositions, int aimDeclared, float aim, int passDeclared, int* playSoundEffect
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int aimDeclared, float aim,
+    int passDeclared, int* playSoundEffect
 )
 {
     int batterIndex = get_active_batter_index(match);
@@ -205,8 +244,6 @@ void update_batting(
             match->pendingActionState.batter_advance_speed = 0.0f;
             // aren't moving yet
             match->pendingActionState.batter_moving = 0;
-            // swinging mode
-            match->pendingActionState.batting_mode = BATTING_MODE_SWING;
             // animation is yet to start
             match->pendingActionState.batting_frame_count = 0;
             // starting of the animation is yet to start
@@ -344,11 +381,7 @@ void update_batting(
                     // set batter_moving flag to 1 so that we can better handle starting points of the
                     // animations
                     match->pendingActionState.batter_moving = 1;
-                    match->pendingActionState.batting_mode = swing_shape(match);
-                    match->pendingActionState.batter_advance_limit =
-                        advance_for_shape(match->pendingActionState.batting_mode);
-                    match->playerInfo[batterIndex].cPI.model =
-                        animation_for_shape(match->pendingActionState.batting_mode);
+                    apply_shape(match, batterIndex, swing_shape(match));
                     match->playerInfo[batterIndex].cPI.animationStage = 0;
                     match->playerInfo[batterIndex].cPI.animationStageCount = 34;
                     match->playerInfo[batterIndex].cPI.animationFrequency = 3;
@@ -364,13 +397,15 @@ void update_batting(
             // has visibly started still re-shapes it: a late power turns a swing into a bunt, and a
             // withdrawal turns either into spread hands, mid-motion. The animation is downstream of
             // the declaration and never a gate on it — the same rule the pitch's windup follows.
+            //
+            // Applied unconditionally rather than only when the shape CHANGES. The guard that used to
+            // stand here was comparing against a value a second writer had already moved, so the one
+            // case it was meant to serve — a withdrawal, mid-motion — was the exact case it skipped.
+            // Re-deriving a shape that has not changed writes the same three values it already holds,
+            // which costs nothing and cannot be wrong; a guard that can be fooled about whether
+            // something changed can.
             if (match->pendingActionState.batter_moving == 1 && batterIndex != -1) {
-                BattingMode shape = swing_shape(match);
-                if (shape != match->pendingActionState.batting_mode) {
-                    match->pendingActionState.batting_mode = shape;
-                    match->pendingActionState.batter_advance_limit = advance_for_shape(shape);
-                    match->playerInfo[batterIndex].cPI.model = animation_for_shape(shape);
-                }
+                apply_shape(match, batterIndex, swing_shape(match));
             }
         }
         // Everything below is timed against the contact frame, and there is no contact frame until a
@@ -406,10 +441,15 @@ void update_batting(
             if (match->pendingActionState.swing.powerActive == 0) {
                 stop_the_swing(match);
             }
-            // so here we continue only if user hasn't decided to not to bat and if we havent bat already.
-            // Guard reads sticky flag: on the hit frame it's still NONE (allows processing),
-            // referee promotes it later this frame, and next frame the guard blocks re-entry.
-            if (match->pendingActionState.batting_stopped == 0 && betweenPitchState->batOutcome == BAT_OUTCOME_NONE) {
+            // Continue only if the batter has not withdrawn and this swing has not already fired.
+            // The re-entry guard is the swing's own `consumed`, set on the way in: the condition that
+            // brought us here (the animation is past the contact frame) stays true for many frames
+            // afterwards, so something has to say "already done". It used to be the referee's sticky
+            // batOutcome — legal state read by a physical stage, and legal state that outlives the
+            // pitch it describes. Now it is a fact about the swing, with the swing's own lifetime,
+            // and it is the same field the INGEST gate refuses on.
+            if (match->pendingActionState.batting_stopped == 0 && match->pendingActionState.swing.consumed == 0) {
+                match->pendingActionState.swing.consumed = 1;
                 // if ball doesnt go too far away to left or right
                 if (match->ballInfo.location.x < BALL_MAX_OFFSET && match->ballInfo.location.x > -BALL_MAX_OFFSET) {
                     float verticalAngle;

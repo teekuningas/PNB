@@ -879,6 +879,10 @@ typedef struct _UIState {
     int gameInfoEventTimer;
     int gameInfoEvent;
     float lastMeterX;
+    // The batting marker's previous position, for the render interpolator. NEGATIVE means it was not
+    // drawn last frame — the batter's bar legitimately has no cursor between his two beats — and a
+    // marker that has just appeared has nothing to interpolate from, so it snaps instead of streaking
+    // across the bar from wherever the last one died.
     float lastSwingMeterX;
 } UIState;
 
@@ -961,6 +965,13 @@ typedef struct _SwingActualization {
     float power;
     int verticalActive;
     float vertical;
+    // The bat has already met this ball — set the moment the swing resolves, hit or miss. It is the
+    // one fact behind two questions that used to be asked of two different things: the INGEST gate's
+    // "is this swing still open?" and the actualizer's "have I already fired?". The actualizer used
+    // to ask the referee's sticky batOutcome, which is legal state with a longer life than the play
+    // it describes — the same reading that, tried at the gate, refused every power committed during
+    // a windup. Here it lives with the swing and dies with it.
+    int consumed;
 } SwingActualization;
 
 typedef struct _PendingActionState {
@@ -983,7 +994,6 @@ typedef struct _PendingActionState {
     float batter_angle;
     float batter_advance_speed;
     float batter_advance;
-    BattingMode batting_mode;
     float batter_advance_limit;
     int batting_stopped;
     int batter_moving;
@@ -1080,10 +1090,28 @@ typedef struct _InputWidget {
 // velocity shrinks as the pitch climbs, and a batter who commits late gets a sweep of a frame or two
 // — a marker that drops like a stone. The engine solves its contact frame exactly once for the same
 // reason, and the two agree because they use the same pure solution on the same launch.
+// Which beat of the gesture the batter is on. The client's OWN account of what it has said, which is
+// the only account it is allowed to keep: the engine's `SwingActualization` is where a declaration
+// ARRIVES, and asking it "have I declared yet" is the read-back the fourth law forbids. Locally the
+// two agree within a tick, so the read looked harmless; across a wire they do not. A message stamped
+// for tick T+D leaves the engine's copy saying "no power declared" for D ticks after the human
+// pressed — long enough for a gesture keyed off it to re-arm the sweep the human just spent and
+// invite a second commitment on the same pitch.
+//
+// One enum rather than a bag of bits, so "declined" and "committed" cannot both be true and the
+// meaningless combinations are unrepresentable. It is a controller's private memory, exactly as the
+// AI's `swingDecided` is: the same fact, on the other side of the same boundary.
+typedef enum {
+    SWING_BEAT_POWER = 0, // the power sweep is running, or about to arm; nothing said yet
+    SWING_BEAT_LOADED, // a power has been declared; the elevation is the beat still outstanding
+    SWING_BEAT_COMMITTED, // both values are out; there is nothing further to say this pitch
+    SWING_BEAT_DECLINED // the one power sweep ran out unpressed — this batter is not swinging
+} SwingBeat;
+
 typedef struct _SwingWidget {
     InputWidget meter;
     int flightFrames; // -1 while no ball is in the air; solved once at release, from the launch
-    int powerSweepSpent; // the one power sweep this pitch offered is over — there is not another
+    SwingBeat beat; // where this gesture has got to, remembered here and nowhere else
     float power; // the power this gesture declared; only meaningful once one has been
 } SwingWidget;
 
@@ -1160,7 +1188,6 @@ typedef enum {
 
 typedef struct _PlayerRelatedActionInfo {
     float meter_value; // meter for pitching and throwing
-    float swing_meter_value; // meter for batting
 
     PitchCycleState pitch_state; // Replaces pitchGoingOn and pitchInAir
 

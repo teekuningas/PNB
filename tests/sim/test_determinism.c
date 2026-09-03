@@ -113,6 +113,19 @@ static unsigned long long run_once(unsigned int seed)
 // from the ball's CURRENT vertical speed, which decays as the pitch rises, so a late commitment got a
 // sweep of one or two frames. Contact went 88% -> 92%, and the AI-vs-AI net scores 3 runs where it
 // has scored 0 or 1 for the whole refactor.
+//
+// NOT re-recorded on 2026-09-03, and that is the interesting part. Two more stale reads were fixed
+// that day — the batter's window and the batting controller's plan lifetime both asked
+// `pitch_state`, which consolidation holds at NONE right through any windup that follows a resolved
+// pitch — and claim 3 above was measurably FALSE until they were: the AI took its beat during the
+// crouch on a half-inning's OPENING pitch and on no other, and the controller re-decided its whole
+// plan on every frame of every later windup. Repairing both changes the game (the two seeds in
+// test_different_seeds_produce_different_games both moved) and **this seed's hash did not budge**.
+//
+// So read a green here for exactly what it is worth. It says this ONE game replayed identically; it
+// does not say behaviour is unchanged, and here it was demonstrably not. The offense breakdown's 24
+// seeds are what carried the argument that the repair was neutral in quality (every band held, with
+// the bands freshly cut). A single-seed fingerprint is a tripwire, never a proof.
 #define SIM_BEHAVIOUR_BASELINE_HASH 0xa0d339d08a516f85ULL
 
 int test_ai_vs_ai_determinism(void)

@@ -584,15 +584,22 @@ static void checkBatterAngle(
     );
 }
 
-// What the swing meter currently reads, for the display. The power sweep shows its raw level; the
-// vertical descent shows the VALUE it would declare, which is the same number the batter is aiming
-// at. Render-only, and the only thing outside this file that looks at the widget.
-float swing_widget_display(const SwingWidget* w)
+// What the batter's bar shows — see SwingMeterView. Render-only, and the only thing outside this file
+// that looks at the widget.
+//
+// The cursor is the bar's raw level, and on the descent that level IS the value the press would
+// declare: the batter aims at the mark he can see and declares exactly it, with nothing in between.
+// The committed mark is the client's own copy of what it said, so it appears the instant the human
+// presses rather than a wire's delay later — and it survives the WAIT between the two beats, which is
+// the whole reason this is a view over the gesture's `beat` and not over its meter's mode.
+SwingMeterView swing_widget_view(const SwingWidget* w)
 {
-    if (w->meter.mode == WIDGET_IDLE || w->meter.counter_max <= 0) return 0.0f;
-    float level = (float)w->meter.counter / (float)w->meter.counter_max;
-    if (w->meter.mode == WIDGET_DESCENT) return level * swing_marker_top(w->power);
-    return level;
+    SwingMeterView view = {0};
+    view.cursorLive = (w->meter.mode != WIDGET_IDLE && w->meter.counter_max > 0);
+    if (view.cursorLive) view.cursor = (float)w->meter.counter / (float)w->meter.counter_max;
+    view.powerCommitted = (w->beat == SWING_BEAT_LOADED || w->beat == SWING_BEAT_COMMITTED);
+    if (view.powerCommitted) view.power = w->power;
+    return view;
 }
 
 // The human's swing — a looping power ping-pong while the pitcher winds up, then a one-way descent
@@ -604,19 +611,22 @@ float swing_widget_display(const SwingWidget* w)
 //                                    the crouch, which is the toss height made physical. That is the
 //                                    only channel the fourth law allows — the pitcher's declared
 //                                    power is not readable from here and must not become so.
-//   press KEY_2 during the flight  → vertical = where the marker has fallen to. Contact is timed off
-//                                    the ball, so this is the swing's whole timing.
+//   press KEY_2 during the flight  → vertical = where the marker has fallen to, on a bar it crosses
+//                                    whole whatever power was declared. Contact is timed off the
+//                                    ball, so this is the swing's whole timing.
 //   press KEY_1 after a power      → withdraw (SWING_PASS). The "väärä!" call: having loaded, the
 //                                    batter sees the pitch is not coming to the plate and stops. It
 //                                    is worth a ball where swinging and missing is worth a strike,
 //                                    which is why it is a message and not merely an absence.
 //
-// Nothing here reads a declaration back. The gesture's own progress lives in the widget: `power` is
-// the client's copy of what it said, because scaling the descent from the ENGINE's copy is exactly
-// the read-back that still ties the pitch's widget to the world. And the descent is sized from the
-// ball the client can see, through the same pure solution the engine uses, rather than from the
-// engine's contact frame — the pitch's aim meter sizes itself from the windup constants for the same
-// reason.
+// Nothing here reads a declaration back. The gesture's whole progress lives in the widget: `beat` is
+// the client's own account of what it has said and `power` its copy of the value, because taking
+// either from the ENGINE's copy is exactly the read-back that still ties the pitch's widget to the
+// world. What the widget reads of the world is physical and nothing else — a batter is batting, a
+// ball is in the air — which is why the same code is correct when the declaration takes ticks to
+// arrive instead of landing inside the tick that made it. And the descent is sized from the ball the
+// client can see, through the same pure solution the engine uses, rather than from the engine's
+// contact frame — the pitch's aim meter sizes itself from the windup constants for the same reason.
 static void checkSwing(
     const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int swingKey,
     int withdrawKey, TeamControlMode control, IntentChannel* channel
@@ -625,7 +635,6 @@ static void checkSwing(
     if (control == CONTROL_AI) return; // the AI decides two numbers and says them; it has no gesture
 
     SwingWidget* w = &clientInput->swingWidget;
-    const SwingActualization* swing = &match->pendingActionState.swing;
     const int airborne = (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE);
 
     // The gesture is over when there is no swing to declare into. Asked of the physical world, never
@@ -636,7 +645,7 @@ static void checkSwing(
         w->meter.counter_max = 0;
         w->meter.dir = 0;
         w->flightFrames = -1;
-        w->powerSweepSpent = 0;
+        w->beat = SWING_BEAT_POWER;
         w->power = 0.0f;
         return;
     }
@@ -648,21 +657,27 @@ static void checkSwing(
             calculate_pitch_frame_time(match->ballInfo.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
     }
 
+    // Move the cursor before anything reads it, and BEFORE the arm chain below — the same order
+    // checkPitch uses, and for the same reason. Advancing after arming spent the first frame of every
+    // meter the moment it appeared, so the marker was never once drawn at the end it starts from and
+    // each sweep was a frame shorter than the length it declares.
+    advance_widget(&w->meter);
+
     // Arm the meter for the beat we are on. Power sweeps ONCE, during the windup, and is then spent:
     // that is what makes it a decision and what puts the batter's commitment before the release,
     // where the four beats need it. The descent arms when the ball is up and a power has been chosen.
-    if (!swing->powerActive && !w->powerSweepSpent && w->meter.mode != WIDGET_PING_PONG) {
+    if (w->beat == SWING_BEAT_POWER && w->meter.mode != WIDGET_PING_PONG) {
         w->meter.mode = WIDGET_PING_PONG;
         w->meter.counter = 0;
         w->meter.counter_max = SWING_POWER_SWEEP_FRAMES;
         w->meter.dir = 1;
-    } else if (!swing->powerActive && w->meter.mode == WIDGET_PING_PONG && w->meter.dir == 0) {
+    } else if (w->beat == SWING_BEAT_POWER && w->meter.mode == WIDGET_PING_PONG && w->meter.dir == 0) {
         // The sweep ran out unpressed. There is not another: this batter is not swinging, and the
         // engine needs no message to know it.
-        w->powerSweepSpent = 1;
+        w->beat = SWING_BEAT_DECLINED;
         w->meter.mode = WIDGET_IDLE;
         w->meter.counter_max = 0;
-    } else if (swing->powerActive && airborne && w->meter.mode != WIDGET_DESCENT && !swing->verticalActive) {
+    } else if (w->beat == SWING_BEAT_LOADED && airborne && w->meter.mode != WIDGET_DESCENT) {
         int sweep = swing_vertical_sweep_frames(w->flightFrames);
         w->meter.mode = WIDGET_DESCENT;
         w->meter.counter = sweep; // starts at the marker's top and falls
@@ -670,30 +685,39 @@ static void checkSwing(
         w->meter.dir = -1;
     }
 
-    advance_widget(&w->meter);
-
-    // Withdrawing is only meaningful once something has been committed and before the swing is spent.
-    if (key_states->pressed[control][withdrawKey] == 1 && swing->powerActive) {
+    // Withdrawing is only meaningful once something has been committed. A batter who let the sweep
+    // run out said nothing, so there is nothing of his to take back — the engine's own backstop at
+    // contact already gives that batter the same outcome, without a message.
+    if (key_states->pressed[control][withdrawKey] == 1 &&
+        (w->beat == SWING_BEAT_LOADED || w->beat == SWING_BEAT_COMMITTED)) {
         intent_push(channel, (IntentMessage){.kind = INTENT_SWING_PASS});
         return;
     }
 
     if (key_states->pressed[control][swingKey] != 1) return;
 
-    if (!swing->powerActive) {
+    if (w->beat == SWING_BEAT_POWER) {
         float power = (float)w->meter.counter / (float)w->meter.counter_max;
-        w->power = power; // our own copy: the descent is scaled by it, and we do not ask the engine
+        // Our own copy of what we said, kept so the meter can go on SHOWING it while the second beat
+        // runs — the pitcher's locked-power marker, on the batting side. Client-local on purpose: it
+        // is instant, where the engine's copy of our own declaration is a wire's delay away.
+        w->power = power;
+        w->beat = SWING_BEAT_LOADED;
         intent_push(channel, (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = power}});
         // The descent is not armed here. It is armed above, on a frame where the ball is actually in
         // the air — which may be this one or may be several beats away, and the widget does not care.
         w->meter.mode = WIDGET_IDLE;
         w->meter.counter_max = 0;
         w->meter.dir = 0;
-    } else if (w->meter.mode == WIDGET_DESCENT && !swing->verticalActive) {
-        // The declared value is the marker's position on the meter the human is watching: the level
-        // scaled by this power's top. The sweet spot sits at SWING_VERTICAL_FOCAL for every power,
-        // which is what makes one learned rhythm work for a bunt and for a full swing alike.
-        float vertical = swing_marker_top(w->power) * (float)w->meter.counter / (float)w->meter.counter_max;
+    } else if (w->beat == SWING_BEAT_LOADED && w->meter.mode == WIDGET_DESCENT) {
+        // The declared value IS the marker's position on the meter the human is watching — the bar
+        // maps to [0,1] and nothing is applied on top of it. The descent starts at the extreme
+        // whatever power was declared, so the sweet spot passes at the same fraction of every sweep
+        // and one learned rhythm works for a bunt and for a full swing alike. Scaling this by the
+        // power was the last thing coupling the batter's two decisions, and it made the moment to
+        // press depend on a choice already made.
+        float vertical = (float)w->meter.counter / (float)w->meter.counter_max;
+        w->beat = SWING_BEAT_COMMITTED;
         intent_push(
             channel, (IntentMessage){.kind = INTENT_SWING_VERTICAL, .as.swing_vertical = {.vertical = vertical}}
         );

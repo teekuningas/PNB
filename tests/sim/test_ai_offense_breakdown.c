@@ -13,17 +13,24 @@
 //
 // The bands below fix both halves of that: the currently-measured value sits beside each band
 // in the table, so the baseline lives in the repo, and the band is wide enough to survive a
-// legitimate re-baseline while still catching degradation. They exist because the
-// slice 1a moves when the AI observes the world and therefore re-baselines the determinism hash
-// BY DESIGN — the hash cannot gate that change, so this net has to.
+// legitimate re-baseline while still catching degradation. They exist because a slice that changes
+// when the AI observes the world re-baselines the determinism hash BY DESIGN — the hash cannot gate
+// that change, so this net has to.
 //
-// WHAT THIS TEST CANNOT SEE. The net reports runs=0. The batter is weak by
-// design until the swing slice, so no run is ever scored here, and nothing downstream of a run
-// — the award paths, should_period_end, the pool refresh, period transitions — is covered by
-// these bands, by the box score, or by the determinism hash. For referee scoring and flow work,
-// tier 3 (scenario) is the primary net. Deliberately, no band mentions runs: a green band must
-// not imply coverage it does not have. Slice 4 is what gives this tier teeth over that half of
-// the rules.
+// A BAND THAT CANNOT SEE A REGRESSION IS A TEST THAT CANNOT FAIL. Several of these were first sized
+// when nothing was expected to move them, and then something did: `batters reaching first` fell 17%
+// (137 -> 109) without its floor of 50 twitching once, and the out-of-bounds rate fell by a factor
+// of three inside a band that ran to 30%. So each band was re-cut around its measurement, roughly a
+// quarter either side for the soft ones and hard against the arithmetic where there is any
+// (`outs recorded` cannot honestly exceed 3 x 3 x 24; a fifth of a five-bucket fan cannot exceed
+// 20%). A slice that legitimately moves one of these will now BREACH, which is the point: a breach
+// is a decision to make, not a failure to route around. The table under the run says which.
+//
+// WHAT THIS TEST STILL CANNOT SEE. Runs are barely reachable here — 3 across 24 seeds — so the award
+// paths, should_period_end, the pool refresh and period transitions remain essentially uncovered by
+// these bands, by the box score and by the determinism hash. For referee scoring and flow work, the
+// scenario tier is the primary net. Deliberately, no band mentions runs: at n=3 a band would be
+// measuring noise, and a green band must not imply coverage it does not have.
 //
 // Set SIM_PBP=1 to also see the play-by-play.
 
@@ -247,8 +254,15 @@ int test_ai_offense_breakdown(void)
     }
 
     // ---- the bands -------------------------------------------------------------------
-    // Every baseline below was measured on this branch at sim hash 204f50ffa89e8b0a
-    // (2026-08-17, 24 seeds × 3 half-innings — re-baselined with the control-stage slice).
+    // Every baseline below is the value this suite produced at sim hash a0d339d08a516f85, 24 seeds ×
+    // 3 half-innings, when the bands were last re-cut. A baseline is not a target: it is what the
+    // number WAS, so a drift is readable here rather than by digging up an old PR.
+    //
+    // Two floors are looser than the quarter-either-side rule: `batters seated` and `joker at-bats`.
+    // Both moved several points when the batter's power window was repaired — not because the
+    // selection policy changed, but because a different set of games gets played once the batting
+    // controller stops re-deciding its plan every frame of every windup. They are cut to survive
+    // that class of reshuffle and still catch a policy actually changing.
 
     long dir_total = 0, dir_min = -1, dir_max = -1;
     for (int b = 0; b < 5; b++) {
@@ -262,47 +276,53 @@ int test_ai_offense_breakdown(void)
 
     band_add(
         bands, &band_count,
-        (Band){"pitches thrown", (double)T_pitches, 300, 1500, "627",
-               "the pitcher stops pitching, or at-bats never end"}
+        (Band){"pitches thrown", (double)T_pitches, 450, 800, "573", "the pitcher stops pitching, or at-bats never end"}
     );
     band_add(
         bands, &band_count,
-        (Band){"contact rate %", percent(T_contacts, T_pitches), 70, 100, "90",
+        (Band){"contact rate %", percent(T_contacts, T_pitches), 85, 97, "90.4",
                "the batter stops meeting the ball (a swing that no longer connects)"}
     );
     band_add(
         bands, &band_count,
-        (Band){"balls called", (double)T_balls, 10, 300, "58",
+        (Band){"balls called", (double)T_balls, 30, 80, "55",
                "pitch aim collapsing onto the plate — every pitch a called strike"}
     );
     band_add(
         bands, &band_count,
-        (Band){"outs recorded", (double)T_outs, 150, 240, "216",
-               "half-innings ending some other way than on three outs"}
+        (Band){"outs recorded", (double)T_outs, 190, 220, "216",
+               "half-innings ending some other way than on three outs — and, at the ceiling, an out counted "
+               "twice (bug #6): 24 seeds x 3 half-innings x 3 burns is EXACTLY 216, so 220 is unreachable "
+               "by honest play"}
     );
     band_add(
         bands, &band_count,
-        (Band){"batters reaching first", (double)T_reached_base, 50, 400, "137",
-               "contact that never turns into a runner"}
+        (Band){"batters reaching first", (double)T_reached_base, 90, 132, "109",
+               "contact that never turns into a runner. KNOW ITS RESOLUTION: this is an aggregate of "
+               "everything between the bat and the base, and a legitimate slice moved it 20% (137 -> 109) "
+               "in one go, so the band cannot be cut fine enough to see a drift of that size and stay "
+               "usable. It is a collapse detector. The instruments that DO see a weaker swing are the "
+               "direct ones — batted-ball power, out-of-bounds rate, mean chase distance — all three of "
+               "which breach on a 17% power cut that leaves this band green"}
     );
     band_add(
         bands, &band_count,
-        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 14, 30, "21.7",
+        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 18.5, 24, "21.0",
                "the swing going soft — the meter starved, as bug #4 did it"}
     );
     band_add(
         bands, &band_count,
-        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 30, "12",
+        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 7, "5.0",
                "direction drifting foul, or every ball dumped safely into the field"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 4, 100, "13",
+        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 7, 20, "10.3",
                "the fan collapsing — the centre-bias the swing slice removes structurally"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 0, 55, "27",
+        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 20, 38, "27.7",
                "the fan piling into one direction"}
     );
 
@@ -316,22 +336,22 @@ int test_ai_offense_breakdown(void)
     band_add(
         bands, &band_count,
         (Band){"mean frames to recover a batted ball",
-               T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0, 60, 150, "102.4",
+               T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0, 85, 118, "97.2",
                "the defence getting slower end to end — a fielder that sets off late, or not at all"}
     );
     band_add(
         bands, &band_count,
-        (Band){"worst frames to recover", (double)T_recovery_max, 0, 2000, "800",
+        (Band){"worst frames to recover", (double)T_recovery_max, 0, 1100, "675",
                "one chase that never converges, hidden inside a healthy mean"}
     );
     band_add(
         bands, &band_count,
-        (Band){"chases that ended in possession %", percent(T_recoveries, T_recoveries + T_abandoned), 70, 100, "87.6",
+        (Band){"chases that ended in possession %", percent(T_recoveries, T_recoveries + T_abandoned), 92, 100, "95.6",
                "balls the catching side simply never brings back"}
     );
     band_add(
         bands, &band_count,
-        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 5, 22, "9.08",
+        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 7.5, 11.5, "9.62",
                "the controlled fielder not going where the engine sent it"}
     );
     // The floor here is the load-bearing one: RUN_SPEED is 0.12 and WALK_SPEED is 0.06, so a
@@ -339,22 +359,25 @@ int test_ai_offense_breakdown(void)
     // move_to_target would have done — cannot stay inside this band.
     band_add(
         bands, &band_count,
-        (Band){"mean step per moving frame", T_step_frames ? T_step_sum / (double)T_step_frames : 0.0, 0.09, 0.125,
-               "0.1073", "the controlled fielder silently switched to a different speed"}
+        (Band){"mean step per moving frame", T_step_frames ? T_step_sum / (double)T_step_frames : 0.0, 0.100, 0.115,
+               "0.1061", "the controlled fielder silently switched to a different speed"}
     );
 
-    // Two bands moved with the swing slice, both because the number IMPROVED and a floor that a
-    // measurement has passed is a floor that has stopped holding anything:
+    // What the swing slice did to the numbers above, kept because it is the argument the bands are
+    // now cut against — and because every one of these was a SIDE EFFECT of the physics being
+    // written honestly rather than of anything aimed at fielding:
     //
-    //   declaration lead   35.0 -> 85.9 frames (floor 8 -> 30). The AI used to declare when a meter
-    //     reached a threshold, which is late by construction; it now declares as soon as the ball is
-    //     up and the values are consumed at contact. The minimum across 24 seeds went from 2 frames
-    //     to 73 — the margin a message would one day have to cross a wire in.
-    //   mean chase        15.12 -> 9.08 (floor 10 -> 5). Not a fielding change: the batted balls are
-    //     different. The old swing's elevation was read off a meter whose scale moved with power, so
-    //     loft and power were accidentally correlated and their extreme combinations flew out; with
-    //     the two values independent the out-of-bounds rate fell 12% -> 4%, more balls stay in play,
-    //     and chases that used to be abandoned at the boundary now converge (87.6% -> 95.1%).
+    //   declaration lead   35.0 -> 85.8 frames. The AI used to declare when a meter reached a
+    //     threshold, which is late by construction; it now declares as soon as the ball is up and
+    //     the values are consumed at contact. The minimum across 24 seeds went from 2 frames to 72 —
+    //     the margin a message would one day have to cross a wire in.
+    //   out of bounds      12% -> 3.5%. The old elevation was read off a meter whose scale moved
+    //     with power, so loft and power were accidentally paired and their extreme combination flew
+    //     off the field. The declared values are independent, so that pairing now happens only by
+    //     chance.
+    //   mean chase         15.12 -> 9.06, and chases ending in possession 87.6% -> 96.2%. NOT a
+    //     fielding change — the catching side's code is untouched and its per-chase behaviour is
+    //     unchanged. The far chases were the ones that went out of bounds, and they stopped happening.
     //
     // ---- the swing bands -------------------------------------------------------------
     // The SWING's timing, which nothing above can see. Baselined on UNCHANGED code on
@@ -364,8 +387,8 @@ int test_ai_offense_breakdown(void)
     // band, and a slice that rewrites the swing's timing would have had no net at all.
     band_add(
         bands, &band_count,
-        (Band){"swing elevation |V| mean (limit 5)", T_sw_elev_n ? T_sw_elev_sum / (double)T_sw_elev_n : 0.0, 0.5, 3.5,
-               "1.91", "swings drifting off the centre of the ball — the miss the contact rate cannot see"}
+        (Band){"swing elevation |V| mean (limit 8)", T_sw_elev_n ? T_sw_elev_sum / (double)T_sw_elev_n : 0.0, 1.5, 2.5,
+               "1.90", "swings drifting off the centre of the ball — the miss the contact rate cannot see"}
     );
     // The early-warning band: margin goes before contact does. A geometry that got harder moves this
     // well before it moves anything downstream. Its FLOOR was dropped to zero when
@@ -374,26 +397,31 @@ int test_ai_offense_breakdown(void)
     // sensitivity knob's business and not this band's. The ceiling is the load-bearing side.
     band_add(
         bands, &band_count,
-        (Band){"swings past half the elevation limit %", percent(T_sw_near, T_sw_elev_n), 0, 40, "0.73",
+        (Band){"swings past half the elevation limit %", percent(T_sw_near, T_sw_elev_n), 0, 8, "1.54",
                "the timing margin collapsing while every swing still technically connects"}
     );
-    // Not a floor at zero: after the sensitivity fix a batter that NEVER mistimes is its own
-    // defect. The band is "some, not many".
+    // The floor is zero and the measurement is zero, and that is honest rather than vacuous: since
+    // the swing slice the AI DECLARES a vertical outright, so it has no timing to get wrong — it can
+    // only miss by its own deliberate scatter, which today never crosses the limit. So this band
+    // has no teeth against the AI at all; its teeth are for a geometry that gets much harder, for a
+    // scatter that widens, and for the day a producer in this tier acquires a timed gesture. Stated
+    // outright because a green band whose reason for being green is "the thing it measures cannot
+    // happen here" is the most misleading kind.
     band_add(
         bands, &band_count,
-        (Band){"whiffs caused by timing", (double)T_sw_miss_elev, 0, 90, "0",
+        (Band){"whiffs caused by timing", (double)T_sw_miss_elev, 0, 25, "0",
                "a swing that stops connecting for timing reasons, or an AI made unrealistically perfect"}
     );
     // How much margin the producer leaves the engine before the value is consumed — and, on a
     // wire one day, how much a late message could eat. The minimum seen today is 2 frames.
     band_add(
         bands, &band_count,
-        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 30,
-               200, "85.9", "a producer drifting back toward declaring at the last possible moment"}
+        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 70,
+               110, "86.1", "a producer drifting back toward declaring at the last possible moment"}
     );
     band_add(
         bands, &band_count,
-        (Band){"declined swings %", percent(T_sw_passes, T_sw_swings + T_sw_passes), 1, 45, "9.4",
+        (Band){"declined swings %", percent(T_sw_passes, T_sw_swings + T_sw_passes), 4, 16, "9.6",
                "the batter swinging at everything, or refusing to swing at all"}
     );
 
@@ -405,14 +433,14 @@ int test_ai_offense_breakdown(void)
     // determinism hash by design, so the hash cannot be the net for it.
     band_add(
         bands, &band_count,
-        (Band){"batters seated", (double)T_at_bats, 200, 360, "272",
+        (Band){"batters seated", (double)T_at_bats, 245, 315, "268",
                "the selection path stalling, double-seating, or ending half-innings early"}
     );
     // The policy probe. The batting controller walks the offer today and chooses outright
     // afterwards; if the preference order survives that rewrite, this number does not move.
     band_add(
         bands, &band_count,
-        (Band){"joker at-bats %", percent(T_joker_at_bats, T_at_bats), 15, 45, "29.0",
+        (Band){"joker at-bats %", percent(T_joker_at_bats, T_at_bats), 26, 44, "31.3",
                "the batting controller's joker preference silently changing"}
     );
     // Not "prompts answered %": a prompt overtaken by the third burn is ordinary play and made
@@ -426,8 +454,8 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 20,
-               260, "158.5", "the batting side taking longer to answer, or retrying blindly"}
+        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 135,
+               190, "156.7", "the batting side taking longer to answer, or retrying blindly"}
     );
     // §7: "Jokeripelaaja ei vie kenenkään lyöntivuoroa", so §12(2)'s "vuoron aloittanut pelaaja"
     // is the regular whose turn it is, never the joker that happened to swing first. When the

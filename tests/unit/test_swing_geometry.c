@@ -71,40 +71,28 @@ int test_swing_vertical_angle_matches_the_legacy_meter_law(void)
     return TEST_PASSED;
 }
 
-// 2. The marker's top is the legacy meter's top, and it degenerates to the sweet spot at zero power
-//    — which is why a bunt cannot be mistimed into loft.
-int test_swing_marker_top_matches_the_legacy_meter_top(void)
-{
-    for (int power_count = 0; power_count <= LEGACY_LOAD_MAX; power_count++) {
-        float power = (float)power_count / (float)LEGACY_LOAD_MAX;
-        float legacy = (float)(power_count + (LEGACY_SWING_MAX - LEGACY_LOAD_MAX)) / (float)LEGACY_SWING_MAX;
-        ASSERT(fabsf(legacy - swing_marker_top(power)) < 0.0005f, "marker top must match the legacy meter top");
-    }
-    ASSERT(
-        fabsf(swing_marker_top(0.0f) - SWING_VERTICAL_FOCAL) < 0.0005f,
-        "at zero power the marker STARTS on the sweet spot — a bunt is level by construction"
-    );
-    ASSERT(fabsf(swing_marker_top(1.0f) - 1.0f) < 0.0005f, "at full power the marker spans the whole meter");
-    ASSERT_EQ(
-        (int)(SWING_VERTICAL_FOCAL * 1000.0f), (int)(swing_marker_top(-4.0f) * 1000.0f),
-        "a power below the range clamps rather than inverting the meter"
-    );
-    return TEST_PASSED;
-}
+// (The test that pinned the marker's TOP to the legacy meter's went with the concept on 2026-09-03.
+// The marker crosses the whole bar now, so the declared vertical is the bar's own level and there is
+// no mapping left in this module to assert. What the human declares is what the human sees, and the
+// scripted tier is where that claim belongs — it can press a key.)
 
-// The hit window for one (pitch power, swing power) pair, in frames: how long the marker spends
-// close enough to the sweet spot that the swing still connects, clipped to the sweep's own ends.
-static float hit_window_frames(float pitch_power, float swing_power)
+// The hit window for one pitch, in frames: how long the marker spends close enough to the sweet spot
+// that the swing still connects, clipped to the sweep's own ends.
+//
+// It takes no swing power, and that is the whole of the 2026-09-03 change: the marker crosses the
+// whole bar whatever was declared, so the batter's own decision no longer changes how hard his swing
+// is to time. One lever each — the pitcher's toss sets the difficulty, the batter's power sets the
+// reward — instead of the pitcher's lever plus a second one the batter pointed at himself.
+static float hit_window_frames(float pitch_power)
 {
     float launch_vy = pitch_velocity_from_aim(pitch_power, 0.0f).y;
     int flight = calculate_pitch_frame_time(launch_vy, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
     int sweep = swing_vertical_sweep_frames(flight);
-    float top = swing_marker_top(swing_power);
 
     float tolerance = (float)VERTICAL_ANGLE_LIMIT / (SWING_ELEVATION_GAIN * launch_vy); // in declared units
-    float per_frame = top / (float)sweep;
+    float per_frame = 1.0f / (float)sweep; // the whole bar, every time
     float half = tolerance / per_frame;
-    float crossing = (float)sweep * (1.0f - SWING_VERTICAL_FOCAL / top);
+    float crossing = (float)sweep * (1.0f - SWING_VERTICAL_FOCAL); // the same fraction of every sweep
 
     float low = crossing - half;
     float high = crossing + half;
@@ -117,7 +105,6 @@ static float hit_window_frames(float pitch_power, float swing_power)
 int test_swing_geometry_stays_inside_its_acceptance_bands(void)
 {
     const float pitch_powers[] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
-    const float swing_powers[] = {0.0f, 0.5f, 1.0f};
 
     float hardest = 1e9f, easiest = 0.0f;
 
@@ -146,45 +133,57 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
             "one full power sweep must fit inside the windup, at every toss height"
         );
 
-        for (int j = 0; j < 3; j++) {
-            // Reachability: the sweet spot must lie on the sweep, or that power could never connect.
-            float top = swing_marker_top(swing_powers[j]);
-            ASSERT(top >= SWING_VERTICAL_FOCAL - 0.0005f, "the sweet spot must lie on the marker's travel");
-
-            float window = hit_window_frames(pitch_powers[i], swing_powers[j]);
-            ASSERT(window > 0.0f, "every (pitch, power) pair must have a reachable hit window");
-            if (window < hardest) hardest = window;
-            if (window > easiest) easiest = window;
-        }
+        float window = hit_window_frames(pitch_powers[i]);
+        ASSERT(window > 0.0f, "every pitch must have a reachable hit window");
+        if (window < hardest) hardest = window;
+        if (window > easiest) easiest = window;
     }
 
-    // Both ends were re-set on 2026-09-02 from the first play session, which is the only evidence
-    // that can set them: the original 5 frames (100 ms) was a guess, and at 154 ms the hardest swing
-    // was reported unhittable. 12 frames is 240 ms, and 55 is 1.1 s — generous at the bunt end, where
-    // a bunt should be generous. A band calibrated against a person beats one calibrated against
-    // nothing, and this is the number to move again if the next session says so.
+    // The hard end was re-set on 2026-09-02 from the first play session, which is the only evidence
+    // that can set it: the original 5 frames (100 ms) was a guess, and at 154 ms the hardest swing
+    // was reported unhittable. 12 frames is 240 ms; today's hardest is 16.6 (332 ms).
     ASSERT(hardest >= 12.0f, "the hardest swing must still be humanly timeable");
-    ASSERT(easiest <= 55.0f, "the easiest swing must still be a decision rather than a formality");
 
-    // The gradient has to EXIST (or the pitcher's power choice means nothing to the batter) and stay
-    // bounded (or the easy end is free and the hard end is hopeless).
+    // The easy end was tightened 55 -> 40 on 2026-09-03, and WHY is the interesting part. 55 frames
+    // was not a generous window, it was the whole sweep: with the marker's top scaled by the declared
+    // power, a bunt's marker STARTED on the sweet spot and never left tolerance, so any press during
+    // the entire descent connected. The "second difficulty axis" was an off switch at its easy end.
+    // With the marker crossing the whole bar there is no such case left, and the band now says so.
+    ASSERT(easiest <= 40.0f, "the easiest swing must still be a decision rather than a formality");
+
+    // The gradient has to EXIST (or the pitcher's toss means nothing to the batter) and stay bounded
+    // (or the easy end is free and the hard end is hopeless). It runs 1.3-3.0 rather than the old
+    // 1.5-4.0 because it now comes from ONE axis instead of two: the toss alone spreads the window
+    // 16.6 -> 25.9 frames, where the deleted power axis used to multiply the easy end by another 3.
     float ratio = easiest / hardest;
-    ASSERT(ratio >= 1.5f, "a higher toss and a harder swing must be measurably harder to time");
-    ASSERT(ratio <= 4.0f, "the difficulty spread must not run away between the easiest and hardest swing");
+    ASSERT(ratio >= 1.3f, "a higher toss must be measurably harder to time than a low one");
+    ASSERT(ratio <= 3.0f, "the difficulty spread must not run away between the easiest and hardest swing");
     return TEST_PASSED;
 }
 
-// 4. The two difficulty axes are real and point the right way — stated separately from the bands,
+// 4. The one difficulty axis is real and points the right way — stated separately from the bands,
 //    because a band that merely holds does not say WHICH direction the game gets harder in.
-int test_swing_difficulty_rises_with_the_toss_and_with_the_power(void)
+//
+//    There used to be a second assertion here, that a harder swing demands more exact timing than a
+//    bunt. It is gone because the axis is gone, and deliberately so: it came from a marker whose top
+//    rose with the declared power, which made the sweet spot arrive at a different moment for every
+//    power and put the difficulty lever in the hands of the player choosing the reward. The axis
+//    that remains is the physical one, and it belongs to the other player.
+int test_swing_difficulty_rises_with_the_toss(void)
 {
     ASSERT(
-        hit_window_frames(1.0f, 1.0f) < hit_window_frames(0.5f, 1.0f),
+        hit_window_frames(1.0f) < hit_window_frames(0.5f),
         "a higher toss must demand more exact timing (the ball-speed axis)"
     );
+    // And the curve is not monotonic, which is SWING_LEAD_FRAMES doing its job rather than an
+    // accident. Below about a quarter power the sweep is clamped to the flight, so it shrinks with
+    // the flight and cancels the ball speed straight back out; above it the sweep hits its cap and
+    // the ball speed starts to bite. The result is a peak in the middle and a lowest toss that is
+    // NOT the free hit it would otherwise be — the header claims exactly this, and until now nothing
+    // held it to the claim.
     ASSERT(
-        hit_window_frames(0.5f, 1.0f) < hit_window_frames(0.5f, 0.0f),
-        "a harder swing must demand more exact timing than a bunt (the power axis)"
+        hit_window_frames(0.0f) < hit_window_frames(0.25f),
+        "the lowest toss must not be the easiest pitch in the game — that is what the lead clamp buys"
     );
     return TEST_PASSED;
 }

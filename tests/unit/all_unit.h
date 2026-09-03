@@ -108,8 +108,7 @@ int test_rng_split_child_stream_is_uniform(void);
 
 // The swing minigame's geometry (actions_pure/swing_geometry.c)
 int test_swing_vertical_angle_matches_the_legacy_meter_law(void);
-int test_swing_marker_top_matches_the_legacy_meter_top(void);
 int test_swing_geometry_stays_inside_its_acceptance_bands(void);
-int test_swing_difficulty_rises_with_the_toss_and_with_the_power(void);
+int test_swing_difficulty_rises_with_the_toss(void);
 
 #endif /* ALL_UNIT_H */

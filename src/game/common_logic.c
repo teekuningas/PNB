@@ -771,7 +771,6 @@ void initialize_prai_information(MatchSession* match)
     int i;
     match->pRAI.pitch_state = PITCH_STAGE_NONE;
     match->pRAI.meter_value = 0.0f;
-    match->pRAI.swing_meter_value = 0.0f;
     match->pRAI.batting_going_on = 0;
     match->pRAI.batter_can_advance = 0;
     match->pRAI.throw_going_to_base = -1;

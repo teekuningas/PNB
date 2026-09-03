@@ -6,6 +6,7 @@
 #include "batting_ai_strategy.h"
 #include "execute_actions.h"
 #include "actions/batting_system.h"
+#include "actions/pitching_system.h" // pitch_is_being_delivered — the plan lives exactly as long as the pitch
 #include "actions_pure/swing_geometry.h"
 #include "game_manipulation.h"
 #include "rng.h"
@@ -259,11 +260,18 @@ void update_batting_ai(
         );
     }
 
-    // The plan belongs to one pitch, and a pitch now spans the WINDUP as well as the flight — the
-    // power is committed during the crouch and the elevation while the ball is up. So it is cleared
-    // when there is no pitch at all, not merely when the ball is not in the air: the earlier reading
-    // wiped the plan on the very frame it was made, and the elevation never arrived.
-    if (match->pRAI.pitch_state == PITCH_STAGE_NONE && match->aiState.swingDecided == 1) {
+    // The plan belongs to one pitch, and a pitch spans the WINDUP as well as the flight — the power
+    // is committed during the crouch and the elevation while the ball is up. So it is cleared when
+    // there is no pitch at all, not merely when the ball is not in the air: an earlier reading wiped
+    // the plan on the very frame it was made, and the elevation never arrived.
+    //
+    // "No pitch at all" is pitch_is_being_delivered and NOT `pitch_state == NONE`, which is the same
+    // correction the batter's window needed and for the same reason. Asked the old way, this cleared
+    // the plan on EVERY frame of every windup after a half-inning's first — so the moment that
+    // window opened, the controller re-decided its power, elevation and aim afresh each frame,
+    // burning three RNG draws a frame and keeping only whatever the last one happened to be. A plan
+    // is supposed to be made once and restated; that made it a plan in name only.
+    if (!pitch_is_being_delivered(match) && match->aiState.swingDecided == 1) {
         match->aiState.swingDecided = 0;
     }
     // AI: Check if it's safe to advance runners

@@ -28,7 +28,6 @@
 #include "actions/fielder_movement.h"
 #include "ai/catching_ai.h"
 #include "ai/batting_ai.h"
-#include "action_invocations.h" // swing_widget_display — the batter's meter is a client widget now
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
@@ -92,7 +91,7 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     clientInput->swingWidget.meter.dir = 0;
     clientInput->swingWidget.meter.mode = WIDGET_IDLE;
     clientInput->swingWidget.flightFrames = -1;
-    clientInput->swingWidget.powerSweepSpent = 0;
+    clientInput->swingWidget.beat = SWING_BEAT_POWER;
     clientInput->swingWidget.power = 0.0f;
 
     reset_pitching_system(match);
@@ -481,8 +480,8 @@ void execute_actions(
     // aim and the withdrawal come through as per-tick commands, because only they are things that
     // HAPPEN; a power and an elevation are things that ARE.
     update_batting(
-        match, &rules->referee, &rules->betweenPitchState, fieldPositions, commands.swing_angle_declared,
-        commands.swing_angle, commands.swing_pass, playSoundEffect
+        match, &rules->referee, fieldPositions, commands.swing_angle_declared, commands.swing_angle,
+        commands.swing_pass, playSoundEffect
     );
 }
 
@@ -614,12 +613,11 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
         match->pRAI.meter_value = 0.0f;
     }
 
-    // The batting meter is the batting side's own, and it is set HERE rather than in an else-branch
-    // of the chain above. That chain used to end in the engine's batting meter, so while a human's
-    // pitch widget was sweeping the batter's meter did not advance at all — invisible while one side
-    // is an AI, and wrong the moment two humans play. Both sides now read their own widget, and the
-    // engine has no meter of its own left to advance.
-    match->pRAI.swing_meter_value = swing_widget_display(&clientInput->swingWidget);
+    // (There is no batting meter here any more. It used to be copied out of the batter's widget into
+    // pRAI so the renderer could find it — a client display value riding in the blittable World, and
+    // one that could not say whether there was a cursor at all. The renderer asks the widget itself
+    // now, through swing_widget_view. The catching meter above is still on the old route and moves
+    // when the pitch widget stops being tied to the engine's declaration.)
 }
 
 void ai_update(

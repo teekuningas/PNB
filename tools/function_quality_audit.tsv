@@ -42,22 +42,22 @@ open	src/core/sound.c
 open	src/core/state_validator.c	
 open	src/core/vector_math.c	
 open	src/cup/cup.c	cup_menu const-correctness is tracked as known debt
-deferred	src/game/action_invocations.c	the channel slice rewrites this file into the INGEST gate
-deferred	src/game/actions/batting_system.c	the swing slice dissolves this file
+deferred	src/game/action_invocations.c	channel part 2 re-keys the pitch and throw widgets in this file
+audited	src/game/actions/batting_system.c	OPEN FINDING: update_batting is ~330 lines doing five things (clear the swing, open the cycle, actualize a pass, walk the aim, run the animation to contact). Splitting it wants the batter/pitch lifecycle seam nothing writes down yet, so it is recorded rather than forced
 audited	src/game/actions/fielder_movement.c	audited on arrival, which is the cheapest moment: one concept (the controlled fielder walks to its destination), no dead parameters, and the idempotence it claims is proved by contract test rather than asserted in a comment
-deferred	src/game/actions/pitching_system.c	the fielder-movement through swing slices dissolve this file
-deferred	src/game/actions/throwing_system.c	the fielder-movement through swing slices dissolve this file
+deferred	src/game/actions/pitching_system.c	channel part 2 merges the declaration into the actualization here
+deferred	src/game/actions/throwing_system.c	channel part 2 merges the declaration into the actualization here
 open	src/game/actions_pure/batting_physics.c	
 open	src/game/actions_pure/pitching_physics.c	
 audited	src/game/actions_pure/swing_geometry.c	purity verified — three total functions of their arguments, no state, no branch on anything but the arguments' own ranges. Written and audited in the same commit, which is the only honest moment: a file whose whole content is one derivation is read completely by whoever derived it, and reading it again later proves less. The clamps are the only conditionals and each has a named reason at its use site (a sweep of zero frames would be an unrepresentable state; a power outside [0,1] must clamp rather than invert the meter).
-deferred	src/game/ai/batting_ai.c	the batter-selection and swing slices dissolve this file
-deferred	src/game/ai/catching_ai.c	the fielder-movement slice splits this file along the controller/engine-behavior seam
+deferred	src/game/ai/batting_ai.c	controller-eviction moves this file's strategy memory out of AIState
+deferred	src/game/ai/catching_ai.c	controller-eviction moves this file's strategy memory out of AIState
 open	src/game/ai_pure/batting_ai_strategy.c	
 open	src/game/ai_pure/catching_ai_strategy.c	
 open	src/game/ai_pure/pitching_ai_strategy.c	
 open	src/game/ball.c	
 open	src/game/common_logic.c	known debt: a god-file bundling four unrelated owners
-deferred	src/game/execute_actions.c	the channel slice rewrites this file into the INGEST gate
+deferred	src/game/execute_actions.c	channel part 2 rewrites the gate's declaration handling; controller-eviction rehomes ai_update
 open	src/game/game_consolidation.c	
 open	src/game/game_frame.c	
 open	src/game/game_manipulation.c	known debt: a god-file bundling four unrelated owners

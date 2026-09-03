@@ -29,5 +29,18 @@ int test_scripted_swing_power_meter_arms_on_the_windup(void);
 int test_scripted_swing_elevation_meter_fits_inside_the_flight(void);
 int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void);
 int test_scripted_swing_silence_is_not_a_miss(void);
+int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void);
+int test_scripted_swing_power_beat_survives_into_later_pitches(void);
+int test_scripted_swing_elevation_marker_always_starts_at_the_extreme(void);
+int test_scripted_swing_a_batter_who_declares_nothing_does_not_swing(void);
+int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(void);
+int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void);
+
+// Two pads, one pitch: the four beats interleaved, a frame both sides declare on, and the one
+// ClientInputState serving both without the widgets colliding.
+int test_scripted_h2h_four_beats_on_one_pitch(void);
+int test_scripted_h2h_both_pads_may_declare_on_one_frame(void);
+int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void);
+int test_scripted_h2h_the_dance_repeats_across_pitches(void);
 
 #endif /* ALL_SCRIPTED_H */

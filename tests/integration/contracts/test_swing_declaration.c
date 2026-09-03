@@ -197,10 +197,13 @@ int test_a_withdrawn_swing_does_not_reach_the_ball(void)
     intent_push(&ctx->state->channels.batting, (IntentMessage){.kind = INTENT_SWING_PASS});
     tick(ctx);
     ASSERT_EQ(1, match->pendingActionState.batting_stopped, "a withdrawal must stop the swing on the tick it arrives");
-    ASSERT_EQ(
-        (int)BATTING_MODE_STOP, (int)match->pendingActionState.batting_mode,
-        "a withdrawn swing must re-shape the body to spread hands"
-    );
+    // What the body DOES about it is no longer assertable here, and that is the point of the change
+    // it lost: the shape used to be cached in a `batting_mode` field that nothing read, and the one
+    // guard that did read it compared against a value stop_the_swing had already moved — so a
+    // withdrawal mid-motion never reached the animation at all. The shape is derived now and stored
+    // nowhere, so the only witness is the animation, and the honest place to watch a body move is a
+    // tier where a real gesture drives it: see the scripted tier's withdrawal tests, which pin it
+    // both before the motion begins and in the middle of it.
 
     run_to_contact(ctx);
     ASSERT_EQ(

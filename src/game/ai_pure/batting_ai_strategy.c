@@ -238,10 +238,11 @@ SwingDecision decide_swing(int battingStyle, int rand_power, int rand_vertical)
     float offset = ((float)rand_vertical - 100.0f) / 100.0f;
     decision.vertical = SWING_VERTICAL_FOCAL + offset * SWING_AI_VERTICAL_SPREAD;
 
-    // Stay inside the meter a human would have been reading: above its top is a place no gesture
-    // could reach, and the engine trusts values rather than clamping them.
-    float top = swing_marker_top(decision.power);
-    if (decision.vertical > top) decision.vertical = top;
+    // Stay inside the meter a human would have been reading — which is now the whole bar, whatever
+    // power was declared, so the bound no longer depends on the power. Kept rather than dropped
+    // because the engine trusts values instead of clamping them, and a controller that can name a
+    // place no gesture could reach is a controller with an advantage nobody chose to give it.
+    if (decision.vertical > 1.0f) decision.vertical = 1.0f;
     if (decision.vertical < 0.0f) decision.vertical = 0.0f;
 
     return decision;

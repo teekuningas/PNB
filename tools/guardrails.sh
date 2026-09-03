@@ -140,7 +140,7 @@ fi
 
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
-ratchet "files awaiting the function-quality audit" "$unaudited" 52 # swing_geometry.c arrived audited
+ratchet "files awaiting the function-quality audit" "$unaudited" 51 # batting_system.c audited after the swing slice left it standing
 
 # ---------------------------------------------------------------------------
 # The rules-vocabulary ledger. A handful of rulebook sections define no consequence —

@@ -119,9 +119,8 @@ int main(int argc, char* argv[])
     // Batting Physics tests
     RUN_TEST(test_pitch_frame_time);
     RUN_TEST(test_swing_vertical_angle_matches_the_legacy_meter_law);
-    RUN_TEST(test_swing_marker_top_matches_the_legacy_meter_top);
     RUN_TEST(test_swing_geometry_stays_inside_its_acceptance_bands);
-    RUN_TEST(test_swing_difficulty_rises_with_the_toss_and_with_the_power);
+    RUN_TEST(test_swing_difficulty_rises_with_the_toss);
     RUN_TEST(test_batted_ball_velocity);
 
     // Pitching Physics tests

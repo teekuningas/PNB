@@ -15,6 +15,7 @@
 #include "referee.h"
 #include "rules_pure/player_utils.h"
 #include "game_reset.h"
+#include "action_invocations.h" // swing_widget_view — the batter's bar is a client widget, never engine state
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f // Midpoint between original -0.12 and current 0.08
@@ -39,7 +40,7 @@ int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
     init_cam_settings(stateInfo);
 
     stateInfo->match->uiState.lastMeterX = 0;
-    stateInfo->match->uiState.lastSwingMeterX = 0;
+    stateInfo->match->uiState.lastSwingMeterX = -1.0f; // nothing drawn yet — see the marker block
 
     result = init_lights(stateInfo);
     if (result != 0) {
@@ -220,7 +221,6 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 {
     char* str4;
     char str5[2] = "x";
-    float swingMeterX;
     float meterX;
     UIState* us = &(stateInfo->match->uiState);
 
@@ -414,21 +414,37 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     float marker_w = 5.0f;
     float marker_travel = meter_w - marker_w;
     meterX = 0.16f * stateInfo->match->pRAI.meter_value;
-    swingMeterX = 0.16f * stateInfo->match->pRAI.swing_meter_value;
 
     float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * marker_travel;
-    float swing_marker_x =
-        meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * marker_travel;
-
     us->lastMeterX = meterX;
-    us->lastSwingMeterX = swingMeterX;
 
     draw_texture_2d(
         resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, marker_w, 40.0f
     );
-    draw_texture_2d(
-        resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w, 40.0f
-    );
+
+    // The batting side's bar, asked of the gesture itself rather than of a number the engine carries
+    // for it. The catching side above still goes through pRAI.meter_value; it moves the same way when
+    // the pitch widget stops being tied to the engine's declaration.
+    SwingMeterView swing = swing_widget_view(&stateInfo->clientInput->swingWidget);
+
+    // The MOVING marker exists only while something is actually sweeping. Drawing it unconditionally
+    // parked a marker at the bar's left edge whenever there was no cursor — including through the
+    // whole wait between committing a power and the ball being released, where it sat next to the
+    // committed mark meaning nothing.
+    if (swing.cursorLive) {
+        // No previous position means nothing to interpolate FROM: a marker that has just appeared
+        // would otherwise streak across the bar from wherever the last one died. -1 is the "not
+        // drawn last frame" sentinel, and it is why the marker can vanish and return cleanly.
+        float previous = (us->lastSwingMeterX < 0.0f) ? swing.cursor : us->lastSwingMeterX;
+        float swing_marker_x = meter_screen_x + (alpha * swing.cursor + (1 - alpha) * previous) * marker_travel;
+        us->lastSwingMeterX = swing.cursor;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w,
+            40.0f
+        );
+    } else {
+        us->lastSwingMeterX = -1.0f;
+    }
 
     // Pitch dance — a SECOND catching-team marker. While the human aims (power already locked, the aim
     // cursor descending = field_marker above), also show a STATIC marker at the locked power, in the same
@@ -443,6 +459,29 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         draw_texture_2d(
             resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,
             40.0f
+        );
+    }
+
+    // ...and the batting team's own, the same dance on the other side of it: a STATIC marker holding
+    // the power already committed, in the batting-team colour. Without it the single cursor appeared
+    // to teleport on commit, and the batter lost sight of the decision he had just made while making
+    // the next one.
+    //
+    // Keyed on the GESTURE having a committed power, not on its second meter running. Those are the
+    // same condition for the pitcher and are NOT for the batter: his elevation meter cannot arm until
+    // the ball is in the air, so a mark keyed on the meter went dark for the whole wait between the
+    // two beats — visible, then gone at the moment of the press, then back when the ball came up.
+    // That wait is the batter's own beat of the four, so it needs a state the pitcher's gesture never
+    // had, which is exactly what SwingBeat is for.
+    //
+    // It reads the CLIENT's own copy rather than the engine's, the one difference from the block
+    // above. Both are correct locally; only this one is still correct when the declaration takes a
+    // wire's delay to arrive. The pitch's marker should follow when part 2 re-keys its widget.
+    if (swing.powerCommitted) {
+        float swing_power_marker_x = meter_screen_x + swing.power * marker_travel;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_power_marker_x, meter_y,
+            marker_w, 40.0f
         );
     }
 

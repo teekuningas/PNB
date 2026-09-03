@@ -28,8 +28,18 @@ int main(void)
     RUN_TEST(test_scripted_swing_elevation_meter_fits_inside_the_flight);
     RUN_TEST(test_scripted_swing_can_be_withdrawn_after_the_power_is_committed);
     RUN_TEST(test_scripted_swing_silence_is_not_a_miss);
+    RUN_TEST(test_scripted_swing_gesture_survives_a_declaration_still_in_flight);
+    RUN_TEST(test_scripted_swing_power_beat_survives_into_later_pitches);
+    RUN_TEST(test_scripted_swing_elevation_marker_always_starts_at_the_extreme);
+    RUN_TEST(test_scripted_swing_a_batter_who_declares_nothing_does_not_swing);
+    RUN_TEST(test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up);
+    RUN_TEST(test_scripted_swing_withdrawal_reshapes_the_body_mid_motion);
     RUN_TEST(test_scripted_batter_cursor_offers_only_legal_players);
     RUN_TEST(test_scripted_aim_leaves_no_interpolation_gap_when_it_stops);
+    RUN_TEST(test_scripted_h2h_four_beats_on_one_pitch);
+    RUN_TEST(test_scripted_h2h_both_pads_may_declare_on_one_frame);
+    RUN_TEST(test_scripted_h2h_one_pads_key_never_moves_the_others_widget);
+    RUN_TEST(test_scripted_h2h_the_dance_repeats_across_pitches);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);
