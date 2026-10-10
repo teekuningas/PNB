@@ -118,7 +118,10 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
             match->pendingActionState.throwDeclaration.phase != THROW_DECL_IDLE) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
-        if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+        // A pitch has a claim on the ball from the first frame of its windup. Asked of
+        // pitch_is_being_delivered and not of pitch_state, which reads NONE through every windup after a
+        // half-inning's first while the previous pitch's result still stands.
+        if (pitch_is_being_delivered(match)) {
             return (Permission){0, RULE_DROP_NOT_WHILE_PITCHING};
         }
         return (Permission){1, RULE_NONE};
