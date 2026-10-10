@@ -875,17 +875,6 @@ typedef struct _CameraState {
     float lightPos[4];
 } CameraState;
 
-typedef struct _UIState {
-    int gameInfoEventTimer;
-    int gameInfoEvent;
-    float lastMeterX;
-    // The batting marker's previous position, for the render interpolator. NEGATIVE means it was not
-    // drawn last frame — the batter's bar legitimately has no cursor between his two beats — and a
-    // marker that has just appeared has nothing to interpolate from, so it snaps instead of streaking
-    // across the bar from wherever the last one died.
-    float lastSwingMeterX;
-} UIState;
-
 typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
 
 typedef struct _GameFlowState {
@@ -1246,7 +1235,6 @@ typedef struct _MatchSession {
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
     PendingActionState pendingActionState; // Milestone 10 - Action globals
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
-    UIState uiState; // Milestone 11 - UI state
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
 
