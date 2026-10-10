@@ -1,6 +1,7 @@
 #include "test_helpers.h"
 #include "scripted_harness.h"
 #include "globals.h"
+#include "action_invocations.h" // catching_widget_view — what the pitcher actually sees on the bar
 #include <math.h>
 
 /*
@@ -126,7 +127,7 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
 
 // 3. After a HUMAN pitch, the AI batter's hit must actually FLY — regression guard for the bug where the
 // pitch widget stayed "active" past release (checkPitch goes quiet once the ball leaves the hand), so
-// update_meters kept showing it and never advanced the batting meter → the swing built ~0 power → the bat
+// the shared meter kept showing it and never advanced the batting meter → the swing built ~0 power → the bat
 // "hit" the ball with near-zero velocity and it floated at the plate. AI-vs-AI never hit this (no widget),
 // so only a human-pitch → AI-bat path catches it.
 int test_scripted_human_pitch_ai_hit_flies(void)
@@ -178,5 +179,68 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     ASSERT(airborne, "the human pitch must release");
     // A floated hit has horizontal speed ≈ the pitch's (~0); a real batted ball is many times faster.
     ASSERT(max_horiz_speed > 0.15f, "the AI's hit off a human pitch must FLY, not float at the plate");
+    return TEST_PASSED;
+}
+
+// 4. The catching side's bar, as the human pitcher sees it, across one whole gesture. It is answered by
+// the input layer from the gesture itself (catching_widget_view) — there is no engine copy of it any
+// more — so this holds what that copy used to promise, every frame: the bar rests at its left end until
+// the human starts, the cursor IS the sweep's level while it rises, the aim cursor descends from the far
+// end once power is locked, and the bar is back at rest once the engine has resolved the pitch.
+static float widget_level(const InputWidget* w)
+{
+    return (float)w->counter / (float)w->counter_max;
+}
+
+int test_scripted_catching_bar_follows_the_pitch_gesture(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x9117C404u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
+    const ClientInputState* ci = scripted_state(g)->clientInput;
+
+    ASSERT_FLOAT_EQ(0.0f, catching_widget_view(ci), 1e-6f, "before the gesture the bar rests at its left end");
+
+    scripted_tap(g, HUMAN_PAD, KEY_2); // start the power sweep
+    ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping after the start press");
+    float previous = catching_widget_view(ci);
+    int rose = 0;
+    for (int i = 0; i < 6; i++) {
+        scripted_tick(g);
+        const float now = catching_widget_view(ci);
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget), now, 1e-6f, "the bar shows the power sweep's own level");
+        if (now > previous) rose = 1;
+        previous = now;
+    }
+    ASSERT(rose, "the power cursor moves while it sweeps");
+
+    scripted_tap(g, HUMAN_PAD, KEY_2); // lock power: the windup begins and the aim descent arms
+    ASSERT_EQ(WIDGET_DESCENT, (int)ci->pitchWidget.mode, "locking power arms the aim descent");
+    previous = catching_widget_view(ci);
+    int fell = 0;
+    for (int i = 0; i < 6; i++) {
+        scripted_tick(g);
+        const float now = catching_widget_view(ci);
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget), now, 1e-6f, "the bar shows the aim descent's own level");
+        if (now < previous) fell = 1;
+        previous = now;
+    }
+    ASSERT(fell, "the aim cursor descends");
+
+    // Never click the aim: the descent runs out, the engine fakes the pitch and clears it, and the
+    // gesture is over. The bar must come back to rest rather than hang on the last level it showed.
+    int rested = 0;
+    for (int i = 0; i < 300 && !rested; i++) {
+        scripted_tick(g);
+        rested = (ci->pitchWidget.mode == WIDGET_IDLE && catching_widget_view(ci) == 0.0f);
+    }
+
+    int failed = scripted_failed(g);
+    char reason[SIM_FAIL_REASON_LEN];
+    snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
+    scripted_destroy(g);
+
+    ASSERT(!failed, reason);
+    ASSERT(rested, "once the pitch is resolved the bar is back at its left end");
     return TEST_PASSED;
 }

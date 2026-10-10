@@ -45,7 +45,12 @@ cd "$(dirname "$0")/.." || exit 2
 # that remains lives in a file a scheduled slice rewrites — catching_ai.c splits further
 # along the law-5 seam at the controller-eviction slice — so making it static now is churn
 # on code that is about to move, and it stays as the row's live example.
-FLOOR=1
+#
+# 1 -> 0 at the controller-eviction slice: throw_ball_to_base became file-local. The split along the
+# law-5 seam anticipated above was looked for and is not there — everything left in catching_ai.c is
+# controller decision (the human steers the controlled fielder too); the engine behaviours were already
+# the engine's.
+FLOOR=0
 
 # `main` is referenced by the C runtime, not by any object we compile.
 EXEMPT_SYMBOLS=" main "

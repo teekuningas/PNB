@@ -26,12 +26,13 @@
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
 static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
-static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
+static void
+draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
 static int init_lights(StateInfo* stateInfo);
 static void init_cam_settings(StateInfo* stateInfo);
-static void load_game_screen_settings(StateInfo* stateInfo);
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud);
 
-int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
+int init_game_screen(StateInfo* stateInfo, HudState* hud, ResourceManager* rm)
 {
     int result;
 
@@ -39,8 +40,10 @@ int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
 
     init_cam_settings(stateInfo);
 
-    stateInfo->match->uiState.lastMeterX = 0;
-    stateInfo->match->uiState.lastSwingMeterX = -1.0f; // nothing drawn yet — see the marker block
+    hud->lastMeterX = 0;
+    hud->lastSwingMeterX = -1.0f; // nothing drawn yet — see the marker block
+    hud->infoEvent = EVENT_NONE;
+    hud->infoEventTimer = -1;
 
     result = init_lights(stateInfo);
     if (result != 0) {
@@ -62,7 +65,7 @@ int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo)
+void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
 {
     BallInfo* ballInfo = &(stateInfo->match->ballInfo);
     CameraState* cs = &(stateInfo->match->cameraState);
@@ -70,7 +73,7 @@ void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo)
     if (stateInfo->changeScreen == 1) {
         stateInfo->changeScreen = 0;
         stateInfo->updated = 1;
-        load_game_screen_settings(stateInfo);
+        load_game_screen_settings(stateInfo, hud);
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -122,22 +125,34 @@ void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo)
         cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
         cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
     }
-    // cant update this at the drawing-function as that doesnt happen synchroniusly.
-    // so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
-    // we hit the threshold.
-    if (stateInfo->match->uiState.gameInfoEventTimer != -1) {
-        stateInfo->match->uiState.gameInfoEventTimer += 1;
+    // The info line's clock runs here, once per tick, and not in the draw code, which does not run in step
+    // with the tick. An announcement starts it at 0 (hud_take_announcement); it clears past the threshold.
+    if (hud->infoEventTimer != -1) {
+        hud->infoEventTimer += 1;
 
-        if (stateInfo->match->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-            stateInfo->match->uiState.gameInfoEventTimer = -1;
+        if (hud->infoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
+            hud->infoEventTimer = -1;
         }
     }
 
     // and here will a lot of logic code.
     update_game_frame(stateInfo, menuInfo);
+    hud_take_announcement(hud, &stateInfo->announcement);
 }
 
-void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+// Put what the referee pronounced this tick on the info line, and consume it. Called once per tick, after
+// it — never from the draw code, which runs at its own rate and used to clear the referee's copy.
+void hud_take_announcement(HudState* hud, GameEventType* announcement)
+{
+    if (*announcement == EVENT_NONE) return;
+    hud->infoEvent = *announcement;
+    hud->infoEventTimer = 0;
+    *announcement = EVENT_NONE;
+}
+
+void draw_game_screen(
+    const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs
+)
 {
     // Ensure the 3D rendering state is correctly set up before drawing the game screen.
     begin_3d_render(rs);
@@ -178,7 +193,7 @@ void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager*
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
-    draw_statistics_2d(stateInfo, alpha, rm, rs);
+    draw_statistics_2d(stateInfo, hud, alpha, rm, rs);
 }
 
 // lights
@@ -217,12 +232,12 @@ static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
     glPopMatrix();
 }
 
-static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+static void
+draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs)
 {
     char* str4;
     char str5[2] = "x";
     float meterX;
-    UIState* us = &(stateInfo->match->uiState);
 
     // Layout Constants
     const float BASE_Y = VIRTUAL_HEIGHT - 80.0f;
@@ -268,15 +283,9 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // INFO AREA (Left-Center)
     float info_x = CENTER_X + INFO_OFFSET_X;
 
-    if (stateInfo->rules->halfInningState.event != EVENT_NONE) {
-        us->gameInfoEventTimer = 0;
-        us->gameInfoEvent = (int)stateInfo->rules->halfInningState.event;
-        stateInfo->rules->halfInningState.event = EVENT_NONE;
-    }
-
-    if (us->gameInfoEventTimer != -1) {
+    if (hud->infoEventTimer != -1) {
         const char* msg = "";
-        switch (us->gameInfoEvent) {
+        switch (hud->infoEvent) {
         case EVENT_OUT:
             msg = "OUT";
             break;
@@ -303,6 +312,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
             break;
         case EVENT_TWO_RUNS_SCORED:
             msg = "TWO RUNS";
+            break;
+        case EVENT_NONE:
             break;
         }
         print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
@@ -413,18 +424,17 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // with the bar's left/right ends (no gap) — its travel range is (meter_w − marker_w), not meter_w.
     float marker_w = 5.0f;
     float marker_travel = meter_w - marker_w;
-    meterX = 0.16f * stateInfo->match->pRAI.meter_value;
+    meterX = 0.16f * catching_widget_view(stateInfo->clientInput);
 
-    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * marker_travel;
-    us->lastMeterX = meterX;
+    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * hud->lastMeterX) / 0.16f * marker_travel;
+    hud->lastMeterX = meterX;
 
     draw_texture_2d(
         resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, marker_w, 40.0f
     );
 
-    // The batting side's bar, asked of the gesture itself rather than of a number the engine carries
-    // for it. The catching side above still goes through pRAI.meter_value; it moves the same way when
-    // the pitch widget stops being tied to the engine's declaration.
+    // The batting side's bar, asked of the gesture itself — as the catching side's is above — rather
+    // than of a number the engine carries for it.
     SwingMeterView swing = swing_widget_view(&stateInfo->clientInput->swingWidget);
 
     // The MOVING marker exists only while something is actually sweeping. Drawing it unconditionally
@@ -435,15 +445,15 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         // No previous position means nothing to interpolate FROM: a marker that has just appeared
         // would otherwise streak across the bar from wherever the last one died. -1 is the "not
         // drawn last frame" sentinel, and it is why the marker can vanish and return cleanly.
-        float previous = (us->lastSwingMeterX < 0.0f) ? swing.cursor : us->lastSwingMeterX;
+        float previous = (hud->lastSwingMeterX < 0.0f) ? swing.cursor : hud->lastSwingMeterX;
         float swing_marker_x = meter_screen_x + (alpha * swing.cursor + (1 - alpha) * previous) * marker_travel;
-        us->lastSwingMeterX = swing.cursor;
+        hud->lastSwingMeterX = swing.cursor;
         draw_texture_2d(
             resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w,
             40.0f
         );
     } else {
-        us->lastSwingMeterX = -1.0f;
+        hud->lastSwingMeterX = -1.0f;
     }
 
     // Pitch dance — a SECOND catching-team marker. While the human aims (power already locked, the aim
@@ -547,9 +557,9 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     }
 }
 
-static void load_game_screen_settings(StateInfo* stateInfo)
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud)
 {
-    stateInfo->match->uiState.gameInfoEventTimer = -1;
+    hud->infoEventTimer = -1;
     // initialize cam
     init_cam_settings(stateInfo);
     // Physical world + flow + team setup

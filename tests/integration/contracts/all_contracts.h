@@ -74,4 +74,8 @@ int test_a_swing_never_declared_is_not_a_miss(void);
 int test_a_withdrawn_swing_does_not_reach_the_ball(void);
 int test_a_swing_declared_with_no_pitch_is_refused(void);
 
+// A pitch is in progress for its whole windup, on every pitch of a half-inning, not only the first.
+int test_drop_refused_during_a_later_windup(void);
+int test_controlled_fielder_holds_during_a_later_windup(void);
+
 #endif // ALL_CONTRACTS_H

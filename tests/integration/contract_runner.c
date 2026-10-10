@@ -51,6 +51,8 @@ static void run_contract_tests(void)
     RUN_TEST(test_a_swing_never_declared_is_not_a_miss);
     RUN_TEST(test_a_withdrawn_swing_does_not_reach_the_ball);
     RUN_TEST(test_a_swing_declared_with_no_pitch_is_refused);
+    RUN_TEST(test_drop_refused_during_a_later_windup);
+    RUN_TEST(test_controlled_fielder_holds_during_a_later_windup);
     RUN_TEST(test_pitch_unaimed_is_valesyotto);
     RUN_TEST(test_no_pitch_after_three_correct_pitches);
 

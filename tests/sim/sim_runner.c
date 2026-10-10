@@ -22,6 +22,8 @@ int main(void)
     RUN_TEST(test_world_snapshot_retick_is_identical);
     RUN_TEST(test_retick_diverges_when_engine_seed_is_not_restored);
     RUN_TEST(test_ai_ignores_frame_events);
+    RUN_TEST(test_ai_swing_plan_lives_one_pitch);
+    RUN_TEST(test_announcements_do_not_depend_on_the_screen);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

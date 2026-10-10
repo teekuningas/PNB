@@ -730,14 +730,8 @@ void reset_flow_state(MatchSession* match)
     // separation as the reset-recipe rule: physical resets never touch referee state. Client input is initialized once
     // and self-clears during play (each gesture's own guards disengage when its preconditions fail), so a foul/inning
     // reset needs to do nothing to it.
-
-    // AI batting state: force re-planning on next pitch cycle.
-    // Without this, after foul play the AI's planCalculated stays 1 (the batter_ready 0→1
-    // transition happens within consolidation, AFTER AI has already run that frame, so the AI
-    // never sees batter_ready==0 to trigger its own reset). The per-base run decisions need no
-    // reset — the AI now derives them from live game state each frame (will_start_running +
-    // player state), so there is no stale click-sim bookkeeping to clear.
-    match->aiState.planCalculated = 0;
+    // The same holds for the AI's memory (AIControllerState), in both directions: a controller notices a reset by
+    // observing the world it leaves behind, never by the engine reaching in to clear it.
 
     // Camera
     match->cameraState.homeRunCameraFlag = 0;
@@ -770,7 +764,6 @@ void initialize_prai_information(MatchSession* match)
 {
     int i;
     match->pRAI.pitch_state = PITCH_STAGE_NONE;
-    match->pRAI.meter_value = 0.0f;
     match->pRAI.batting_going_on = 0;
     match->pRAI.batter_can_advance = 0;
     match->pRAI.throw_going_to_base = -1;

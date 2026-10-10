@@ -18,7 +18,6 @@
     instead is gone: its last field was the swing's phase, and the swing became two declared values.
 */
 
-#include "globals.h"
 #include "execute_actions.h"
 #include "common_logic.h"
 #include "vector_math.h"
@@ -26,9 +25,6 @@
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"
 #include "actions/fielder_movement.h"
-#include "ai/catching_ai.h"
-#include "ai/batting_ai.h"
-#include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/rules_batting_order.h"
@@ -61,47 +57,14 @@ typedef struct _IngestedCommands {
 static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
 static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels);
 
-void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
+void init_execute_actions(MatchSession* match)
 {
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-
-    // Client-local input memory: initialized once here, self-clears during play (a physical-world reset
-    // never touches it — see reset_flow_state).
-    for (int i = 0; i < BASE_COUNT; i++) {
-        clientInput->run_press_window[i] = 0;
-    }
-    clientInput->pitchWidget.counter = 0;
-    clientInput->pitchWidget.counter_max = 0;
-    clientInput->pitchWidget.dir = 0;
-    clientInput->pitchWidget.mode = WIDGET_IDLE;
-    clientInput->throwWidget.counter = 0;
-    clientInput->throwWidget.counter_max = 0;
-    clientInput->throwWidget.dir = 0;
-    clientInput->throwWidget.mode = WIDGET_IDLE;
-    clientInput->moveWidget.held = 0;
-    clientInput->moveWidget.controlIndex = -1;
-    clientInput->moveWidget.declared = 0;
-    clientInput->moveWidget.framesSinceDeclared = 0;
-    clientInput->moveWidget.point = (Vector3D){0};
-    clientInput->batterWidget.highlight = 0;
-    clientInput->batterWidget.selected = 0;
-    clientInput->batterAim = 0.0f;
-    clientInput->swingWidget.meter.counter = 0;
-    clientInput->swingWidget.meter.counter_max = 0;
-    clientInput->swingWidget.meter.dir = 0;
-    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
-    clientInput->swingWidget.flightFrames = -1;
-    clientInput->swingWidget.beat = SWING_BEAT_POWER;
-    clientInput->swingWidget.power = 0.0f;
 
     reset_pitching_system(match);
     init_batting_system(match);
     init_throwing_system(match);
     match->pendingActionState.run_bat_flag = 0;
-
-    // ai uses a few flags..
-
-    init_batting_ai(&(match->aiState));
 }
 
 // The channel's producer-side operation. It lives beside the gate that drains it because the channel
@@ -155,7 +118,10 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
             match->pendingActionState.throwDeclaration.phase != THROW_DECL_IDLE) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
-        if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+        // A pitch has a claim on the ball from the first frame of its windup. Asked of
+        // pitch_is_being_delivered and not of pitch_state, which reads NONE through every windup after a
+        // half-inning's first while the previous pitch's result still stands.
+        if (pitch_is_being_delivered(match)) {
             return (Permission){0, RULE_DROP_NOT_WHILE_PITCHING};
         }
         return (Permission){1, RULE_NONE};
@@ -594,47 +560,5 @@ static void base_run(
         } else {
             run_to_previous_base(match, fieldPositions, index, base);
         }
-    }
-}
-
-void update_meters(MatchSession* match, const ClientInputState* clientInput)
-{
-    // The catching meter (meter_value) is a CLIENT display, read from the LOCAL HUMAN's input widget — the
-    // pitch sampler (power ping-pong, then aim descent) or the throw charge widget — whichever is active.
-    // Both are self-contained client widgets (ClientInputState); neither the meter nor any input logic reads
-    // an engine actualization clock (the engine↔client contract). An AI pitch/throw arms NO widget, so it
-    // drives no meter automatically — no phase-gate special-case needed. (meter_value is render-only: read
-    // solely by game_screen.c, never by logic and not in the checksum.)
-    if (clientInput->pitchWidget.mode != WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
-        match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
-    } else if (clientInput->throwWidget.mode != WIDGET_IDLE && clientInput->throwWidget.counter_max > 0) {
-        match->pRAI.meter_value = (float)clientInput->throwWidget.counter / clientInput->throwWidget.counter_max;
-    } else {
-        match->pRAI.meter_value = 0.0f;
-    }
-
-    // (There is no batting meter here any more. It used to be copied out of the batter's widget into
-    // pRAI so the renderer could find it — a client display value riding in the blittable World, and
-    // one that could not say whether there was a cursor at all. The renderer asks the widget itself
-    // now, through swing_widget_view. The catching meter above is still on the old route and moves
-    // when the pitch widget stops being tied to the engine's declaration.)
-}
-
-void ai_update(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
-    AIControllerState* aiController, IntentChannels* channels
-)
-{
-    int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
-    TeamControlMode battingControl = rules->scoreboard.teams[battingTeamIndex].control;
-    TeamControlMode catchingControl = rules->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
-
-    // Each controller is handed ONLY its own team's channel — not both. A controller that cannot name
-    // the other team's channel cannot write it, whatever it intends.
-    if (team_is_ai(catchingControl)) {
-        update_catching_ai(match, rules, fieldPositions, aiController, &channels->catching);
-    }
-    if (team_is_ai(battingControl)) {
-        update_batting_ai(match, rules, fieldPositions, aiController, &channels->batting);
     }
 }

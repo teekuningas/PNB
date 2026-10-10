@@ -176,7 +176,7 @@ static void update_initialization_events(
 
 static void update_foul_play_logic(
     const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
-    BetweenPitchState* betweenPitchState
+    BetweenPitchState* betweenPitchState, GameEventType* announcement
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -243,11 +243,11 @@ static void update_foul_play_logic(
                 referee->foulTimer = 0;
 
                 // Trigger global OUT_OF_BOUNDS event (or OUT if we struck out)
-                if (halfInningState->event == EVENT_NONE) {
+                if (*announcement == EVENT_NONE) {
                     if (referee->strikesAtPitchStart == 2) {
-                        halfInningState->event = EVENT_OUT;
+                        *announcement = EVENT_OUT;
                     } else {
-                        halfInningState->event = EVENT_OUT_OF_BOUNDS;
+                        *announcement = EVENT_OUT_OF_BOUNDS;
                     }
                 }
             }
@@ -256,8 +256,8 @@ static void update_foul_play_logic(
 }
 
 static void update_wounding_logic(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
-    const BetweenPitchState* betweenPitchState
+    const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events,
+    const BetweenPitchState* betweenPitchState, GameEventType* announcement
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -324,7 +324,7 @@ static void update_wounding_logic(
                     // Normal wound: WOUND_MARKED -> WOUNDED (if at base) or WOUND_PENDING (if running)
                     if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) {
                         // Trigger global event
-                        halfInningState->event = EVENT_WOUNDED;
+                        *announcement = EVENT_WOUNDED;
                         referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
 
                         // Check if player is at a base or running
@@ -339,7 +339,7 @@ static void update_wounding_logic(
                     // Tuplahaava wound: WOUND_MARKED_DOUBLE -> WOUND_PENDING_DOUBLE (keep safety for now)
                     else if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
                         // Trigger global event
-                        halfInningState->event = EVENT_WOUNDED;
+                        *announcement = EVENT_WOUNDED;
 
                         // Tuplahaava: Keep safety, set to PENDING_DOUBLE (resolved later)
                         referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
@@ -476,15 +476,18 @@ static void update_safety_status(const StateInfo* stateInfo, RefereeState* refer
 // to a spurious 4th out (bug #6, seed 0xFD7261D4). This caps the count: record an out only while < 3. The
 // homerun contest (period >= 4) accumulates outs differently, so it is left uncapped. The caller still
 // sets the player's status OUT regardless — a would-be 4th out's status is harmless (the inning resets).
-static void record_out_capped(HalfInningState* halfInningState, const Scoreboard* scoreboard)
+static void
+record_out_capped(HalfInningState* halfInningState, const Scoreboard* scoreboard, GameEventType* announcement)
 {
     if (scoreboard->period < 4 && halfInningState->outs >= 3) return;
     halfInningState->outs += 1;
-    halfInningState->event = EVENT_OUT;
+    *announcement = EVENT_OUT;
 }
 
-static void
-update_force_outs(const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase)
+static void update_force_outs(
+    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
+    GameEventType* announcement
+)
 {
     const MatchSession* game = stateInfo->match;
 
@@ -523,7 +526,9 @@ update_force_outs(const StateInfo* stateInfo, RefereeState* referee, HalfInningS
                 )) {
 
                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
+                record_out_capped(
+                    halfInningState, &stateInfo->rules->scoreboard, announcement
+                ); // §28: never a spurious 4th
 
                 // Remove safety if they had it at this base
                 if (has_safety_at_current) {
@@ -545,7 +550,8 @@ update_force_outs(const StateInfo* stateInfo, RefereeState* referee, HalfInningS
 }
 
 static void update_tuplahaava_logic(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase
+    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
+    GameEventType* announcement
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -572,7 +578,9 @@ static void update_tuplahaava_logic(
                 // Exception 2: Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
+                    record_out_capped(
+                        halfInningState, &stateInfo->rules->scoreboard, announcement
+                    ); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
                 }
                 // Exception 1: Ball at SOURCE base -> Lose Safety, become WOUNDED
@@ -605,7 +613,9 @@ static void update_tuplahaava_logic(
                 // Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28: never a spurious 4th
+                    record_out_capped(
+                        halfInningState, &stateInfo->rules->scoreboard, announcement
+                    ); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                 }
             } else if (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT) {
@@ -624,12 +634,12 @@ static void update_tuplahaava_logic(
 // awarded it and deliberately stays at the call site: which player flag it sets (`hasScored` removes the
 // player; `runOfHonorScored` leaves them on third), whether it refreshes the batting pool, and the §42
 // overtaking check. Folding those in would need a mode flag per rule — four rules wearing one name.
-static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState)
+static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState, GameEventType* announcement)
 {
     const int battingTeamIndex = get_batting_team_index(scoreboard);
     scoreboard->teams[battingTeamIndex].runs += 1;
     halfInningState->runsInTheInning += 1;
-    halfInningState->event = EVENT_RUN_SCORED;
+    *announcement = EVENT_RUN_SCORED;
 
     // §12: "kahden saadun juoksun ja kunkin kahden lisäjuoksun jälkeen" — every EVEN-numbered run of
     // the half-inning re-designates the last batter, and the official interpretation says exactly
@@ -664,7 +674,7 @@ static void end_period_if_decided(HalfInningState* halfInningState, const Scoreb
 
 static void update_runs(
     const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, GameEventType* announcement
 )
 {
     const MatchSession* game = stateInfo->match;
@@ -723,11 +733,11 @@ static void update_runs(
                     );
 
                     if (regularRun) {
-                        award_run(scoreboard, halfInningState);
+                        award_run(scoreboard, halfInningState, announcement);
 
                         referee->battingPlayers[i].hasScored = 1;
                     } else if (runOfHonor) {
-                        award_run(scoreboard, halfInningState);
+                        award_run(scoreboard, halfInningState, announcement);
 
                         referee->battingPlayers[i].runOfHonorScored = 1;
                         // Do NOT set hasScored=1, as that removes the player. Run of Honor players stay at 3rd.
@@ -744,7 +754,9 @@ static void update_runs(
 
                             if (someone_else_has_third_safety) {
                                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                                record_out_capped(halfInningState, &stateInfo->rules->scoreboard); // §28 cap
+                                record_out_capped(
+                                    halfInningState, &stateInfo->rules->scoreboard, announcement
+                                ); // §28 cap
                             }
                         }
                     }
@@ -767,7 +779,7 @@ static void update_strikes(HalfInningState* halfInningState, const GameEvents* e
 
 static void update_pitch_resolution(
     const StateInfo* stateInfo, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
-    const GameEvents* events
+    const GameEvents* events, GameEventType* announcement
 )
 {
     // Check if a pitch has physically concluded (hit ground) while still logically active
@@ -779,10 +791,10 @@ static void update_pitch_resolution(
 
             if (result == PITCH_RESULT_STRIKE) {
                 halfInningState->strikes += 1;
-                halfInningState->event = EVENT_STRIKE;
+                *announcement = EVENT_STRIKE;
             } else if (result == PITCH_RESULT_BALL) {
                 halfInningState->balls += 1;
-                halfInningState->event = EVENT_BALL;
+                *announcement = EVENT_BALL;
             }
 
             betweenPitchState->pitchResult = result;
@@ -795,7 +807,7 @@ static void update_pitch_resolution(
 
 static void update_free_walk_resolution(
     RefereeState* referee, HalfInningState* halfInningState, Scoreboard* scoreboard, const FlowControl* flowControl,
-    const GameEvents* events
+    const GameEvents* events, GameEventType* announcement
 )
 {
     // No free walk processing once end-of-inning has been decided
@@ -813,11 +825,11 @@ static void update_free_walk_resolution(
             referee->battingPlayers[i].hasScored = 1;
 
             // Add run — a free walk on 3+ balls is worth two here
-            award_run(scoreboard, halfInningState);
+            award_run(scoreboard, halfInningState, announcement);
 
             if (halfInningState->balls >= 3) {
-                award_run(scoreboard, halfInningState);
-                halfInningState->event = EVENT_TWO_RUNS_SCORED;
+                award_run(scoreboard, halfInningState, announcement);
+                *announcement = EVENT_TWO_RUNS_SCORED;
             }
 
             end_period_if_decided(halfInningState, scoreboard);
@@ -836,7 +848,7 @@ static void update_free_walk_resolution(
                 referee->battingPlayers[i].hasScored = 1;
 
                 // Add run
-                award_run(scoreboard, halfInningState);
+                award_run(scoreboard, halfInningState, announcement);
 
                 end_period_if_decided(halfInningState, scoreboard);
             }
@@ -849,7 +861,7 @@ static void update_free_walk_resolution(
 
 static void resolve_pending_runs(
     RefereeState* referee, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
-    Scoreboard* scoreboard
+    Scoreboard* scoreboard, GameEventType* announcement
 )
 {
     // No run resolution once end-of-inning has been decided
@@ -868,14 +880,14 @@ static void resolve_pending_runs(
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (referee->battingPlayers[i].hasPendingRun) {
                     // Award Regular Run
-                    award_run(scoreboard, halfInningState);
+                    award_run(scoreboard, halfInningState, announcement);
 
                     referee->battingPlayers[i].hasScored = 1;
                     referee->battingPlayers[i].hasPendingRun = 0;
                 }
                 if (referee->battingPlayers[i].hasPendingRunOfHonor) {
                     // Award Run of Honor
-                    award_run(scoreboard, halfInningState);
+                    award_run(scoreboard, halfInningState, announcement);
 
                     referee->battingPlayers[i].runOfHonorScored = 1;
                     referee->battingPlayers[i].hasPendingRunOfHonor = 0;
@@ -896,7 +908,7 @@ static void resolve_pending_runs(
                 // Only award run if player was NOT wounded by the catch
                 if (referee->battingPlayers[i].status < PLAYER_STATUS_WOUND_MARKED) {
                     // Award Regular Run
-                    award_run(scoreboard, halfInningState);
+                    award_run(scoreboard, halfInningState, announcement);
 
                     referee->battingPlayers[i].hasScored = 1;
                 } else {
@@ -1015,7 +1027,6 @@ static void clear_referee_for_inning_end(
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     halfInningState->runsInTheInning = 0;
-    halfInningState->event = EVENT_NONE;
     halfInningState->endPeriod = 0;
     halfInningState->jokersLeft = JOKER_COUNT;
     halfInningState->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
@@ -1059,7 +1070,6 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     his->balls = 0;
     his->strikes = 0;
     his->runsInTheInning = 0;
-    his->event = EVENT_NONE;
     his->endPeriod = 0;
     his->jokersLeft = JOKER_COUNT;
     his->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
@@ -1176,11 +1186,18 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
 
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState,
+    GameEventType* announcement
 )
 {
     const MatchSession* game = stateInfo->match;
     const FlowControl* flowControl = &game->flowControl; // Read-only access to flow data
+
+    // What the referee announces — OUT, STRIKE, RUN — is an output of this tick, like a sound, and never
+    // World state: nothing that decides the game may depend on whether somebody displayed it. It starts
+    // every tick empty, so "nothing announced yet" means "this tick", which is what the foul-play
+    // announcement asks before it speaks.
+    *announcement = EVENT_NONE;
 
     // 0. Initialization Events (Milestone 17)
     update_initialization_events(
@@ -1196,7 +1213,9 @@ void update_referee(
     }
 
     // 2.5 Foul Play & Wounding Logic (Milestone 17)
-    update_foul_play_logic(stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState);
+    update_foul_play_logic(
+        stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState, announcement
+    );
 
     // If foul play reset is triggered, the physical world is out of sync with legal state.
     // We skip gameplay logic this frame, but we still run Flow Control (Gather-Decide-Act)
@@ -1206,24 +1225,24 @@ void update_referee(
             betweenPitchState->hasBallHitGround = 1;
         }
 
-        update_wounding_logic(
-            stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState
-        );
+        update_wounding_logic(stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, announcement);
 
         // 3. Safety Pipeline
         update_safety_status(stateInfo, refereeState);
-        update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase);
-        update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase);
-        update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, scoreboard);
+        update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase, announcement);
+        update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase, announcement);
+        update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
 
         // 3.5 Resolve Pending Runs (Milestone 17)
-        resolve_pending_runs(refereeState, halfInningState, betweenPitchState, scoreboard);
+        resolve_pending_runs(refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
 
         // 4. Strikes
         update_strikes(halfInningState, &stateInfo->match->gameEvents);
-        update_pitch_resolution(stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents);
+        update_pitch_resolution(
+            stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents, announcement
+        );
         update_free_walk_resolution(
-            refereeState, halfInningState, scoreboard, flowControl, &stateInfo->match->gameEvents
+            refereeState, halfInningState, scoreboard, flowControl, &stateInfo->match->gameEvents, announcement
         );
 
         // 5. Game State Flags
@@ -1376,7 +1395,7 @@ void update_referee(
                 homeRunContestState->runnerBatterPairCounter++;
 
                 if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
-                    halfInningState->event = EVENT_NEXT_PAIR;
+                    *announcement = EVENT_NEXT_PAIR;
                 }
             }
         } else if (currentState == HR_PAIR_STATE_DETECTED) {
@@ -1401,7 +1420,7 @@ void update_referee(
         if (wants_inning_end) {
             refereeState->endOfInningState = END_INNING_STATE_DETECTED;
             refereeState->endInningTimer = 0;
-            halfInningState->event = EVENT_INNING_ENDING;
+            *announcement = EVENT_INNING_ENDING;
         }
     } else if (endState == END_INNING_STATE_DETECTED) {
         refereeState->endInningTimer++;

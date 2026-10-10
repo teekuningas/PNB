@@ -111,7 +111,11 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 # 88 → 89 on 2026-08-28: the batter-selection contract tests, which build the §12 window and name
 # MatchSession, IntentMessage and JokerStatus to do it. The rule they exercise, rules_batting_order.c,
 # includes NOTHING and costs zero here — the price is the test that drives the engine, not the rule.
-ratchet "files including globals.h" "$globals_includers" 89
+# 89 → 88 on 2026-10-10, the controller-eviction slice: +1 for ai/ai_controller.h, the CONTROL stage's AI
+# half moving out of the execution stage's header where it never belonged, paid openly; −2 for
+# batting_ai.c and execute_actions.c, which named globals.h directly beside their own header that
+# already provides it — the house convention, not a hidden dependency.
+ratchet "files including globals.h" "$globals_includers" 88
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:
@@ -140,7 +144,7 @@ fi
 
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
-ratchet "files awaiting the function-quality audit" "$unaudited" 51 # batting_system.c audited after the swing slice left it standing
+ratchet "files awaiting the function-quality audit" "$unaudited" 49 # the AI controllers audited at the controller-eviction slice, as their deferral said
 
 # ---------------------------------------------------------------------------
 # The rules-vocabulary ledger. A handful of rulebook sections define no consequence —
@@ -169,6 +173,20 @@ ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
 # ---------------------------------------------------------------------------
 action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='*.h' | wc -l)
 ratchet "lines touching ActionFlags" "$action_flags_lines" 0
+
+# ---------------------------------------------------------------------------
+# A signal that cannot answer the question it looks like it answers. pRAI.pitch_state
+# reads NONE right through every windup after a half-inning's first, because consolidation
+# re-asserts a resolved pitch on every frame the previous pitch's result still stands. So
+# "is a pitch happening?" must be asked of pitch_is_being_delivered; reading AIRBORNE is
+# the one comparison that never lies. Every other reading was audited on 2026-10-10 — the
+# two that asked the unanswerable question (the DROP gate, the fielder freeze) were fixed,
+# and the seven left each ask something the signal CAN answer. A new one fails here and has
+# to be argued for, until the root repair in consolidation makes the signal honest.
+# ---------------------------------------------------------------------------
+pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep -v 'AIRBORNE' |
+    grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
+ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 7
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

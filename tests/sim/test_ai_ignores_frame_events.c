@@ -1,7 +1,7 @@
 #include "test_helpers.h"
 #include "sim_harness.h"
 #include "game_frame.h"
-#include "execute_actions.h"
+#include "ai/ai_controller.h"
 
 #include <string.h>
 
@@ -26,6 +26,9 @@
 // It also pins the other direction: a controller must not WRITE frame events either. Events are
 // produced by engine stages and consumed by the referee; a controller that posts one is speaking
 // on the engine's behalf.
+// Since the controller-eviction slice that direction is the compiler's as well — ai_update receives the
+// World const — so the runtime check below is a second net, and the comparison that does the work is
+// the controller's own memory and its declared messages.
 
 #define WARMUP_FRAMES 400
 #define SAMPLE_FRAMES 3000

@@ -8,8 +8,8 @@
 // base-run key as advance vs. come-back), halfInningState (const) for §12's spent-order clause (the
 // batter cursor offers only what the rules allow), and keyStates for input.
 // Writes each team's intent channel and clientInput (the human's tap windows, charge and meter
-// memory) and NOTHING ELSE. It has no write access to the world beyond the channel: every action a
-// human can take is now a declared message, so there is no flag left for this stage to set.
+// memory) and NOTHING ELSE. The world arrives const, so the compiler holds that: every action a human
+// can take is a declared message, and there is nothing left in the world for this stage to set.
 // What the batter's bar should SHOW this frame — the whole of it, answered in one place.
 //
 // The input layer answers it because the bar IS the gesture: which marks exist and where is a fact
@@ -31,8 +31,13 @@ typedef struct _SwingMeterView {
 
 SwingMeterView swing_widget_view(const SwingWidget* w);
 
+// The catching side's bar: the live pitch or throw cursor in [0,1], or 0 when neither widget is live.
+float catching_widget_view(const ClientInputState* clientInput);
+
+void init_client_input(ClientInputState* clientInput);
+
 void action_invocations(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
     const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 );
 

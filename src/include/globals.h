@@ -803,7 +803,6 @@ typedef struct _HalfInningState {
     int balls;
     int strikes;
     int runsInTheInning;
-    GameEventType event;
     int endPeriod; // Rule state: period should end
     // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."
     // A genuinely consumable resource, and per half-inning — so it lives with the half-inning.
@@ -875,39 +874,7 @@ typedef struct _CameraState {
     float lightPos[4];
 } CameraState;
 
-typedef struct _UIState {
-    int gameInfoEventTimer;
-    int gameInfoEvent;
-    float lastMeterX;
-    // The batting marker's previous position, for the render interpolator. NEGATIVE means it was not
-    // drawn last frame — the batter's bar legitimately has no cursor between his two beats — and a
-    // marker that has just appeared has nothing to interpolate from, so it snaps instead of streaking
-    // across the bar from wherever the last one died.
-    float lastSwingMeterX;
-} UIState;
-
 typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
-
-typedef struct _AIState {
-    // Catching AI
-
-    // Batting AI. There is no lock machine and no key-down bookkeeping: the controller decides a
-    // swing once per pitch and declares it as values, so there is nothing to sequence.
-    int swingDecided; // 1 once this pitch's swing has been planned
-    float decidedAngle;
-    float decidedPower; // [0,1], the power this at-bat's swing is aimed at
-    float decidedVertical; // [0,1], where on the sweep it means to meet the ball
-    int battingStyle;
-    int runningBatter;
-    int runningBaseRunners;
-    int planCalculated;
-
-    // Pitching AI. The legacy click-sim lock machine (pitchStage / pitchFirstLimit / pitchSecondLimit /
-    // pitchTime / pitchPreviousTime) is GONE — the AI now declares the pitch directly through the phased
-    // PitchDeclaration (decide_pitch_aim), exactly like the human, with no meter to puppeteer.
-    int batterReadyTimer; // delay before the AI begins a pitch (gives a human batter time to settle)
-    int aiWrongPitch; // derived predicate (kept; read by the batting AI)
-} AIState;
 
 typedef struct _GameFlowState {
     int closeToGround;
@@ -1100,7 +1067,7 @@ typedef struct _InputWidget {
 //
 // One enum rather than a bag of bits, so "declined" and "committed" cannot both be true and the
 // meaningless combinations are unrepresentable. It is a controller's private memory, exactly as the
-// AI's `swingDecided` is: the same fact, on the other side of the same boundary.
+// AI's swing plan (`AISwingPlan.decided`) is: the same fact, on the other side of the same boundary.
 typedef enum {
     SWING_BEAT_POWER = 0, // the power sweep is running, or about to arm; nothing said yet
     SWING_BEAT_LOADED, // a power has been declared; the elevation is the beat still outstanding
@@ -1153,10 +1120,33 @@ typedef struct _ClientInputState {
     float batterAim;
 } ClientInputState;
 
+// The batting controller's plan for the pitch under way: what it decided to swing, and whether it
+// has judged the pitch väärä. One struct because it is one lifetime — it is made during the windup,
+// used through the flight, and wiped whole the first tick the controller sees no pitch being
+// delivered. The controller wipes it itself, by observing the world; the engine used to reset the
+// judgement at release, which was an engine write into a controller's memory.
+//
+// `style` is memory and not something to recompute, unlike the pre-pitch strategy it is taken from:
+// the moment the ball leaves the hand, runners leave their bases and the situation the strategy
+// reads changes under it. What the swing was decided AS is fixed when it is decided.
+//
+// `wrongPitch` is a judgement, not a predicate to recompute either: is_wrong_pitch reads the ball's
+// velocity as if it had just been launched, so it is only true about the pitch near the start of
+// the flight, and the decision to withdraw has to outlive that.
+typedef struct _AISwingPlan {
+    int decided; // the values below are this pitch's swing; nothing else here means anything until then
+    int style; // the batting style it was decided as — 0 bunt, 1 normal, 2 wounding
+    float power;
+    float vertical;
+    float angle;
+    int wrongPitch; // judged väärä from the ball in the air — the swing is withdrawn, the runners called back
+} AISwingPlan;
+
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE
 // MatchSession, never crosses the wire, and is in no snapshot — controller memory is controller-private.
-// Today it holds only the controller's RNG stream. The AI's surviving strategy memory (AIState)
-// moves here at the controller-eviction slice.
+// It is ALL of the AI's memory. The controller reads the World const and writes only this and its
+// team's channel, and nothing in the engine writes here: a controller invalidates its own memory by
+// observing durable world state. Its lifetime is the match (init_ai_controller, at match setup).
 //
 // Why the controller's randomness cannot live on the engine's stream: a replay from a message log
 // runs no AI at all, and a networked peer never runs OUR controllers. Either way the AI's draws
@@ -1164,6 +1154,12 @@ typedef struct _ClientInputState {
 // diverge permanently — lockstep prevents divergence, it never heals it.
 typedef struct _AIControllerState {
     unsigned int rngSeed;
+
+    // Frames the batter has stood ready with the ball in the pitcher's hand, -1 while he is not —
+    // the pause before the AI pitches, so a human batter can settle and the fielders get home.
+    int batterReadyTimer;
+
+    AISwingPlan swing;
 
     // What the catching controller last told the engine about where its fielder is going, and how
     // long ago. Controller memory, so it lives here and not in the World: a replay from a message
@@ -1187,7 +1183,6 @@ typedef enum {
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {
-    float meter_value; // meter for pitching and throwing
 
     PitchCycleState pitch_state; // Replaces pitchGoingOn and pitchInAir
 
@@ -1238,9 +1233,7 @@ typedef struct _MatchSession {
     FlowControl flowControl; // MILESTONE 17 - User flow gates
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
     PendingActionState pendingActionState; // Milestone 10 - Action globals
-    AIState aiState; // Milestone 11 - AI globals
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
-    UIState uiState; // Milestone 11 - UI state
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
 
@@ -1289,6 +1282,11 @@ typedef struct _StateInfo {
     // frame. Storing them here just gives that per-tick value a place to sit on this machine; the
     // state validator holds them to being empty at every frame boundary.
     IntentChannels channels;
+    // What the referee pronounced this tick — OUT, STRIKE, RUN — for the screen to show. An OUTPUT of the
+    // tick, beside the channels that are its input and for the same reason held by value: the referee
+    // empties it at the top of every tick and the screen consumes it, and it is in no snapshot, so whether
+    // anybody displayed an announcement can never reach a future frame.
+    GameEventType announcement;
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

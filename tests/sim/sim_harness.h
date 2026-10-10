@@ -13,7 +13,7 @@
  * deliberately bypasses input, AI, meters and menus and injects intents by hand,
  * this harness boots a real game from a GameSetup (the same fixtures the graphical
  * client uses) and ticks the production `update_game_frame()` — including the whole
- * CONTROL stage (action_invocations + ai_update) plus update_meters + referee +
+ * CONTROL stage (action_invocations + ai_update) plus execution + referee +
  * consolidation. With both teams set to CONTROL_AI this runs a real AI-vs-AI game
  * with zero rendering.
  *

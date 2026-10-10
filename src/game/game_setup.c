@@ -3,6 +3,7 @@
 #include "rules_pure/player_utils.h"
 #include "referee.h"
 #include "rng.h"
+#include "ai/ai_controller.h"
 #include <string.h>
 
 void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
@@ -15,10 +16,11 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
     // A match starts here, so this is where its random streams are born. The caller's seed is the
     // app-level stream (menus, cup simulation); the match gets two independent children of it:
     // one for the engine (World state, snapshotted) and one for the AI controller (controller-
-    // private, never synced). Both stay reproducible from the caller's seed alone.
+    // private, never synced). Both stay reproducible from the caller's seed alone, and the controller's whole
+    // memory is born here with its stream: it lives exactly as long as the match.
     stateInfo->match->rngSeed = rng_split(rng_seed);
     if (stateInfo->aiController != NULL) {
-        stateInfo->aiController->rngSeed = rng_split(rng_seed);
+        init_ai_controller(stateInfo->aiController, rng_split(rng_seed));
     }
 
     // Set teams and controls for all game modes

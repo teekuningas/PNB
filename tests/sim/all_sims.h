@@ -19,4 +19,10 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void);
 // Controller symmetry, law 1 — controllers may not read (or write) frame events.
 int test_ai_ignores_frame_events(void);
 
+// Controller memory is the controller's to end: the batting plan lives exactly one pitch.
+int test_ai_swing_plan_lives_one_pitch(void);
+
+// The tick's announcement is an output: the same game whether or not a screen consumes it.
+int test_announcements_do_not_depend_on_the_screen(void);
+
 #endif /* ALL_SIMS_H */

@@ -1,7 +1,4 @@
-/*
-    the main purpose of this code is to set flags for execute_actions when key combinations trigger some events.
-    everything here is pretty straightforward.
-*/
+// The human controller: key states and client-local widgets in, value messages on the team's channel out.
 
 #include "globals.h"
 #include "action_invocations.h"
@@ -37,23 +34,24 @@
 #define THROW_CHARGE_FRAMES 45 // frames to reach full charge on a held throw (~0.9s at 50Hz)
 
 static int checkThrowGesture(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 );
 static void advance_widget(InputWidget* w);
 static float charge_to_power(int counter, int counter_max);
-static void
-checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel);
+static void checkDrop(
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+);
 static void checkMove(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 );
 static void checkChangePlayer(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 );
 static void checkPitch(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, IntentChannel* channel
 );
 static void checkBatterSelection(
     const MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* halfInningState,
@@ -72,12 +70,12 @@ static void checkSwing(
     int withdrawKey, TeamControlMode control, IntentChannel* channel
 );
 static void checkBattingTeamRun(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    BaseID base, const RefereeState* referee, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, BaseID base, const RefereeState* referee, IntentChannel* channel
 );
 
 void action_invocations(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
     const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 )
 {
@@ -198,7 +196,7 @@ void action_invocations(
 //     already elapsed → immediate. This is the same COMMITTED the AI declares, just reached in two frames.
 // The AI never uses this — it declares COMMITTED directly in catching_ai.c — so AI control returns early.
 static int checkThrowGesture(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 )
 {
@@ -289,7 +287,7 @@ static int checkThrowGesture(
 // itself. Holding a key is a state, not a stream of events, so a widget that re-declared every frame
 // would be paying messages to tell the engine what it already holds.
 static void checkMove(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 )
 {
@@ -349,7 +347,7 @@ static void checkMove(
 // declaring; the gate makes the binding decision, and disagreeing with the producer here would only
 // cost a message, never a wrong action.
 static void checkChangePlayer(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 )
 {
     if (control != CONTROL_AI) {
@@ -363,8 +361,9 @@ static void checkChangePlayer(
     }
 }
 
-static void
-checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel)
+static void checkDrop(
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+)
 {
     if (control != CONTROL_AI) {
         if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
@@ -424,8 +423,8 @@ static float charge_to_power(int counter, int counter_max)
 // rests at the left and the engine windup elapses → valesyöttö (FAKE) — see update_pitch_actualization.
 // The widget is client-local input interpretation only; the AI declares values directly and never touches it.
 static void checkPitch(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, IntentChannel* channel
 )
 {
     if (control == CONTROL_AI) {
@@ -602,6 +601,51 @@ SwingMeterView swing_widget_view(const SwingWidget* w)
     return view;
 }
 
+// What the catching side's bar shows: the cursor of whichever of the pitcher's or the thrower's widgets
+// is live, and the bar's left end when neither is. Render-only, answered here for the same reason the
+// batter's bar is — the bar IS the gesture, and the engine has no business carrying a copy of it.
+float catching_widget_view(const ClientInputState* clientInput)
+{
+    const InputWidget* pitch = &clientInput->pitchWidget;
+    const InputWidget* throwing = &clientInput->throwWidget;
+    if (pitch->mode != WIDGET_IDLE && pitch->counter_max > 0) return (float)pitch->counter / pitch->counter_max;
+    if (throwing->mode != WIDGET_IDLE && throwing->counter_max > 0)
+        return (float)throwing->counter / throwing->counter_max;
+    return 0.0f;
+}
+
+// The client's input memory, fresh. Initialized once; after that every gesture clears itself when its
+// preconditions fail, which is why no physical-world reset ever has to reach in here.
+void init_client_input(ClientInputState* clientInput)
+{
+    for (int i = 0; i < BASE_COUNT; i++) {
+        clientInput->run_press_window[i] = 0;
+    }
+    clientInput->pitchWidget.counter = 0;
+    clientInput->pitchWidget.counter_max = 0;
+    clientInput->pitchWidget.dir = 0;
+    clientInput->pitchWidget.mode = WIDGET_IDLE;
+    clientInput->throwWidget.counter = 0;
+    clientInput->throwWidget.counter_max = 0;
+    clientInput->throwWidget.dir = 0;
+    clientInput->throwWidget.mode = WIDGET_IDLE;
+    clientInput->moveWidget.held = 0;
+    clientInput->moveWidget.controlIndex = -1;
+    clientInput->moveWidget.declared = 0;
+    clientInput->moveWidget.framesSinceDeclared = 0;
+    clientInput->moveWidget.point = (Vector3D){0};
+    clientInput->batterWidget.highlight = 0;
+    clientInput->batterWidget.selected = 0;
+    clientInput->batterAim = 0.0f;
+    clientInput->swingWidget.meter.counter = 0;
+    clientInput->swingWidget.meter.counter_max = 0;
+    clientInput->swingWidget.meter.dir = 0;
+    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
+    clientInput->swingWidget.flightFrames = -1;
+    clientInput->swingWidget.beat = SWING_BEAT_POWER;
+    clientInput->swingWidget.power = 0.0f;
+}
+
 // The human's swing — a looping power ping-pong while the pitcher winds up, then a one-way descent
 // while the ball is in the air, one press each. It is the pitch's gesture with the beats interleaved
 // the other way round, and it declares VALUES at both.
@@ -726,8 +770,8 @@ static void checkSwing(
 }
 
 static void checkBattingTeamRun(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    BaseID base, const RefereeState* referee, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, BaseID base, const RefereeState* referee, IntentChannel* channel
 )
 {
     if (control != CONTROL_AI) {

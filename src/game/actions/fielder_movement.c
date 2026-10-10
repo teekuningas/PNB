@@ -1,5 +1,6 @@
 #include "actions/fielder_movement.h"
 #include "vector_math.h"
+#include "actions/pitching_system.h" // pitch_is_being_delivered — the one honest reading of "a pitch is on"
 #include <math.h>
 
 /*
@@ -30,8 +31,10 @@ static int controlled_fielder_may_walk(const MatchSession* match)
     if (match->pII.controlIndex == -1) return 0;
     // A gathered throw owns the thrower's feet until the ball leaves the hand.
     if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING) return 0;
-    // Fielders hold their positions while a pitch is in progress.
-    if (match->pRAI.pitch_state != PITCH_STAGE_NONE) return 0;
+    // Fielders hold their positions while a pitch is in progress — its windup included, on every pitch:
+    // pitch_is_being_delivered, because pitch_state reads NONE through every windup after a
+    // half-inning's first.
+    if (pitch_is_being_delivered(match)) return 0;
     // A throw's recoil animation has to finish before the model may be changed under it.
     if (match->playerInfo[match->pII.controlIndex].cTPI.throwRecoil != 0) return 0;
     return 1;

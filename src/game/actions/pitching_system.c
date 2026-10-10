@@ -13,7 +13,6 @@ void reset_pitching_system(MatchSession* match)
     match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_IDLE;
     match->pendingActionState.pitchDeclaration.power = 0.0f;
     match->pendingActionState.pitchDeclaration.direction = 0.0f;
-    match->aiState.batterReadyTimer = -1;
 }
 
 // Can a windup legally begin right now? (Was the precondition block of the old start_pitch.)
@@ -100,7 +99,6 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
     match->pendingActionState.run_bat_flag = 0;
     match->pRAI.batter_can_advance = 1;
-    match->aiState.aiWrongPitch = 0;
     match->cameraState.homeRunCameraFlag = 0;
     match->gameEvents.pitchReleased = 1;
     // release animation (downstream): the windup arc (render-side, driven by the windup clock) has already
