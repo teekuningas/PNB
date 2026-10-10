@@ -1067,7 +1067,7 @@ typedef struct _InputWidget {
 //
 // One enum rather than a bag of bits, so "declined" and "committed" cannot both be true and the
 // meaningless combinations are unrepresentable. It is a controller's private memory, exactly as the
-// AI's `swingDecided` is: the same fact, on the other side of the same boundary.
+// AI's swing plan (`AISwingPlan.decided`) is: the same fact, on the other side of the same boundary.
 typedef enum {
     SWING_BEAT_POWER = 0, // the power sweep is running, or about to arm; nothing said yet
     SWING_BEAT_LOADED, // a power has been declared; the elevation is the beat still outstanding
