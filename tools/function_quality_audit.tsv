@@ -50,8 +50,9 @@ deferred	src/game/actions/throwing_system.c	channel part 2 merges the declaratio
 open	src/game/actions_pure/batting_physics.c	
 open	src/game/actions_pure/pitching_physics.c	
 audited	src/game/actions_pure/swing_geometry.c	purity verified — three total functions of their arguments, no state, no branch on anything but the arguments' own ranges. Written and audited in the same commit, which is the only honest moment: a file whose whole content is one derivation is read completely by whoever derived it, and reading it again later proves less. The clamps are the only conditionals and each has a named reason at its use site (a sweep of zero frames would be an unrepresentable state; a power outside [0,1] must clamp rather than invert the meter).
-deferred	src/game/ai/batting_ai.c	controller-eviction moves this file's strategy memory out of AIState
-deferred	src/game/ai/catching_ai.c	controller-eviction moves this file's strategy memory out of AIState
+audited	src/game/ai/ai_controller.c	audited on arrival: the AI half of the CONTROL stage — one dispatcher that hands each AI team only its own channel, and the controller's one init. The World arrives const, so what a controller may touch is the signature
+audited	src/game/ai/batting_ai.c	audited at the controller-eviction slice, which rewrote it: one function per beat of the dance (batter choice, pre-pitch arming, recall, the flight, the power commit, the loose-hit advance) where there was one ~225-line function; the strategy is derived from the const World each time it is asked rather than remembered; the per-pitch plan is one struct with one clear. Two RNG draws that were arguments to one call (unspecified order in C) are now two statements, in the order gcc had been using
+audited	src/game/ai/catching_ai.c	audited at the controller-eviction slice: three dead includes and an unused macro removed, throw_ball_to_base made file-local, the World taken const. update_catching_ai is long but one concept — the fielding controller's two situations (nobody has the ball / somebody does) — and the drop-or-throw branch reads as one decision, so it is left whole
 open	src/game/ai_pure/batting_ai_strategy.c	
 open	src/game/ai_pure/catching_ai_strategy.c	
 open	src/game/ai_pure/pitching_ai_strategy.c	

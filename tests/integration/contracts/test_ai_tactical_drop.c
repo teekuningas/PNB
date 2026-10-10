@@ -1,6 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
+#include "ai/ai_controller.h"
 #include "execute_actions.h"
 #include "rules_pure/player_utils.h"
 #include "globals.h"
@@ -62,7 +63,8 @@ int test_ai_declares_and_executes_tactical_drop(void)
     // calls
     // update_catching_ai, which—given the §30 state—declares the drop command. (The batting team is
     // human-controlled here, so no batting AI runs.) This is the function the migration changed.
-    AIControllerState ai = {.rngSeed = 0xD0D0D0u};
+    AIControllerState ai;
+    init_ai_controller(&ai, 0xD0D0D0u);
     ai_update(match, ctx->state->rules, ctx->state->fieldPositions, &ai, &ctx->state->channels);
 
     ASSERT_EQ(

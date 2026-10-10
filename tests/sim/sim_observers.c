@@ -161,7 +161,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
                   "pitch_state,catchingAction,hasBall,"
-                  "waitBatter,waitWalk,batter_ready,planCalc,pitchDeclPhase,pitchTimer,batterReadyTimer,"
+                  "waitBatter,waitWalk,batter_ready,swingDecided,pitchDeclPhase,pitchTimer,batterReadyTimer,"
                   "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,batting_going_on\n"
         );
         o->header_written = 1;
@@ -173,17 +173,17 @@ void trace_observer_hook(const SimGame* g, void* ctx)
 
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
+    const AIControllerState* ai = g->state->aiController;
     fprintf(
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.current_catching_action,
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, m->aiState.planCalculated, (int)m->pendingActionState.pitchDeclaration.phase,
-        m->pendingActionState.pitchActualization.timer, m->aiState.batterReadyTimer,
-        m->pendingActionState.swing.contactFrame, m->pendingActionState.swing.powerActive,
-        m->pendingActionState.swing.verticalActive, m->aiState.aiWrongPitch, m->aiState.battingStyle,
-        (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
+        m->pRAI.batter_ready, ai->swing.decided, (int)m->pendingActionState.pitchDeclaration.phase,
+        m->pendingActionState.pitchActualization.timer, ai->batterReadyTimer, m->pendingActionState.swing.contactFrame,
+        m->pendingActionState.swing.powerActive, m->pendingActionState.swing.verticalActive, ai->swing.wrongPitch,
+        ai->swing.style, (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
 }
 
@@ -359,7 +359,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             // it here would fake a collapse to center. atan2(vx, -vz) is the true flight heading
             // (0 = straight to centre, + = one side) and is constant after launch (gravity only
             // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
-            if (m->aiState.battingStyle == 1) {
+            if (g->state->aiController->swing.decided && g->state->aiController->swing.style == 1) {
                 float heading = atan2f(m->ballInfo.velocity.x, -m->ballInfo.velocity.z);
                 int bin = (int)((heading + 1.0f) * 2.5f); // [-1,1] rad -> [0,5)
                 if (bin < 0) bin = 0;

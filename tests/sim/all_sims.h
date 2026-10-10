@@ -19,4 +19,7 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void);
 // Controller symmetry, law 1 — controllers may not read (or write) frame events.
 int test_ai_ignores_frame_events(void);
 
+// Controller memory is the controller's to end: the batting plan lives exactly one pitch.
+int test_ai_swing_plan_lives_one_pitch(void);
+
 #endif /* ALL_SIMS_H */

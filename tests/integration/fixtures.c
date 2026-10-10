@@ -6,6 +6,7 @@
 #include "game_frame.h"
 #include "common_logic.h"
 #include "game_consolidation.h"
+#include "ai/ai_controller.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,7 +38,7 @@ StateInfo* setup_test_state()
 
     // Controller-private AI memory — the mirror sibling (NOT synced; see AIControllerState).
     state->aiController = malloc(sizeof(AIControllerState));
-    memset(state->aiController, 0, sizeof(AIControllerState));
+    init_ai_controller(state->aiController, 0);
 
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));

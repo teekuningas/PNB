@@ -111,7 +111,11 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 # 88 → 89 on 2026-08-28: the batter-selection contract tests, which build the §12 window and name
 # MatchSession, IntentMessage and JokerStatus to do it. The rule they exercise, rules_batting_order.c,
 # includes NOTHING and costs zero here — the price is the test that drives the engine, not the rule.
-ratchet "files including globals.h" "$globals_includers" 89
+# 89 → 88 on 2026-10-10, the controller-eviction slice: +1 for ai/ai_controller.h, the CONTROL stage's AI
+# half moving out of the execution stage's header where it never belonged, paid openly; −2 for
+# batting_ai.c and execute_actions.c, which named globals.h directly beside their own header that
+# already provides it — the house convention, not a hidden dependency.
+ratchet "files including globals.h" "$globals_includers" 88
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:
@@ -140,7 +144,7 @@ fi
 
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
-ratchet "files awaiting the function-quality audit" "$unaudited" 51 # batting_system.c audited after the swing slice left it standing
+ratchet "files awaiting the function-quality audit" "$unaudited" 49 # the AI controllers audited at the controller-eviction slice, as their deferral said
 
 # ---------------------------------------------------------------------------
 # The rules-vocabulary ledger. A handful of rulebook sections define no consequence —

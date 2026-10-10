@@ -240,11 +240,6 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s  \"onGround\": %d\n", sp, game->ballInfo.onGround);
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"aiState\": {\n", sp);
-    fprintf(f, "%s  \"swingDecided\": %d,\n", sp, game->aiState.swingDecided);
-    fprintf(f, "%s  \"planCalculated\": %d\n", sp, game->aiState.planCalculated);
-    fprintf(f, "%s},\n", sp);
-
     fprintf(f, "%s\"rngSeed\": %u,\n", sp, game->rngSeed);
 
     fprintf(f, "%s\"players\": [\n", sp);

@@ -19,6 +19,7 @@
 #include "player.h"
 #include "execute_actions.h"
 #include "action_invocations.h"
+#include "ai/ai_controller.h"
 #include "game_consolidation.h"
 #include "game_manipulation.h"
 

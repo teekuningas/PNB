@@ -18,7 +18,6 @@
     instead is gone: its last field was the swing's phase, and the swing became two declared values.
 */
 
-#include "globals.h"
 #include "execute_actions.h"
 #include "common_logic.h"
 #include "vector_math.h"
@@ -26,9 +25,6 @@
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"
 #include "actions/fielder_movement.h"
-#include "ai/catching_ai.h"
-#include "ai/batting_ai.h"
-#include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/rules_batting_order.h"
@@ -98,10 +94,6 @@ void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
     init_batting_system(match);
     init_throwing_system(match);
     match->pendingActionState.run_bat_flag = 0;
-
-    // ai uses a few flags..
-
-    init_batting_ai(&(match->aiState));
 }
 
 // The channel's producer-side operation. It lives beside the gate that drains it because the channel
@@ -618,23 +610,4 @@ void update_meters(MatchSession* match, const ClientInputState* clientInput)
     // one that could not say whether there was a cursor at all. The renderer asks the widget itself
     // now, through swing_widget_view. The catching meter above is still on the old route and moves
     // when the pitch widget stops being tied to the engine's declaration.)
-}
-
-void ai_update(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
-    AIControllerState* aiController, IntentChannels* channels
-)
-{
-    int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
-    TeamControlMode battingControl = rules->scoreboard.teams[battingTeamIndex].control;
-    TeamControlMode catchingControl = rules->scoreboard.teams[(battingTeamIndex + 1) % 2].control;
-
-    // Each controller is handed ONLY its own team's channel — not both. A controller that cannot name
-    // the other team's channel cannot write it, whatever it intends.
-    if (team_is_ai(catchingControl)) {
-        update_catching_ai(match, rules, fieldPositions, aiController, &channels->catching);
-    }
-    if (team_is_ai(battingControl)) {
-        update_batting_ai(match, rules, fieldPositions, aiController, &channels->batting);
-    }
 }

@@ -1,16 +1,11 @@
 #include "ai/catching_ai.h"
 #include "execute_actions.h"
 #include "actions/throwing_system.h"
-#include "actions/pitching_system.h"
-#include "common_logic.h"
-#include "vector_math.h"
 #include "catching_ai_strategy.h"
 #include "pitching_ai_strategy.h"
 #include "rng.h"
 #include "base_logic.h"
 #include "base_control.h"
-
-#define ANIMATION_FREQUENCY 3
 
 // How long (frames) after the batter is ready the AI waits before pitching — a deliberate pause so a
 // human batter can settle, and so the fielders can get home. (Was the legacy batterReadyTimer>70 gate +
@@ -18,7 +13,8 @@
 #define AI_PITCH_DELAY 150
 
 static void update_ai_pitching(
-    MatchSession* match, const HalfInningState* halfInningState, AIControllerState* aiController, IntentChannel* channel
+    const MatchSession* match, const HalfInningState* halfInningState, AIControllerState* aiController,
+    IntentChannel* channel
 )
 {
     int pitcherIndex = match->pII.catcherOnBaseIndex[0];
@@ -29,7 +25,7 @@ static void update_ai_pitching(
     // machine to mirror. The engine owns the windup + release.
     if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
         match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
-        match->pRAI.pitch_state == PITCH_STAGE_NONE && match->aiState.batterReadyTimer > AI_PITCH_DELAY) {
+        match->pRAI.pitch_state == PITCH_STAGE_NONE && aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
@@ -56,13 +52,13 @@ static void update_ai_pitching(
     // batterReadyTimer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
     // ready batter; reset whenever the batter is not ready).
     if (match->pRAI.batter_ready == 1 && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
-        match->aiState.batterReadyTimer == -1) {
-        match->aiState.batterReadyTimer = 0;
+        aiController->batterReadyTimer == -1) {
+        aiController->batterReadyTimer = 0;
     } else if (match->pRAI.batter_ready == 0) {
-        match->aiState.batterReadyTimer = -1;
+        aiController->batterReadyTimer = -1;
     }
-    if (match->aiState.batterReadyTimer != -1) {
-        match->aiState.batterReadyTimer++;
+    if (aiController->batterReadyTimer != -1) {
+        aiController->batterReadyTimer++;
     }
 }
 
@@ -70,8 +66,9 @@ static void update_ai_pitching(
 // something. The controller decides WHAT is worth declaring — the dead zone, the drift threshold,
 // the heartbeat — and the engine decides how the walk happens. Nothing here simulates a keypress,
 // counts a throttle, or reads back what it said last time.
-static void
-steer_controlled_fielder(MatchSession* match, AIControllerState* ai, const Vector3D* desired, IntentChannel* channel)
+static void steer_controlled_fielder(
+    const MatchSession* match, AIControllerState* ai, const Vector3D* desired, IntentChannel* channel
+)
 {
     int index = match->pII.controlIndex;
     if (index == -1) return;
@@ -99,7 +96,7 @@ steer_controlled_fielder(MatchSession* match, AIControllerState* ai, const Vecto
     ai->framesSinceMoveDeclared = 0;
 }
 
-void throw_ball_to_base(MatchSession* match, BaseID base, IntentChannel* channel)
+static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentChannel* channel)
 {
     // Don't start a throw if any catching action is already in progress. We read the real
     // execution-side mutex (current_catching_action) directly — the AI no longer keeps a duplicate
@@ -139,7 +136,7 @@ void throw_ball_to_base(MatchSession* match, BaseID base, IntentChannel* channel
 }
 
 void update_catching_ai(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
     AIControllerState* aiController, IntentChannel* channel
 )
 {

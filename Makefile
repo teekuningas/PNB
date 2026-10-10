@@ -12,7 +12,7 @@ ODIR=obj
 
 # Object list shared by all builds
 _OBJ_COMMON = core/fill_player_data.o core/font.o core/input.o core/loadobj.o core/render.o core/resource_manager.o core/sound.o core/fixtures.o core/platform.o core/vector_math.o core/rng.o core/field_layout.o core/state_validator.o physics/ball_physics.o physics/collision.o renderer/player_renderer.o renderer/ball_renderer.o
-_OBJ_COMMON += game/execute_actions.o game/action_invocations.o game/ball.o game/common_logic.o game/game_consolidation.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/game_frame.o game/player.o game/game_setup.o game/game_reset.o game/actions/pitching_system.o game/actions/batting_system.o game/actions/throwing_system.o game/actions/fielder_movement.o game/ai/catching_ai.o game/ai/batting_ai.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/actions_pure/swing_geometry.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o game/rules_pure/rules_side_change.o game/rules_pure/rules_batting_order.o
+_OBJ_COMMON += game/execute_actions.o game/action_invocations.o game/ball.o game/common_logic.o game/game_consolidation.o game/game_manipulation.o game/game_screen.o game/immutable_world.o game/game_frame.o game/player.o game/game_setup.o game/game_reset.o game/actions/pitching_system.o game/actions/batting_system.o game/actions/throwing_system.o game/actions/fielder_movement.o game/ai/catching_ai.o game/ai/batting_ai.o game/ai/ai_controller.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/actions_pure/swing_geometry.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o game/rules_pure/rules_side_change.o game/rules_pure/rules_batting_order.o
 _OBJ_COMMON += menu/batting_order_menu.o menu/hutunkeitto_menu.o menu/main_menu.o menu/team_selection_menu.o menu/front_menu.o menu/game_over_menu.o menu/homerun_contest_menu.o menu/menu_helpers.o menu/help_menu.o menu/loading_screen_menu.o menu/cup_menu.o
 _OBJ_COMMON += cup/cup.o
 
@@ -64,7 +64,8 @@ _OBJ_SIMS = tests/sim/sim_harness.o \
             tests/sim/test_ai_offense_breakdown.o \
             tests/sim/test_no_batter_lock_stall.o \
             tests/sim/test_world_retick.o \
-            tests/sim/test_ai_ignores_frame_events.o
+            tests/sim/test_ai_ignores_frame_events.o \
+            tests/sim/test_ai_swing_plan_lifecycle.o
 
 # Scripted-human test objects (headless, drive the REAL action_invocations via scripted KeyStates,
 # live in tests/scripted/). Reuses the sim harness + observers (boot, real rosters, validator).
