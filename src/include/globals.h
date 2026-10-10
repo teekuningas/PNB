@@ -803,7 +803,6 @@ typedef struct _HalfInningState {
     int balls;
     int strikes;
     int runsInTheInning;
-    GameEventType event;
     int endPeriod; // Rule state: period should end
     // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."
     // A genuinely consumable resource, and per half-inning — so it lives with the half-inning.
@@ -1283,6 +1282,11 @@ typedef struct _StateInfo {
     // frame. Storing them here just gives that per-tick value a place to sit on this machine; the
     // state validator holds them to being empty at every frame boundary.
     IntentChannels channels;
+    // What the referee pronounced this tick — OUT, STRIKE, RUN — for the screen to show. An OUTPUT of the
+    // tick, beside the channels that are its input and for the same reason held by value: the referee
+    // empties it at the top of every tick and the screen consumes it, and it is in no snapshot, so whether
+    // anybody displayed an announcement can never reach a future frame.
+    GameEventType announcement;
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

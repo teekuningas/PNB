@@ -125,9 +125,8 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
         cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
         cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
     }
-    // cant update this at the drawing-function as that doesnt happen synchroniusly.
-    // so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
-    // we hit the threshold.
+    // The info line's clock runs here, once per tick, and not in the draw code, which does not run in step
+    // with the tick. An announcement starts it at 0 (hud_take_announcement); it clears past the threshold.
     if (hud->infoEventTimer != -1) {
         hud->infoEventTimer += 1;
 
@@ -138,6 +137,17 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
 
     // and here will a lot of logic code.
     update_game_frame(stateInfo, menuInfo);
+    hud_take_announcement(hud, &stateInfo->announcement);
+}
+
+// Put what the referee pronounced this tick on the info line, and consume it. Called once per tick, after
+// it — never from the draw code, which runs at its own rate and used to clear the referee's copy.
+void hud_take_announcement(HudState* hud, GameEventType* announcement)
+{
+    if (*announcement == EVENT_NONE) return;
+    hud->infoEvent = *announcement;
+    hud->infoEventTimer = 0;
+    *announcement = EVENT_NONE;
 }
 
 void draw_game_screen(
@@ -272,12 +282,6 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
     // INFO AREA (Left-Center)
     float info_x = CENTER_X + INFO_OFFSET_X;
-
-    if (stateInfo->rules->halfInningState.event != EVENT_NONE) {
-        hud->infoEventTimer = 0;
-        hud->infoEvent = stateInfo->rules->halfInningState.event;
-        stateInfo->rules->halfInningState.event = EVENT_NONE;
-    }
 
     if (hud->infoEventTimer != -1) {
         const char* msg = "";

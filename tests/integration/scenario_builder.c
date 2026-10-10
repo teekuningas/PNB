@@ -291,7 +291,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         GameRulesState* rules = ctx->state->rules;
         update_referee(
             ctx->state, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
-            &rules->homeRunContestState
+            &rules->homeRunContestState, &ctx->state->announcement
         );
         ConsolidationOutput consolidation_output;
         consolidation_update(

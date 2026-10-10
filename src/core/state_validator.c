@@ -148,8 +148,7 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
         fprintf(f, "%s  \"outs\": %d,\n", sp, rules->halfInningState.outs);
         fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, rules->halfInningState.runsInTheInning);
         fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->halfInningState.strikes);
-        fprintf(f, "%s  \"balls\": %d,\n", sp, rules->halfInningState.balls);
-        fprintf(f, "%s  \"event\": %d\n", sp, rules->halfInningState.event);
+        fprintf(f, "%s  \"balls\": %d\n", sp, rules->halfInningState.balls);
         fprintf(f, "%s},\n", sp);
 
         fprintf(f, "%s\"lastBatter\": {\n", sp);

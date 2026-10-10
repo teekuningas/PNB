@@ -43,9 +43,11 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
  */
 void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, BetweenPitchState* betweenPitchState);
 
+// `announcement` is an out-parameter of the tick: what the referee pronounced this frame, for the screen.
 void update_referee(
     const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState
+    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState,
+    GameEventType* announcement
 );
 
 #endif // REFEREE_H

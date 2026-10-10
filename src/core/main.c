@@ -98,6 +98,7 @@ int main(int argc, char* argv[])
     stateInfo.fieldPositions = &fieldPositions;
     stateInfo.teamData = NULL;
     stateInfo.playSoundEffect = 0;
+    stateInfo.announcement = EVENT_NONE;
     stateInfo.stopSoundEffect = 0;
     stateInfo.soundEnabled = soundEnabled;
     stateInfo.cup = NULL;

@@ -99,7 +99,7 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         // Runs AFTER physics to ensure legal state matches physical events
         update_referee(
             stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
-            &rules->homeRunContestState
+            &rules->homeRunContestState, &stateInfo->announcement
         );
 
         // 4. Consolidation (Reaction Phase)

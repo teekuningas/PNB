@@ -109,12 +109,12 @@ int test_fly_ball_out_and_wound(void)
             printf("Frame %d: CATCH by player %d\n", frame, match->pII.hasBallIndex);
         }
 
-        if (rules->halfInningState.event == EVENT_OUT && outFrame == -1) {
+        if (ctx->state->announcement == EVENT_OUT && outFrame == -1) {
             outFrame = frame;
             printf("Frame %d: OUT event (Runner A)\n", frame);
         }
 
-        if (rules->halfInningState.event == EVENT_WOUNDED) {
+        if (ctx->state->announcement == EVENT_WOUNDED) {
             if (match->playerInfo[1].bTPI.state == PLAYER_STATE_WOUNDED && woundFrame == -1) {
                 woundFrame = frame;
                 printf("Frame %d: BATTER WOUNDED\n", frame);

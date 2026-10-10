@@ -60,10 +60,8 @@ int test_foul_detected_on_out_of_bounds_hit(void)
         "Foul state should be DETECTED after out-of-bounds hit"
     );
 
-    // Assert: the event was recorded
-    ASSERT_EQ(
-        EVENT_OUT_OF_BOUNDS, ctx->state->rules->halfInningState.event, "Half-inning event should be OUT_OF_BOUNDS"
-    );
+    // Assert: the referee announced it, in the tick it decided it
+    ASSERT_EQ(EVENT_OUT_OF_BOUNDS, ctx->state->announcement, "the referee should announce OUT_OF_BOUNDS");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
