@@ -1195,7 +1195,6 @@ typedef enum {
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {
-    float meter_value; // meter for pitching and throwing
 
     PitchCycleState pitch_state; // Replaces pitchGoingOn and pitchInAir
 

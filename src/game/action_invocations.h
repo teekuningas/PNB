@@ -31,6 +31,11 @@ typedef struct _SwingMeterView {
 
 SwingMeterView swing_widget_view(const SwingWidget* w);
 
+// The catching side's bar: the live pitch or throw cursor in [0,1], or 0 when neither widget is live.
+float catching_widget_view(const ClientInputState* clientInput);
+
+void init_client_input(ClientInputState* clientInput);
+
 void action_invocations(
     const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
     const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels

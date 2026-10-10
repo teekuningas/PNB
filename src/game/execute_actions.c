@@ -57,38 +57,9 @@ typedef struct _IngestedCommands {
 static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
 static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels);
 
-void init_execute_actions(MatchSession* match, ClientInputState* clientInput)
+void init_execute_actions(MatchSession* match)
 {
     match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-
-    // Client-local input memory: initialized once here, self-clears during play (a physical-world reset
-    // never touches it — see reset_flow_state).
-    for (int i = 0; i < BASE_COUNT; i++) {
-        clientInput->run_press_window[i] = 0;
-    }
-    clientInput->pitchWidget.counter = 0;
-    clientInput->pitchWidget.counter_max = 0;
-    clientInput->pitchWidget.dir = 0;
-    clientInput->pitchWidget.mode = WIDGET_IDLE;
-    clientInput->throwWidget.counter = 0;
-    clientInput->throwWidget.counter_max = 0;
-    clientInput->throwWidget.dir = 0;
-    clientInput->throwWidget.mode = WIDGET_IDLE;
-    clientInput->moveWidget.held = 0;
-    clientInput->moveWidget.controlIndex = -1;
-    clientInput->moveWidget.declared = 0;
-    clientInput->moveWidget.framesSinceDeclared = 0;
-    clientInput->moveWidget.point = (Vector3D){0};
-    clientInput->batterWidget.highlight = 0;
-    clientInput->batterWidget.selected = 0;
-    clientInput->batterAim = 0.0f;
-    clientInput->swingWidget.meter.counter = 0;
-    clientInput->swingWidget.meter.counter_max = 0;
-    clientInput->swingWidget.meter.dir = 0;
-    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
-    clientInput->swingWidget.flightFrames = -1;
-    clientInput->swingWidget.beat = SWING_BEAT_POWER;
-    clientInput->swingWidget.power = 0.0f;
 
     reset_pitching_system(match);
     init_batting_system(match);
@@ -587,27 +558,4 @@ static void base_run(
             run_to_previous_base(match, fieldPositions, index, base);
         }
     }
-}
-
-void update_meters(MatchSession* match, const ClientInputState* clientInput)
-{
-    // The catching meter (meter_value) is a CLIENT display, read from the LOCAL HUMAN's input widget — the
-    // pitch sampler (power ping-pong, then aim descent) or the throw charge widget — whichever is active.
-    // Both are self-contained client widgets (ClientInputState); neither the meter nor any input logic reads
-    // an engine actualization clock (the engine↔client contract). An AI pitch/throw arms NO widget, so it
-    // drives no meter automatically — no phase-gate special-case needed. (meter_value is render-only: read
-    // solely by game_screen.c, never by logic and not in the checksum.)
-    if (clientInput->pitchWidget.mode != WIDGET_IDLE && clientInput->pitchWidget.counter_max > 0) {
-        match->pRAI.meter_value = (float)clientInput->pitchWidget.counter / clientInput->pitchWidget.counter_max;
-    } else if (clientInput->throwWidget.mode != WIDGET_IDLE && clientInput->throwWidget.counter_max > 0) {
-        match->pRAI.meter_value = (float)clientInput->throwWidget.counter / clientInput->throwWidget.counter_max;
-    } else {
-        match->pRAI.meter_value = 0.0f;
-    }
-
-    // (There is no batting meter here any more. It used to be copied out of the batter's widget into
-    // pRAI so the renderer could find it — a client display value riding in the blittable World, and
-    // one that could not say whether there was a cursor at all. The renderer asks the widget itself
-    // now, through swing_widget_view. The catching meter above is still on the old route and moves
-    // when the pitch widget stops being tied to the engine's declaration.)
 }

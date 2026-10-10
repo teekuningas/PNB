@@ -413,7 +413,7 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // with the bar's left/right ends (no gap) — its travel range is (meter_w − marker_w), not meter_w.
     float marker_w = 5.0f;
     float marker_travel = meter_w - marker_w;
-    meterX = 0.16f * stateInfo->match->pRAI.meter_value;
+    meterX = 0.16f * catching_widget_view(stateInfo->clientInput);
 
     float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * marker_travel;
     us->lastMeterX = meterX;
@@ -422,9 +422,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, marker_w, 40.0f
     );
 
-    // The batting side's bar, asked of the gesture itself rather than of a number the engine carries
-    // for it. The catching side above still goes through pRAI.meter_value; it moves the same way when
-    // the pitch widget stops being tied to the engine's declaration.
+    // The batting side's bar, asked of the gesture itself — as the catching side's is above — rather
+    // than of a number the engine carries for it.
     SwingMeterView swing = swing_widget_view(&stateInfo->clientInput->swingWidget);
 
     // The MOVING marker exists only while something is actually sweeping. Drawing it unconditionally

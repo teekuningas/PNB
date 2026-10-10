@@ -4,7 +4,7 @@
     Each frame executes 7 stages in strict order:
       1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world,
                          writing nothing but value messages into its own team's intent channel
-      2. Physics & Logic (execute_actions: INGEST the channels, then actualize; + update_meters + game_manipulation)
+      2. Physics & Logic (execute_actions: INGEST the channels, then actualize; + game_manipulation)
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
@@ -49,7 +49,8 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    init_execute_actions(stateInfo->match, stateInfo->clientInput);
+    init_execute_actions(stateInfo->match);
+    init_client_input(stateInfo->clientInput);
 
     // Consolidated Init (Game Flow + Reset Logic)
     consolidation_init(&(stateInfo->match->gameFlowState));
@@ -88,11 +89,10 @@ void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 
         // 2. Physics & Logic
         // StateInfo is destructured here (the assembly point): each stage receives exactly the
-        // worlds it touches — mutable physical (MatchSession), client-local input read-only
-        // (const ClientInputState: stage 1 writes it, execution only reads), read-only legal
-        // (GameRulesState), geometry, and its one output — a signature is its complete edge list.
+        // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
+        // geometry, the tick's input (the channels) and its one output — a signature is its complete
+        // edge list. The client's input memory is not among them: only stage 1 ever names it.
         execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->channels, &stateInfo->playSoundEffect);
-        update_meters(game, stateInfo->clientInput);
         game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
         // 3. Referee (Legal State Authority)

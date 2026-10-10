@@ -13,8 +13,7 @@ void execute_actions(
 // Append one message to a team's channel. Silently refusing to grow: a full channel records that it
 // overflowed and the state validator fails the frame.
 void intent_push(IntentChannel* channel, IntentMessage message);
-void init_execute_actions(MatchSession* match, ClientInputState* clientInput);
+void init_execute_actions(MatchSession* match);
 void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z);
-void update_meters(MatchSession* match, const ClientInputState* clientInput);
 
 #endif /* EXECUTE_ACTIONS_H */

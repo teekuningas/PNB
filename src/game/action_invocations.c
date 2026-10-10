@@ -601,6 +601,51 @@ SwingMeterView swing_widget_view(const SwingWidget* w)
     return view;
 }
 
+// What the catching side's bar shows: the cursor of whichever of the pitcher's or the thrower's widgets
+// is live, and the bar's left end when neither is. Render-only, answered here for the same reason the
+// batter's bar is — the bar IS the gesture, and the engine has no business carrying a copy of it.
+float catching_widget_view(const ClientInputState* clientInput)
+{
+    const InputWidget* pitch = &clientInput->pitchWidget;
+    const InputWidget* throwing = &clientInput->throwWidget;
+    if (pitch->mode != WIDGET_IDLE && pitch->counter_max > 0) return (float)pitch->counter / pitch->counter_max;
+    if (throwing->mode != WIDGET_IDLE && throwing->counter_max > 0)
+        return (float)throwing->counter / throwing->counter_max;
+    return 0.0f;
+}
+
+// The client's input memory, fresh. Initialized once; after that every gesture clears itself when its
+// preconditions fail, which is why no physical-world reset ever has to reach in here.
+void init_client_input(ClientInputState* clientInput)
+{
+    for (int i = 0; i < BASE_COUNT; i++) {
+        clientInput->run_press_window[i] = 0;
+    }
+    clientInput->pitchWidget.counter = 0;
+    clientInput->pitchWidget.counter_max = 0;
+    clientInput->pitchWidget.dir = 0;
+    clientInput->pitchWidget.mode = WIDGET_IDLE;
+    clientInput->throwWidget.counter = 0;
+    clientInput->throwWidget.counter_max = 0;
+    clientInput->throwWidget.dir = 0;
+    clientInput->throwWidget.mode = WIDGET_IDLE;
+    clientInput->moveWidget.held = 0;
+    clientInput->moveWidget.controlIndex = -1;
+    clientInput->moveWidget.declared = 0;
+    clientInput->moveWidget.framesSinceDeclared = 0;
+    clientInput->moveWidget.point = (Vector3D){0};
+    clientInput->batterWidget.highlight = 0;
+    clientInput->batterWidget.selected = 0;
+    clientInput->batterAim = 0.0f;
+    clientInput->swingWidget.meter.counter = 0;
+    clientInput->swingWidget.meter.counter_max = 0;
+    clientInput->swingWidget.meter.dir = 0;
+    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
+    clientInput->swingWidget.flightFrames = -1;
+    clientInput->swingWidget.beat = SWING_BEAT_POWER;
+    clientInput->swingWidget.power = 0.0f;
+}
+
 // The human's swing — a looping power ping-pong while the pitcher winds up, then a one-way descent
 // while the ball is in the air, one press each. It is the pitch's gesture with the beats interleaved
 // the other way round, and it declares VALUES at both.
