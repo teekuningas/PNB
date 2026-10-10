@@ -175,6 +175,20 @@ action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='
 ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 
 # ---------------------------------------------------------------------------
+# A signal that cannot answer the question it looks like it answers. pRAI.pitch_state
+# reads NONE right through every windup after a half-inning's first, because consolidation
+# re-asserts a resolved pitch on every frame the previous pitch's result still stands. So
+# "is a pitch happening?" must be asked of pitch_is_being_delivered; reading AIRBORNE is
+# the one comparison that never lies. Every other reading was audited on 2026-10-10 — the
+# two that asked the unanswerable question (the DROP gate, the fielder freeze) were fixed,
+# and the seven left each ask something the signal CAN answer. A new one fails here and has
+# to be argued for, until the root repair in consolidation makes the signal honest.
+# ---------------------------------------------------------------------------
+pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep -v 'AIRBORNE' |
+    grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
+ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 7
+
+# ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is
 # one-way on purpose — the code is the thing that is true, and the docs describe it.
 # A comment citing a doc file or a doc section number is a back-edge, and it rots

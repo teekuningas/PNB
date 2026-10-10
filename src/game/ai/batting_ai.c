@@ -242,7 +242,7 @@ void update_batting_ai(
     AIControllerState* aiController, IntentChannel* channel
 )
 {
-    const int notAirborne = match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE;
+    const int airborne = match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
 
     // Take the walk, restated for as long as it is offered: an answer that means the same thing every
     // time it arrives needs no edge and no memory.
@@ -254,11 +254,11 @@ void update_batting_ai(
     // more of the play's outcome to choose from.
     if (match->flowControl.waitingForBatterDecision == 1 && match->gameFlowState.ballHome == 1) {
         declare_batter_choice(match, rules, channel);
-    } else if (match->pRAI.batter_ready == 1 && notAirborne && match->gameFlowState.ballHome == 1) {
+    } else if (match->pRAI.batter_ready == 1 && !airborne && match->gameFlowState.ballHome == 1) {
         arm_runners_for_the_pitch(match, rules, channel);
-    } else if (match->pRAI.batter_ready == 1 && notAirborne && match->gameFlowState.ballHome == 0) {
+    } else if (match->pRAI.batter_ready == 1 && !airborne && match->gameFlowState.ballHome == 0) {
         recall_leading_runners(match, rules, channel);
-    } else if (!notAirborne) {
+    } else if (airborne) {
         play_the_flight(match, rules, &aiController->swing, channel);
     }
 
