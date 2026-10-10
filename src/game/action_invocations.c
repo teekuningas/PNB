@@ -1,7 +1,4 @@
-/*
-    the main purpose of this code is to set flags for execute_actions when key combinations trigger some events.
-    everything here is pretty straightforward.
-*/
+// The human controller: key states and client-local widgets in, value messages on the team's channel out.
 
 #include "globals.h"
 #include "action_invocations.h"
@@ -37,23 +34,24 @@
 #define THROW_CHARGE_FRAMES 45 // frames to reach full charge on a held throw (~0.9s at 50Hz)
 
 static int checkThrowGesture(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 );
 static void advance_widget(InputWidget* w);
 static float charge_to_power(int counter, int counter_max);
-static void
-checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel);
+static void checkDrop(
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+);
 static void checkMove(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 );
 static void checkChangePlayer(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 );
 static void checkPitch(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, IntentChannel* channel
 );
 static void checkBatterSelection(
     const MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* halfInningState,
@@ -72,12 +70,12 @@ static void checkSwing(
     int withdrawKey, TeamControlMode control, IntentChannel* channel
 );
 static void checkBattingTeamRun(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    BaseID base, const RefereeState* referee, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, BaseID base, const RefereeState* referee, IntentChannel* channel
 );
 
 void action_invocations(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, const Scoreboard* scoreboard,
     const RefereeState* referee, const HalfInningState* halfInningState, IntentChannels* channels
 )
 {
@@ -198,7 +196,7 @@ void action_invocations(
 //     already elapsed → immediate. This is the same COMMITTED the AI declares, just reached in two frames.
 // The AI never uses this — it declares COMMITTED directly in catching_ai.c — so AI control returns early.
 static int checkThrowGesture(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 )
 {
@@ -289,7 +287,7 @@ static int checkThrowGesture(
 // itself. Holding a key is a state, not a stream of events, so a widget that re-declared every frame
 // would be paying messages to tell the engine what it already holds.
 static void checkMove(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, TeamControlMode control,
     IntentChannel* channel
 )
 {
@@ -349,7 +347,7 @@ static void checkMove(
 // declaring; the gate makes the binding decision, and disagreeing with the producer here would only
 // cost a message, never a wrong action.
 static void checkChangePlayer(
-    MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 )
 {
     if (control != CONTROL_AI) {
@@ -363,8 +361,9 @@ static void checkChangePlayer(
     }
 }
 
-static void
-checkDrop(MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel)
+static void checkDrop(
+    const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
+)
 {
     if (control != CONTROL_AI) {
         if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
@@ -424,8 +423,8 @@ static float charge_to_power(int counter, int counter_max)
 // rests at the left and the engine windup elapses → valesyöttö (FAKE) — see update_pitch_actualization.
 // The widget is client-local input interpretation only; the AI declares values directly and never touches it.
 static void checkPitch(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, IntentChannel* channel
 )
 {
     if (control == CONTROL_AI) {
@@ -726,8 +725,8 @@ static void checkSwing(
 }
 
 static void checkBattingTeamRun(
-    MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control,
-    BaseID base, const RefereeState* referee, IntentChannel* channel
+    const MatchSession* match, ClientInputState* clientInput, const KeyStates* key_states, int key,
+    TeamControlMode control, BaseID base, const RefereeState* referee, IntentChannel* channel
 )
 {
     if (control != CONTROL_AI) {
