@@ -24,5 +24,6 @@ int test_ai_swing_plan_lives_one_pitch(void);
 
 // The tick's announcement is an output: the same game whether or not a screen consumes it.
 int test_announcements_do_not_depend_on_the_screen(void);
+int test_the_info_line_holds_its_message_while_paused(void);
 
 #endif /* ALL_SIMS_H */

@@ -25,8 +25,9 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
 void draw_game_screen(
     const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs
 );
-// The screen's side of the tick's announcement: show it, and consume it.
-void hud_take_announcement(HudState* hud, GameEventType* announcement);
+// The screen's side of one tick that ran: the info line's clock advances, then the referee's announcement
+// is shown and consumed.
+void hud_after_tick(HudState* hud, GameEventType* announcement);
 int clean_game_screen(StateInfo* stateInfo);
 
 #endif /* GAME_SCREEN_H */

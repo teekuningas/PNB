@@ -125,29 +125,34 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
         cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
         cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
     }
-    // The info line's clock runs here, once per tick, and not in the draw code, which does not run in step
-    // with the tick. An announcement starts it at 0 (hud_take_announcement); it clears past the threshold.
-    if (hud->infoEventTimer != -1) {
-        hud->infoEventTimer += 1;
-
-        if (hud->infoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-            hud->infoEventTimer = -1;
-        }
+    if (update_game_frame(stateInfo, menuInfo)) {
+        hud_after_tick(hud, &stateInfo->announcement);
     }
-
-    // and here will a lot of logic code.
-    update_game_frame(stateInfo, menuInfo);
-    hud_take_announcement(hud, &stateInfo->announcement);
 }
 
 // Put what the referee pronounced this tick on the info line, and consume it. Called once per tick, after
 // it — never from the draw code, which runs at its own rate and used to clear the referee's copy.
-void hud_take_announcement(HudState* hud, GameEventType* announcement)
+static void hud_take_announcement(HudState* hud, GameEventType* announcement)
 {
     if (*announcement == EVENT_NONE) return;
     hud->infoEvent = *announcement;
     hud->infoEventTimer = 0;
     *announcement = EVENT_NONE;
+}
+
+// The screen's side of one tick that ran. The info line's clock counts TICKS — game time — so a message
+// stays up while the game is paused rather than running out underneath the pause; it is advanced here,
+// once per tick, and not in the draw code, which does not run in step with the tick. Then whatever the
+// referee announced this tick goes up on the line, starting the clock at 0, and is consumed.
+void hud_after_tick(HudState* hud, GameEventType* announcement)
+{
+    if (hud->infoEventTimer != -1) {
+        hud->infoEventTimer += 1;
+        if (hud->infoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
+            hud->infoEventTimer = -1;
+        }
+    }
+    hud_take_announcement(hud, announcement);
 }
 
 void draw_game_screen(

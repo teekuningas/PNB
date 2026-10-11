@@ -24,6 +24,7 @@ int main(void)
     RUN_TEST(test_ai_ignores_frame_events);
     RUN_TEST(test_ai_swing_plan_lives_one_pitch);
     RUN_TEST(test_announcements_do_not_depend_on_the_screen);
+    RUN_TEST(test_the_info_line_holds_its_message_while_paused);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

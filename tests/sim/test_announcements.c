@@ -14,7 +14,7 @@
 // renderer had run, which is the one thing the tick equation says it may never depend on.
 //
 // So the same seed is played twice: once with a screen consuming every announcement the way the real
-// one does (hud_take_announcement, once per tick), and once with nobody consuming anything. The game
+// one does (hud_after_tick, once per tick), and once with nobody consuming anything. The game
 // must be the same game, and the announcements the same announcements, frame for frame.
 
 #define ANNOUNCE_MAX 4096
@@ -37,7 +37,7 @@ static void announcement_hook(const SimGame* g, void* ctx)
         log->event[log->count] = *announcement;
         log->count++;
     }
-    if (log->consume) hud_take_announcement(&log->hud, announcement);
+    if (log->consume) hud_after_tick(&log->hud, announcement);
 }
 
 static int three_half_innings_done(const SimGame* g)
@@ -100,11 +100,53 @@ int test_announcements_do_not_depend_on_the_screen(void)
     // consumed, so the next tick starts with nothing standing.
     HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
     GameEventType announcement = EVENT_STRIKE;
-    hud_take_announcement(&hud, &announcement);
+    hud_after_tick(&hud, &announcement);
     ASSERT_EQ(EVENT_STRIKE, (int)hud.infoEvent, "the info line shows what was announced");
     ASSERT_EQ(0, hud.infoEventTimer, "and starts its clock");
     ASSERT_EQ(EVENT_NONE, (int)announcement, "and the announcement is consumed");
-    hud_take_announcement(&hud, &announcement);
+    hud_after_tick(&hud, &announcement);
     ASSERT_EQ(EVENT_STRIKE, (int)hud.infoEvent, "an empty tick leaves the line as it was");
+    ASSERT_EQ(1, hud.infoEventTimer, "but one tick older");
+    return TEST_PASSED;
+}
+
+// A message on the info line is game time, not screen time: it stays up while the game is paused and
+// runs out once play resumes. Driven through the real update_game_screen, which is where the clock
+// lives, on a real headless game — the owner paused with "OUT" showing and watched it vanish anyway,
+// because the clock counted screen frames and the screen keeps running under a pause.
+static int an_announcement_is_on_the_line(HudState* hud, SimGame* g)
+{
+    for (long i = 0; i < PERIOD_MAX_FRAMES; i++) {
+        update_game_screen(g->state, hud, &g->menu);
+        if (hud->infoEventTimer == 0) return 1;
+    }
+    return 0;
+}
+
+int test_the_info_line_holds_its_message_while_paused(void)
+{
+    GameSetup setup;
+    sim_make_normal_setup(&setup, 0, 1, CONTROL_AI, CONTROL_AI);
+    SimGame* g = sim_create(&setup, 0x9A05Eu);
+    ASSERT_NOT_NULL(g, "sim_create returned NULL");
+    HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
+    ASSERT(an_announcement_is_on_the_line(&hud, g), "the referee never announced anything");
+    const GameEventType shown = hud.infoEvent;
+
+    g->state->match->flowControl.pause = 1;
+    for (int i = 0; i < 500; i++) {
+        update_game_screen(g->state, &hud, &g->menu);
+    }
+    ASSERT_EQ((int)shown, (int)hud.infoEvent, "the paused screen still shows the message");
+    ASSERT_EQ(0, hud.infoEventTimer, "and its clock has not moved: 500 screen frames, no game time");
+
+    g->state->match->flowControl.pause = 0;
+    int cleared = 0;
+    for (int i = 0; i < 500 && !cleared; i++) {
+        update_game_screen(g->state, &hud, &g->menu);
+        cleared = (hud.infoEventTimer == -1);
+    }
+    ASSERT(cleared, "once play resumes the message runs out as usual");
+    sim_destroy(g);
     return TEST_PASSED;
 }
