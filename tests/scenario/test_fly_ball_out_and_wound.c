@@ -213,8 +213,6 @@ int test_fly_ball_out_and_wound(void)
 
     printf("=====================\n\n");
 
-    cleanup_scenario(ctx);
-
     ASSERT_NE(-1, catchFrame, "Ball should have been caught");
     ASSERT_NE(-1, outFrame, "Runner A should have been forced OUT");
     ASSERT_NE(-1, batterArrivalFrame, "Batter B should have arrived at 1st");
@@ -227,6 +225,7 @@ int test_fly_ball_out_and_wound(void)
     // Currently the batter retains safety=1 (BASE_FIRST) even after wounding
     // Expected: safety should be -1 (BASE_NONE) like Runner A who got OUT
     int batterFinalSafety = rules->referee.battingPlayers[1].currentSafetyBase;
+    cleanup_scenario(ctx); // after the last read of the scenario's state, which it frees
     ASSERT_EQ(BASE_NONE, batterFinalSafety, "Wounded batter should lose safety (bug: they keep it)");
 
     return TEST_PASSED;

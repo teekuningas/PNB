@@ -19,7 +19,10 @@ StateInfo* setup_test_state()
     memset(state->teamData, 0, sizeof(TeamData) * 2);
 
     for (int i = 0; i < 2; ++i) {
-        state->teamData[i].players = malloc(sizeof(PlayerData) * 12);
+        // Zeroed like everything else here: speed and power are read from the roster when a player is set
+        // up, and a malloc'd roster holds whatever the allocator left — zero on a fresh page, garbage under
+        // a sanitizer, where every runner came out too slow to move.
+        state->teamData[i].players = calloc(12, sizeof(PlayerData));
         for (int j = 0; j < 12; ++j) {
             state->teamData[i].players[j].name = malloc(sizeof(char) * 10);
             sprintf(state->teamData[i].players[j].name, "Player %d", j + 1);
