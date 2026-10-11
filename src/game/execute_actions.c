@@ -66,7 +66,7 @@ static IngestedCommands ingest_intents(
 
 void init_execute_actions(MatchSession* match)
 {
-    reset_pitching_system(match);
+    match->pendingActionState.catchingAction = (CatchingAction){0};
     init_batting_system(match);
     match->pendingActionState.run_bat_flag = 0;
 }
@@ -298,7 +298,6 @@ static void settle_catching_claims(IngestedCommands* out)
     }
 }
 
-// Neither a rule refusing an action nor an action at all, but a producer that is broken.
 static int message_is_malformed(const IntentMessage* message, int is_batting_channel)
 {
     // A kindless message and a message on the wrong team's channel are the same class of thing:
@@ -316,10 +315,11 @@ static int message_is_malformed(const IntentMessage* message, int is_batting_cha
         (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
         return 1;
     }
-    // A command for a base that does not exist, or a throw at something that is not a base, is the same
-    // class again.
+    // A command for a base that does not exist, a command that is not a command, or a throw at
+    // something that is not a base, is the same class again.
     if (message->kind == INTENT_BASE_RUN &&
-        (message->as.base_run.base < BASE_HOME || message->as.base_run.base >= BASE_COUNT)) {
+        (message->as.base_run.base < BASE_HOME || message->as.base_run.base >= BASE_COUNT ||
+         message->as.base_run.command < RUN_NONE || message->as.base_run.command > RUN_BACK)) {
         return 1;
     }
     if (message->kind == INTENT_THROW_TARGET &&

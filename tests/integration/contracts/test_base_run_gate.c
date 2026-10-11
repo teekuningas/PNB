@@ -78,8 +78,8 @@ int test_a_base_run_needs_a_runner(void)
     return TEST_PASSED;
 }
 
-// A command for a base that does not exist is not refused, it is malformed: a broken producer, which fails
-// the frame through the state validator rather than being told no.
+// A command for a base that does not exist, or a command that is none of the three, is not refused — it is
+// malformed: a broken producer, which fails the frame through the state validator rather than being told no.
 int test_a_base_run_for_no_base_is_malformed(void)
 {
     ScenarioContext* ctx = create_scenario();
@@ -87,6 +87,14 @@ int test_a_base_run_for_no_base_is_malformed(void)
     run_command(ctx, (BaseID)BASE_COUNT, RUN_FORWARD);
     tick(ctx);
     ASSERT_EQ(1, ctx->state->channels.batting.malformed, "a base outside the field is flagged as malformed");
+    cleanup_scenario(ctx);
+
+    // And a command that is not one of the three: read as RUN_BACK it would quietly send a runner home.
+    ctx = create_scenario();
+    one_runner_on_first(ctx);
+    run_command(ctx, BASE_FIRST, (RunIntent)(RUN_BACK + 1));
+    tick(ctx);
+    ASSERT_EQ(1, ctx->state->channels.batting.malformed, "a command outside RunIntent is flagged as malformed");
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }

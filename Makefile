@@ -151,8 +151,17 @@ check:
 	@$(MAKE) --no-print-directory scripted_test
 	@$(MAKE) --no-print-directory guardrails
 	@$(MAKE) --no-print-directory dead_exports
+	@$(MAKE) --no-print-directory golden_harness
 	@echo
 	@echo "  make check: build + all five tiers + guardrails + the exported surface, all green."
+
+# The golden-trace harness is a tool, not a tier (tools/golden/record.sh runs it), but it is COMPILED
+# here: its projection.h names the structs a refactor moves, and a move that forgot to carry the
+# projection along should fail now rather than on the day someone next needs the net.
+.PHONY: golden_harness
+golden_harness: $(OBJ_SCRIPTED)
+	@mkdir -p $(ODIR)
+	@$(CC) tools/golden/golden.c $(OBJ_SCRIPTED) -o $(ODIR)/golden_harness $(CFLAGS) $(LFLAGS)
 
 # The architectural numbers that may only go down (globals.h includers, dead
 # parameters, function-quality audit coverage, ...). The script carries the floors

@@ -7,8 +7,6 @@
 // Constants moved from execute_actions.c
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
 
-void reset_pitching_system(MatchSession* match);
-
 // Is a pitch physically on its way — the pitcher winding up, or the ball in the air? Two halves with two
 // homes: the windup is the catching action's, the flight is `pitch_state`'s, and this is the one place
 // that asks both.

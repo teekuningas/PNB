@@ -1154,7 +1154,7 @@ typedef struct _HomeRunContestState {
 // clear — a resolved pitch goes back to NONE once, when its result is pronounced.
 typedef enum {
     PITCH_STAGE_NONE = 0,
-    PITCH_STAGE_AIRBORNE = 2 // the ball is on its way to the plate
+    PITCH_STAGE_AIRBORNE = 2 // the ball is on its way to the plate; 2 as it always was — checksums fold it raw
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {

@@ -7,11 +7,6 @@
 
 #define ANIMATION_FREQUENCY 3
 
-void reset_pitching_system(MatchSession* match)
-{
-    match->pendingActionState.catchingAction = (CatchingAction){0};
-}
-
 // May a pitch begin in the world as it stands? Asked by the INGEST gate of a declared power, against the
 // world at the top of the tick, and answered with the rule that refuses it:
 //   - nothing else is being done with the ball — no pitch already winding, no throw gathering
