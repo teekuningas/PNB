@@ -98,8 +98,8 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 3. Referee (Legal State Authority)
     // Runs AFTER physics to ensure legal state matches physical events
     update_referee(
-        stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
-        &rules->homeRunContestState, &stateInfo->announcement
+        stateInfo->match, stateInfo->fieldPositions, &rules->referee, &rules->halfInningState,
+        &rules->betweenPitchState, &rules->scoreboard, &rules->homeRunContestState, &stateInfo->announcement
     );
 
     // 4. Consolidation (Reaction Phase)
@@ -123,7 +123,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 5. Referee Finalize (Post-Consolidation)
     // Handles RESETTING→NONE transitions after consolidation has performed
     // physical resets. Scans the new physical world and establishes legal tracking.
-    referee_finalize(stateInfo, &rules->referee, &rules->betweenPitchState);
+    referee_finalize(stateInfo->match, &rules->referee, &rules->betweenPitchState);
 
     // 6. Capture snapshot after all updates when pitch is released
     if (stateInfo->match->gameEvents.pitchReleased) {

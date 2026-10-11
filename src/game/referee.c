@@ -34,11 +34,10 @@ static void clear_between_pitch_state(BetweenPitchState* bps)
 // ============================================================================
 
 static void update_initialization_events(
-    const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState,
+    const MatchSession* game, RefereeState* referee, const GameEvents* events, BetweenPitchState* betweenPitchState,
     HalfInningState* halfInningState, Scoreboard* scoreboard
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // Batter Entered: Initialize safety for the new batter and reset count
     if (events->batterEntered) {
@@ -110,7 +109,7 @@ static void update_initialization_events(
         referee->ballInThirdBaseSincePitch = 0;
 
         // 2. Mark that a pitch has been released (for homerun contest pair tracking)
-        if (stateInfo->rules->scoreboard.period >= 4) {
+        if (scoreboard->period >= 4) {
             referee->homerunPairHasPitch = 1;
         }
 
@@ -175,11 +174,11 @@ static void update_initialization_events(
 }
 
 static void update_foul_play_logic(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, const GameEvents* events,
-    BetweenPitchState* betweenPitchState, GameEventType* announcement
+    const MatchSession* game, const FieldPositions* fieldPositions, RefereeState* referee,
+    HalfInningState* halfInningState, const GameEvents* events, BetweenPitchState* betweenPitchState,
+    GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // RESETTING is handled by referee_finalize (post-consolidation stage).
     // Skip all foul logic this frame — consolidation is doing the physical reset.
@@ -219,7 +218,7 @@ static void update_foul_play_logic(
     // Out of Bounds Logic: Check ONLY on first bounce
     if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
         if (betweenPitchState->batOutcome == BAT_OUTCOME_HIT && betweenPitchState->catchHasBeenMade == 0) {
-            if (is_ball_out_of_bounds(&game->ballInfo, stateInfo->fieldPositions)) {
+            if (is_ball_out_of_bounds(&game->ballInfo, fieldPositions)) {
 
                 // 1. Immediately apply the consequence of the foul (Strike/Out)
                 if (referee->strikesAtPitchStart == 2) {
@@ -256,11 +255,10 @@ static void update_foul_play_logic(
 }
 
 static void update_wounding_logic(
-    const StateInfo* stateInfo, RefereeState* referee, const GameEvents* events,
+    const MatchSession* game, RefereeState* referee, const GameEvents* events,
     const BetweenPitchState* betweenPitchState, GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // A. Start Wounding Evaluation (on catch event)
     // Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
@@ -355,9 +353,8 @@ static void update_wounding_logic(
     }
 }
 
-static void update_safety_status(const StateInfo* stateInfo, RefereeState* referee)
+static void update_safety_status(const MatchSession* game, RefereeState* referee)
 {
-    const MatchSession* game = stateInfo->match;
 
     // Process players in base order (HOME -> FIRST -> SECOND -> THIRD)
     // This ensures deterministic safety resolution when two players are at the same base.
@@ -485,11 +482,10 @@ record_out_capped(HalfInningState* halfInningState, const Scoreboard* scoreboard
 }
 
 static void update_force_outs(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
-    GameEventType* announcement
+    const MatchSession* game, const Scoreboard* scoreboard, RefereeState* referee, HalfInningState* halfInningState,
+    int ballAtBase, GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // Once the half-inning is ending, no further outs are recorded: 3 outs ends the half-inning
     // immediately and nothing happens after. Mirrors the run paths' guard (update_runs /
@@ -526,9 +522,7 @@ static void update_force_outs(
                 )) {
 
                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                record_out_capped(
-                    halfInningState, &stateInfo->rules->scoreboard, announcement
-                ); // §28: never a spurious 4th
+                record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
 
                 // Remove safety if they had it at this base
                 if (has_safety_at_current) {
@@ -550,11 +544,10 @@ static void update_force_outs(
 }
 
 static void update_tuplahaava_logic(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState, int ballAtBase,
-    GameEventType* announcement
+    const MatchSession* game, const Scoreboard* scoreboard, RefereeState* referee, HalfInningState* halfInningState,
+    int ballAtBase, GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // No further outs once the half-inning is ending (see update_force_outs).
     if (referee->endOfInningState != END_INNING_STATE_NONE) return;
@@ -578,9 +571,7 @@ static void update_tuplahaava_logic(
                 // Exception 2: Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    record_out_capped(
-                        halfInningState, &stateInfo->rules->scoreboard, announcement
-                    ); // §28: never a spurious 4th
+                    record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
                 }
                 // Exception 1: Ball at SOURCE base -> Lose Safety, become WOUNDED
@@ -613,9 +604,7 @@ static void update_tuplahaava_logic(
                 // Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
                     referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                    record_out_capped(
-                        halfInningState, &stateInfo->rules->scoreboard, announcement
-                    ); // §28: never a spurious 4th
+                    record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                 }
             } else if (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT) {
@@ -673,11 +662,10 @@ static void end_period_if_decided(HalfInningState* halfInningState, const Scoreb
 }
 
 static void update_runs(
-    const StateInfo* stateInfo, RefereeState* referee, HalfInningState* halfInningState,
+    const MatchSession* game, RefereeState* referee, HalfInningState* halfInningState,
     BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
 
     // 4. Check for Runs (§41/42)
     // We trigger this check if ANY player arrived at a base this frame.
@@ -754,9 +742,7 @@ static void update_runs(
 
                             if (someone_else_has_third_safety) {
                                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                                record_out_capped(
-                                    halfInningState, &stateInfo->rules->scoreboard, announcement
-                                ); // §28 cap
+                                record_out_capped(halfInningState, scoreboard, announcement); // §28 cap
                             }
                         }
                     }
@@ -778,16 +764,16 @@ static void update_strikes(HalfInningState* halfInningState, const GameEvents* e
 }
 
 static void update_pitch_resolution(
-    const StateInfo* stateInfo, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
+    const MatchSession* game, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState,
     const GameEvents* events, GameEventType* announcement
 )
 {
     // Check if a pitch has physically concluded (hit ground) while still logically active
-    if (events->ballHitGround && stateInfo->match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+    if (events->ballHitGround && game->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
 
         if (betweenPitchState->batOutcome == BAT_OUTCOME_NONE) {
             // No swing: resolve by ball position (strike zone check)
-            PitchResult result = determine_pitch_result(stateInfo->match->ballInfo.location.x, PLATE_WIDTH);
+            PitchResult result = determine_pitch_result(game->ballInfo.location.x, PLATE_WIDTH);
 
             if (result == PITCH_RESULT_STRIKE) {
                 halfInningState->strikes += 1;
@@ -945,13 +931,13 @@ static void resolve_pending_runs(
 // of bounds is by definition not. The two conjuncts exclude each other, so no guard is added here — an
 // unreachable defence is a claim, not a fact.
 static void update_side_change_readiness(
-    const StateInfo* stateInfo, const RefereeState* referee, HalfInningState* halfInningState,
+    const MatchSession* game, const RefereeState* referee, HalfInningState* halfInningState,
     const Scoreboard* scoreboard
 )
 {
     if (scoreboard->period >= 4) return; // the homerun contest ends on its pair counter (§8)
 
-    const int turn_concluded = get_base_controller(stateInfo->match, referee, BASE_HOME) == -1;
+    const int turn_concluded = get_base_controller(game, referee, BASE_HOME) == -1;
 
     const int battingTeamIndex = get_batting_team_index(scoreboard);
     const int nextInOrder =
@@ -1185,12 +1171,11 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
 }
 
 void update_referee(
-    const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState,
-    GameEventType* announcement
+    const MatchSession* game, const FieldPositions* fieldPositions, RefereeState* refereeState,
+    HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, Scoreboard* scoreboard,
+    HomeRunContestState* homeRunContestState, GameEventType* announcement
 )
 {
-    const MatchSession* game = stateInfo->match;
     const FlowControl* flowControl = &game->flowControl; // Read-only access to flow data
 
     // What the referee announces — OUT, STRIKE, RUN — is an output of this tick, like a sound, and never
@@ -1200,12 +1185,10 @@ void update_referee(
     *announcement = EVENT_NONE;
 
     // 0. Initialization Events (Milestone 17)
-    update_initialization_events(
-        stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, halfInningState, scoreboard
-    );
+    update_initialization_events(game, refereeState, &game->gameEvents, betweenPitchState, halfInningState, scoreboard);
 
     // 1. Where is the ball?
-    int ballAtBase = get_ball_at_base_index(stateInfo->match, stateInfo->fieldPositions);
+    int ballAtBase = get_ball_at_base_index(game, fieldPositions);
 
     // 2. Track if ball has been at 3rd base since pitch started (for run of honor logic)
     if (ballAtBase == 3) {
@@ -1214,42 +1197,40 @@ void update_referee(
 
     // 2.5 Foul Play & Wounding Logic (Milestone 17)
     update_foul_play_logic(
-        stateInfo, refereeState, halfInningState, &stateInfo->match->gameEvents, betweenPitchState, announcement
+        game, fieldPositions, refereeState, halfInningState, &game->gameEvents, betweenPitchState, announcement
     );
 
     // If foul play reset is triggered, the physical world is out of sync with legal state.
     // We skip gameplay logic this frame, but we still run Flow Control (Gather-Decide-Act)
     if (refereeState->foulState != FOUL_STATE_RESETTING) {
         // Mark that ball hit ground (after foul play check, so it can detect first bounce)
-        if (stateInfo->match->gameEvents.ballHitGround) {
+        if (game->gameEvents.ballHitGround) {
             betweenPitchState->hasBallHitGround = 1;
         }
 
-        update_wounding_logic(stateInfo, refereeState, &stateInfo->match->gameEvents, betweenPitchState, announcement);
+        update_wounding_logic(game, refereeState, &game->gameEvents, betweenPitchState, announcement);
 
         // 3. Safety Pipeline
-        update_safety_status(stateInfo, refereeState);
-        update_force_outs(stateInfo, refereeState, halfInningState, ballAtBase, announcement);
-        update_tuplahaava_logic(stateInfo, refereeState, halfInningState, ballAtBase, announcement);
-        update_runs(stateInfo, refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
+        update_safety_status(game, refereeState);
+        update_force_outs(game, scoreboard, refereeState, halfInningState, ballAtBase, announcement);
+        update_tuplahaava_logic(game, scoreboard, refereeState, halfInningState, ballAtBase, announcement);
+        update_runs(game, refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
 
         // 3.5 Resolve Pending Runs (Milestone 17)
         resolve_pending_runs(refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
 
         // 4. Strikes
-        update_strikes(halfInningState, &stateInfo->match->gameEvents);
-        update_pitch_resolution(
-            stateInfo, halfInningState, betweenPitchState, &stateInfo->match->gameEvents, announcement
-        );
+        update_strikes(halfInningState, &game->gameEvents);
+        update_pitch_resolution(game, halfInningState, betweenPitchState, &game->gameEvents, announcement);
         update_free_walk_resolution(
-            refereeState, halfInningState, scoreboard, flowControl, &stateInfo->match->gameEvents, announcement
+            refereeState, halfInningState, scoreboard, flowControl, &game->gameEvents, announcement
         );
 
         // 5. Game State Flags
-        update_game_state_flags(&stateInfo->match->gameEvents, betweenPitchState);
+        update_game_state_flags(&game->gameEvents, betweenPitchState);
 
         // 6. §12 — is the batting turn spent? Last, so it reads this frame's settled runs and outs.
-        update_side_change_readiness(stateInfo, refereeState, halfInningState, scoreboard);
+        update_side_change_readiness(game, refereeState, halfInningState, scoreboard);
     }
 
     // ========================================================================
@@ -1447,9 +1428,8 @@ void update_referee(
 // the TOP of update_referee in the NEXT frame.
 // ============================================================================
 
-void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, BetweenPitchState* betweenPitchState)
+void referee_finalize(const MatchSession* game, RefereeState* refereeState, BetweenPitchState* betweenPitchState)
 {
-    const MatchSession* game = stateInfo->match;
 
     // Foul play: RESETTING → NONE
     if (refereeState->foulState == FOUL_STATE_RESETTING) {
@@ -1489,15 +1469,14 @@ void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, Be
     }
 }
 
-void initialize_referee(const StateInfo* stateInfo, RefereeState* referee)
+void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, RefereeState* referee)
 {
-    const MatchSession* game = stateInfo->match;
 
     // Full reset first
     initialize_referee_state(referee);
 
     // Scan physical world and initialize safety based on player positions
-    if (stateInfo->rules->scoreboard.period >= 4) {
+    if (scoreboard->period >= 4) {
         // Homerun Contest (period >= 4): scan for batter at HOME, runner at THIRD
         // Reset homerun pair pitch tracking
         referee->homerunPairHasPitch = 0;

@@ -76,7 +76,7 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     referee_reset_for_new_inning(
         &g->state->rules->referee, &g->state->rules->halfInningState, &g->state->rules->betweenPitchState
     );
-    initialize_referee(g->state, &g->state->rules->referee);
+    initialize_referee(g->state->match, &g->state->rules->scoreboard, &g->state->rules->referee);
 
     g->state->changeScreen = 0; // consumed
     g->state->updated = 1;

@@ -572,7 +572,7 @@ static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud)
         &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState
     );
     // Scan physical world to establish initial legal tracking
-    initialize_referee(stateInfo, &stateInfo->rules->referee);
+    initialize_referee(stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->referee);
 }
 
 static void init_cam_settings(StateInfo* stateInfo)

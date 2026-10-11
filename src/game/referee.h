@@ -12,23 +12,12 @@
  * This is NOT used for runtime transitions (end of inning, next pair)
  * which are handled via state machines within update_referee().
  *
- * @param stateInfo Full game state to scan for player positions
+ * @param game The physical world, scanned for player positions — read, never moved
+ * @param scoreboard Which mode is being played (the home-run contest starts differently)
  * @param referee Mutable pointer to the referee state to initialize
  */
-void initialize_referee(const StateInfo* stateInfo, RefereeState* referee);
+void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, RefereeState* referee);
 
-/**
- * @brief Updates the referee state and game state based on the current world state.
- *
- * This function replaces the Analyze/Apply pattern. It sequentially checks rules
- * and updates the state immediately.
- *
- * @param stateInfo Read-only access to the full game state.
- * @param refereeState Mutable pointer to the referee state.
- * @param halfInningState Mutable pointer to the game state (for outs/runs).
- * @param betweenPitchState Mutable pointer to between-pitch sticky flags.
- * @param scoreboard Mutable pointer to global game info (teams/runs).
- */
 void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, BetweenPitchState* bps);
 
 /**
@@ -41,13 +30,24 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
  * This runs as a separate pipeline stage after consolidation, making the
  * ownership boundary physically impossible to violate by code placement.
  */
-void referee_finalize(const StateInfo* stateInfo, RefereeState* refereeState, BetweenPitchState* betweenPitchState);
+void referee_finalize(const MatchSession* game, RefereeState* refereeState, BetweenPitchState* betweenPitchState);
 
-// `announcement` is an out-parameter of the tick: what the referee pronounced this frame, for the screen.
+/**
+ * @brief Updates the legal world from the physical one, once per tick.
+ *
+ * It sequentially checks rules and updates the state immediately. The physical world comes in as
+ * `const MatchSession*` and `const FieldPositions*`, named, so "the referee may read the physical world
+ * but never move it" is the compiler's to hold — a `const StateInfo*` would leave its pointer members
+ * writable, which is how the draw code once cleared legal state the referee then read back.
+ *
+ * @param refereeState, halfInningState, betweenPitchState, scoreboard, homeRunContestState  the legal
+ *        world, which the referee alone writes.
+ * @param announcement An out-parameter of the tick: what the referee pronounced this frame, for the screen.
+ */
 void update_referee(
-    const StateInfo* stateInfo, RefereeState* refereeState, HalfInningState* halfInningState,
-    BetweenPitchState* betweenPitchState, Scoreboard* scoreboard, HomeRunContestState* homeRunContestState,
-    GameEventType* announcement
+    const MatchSession* game, const FieldPositions* fieldPositions, RefereeState* refereeState,
+    HalfInningState* halfInningState, BetweenPitchState* betweenPitchState, Scoreboard* scoreboard,
+    HomeRunContestState* homeRunContestState, GameEventType* announcement
 );
 
 #endif // REFEREE_H

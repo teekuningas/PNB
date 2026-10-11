@@ -62,7 +62,7 @@ void initialize_referee_from_physical_state(ScenarioContext* ctx)
 {
     // Initialize referee by scanning the physical world
     // This replaces the old gameInitialized event pattern
-    initialize_referee(ctx->state, &ctx->state->rules->referee);
+    initialize_referee(ctx->state->match, &ctx->state->rules->scoreboard, &ctx->state->rules->referee);
 }
 
 void snapshot_pitch_start_state(ScenarioContext* ctx)
@@ -290,8 +290,8 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // Milestone 14: Rules engine must run after physics to reconcile state
         GameRulesState* rules = ctx->state->rules;
         update_referee(
-            ctx->state, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->scoreboard,
-            &rules->homeRunContestState, &ctx->state->announcement
+            ctx->state->match, ctx->state->fieldPositions, &rules->referee, &rules->halfInningState,
+            &rules->betweenPitchState, &rules->scoreboard, &rules->homeRunContestState, &ctx->state->announcement
         );
         ConsolidationOutput consolidation_output;
         consolidation_update(
@@ -308,7 +308,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // Foul Play Reset is now handled by consolidation_update. Manual logic removed.
 
         // 5. Referee Finalize (RESETTING→NONE transitions)
-        referee_finalize(ctx->state, &rules->referee, &rules->betweenPitchState);
+        referee_finalize(ctx->state->match, &rules->referee, &rules->betweenPitchState);
 
         // Clear transient events for next frame (Critical for correct event loop)
         clear_frame_events(&ctx->state->match->gameEvents);
