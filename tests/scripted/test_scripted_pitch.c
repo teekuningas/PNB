@@ -26,7 +26,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->pRAI.batter_ready == 1 &&
-            m->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
+            m->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
             m->pRAI.pitch_state == PITCH_STAGE_NONE) {
             return 1;
         }
@@ -40,10 +40,10 @@ static int tick_until_widget_sweeping(ScriptedGame* g, int budget)
 {
     ClientInputState* ci = scripted_state(g)->clientInput;
     for (int i = 0; i < budget; i++) {
-        if (ci->pitchWidget.dir != 0) return 1;
+        if (ci->pitchWidget.meter.dir != 0) return 1;
         scripted_tick(g);
     }
-    return ci->pitchWidget.dir != 0;
+    return ci->pitchWidget.meter.dir != 0;
 }
 
 // 1. Press → power click → aim click (timed at the sweet-spot) → a real strike-zone pitch is released.
@@ -63,8 +63,8 @@ int test_scripted_pitch_two_pingpongs_strike(void)
     // from the left), then click → a strike-zone aim.
     ClientInputState* ci = scripted_state(g)->clientInput;
     int guard = 0;
-    while (ci->pitchWidget.dir != 0 && ci->pitchWidget.counter * 100 > ci->pitchWidget.counter_max * 35 &&
-           guard++ < 400) {
+    while (ci->pitchWidget.meter.dir != 0 &&
+           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // click during the aim descent: lock aim near the plate (strike)
@@ -143,14 +143,14 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping");
     int guard = 0;
-    while (ci->pitchWidget.dir == 1 && ci->pitchWidget.counter * 100 < ci->pitchWidget.counter_max * 50 &&
-           guard++ < 200) {
+    while (ci->pitchWidget.meter.dir == 1 &&
+           ci->pitchWidget.meter.counter * 100 < ci->pitchWidget.meter.counter_max * 50 && guard++ < 200) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock ~mid power → windup begins
     guard = 0;
-    while (ci->pitchWidget.dir != 0 && ci->pitchWidget.counter * 100 > ci->pitchWidget.counter_max * 35 &&
-           guard++ < 400) {
+    while (ci->pitchWidget.meter.dir != 0 &&
+           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock aim near the plate (strike)
@@ -208,20 +208,20 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     for (int i = 0; i < 6; i++) {
         scripted_tick(g);
         const float now = catching_widget_view(ci);
-        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget), now, 1e-6f, "the bar shows the power sweep's own level");
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget.meter), now, 1e-6f, "the bar shows the power sweep's own level");
         if (now > previous) rose = 1;
         previous = now;
     }
     ASSERT(rose, "the power cursor moves while it sweeps");
 
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock power: the windup begins and the aim descent arms
-    ASSERT_EQ(WIDGET_DESCENT, (int)ci->pitchWidget.mode, "locking power arms the aim descent");
+    ASSERT_EQ(WIDGET_DESCENT, (int)ci->pitchWidget.meter.mode, "locking power arms the aim descent");
     previous = catching_widget_view(ci);
     int fell = 0;
     for (int i = 0; i < 6; i++) {
         scripted_tick(g);
         const float now = catching_widget_view(ci);
-        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget), now, 1e-6f, "the bar shows the aim descent's own level");
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget.meter), now, 1e-6f, "the bar shows the aim descent's own level");
         if (now < previous) fell = 1;
         previous = now;
     }
@@ -232,7 +232,7 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     int rested = 0;
     for (int i = 0; i < 300 && !rested; i++) {
         scripted_tick(g);
-        rested = (ci->pitchWidget.mode == WIDGET_IDLE && catching_widget_view(ci) == 0.0f);
+        rested = (ci->pitchWidget.meter.mode == WIDGET_IDLE && catching_widget_view(ci) == 0.0f);
     }
 
     int failed = scripted_failed(g);

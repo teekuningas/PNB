@@ -33,12 +33,17 @@
 #define PITCH_WINDUP_UP_FRAMES 35
 #define PITCH_WINDUP_HOLD_MAX 25
 
-// Total windup frames for a declared toss power. Pure arithmetic over the segments above, so the
-// engine's clock, the client's aim meter and the geometry test all size themselves from ONE
-// definition rather than three copies of the same sum.
+// The crouch for a declared toss power: DOWN plus the power-scaled HOLD — everything before the rise.
+// The human's aim meter runs exactly this long, so its cursor reaches the left as the rise begins, and
+// the renderer splits the windup at it.
+int pitch_windup_crouch_frames(float power);
+
+// Total windup frames for a declared toss power: the crouch, then the rise. Pure arithmetic over the
+// segments above, so the engine's clock, the client's aim meter and the geometry test all size
+// themselves from ONE definition rather than three copies of the same sum.
 int pitch_windup_total_frames(float power);
 
-// The pitch actualizer (end-state): convert a declared PitchAim into the ball's launch velocity.
+// Convert a pitch's two declared values into the ball's launch velocity.
 // power [0,1] -> toss height (dy); direction [-1,1] -> placement (dx), 0 = straight up over the plate
 // (oikea / strike); dz is always 0. The result is a pure function of the DECLARED aim — never a live
 // meter — which is the whole point of the pitch slice. Inputs are clamped to their ranges.

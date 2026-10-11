@@ -7,19 +7,33 @@
 #include <math.h>
 
 /**
- * CONTRACT: the throw (the phased shape plus the engine↔client fix) — the throw is ONE intent
- * {direction, power} the engine actualizes over its own windup clock (ThrowActualization). Both producers
- * declare `power` as a trusted VALUE; the ENGINE owns the release instant (release when the clock reaches
- * windup(power)), never a client "fire now" edge, never derived from the clock:
- *   - COMMITTED in one frame (AI): direction + power at once; the engine sizes the windup to the power and
- *     auto-releases at its end. Higher declared power → faster launch.
- *   - INITIATED → COMMITTED in two frames (human): INITIATED{direction} starts the windup (so the gather
- *     runs while the human picks power on the meter); COMMITTED{power} hands the engine the value and it
- *     releases once the windup for that power completes — immediately if it already elapsed, else it waits.
- * The throw analog of test_pitch_declaration: we construct a ball-holder away from a base and drive the
- * REAL execute_actions (no AI, no meter). Calling execute_actions directly (not the full frame) keeps the
- * thrown ball un-fielded so the launch velocity can be read at the release frame.
+ * CONTRACT: the throw — two declared values, a target and a power, actualized by the engine-owned windup
+ * clock (CatchingAction.timer). Both producers declare `power` as a trusted VALUE; the ENGINE owns the
+ * release instant (release when the clock reaches windup(power)), never a client "fire now" edge, never
+ * derived from the clock:
+ *   - both in one tick (AI): the engine sizes the windup to the power and auto-releases at its end. Higher
+ *     declared power → faster launch.
+ *   - target, then power (human): the target starts the windup (so the gather runs while the human picks
+ *     power on the meter); the power hands the engine the value and it releases once the windup for that
+ *     power completes — immediately if it already elapsed, else it waits.
+ * We construct a ball-holder away from a base and drive the REAL execute_actions through the catching
+ * channel (no AI, no meter). Calling execute_actions directly (not the full frame) keeps the thrown ball
+ * un-fielded so the launch velocity can be read at the release frame.
  */
+
+static void declare_target(ScenarioContext* ctx, BaseID base)
+{
+    intent_push(
+        &ctx->state->channels.catching, (IntentMessage){.kind = INTENT_THROW_TARGET, .as.throw_target = {.base = base}}
+    );
+}
+
+static void declare_power(ScenarioContext* ctx, float power)
+{
+    intent_push(
+        &ctx->state->channels.catching, (IntentMessage){.kind = INTENT_THROW_POWER, .as.throw_power = {.power = power}}
+    );
+}
 
 // A controlled fielder holds the ball out in the field, far enough from any base to throw.
 static void setup_fielder_with_ball(ScenarioContext* ctx)
@@ -63,7 +77,7 @@ static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
     return -1.0f;
 }
 
-// 0. The AI windup sizing scales with declared power: throw_windup_total_frames maps [THROW_POWER_MIN,1] →
+// 0. The windup sizing scales with declared power: throw_windup_total_frames maps [THROW_POWER_MIN,1] →
 //    [MIN,MAX] frames, monotonically. This is the ONLY throw↔clock relationship that survives — the
 //    human's power is a value declared from the client charge widget, never read back off the clock,
 //    so the old power<->windup round-trip (and throw_power_from_windup) is gone.
@@ -88,9 +102,9 @@ int test_throw_windup_frames_scale_with_power(void)
     return TEST_PASSED;
 }
 
-// 1. A COMMITTED throw begins the engine windup, releases at throw_windup_total_frames(power), and a
-//    higher declared power launches the ball faster (power drives the outcome, read from the declaration).
-int test_throw_committed_releases_sized_to_power(void)
+// 1. A throw declared whole begins the engine windup, releases at throw_windup_total_frames(power), and a
+//    higher declared power launches the ball faster (power drives the outcome).
+int test_throw_declared_whole_releases_sized_to_power(void)
 {
     // --- low power: also assert the windup timing + resolution bookkeeping ---
     ScenarioContext* ctx = create_scenario();
@@ -98,14 +112,13 @@ int test_throw_committed_releases_sized_to_power(void)
     MatchSession* m = ctx->state->match;
 
     const float lowPower = 0.3f;
-    m->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
-    m->pendingActionState.throwDeclaration.target = BASE_FIRST;
-    m->pendingActionState.throwDeclaration.power = lowPower;
+    declare_target(ctx, BASE_FIRST);
+    declare_power(ctx, lowPower);
 
     // First frame begins the windup (engine mutex), without releasing.
     tick(ctx);
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action,
+        CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind,
         "declaring a throw must begin the engine-owned windup"
     );
     ASSERT_EQ(15, m->pII.hasBallIndex, "ball is still in hand during the windup");
@@ -119,88 +132,72 @@ int test_throw_committed_releases_sized_to_power(void)
     // frames counts from the SECOND frame onward (the first began the windup); release near the windup end.
     ASSERT(frames + 1 >= windup - 1, "release must wait for the engine windup, not fire instantly");
     ASSERT_EQ(
-        THROW_DECL_IDLE, (int)m->pendingActionState.throwDeclaration.phase,
-        "the declaration is consumer-cleared to IDLE at release"
-    );
-    ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)m->pendingActionState.current_catching_action,
-        "the catching action clears at release"
+        CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "the catching action clears at release"
     );
     cleanup_scenario(ctx);
 
     // --- high power: same geometry → the only difference is the declared power ---
     ScenarioContext* ctx2 = create_scenario();
     setup_fielder_with_ball(ctx2);
-    ctx2->state->match->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
-    ctx2->state->match->pendingActionState.throwDeclaration.target = BASE_FIRST;
-    ctx2->state->match->pendingActionState.throwDeclaration.power = 1.0f;
+    declare_target(ctx2, BASE_FIRST);
+    declare_power(ctx2, 1.0f);
     float highSpeed = run_until_release(ctx2, throw_windup_total_frames(1.0f) + 6, NULL);
     ASSERT(highSpeed > 0.0f, "the high-power throw must release");
 
-    ASSERT(
-        highSpeed > lowSpeed,
-        "a higher DECLARED power must launch the ball faster (power drives the outcome, read from the intent)"
-    );
+    ASSERT(highSpeed > lowSpeed, "a higher DECLARED power must launch the ball faster (power drives the outcome)");
     cleanup_scenario(ctx2);
     return TEST_PASSED;
 }
 
-// 2. The human's two-frame intent: INITIATED (direction) winds up but never releases while power is
-//    PENDING; COMMITTED (power) hands the engine the value, and the ENGINE owns the release instant — it
-//    fires when its clock reaches windup(power), NOT on the frame the client committed. Proven two ways:
-//    (a) a long INITIATED then a low power releases immediately (the windup already elapsed); (b) a short
-//    INITIATED then a high power makes the engine WAIT out the windup (no client "fire now" edge). Velocity
-//    tracks the DECLARED power either way — the value is trusted, not derived from the clock.
-int test_throw_initiated_then_committed_engine_times_release(void)
+// 2. The human's two values a moment apart: a target winds up but never releases while the power is owed;
+//    the power hands the engine the value, and the ENGINE owns the release instant — it fires when its
+//    clock reaches windup(power), NOT on the frame the power arrived. Proven two ways: (a) a long gather
+//    then a low power releases immediately (the windup already elapsed); (b) a short gather then a high
+//    power makes the engine WAIT out the windup (no client "fire now" edge). Velocity tracks the DECLARED
+//    power either way — the value is trusted, not derived from the clock.
+int test_throw_target_then_power_engine_times_release(void)
 {
-    // --- long INITIATED, then LOW power → releases immediately, velocity sized to the low power ---
+    // --- a long gather, then LOW power → releases immediately, velocity sized to the low power ---
     ScenarioContext* ctx = create_scenario();
     setup_fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
 
-    m->pendingActionState.throwDeclaration.phase = THROW_DECL_INITIATED;
-    m->pendingActionState.throwDeclaration.target = BASE_FIRST;
+    declare_target(ctx, BASE_FIRST);
 
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES + 20; i++) {
         tick(ctx);
     }
-    ASSERT_EQ(15, m->pII.hasBallIndex, "an INITIATED throw never releases while power is pending");
+    ASSERT_EQ(15, m->pII.hasBallIndex, "a throw never releases while its power is owed");
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action, "still winding up while pending"
+        CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind, "still winding up while pending"
     );
     ASSERT_EQ(
-        THROW_WINDUP_MAX_FRAMES, m->pendingActionState.throwActualization.timer,
+        THROW_WINDUP_MAX_FRAMES, m->pendingActionState.catchingAction.timer,
         "the windup clock caps at the full-power windup (holding past full does not overspill)"
     );
 
-    // Commit a LOW power. The clock (capped at MAX) is already well past windup(0.3), so the engine releases
-    // this very tick — the "second frame arrived late" case.
-    m->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
-    m->pendingActionState.throwDeclaration.power = 0.3f;
+    // Declare a LOW power. The clock (capped at MAX) is already well past windup(0.3), so the engine
+    // releases this very tick — the "power arrived late" case.
+    declare_power(ctx, 0.3f);
     tick(ctx);
-    ASSERT_EQ(-1, m->pII.hasBallIndex, "committing after a full windup releases immediately");
+    ASSERT_EQ(-1, m->pII.hasBallIndex, "a power declared after a full windup releases immediately");
     float longInitLowPowerSpeed = horiz_speed(m);
-    ASSERT_EQ(
-        THROW_DECL_IDLE, (int)m->pendingActionState.throwDeclaration.phase,
-        "the declaration is cleared to IDLE at release"
-    );
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "the throw is done at release");
     cleanup_scenario(ctx);
 
-    // --- short INITIATED, then HIGH power → the engine WAITS out the windup (it owns the release instant) ---
+    // --- a short gather, then HIGH power → the engine WAITS out the windup (it owns the release instant) ---
     ScenarioContext* ctx2 = create_scenario();
     setup_fielder_with_ball(ctx2);
     MatchSession* m2 = ctx2->state->match;
-    m2->pendingActionState.throwDeclaration.phase = THROW_DECL_INITIATED;
-    m2->pendingActionState.throwDeclaration.target = BASE_FIRST;
+    declare_target(ctx2, BASE_FIRST);
     tick(ctx2); // begin windup
     tick(ctx2); // barely wound (clock ~1, well short of windup(1.0) = MAX)
 
-    m2->pendingActionState.throwDeclaration.power = 1.0f;
-    m2->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
-    tick(ctx2); // committing does NOT fire this frame — the windup is not done
-    ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a committed throw waits out its windup");
+    declare_power(ctx2, 1.0f);
+    tick(ctx2); // the power does NOT fire this frame — the windup is not done
+    ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a powered throw waits out its windup");
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m2->pendingActionState.current_catching_action, "still winding after commit"
+        CATCHING_ACTION_THROWING, (int)m2->pendingActionState.catchingAction.kind, "still winding after the power"
     );
 
     int budget = THROW_WINDUP_MAX_FRAMES + 10, frames = 0;
@@ -208,10 +205,10 @@ int test_throw_initiated_then_committed_engine_times_release(void)
     ASSERT(shortInitHighPowerSpeed > 0.0f, "the high-power throw eventually releases (once the windup completes)");
     ASSERT(
         frames >= THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES,
-        "release waited for the full-power windup, not the client's commit frame"
+        "release waited for the full-power windup, not the frame the power arrived"
     );
 
-    // The DECLARED power decides the launch speed (trusted value), independent of how long INITIATED ran.
+    // The DECLARED power decides the launch speed (trusted value), independent of how long the gather ran.
     ASSERT(
         shortInitHighPowerSpeed > longInitLowPowerSpeed,
         "launch velocity tracks the DECLARED power value, not the hold/clock (the engine↔client contract)"

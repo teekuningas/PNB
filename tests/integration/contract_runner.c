@@ -44,7 +44,7 @@ static void run_contract_tests(void)
     // Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)
     RUN_TEST(test_control_stage_precedes_execution);
 
-    // Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
+    // Pitch contracts (a declared power and aim → the engine-owned windup)
     RUN_TEST(test_pitch_aimed_releases_with_declared_velocity);
     RUN_TEST(test_swing_declared_values_drive_the_contact);
     RUN_TEST(test_swing_declarations_are_repeat_safe);
@@ -54,12 +54,13 @@ static void run_contract_tests(void)
     RUN_TEST(test_drop_refused_during_a_later_windup);
     RUN_TEST(test_controlled_fielder_holds_during_a_later_windup);
     RUN_TEST(test_pitch_unaimed_is_valesyotto);
+    RUN_TEST(test_pitch_aim_declared_during_the_windup_is_the_aim_released);
     RUN_TEST(test_no_pitch_after_three_correct_pitches);
 
-    // Throw contracts (phased throw declaration → engine windup clock; power declared as a value)
+    // Throw contracts (a declared target and power → the engine windup clock)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
-    RUN_TEST(test_throw_committed_releases_sized_to_power);
-    RUN_TEST(test_throw_initiated_then_committed_engine_times_release);
+    RUN_TEST(test_throw_declared_whole_releases_sized_to_power);
+    RUN_TEST(test_throw_target_then_power_engine_times_release);
 
     printf("\n--- Fielder movement (the destination message and the engine mover) ---\n");
     RUN_TEST(test_move_target_sets_velocity_toward_the_point);

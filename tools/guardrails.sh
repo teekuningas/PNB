@@ -181,12 +181,13 @@ ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 # "is a pitch happening?" must be asked of pitch_is_being_delivered; reading AIRBORNE is
 # the one comparison that never lies. Every other reading was audited on 2026-10-10 — the
 # two that asked the unanswerable question (the DROP gate, the fielder freeze) were fixed,
-# and the seven left each ask something the signal CAN answer. A new one fails here and has
-# to be argued for, until the root repair in consolidation makes the signal honest.
+# and the six left each ask something the signal CAN answer (a seventh went with the throw's
+# unreachable "cancel the pitch" branch). A new one fails here and has to be argued for, until
+# the root repair in consolidation makes the signal honest.
 # ---------------------------------------------------------------------------
 pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep -v 'AIRBORNE' |
     grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
-ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 7
+ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 6
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

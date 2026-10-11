@@ -9,17 +9,14 @@
 
 void reset_pitching_system(MatchSession* match)
 {
-    match->pendingActionState.pitchActualization.timer = 0;
-    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_IDLE;
-    match->pendingActionState.pitchDeclaration.power = 0.0f;
-    match->pendingActionState.pitchDeclaration.direction = 0.0f;
+    match->pendingActionState.catchingAction = (CatchingAction){0};
 }
 
 // Can a windup legally begin right now? (Was the precondition block of the old start_pitch.)
 //   i)   the pitcher (home catcher) holds the ball
 //   ii)  no pitch already in flight
 //   iii) the batter is ready
-//   iv)  no throw is going on (a pitch may be cancelled for a throw, never the reverse)
+//   iv)  no throw is going on
 //   v)   the pitcher is close enough to the pitching plate
 //   vi)  no free-walk decision is pending
 //   vii) §18(1): the batter has not already spent his three correct pitches. A batter who has is
@@ -29,22 +26,21 @@ static int can_begin_windup(const MatchSession* match, int correct_pitches_recei
 {
     return !batter_has_become_runner_permanently(correct_pitches_received) &&
            match->pII.hasBallIndex == match->pII.catcherOnBaseIndex[0] && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
-           match->pRAI.batter_ready == 1 &&
-           match->pendingActionState.current_catching_action != CATCHING_ACTION_THROWING &&
+           match->pRAI.batter_ready == 1 && match->pendingActionState.catchingAction.kind != CATCHING_ACTION_THROWING &&
            match->playerInfo[match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
            match->flowControl.waitingForFreeWalkDecision == 0;
 }
 
 int pitch_is_being_delivered(const MatchSession* match)
 {
-    return match->pendingActionState.current_catching_action == CATCHING_ACTION_PITCHING ||
+    return match->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING ||
            match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
 }
 
-// Begin the engine-owned windup: set up the pitcher and the ball, start the deterministic clock. This is
-// pure timing setup — the animation model is set downstream for the renderer, but nothing here (or later)
-// reads animation to drive timing.
-static void begin_windup(MatchSession* match)
+// Begin the engine-owned windup for a toss of `power`: set up the pitcher and the ball, start the
+// deterministic clock. This is pure timing setup — the animation model is set downstream for the
+// renderer, but nothing here (or later) reads animation to drive timing.
+static void begin_windup(MatchSession* match, float power)
 {
     int pitcher = match->pII.hasBallIndex;
 
@@ -67,18 +63,17 @@ static void begin_windup(MatchSession* match)
     vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
 
     match->pRAI.pitch_state = PITCH_STAGE_WINDUP;
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_PITCHING;
-    match->pendingActionState.pitchActualization.timer = 0;
+    match->pendingActionState.catchingAction =
+        (CatchingAction){.kind = CATCHING_ACTION_PITCHING, .timer = 0, .as.pitch = {.power = power}};
 }
 
-// Release the real pitch — the outcome is a pure function of the DECLARED aim (never a live meter): the
-// ball leaves with velocity pitch_velocity_from_aim(power, direction). Preserves every legacy
-// release_pitch side effect (pitchReleased event, runner commits, batter_can_advance, ...).
+// Release the real pitch — the outcome is a pure function of the DECLARED values (never a live meter):
+// the ball leaves with velocity pitch_velocity_from_aim(power, direction).
 static void release_pitch(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
     int pitcher = match->pII.hasBallIndex;
-    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
-    Vector3D v = pitch_velocity_from_aim(decl->power, decl->direction);
+    const PitchWindup* pitch = &match->pendingActionState.catchingAction.as.pitch;
+    Vector3D v = pitch_velocity_from_aim(pitch->power, pitch->direction);
     Vector3D target;
     int i;
 
@@ -122,75 +117,60 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
         }
     }
 
-    // resolution: clear the declaration (consumer-clears) and the dance state
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    match->pendingActionState.pitchActualization.timer = 0;
-    decl->phase = PITCH_DECL_IDLE;
-    decl->power = 0.0f;
-    decl->direction = 0.0f;
+    match->pendingActionState.catchingAction = (CatchingAction){0};
 }
 
-// Valesyöttö (a fake): the pitcher declined the aim. No real pitch — the pitcher keeps the ball, which
-// returns to their position; no ball/strike is counted. (Minimal first definition; committed-runner
-// exposure refined in the graphical pass.)
+// Valesyöttö (a fake): the windup ran out and nobody aimed it. No real pitch — the pitcher keeps the
+// ball, which returns to their position; no ball/strike is counted.
 static void fake_pitch(MatchSession* match)
 {
     int pitcher = match->pII.hasBallIndex;
-    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
 
     match->pRAI.pitch_state = PITCH_STAGE_NONE;
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
     if (pitcher != -1) {
         match->ballInfo.location.x = match->playerInfo[pitcher].tPI.location.x;
         match->ballInfo.location.z = match->playerInfo[pitcher].tPI.location.z;
         match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
     }
-    match->pendingActionState.pitchActualization.timer = 0;
-    decl->phase = PITCH_DECL_IDLE;
-    decl->power = 0.0f;
-    decl->direction = 0.0f;
+    match->pendingActionState.catchingAction = (CatchingAction){0};
 }
 
-// The pitch actualizer — the single engine entry point (replaces start_pitch / continue_pitch /
-// release_pitch / update_pitching_meter). Reads the producer's phased declaration, runs the deterministic
-// windup clock, and resolves: AIMED at the windup end → real pitch; FAKE (or never aimed in time) →
-// valesyöttö. Timing is the master; the animation only follows.
+// The pitch actualizer — the single engine entry point. A declared power begins the windup if it can
+// legally begin; an aim, whenever it arrives, is held on the windup until release; and the engine's clock
+// decides the rest: aimed when the windup ends → a real pitch, unaimed → valesyöttö. Timing is the master;
+// the animation only follows.
 void update_pitch_actualization(
-    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int correct_pitches_received
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions,
+    int correct_pitches_received, const PitchValues* declared
 )
 {
-    PitchDeclaration* decl = &match->pendingActionState.pitchDeclaration;
-    PendingActionState* pas = &match->pendingActionState;
+    CatchingAction* action = &match->pendingActionState.catchingAction;
 
-    // Begin a windup the first frame a producer has declared anything (phase left IDLE) while no catching
-    // action is in progress — if it is legal; otherwise drop the declaration.
-    if (decl->phase != PITCH_DECL_IDLE && pas->current_catching_action == CATCHING_ACTION_NONE) {
-        if (can_begin_windup(match, correct_pitches_received)) {
-            begin_windup(match);
-        } else {
-            decl->phase = PITCH_DECL_IDLE;
-            decl->power = 0.0f;
-            decl->direction = 0.0f;
+    if (declared->powerDeclared && action->kind == CATCHING_ACTION_NONE) {
+        if (!can_begin_windup(match, correct_pitches_received)) return;
+        begin_windup(match, declared->power);
+        if (declared->aimDeclared) {
+            action->as.pitch.aimed = 1;
+            action->as.pitch.direction = declared->direction;
         }
         return; // never begin and resolve in the same frame — the windup is at least one tick
     }
 
-    // The windup is tracked by the engine mutex (current_catching_action), NOT by pitch_state: pitch_state
-    // is a broad "ball in flight" signal other stages reset (e.g. consolidation zeroes it while a stale
-    // pitchResult lingers), so gating on it would kill a fresh windup before it could release. cca is
-    // engine-owned and untouched by them.
-    if (pas->current_catching_action == CATCHING_ACTION_PITCHING) {
-        pas->pitchActualization.timer++;
-
-        if (decl->phase == PITCH_DECL_FAKE) {
-            fake_pitch(match); // explicit early fake (strategic — e.g. against leading runners)
-        } else if (pas->pitchActualization.timer >= pitch_windup_total_frames(decl->power)) {
-            if (decl->phase == PITCH_DECL_AIMED) {
-                release_pitch(match, referee, fieldPositions); // committed aim → real pitch
+    // The windup is tracked by the catching action, NOT by pitch_state: pitch_state is a broad "ball in
+    // flight" signal other stages reset (consolidation zeroes it while a stale pitchResult lingers), so
+    // gating on it would kill a fresh windup before it could release.
+    if (action->kind == CATCHING_ACTION_PITCHING) {
+        if (declared->aimDeclared) {
+            action->as.pitch.aimed = 1;
+            action->as.pitch.direction = declared->direction;
+        }
+        action->timer++;
+        if (action->timer >= pitch_windup_total_frames(action->as.pitch.power)) {
+            if (action->as.pitch.aimed) {
+                release_pitch(match, referee, fieldPositions);
             } else {
-                fake_pitch(match); // windup elapsed without an aim → valesyöttö
+                fake_pitch(match);
             }
         }
-        // else: still winding up (WINDUP/POWER) — waiting for the producer to aim.
     }
 }

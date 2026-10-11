@@ -207,9 +207,8 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"actionState\": {\n", sp);
-    fprintf(f, "%s  \"current_catching_action\": %d,\n", sp, (int)game->pendingActionState.current_catching_action);
-    fprintf(f, "%s  \"pitch_decl_phase\": %d,\n", sp, (int)game->pendingActionState.pitchDeclaration.phase);
-    fprintf(f, "%s  \"pitch_timer\": %d,\n", sp, game->pendingActionState.pitchActualization.timer);
+    fprintf(f, "%s  \"catching_action\": %d,\n", sp, (int)game->pendingActionState.catchingAction.kind);
+    fprintf(f, "%s  \"catching_action_timer\": %d,\n", sp, game->pendingActionState.catchingAction.timer);
     // The drop / change-player commands used to be dumped here as persistent flags. They are messages
     // now: declared and consumed inside one tick, so at the frame boundary this dump is taken there is
     // nothing left of them to print — what a reader wants instead is the world they produced.

@@ -17,35 +17,33 @@
  * tiers stayed green, because in AI-vs-AI play the engine happens to have cleared both declarations
  * before every reset — a latent bug, invisible to a determinism hash by construction.
  *
- * It asserts the CLAIM ("nothing declared survives a reset"), not the mechanism, so it keeps its
- * meaning when the declarations merge into the actualizations.
+ * It asserts the CLAIM ("nothing declared survives a reset"), not the mechanism, which is why it kept its
+ * meaning when the declarations merged into the catching action they describe.
  */
 int test_reset_clears_declared_intent(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* match = ctx->state->match;
 
-    // A pitch aimed and a throw committed — both mid-flight as far as the engine is concerned.
-    match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_AIMED;
-    match->pendingActionState.pitchDeclaration.power = 0.75f;
-    match->pendingActionState.pitchDeclaration.direction = -0.4f;
-    match->pendingActionState.throwDeclaration.phase = THROW_DECL_COMMITTED;
-    match->pendingActionState.throwDeclaration.target = BASE_SECOND;
-    match->pendingActionState.throwDeclaration.power = 1.0f;
+    // A pitch aimed and mid-windup, as far as the engine is concerned.
+    match->pendingActionState.catchingAction = (CatchingAction){
+        .kind = CATCHING_ACTION_PITCHING, .timer = 30, .as.pitch = {.power = 0.75f, .aimed = 1, .direction = -0.4f}
+    };
 
     initialize_action_info(match);
 
-    ASSERT_EQ(PITCH_DECL_IDLE, (int)match->pendingActionState.pitchDeclaration.phase, "the pitch declaration is idle");
-    ASSERT_FLOAT_EQ(0.0f, match->pendingActionState.pitchDeclaration.power, 1e-6f, "no declared pitch power survives");
-    ASSERT_FLOAT_EQ(
-        0.0f, match->pendingActionState.pitchDeclaration.direction, 1e-6f, "no declared pitch direction survives"
-    );
-    ASSERT_EQ(THROW_DECL_IDLE, (int)match->pendingActionState.throwDeclaration.phase, "the throw declaration is idle");
-    ASSERT_FLOAT_EQ(0.0f, match->pendingActionState.throwDeclaration.power, 1e-6f, "no declared throw power survives");
-    ASSERT_EQ(
-        BASE_NONE, (int)match->pendingActionState.throwDeclaration.target,
-        "the throw target returns to its absent sentinel, which is NOT zero"
-    );
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "no pitch survives a reset");
+    ASSERT_EQ(0, match->pendingActionState.catchingAction.timer, "no windup clock survives a reset");
+
+    // And a throw gathering, with its power in.
+    match->pendingActionState.catchingAction = (CatchingAction){
+        .kind = CATCHING_ACTION_THROWING, .timer = 12, .as.throw = {.target = BASE_SECOND, .powered = 1, .power = 1.0f}
+    };
+
+    initialize_action_info(match);
+
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "no throw survives a reset");
+    ASSERT_EQ(0, match->pendingActionState.catchingAction.as.throw.powered, "no declared throw power survives");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

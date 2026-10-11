@@ -25,10 +25,22 @@ void reset_pitching_system(MatchSession* match);
 // pitch. Other callers still ask `pitch_state` the same question in their own words — see the debt
 // table.
 int pitch_is_being_delivered(const MatchSession* match);
-// The pitch actualizer: read the phased PitchDeclaration, run the windup clock, release on AIMED / fake
-// otherwise. Called once per frame from execute_actions.
+
+// This tick's pitch values, as the INGEST gate let them through. A per-tick command block, never held:
+// what a pitch IS once it has begun lives in the CatchingAction, and these only contribute to it.
+typedef struct _PitchValues {
+    int powerDeclared;
+    float power;
+    int aimDeclared;
+    float direction;
+} PitchValues;
+
+// The pitch actualizer: a power begins the windup, an aim is held until release, and the engine's
+// clock decides when the ball leaves — aimed, a real pitch; unaimed, a valesyöttö. Called once per
+// frame from execute_actions.
 void update_pitch_actualization(
-    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int correct_pitches_received
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions,
+    int correct_pitches_received, const PitchValues* declared
 );
 
 #endif

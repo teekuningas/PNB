@@ -77,7 +77,7 @@ typedef struct {
     int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
-    int p_throwing; // previous frame's (current_catching_action == CATCHING_ACTION_THROWING)
+    int p_throwing; // previous frame's (catchingAction.kind == CATCHING_ACTION_THROWING)
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
 

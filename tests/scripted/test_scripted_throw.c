@@ -28,7 +28,7 @@ static int tick_until_ball_holder_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p &&
-            m->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
+            m->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
             m->pRAI.pitch_state == PITCH_STAGE_NONE) {
             return 1;
         }
@@ -59,7 +59,7 @@ int test_scripted_throw_hold_release_to_base(void)
     // The windup is now running (GATHERING → the engine's THROWING), ball still in hand, and the client
     // charge widget is armed (CHARGE mode) — the input mechanism that will carry the declared power.
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action,
+        CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind,
         "holding KEY_2 + a direction must begin the throw windup"
     );
     ASSERT_EQ(thrower, m->pII.hasBallIndex, "the ball is still in hand while gathering");
@@ -68,9 +68,7 @@ int test_scripted_throw_hold_release_to_base(void)
     // Keep holding to build power (the charge widget rises while held) — the throw must NOT auto-release.
     scripted_run(g, 20);
     ASSERT_EQ(thrower, m->pII.hasBallIndex, "a held throw does not auto-release before the human lets go");
-    ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.current_catching_action, "still gathering while held"
-    );
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind, "still gathering while held");
     ASSERT(tw->counter > 0, "the client charge widget builds power while KEY_2 is held (the input signal)");
 
     // Release KEY_2 → completes the intent as COMMITTED (power sampled from the widget); the ENGINE then

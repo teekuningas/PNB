@@ -159,19 +159,17 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
         // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
         // and human (the AI declares power directly; the windup + arc are the same engine path).
-        float power = stateInfo->match->pendingActionState.pitchDeclaration.power;
-        if (power < 0.0f) power = 0.0f;
-        if (power > 1.0f) power = 1.0f;
-        int timer = stateInfo->match->pendingActionState.pitchActualization.timer;
-        int hold = (int)(power * PITCH_WINDUP_HOLD_MAX);
+        const CatchingAction* action = &stateInfo->match->pendingActionState.catchingAction;
+        int timer = action->timer;
+        int crouch = pitch_windup_crouch_frames(action->as.pitch.power);
         if (timer < PITCH_WINDUP_DOWN_FRAMES) {
             int f = timer * PITCH_DOWN_MAX / PITCH_WINDUP_DOWN_FRAMES; // crouch descent 0..DOWN_MAX-1
             if (f >= PITCH_DOWN_MAX) f = PITCH_DOWN_MAX - 1;
             sprintf(path, "data/models/pitch/pitch_down_%06d.obj", f + 1);
-        } else if (timer < PITCH_WINDUP_DOWN_FRAMES + hold) {
+        } else if (timer < crouch) {
             sprintf(path, "data/models/pitch/pitch_down_%06d.obj", PITCH_DOWN_MAX); // hold the deepest crouch
         } else {
-            int up = (timer - PITCH_WINDUP_DOWN_FRAMES - hold) * PITCH_UP_MAX / PITCH_WINDUP_UP_FRAMES;
+            int up = (timer - crouch) * PITCH_UP_MAX / PITCH_WINDUP_UP_FRAMES;
             if (up >= PITCH_UP_MAX) up = PITCH_UP_MAX - 1;
             sprintf(path, "data/models/pitch/pitch_up_%06d.obj", up + 1);
         }
@@ -186,8 +184,8 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // Gather arc driven by the engine windup CLOCK (timing dictates animation, never the reverse): the
         // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
         // hold. Mapped to the full-power windup length; animationStage is ignored (the timer is master).
-        // Works identically for AI (COMMITTED) and human (GATHERING) — the same engine clock.
-        int timer = stateInfo->match->pendingActionState.throwActualization.timer;
+        // Works identically for AI and human — the same engine clock.
+        int timer = stateInfo->match->pendingActionState.catchingAction.timer;
         int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;
         if (f >= THROW_LOAD_FRAMES) f = THROW_LOAD_FRAMES - 1;
         if (f < 0) f = 0;

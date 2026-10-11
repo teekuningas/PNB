@@ -41,8 +41,9 @@ static void base_run(
 // What ingestion leaves behind: this tick's commands, in engine terms. It is a local of
 // execute_actions, so it cannot outlive the tick, cannot be snapshot, and cannot be read by a
 // controller — the same guarantees the channel itself has, carried through the interpretation step.
-// Only actions whose whole content is "do this, now" appear here; a phased declaration (pitch, throw)
-// is engine state with a lifetime and lives in the World.
+// A held value with a lifetime of its own (a destination, a swing's power) is written straight into the
+// engine state that owns it instead; the pitch's and the throw's values come through here because what
+// they contribute to — a windup — may not exist until the actualizer begins it this very tick.
 typedef struct _IngestedCommands {
     int change_player; // hand control to the next fielder
     int drop_ball; // put the held ball down
@@ -52,18 +53,19 @@ typedef struct _IngestedCommands {
     int swing_angle_declared; // 0 when the batting side said nothing about its aim this tick
     float swing_angle;
     int swing_pass; // the batting side withdrew its swing this tick
+    PitchValues pitch;
+    ThrowValues throw;
 } IngestedCommands;
 
-static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message);
+static Permission permit(
+    const MatchSession* match, const GameRulesState* rules, const IntentMessage* message, const IngestedCommands* sofar
+);
 static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels);
 
 void init_execute_actions(MatchSession* match)
 {
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-
     reset_pitching_system(match);
     init_batting_system(match);
-    init_throwing_system(match);
     match->pendingActionState.run_bat_flag = 0;
 }
 
@@ -96,7 +98,9 @@ void intent_push(IntentChannel* channel, IntentMessage message)
 // producer can be advantaged by the engine's internal ordering. Where that reading is not yet
 // provably the same as the one the old flag-consumption site made, the check stays at its site for
 // now and moves in the slice that rewrites it — see base running below.
-static Permission permit(const MatchSession* match, const GameRulesState* rules, const IntentMessage* message)
+static Permission permit(
+    const MatchSession* match, const GameRulesState* rules, const IntentMessage* message, const IngestedCommands* sofar
+)
 {
     switch (message->kind) {
     case INTENT_CHANGE_PLAYER:
@@ -110,12 +114,10 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
         if (match->pII.hasBallIndex == -1) {
             return (Permission){0, RULE_DROP_NEEDS_BALL_IN_HAND};
         }
-        // A gathered throw owns the ball until the engine releases it. Both the declaration and the
-        // engine's own throwing mutex are checked: the declaration covers a throw declared THIS tick
-        // (whose windup has not started yet at this point in the frame), the mutex covers one already
-        // running. Together they are exactly the window in which the ball is spoken for.
-        if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING ||
-            match->pendingActionState.throwDeclaration.phase != THROW_DECL_IDLE) {
+        // A gathered throw owns the ball until the engine releases it: one already running, or one
+        // declared earlier in this drain, whose windup has not started yet at this point in the frame.
+        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING || sofar->throw.targetDeclared ||
+            sofar->throw.powerDeclared) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
         // A pitch has a claim on the ball from the first frame of its windup. Asked of
@@ -207,8 +209,10 @@ static Permission permit(const MatchSession* match, const GameRulesState* rules,
         // and is asked once, where the walking happens.
         return (Permission){1, RULE_NONE};
 
-    case INTENT_PITCH:
-    case INTENT_THROW:
+    case INTENT_PITCH_POWER:
+    case INTENT_PITCH_AIM:
+    case INTENT_THROW_TARGET:
+    case INTENT_THROW_POWER:
         // Deliberately unrestricted here, for now. Whether a pitch or a throw may begin is asked today
         // by the producer before it declares and by the actualizer before it acts, and those two
         // readings are not yet provably the same as one taken here — they will be when the
@@ -273,7 +277,14 @@ static void ingest_channel(
             continue;
         }
 
-        Permission permission = permit(match, rules, message);
+        // A throw at something that is not a base is not a throw a rule can refuse, for the same reason.
+        if (message->kind == INTENT_THROW_TARGET &&
+            (message->as.throw_target.base < BASE_HOME || message->as.throw_target.base >= BASE_COUNT)) {
+            channel->malformed = 1;
+            continue;
+        }
+
+        Permission permission = permit(match, rules, message, out);
         if (!permission.allowed) {
             continue; // the reason dies here for now — the hint system is where it will be read
         }
@@ -324,7 +335,7 @@ static void ingest_channel(
             }
             break;
         case INTENT_MOVE_TARGET:
-            // A destination has a lifetime too, so like the declarations it is written straight into
+            // A destination has a lifetime too, so like the swing's values it is written straight into
             // the engine state that owns it rather than into this tick's command block — and unlike
             // them it is never consumed: it is held until a producer replaces it. That is what lets
             // the fielder resume by itself after the engine interrupts its walk, and what makes
@@ -333,14 +344,21 @@ static void ingest_channel(
             match->catchingState.controlledMoveTargetActive = 1;
             match->catchingState.controlledMoveTargetFor = match->pII.controlIndex;
             break;
-        case INTENT_PITCH:
-            // A declaration has a lifetime, so it is not a command in the block above: it is written
-            // straight into the engine state that owns it, and the engine clears it when it resolves.
-            // Ingestion is the ONLY place a controller's declaration reaches that state.
-            match->pendingActionState.pitchDeclaration = message->as.pitch;
+        case INTENT_PITCH_POWER:
+            out->pitch.powerDeclared = 1;
+            out->pitch.power = message->as.pitch_power.power;
             break;
-        case INTENT_THROW:
-            match->pendingActionState.throwDeclaration = message->as.throw;
+        case INTENT_PITCH_AIM:
+            out->pitch.aimDeclared = 1;
+            out->pitch.direction = message->as.pitch_aim.direction;
+            break;
+        case INTENT_THROW_TARGET:
+            out->throw.targetDeclared = 1;
+            out->throw.target = message->as.throw_target.base;
+            break;
+        case INTENT_THROW_POWER:
+            out->throw.powerDeclared = 1;
+            out->throw.power = message->as.throw_power.power;
             break;
         case INTENT_NONE:
         default:
@@ -379,14 +397,11 @@ void execute_actions(
      * CATCHING TEAM
      */
 
-    // THROW — the engine-owned actualizer reads the phased ThrowDeclaration the gate stored, runs the
-    // deterministic windup clock (ThrowActualization), and releases once the intent is COMMITTED (power
-    // known) when the clock reaches throw_windup_total_frames(power) — ONE rule for both producers, no
-    // client "fire-now" edge. The AI declares COMMITTED in one frame; a human streams
-    // INITIATED{target} → COMMITTED{power}, its power a trusted value from the client charge widget — never
-    // a live meter or this clock. It also cancels a pitch for a throw (never the reverse). The same
-    // phased-declaration + engine-windup-clock shape as the pitch.
-    update_throw_actualization(match, fieldPositions);
+    // THROW — a declared target begins the gather, a declared power is held on it, and the engine releases
+    // once the power is known and its windup has elapsed: one rule for both producers, no client
+    // "fire-now" edge. The AI declares both values in one tick; a human declares the power when it lets
+    // go of the key, a trusted value from its own charge widget — never a live meter or this clock.
+    update_throw_actualization(match, fieldPositions, &commands.throw);
     // MOVE — the engine walks the controlled fielder toward the destination the gate stored. One
     // behaviour for every producer: the four per-direction key flags that used to be read here are
     // gone, and with them the last thing about movement that was shaped like an input device. It
@@ -417,10 +432,9 @@ void execute_actions(
     if (commands.drop_ball) {
         drop_ball(match);
     }
-    // pitching — the engine-owned actualizer reads the phased declaration the gate stored, runs the
-    // deterministic windup clock, and releases on AIMED (or fakes / valesyöttö otherwise). No meter read,
-    // no lock machine, no stuck-state auto-clear: the declaration is consumer-cleared at resolution.
-    update_pitch_actualization(match, &rules->referee, fieldPositions, rules->halfInningState.strikes);
+    // PITCH — a declared power begins the windup, a declared aim is held on it, and the engine's clock
+    // decides the release: aimed, a real pitch; unaimed, a valesyöttö. No meter read, no phase.
+    update_pitch_actualization(match, &rules->referee, fieldPositions, rules->halfInningState.strikes, &commands.pitch);
 
     /*
      * BATTING TEAM

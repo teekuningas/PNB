@@ -29,7 +29,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->pRAI.batter_ready == 1 &&
-            m->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
+            m->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
             m->pRAI.pitch_state == PITCH_STAGE_NONE) {
             return 1;
         }
@@ -46,7 +46,7 @@ static int tick_until_steerable(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.controlIndex == p && m->pII.hasBallIndex == p &&
-            m->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
+            m->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
             m->pRAI.pitch_state == PITCH_STAGE_NONE) {
             return 1;
         }
@@ -137,10 +137,10 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     // Pitch: press to start the power meter, click during the sweep to lock power — which is what
     // begins the engine windup.
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    for (int i = 0; i < 8 && ci->pitchWidget.dir == 0; i++) {
+    for (int i = 0; i < 8 && ci->pitchWidget.meter.dir == 0; i++) {
         scripted_tick(g);
     }
-    ASSERT(ci->pitchWidget.dir != 0, "the power meter did not start sweeping");
+    ASSERT(ci->pitchWidget.meter.dir != 0, "the power meter did not start sweeping");
     scripted_tap(g, HUMAN_PAD, KEY_2);
 
     int reached = 0;

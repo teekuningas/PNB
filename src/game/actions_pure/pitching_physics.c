@@ -13,9 +13,14 @@ Vector3D pitch_velocity_from_aim(float power, float direction)
     return v;
 }
 
-int pitch_windup_total_frames(float power)
+int pitch_windup_crouch_frames(float power)
 {
     if (power < 0.0f) power = 0.0f;
     if (power > 1.0f) power = 1.0f;
-    return PITCH_WINDUP_DOWN_FRAMES + (int)(power * PITCH_WINDUP_HOLD_MAX) + PITCH_WINDUP_UP_FRAMES;
+    return PITCH_WINDUP_DOWN_FRAMES + (int)(power * PITCH_WINDUP_HOLD_MAX);
+}
+
+int pitch_windup_total_frames(float power)
+{
+    return pitch_windup_crouch_frames(power) + PITCH_WINDUP_UP_FRAMES;
 }

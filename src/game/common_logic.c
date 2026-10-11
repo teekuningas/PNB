@@ -672,15 +672,13 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.needsMoveUpdate = 0;
     match->ballInfo.lastLastLocationUpdate = 0;
 }
-// Empty everything a play can have left on the table that is not physics: the actions still held as
-// persistent flags, the two phased declarations, and the catching team's own state — where the
-// controlled fielder was told to go, and the engine's prediction of where the ball can next be met.
-// The last of those is not producer-set, but it is just as stale after a reset and it is cleared here
-// so that ONE recipe owns the whole struct; the alternative was two recipes clearing two fields of
-// it, which is how the channel slice lost a declaration. Each is cleared as a WHOLE STRUCT, never field by field —
-// the field-by-field version this replaced had silently missed two, and a struct assignment cannot
-// miss a field that gets added later. Every idle/none enumerator is 0; throw.target is the one
-// non-zero "absent" sentinel. The windup clocks empty with the declarations they actualize.
+// Empty everything a play can have left on the table that is not physics: the catching action in progress,
+// the swing, and the catching team's own state — where the controlled fielder was told to go, and the
+// engine's prediction of where the ball can next be met. The last of those is not producer-set, but it is
+// just as stale after a reset and it is cleared here so that ONE recipe owns the whole struct; the
+// alternative was two recipes clearing two fields of it, which is how the channel slice lost a
+// declaration. Each is cleared as a WHOLE STRUCT, never field by field — the field-by-field version this
+// replaced had silently missed two, and a struct assignment cannot miss a field that gets added later.
 //
 // The message channel needs no counterpart here: it is drained to empty inside every tick, so a
 // reset has nothing of it to clean up.
@@ -688,12 +686,7 @@ void initialize_action_info(MatchSession* match)
 {
     match->catchingState = (CatchingTeamState){0};
 
-    match->pendingActionState.pitchDeclaration = (PitchDeclaration){0};
-    match->pendingActionState.throwDeclaration = (ThrowDeclaration){0};
-    match->pendingActionState.throwDeclaration.target = BASE_NONE;
-
-    match->pendingActionState.pitchActualization.timer = 0;
-    match->pendingActionState.throwActualization.timer = 0;
+    match->pendingActionState.catchingAction = (CatchingAction){0};
 
     match->pendingActionState.swing = (SwingActualization){0};
     match->pendingActionState.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
@@ -720,10 +713,8 @@ void reset_flow_state(MatchSession* match)
     consolidation_init(&(match->gameFlowState));
     init_game_manipulation(&(match->gameFlowState));
 
-    // Action state. The persistent flags, the declarations and the windup clocks belong to
-    // initialize_action_info (in reset_physical_world, which every recipe runs before this) — one
-    // owner per field.
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
+    // Action state. The catching action in progress belongs to initialize_action_info (in
+    // reset_physical_world, which every recipe runs before this) — one owner per field.
     match->pRAI.throw_going_to_base = -1;
     // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same

@@ -257,22 +257,6 @@ typedef enum {
     ACTION_TRIGGER_STOP = 3
 } ActionTriggerState;
 
-// The phased pitch DECLARATION (the catching team's pitch intent). The pitch↔bat dance is staggered so
-// each side reacts to the other's revealed information (unlike a throw, declared atomically): the pitcher
-// declares power first (the batter may react to the toss height), then either commits an aim (real pitch)
-// or declines (a fake). This is a small state machine; the `phase` is the SINGLE discriminator that says
-// which fields of PitchDeclaration are valid (tagged-union discipline — invalid states unrepresentable,
-// not independent per-field flags). "Existence = declared" generalizes to "the phase says what exists."
-// Declaring POWER is what STARTS the engine windup (power-as-start); there is no separate WINDUP phase —
-// power selection happens beforehand on the client-local meter, leaving the declaration IDLE until locked.
-//   IDLE   — no pitch declared (the human may be sweeping the power meter, but that is client-local).
-//   POWER  — power declared → the engine windup begins. Aim pending; the batter may react to the toss
-//            height. (Swing slice.)
-//   AIMED  — power + direction declared → the engine releases the real pitch.
-//   FAKE   — the pitcher declined the aim → valesyöttö (a fake; ball returns, no ball/strike counted,
-//            committed runners exposed). Distinct from a väärä (a real AIMED pitch placed off the plate).
-typedef enum { PITCH_DECL_IDLE = 0, PITCH_DECL_POWER, PITCH_DECL_AIMED, PITCH_DECL_FAKE } PitchDeclPhase;
-
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
 // Base-running command intent (single-frame, consumed by execute_actions::base_run).
@@ -288,51 +272,9 @@ typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } 
 // Both the human (action_invocations) and the AI (batting_ai) emit this same command — no click sim.
 typedef enum { RUN_NONE = 0, RUN_FORWARD = 1, RUN_COMMIT = 2, RUN_BACK = 3 } RunIntent;
 
-// The phased throw DECLARATION (catching team) — the throw's intent, mirroring PitchDeclaration. The throw
-// is ONE intent `{direction, power}` that the engine actualizes over its own windup clock
-// (ThrowActualization); the `phase` is just how much of that one intent has been ASSEMBLED (a tagged union —
-// invalid states unrepresentable, not independent per-field flags):
-//   IDLE       — no throw declared.
-//   INITIATED  — the intent has begun: the target (direction) is declared, power PENDING. Only the human
-//                uses this — its first frame ("I started, toward base B") starts the engine windup so the
-//                gather animates and the runner-observable wind-up begins, WHILE the human reads the meter to
-//                pick power. Power arrives in an optional second frame (see COMMITTED). The engine winds up
-//                but cannot release yet (it doesn't know the power).
-//   COMMITTED  — the full intent is assembled: target + power both declared. The AI reaches it in ONE frame
-//                (it declares direction+power at once, never using INITIATED); the human reaches it on its
-//                optional SECOND frame (the meter marker's value passed in as `power`). The engine now knows
-//                the windup length and RELEASES when its clock reaches windup(power).
-// Engine owns the release instant (never the client): once COMMITTED, release when the windup clock ≥
-// throw_windup_total_frames(power). Because the human's clock started at INITIATED (running concurrently
-// with power selection), it is usually already past → immediate release (no double-wait); if power arrives
-// early the engine waits out the physical windup. There is no "fire now" client edge (the engine↔client
-// contract). Values are client-TRUSTED — the engine actualizes `power`/`target`, it does not validate them (same
-// trust as the AI). Lifecycle: persistent across the windup; the engine consumer-clears it to IDLE at
-// release / interrupt. Both producers emit this same declaration; only how many frames it takes differs.
-//   - `target` : BASE_NONE = no throw; any other BaseID is the single target base.
-//   - `power`  : declared throw power [0,1], valid at COMMITTED. Client-produced (AI strategy, or the human's
-//                client-local charge widget — floored client-side); the engine reads it for the windup
-//                length + release velocity, trusting it, never a live meter or clock.
-typedef enum { THROW_DECL_IDLE = 0, THROW_DECL_INITIATED, THROW_DECL_COMMITTED } ThrowDeclPhase;
-
-typedef struct _ThrowDeclaration {
-    ThrowDeclPhase phase;
-    BaseID target;
-    float power; // valid at COMMITTED (both producers)
-} ThrowDeclaration;
-
-// Pitch aim — the DECLARED end-result aim for a pitch (the catching team's aim intent). Pure values,
-// no "declared" flags: the very EXISTENCE of a PitchAim means it has been declared. The two producers
-// converge on this same end result by different routes —
-//   - AI:    decide_pitch_aim produces a complete PitchAim immediately (declares at once).
-//   - human: gathers power/direction across the dance windows in the CLIENT-LOCAL input layer (an
-//            optional, per-window accumulation that the AI never has), then RESOLVES that gathering into a
-//            PitchAim at the release boundary — substituting the VALESYÖTTÖ / no-pitch default for any
-//            window left unfilled. The partial/optional-ness lives entirely in the gathering layer and
-//            never touches this synced intent.
-// Physically this works because the launch velocity is needed only at the release instant
-// (pitch_velocity_from_aim is computed once), so the engine only ever needs a COMPLETE aim — never a
-// half-aim mid-dance.
+// A pitch as the AI decides it: both values at once, which it then declares as PITCH_POWER and
+// PITCH_AIM on the same tick. A human reaches the same two values across the dance instead, one click
+// each — the engine cannot tell the difference, because only the values ever reach it.
 //   - power     : [0,1]  toss height (dy = PITCH_BASE_SPEED + power*PITCH_POWER_CONSTANT).
 //   - direction : [-1,1] placement; 0 = straight up over the plate (oikea / strike).
 //                 dx = direction*PITCH_ANGLE_CONSTANT. See pitch_velocity_from_aim.
@@ -340,18 +282,6 @@ typedef struct _PitchAim {
     float power;
     float direction;
 } PitchAim;
-
-// The catching team's phased pitch declaration (intent). Producer (AI/human) drives `phase` forward
-// (WINDUP→POWER→AIMED|FAKE); the engine reads it, runs the windup clock, releases on AIMED (or fakes on
-// FAKE / a POWER timeout), then clears it back to IDLE at resolution (consumer-clears). `power` is valid
-// once phase >= POWER; `direction` only at AIMED — the phase governs validity. At AIMED, {power,
-// direction} is a complete PitchAim the engine feeds to pitch_velocity_from_aim. Persistent across the
-// dance (aim lifecycle), revisable until committed.
-typedef struct _PitchDeclaration {
-    PitchDeclPhase phase;
-    float power; // valid once phase >= POWER
-    float direction; // valid only at AIMED
-} PitchDeclaration;
 
 // ---------------------------------------------------------------------------
 // THE INTENT CHANNEL — one per team, a PARAMETER of the tick, never World state.
@@ -389,8 +319,10 @@ typedef enum {
     INTENT_DROP_BALL, // catching: put the held ball on the ground deliberately
     INTENT_CHANGE_PLAYER, // catching: hand control to the next fielder in the ranked order
     INTENT_MOVE_TARGET, // catching: {point} — where the controlled fielder is headed
-    INTENT_PITCH, // catching: the pitch declaration as it now stands
-    INTENT_THROW // catching: the throw declaration as it now stands
+    INTENT_PITCH_POWER, // catching: {power} — the toss height; begins the windup
+    INTENT_PITCH_AIM, // catching: {direction} — where this pitch goes; held until release
+    INTENT_THROW_TARGET, // catching: {base} — the base to throw to; begins the gather
+    INTENT_THROW_POWER // catching: {power} — how hard; the throw leaves once its windup allows
 } IntentKind;
 
 typedef struct _BaseRunIntent {
@@ -463,12 +395,29 @@ typedef struct _MoveTargetIntent {
     Vector3D point;
 } MoveTargetIntent;
 
-// The pitch and the throw are the two actions a producer assembles over several frames rather than in
-// one, so what they send is the declaration in full, every time it changes — a complete value, not a
-// "now add the power" edge. The gate stores it; the engine actualizes and clears it. That the payload
-// is the engine's own declaration type, phase and all, is the transitional part: once the declarations
-// merge into the actualizations these two carry a finished pitch and throw instead, and the phase goes
-// back to being purely the engine's business.
+// The pitch and the throw, as values. Each is two numbers a producer may say on different ticks, and
+// the first one is what BEGINS the action: the toss height is what sizes the pitcher's windup, and the
+// base is what the thrower turns to face. The second may follow in the same tick (the AI says both at
+// once) or arrive while the body is already moving (a human clicks again). None of them is a phase:
+// "the power is P" means the same thing in every world, so a producer never has to look at what the
+// engine made of its last message before sending the next one. What may follow what is the gate's
+// question, asked of the world — a windup running, a throw gathering — and never carried by a message.
+typedef struct _PitchPowerIntent {
+    float power; // [0,1]
+} PitchPowerIntent;
+
+typedef struct _PitchAimIntent {
+    float direction; // [-1,1]; 0 is straight up over the plate
+} PitchAimIntent;
+
+typedef struct _ThrowTargetIntent {
+    BaseID base;
+} ThrowTargetIntent;
+
+typedef struct _ThrowPowerIntent {
+    float power; // [THROW_POWER_MIN, 1]
+} ThrowPowerIntent;
+
 typedef struct _IntentMessage {
     IntentKind kind;
     union {
@@ -479,8 +428,10 @@ typedef struct _IntentMessage {
         SwingPowerIntent swing_power;
         SwingVerticalIntent swing_vertical;
         MoveTargetIntent move_target;
-        PitchDeclaration pitch;
-        ThrowDeclaration throw;
+        PitchPowerIntent pitch_power;
+        PitchAimIntent pitch_aim;
+        ThrowTargetIntent throw_target;
+        ThrowPowerIntent throw_power;
     } as;
 } IntentMessage;
 
@@ -882,39 +833,53 @@ typedef struct _GameFlowState {
     int ballHome; // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
 
-typedef enum {
-    CATCHING_ACTION_NONE = 0,
-    CATCHING_ACTION_THROWING,
-    CATCHING_ACTION_PITCHING,
-    CATCHING_ACTION_DROPPING,
-    CATCHING_ACTION_CHANGING
-} CatchingTeamCurrentAction;
+// What the catching team's ball-holder is doing with the ball, if anything. One at a time, which is
+// why it is one tag: a pitch and a throw both claim the same hands, and two independent flags would
+// leave "both at once" representable.
+typedef enum { CATCHING_ACTION_NONE = 0, CATCHING_ACTION_THROWING, CATCHING_ACTION_PITCHING } CatchingActionKind;
 
-// Engine-owned pitch actualization clock — pure deterministic timing, the MASTER of the windup cadence.
-// Counts frames since the windup began; the engine uses it to time the release/valesyöttö, NOT the
-// animation. Timing dictates animation, never the reverse: this never reads animationStage, and it runs
-// identically headless (AI-vs-AI, no animation at all). See PitchDeclaration for the declaration it pairs
-// with.
-typedef struct _PitchActualization {
-    int timer;
-} PitchActualization;
+// A pitch being delivered. The power is known from the first frame, because it is what sizes the
+// windup; the aim may arrive at any point before release. A windup that runs out unaimed is a
+// valesyöttö, which needs no value of its own: it is simply a pitch that was never aimed.
+typedef struct _PitchWindup {
+    float power; // [0,1]
+    int aimed; // 0 until a direction has been declared — 0.0 is a real direction, straight over the plate
+    float direction;
+} PitchWindup;
 
-// Engine-owned throw actualization clock — the throw analog of PitchActualization, and the MASTER of the
-// throw windup cadence AND the release instant. Counts frames since the windup began (at INITIATED for a
-// human, at COMMITTED for the AI). Once the intent is COMMITTED (power known), the engine releases when this
-// clock reaches throw_windup_total_frames(power) — for BOTH producers, one rule. It also drives the render
-// gather arc. The client never reads it: the human's power comes from its own client charge widget, not this
-// clock (the engine↔client contract — input logic never reads the actualization clock). Runs identically
-// headless. See ThrowDeclaration.
-typedef struct _ThrowActualization {
+// A throw being gathered. The target is known from the first frame, because it is what the thrower
+// turns to face; the power may arrive later, and the ball leaves once it has and the windup for it has
+// elapsed. `distance` and `direction` are the line to the target, latched when the gather began.
+typedef struct _ThrowWindup {
+    BaseID target;
+    int powered; // 0 until a power has been declared
+    float power;
+    float distance;
+    Vector3D direction;
+} ThrowWindup;
+
+// The catching action in progress — the values a producer declared and the clock the engine runs them
+// on, in ONE record because they are one fact: "is the ball-holder pitching or throwing, with what, and
+// for how long". They used to be two halves, a declaration the producer drove through phases and a
+// clock the engine kept beside it, and the producer had to read the declaration back to know which
+// phase it was in. Now the engine owns the whole answer and producers contribute values to it.
+//
+// `timer` counts frames since the windup began and is the master of the cadence: it decides the
+// release, and the animation follows it, never the reverse — it runs identically headless. The record
+// is zeroed when the action resolves, which is the engine's "this one is done", and is nobody's
+// message. Which half of the union means anything is said by `kind`, as with IntentMessage.
+typedef struct _CatchingAction {
+    CatchingActionKind kind;
     int timer;
-} ThrowActualization;
+    union {
+        PitchWindup pitch;
+        ThrowWindup throw;
+    } as;
+} CatchingAction;
 
 // The swing, as the engine owns it — the values a producer has declared and the clock that consumes
 // them, in ONE struct because they are one fact: "is a swing being assembled, with what, and how long
-// until it is used". The pitch and the throw still keep those two halves apart, in a declaration a
-// producer writes and an actualization the engine writes; this is the shape they are heading for, so
-// it is built here rather than copied later.
+// until it is used". The catching side's CatchingAction is the same shape.
 //
 // The `Active` flags are load-bearing, not tidiness — the same argument `controlledMoveTargetActive`
 // carries on the fielding side. Zero is a real power (the softest bunt) and a real vertical (the
@@ -942,15 +907,7 @@ typedef struct _SwingActualization {
 } SwingActualization;
 
 typedef struct _PendingActionState {
-    CatchingTeamCurrentAction current_catching_action;
-    // The two phased declarations and the clocks that actualize them. The declarations are ENGINE
-    // state, not intent storage: a controller declares by sending a message, the INGEST gate is the
-    // only thing that writes what a controller declared, and the engine clears each one when it
-    // resolves. They sit beside their clocks because that is what they will merge into.
-    PitchDeclaration pitchDeclaration;
-    ThrowDeclaration throwDeclaration;
-    PitchActualization pitchActualization; // engine windup clock (replaces pitch_phase + the AI lock machine)
-    ThrowActualization throwActualization; // engine windup clock for the throw
+    CatchingAction catchingAction; // the pitch or throw in progress, if any
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
 
     int run_bat_flag;
@@ -965,13 +922,6 @@ typedef struct _PendingActionState {
     int batting_stopped;
     int batter_moving;
     int update_batter_location_and_orientation;
-
-    // Throwing related
-    float throw_distance; // from throwing_system.c
-    Vector3D throw_direction; // from throwing_system.c
-    // (throw_power is gone: the actualized power now flows as a parameter to throw_release — resolved from
-    // the declaration for the AI, or from throwActualization.timer for a human — never a pending field.)
-
 } PendingActionState;
 
 // Client-local input layer. Input *interpretation* memory — tap
@@ -996,8 +946,8 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE 
 // A meter the human samples to convert input TIMING into a declared VALUE — the client-local sampler the AI
 // never needs (it declares values from strategy directly). A read takes counter/counter_max as the chosen
 // [0,1] level: a click samples it (pitch), or a key-release samples it (throw charge). This is pure input
-// interpretation, NOT engine timing — the engine's deterministic clocks (PitchActualization /
-// ThrowActualization) are separate and authoritative; this only turns a human's input moment into a number.
+// interpretation, NOT engine timing — the engine's deterministic clock (CatchingAction.timer) is
+// separate and authoritative; this only turns a human's input moment into a number.
 // The same struct serves the pitch (PING_PONG power then DESCENT aim), the throw (CHARGE power) and the
 // swing (PING_PONG power then DESCENT elevation) — one general input widget, per the
 // engine↔client contract.
@@ -1048,8 +998,8 @@ typedef struct _InputWidget {
 // on its own side of the boundary.
 //
 // `power` is the client's OWN copy of what it declared, and it has to be: reading the engine's copy
-// back to scale the descent is exactly the read-back the fourth law forbids, and exactly what the
-// pitch still does. The producer's unfinished gesture lives in the producer.
+// back to scale the descent is exactly the read-back the fourth law forbids. The producer's unfinished
+// gesture lives in the producer.
 //
 // `flightFrames` is solved ONCE, on the frame the client saw the ball leave the hand, and from the
 // LAUNCH velocity. That is not an optimisation, it is the whole correctness of the descent: the
@@ -1082,6 +1032,16 @@ typedef struct _SwingWidget {
     float power; // the power this gesture declared; only meaningful once one has been
 } SwingWidget;
 
+// The human's pitch gesture: one cursor that is a power ping-pong before the windup and an aim descent
+// during it, and the power it declared. `power` is the client's own copy, kept so the bar can go on
+// showing the committed power while the aim is chosen — the swing's committed mark, on the pitching
+// side. Reading the engine's copy back instead would be correct only while a declaration lands inside
+// the tick that made it.
+typedef struct _PitchWidget {
+    InputWidget meter;
+    float power;
+} PitchWidget;
+
 typedef struct _BatterSelectWidget {
     int highlight; // cursor position within the current candidate list
     int selected; // 1 once the human has accepted the highlighted candidate
@@ -1093,13 +1053,13 @@ typedef struct _ClientInputState {
     // action_invocations.c. Human path only — the AI declares RUN_COMMIT directly.
     int run_press_window[BASE_COUNT];
 
-    // The pitch meter the human samples across the dance (power ping-pong → aim descent). Human path only.
-    InputWidget pitchWidget;
+    // The pitch gesture the human runs across the dance (power ping-pong → aim descent). Human path only.
+    PitchWidget pitchWidget;
 
     // The throw charge meter — a CHARGE widget that rises while the human holds KEY_2 and is sampled on
     // release to declare the throw power as a VALUE (the engine↔client contract). Self-contained: it runs
-    // its own timing and never reads ThrowActualization (the engine clock drives only the render animation).
-    // Human path only — the AI declares the throw COMMITTED with power directly, using no widget.
+    // its own timing and never reads the engine's windup clock (which drives only the render animation).
+    // Human path only — the AI declares the target and the power together, using no widget.
     InputWidget throwWidget;
 
     // The steering widget — held arrows in, a destination out. Human path only; the AI keeps the

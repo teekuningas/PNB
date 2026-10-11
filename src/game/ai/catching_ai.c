@@ -21,10 +21,10 @@ static void update_ai_pitching(
 
     // Try to pitch when: the pitcher holds the ball at home, no catching action is in progress, no pitch
     // is already going, the batter has had a moment to settle, and the fielders are home. The AI then
-    // DECLARES the pitch directly through the phased PitchDeclaration — no meter to puppeteer, no lock
-    // machine to mirror. The engine owns the windup + release.
+    // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
+    // engine owns the windup + release.
     if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
-        match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE &&
+        match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
         match->pRAI.pitch_state == PITCH_STAGE_NONE && aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
@@ -41,11 +41,13 @@ static void update_ai_pitching(
                 count_active_batting_players(match->playerInfo), halfInningState->strikes, halfInningState->balls,
                 rand_power, rand_dir, rand_choice
             );
-            // Commit the complete aim at once. One message, complete: the engine actualizes from there.
-            // The staggered reveal the batter reacts to is real now — the windup's length scales with
-            // the toss, so a batter loading during the crouch is reading this decision physically.
-            PitchDeclaration declared = {.phase = PITCH_DECL_AIMED, .power = aim.power, .direction = aim.direction};
-            intent_push(channel, (IntentMessage){.kind = INTENT_PITCH, .as.pitch = declared});
+            // Both values at once, in the same tick: the power begins the windup and the aim is held on
+            // it. The staggered reveal the batter reacts to is real — the windup's length scales with the
+            // toss, so a batter loading during the crouch is reading this decision physically.
+            intent_push(channel, (IntentMessage){.kind = INTENT_PITCH_POWER, .as.pitch_power = {.power = aim.power}});
+            intent_push(
+                channel, (IntentMessage){.kind = INTENT_PITCH_AIM, .as.pitch_aim = {.direction = aim.direction}}
+            );
         }
     }
 
@@ -99,9 +101,9 @@ static void steer_controlled_fielder(
 static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentChannel* channel)
 {
     // Don't start a throw if any catching action is already in progress. We read the real
-    // execution-side mutex (current_catching_action) directly — the AI no longer keeps a duplicate
+    // catching action in progress directly — the AI no longer keeps a duplicate
     // throwStage/AI_THROW_LOCK state machine that had to mirror (and drifted from) it.
-    if (match->pendingActionState.current_catching_action != CATCHING_ACTION_NONE) {
+    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
         return;
     }
 
@@ -126,12 +128,14 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     );
 
     if (shouldThrow == 1) {
-        // Declare the throw COMMITTED — target + power at once. The engine sizes the windup to the power
-        // and actualizes the release (execute_actions / throwing_system); the AI plays no minigame, counts
-        // no frames. (The human reaches the same COMMITTED in two frames — INITIATED{target} then
-        // COMMITTED{power} from its charge widget; the engine owns the release instant for both.)
-        ThrowDeclaration declared = {.phase = THROW_DECL_COMMITTED, .target = base, .power = THROW_POWER_DEFAULT};
-        intent_push(channel, (IntentMessage){.kind = INTENT_THROW, .as.throw = declared});
+        // Target and power at once. The engine sizes the windup to the power and actualizes the release;
+        // the AI plays no minigame and counts no frames. (A human says the same two values a moment
+        // apart — the target when it starts holding, the power when it lets go; the engine owns the
+        // release instant for both.)
+        intent_push(channel, (IntentMessage){.kind = INTENT_THROW_TARGET, .as.throw_target = {.base = base}});
+        intent_push(
+            channel, (IntentMessage){.kind = INTENT_THROW_POWER, .as.throw_power = {.power = THROW_POWER_DEFAULT}}
+        );
     }
 }
 
@@ -152,7 +156,7 @@ void update_catching_ai(
     if (match->pII.hasBallIndex == -1 && match->pII.controlIndex != -1) {
         // gate on the real execution-side mutex (no catching action in progress) — the AI's duplicate
         // aiActionEventLock/aiLockUpdate is gone.
-        if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
             if (match->pRAI.throw_going_to_base == -1 || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
                     &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->catchingState.ballTargetPoint)
@@ -225,7 +229,7 @@ void update_catching_ai(
             else
                 throwBase = 0;
 
-            if (match->pendingActionState.current_catching_action == CATCHING_ACTION_NONE) {
+            if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
                 // Two different jobs share this move, and telling them apart is what keeps the
                 // game alive.
                 //

@@ -30,7 +30,7 @@ static int controlled_fielder_may_walk(const MatchSession* match)
 {
     if (match->pII.controlIndex == -1) return 0;
     // A gathered throw owns the thrower's feet until the ball leaves the hand.
-    if (match->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING) return 0;
+    if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING) return 0;
     // Fielders hold their positions while a pitch is in progress — its windup included, on every pitch:
     // pitch_is_being_delivered, because pitch_state reads NONE through every windup after a
     // half-inning's first.

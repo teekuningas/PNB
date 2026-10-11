@@ -34,15 +34,16 @@ int test_ai_declares_and_executes_tactical_drop(void);
 // Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)
 int test_control_stage_precedes_execution(void);
 
-// Pitch slice contracts (§5 — declared phased pitch → engine-owned windup)
+// Pitch contracts (a declared power and aim → the engine-owned windup)
 int test_pitch_aimed_releases_with_declared_velocity(void);
 int test_pitch_unaimed_is_valesyotto(void);
+int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void);
 int test_no_pitch_after_three_correct_pitches(void);
 
-// Throw contracts (phased throw declaration → engine windup clock; power declared as a value)
+// Throw contracts (a declared target and power → the engine windup clock)
 int test_throw_windup_frames_scale_with_power(void);
-int test_throw_committed_releases_sized_to_power(void);
-int test_throw_initiated_then_committed_engine_times_release(void);
+int test_throw_declared_whole_releases_sized_to_power(void);
+int test_throw_target_then_power_engine_times_release(void);
 
 // Fielder-movement contracts (the destination message and the engine mover)
 int test_move_target_sets_velocity_toward_the_point(void);

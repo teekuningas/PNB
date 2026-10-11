@@ -11,9 +11,9 @@
 
 #define THROW_ANIMATION_FREQUENCY 3
 
-// Windup sizing: how long the physical windup for a declared power lasts. Once an intent is COMMITTED the
-// engine releases when its clock reaches this — for BOTH producers. A human's clock starts earlier
-// (at INITIATED, running while it picks power on the client charge widget), so by its COMMITTED frame the
+// Windup sizing: how long the physical windup for a declared power lasts. Once the power is known the engine
+// releases when its clock reaches this — for BOTH producers. A human's clock starts earlier (with the
+// target, running while it picks power on the client charge widget), so by the time its power arrives the
 // windup has usually elapsed → immediate release; the client never reads this function or the clock.
 int throw_windup_total_frames(float power)
 {
@@ -23,24 +23,6 @@ int throw_windup_total_frames(float power)
     return THROW_WINDUP_MIN_FRAMES + (int)(t * (THROW_WINDUP_MAX_FRAMES - THROW_WINDUP_MIN_FRAMES));
 }
 
-void init_throwing_system(MatchSession* match)
-{
-    match->pendingActionState.throw_distance = 0;
-    match->pendingActionState.throw_direction.x = 0;
-    match->pendingActionState.throw_direction.y = 0;
-    match->pendingActionState.throw_direction.z = 0;
-    match->pendingActionState.throwActualization.timer = 0;
-}
-
-static void clear_throw_declaration(ThrowDeclaration* decl)
-{
-    decl->phase = THROW_DECL_IDLE;
-    decl->target = BASE_NONE;
-    decl->power = 0.0f;
-}
-
-// Compute the (un-normalized) throw direction from the ball-holder toward a target base, and record which
-// base the throw is going to (throw_going_to_base keeps basemen from wandering out to catch it).
 Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
 {
     switch (base) {
@@ -56,50 +38,31 @@ Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
     }
 }
 
-static void set_throw_direction(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
-{
-    if (base < BASE_HOME || base >= BASE_COUNT) return;
-
-    Vector3D target = throw_target_point(fieldPositions, base);
-    match->pRAI.throw_going_to_base = (int)base;
-    match->pendingActionState.throw_direction.x = target.x - match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-    match->pendingActionState.throw_direction.z = target.z - match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
-}
-
-// Begin the engine-owned windup for a throw toward `base`: cancel any pitch, latch the direction/distance,
-// stop and orient the thrower, and start the deterministic clock. Returns 1 if the windup began, 0 if it
-// could not (no ball, or the thrower already stands on the target base — too close to throw). This is the
-// throw analog of the pitch's begin_windup; the gather animation follows the clock downstream.
+// Begin the engine-owned windup for a throw toward `base`: latch the line to the target, stop and orient
+// the thrower, and start the deterministic clock. Returns 1 if the windup began, 0 if it could not (no ball,
+// or the thrower already stands on the target base — too close to throw). The gather animation follows
+// the clock downstream.
 static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
     if (match->pII.hasBallIndex == -1) {
         return 0;
     }
+    if (base < BASE_HOME || base >= BASE_COUNT) return 0;
 
-    // A pitch may be cancelled for a throw (never the reverse): drop the pitch declaration + its windup
-    // clock, and move the ball back from the plate centre to the pitcher's hand.
-    if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
-        match->pendingActionState.pitchDeclaration.phase = PITCH_DECL_IDLE;
-        match->pendingActionState.pitchDeclaration.power = 0.0f;
-        match->pendingActionState.pitchDeclaration.direction = 0.0f;
-        match->pRAI.pitch_state = PITCH_STAGE_NONE;
-        match->pendingActionState.pitchActualization.timer = 0;
-        match->ballInfo.location.x = match->playerInfo[match->pII.hasBallIndex].tPI.location.x;
-        match->ballInfo.location.z = match->playerInfo[match->pII.hasBallIndex].tPI.location.z;
-    }
-
-    set_throw_direction(match, fieldPositions, base);
-    match->pendingActionState.throw_distance = (float)sqrt(
-        match->pendingActionState.throw_direction.x * match->pendingActionState.throw_direction.x +
-        match->pendingActionState.throw_direction.z * match->pendingActionState.throw_direction.z
-    );
+    int thrower = match->pII.hasBallIndex;
+    Vector3D target = throw_target_point(fieldPositions, base);
+    // which base the throw is going to keeps basemen from wandering out to catch it
+    match->pRAI.throw_going_to_base = (int)base;
+    ThrowWindup windup = {.target = base};
+    windup.direction.x = target.x - match->playerInfo[thrower].tPI.location.x;
+    windup.direction.z = target.z - match->playerInfo[thrower].tPI.location.z;
+    windup.distance = (float)sqrt(windup.direction.x * windup.direction.x + windup.direction.z * windup.direction.z);
     // Can't throw to a base you are already standing on.
-    if (match->pendingActionState.throw_distance <= THROW_TO_BASE_DISTANCE) {
+    if (windup.distance <= THROW_TO_BASE_DISTANCE) {
         match->pRAI.throw_going_to_base = -1;
         return 0;
     }
 
-    int thrower = match->pII.hasBallIndex;
     // Stop the thrower if moving — the gather animation has no foot movement.
     if (match->playerInfo[thrower].cPI.moving == 1) {
         stop_movement(match->playerInfo, thrower);
@@ -113,23 +76,25 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
     // Avoid twitching if a move key is still down while the thrower can't move.
     match->playerInfo[thrower].cPI.lastLastLocationUpdate = 1;
     // Face the target base.
-    match->playerInfo[thrower].tPI.orientation.x = match->pendingActionState.throw_direction.x;
-    match->playerInfo[thrower].tPI.orientation.z = match->pendingActionState.throw_direction.z;
+    match->playerInfo[thrower].tPI.orientation.x = windup.direction.x;
+    match->playerInfo[thrower].tPI.orientation.z = windup.direction.z;
 
-    match->pendingActionState.throwActualization.timer = 0;
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_THROWING;
+    match->pendingActionState.catchingAction =
+        (CatchingAction){.kind = CATCHING_ACTION_THROWING, .timer = 0, .as.throw = windup};
     return 1;
 }
 
-// Launch the ball toward the latched base with the DECLARED power — a trusted client value (the AI's
-// strategy, or the human's charge-widget sample carried on the COMMITTED declaration) — never a live meter
-// or the engine clock. Preserves every legacy release side effect (recoil, fielder-selection
-// refresh, control handoff to generic_sling_ball).
-static void throw_release(MatchSession* match, float power)
+// Launch the ball toward the latched base with the DECLARED power — a trusted value (the AI's strategy, or
+// the human's charge-widget sample), never a live meter or the engine clock. The action resolves here: the
+// record is zeroed, which is the engine's "this one is done".
+static void throw_release(MatchSession* match)
 {
+    ThrowWindup windup = match->pendingActionState.catchingAction.as.throw;
+    match->pendingActionState.catchingAction = (CatchingAction){0};
     if (match->pII.hasBallIndex == -1) {
         return;
     }
+    float power = windup.power;
     if (power < 0.0f) power = 0.0f;
     if (power > 1.0f) power = 1.0f;
 
@@ -142,16 +107,12 @@ static void throw_release(MatchSession* match, float power)
     match->playerInfo[match->pII.hasBallIndex].cTPI.throwRecoil = 1;
 
     // normalize the latched direction and give it a small upward component
-    match->pendingActionState.throw_direction.x =
-        match->pendingActionState.throw_direction.x / match->pendingActionState.throw_distance;
-    match->pendingActionState.throw_direction.z =
-        match->pendingActionState.throw_direction.z / match->pendingActionState.throw_distance;
-    match->pendingActionState.throw_direction.y = 0.06f;
+    float dx = windup.direction.x / windup.distance;
+    float dz = windup.direction.z / windup.distance;
+    float dy = 0.06f;
     generic_sling_ball(
-        &(match->ballInfo), match->pendingActionState.throw_direction.x * power * THROW_POWER_CONSTANT,
-        match->pendingActionState.throw_direction.y +
-            match->pendingActionState.throw_distance * THROW_DISTANCE_CONSTANT,
-        match->pendingActionState.throw_direction.z * power * THROW_POWER_CONSTANT
+        &(match->ballInfo), dx * power * THROW_POWER_CONSTANT, dy + windup.distance * THROW_DISTANCE_CONSTANT,
+        dz * power * THROW_POWER_CONSTANT
     );
     // Trigger fielder selection update after throw
     match->pRAI.refresh_catch_and_change = 1;
@@ -166,54 +127,38 @@ static void throw_release(MatchSession* match, float power)
     match->pII.controlIndex = -1;
 }
 
-// Release and clear all throw actualization state back to idle (consumer-clears the declaration).
-static void resolve_throw(MatchSession* match, ThrowDeclaration* decl, float power)
+// The throw actualizer — the single engine entry point, the throw's counterpart of the pitch's. A declared
+// target begins the gather; a declared power, whenever it arrives, is held on it; and the ball leaves once
+// the power is known and the windup for that power has elapsed. ONE rule for both producers: the AI
+// declares both values at once, so its clock starts with the power known; a human declares the target
+// first, so the gather runs WHILE it picks power on its own meter and the release usually follows the
+// moment the power arrives. The client never commands the release instant; the engine owns it.
+void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared)
 {
-    throw_release(match, power);
-    match->pendingActionState.current_catching_action = CATCHING_ACTION_NONE;
-    match->pendingActionState.throwActualization.timer = 0;
-    clear_throw_declaration(decl);
-}
+    CatchingAction* action = &match->pendingActionState.catchingAction;
 
-// The throw actualizer — the single engine entry point (the throw analog of update_pitch_actualization).
-// Reads the phased ThrowDeclaration, runs the deterministic windup clock, and — once the intent is COMMITTED
-// (power known) — releases when the clock reaches throw_windup_total_frames(power). ONE rule for both
-// producers: the AI declares COMMITTED at once (clock starts then); a human declares INITIATED first (clock
-// starts, gather animates while it picks power on the meter) then COMMITTED (power in), releasing at once if
-// the windup already elapsed. The client never commands the release instant; the engine owns it.
-void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions)
-{
-    ThrowDeclaration* decl = &match->pendingActionState.throwDeclaration;
-    PendingActionState* pas = &match->pendingActionState;
-
-    // Begin a windup the first frame a throw is declared while no catching action is in progress — if it
-    // can legally begin; otherwise drop the declaration.
-    if (decl->phase != THROW_DECL_IDLE && pas->current_catching_action == CATCHING_ACTION_NONE) {
-        if (!begin_throw_windup(match, fieldPositions, decl->target)) {
-            clear_throw_declaration(decl);
+    if (declared->targetDeclared && action->kind == CATCHING_ACTION_NONE) {
+        if (!begin_throw_windup(match, fieldPositions, declared->target)) return;
+        if (declared->powerDeclared) {
+            action->as.throw.powered = 1;
+            action->as.throw.power = declared->power;
         }
         return; // never begin and release in the same frame — the windup is at least one tick
     }
 
-    if (pas->current_catching_action == CATCHING_ACTION_THROWING) {
-        pas->throwActualization.timer++;
-
-        if (decl->phase == THROW_DECL_COMMITTED) {
-            // The full intent is assembled (power known — the AI at once, or the human's second frame). The
-            // ENGINE owns the release instant: fire once the physical windup for that power has elapsed. The
-            // clock has run since the throw began (INITIATED for a human, so concurrently with the human's
-            // power pick — no double-wait), so it is usually already past the target → immediate; if power
-            // arrived early it waits out the windup. One rule for both producers; no client "fire now" edge.
-            if (pas->throwActualization.timer >= throw_windup_total_frames(decl->power)) {
-                resolve_throw(match, decl, decl->power);
+    if (action->kind == CATCHING_ACTION_THROWING) {
+        if (declared->powerDeclared) {
+            action->as.throw.powered = 1;
+            action->as.throw.power = declared->power;
+        }
+        action->timer++;
+        if (action->as.throw.powered) {
+            if (action->timer >= throw_windup_total_frames(action->as.throw.power)) {
+                throw_release(match);
             }
-        } else {
-            // INITIATED (human: direction declared, power pending): keep winding to drive the render gather
-            // arc; cap at the full-power windup so it rests at full while the human is still picking power
-            // (holding past full does not overspill). Cannot release yet — the power is not known.
-            if (pas->throwActualization.timer > THROW_WINDUP_MAX_FRAMES) {
-                pas->throwActualization.timer = THROW_WINDUP_MAX_FRAMES;
-            }
+        } else if (action->timer > THROW_WINDUP_MAX_FRAMES) {
+            // No power yet: keep the gather arc resting fully wound while the human is still choosing.
+            action->timer = THROW_WINDUP_MAX_FRAMES;
         }
     }
 }

@@ -327,7 +327,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     int armed = 0;
     for (int i = 0; i < 1200 && !armed; i++) {
         scripted_tick(g);
-        if (m->pendingActionState.current_catching_action == CATCHING_ACTION_PITCHING) {
+        if (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) {
             scripted_tick(g);
             ASSERT(
                 swing_may_be_declared(m),

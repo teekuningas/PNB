@@ -161,7 +161,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
                   "pitch_state,catchingAction,hasBall,"
-                  "waitBatter,waitWalk,batter_ready,swingDecided,pitchDeclPhase,pitchTimer,batterReadyTimer,"
+                  "waitBatter,waitWalk,batter_ready,swingDecided,pitchAimed,catchingTimer,batterReadyTimer,"
                   "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,batting_going_on\n"
         );
         o->header_written = 1;
@@ -178,10 +178,10 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.current_catching_action,
+        m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.catchingAction.kind,
         m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, ai->swing.decided, (int)m->pendingActionState.pitchDeclaration.phase,
-        m->pendingActionState.pitchActualization.timer, ai->batterReadyTimer, m->pendingActionState.swing.contactFrame,
+        m->pRAI.batter_ready, ai->swing.decided, m->pendingActionState.catchingAction.as.pitch.aimed,
+        m->pendingActionState.catchingAction.timer, ai->batterReadyTimer, m->pendingActionState.swing.contactFrame,
         m->pendingActionState.swing.powerActive, m->pendingActionState.swing.verticalActive, ai->swing.wrongPitch,
         ai->swing.style, (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
     );
@@ -236,7 +236,7 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->pII.hasBallIndex);
     FOLD(h, m->pII.controlIndex);
     FOLD(h, m->pRAI.pitch_state);
-    FOLD(h, m->pendingActionState.current_catching_action);
+    FOLD(h, m->pendingActionState.catchingAction.kind);
     // The swing, as declared. This replaces the meter counter that used to be folded here — and the
     // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
     // now tracks the VALUES a producer declared rather than the level a shared meter had reached.
@@ -320,7 +320,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_runs1 = sb->teams[1].runs;
         o->p_inning = sb->inning;
         o->p_period = sb->period;
-        o->p_throwing = (m->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING);
+        o->p_throwing = (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING);
         for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
             o->p_baseId[i] = (int)m->playerInfo[i].bTPI.baseId;
             o->p_state[i] = (int)m->playerInfo[i].bTPI.state;
@@ -407,7 +407,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     // Throw to a base started: a rising edge into CATCHING_ACTION_THROWING, which only
     // begin_throw_windup raises. (A drop counter was tried here and removed — a §30 drop's post-frame
     // state aliases a reset that also clears a fielder's ball; see sim_observers.h.)
-    int throwing = (m->pendingActionState.current_catching_action == CATCHING_ACTION_THROWING);
+    int throwing = (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING);
     if (throwing == 1 && o->p_throwing == 0) {
         o->throws++;
         pbp(o, g, r, "throw to a base (windup)");

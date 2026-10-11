@@ -42,8 +42,10 @@ static ScenarioContext* later_windup(void)
 
     intent_push(
         &ctx->state->channels.catching,
-        (IntentMessage){.kind = INTENT_PITCH,
-                        .as.pitch = {.phase = PITCH_DECL_AIMED, .power = DECLARED_POWER, .direction = 0.0f}}
+        (IntentMessage){.kind = INTENT_PITCH_POWER, .as.pitch_power = {.power = DECLARED_POWER}}
+    );
+    intent_push(
+        &ctx->state->channels.catching, (IntentMessage){.kind = INTENT_PITCH_AIM, .as.pitch_aim = {.direction = 0.0f}}
     );
     tick(ctx); // the windup begins
 
@@ -59,8 +61,7 @@ int test_drop_refused_during_a_later_windup(void)
     MatchSession* m = ctx->state->match;
     const int pitcher = m->pII.hasBallIndex;
     ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.current_catching_action,
-        "precondition: a windup is running"
+        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "precondition: a windup is running"
     );
 
     intent_push(&ctx->state->channels.catching, (IntentMessage){.kind = INTENT_DROP_BALL});
@@ -96,7 +97,7 @@ int test_controlled_fielder_holds_during_a_later_windup(void)
 
     const Vector3D v = m->playerInfo[pitcher].tPI.velocity;
     ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.current_catching_action, "precondition: still winding up"
+        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "precondition: still winding up"
     );
     ASSERT_FLOAT_EQ(0.0f, v.x, 1e-6f, "the pitcher must not be set walking during the windup");
     ASSERT_FLOAT_EQ(0.0f, v.z, 1e-6f, "the pitcher must not be set walking during the windup");

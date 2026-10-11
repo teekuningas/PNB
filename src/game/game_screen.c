@@ -459,12 +459,11 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     // Pitch dance — a SECOND catching-team marker. While the human aims (power already locked, the aim
     // cursor descending = field_marker above), also show a STATIC marker at the locked power, in the same
     // catching-team marker colour. This removes the old visual "jump" (the single cursor used to teleport
-    // to the far right on power-lock) and is the first instance of the dance's multi-marker meter (each
-    // team will eventually show its own power + aim markers, same colour within a team). Shown only during
-    // the human aim phase; the AI drives no widget, so an AI pitch never shows a marker. Render-only —
-    // reads the client-local widget phase + the declared (synced) power.
-    if (stateInfo->clientInput->pitchWidget.mode == WIDGET_DESCENT) {
-        float locked_power = stateInfo->match->pendingActionState.pitchDeclaration.power;
+    // to the far right on power-lock). Shown only during the human aim phase; the AI drives no widget, so
+    // an AI pitch never shows a marker. Render-only — reads the gesture's own copy of what it declared,
+    // which is correct even while the declaration is still on its way to the engine.
+    if (stateInfo->clientInput->pitchWidget.meter.mode == WIDGET_DESCENT) {
+        float locked_power = stateInfo->clientInput->pitchWidget.power;
         float power_marker_x = meter_screen_x + locked_power * marker_travel;
         draw_texture_2d(
             resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,
@@ -484,9 +483,8 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     // That wait is the batter's own beat of the four, so it needs a state the pitcher's gesture never
     // had, which is exactly what SwingBeat is for.
     //
-    // It reads the CLIENT's own copy rather than the engine's, the one difference from the block
-    // above. Both are correct locally; only this one is still correct when the declaration takes a
-    // wire's delay to arrive. The pitch's marker should follow when part 2 re-keys its widget.
+    // Like the pitch's, it reads the CLIENT's own copy rather than the engine's: only that is still
+    // correct when the declaration takes a wire's delay to arrive.
     if (swing.powerCommitted) {
         float swing_power_marker_x = meter_screen_x + swing.power * marker_travel;
         draw_texture_2d(
