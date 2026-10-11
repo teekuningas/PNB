@@ -126,7 +126,15 @@ static unsigned long long run_once(unsigned int seed)
 // does not say behaviour is unchanged, and here it was demonstrably not. The offense breakdown's 24
 // seeds are what carried the argument that the repair was neutral in quality (every band held, with
 // the bands freshly cut). A single-seed fingerprint is a tripwire, never a proof.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0xa0d339d08a516f85ULL
+//
+// Re-recorded 2026-10-11, deliberately, when `pitch_state` lost its windup state (the windup is the
+// catching action's alone now). Two things move it. The checksum folds `pitch_state` raw, and on every
+// half-inning's opening windup it used to read WINDUP where it now reads NONE — a byte, not a play.
+// And one real change: starting a windup with the previous BALL still standing no longer makes
+// consolidation react to that BALL a second time, so the free-walk calculation is no longer re-run
+// mid-windup (42 golden runs: two offers had been raised in the middle of a pitch, now none, and the
+// state validator holds it at none). Same frame counts on all three seeds, every band held.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x19f40d41e20f8075ULL
 
 int test_ai_vs_ai_determinism(void)
 {

@@ -271,11 +271,11 @@ void update_batting_ai(
     // no pitch at all, not merely when the ball is not in the air: an earlier reading wiped the plan on
     // the very frame it was made, and the elevation never arrived.
     //
-    // "No pitch at all" is pitch_is_being_delivered and NOT `pitch_state == NONE`, which is the same
-    // correction the batter's window needed and for the same reason. Asked the old way, this cleared the
-    // plan on EVERY frame of every windup after a half-inning's first — so the moment that window opened,
-    // the controller re-decided its power, elevation and aim afresh each frame, burning three RNG draws a
-    // frame and keeping only whatever the last one happened to be.
+    // "No pitch at all" is pitch_is_being_delivered — the windup or the flight — the same correction the
+    // batter's window needed. Asked of `pitch_state` alone, back when it lied about windups, this cleared
+    // the plan on EVERY frame of every windup after a half-inning's first — so the moment that window
+    // opened, the controller re-decided its power, elevation and aim afresh each frame, burning three RNG
+    // draws a frame and keeping only whatever the last one happened to be.
     //
     // The wrong-pitch judgement goes with it, being about the same pitch. Clearing it is this
     // controller's job alone: the engine used to clear it at release, which was the engine writing into a

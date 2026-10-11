@@ -9,21 +9,15 @@
 
 void reset_pitching_system(MatchSession* match);
 
-// Is a pitch physically on its way — the pitcher winding up, or the ball in the air?
+// Is a pitch physically on its way — the pitcher winding up, or the ball in the air? Two halves with two
+// homes: the windup is the catching action's, the flight is `pitch_state`'s, and this is the one place
+// that asks both.
 //
-// It exists because `pRAI.pitch_state` cannot answer this and looks as though it can. Between a
-// pitch's RESOLUTION and the next pitch's RELEASE, consolidation stamps `pitch_state` back to NONE
-// on every frame the resolved pitch's `pitchResult` is still standing — and that flag is only
-// cleared at the next release. So from the second pitch of every half-inning onward, `pitch_state`
-// reads NONE right through the windup. The windup is therefore asked of the engine's own pitch
-// mutex, which nothing outside this file touches; only the flight is asked of `pitch_state`, where
-// AIRBORNE means exactly what it says and nothing is stale.
-//
-// One definition, because two callers had improvised their own and disagreed: the batter's window
-// (batting_system.c) and the batting controller's plan lifetime (batting_ai.c). Both were reading
-// the lying signal, which cost the batter the entire power beat on all but a half-inning's opening
-// pitch. Other callers still ask `pitch_state` the same question in their own words — see the debt
-// table.
+// One definition, because callers used to improvise their own and disagree: the batter's window
+// (batting_system.c) and the batting controller's plan lifetime (batting_ai.c) once asked `pitch_state`
+// alone, back when it also carried a windup state that consolidation wiped on every windup after a
+// half-inning's first — which cost the batter the entire power beat on all but the opening pitch. That
+// state is gone; `pitch_state` now answers only the question it always answered truthfully.
 int pitch_is_being_delivered(const MatchSession* match);
 
 // May a pitch begin in the world as it stands? The INGEST gate asks it of a declared power; the answer names

@@ -141,7 +141,10 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     press(g, PITCH_PAD, KEY_2); // commit the toss power -> the engine windup begins
     scripted_tick(g);
     ASSERT(winding_unaimed(m), "the pitcher's power click must declare a power and leave the aim outstanding");
-    ASSERT_EQ((int)PITCH_STAGE_WINDUP, (int)m->pRAI.pitch_state, "committing a power must start the engine windup");
+    ASSERT_EQ(
+        (int)CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind,
+        "committing a power must start the engine windup"
+    );
 
     /* BEAT 2 — the batter's power meter arms itself off that windup, with no key pressed, and a
      * press samples it. The pitcher's aim is still outstanding while this happens. */
@@ -239,7 +242,9 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     scripted_run(g, 9);
     press(g, PITCH_PAD, KEY_2); // power committed -> windup -> the batter's meter arms
     scripted_tick(g);
-    ASSERT_EQ((int)PITCH_STAGE_WINDUP, (int)m->pRAI.pitch_state, "the windup must have begun");
+    ASSERT_EQ(
+        (int)CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "the windup must have begun"
+    );
     ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode, "the batter's power meter must be armed");
 
     // Let the pitcher's aim fall to the sweet spot; the batter's power sweep is still running,

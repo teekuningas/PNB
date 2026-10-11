@@ -197,7 +197,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball
     // and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
     // as that could make some weird things happen. try on the next frame again.
-    if (match->pII.hasBallIndex == -1 && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
+    if (match->pII.hasBallIndex == -1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
         match->pRAI.refresh_catch_and_change != 1) {
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             // so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.

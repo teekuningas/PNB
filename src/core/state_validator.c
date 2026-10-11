@@ -451,6 +451,19 @@ int state_validator_check(StateInfo* state)
         return 0;
     }
 
+    // Invariant 4b: no free walk is on offer while a pitch is being wound up.
+    //
+    // The lukkari may not begin a windup while an offer is open (pitch_may_begin), so the only way the
+    // two can meet is an offer raised AFTER the windup began — which is what the old windup state in
+    // pitch_state did: starting a windup with the previous BALL still standing made consolidation react
+    // to that BALL a second time, re-run the free-walk calculation and, with two balls standing, ask the
+    // batting side a question it had already answered, in the middle of the pitch.
+    if (game->flowControl.waitingForFreeWalkDecision == 1 &&
+        game->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) {
+        printf("\n[STATE ERROR] FATAL: a free walk is on offer while a pitch is being wound up\n");
+        return 0;
+    }
+
     // Invariant 5: the intent channels are empty at the frame boundary.
     //
     // This is what makes "the channel is a parameter of the tick, not state" a fact instead of an

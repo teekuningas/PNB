@@ -34,7 +34,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
 static int tick_until_windup(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
-        if (scripted_match(g)->pRAI.pitch_state == PITCH_STAGE_WINDUP) return 1;
+        if (scripted_match(g)->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) return 1;
         if (!scripted_tick(g)) return 0;
     }
     return 0;
@@ -298,9 +298,10 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
  * workaround was even written into the controller as a comment about declaring "as early as it
  * legally can". And one-pitch tests could not, by construction.
  *
- * So the claim here is deliberately about the SECOND pitch. Ablate by asking `pitch_state ==
- * PITCH_STAGE_WINDUP` again in swing_may_be_declared: this goes red and the first-pitch tests above
- * all stay green.
+ * So the claim here is deliberately about the SECOND pitch. Ablated when it was written by asking
+ * the old `pitch_state == PITCH_STAGE_WINDUP` again in swing_may_be_declared: it went red and the
+ * first-pitch tests above stayed green. That state no longer exists — the windup is the catching
+ * action's alone — but the claim is still the one worth holding.
  */
 int test_scripted_swing_power_beat_survives_into_later_pitches(void)
 {

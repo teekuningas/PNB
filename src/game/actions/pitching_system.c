@@ -33,7 +33,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (pitcher == -1 || match->pII.hasBallIndex != pitcher) {
         return (Permission){0, RULE_PITCH_NEEDS_BALL_AT_HOME};
     }
-    if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+    if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
     }
     if (match->pRAI.batter_ready != 1) {
@@ -79,7 +79,6 @@ static void begin_windup(MatchSession* match, float power)
     // the ball rises from the centre of the plate
     vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
 
-    match->pRAI.pitch_state = PITCH_STAGE_WINDUP;
     match->pendingActionState.catchingAction =
         (CatchingAction){.kind = CATCHING_ACTION_PITCHING, .timer = 0, .as.pitch = {.power = power}};
 }
@@ -173,9 +172,6 @@ void update_pitch_actualization(
     }
     if (declared->powerDeclared) return; // never begin and resolve in the same frame — the windup is at least one tick
 
-    // The windup is tracked by the catching action, NOT by pitch_state: pitch_state is a broad "ball in
-    // flight" signal other stages reset (consolidation zeroes it while a stale pitchResult lingers), so
-    // gating on it would kill a fresh windup before it could release.
     if (action->kind == CATCHING_ACTION_PITCHING) {
         action->timer++;
         if (action->timer >= pitch_windup_total_frames(action->as.pitch.power)) {

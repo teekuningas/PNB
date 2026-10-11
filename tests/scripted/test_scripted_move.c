@@ -1,5 +1,6 @@
 #include "test_helpers.h"
 #include "scripted_harness.h"
+#include "actions/pitching_system.h"
 #include "globals.h"
 #include "common_logic.h"
 #include <math.h>
@@ -146,7 +147,7 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     int reached = 0;
     for (int i = 0; i < 400 && !reached; i++) {
         scripted_tick(g);
-        reached = (m->pRAI.pitch_state != PITCH_STAGE_NONE);
+        reached = pitch_is_being_delivered(m);
     }
     ASSERT(reached, "the human pitch never started");
 
@@ -156,7 +157,7 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     Vector3D held_still = m->playerInfo[fielder].tPI.location;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
-    for (int i = 0; i < 20 && m->pRAI.pitch_state != PITCH_STAGE_NONE; i++) {
+    for (int i = 0; i < 20 && pitch_is_being_delivered(m); i++) {
         scripted_tick(g);
         ASSERT_EQ(fielder, m->pII.controlIndex, "control did not change during the pitch window");
         float dx = m->playerInfo[fielder].tPI.location.x - held_still.x;

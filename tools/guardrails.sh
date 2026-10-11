@@ -175,19 +175,17 @@ action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='
 ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 
 # ---------------------------------------------------------------------------
-# A signal that cannot answer the question it looks like it answers. pRAI.pitch_state
-# reads NONE right through every windup after a half-inning's first, because consolidation
-# re-asserts a resolved pitch on every frame the previous pitch's result still stands. So
-# "is a pitch happening?" must be asked of pitch_is_being_delivered; reading AIRBORNE is
-# the one comparison that never lies. Every other reading was audited on 2026-10-10 — the
-# two that asked the unanswerable question (the DROP gate, the fielder freeze) were fixed,
-# and the six left each ask something the signal CAN answer (a seventh went with the throw's
-# unreachable "cancel the pitch" branch). A new one fails here and has to be argued for, until
-# the root repair in consolidation makes the signal honest.
+# A signal that asks one question. pRAI.pitch_state used to carry a windup state that
+# consolidation wiped on every windup after a half-inning's first, so it read NONE right through
+# them and four readers were misled before the last was found. The windup now belongs to the
+# catching action alone and pitch_state has two values: a pitched ball is in the air, or it is
+# not. Every reading asks exactly that, in those words (== or != AIRBORNE), and this holds the
+# count of any other phrasing at 0 — a floor, as with ActionFlags — so a third state, or a
+# reading that leans on what NONE used to mean, has to argue its way in.
 # ---------------------------------------------------------------------------
 pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep -v 'AIRBORNE' |
     grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
-ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 6
+ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 0
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

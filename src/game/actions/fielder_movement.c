@@ -31,9 +31,7 @@ static int controlled_fielder_may_walk(const MatchSession* match)
     if (match->pII.controlIndex == -1) return 0;
     // A gathered throw owns the thrower's feet until the ball leaves the hand.
     if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING) return 0;
-    // Fielders hold their positions while a pitch is in progress — its windup included, on every pitch:
-    // pitch_is_being_delivered, because pitch_state reads NONE through every windup after a
-    // half-inning's first.
+    // Fielders hold their positions while a pitch is in progress — its windup included.
     if (pitch_is_being_delivered(match)) return 0;
     // A throw's recoil animation has to finish before the model may be changed under it.
     if (match->playerInfo[match->pII.controlIndex].cTPI.throwRecoil != 0) return 0;

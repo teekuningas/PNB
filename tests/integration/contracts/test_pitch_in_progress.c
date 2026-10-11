@@ -9,9 +9,10 @@
  *
  * Two rules hold while the pitcher is winding up: the ball cannot be dropped (the pitch has a claim on
  * it), and the controlled fielder — the pitcher, whose hand the ball is in — stays where the windup put
- * him. Both used to ask `pRAI.pitch_state`, and that signal cannot answer the question: consolidation
- * re-asserts a resolved pitch by zeroing it on every frame the previous pitch's result still stands,
- * which is the whole of every windup after a half-inning's first. On those windups both rules were off.
+ * him. Both used to ask `pRAI.pitch_state`, which then carried a windup state that consolidation zeroed
+ * on every frame the previous pitch's result still stood — the whole of every windup after a
+ * half-inning's first. On those windups both rules were off. The windup state has since left
+ * `pitch_state` altogether; the test still builds the later-windup world, because that is the claim.
  *
  * Nothing the game's own producers do reaches it — the human's drop key is for a holder who is not the
  * pitcher, and neither controller steers during a windup — but the gate is the one place a declared

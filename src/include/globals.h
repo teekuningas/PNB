@@ -1148,15 +1148,17 @@ typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
 } HomeRunContestState;
 
+// Is a pitched ball in the air? Exactly that question and no other: the windup belongs to the catching
+// action (pitch_is_being_delivered asks both), so there is no third state for anything to forget to
+// clear — a resolved pitch goes back to NONE once, when its result is pronounced.
 typedef enum {
     PITCH_STAGE_NONE = 0,
-    PITCH_STAGE_WINDUP = 1, // Pitcher winding up
-    PITCH_STAGE_AIRBORNE = 2 // Ball in air towards plate
+    PITCH_STAGE_AIRBORNE = 2 // the ball is on its way to the plate
 } PitchCycleState;
 
 typedef struct _PlayerRelatedActionInfo {
 
-    PitchCycleState pitch_state; // Replaces pitchGoingOn and pitchInAir
+    PitchCycleState pitch_state; // a pitched ball is in the air — see PitchCycleState
 
     int throw_going_to_base; // to avoid moving basecatchers out in the wild when ball is thrown to them.
 

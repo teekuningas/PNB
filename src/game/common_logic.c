@@ -341,9 +341,9 @@ void lead_from_base(
 
 void change_player(MatchSession* match)
 {
-    // this is called by user explicitly and sometimes after updating change_player lists.
-    // so cant change pitch if pitch is going on
-    if (match->pRAI.pitch_state == PITCH_STAGE_NONE) {
+    // this is called by user explicitly and sometimes after updating change_player lists — both only
+    // with nobody holding the ball, so never during a windup. Not while a pitched ball is in the air.
+    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE) {
         // player will start randomly floating after control changes to next player.
         if (match->pII.controlIndex != -1) {
             stop_movement(match->playerInfo, match->pII.controlIndex);

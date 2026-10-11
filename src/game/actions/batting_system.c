@@ -104,11 +104,10 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 int swing_may_be_declared(const MatchSession* match)
 {
     if (match->pRAI.batting_going_on != 1) return 0; // nobody is at the plate swinging
-    // There has to be a pitch on its way. Asked of pitch_is_being_delivered and NOT of `pitch_state
-    // == WINDUP`, which is the correction the two-human soak caught: that read was wrong from the
-    // second pitch of every half-inning onward, and it cost the batter his entire power beat.
-    // Measured: declarable in 87 of the first windup's 87 frames, and in 0 of 87 on every windup
-    // after it.
+    // There has to be a pitch on its way — the windup or the flight. The two-human soak caught this
+    // asked of the old `pitch_state == WINDUP`, which was wrong from the second pitch of every
+    // half-inning onward and cost the batter his entire power beat: declarable in 87 of the first
+    // windup's 87 frames, and in 0 of 87 on every windup after it.
     if (!pitch_is_being_delivered(match)) return 0;
     if (match->pendingActionState.batting_stopped == 1) return 0; // withdrawn, or never begun
     // Spent: the bat has already met the ball. Asked of THIS swing's own record of it and not of the

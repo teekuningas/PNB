@@ -127,9 +127,7 @@ static Permission permit(
         if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
-        // A pitch has a claim on the ball from the first frame of its windup. Asked of
-        // pitch_is_being_delivered and not of pitch_state, which reads NONE through every windup after a
-        // half-inning's first while the previous pitch's result still stands.
+        // A pitch has a claim on the ball from the first frame of its windup.
         if (pitch_is_being_delivered(match)) {
             return (Permission){0, RULE_DROP_NOT_WHILE_PITCHING};
         }

@@ -135,7 +135,7 @@ static void enforce_legal_state(
     }
 
     // 5. React to Pitch Resolution
-    if (bps->pitchResult != PITCH_RESULT_NONE && match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+    if (bps->pitchResult != PITCH_RESULT_NONE && match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         match->pRAI.pitch_state = PITCH_STAGE_NONE;
         // On ball: reset free walk calculation so it is re-evaluated
         if (bps->pitchResult == PITCH_RESULT_BALL) {

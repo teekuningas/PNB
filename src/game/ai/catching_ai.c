@@ -25,7 +25,7 @@ static void update_ai_pitching(
     // engine owns the windup + release.
     if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
         match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
-        match->pRAI.pitch_state == PITCH_STAGE_NONE && aiController->batterReadyTimer > AI_PITCH_DELAY) {
+        match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
