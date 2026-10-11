@@ -485,7 +485,8 @@ typedef enum {
     RULE_PITCH_AIM_NEEDS_A_WINDUP, // there is no pitch being wound up to aim
     RULE_THROW_NEEDS_BALL_IN_HAND, // you cannot throw what you are not holding
     RULE_THROW_TARGET_TOO_CLOSE, // the thrower is already standing on that base
-    RULE_THROW_POWER_NEEDS_A_THROW // there is no throw gathering to give a power to
+    RULE_THROW_POWER_NEEDS_A_THROW, // there is no throw gathering to give a power to
+    RULE_BASE_RUN_NEEDS_A_RUNNER // nobody holds that base to run from it
 } RuleId;
 
 typedef struct _Permission {

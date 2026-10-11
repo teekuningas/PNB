@@ -66,6 +66,10 @@ static void run_contract_tests(void)
     RUN_TEST(test_pitch_and_throw_values_are_repeat_safe);
     RUN_TEST(test_a_late_beginning_changes_nothing);
 
+    // A base-run command is for the runner holding the base at the top of the tick
+    RUN_TEST(test_a_base_run_needs_a_runner);
+    RUN_TEST(test_a_base_run_for_no_base_is_malformed);
+
     // Throw contracts (a declared target and power → the engine windup clock)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
     RUN_TEST(test_throw_declared_whole_releases_sized_to_power);

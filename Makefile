@@ -54,6 +54,7 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_pitch_declaration.o tests/integration/contracts/test_swing_declaration.o \
                  tests/integration/contracts/test_throw_declaration.o \
                  tests/integration/contracts/test_catching_gate.o \
+                 tests/integration/contracts/test_base_run_gate.o \
                  tests/integration/contracts/test_fielder_movement.o tests/integration/contracts/test_batter_selection.o \
                  tests/integration/contracts/test_pitch_in_progress.o
 

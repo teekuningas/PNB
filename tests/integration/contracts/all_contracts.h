@@ -49,6 +49,10 @@ int test_one_catching_action_per_tick_whatever_the_order(void);
 int test_pitch_and_throw_values_are_repeat_safe(void);
 int test_a_late_beginning_changes_nothing(void);
 
+// A base-run command is for the runner holding the base at the top of the tick
+int test_a_base_run_needs_a_runner(void);
+int test_a_base_run_for_no_base_is_malformed(void);
+
 // Throw contracts (a declared target and power → the engine windup clock)
 int test_throw_windup_frames_scale_with_power(void);
 int test_throw_declared_whole_releases_sized_to_power(void);

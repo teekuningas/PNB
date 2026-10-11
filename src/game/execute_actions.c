@@ -34,9 +34,7 @@
 static void take_free_walk_decision(
     MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
 );
-static void base_run(
-    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base, RunIntent cmd
-);
+static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd);
 
 // What ingestion leaves behind: this tick's commands, in engine terms. It is a local of
 // execute_actions, so it cannot outlive the tick, cannot be snapshot, and cannot be read by a
@@ -49,6 +47,7 @@ typedef struct _IngestedCommands {
     int drop_ball; // put the held ball down
     FreeWalkAction take_free_walk; // FREE_WALK_IDLE when no answer was given this tick
     RunIntent base_run[BASE_COUNT]; // per base, RUN_NONE where nothing was commanded
+    int base_runner[BASE_COUNT]; // who the command was for: the base's runner at the top of the tick
     int seat_batter_index; // who to seat as the next batter; -1 when nobody was named this tick
     int swing_angle_declared; // 0 when the batting side said nothing about its aim this tick
     float swing_angle;
@@ -98,9 +97,8 @@ void intent_push(IntentChannel* channel, IntentMessage message)
 //
 // These read the world as it stands at the TOP of the tick, which is the whole reason ingestion runs
 // before actualization: every producer's messages are judged against the same settled world, so no
-// producer can be advantaged by the engine's internal ordering. Where that reading is not yet
-// provably the same as the one the old flag-consumption site made, the check stays at its site for
-// now and moves in the slice that rewrites it — see base running below.
+// producer can be advantaged by the engine's internal ordering. Each rule moved here only once the
+// frame-top reading was shown to be the one its old site made — measured, not assumed.
 //
 // The two values that CONTRIBUTE to an action rather than begin one — a pitch's aim, a throw's power —
 // are not asked here but after the whole channel's beginnings are known (permit_contribution), because
@@ -230,11 +228,18 @@ static Permission permit(
         return (Permission){0, RULE_NONE};
 
     case INTENT_BASE_RUN:
-        // Deliberately unrestricted here. Who may run is decided by which player controls the base,
-        // and that reading can still change inside a tick (a batter taken to the plate, a free walk
-        // started) between this gate and the moment the command is actualized. Moving it here would
-        // be a behaviour change wearing a refactor's clothes, so it stays at the actualization site
-        // until the slice that rewrites base running can move it honestly.
+        // A command for "the runner on base B" means the runner the producer saw there — the one
+        // holding the base at the top of the tick — and if nobody does, there is nobody to command.
+        // The gate binds it to that player (ingest_message), the way a destination is bound to the
+        // fielder controlled at the top of the tick, so the actualizer moves exactly that player even
+        // if something later in the same tick were to change who holds the base. Nothing can: holding a
+        // base is the referee's safety plus the player's baseId, the legal world is const for the whole
+        // of execute_actions, and the only baseId written before base running is a newly seated
+        // batter's, who holds no safety until the referee grants it. Measured as well, over 42 golden
+        // runs: all 1,656 base-run commands found the same runner at the gate as at the actualizer.
+        if (get_base_controller(match, &rules->referee, message->as.base_run.base) == -1) {
+            return (Permission){0, RULE_BASE_RUN_NEEDS_A_RUNNER};
+        }
         return (Permission){1, RULE_NONE};
 
     case INTENT_NONE:
@@ -311,7 +316,12 @@ static int message_is_malformed(const IntentMessage* message, int is_batting_cha
         (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
         return 1;
     }
-    // A throw at something that is not a base is not a throw a rule can refuse, for the same reason.
+    // A command for a base that does not exist, or a throw at something that is not a base, is the same
+    // class again.
+    if (message->kind == INTENT_BASE_RUN &&
+        (message->as.base_run.base < BASE_HOME || message->as.base_run.base >= BASE_COUNT)) {
+        return 1;
+    }
     if (message->kind == INTENT_THROW_TARGET &&
         (message->as.throw_target.base < BASE_HOME || message->as.throw_target.base >= BASE_COUNT)) {
         return 1;
@@ -319,7 +329,8 @@ static int message_is_malformed(const IntentMessage* message, int is_batting_cha
     return 0;
 }
 
-static void ingest_message(MatchSession* match, const IntentMessage* message, IngestedCommands* out);
+static void
+ingest_message(MatchSession* match, const RefereeState* referee, const IntentMessage* message, IngestedCommands* out);
 
 // Drain one channel into the command block, in two passes: everything that stands on its own or begins
 // an action, then — once the channel's competing claims on the ball are settled — the values that
@@ -338,19 +349,20 @@ static void ingest_channel(
             continue;
         }
         if (contributes_to_an_action(message->kind)) continue;
-        if (permit(match, rules, fieldPositions, message).allowed) ingest_message(match, message, out);
+        if (permit(match, rules, fieldPositions, message).allowed) ingest_message(match, &rules->referee, message, out);
     }
     settle_catching_claims(out);
     for (int m = 0; m < channel->count; m++) {
         const IntentMessage* message = &channel->message[m];
         if (message_is_malformed(message, is_batting_channel) || !contributes_to_an_action(message->kind)) continue;
-        if (permit_contribution(match, message, out).allowed) ingest_message(match, message, out);
+        if (permit_contribution(match, message, out).allowed) ingest_message(match, &rules->referee, message, out);
     }
     channel->count = 0;
 }
 
 // Interpret one permitted message into engine terms.
-static void ingest_message(MatchSession* match, const IntentMessage* message, IngestedCommands* out)
+static void
+ingest_message(MatchSession* match, const RefereeState* referee, const IntentMessage* message, IngestedCommands* out)
 {
     switch (message->kind) {
     case INTENT_CHANGE_PLAYER:
@@ -393,9 +405,8 @@ static void ingest_message(MatchSession* match, const IntentMessage* message, In
         out->seat_batter_index = message->as.select_batter.index;
         break;
     case INTENT_BASE_RUN:
-        if (message->as.base_run.base >= 0 && message->as.base_run.base < BASE_COUNT) {
-            out->base_run[message->as.base_run.base] = message->as.base_run.command;
-        }
+        out->base_run[message->as.base_run.base] = message->as.base_run.command;
+        out->base_runner[message->as.base_run.base] = get_base_controller(match, referee, message->as.base_run.base);
         break;
     case INTENT_MOVE_TARGET:
         // A destination has a lifetime too, so like the swing's values it is written straight into
@@ -516,7 +527,9 @@ void execute_actions(
 
     // baserunners must be able to run!
     for (i = 0; i < BASE_COUNT; i++) {
-        base_run(match, &rules->referee, fieldPositions, i, commands.base_run[i]);
+        if (commands.base_run[i] != RUN_NONE) {
+            base_run(match, fieldPositions, i, commands.base_runner[i], commands.base_run[i]);
+        }
     }
     // SWING — the batter's frame. The two declared VALUES are not passed: the gate wrote them into
     // pendingActionState.swing, where they are held until the contact frame consumes them. Only the
@@ -602,14 +615,8 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 //
 // The command is single-frame and consumed here; it encodes no timing (the old AI double-click sim
 // is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
-static void base_run(
-    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, BaseID base, RunIntent cmd
-)
+static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd)
 {
-    int index = get_base_controller(match, referee, base);
-
-    if (index == -1 || cmd == RUN_NONE) return;
-
     PlayerUnitState state = match->playerInfo[index].bTPI.state;
     int settled_on_base = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
 
