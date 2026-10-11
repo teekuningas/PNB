@@ -135,8 +135,10 @@ play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingP
             }
         }
         // The power was committed during the windup; taking it back now is worth a ball, where
-        // swinging and missing would be worth a strike.
-        if (match->pendingActionState.swing.powerActive) {
+        // swinging and missing would be worth a strike. Whether there is a power to take back is the
+        // plan's own memory — it was decided, and said, when the swing was open — never the engine's
+        // copy of what this controller declared.
+        if (plan->decided) {
             intent_push(channel, (IntentMessage){.kind = INTENT_SWING_PASS});
         }
     } else if (plan->decided == 1) {

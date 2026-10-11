@@ -188,6 +188,18 @@ pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep
 ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 0
 
 # ---------------------------------------------------------------------------
+# No read-back — the fourth law. A controller reads the world to know what is legal and to draw:
+# what a body is doing (catchingAction.kind, a ball in the air) is the world. What a producer
+# DECLARED, once the engine holds it, is not — the windup's power and aim, a throw's target and
+# power (catchingAction.as), the swing's values (pendingActionState.swing). A controller that reads
+# its own declaration back is keyed to the engine's copy, which is a wire's delay late; the human
+# widgets keep their own copy instead and the AI its plan. Held at 0 in the controllers' files.
+# ---------------------------------------------------------------------------
+controller_readbacks=$(grep -nE 'catchingAction\.as|pendingActionState\.swing' src/game/action_invocations.c \
+    src/game/ai/*.c | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
+ratchet "controller reads of declared values" "$controller_readbacks" 0
+
+# ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is
 # one-way on purpose — the code is the thing that is true, and the docs describe it.
 # A comment citing a doc file or a doc section number is a back-edge, and it rots
