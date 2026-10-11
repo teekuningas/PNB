@@ -21,3 +21,4 @@ result
 .pre-commit-config.yaml
 
 debug.log
+obj_asan/
