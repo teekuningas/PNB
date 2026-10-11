@@ -473,7 +473,19 @@ typedef enum {
     RULE_BATTER_NOT_IN_BATTING_TURN, // §27: a regular whose turn in the order it is not
     RULE_BATTER_ORDER_SPENT, // §12: the order has come round; only a joker may extend the turn
     RULE_BATTER_JOKER_ALREADY_USED, // §7: three jokers per half-inning, each once
-    RULE_SWING_NEEDS_A_PITCH // there is no pitch to swing at, or this batter's swing is already over
+    RULE_SWING_NEEDS_A_PITCH, // there is no pitch to swing at, or this batter's swing is already over
+    RULE_CATCHING_ACTION_IN_PROGRESS, // the ball-holder is already pitching or throwing
+    RULE_ONE_CATCHING_ACTION_PER_TICK, // a throw, a drop and a pitch claim the same hands; one is taken
+    RULE_PITCH_NEEDS_BALL_AT_HOME, // the pitcher at the plate must be the one holding the ball
+    RULE_PITCH_PREVIOUS_UNRESOLVED, // the last pitch has not been judged yet
+    RULE_PITCH_NEEDS_A_READY_BATTER, // nobody is standing ready to be pitched to
+    RULE_PITCHER_OFF_THE_PLATE, // the pitcher has to be at the pitching plate
+    RULE_PITCH_NOT_DURING_FREE_WALK_OFFER, // §26: the batting side has a free walk to answer first
+    RULE_PITCH_BATTER_IS_A_RUNNER, // §18(1): three correct pitches spent — nobody is in the batting turn
+    RULE_PITCH_AIM_NEEDS_A_WINDUP, // there is no pitch being wound up to aim
+    RULE_THROW_NEEDS_BALL_IN_HAND, // you cannot throw what you are not holding
+    RULE_THROW_TARGET_TOO_CLOSE, // the thrower is already standing on that base
+    RULE_THROW_POWER_NEEDS_A_THROW // there is no throw gathering to give a power to
 } RuleId;
 
 typedef struct _Permission {

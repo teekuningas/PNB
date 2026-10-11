@@ -40,6 +40,9 @@ int throw_windup_total_frames(float power);
 // controller reasoning about where a throw could go from where.
 Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base);
 
+// May a throw to `base` begin in the world as it stands? The INGEST gate asks it of a declared target.
+Permission throw_may_begin(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base);
+
 // This tick's throw values, as the INGEST gate let them through — a per-tick command block, like the
 // pitch's. What a throw IS once it has begun lives in the CatchingAction.
 typedef struct _ThrowValues {

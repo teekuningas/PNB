@@ -57,6 +57,15 @@ static void run_contract_tests(void)
     RUN_TEST(test_pitch_aim_declared_during_the_windup_is_the_aim_released);
     RUN_TEST(test_no_pitch_after_three_correct_pitches);
 
+    // The gate owns the pitch's and the throw's permissions
+    RUN_TEST(test_pitch_permission_names_each_rule);
+    RUN_TEST(test_a_refused_pitch_begins_nothing);
+    RUN_TEST(test_throw_permission_names_each_rule);
+    RUN_TEST(test_contributions_need_an_action_to_contribute_to);
+    RUN_TEST(test_one_catching_action_per_tick_whatever_the_order);
+    RUN_TEST(test_pitch_and_throw_values_are_repeat_safe);
+    RUN_TEST(test_a_late_beginning_changes_nothing);
+
     // Throw contracts (a declared target and power → the engine windup clock)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
     RUN_TEST(test_throw_declared_whole_releases_sized_to_power);

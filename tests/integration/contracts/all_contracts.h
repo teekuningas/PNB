@@ -40,6 +40,15 @@ int test_pitch_unaimed_is_valesyotto(void);
 int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void);
 int test_no_pitch_after_three_correct_pitches(void);
 
+// The gate owns the pitch's and the throw's permissions
+int test_pitch_permission_names_each_rule(void);
+int test_a_refused_pitch_begins_nothing(void);
+int test_throw_permission_names_each_rule(void);
+int test_contributions_need_an_action_to_contribute_to(void);
+int test_one_catching_action_per_tick_whatever_the_order(void);
+int test_pitch_and_throw_values_are_repeat_safe(void);
+int test_a_late_beginning_changes_nothing(void);
+
 // Throw contracts (a declared target and power → the engine windup clock)
 int test_throw_windup_frames_scale_with_power(void);
 int test_throw_declared_whole_releases_sized_to_power(void);

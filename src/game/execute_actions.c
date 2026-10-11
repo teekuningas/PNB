@@ -58,9 +58,12 @@ typedef struct _IngestedCommands {
 } IngestedCommands;
 
 static Permission permit(
-    const MatchSession* match, const GameRulesState* rules, const IntentMessage* message, const IngestedCommands* sofar
+    const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    const IntentMessage* message
 );
-static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels);
+static IngestedCommands ingest_intents(
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels
+);
 
 void init_execute_actions(MatchSession* match)
 {
@@ -98,8 +101,13 @@ void intent_push(IntentChannel* channel, IntentMessage message)
 // producer can be advantaged by the engine's internal ordering. Where that reading is not yet
 // provably the same as the one the old flag-consumption site made, the check stays at its site for
 // now and moves in the slice that rewrites it — see base running below.
+//
+// The two values that CONTRIBUTE to an action rather than begin one — a pitch's aim, a throw's power —
+// are not asked here but after the whole channel's beginnings are known (permit_contribution), because
+// what they may contribute to can be begun by another message in the very same tick.
 static Permission permit(
-    const MatchSession* match, const GameRulesState* rules, const IntentMessage* message, const IngestedCommands* sofar
+    const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
+    const IntentMessage* message
 )
 {
     switch (message->kind) {
@@ -114,10 +122,9 @@ static Permission permit(
         if (match->pII.hasBallIndex == -1) {
             return (Permission){0, RULE_DROP_NEEDS_BALL_IN_HAND};
         }
-        // A gathered throw owns the ball until the engine releases it: one already running, or one
-        // declared earlier in this drain, whose windup has not started yet at this point in the frame.
-        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING || sofar->throw.targetDeclared ||
-            sofar->throw.powerDeclared) {
+        // A gathered throw owns the ball until the engine releases it. (One declared in this same tick
+        // is settled after the drain, with the other claims on the ball — see settle_catching_claims.)
+        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
         // A pitch has a claim on the ball from the first frame of its windup. Asked of
@@ -210,15 +217,19 @@ static Permission permit(
         return (Permission){1, RULE_NONE};
 
     case INTENT_PITCH_POWER:
-    case INTENT_PITCH_AIM:
+        // The power is what begins a pitch, so this is the pitch's whole permission: the ball at the
+        // plate in the pitcher's hand, a batter ready, nothing else under way — and §18(1). Asked once,
+        // here, against the world at the top of the tick; the actualizer only acts.
+        return pitch_may_begin(match, rules->halfInningState.strikes);
+
     case INTENT_THROW_TARGET:
+        // Likewise the target is what begins a throw.
+        return throw_may_begin(match, fieldPositions, message->as.throw_target.base);
+
+    case INTENT_PITCH_AIM:
     case INTENT_THROW_POWER:
-        // Deliberately unrestricted here, for now. Whether a pitch or a throw may begin is asked today
-        // by the producer before it declares and by the actualizer before it acts, and those two
-        // readings are not yet provably the same as one taken here — they will be when the
-        // declarations merge into the actualizations and the phase stops being something a producer
-        // names at all. That merge is where these rules move, in one piece.
-        return (Permission){1, RULE_NONE};
+        // Unreachable: contributions are asked by permit_contribution, in the drain's second pass.
+        return (Permission){0, RULE_NONE};
 
     case INTENT_BASE_RUN:
         // Deliberately unrestricted here. Who may run is decided by which player controls the base,
@@ -246,138 +257,192 @@ static int intent_belongs_to_batting_team(IntentKind kind)
            kind == INTENT_SWING_PASS;
 }
 
-// Drain one channel into the command block. Same-kind duplicates are last-write-wins — a controller
-// that changes its mind within a tick means the later value, and per-base commands never collide
-// because each writes its own slot.
+// The values that add to an action rather than begin one. They are asked last, once everything in the
+// channel that could begin an action has been asked, so their answer cannot depend on where they happen
+// to sit in the ring.
+static int contributes_to_an_action(IntentKind kind)
+{
+    return kind == INTENT_PITCH_AIM || kind == INTENT_THROW_POWER;
+}
+
+// An aim needs a pitch being wound up — one already running, or one this tick begins. A throw's power
+// needs a throw gathering, in the same two ways. That is how the AI says a whole pitch in one tick and a
+// human says its aim halfway through the windup, and the gate cannot tell which is which.
+static Permission
+permit_contribution(const MatchSession* match, const IntentMessage* message, const IngestedCommands* out)
+{
+    const CatchingActionKind running = match->pendingActionState.catchingAction.kind;
+    if (message->kind == INTENT_PITCH_AIM) {
+        if (running == CATCHING_ACTION_PITCHING || out->pitch.powerDeclared) return (Permission){1, RULE_NONE};
+        return (Permission){0, RULE_PITCH_AIM_NEEDS_A_WINDUP};
+    }
+    if (running == CATCHING_ACTION_THROWING || out->throw.targetDeclared) return (Permission){1, RULE_NONE};
+    return (Permission){0, RULE_THROW_POWER_NEEDS_A_THROW};
+}
+
+// A throw, a drop and a pitch all claim the ball-holder's hands, and each was judged against the world
+// at the top of the tick — so all three can have been allowed, each on its own. Only one can happen.
+// The engine's own actualization order decides — throw, then drop, then pitch, the order execute_actions
+// has always run them in — so the outcome never depends on where the messages sat in the ring. The
+// losers are refused: a drop by RULE_DROP_NOT_WHILE_THROWING, a pitch by RULE_ONE_CATCHING_ACTION_PER_TICK.
+static void settle_catching_claims(IngestedCommands* out)
+{
+    if (out->throw.targetDeclared) {
+        out->drop_ball = 0;
+        out->pitch.powerDeclared = 0;
+    } else if (out->drop_ball) {
+        out->pitch.powerDeclared = 0;
+    }
+}
+
+// Neither a rule refusing an action nor an action at all, but a producer that is broken.
+static int message_is_malformed(const IntentMessage* message, int is_batting_channel)
+{
+    // A kindless message and a message on the wrong team's channel are the same class of thing:
+    // not a rule refusing an action, but a producer that is broken. Neither is "denied" — both
+    // fail the frame through the state validator, because a rule refusing you is ordinary play
+    // and a malformed message never is.
+    int belongs_to_batting = intent_belongs_to_batting_team(message->kind) ? 1 : 0;
+    if (message->kind == INTENT_NONE || belongs_to_batting != is_batting_channel) return 1;
+    // A SELECT_BATTER naming somebody who is not on the batting side is the same class again: a
+    // rule can refuse a player, but it cannot refuse a number that is not a player. Flagged here
+    // rather than quietly denied in permit() — the two look identical from the outside and mean
+    // opposite things — and checked before permission so everything downstream, the gate's own
+    // §27 lookup included, can subscript playerInfo without asking twice.
+    if (message->kind == INTENT_SELECT_BATTER &&
+        (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
+        return 1;
+    }
+    // A throw at something that is not a base is not a throw a rule can refuse, for the same reason.
+    if (message->kind == INTENT_THROW_TARGET &&
+        (message->as.throw_target.base < BASE_HOME || message->as.throw_target.base >= BASE_COUNT)) {
+        return 1;
+    }
+    return 0;
+}
+
+static void ingest_message(MatchSession* match, const IntentMessage* message, IngestedCommands* out);
+
+// Drain one channel into the command block, in two passes: everything that stands on its own or begins
+// an action, then — once the channel's competing claims on the ball are settled — the values that
+// contribute to an action. Same-kind duplicates are last-write-wins — a controller that changes its mind
+// within a tick means the later value, and per-base commands never collide because each writes its own
+// slot. The reasons for a refusal die here for now — the hint system is where they will be read.
 static void ingest_channel(
-    MatchSession* match, const GameRulesState* rules, IntentChannel* channel, int is_batting_channel,
-    IngestedCommands* out
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannel* channel,
+    int is_batting_channel, IngestedCommands* out
 )
 {
     for (int m = 0; m < channel->count; m++) {
         const IntentMessage* message = &channel->message[m];
-
-        // A kindless message and a message on the wrong team's channel are the same class of thing:
-        // not a rule refusing an action, but a producer that is broken. Neither is "denied" — both
-        // fail the frame through the state validator, because a rule refusing you is ordinary play
-        // and a malformed message never is.
-        int belongs_to_batting = intent_belongs_to_batting_team(message->kind) ? 1 : 0;
-        if (message->kind == INTENT_NONE || belongs_to_batting != is_batting_channel) {
+        if (message_is_malformed(message, is_batting_channel)) {
             channel->malformed = 1;
             continue;
         }
-        // A SELECT_BATTER naming somebody who is not on the batting side is the same class again: a
-        // rule can refuse a player, but it cannot refuse a number that is not a player. Flagged here
-        // rather than quietly denied in permit() — the two look identical from the outside and mean
-        // opposite things — and checked before permission so everything downstream, the gate's own
-        // §27 lookup included, can subscript playerInfo without asking twice.
-        if (message->kind == INTENT_SELECT_BATTER &&
-            (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
-            channel->malformed = 1;
-            continue;
-        }
-
-        // A throw at something that is not a base is not a throw a rule can refuse, for the same reason.
-        if (message->kind == INTENT_THROW_TARGET &&
-            (message->as.throw_target.base < BASE_HOME || message->as.throw_target.base >= BASE_COUNT)) {
-            channel->malformed = 1;
-            continue;
-        }
-
-        Permission permission = permit(match, rules, message, out);
-        if (!permission.allowed) {
-            continue; // the reason dies here for now — the hint system is where it will be read
-        }
-
-        switch (message->kind) {
-        case INTENT_CHANGE_PLAYER:
-            out->change_player = 1;
-            break;
-        case INTENT_DROP_BALL:
-            out->drop_ball = 1;
-            break;
-        case INTENT_TAKE_FREE_WALK:
-            out->take_free_walk = message->as.free_walk.accept ? FREE_WALK_ACCEPT : FREE_WALK_REJECT;
-            break;
-        case INTENT_SWING_ANGLE:
-            out->swing_angle_declared = 1;
-            out->swing_angle = message->as.swing_angle.angle;
-            break;
-        case INTENT_SWING_POWER:
-            // A held value, like a destination and unlike a command: written straight into the engine
-            // state that owns it, and kept until the contact frame consumes it or the next batter
-            // clears it. That is what makes re-delivering it a no-op — the property rollback needs,
-            // and the reason a producer never has to learn whether its last message landed.
-            match->pendingActionState.swing.power = message->as.swing_power.power;
-            match->pendingActionState.swing.powerActive = 1;
-            break;
-        case INTENT_SWING_VERTICAL:
-            match->pendingActionState.swing.vertical = message->as.swing_vertical.vertical;
-            match->pendingActionState.swing.verticalActive = 1;
-            break;
-        case INTENT_SWING_PASS:
-            // A per-tick command and not held state: withdrawing is a thing that HAPPENS, and what it
-            // leaves behind (batting_stopped) is the engine's own conclusion rather than the message.
-            out->swing_pass = 1;
-            break;
-        case INTENT_SELECT_BATTER:
-            // A per-tick command and not held engine state, unlike the destination below. It can be,
-            // because a producer that has chosen restates the choice every frame the decision is
-            // open — so "the seat was not free this tick" needs no memory anywhere in the World to
-            // survive: the same answer arrives again next tick. The producer's unfinished gesture
-            // lives in the producer, which is where §27 puts it too ("Lyömään asettunutta pelaajaa
-            // ei voi vaihtaa pois lyömästä" — the choice is the team's until the bat is taken).
-            out->seat_batter_index = message->as.select_batter.index;
-            break;
-        case INTENT_BASE_RUN:
-            if (message->as.base_run.base >= 0 && message->as.base_run.base < BASE_COUNT) {
-                out->base_run[message->as.base_run.base] = message->as.base_run.command;
-            }
-            break;
-        case INTENT_MOVE_TARGET:
-            // A destination has a lifetime too, so like the swing's values it is written straight into
-            // the engine state that owns it rather than into this tick's command block — and unlike
-            // them it is never consumed: it is held until a producer replaces it. That is what lets
-            // the fielder resume by itself after the engine interrupts its walk, and what makes
-            // re-delivering the same message (a rollback repeating its last input) a no-op.
-            match->catchingState.controlledMoveTarget = message->as.move_target.point;
-            match->catchingState.controlledMoveTargetActive = 1;
-            match->catchingState.controlledMoveTargetFor = match->pII.controlIndex;
-            break;
-        case INTENT_PITCH_POWER:
-            out->pitch.powerDeclared = 1;
-            out->pitch.power = message->as.pitch_power.power;
-            break;
-        case INTENT_PITCH_AIM:
-            out->pitch.aimDeclared = 1;
-            out->pitch.direction = message->as.pitch_aim.direction;
-            break;
-        case INTENT_THROW_TARGET:
-            out->throw.targetDeclared = 1;
-            out->throw.target = message->as.throw_target.base;
-            break;
-        case INTENT_THROW_POWER:
-            out->throw.powerDeclared = 1;
-            out->throw.power = message->as.throw_power.power;
-            break;
-        case INTENT_NONE:
-        default:
-            break;
-        }
+        if (contributes_to_an_action(message->kind)) continue;
+        if (permit(match, rules, fieldPositions, message).allowed) ingest_message(match, message, out);
+    }
+    settle_catching_claims(out);
+    for (int m = 0; m < channel->count; m++) {
+        const IntentMessage* message = &channel->message[m];
+        if (message_is_malformed(message, is_batting_channel) || !contributes_to_an_action(message->kind)) continue;
+        if (permit_contribution(match, message, out).allowed) ingest_message(match, message, out);
     }
     channel->count = 0;
+}
+
+// Interpret one permitted message into engine terms.
+static void ingest_message(MatchSession* match, const IntentMessage* message, IngestedCommands* out)
+{
+    switch (message->kind) {
+    case INTENT_CHANGE_PLAYER:
+        out->change_player = 1;
+        break;
+    case INTENT_DROP_BALL:
+        out->drop_ball = 1;
+        break;
+    case INTENT_TAKE_FREE_WALK:
+        out->take_free_walk = message->as.free_walk.accept ? FREE_WALK_ACCEPT : FREE_WALK_REJECT;
+        break;
+    case INTENT_SWING_ANGLE:
+        out->swing_angle_declared = 1;
+        out->swing_angle = message->as.swing_angle.angle;
+        break;
+    case INTENT_SWING_POWER:
+        // A held value, like a destination and unlike a command: written straight into the engine
+        // state that owns it, and kept until the contact frame consumes it or the next batter
+        // clears it. That is what makes re-delivering it a no-op — the property rollback needs,
+        // and the reason a producer never has to learn whether its last message landed.
+        match->pendingActionState.swing.power = message->as.swing_power.power;
+        match->pendingActionState.swing.powerActive = 1;
+        break;
+    case INTENT_SWING_VERTICAL:
+        match->pendingActionState.swing.vertical = message->as.swing_vertical.vertical;
+        match->pendingActionState.swing.verticalActive = 1;
+        break;
+    case INTENT_SWING_PASS:
+        // A per-tick command and not held state: withdrawing is a thing that HAPPENS, and what it
+        // leaves behind (batting_stopped) is the engine's own conclusion rather than the message.
+        out->swing_pass = 1;
+        break;
+    case INTENT_SELECT_BATTER:
+        // A per-tick command and not held engine state, unlike the destination below. It can be,
+        // because a producer that has chosen restates the choice every frame the decision is
+        // open — so "the seat was not free this tick" needs no memory anywhere in the World to
+        // survive: the same answer arrives again next tick. The producer's unfinished gesture
+        // lives in the producer, which is where §27 puts it too ("Lyömään asettunutta pelaajaa
+        // ei voi vaihtaa pois lyömästä" — the choice is the team's until the bat is taken).
+        out->seat_batter_index = message->as.select_batter.index;
+        break;
+    case INTENT_BASE_RUN:
+        if (message->as.base_run.base >= 0 && message->as.base_run.base < BASE_COUNT) {
+            out->base_run[message->as.base_run.base] = message->as.base_run.command;
+        }
+        break;
+    case INTENT_MOVE_TARGET:
+        // A destination has a lifetime too, so like the swing's values it is written straight into
+        // the engine state that owns it rather than into this tick's command block — and unlike
+        // them it is never consumed: it is held until a producer replaces it. That is what lets
+        // the fielder resume by itself after the engine interrupts its walk, and what makes
+        // re-delivering the same message (a rollback repeating its last input) a no-op.
+        match->catchingState.controlledMoveTarget = message->as.move_target.point;
+        match->catchingState.controlledMoveTargetActive = 1;
+        match->catchingState.controlledMoveTargetFor = match->pII.controlIndex;
+        break;
+    case INTENT_PITCH_POWER:
+        out->pitch.powerDeclared = 1;
+        out->pitch.power = message->as.pitch_power.power;
+        break;
+    case INTENT_PITCH_AIM:
+        out->pitch.aimDeclared = 1;
+        out->pitch.direction = message->as.pitch_aim.direction;
+        break;
+    case INTENT_THROW_TARGET:
+        out->throw.targetDeclared = 1;
+        out->throw.target = message->as.throw_target.base;
+        break;
+    case INTENT_THROW_POWER:
+        out->throw.powerDeclared = 1;
+        out->throw.power = message->as.throw_power.power;
+        break;
+    case INTENT_NONE:
+    default:
+        break;
+    }
 }
 
 // THE INGEST GATE. Both channels are drained here and nowhere else, and they are left empty — which
 // is what makes the channel a parameter of the tick rather than a place intent can accumulate. The
 // state validator checks that emptiness at the end of every frame.
-static IngestedCommands ingest_intents(MatchSession* match, const GameRulesState* rules, IntentChannels* channels)
+static IngestedCommands ingest_intents(
+    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels
+)
 {
     IngestedCommands commands = {0};
     commands.seat_batter_index = -1; // "nobody was named" is not player 0
 
-    ingest_channel(match, rules, &channels->batting, 1, &commands);
-    ingest_channel(match, rules, &channels->catching, 0, &commands);
+    ingest_channel(match, rules, fieldPositions, &channels->batting, 1, &commands);
+    ingest_channel(match, rules, fieldPositions, &channels->catching, 0, &commands);
 
     return commands;
 }
@@ -391,7 +456,7 @@ void execute_actions(
 
     // INGEST first: every controller's declarations for this tick, judged against one settled world,
     // become engine commands here. After this line no intent-shaped thing is left to read.
-    IngestedCommands commands = ingest_intents(match, rules, channels);
+    IngestedCommands commands = ingest_intents(match, rules, fieldPositions, channels);
 
     /*
      * CATCHING TEAM
@@ -434,7 +499,7 @@ void execute_actions(
     }
     // PITCH — a declared power begins the windup, a declared aim is held on it, and the engine's clock
     // decides the release: aimed, a real pitch; unaimed, a valesyöttö. No meter read, no phase.
-    update_pitch_actualization(match, &rules->referee, fieldPositions, rules->halfInningState.strikes, &commands.pitch);
+    update_pitch_actualization(match, &rules->referee, fieldPositions, &commands.pitch);
 
     /*
      * BATTING TEAM

@@ -38,30 +38,46 @@ Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
     }
 }
 
-// Begin the engine-owned windup for a throw toward `base`: latch the line to the target, stop and orient
-// the thrower, and start the deterministic clock. Returns 1 if the windup began, 0 if it could not (no ball,
-// or the thrower already stands on the target base — too close to throw). The gather animation follows
-// the clock downstream.
-static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
+// The line from the ball-holder to `base`, unnormalized: what a throw there would travel along.
+static Vector3D line_to_base(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
-    if (match->pII.hasBallIndex == -1) {
-        return 0;
-    }
-    if (base < BASE_HOME || base >= BASE_COUNT) return 0;
-
-    int thrower = match->pII.hasBallIndex;
     Vector3D target = throw_target_point(fieldPositions, base);
+    const Vector3D* from = &match->playerInfo[match->pII.hasBallIndex].tPI.location;
+    return (Vector3D){.x = target.x - from->x, .y = 0.0f, .z = target.z - from->z};
+}
+
+static float horizontal_length(Vector3D v)
+{
+    return (float)sqrt(v.x * v.x + v.z * v.z);
+}
+
+// May a throw to `base` begin in the world as it stands? Asked by the INGEST gate of a declared target:
+// nothing else is being done with the ball, somebody is holding it, and they are not already standing on
+// the base they would throw to.
+Permission throw_may_begin(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
+{
+    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
+        return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
+    }
+    if (match->pII.hasBallIndex == -1) {
+        return (Permission){0, RULE_THROW_NEEDS_BALL_IN_HAND};
+    }
+    if (horizontal_length(line_to_base(match, fieldPositions, base)) <= THROW_TO_BASE_DISTANCE) {
+        return (Permission){0, RULE_THROW_TARGET_TOO_CLOSE};
+    }
+    return (Permission){1, RULE_NONE};
+}
+
+// Begin the engine-owned windup for a throw toward `base`: latch the line to the target, stop and orient
+// the thrower, and start the deterministic clock. The gate has already established that it may begin; the
+// gather animation follows the clock downstream.
+static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
+{
+    int thrower = match->pII.hasBallIndex;
     // which base the throw is going to keeps basemen from wandering out to catch it
     match->pRAI.throw_going_to_base = (int)base;
-    ThrowWindup windup = {.target = base};
-    windup.direction.x = target.x - match->playerInfo[thrower].tPI.location.x;
-    windup.direction.z = target.z - match->playerInfo[thrower].tPI.location.z;
-    windup.distance = (float)sqrt(windup.direction.x * windup.direction.x + windup.direction.z * windup.direction.z);
-    // Can't throw to a base you are already standing on.
-    if (windup.distance <= THROW_TO_BASE_DISTANCE) {
-        match->pRAI.throw_going_to_base = -1;
-        return 0;
-    }
+    ThrowWindup windup = {.target = base, .direction = line_to_base(match, fieldPositions, base)};
+    windup.distance = horizontal_length(windup.direction);
 
     // Stop the thrower if moving — the gather animation has no foot movement.
     if (match->playerInfo[thrower].cPI.moving == 1) {
@@ -81,7 +97,6 @@ static int begin_throw_windup(MatchSession* match, const FieldPositions* fieldPo
 
     match->pendingActionState.catchingAction =
         (CatchingAction){.kind = CATCHING_ACTION_THROWING, .timer = 0, .as.throw = windup};
-    return 1;
 }
 
 // Launch the ball toward the latched base with the DECLARED power — a trusted value (the AI's strategy, or
@@ -128,29 +143,27 @@ static void throw_release(MatchSession* match)
 }
 
 // The throw actualizer — the single engine entry point, the throw's counterpart of the pitch's. A declared
-// target begins the gather; a declared power, whenever it arrives, is held on it; and the ball leaves once
-// the power is known and the windup for that power has elapsed. ONE rule for both producers: the AI
-// declares both values at once, so its clock starts with the power known; a human declares the target
+// target begins the gather (the gate has already established that it may); a declared power, whenever it arrives, is
+// held on it; and the ball leaves once the power is known and the windup for that power has elapsed. ONE rule for both
+// producers: the AI declares both values at once, so its clock starts with the power known; a human declares the target
 // first, so the gather runs WHILE it picks power on its own meter and the release usually follows the
 // moment the power arrives. The client never commands the release instant; the engine owns it.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared)
 {
     CatchingAction* action = &match->pendingActionState.catchingAction;
 
-    if (declared->targetDeclared && action->kind == CATCHING_ACTION_NONE) {
-        if (!begin_throw_windup(match, fieldPositions, declared->target)) return;
-        if (declared->powerDeclared) {
-            action->as.throw.powered = 1;
-            action->as.throw.power = declared->power;
-        }
-        return; // never begin and release in the same frame — the windup is at least one tick
+    // The gate has settled what these may do: a target only when nothing else is in progress, a power
+    // only while a throw is gathering or begins this tick.
+    if (declared->targetDeclared) {
+        begin_throw_windup(match, fieldPositions, declared->target);
     }
+    if (declared->powerDeclared) {
+        action->as.throw.powered = 1;
+        action->as.throw.power = declared->power;
+    }
+    if (declared->targetDeclared) return; // never begin and release in the same frame — the windup is at least one tick
 
     if (action->kind == CATCHING_ACTION_THROWING) {
-        if (declared->powerDeclared) {
-            action->as.throw.powered = 1;
-            action->as.throw.power = declared->power;
-        }
         action->timer++;
         if (action->as.throw.powered) {
             if (action->timer >= throw_windup_total_frames(action->as.throw.power)) {

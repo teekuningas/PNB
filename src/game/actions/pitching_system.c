@@ -12,23 +12,40 @@ void reset_pitching_system(MatchSession* match)
     match->pendingActionState.catchingAction = (CatchingAction){0};
 }
 
-// Can a windup legally begin right now? (Was the precondition block of the old start_pitch.)
-//   i)   the pitcher (home catcher) holds the ball
-//   ii)  no pitch already in flight
-//   iii) the batter is ready
-//   iv)  no throw is going on
-//   v)   the pitcher is close enough to the pitching plate
-//   vi)  no free-walk decision is pending
-//   vii) §18(1): the batter has not already spent his three correct pitches. A batter who has is
-//        permanently a runner — "ei ole enää lyöntivuorossa" — so there is nobody to pitch to. Stated
-//        here rather than left to the side effect of the forced run, which held only for period < 4.
-static int can_begin_windup(const MatchSession* match, int correct_pitches_received)
+// May a pitch begin in the world as it stands? Asked by the INGEST gate of a declared power, against the
+// world at the top of the tick, and answered with the rule that refuses it:
+//   - nothing else is being done with the ball — no pitch already winding, no throw gathering
+//   - §18(1): the batter has not already spent his three correct pitches. A batter who has is
+//     permanently a runner — "ei ole enää lyöntivuorossa" — so there is nobody to pitch to. Stated
+//     here rather than left to the side effect of the forced run, which held only for period < 4.
+//   - the pitcher at the plate holds the ball, and the previous pitch has been judged
+//   - a batter stands ready, and no free walk is waiting to be answered
+//   - the pitcher is at the pitching plate
+Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received)
 {
-    return !batter_has_become_runner_permanently(correct_pitches_received) &&
-           match->pII.hasBallIndex == match->pII.catcherOnBaseIndex[0] && match->pRAI.pitch_state == PITCH_STAGE_NONE &&
-           match->pRAI.batter_ready == 1 && match->pendingActionState.catchingAction.kind != CATCHING_ACTION_THROWING &&
-           match->playerInfo[match->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation == 1 &&
-           match->flowControl.waitingForFreeWalkDecision == 0;
+    const int pitcher = match->pII.catcherOnBaseIndex[0];
+    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
+        return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
+    }
+    if (batter_has_become_runner_permanently(correct_pitches_received)) {
+        return (Permission){0, RULE_PITCH_BATTER_IS_A_RUNNER};
+    }
+    if (pitcher == -1 || match->pII.hasBallIndex != pitcher) {
+        return (Permission){0, RULE_PITCH_NEEDS_BALL_AT_HOME};
+    }
+    if (match->pRAI.pitch_state != PITCH_STAGE_NONE) {
+        return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
+    }
+    if (match->pRAI.batter_ready != 1) {
+        return (Permission){0, RULE_PITCH_NEEDS_A_READY_BATTER};
+    }
+    if (match->flowControl.waitingForFreeWalkDecision != 0) {
+        return (Permission){0, RULE_PITCH_NOT_DURING_FREE_WALK_OFFER};
+    }
+    if (match->playerInfo[pitcher].cTPI.isNearHomeLocation != 1) {
+        return (Permission){0, RULE_PITCHER_OFF_THE_PLATE};
+    }
+    return (Permission){1, RULE_NONE};
 }
 
 int pitch_is_being_delivered(const MatchSession* match)
@@ -135,35 +152,31 @@ static void fake_pitch(MatchSession* match)
     match->pendingActionState.catchingAction = (CatchingAction){0};
 }
 
-// The pitch actualizer — the single engine entry point. A declared power begins the windup if it can
-// legally begin; an aim, whenever it arrives, is held on the windup until release; and the engine's clock
-// decides the rest: aimed when the windup ends → a real pitch, unaimed → valesyöttö. Timing is the master;
-// the animation only follows.
+// The pitch actualizer — the single engine entry point. A declared power begins the windup (the gate has
+// already established that it may); an aim, whenever it arrives, is held on the windup until release; and
+// the engine's clock decides the rest: aimed when the windup ends → a real pitch, unaimed → valesyöttö.
+// Timing is the master; the animation only follows.
 void update_pitch_actualization(
-    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions,
-    int correct_pitches_received, const PitchValues* declared
+    MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, const PitchValues* declared
 )
 {
     CatchingAction* action = &match->pendingActionState.catchingAction;
 
-    if (declared->powerDeclared && action->kind == CATCHING_ACTION_NONE) {
-        if (!can_begin_windup(match, correct_pitches_received)) return;
+    // The gate has settled what these may do: a power only when nothing else is in progress, an aim only
+    // while a pitch is winding up or begins this tick.
+    if (declared->powerDeclared) {
         begin_windup(match, declared->power);
-        if (declared->aimDeclared) {
-            action->as.pitch.aimed = 1;
-            action->as.pitch.direction = declared->direction;
-        }
-        return; // never begin and resolve in the same frame — the windup is at least one tick
     }
+    if (declared->aimDeclared) {
+        action->as.pitch.aimed = 1;
+        action->as.pitch.direction = declared->direction;
+    }
+    if (declared->powerDeclared) return; // never begin and resolve in the same frame — the windup is at least one tick
 
     // The windup is tracked by the catching action, NOT by pitch_state: pitch_state is a broad "ball in
     // flight" signal other stages reset (consolidation zeroes it while a stale pitchResult lingers), so
     // gating on it would kill a fresh windup before it could release.
     if (action->kind == CATCHING_ACTION_PITCHING) {
-        if (declared->aimDeclared) {
-            action->as.pitch.aimed = 1;
-            action->as.pitch.direction = declared->direction;
-        }
         action->timer++;
         if (action->timer >= pitch_windup_total_frames(action->as.pitch.power)) {
             if (action->as.pitch.aimed) {
