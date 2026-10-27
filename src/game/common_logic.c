@@ -435,11 +435,11 @@ void calculate_free_walk(MatchSession* match, const RefereeState* referee)
             }
         }
     }
-    match->flowControl.freeWalkIndex = maxIndex;
+    match->free_walk.runner = maxIndex;
     if (maxIndex != -1)
-        match->flowControl.freeWalkBase = match->playerInfo[maxIndex].bTPI.baseId;
+        match->free_walk.from = match->playerInfo[maxIndex].bTPI.baseId;
     else
-        match->flowControl.freeWalkBase = BASE_NONE;
+        match->free_walk.from = BASE_NONE;
 }
 /*
     Here we initialize all the locations and velocities so that players will be in their correct
@@ -708,11 +708,9 @@ void reset_flow_state(MatchSession* match)
 {
     // Flow control
     match->flowControl.pause = 0;
-    match->flowControl.waitingForBatterDecision = 0;
-    match->flowControl.waitingForFreeWalkDecision = 0;
-    match->flowControl.freeWalkCalculationMade = 1;
-    match->flowControl.freeWalkIndex = -1;
-    match->flowControl.freeWalkBase = BASE_NONE;
+    // No question is open after a reset, and there is no BALL whose free walk is still to be worked out.
+    match->offers = (BattingOffers){0};
+    match->free_walk = (FreeWalkEntitlement){.worked_out = 1, .runner = -1, .from = BASE_NONE};
 
     // Frame events (cleared every frame, but ensure clean start)
     clear_frame_events(&match->gameEvents);

@@ -136,11 +136,9 @@ static void enforce_legal_state(
     // 5. React to Pitch Resolution
     if (bps->pitchResult != PITCH_RESULT_NONE && match->ballInfo.pitch_in_flight) {
         match->ballInfo.pitch_in_flight = 0;
-        // On ball: reset free walk calculation so it is re-evaluated
+        // A BALL asks §26's question afresh: the entitlement is worked out again from where everybody is now.
         if (bps->pitchResult == PITCH_RESULT_BALL) {
-            match->flowControl.freeWalkCalculationMade = 0;
-            match->flowControl.freeWalkIndex = -1;
-            match->flowControl.freeWalkBase = BASE_NONE;
+            match->free_walk = (FreeWalkEntitlement){.worked_out = 0, .runner = -1, .from = BASE_NONE};
         }
     }
 }
@@ -205,7 +203,7 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
 
     // Cancel pending batter request if inning is ending
     if (referee->endOfInningState != END_INNING_STATE_NONE) {
-        match->flowControl.waitingForBatterDecision = 0;
+        match->offers.batter_seat = 0;
         return;
     }
 
@@ -215,7 +213,7 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
 
     if (scoreboard->period >= 4) {
 
-    } else if (get_active_batter_index(match) == -1 && match->flowControl.waitingForBatterDecision == 0 &&
+    } else if (get_active_batter_index(match) == -1 && match->offers.batter_seat == 0 &&
                referee->endOfInningState == END_INNING_STATE_NONE) {
         // §12: the batting order is a cycle, so there is always a next regular batter — until the
         // order comes round to the designated last batter, after which only an unused joker can
@@ -251,7 +249,7 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
                 if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
                     // if that happens we can now start.
                     // this will give work to action_invocations.c and execute_actions.c
-                    match->flowControl.waitingForBatterDecision = 1;
+                    match->offers.batter_seat = 1;
                 }
             }
         }
@@ -284,9 +282,9 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
     // we calculate the player and the base he has right to go freely only once, and that is when
     // the ball happens. if player moves to next base and user after that decides to make the free walk
     // that wont have any effect.
-    if (match->flowControl.freeWalkCalculationMade == 0) {
+    if (match->free_walk.worked_out == 0) {
         // §26 gives the walk to a PLAYER — the lead runner — so the offer only exists if there is
-        // somebody to give it to. calculate_free_walk leaves freeWalkIndex at -1 when it finds
+        // somebody to give it to. calculate_free_walk leaves free_walk.runner at -1 when it finds
         // nobody, which happens when the whole inner side is off the field: the batter is burnt and
         // no runner is left. Raising the question anyway put a prompt on screen that belonged to
         // nobody, and one that nothing could withdraw, because the cancellation below asks about the
@@ -297,30 +295,30 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
             // if only one player on the field, thats the batter, and then free walks can be made after one pitch.
             if (his->balls >= 1) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = (match->flowControl.freeWalkIndex != -1);
+                match->offers.free_walk = (match->free_walk.runner != -1);
             }
         } else {
             // otherwise there is some non-batter leadrunner and he can have free walks after two balls.
             if (his->balls >= 2) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = (match->flowControl.freeWalkIndex != -1);
+                match->offers.free_walk = (match->free_walk.runner != -1);
             }
         }
-        match->flowControl.freeWalkCalculationMade = 1;
+        match->free_walk.worked_out = 1;
     } else {
         // so that if player just ran without taking his free walk, and got wounded or out, then stop asking
-        if (match->flowControl.waitingForFreeWalkDecision == 1) {
+        if (match->offers.free_walk == 1) {
             // No -1 guard, and that is a claim rather than an oversight: an open offer always names a
             // real player now, because the only site that raises one raises it from the calculation's
-            // own answer. The two ways freeWalkIndex goes back to -1 both take the offer with them —
-            // the wrong-pitch reset clears freeWalkCalculationMade too, so the branch above runs
+            // own answer. The two ways free_walk.runner goes back to -1 both take the offer with them —
+            // the wrong-pitch reset clears free_walk.worked_out too, so the branch above runs
             // instead of this one, and reset_flow_state clears the offer outright. The state
             // validator asserts the pairing rather than this defending against it, because a guard
             // that cannot fire reads exactly like one that never has.
-            const int offered = match->flowControl.freeWalkIndex;
+            const int offered = match->free_walk.runner;
             if (match->playerInfo[offered].bTPI.state == PLAYER_STATE_WOUNDED ||
                 match->playerInfo[offered].bTPI.state == PLAYER_STATE_OUT) {
-                match->flowControl.waitingForFreeWalkDecision = 0;
+                match->offers.free_walk = 0;
             }
         }
     }

@@ -162,8 +162,8 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
 
         fprintf(f, "%s\"gameControl\": {\n", sp);
         fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
-        fprintf(f, "%s  \"waitingForBatterDecision\": %d,\n", sp, game->flowControl.waitingForBatterDecision);
-        fprintf(f, "%s  \"waitingForFreeWalkDecision\": %d,\n", sp, game->flowControl.waitingForFreeWalkDecision);
+        fprintf(f, "%s  \"batter_seat_offered\": %d,\n", sp, game->offers.batter_seat);
+        fprintf(f, "%s  \"free_walk_offered\": %d,\n", sp, game->offers.free_walk);
         fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
         fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
         fprintf(f, "%s  \"foulState\": %d\n", sp, (int)rules->referee.foulState);
@@ -437,7 +437,7 @@ int state_validator_check(StateInfo* state)
     //
     // §26 gives the walk to the lead runner, so the offer and the player it belongs to are one fact
     // and must be set together. They were not: the offer was raised whenever the ball count reached
-    // the threshold, while calculate_free_walk leaves freeWalkIndex at -1 when the whole inner side
+    // the threshold, while calculate_free_walk leaves free_walk.runner at -1 when the whole inner side
     // is off the field. That put a prompt on screen belonging to nobody, made the withdrawal beside
     // it read playerInfo[-1] every frame, and — because the lukkari may not pitch while an offer is
     // open — left the game waiting for an answer to a question about no one. Found by the owner in
@@ -446,12 +446,12 @@ int state_validator_check(StateInfo* state)
     // Asserted here rather than defended at the read, because this is a resting state: it is true
     // between frames or it is not, and an assertion on it fires at the frame a future change breaks
     // the pairing rather than quietly papering over it.
-    if (game->flowControl.waitingForFreeWalkDecision == 1 &&
-        (game->flowControl.freeWalkIndex < 0 || game->flowControl.freeWalkIndex >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
+    if (game->offers.free_walk == 1 &&
+        (game->free_walk.runner < 0 || game->free_walk.runner >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
         printf(
-            "\n[STATE ERROR] FATAL: a free walk is being offered, but freeWalkIndex is %d — §26's walk "
+            "\n[STATE ERROR] FATAL: a free walk is being offered, but free_walk.runner is %d — §26's walk "
             "belongs to a player, so an offer that names nobody is not an offer\n",
-            game->flowControl.freeWalkIndex
+            game->free_walk.runner
         );
         return 0;
     }
@@ -463,7 +463,7 @@ int state_validator_check(StateInfo* state)
     // pitch flag used to carry did: starting a windup with the previous BALL still standing made consolidation react
     // to that BALL a second time, re-run the free-walk calculation and, with two balls standing, ask the
     // batting side a question it had already answered, in the middle of the pitch.
-    if (game->flowControl.waitingForFreeWalkDecision == 1 && game->catching_action.kind == CATCHING_ACTION_PITCHING) {
+    if (game->offers.free_walk == 1 && game->catching_action.kind == CATCHING_ACTION_PITCHING) {
         printf("\n[STATE ERROR] FATAL: a free walk is on offer while a pitch is being wound up\n");
         return 0;
     }

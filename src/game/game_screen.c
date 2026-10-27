@@ -322,7 +322,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
             break;
         }
         print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
-    } else if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
+    } else if (stateInfo->match->offers.free_walk == 1) {
         print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
     } else {
         // Who the panel is about: the candidate the human is looking at while a decision is open,
@@ -335,7 +335,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
         int index;
         int shouldContinue = 1;
         if (stateInfo->rules->scoreboard.period < 4) {
-            if (stateInfo->match->flowControl.waitingForBatterDecision == 1) {
+            if (stateInfo->match->offers.batter_seat == 1) {
                 int candidates[BATTER_CANDIDATE_MAX];
                 int count = list_batter_candidates(
                     stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->halfInningState, candidates

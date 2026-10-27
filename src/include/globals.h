@@ -835,14 +835,25 @@ typedef struct _BetweenPitchState {
 // MILESTONE 17: User interaction flow control
 typedef struct _FlowControl {
     int pause;
-    int waitingForBatterDecision;
-    int waitingForFreeWalkDecision;
-
-    // Free walk offer data (calculated by game_analysis, consumed by UI/actions)
-    int freeWalkCalculationMade;
-    int freeWalkIndex; // Which player to offer free walk (-1 = none)
-    BaseID freeWalkBase; // From which base (BASE_NONE = none)
 } FlowControl;
+
+// The two questions the engine puts to the batting side and waits on: who takes the bat next (§27), and
+// whether the lead runner takes the free walk (§26). Consolidation raises each; its answer, a reset, or
+// the situation that raised it going away closes it. Only that a question is OPEN lives here — what a
+// free walk would give, and to whom, is the entitlement below, which has a lifetime of its own.
+typedef struct _BattingOffers {
+    int batter_seat; // a batter is wanted: somebody may be named to take the bat
+    int free_walk; // the entitled runner may take the free walk, or decline it
+} BattingOffers;
+
+// §26: what the latest BALL entitles the batting side to — the lead runner, and the base he would walk
+// from — worked out once per BALL. Each new BALL asks the question afresh; a reset leaves nothing to work
+// out until the next one.
+typedef struct _FreeWalkEntitlement {
+    int worked_out; // this BALL's entitlement has been worked out (or there is nothing to work out)
+    int runner; // the lead runner it entitles; -1 when nobody is
+    BaseID from; // the base he would walk from; BASE_NONE when nobody is
+} FreeWalkEntitlement;
 
 typedef struct _CameraState {
     int homeRunCameraFlag;
@@ -1241,6 +1252,8 @@ typedef struct _MatchSession {
     FieldingPosts fielding_posts;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     FlowControl flowControl; // MILESTONE 17 - User flow gates
+    BattingOffers offers;
+    FreeWalkEntitlement free_walk;
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;

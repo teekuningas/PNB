@@ -143,7 +143,7 @@ static Permission permit(
 
     case INTENT_TAKE_FREE_WALK:
         // §26: an answer means nothing unless the referee has offered the walk.
-        if (match->flowControl.waitingForFreeWalkDecision != 1) {
+        if (match->offers.free_walk != 1) {
             return (Permission){0, RULE_FREE_WALK_NEEDS_AN_OFFER};
         }
         return (Permission){1, RULE_NONE};
@@ -161,7 +161,7 @@ static Permission permit(
         // about the message: it holds whether or not anyone declared anything, so it lives with the
         // seating and is asked once, there. Splitting it the other way would have the gate asking a
         // question the actualizer must ask again anyway, and two homes for one rule drift.
-        if (match->flowControl.waitingForBatterDecision != 1) {
+        if (match->offers.batter_seat != 1) {
             return (Permission){0, RULE_BATTER_SEAT_NEEDS_AN_OFFER};
         }
         const int index = message->as.select_batter.index;
@@ -546,8 +546,8 @@ static void take_free_walk_decision(
 )
 {
     if (accepted) {
-        int index = match->flowControl.freeWalkIndex;
-        BaseID base = match->flowControl.freeWalkBase;
+        int index = match->free_walk.runner;
+        BaseID base = match->free_walk.from;
         if (index != -1) {
             // there can be a little gap between the decision and when the possibility to decide came
             // so player might have run already to the following base, and free walk actually
@@ -578,7 +578,7 @@ static void take_free_walk_decision(
         }
     }
     // no more decision to make.
-    match->flowControl.waitingForFreeWalkDecision = 0;
+    match->offers.free_walk = 0;
 }
 void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 {

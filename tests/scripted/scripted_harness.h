@@ -61,7 +61,7 @@ int scripted_tick(ScriptedGame* g);
  */
 void scripted_tap(ScriptedGame* g, int pad, int key);
 
-/** Tick until the engine asks for a batter (flowControl.waitingForBatterDecision == 1). Returns 1 if
+/** Tick until the engine asks for a batter (offers.batter_seat == 1). Returns 1 if
  * reached within `budget` frames, 0 otherwise. */
 int scripted_tick_until_batter_decision(ScriptedGame* g, int budget);
 

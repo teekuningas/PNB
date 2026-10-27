@@ -31,9 +31,9 @@ int test_free_walk_resolution(void)
     );
 
     // 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
-    game->flowControl.freeWalkIndex = runnerIdx;
-    game->flowControl.freeWalkBase = BASE_FIRST;
-    game->flowControl.waitingForFreeWalkDecision = 1;
+    game->free_walk.runner = runnerIdx;
+    game->free_walk.from = BASE_FIRST;
+    game->offers.free_walk = 1;
 
     printf("[TEST] Offering Free Walk to Player %d from Base %d\n", runnerIdx, BASE_FIRST);
 
@@ -93,7 +93,7 @@ int test_free_walk_resolution(void)
  *
  * Found by the owner in play: get burnt while a walk is on the table and the prompt stays up, with
  * the game refusing to continue until it is answered. The mechanism is that consolidation clears
- * `freeWalkIndex` on every wrong pitch so the walk is re-evaluated, and does NOT clear the offer
+ * `free_walk.runner` on every wrong pitch so the walk is re-evaluated, and does NOT clear the offer
  * along with it — so if the re-evaluation then finds nobody (the batter burnt, no runner left), the
  * offer was raised again anyway. It named nobody, nothing could withdraw it because the withdrawal
  * asks about the player it names, and the lukkari may not pitch while an offer is open. Only a human
@@ -125,8 +125,8 @@ int test_free_walk_is_not_offered_to_nobody(void)
 
     // A wrong pitch lands, which is what re-runs the calculation.
     r->halfInningState.balls = 2;
-    m->flowControl.freeWalkCalculationMade = 0;
-    m->flowControl.freeWalkIndex = -1;
+    m->free_walk.worked_out = 0;
+    m->free_walk.runner = -1;
 
     // Stepped one frame at a time, and asserting on EVERY frame rather than at the end. Checking
     // only the final state cannot tell the two halves of the fix apart: with the offer raised and
@@ -136,11 +136,11 @@ int test_free_walk_is_not_offered_to_nobody(void)
     int ever_offered = 0;
     for (int f = 0; f < 10; f++) {
         simulate_frames(ctx, 1);
-        if (m->flowControl.waitingForFreeWalkDecision == 1) ever_offered = 1;
+        if (m->offers.free_walk == 1) ever_offered = 1;
     }
 
-    int waiting = m->flowControl.waitingForFreeWalkDecision;
-    int index = m->flowControl.freeWalkIndex;
+    int waiting = m->offers.free_walk;
+    int index = m->free_walk.runner;
     cleanup_scenario(ctx);
 
     ASSERT_EQ(-1, index, "setup: this is the case where §26 has nobody to give the walk to");

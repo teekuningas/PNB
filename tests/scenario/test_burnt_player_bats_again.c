@@ -36,7 +36,7 @@ int test_burnt_player_bats_again(void)
 
     // The order comes round to them again and they are handed the bat — declared as a producer
     // declares it, restated each frame because the seat is not always free on the first.
-    st->match->flowControl.waitingForBatterDecision = 1;
+    st->match->offers.batter_seat = 1;
     for (int i = 0; i < 5; i++) {
         intent_push(
             &ctx->state->channels.batting,

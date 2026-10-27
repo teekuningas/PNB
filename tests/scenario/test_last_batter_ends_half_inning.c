@@ -27,7 +27,7 @@
 // what to wait on rather than a frame count guessed from nothing.
 static int take_the_bat(ScenarioContext* ctx, int playerIndex)
 {
-    ctx->state->match->flowControl.waitingForBatterDecision = 1;
+    ctx->state->match->offers.batter_seat = 1;
 
     for (int i = 0; i < 600; i++) {
         // The producer's half of §27, restated every frame exactly as a real one does: the seat may

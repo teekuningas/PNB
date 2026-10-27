@@ -64,7 +64,7 @@ int batting_cycle_is_open(const AtBat* at_bat)
 // is open, so the seating simply happens on the first tick it can.
 void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int index)
 {
-    if (match->flowControl.waitingForBatterDecision != 1) return;
+    if (match->offers.batter_seat != 1) return;
     if (get_base_controller(match, referee, BASE_HOME) != -1) return;
     // No range check: an index that is not a player never reaches here, because the drain treats one
     // as a malformed message and fails the frame. A guard here could not fire, and a guard that
@@ -73,7 +73,7 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
     Vector3D target;
     // The decision is made and, per §27, is not revisited: "Lyömään asettunutta pelaajaa ei voi
     // vaihtaa pois lyömästä."
-    match->flowControl.waitingForBatterDecision = 0;
+    match->offers.batter_seat = 0;
 
     // new batting team player on the field.
     // has base of zero, is on base and original base is zero too.

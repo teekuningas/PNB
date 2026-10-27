@@ -85,7 +85,7 @@ static void observe(const SimGame* g, void* ctx)
         else cov.fakes++;
     }
     if (hit && !cov.lastHit) cov.hits++;
-    int walk = m->flowControl.waitingForFreeWalkDecision;
+    int walk = m->offers.free_walk;
     if (walk && !cov.lastWalk) {
         cov.walkOffers++;
         if (cca == 2) cov.walkOffersMidWindup++;

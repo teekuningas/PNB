@@ -56,7 +56,7 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
     for (int i = 0; i < JOKER_COUNT; i++) {
         m->playerInfo[scenario_joker(ctx, i)].bTPI.joker = JOKER_AVAILABLE;
     }
-    m->flowControl.waitingForBatterDecision = 1;
+    m->offers.batter_seat = 1;
 }
 
 static void declare_seat(ScenarioContext* ctx, int index)
@@ -107,7 +107,7 @@ int test_seat_refuses_regular_when_order_spent(void)
     tick_ingest(ctx);
 
     ASSERT_EQ(-1, get_active_batter_index(m), "a regular must not be seated once §12 has spent the order");
-    ASSERT_EQ(1, m->flowControl.waitingForBatterDecision, "and the decision must still be open, not silently consumed");
+    ASSERT_EQ(1, m->offers.batter_seat, "and the decision must still be open, not silently consumed");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -201,7 +201,7 @@ int test_seat_waits_for_home_then_seats_the_named_joker(void)
     declare_seat(ctx, joker);
     tick_ingest(ctx);
     ASSERT_EQ(-1, get_active_batter_index(m), "nobody may be seated while the previous batter still holds home");
-    ASSERT_EQ(1, m->flowControl.waitingForBatterDecision, "and the decision stays open");
+    ASSERT_EQ(1, m->offers.batter_seat, "and the decision stays open");
 
     // The previous batter is finally established elsewhere; the seat is free.
     const int battingTeamIndex = get_batting_team_index(&r->scoreboard);
@@ -213,7 +213,7 @@ int test_seat_waits_for_home_then_seats_the_named_joker(void)
     tick_ingest(ctx);
 
     ASSERT_EQ(joker, get_active_batter_index(m), "the named joker takes the bat on the first frame the seat is free");
-    ASSERT_EQ(0, m->flowControl.waitingForBatterDecision, "and the decision is closed");
+    ASSERT_EQ(0, m->offers.batter_seat, "and the decision is closed");
     ASSERT_EQ((int)JOKER_USED, (int)m->playerInfo[joker].bTPI.joker, "§7: the joker is spent by taking the bat");
 
     cleanup_scenario(ctx);
@@ -278,7 +278,7 @@ int test_seat_refuses_when_no_decision_is_open(void)
     setup_order_spent_with_jokers(ctx, &inTurnRegular);
     MatchSession* m = ctx->state->match;
 
-    m->flowControl.waitingForBatterDecision = 0;
+    m->offers.batter_seat = 0;
 
     declare_seat(ctx, scenario_joker(ctx, 0));
     tick_ingest(ctx);

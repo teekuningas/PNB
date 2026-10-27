@@ -35,7 +35,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (!batter_stands_ready(&match->at_bat)) {
         return (Permission){0, RULE_PITCH_NEEDS_A_READY_BATTER};
     }
-    if (match->flowControl.waitingForFreeWalkDecision != 0) {
+    if (match->offers.free_walk != 0) {
         return (Permission){0, RULE_PITCH_NOT_DURING_FREE_WALK_OFFER};
     }
     if (match->playerInfo[pitcher].cTPI.isNearHomeLocation != 1) {

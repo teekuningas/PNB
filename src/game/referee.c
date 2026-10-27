@@ -792,17 +792,17 @@ static void update_pitch_resolution(
 }
 
 static void update_free_walk_resolution(
-    RefereeState* referee, HalfInningState* halfInningState, Scoreboard* scoreboard, const FlowControl* flowControl,
-    const GameEvents* events, GameEventType* announcement
+    RefereeState* referee, HalfInningState* halfInningState, Scoreboard* scoreboard,
+    const FreeWalkEntitlement* freeWalk, const GameEvents* events, GameEventType* announcement
 )
 {
     // No free walk processing once end-of-inning has been decided
     if (referee->endOfInningState != END_INNING_STATE_NONE) return;
 
     // 6. Free Walk Resolution
-    if (events->freeWalkAccepted && flowControl->freeWalkIndex != -1) {
-        int i = flowControl->freeWalkIndex;
-        BaseID sourceBase = flowControl->freeWalkBase;
+    if (events->freeWalkAccepted && freeWalk->runner != -1) {
+        int i = freeWalk->runner;
+        BaseID sourceBase = freeWalk->from;
 
         if (scoreboard->period >= 4) {
             // Homerun Contest / Super Inning Logic
@@ -1176,8 +1176,6 @@ void update_referee(
     HomeRunContestState* homeRunContestState, GameEventType* announcement
 )
 {
-    const FlowControl* flowControl = &game->flowControl; // Read-only access to flow data
-
     // What the referee announces — OUT, STRIKE, RUN — is an output of this tick, like a sound, and never
     // World state: nothing that decides the game may depend on whether somebody displayed it. It starts
     // every tick empty, so "nothing announced yet" means "this tick", which is what the foul-play
@@ -1223,7 +1221,7 @@ void update_referee(
         update_strikes(halfInningState, &game->gameEvents);
         update_pitch_resolution(game, halfInningState, betweenPitchState, &game->gameEvents, announcement);
         update_free_walk_resolution(
-            refereeState, halfInningState, scoreboard, flowControl, &game->gameEvents, announcement
+            refereeState, halfInningState, scoreboard, &game->free_walk, &game->gameEvents, announcement
         );
 
         // 5. Game State Flags

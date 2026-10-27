@@ -66,7 +66,7 @@ int scripted_tick_until_batter_decision(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->flowControl.waitingForBatterDecision == 1) return 1;
+        if (scripted_match(g)->offers.batter_seat == 1) return 1;
     }
     return 0;
 }

@@ -151,9 +151,9 @@ void action_invocations(
 
     // check these only if necessary. also if it happened to be so that
     // they are both asked the same time, choose the free walk first
-    if (match->flowControl.waitingForFreeWalkDecision == 1) {
+    if (match->offers.free_walk == 1) {
         checkFreeWalkDecision(key_states, KEY_2, KEY_1, battingControl, &channels->batting);
-    } else if (match->flowControl.waitingForBatterDecision == 1) {
+    } else if (match->offers.batter_seat == 1) {
         checkBatterSelection(
             match, scoreboard, halfInningState, clientInput, key_states, KEY_1, KEY_2, battingControl,
             &channels->batting
@@ -163,7 +163,7 @@ void action_invocations(
     // which branch above ran: a free walk offered in the same frame must not leave a stale choice
     // behind it. The widget self-clears the way every other client-local gesture does, which is why
     // a physical-world reset never has to reach in here.
-    if (match->flowControl.waitingForBatterDecision != 1) {
+    if (match->offers.batter_seat != 1) {
         clientInput->batterWidget.selected = 0;
         clientInput->batterWidget.highlight = 0;
     }

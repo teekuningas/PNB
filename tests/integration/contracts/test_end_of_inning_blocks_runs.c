@@ -81,8 +81,8 @@ int test_no_free_walk_runs_during_end_of_inning(void)
 
     // Set up free walk acceptance from 3rd base (would normally score)
     ctx->state->match->gameEvents.freeWalkAccepted = 1;
-    ctx->state->match->flowControl.freeWalkIndex = 0;
-    ctx->state->match->flowControl.freeWalkBase = BASE_THIRD;
+    ctx->state->match->free_walk.runner = 0;
+    ctx->state->match->free_walk.from = BASE_THIRD;
 
     int runsBefore = ctx->state->rules->scoreboard.teams[0].runs;
 

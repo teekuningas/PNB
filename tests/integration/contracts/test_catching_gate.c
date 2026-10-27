@@ -124,7 +124,7 @@ int test_pitch_permission_names_each_rule(void)
     ASSERT_EQ(RULE_PITCH_NEEDS_A_READY_BATTER, pitch_may_begin(m, 0).denied_by, "nobody to pitch to");
     restore(ctx, &ready);
 
-    m->flowControl.waitingForFreeWalkDecision = 1;
+    m->offers.free_walk = 1;
     ASSERT_EQ(RULE_PITCH_NOT_DURING_FREE_WALK_OFFER, pitch_may_begin(m, 0).denied_by, "§26: answer the walk first");
     restore(ctx, &ready);
 

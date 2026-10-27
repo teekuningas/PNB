@@ -77,7 +77,7 @@ int test_scripted_key_edges(void)
 /* ---- 3. Input reaches the real action_invocations ------------------------------------------- *
  * Prove a scripted key press flows through the production action_invocations into a durable game
  * effect. Uses the start-of-game batter selection (the first decision a batting human faces): once
- * the engine asks for a batter (waitingForBatterDecision == 1), a change (KEY_1) then select (KEY_2)
+ * the engine asks for a batter (offers.batter_seat == 1), a change (KEY_1) then select (KEY_2)
  * — each a release edge — must clear the request. This exercises checkBatterSelection (the client
  * cursor and the declaration it pushes), the INGEST gate's §27/§12/§7 permission, and seat_batter,
  * via the real pipeline. */
@@ -91,13 +91,13 @@ int test_scripted_input_reaches_pipeline(void)
     scripted_tap(g, HUMAN_PAD, KEY_1); // move the cursor along the legal candidates (client-local)
     scripted_tap(g, HUMAN_PAD, KEY_2); // accept the highlighted one → INTENT_SELECT_BATTER
 
-    int still_waiting = scripted_match(g)->flowControl.waitingForBatterDecision;
+    int still_waiting = scripted_match(g)->offers.batter_seat;
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
     scripted_destroy(g);
 
     ASSERT(!failed, reason);
-    ASSERT_EQ(0, still_waiting, "scripted select should have cleared waitingForBatterDecision");
+    ASSERT_EQ(0, still_waiting, "scripted select should have closed the batter offer");
     return TEST_PASSED;
 }

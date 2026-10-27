@@ -113,7 +113,7 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
     }
 
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    for (int i = 0; i < 300 && m->flowControl.waitingForBatterDecision == 1; i++) {
+    for (int i = 0; i < 300 && m->offers.batter_seat == 1; i++) {
         scripted_tick(g);
     }
 

@@ -248,14 +248,14 @@ void update_batting_ai(
 
     // Take the walk, restated for as long as it is offered: an answer that means the same thing every
     // time it arrives needs no edge and no memory.
-    if (match->flowControl.waitingForFreeWalkDecision == 1) {
+    if (match->offers.free_walk == 1) {
         intent_push(channel, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}});
     }
 
     // The batter is chosen only once the ball is home, so that in the normal situation the strategy has
     // more of the play's outcome to choose from.
     const int ballHome = ball_is_home(match, fieldPositions);
-    if (match->flowControl.waitingForBatterDecision == 1 && ballHome) {
+    if (match->offers.batter_seat == 1 && ballHome) {
         declare_batter_choice(match, rules, channel);
     } else if (batter_stands_ready(&match->at_bat) && !airborne && ballHome) {
         arm_runners_for_the_pitch(match, rules, channel);

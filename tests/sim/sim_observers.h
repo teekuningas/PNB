@@ -206,7 +206,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx);
  *                  both sides of the fix.
  *
  * Every count is taken on a rising edge (seatings from batterEntered's own effect,
- * prompts from waitingForBatterDecision), so a frame held open never double-counts. */
+ * prompts from offers.batter_seat), so a frame held open never double-counts. */
 typedef struct {
     // internal edge-detection state (do not set)
     int initialized;

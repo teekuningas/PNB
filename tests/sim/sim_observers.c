@@ -180,10 +180,10 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         ball_is_home(m, g->state->fieldPositions), m->ballInfo.pitch_in_flight, (int)m->catching_action.kind,
-        m->ballInfo.holder, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        batter_stands_ready(&m->at_bat), ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer,
-        ai->batterReadyTimer, m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive,
-        ai->swing.wrongPitch, ai->swing.style, (int)r->betweenPitchState.batOutcome, batting_cycle_is_open(&m->at_bat)
+        m->ballInfo.holder, m->offers.batter_seat, m->offers.free_walk, batter_stands_ready(&m->at_bat),
+        ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
+        m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
+        ai->swing.style, (int)r->betweenPitchState.batOutcome, batting_cycle_is_open(&m->at_bat)
     );
 }
 
@@ -575,7 +575,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
 
-    const int waiting = m->flowControl.waitingForBatterDecision;
+    const int waiting = m->offers.batter_seat;
     const int batter = get_active_batter_index(m);
     const int designated = r->halfInningState.lastBatter.designatedIndex;
     const int inning = r->scoreboard.inning;
