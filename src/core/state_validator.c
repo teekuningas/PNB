@@ -178,7 +178,7 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(f, "%s  \"batterEntered\": %d\n", sp, game->gameEvents.batterEntered);
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"gameFlowState\": {\n", sp);
+    fprintf(f, "%s\"flow\": {\n", sp);
     fprintf(f, "%s  \"ballHome\": %d", sp, ball_is_home(game, fieldPositions));
     if (rules) {
         fprintf(f, ",\n%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);

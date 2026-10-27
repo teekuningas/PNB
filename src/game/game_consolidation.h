@@ -12,7 +12,6 @@ typedef struct {
 } ConsolidationOutput;
 
 // Initializes flow control counters and state
-void consolidation_init(GameFlowState* gameFlowState);
 
 // Main update function: Reacts to Referee decisions, manages flow, and enforces physical state.
 // Referee-owned state is passed as const — consolidation READS legal state but never WRITES to it.

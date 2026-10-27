@@ -218,7 +218,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
 
-                match->cameraState.homeRunCameraFlag = 1;
+                match->home_run_camera.active = 1;
             } else if (match->playerRuntime[index].passedPathPoint == 1) {
                 target.x = field_positions->homeRunPoint.x;
                 target.z = field_positions->homeRunPoint.z;
@@ -713,8 +713,8 @@ void reset_flow_state(MatchSession* match)
     // Frame events (cleared every frame, but ensure clean start)
     clear_frame_events(&match->gameEvents);
 
-    // Subsystem initialization
-    consolidation_init(&(match->gameFlowState));
+    // The home-run camera is back to the normal view, and not counting.
+    match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
 
     // The catching action in progress belongs to initialize_action_info, and the ball's flight to
     // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one
@@ -726,9 +726,6 @@ void reset_flow_state(MatchSession* match)
     // reset needs to do nothing to it.
     // The same holds for the AI's memory (AIControllerState), in both directions: a controller notices a reset by
     // observing the world it leaves behind, never by the engine reaching in to clear it.
-
-    // Camera
-    match->cameraState.homeRunCameraFlag = 0;
 }
 
 void clear_frame_events(GameEvents* events)

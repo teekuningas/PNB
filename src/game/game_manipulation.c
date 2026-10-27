@@ -42,7 +42,7 @@ static void move_idling_players_to_home_location(MatchSession* match);
 static void rank_players_and_move_them(MatchSession* match);
 static void update_models(MatchSession* match);
 static void
-update_ball_home_status(MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee);
+update_home_run_camera(MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee);
 
 void game_manipulation(
     MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, int* play_sound_effect
@@ -66,7 +66,7 @@ void game_manipulation(
     update_ball_to_player(
         match
     ); // if some player has the ball, update ball velocity so that the ball will follow the player
-    update_ball_home_status(match, field_positions, referee); // NEW: Check if ball is at home
+    update_home_run_camera(match, field_positions, referee); // the cue holds once the ball is home with third clear
     update_models(match);
 }
 
@@ -829,15 +829,13 @@ static void update_models(MatchSession* match)
 }
 
 static void
-update_ball_home_status(MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee)
+update_home_run_camera(MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee)
 {
-    int ballAtBase = get_ball_at_base_index(match, field_positions);
-    if (ballAtBase == 0) {
-        // Camera logic from checkForOuts
-        if (match->gameFlowState.homeRunCameraCounter == -1 && match->cameraState.homeRunCameraFlag == 1 &&
+    if (ball_is_home(match, field_positions)) {
+        if (match->home_run_camera.hold == -1 && match->home_run_camera.active == 1 &&
             (get_base_controller(match, referee, BASE_THIRD) == -1 ||
              match->playerInfo[get_base_controller(match, referee, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
-            match->gameFlowState.homeRunCameraCounter = 0;
+            match->home_run_camera.hold = 0;
         }
     }
 }

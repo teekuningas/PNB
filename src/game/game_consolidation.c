@@ -38,11 +38,6 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
 // PUBLIC API
 // ===============================================================================================
 
-void consolidation_init(GameFlowState* gameFlowState)
-{
-    gameFlowState->homeRunCameraCounter = -1;
-}
-
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
     GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
@@ -171,11 +166,10 @@ update_game_flow(MatchSession* match, const FieldPositions* field_positions, Gam
 {
     // when player from third base starts running, we change camera view. when the situation is over we
     // wait 50 update frames, before moving to normal camera
-    if (match->gameFlowState.homeRunCameraCounter >= 0) {
-        match->gameFlowState.homeRunCameraCounter++;
-        if (match->gameFlowState.homeRunCameraCounter > 50) {
-            match->cameraState.homeRunCameraFlag = 0;
-            match->gameFlowState.homeRunCameraCounter = -1;
+    if (match->home_run_camera.hold >= 0) {
+        match->home_run_camera.hold++;
+        if (match->home_run_camera.hold > 50) {
+            match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
         }
     }
 

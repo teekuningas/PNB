@@ -96,8 +96,8 @@ static void project(const StateInfo* st)
 
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
-    put(4, "gfs=%d,%d;", m->gameFlowState.homeRunCameraCounter, ball_is_home(m, st->fieldPositions));
-    put(4, "cam=%d;", m->cameraState.homeRunCameraFlag);
+    put(4, "gfs=%d,%d;", m->home_run_camera.hold, ball_is_home(m, st->fieldPositions));
+    put(4, "cam=%d;", m->home_run_camera.active);
     V(4, m->catchingState.controlledMoveTarget);
     put(4, "%d,%d;", m->catchingState.controlledMoveTargetActive, m->catchingState.controlledMoveTargetFor);
     V(4, m->catchingState.ballTargetPoint);

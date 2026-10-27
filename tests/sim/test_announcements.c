@@ -114,10 +114,10 @@ int test_announcements_do_not_depend_on_the_screen(void)
 // runs out once play resumes. Driven through the real update_game_screen, which is where the clock
 // lives, on a real headless game — the owner paused with "OUT" showing and watched it vanish anyway,
 // because the clock counted screen frames and the screen keeps running under a pause.
-static int an_announcement_is_on_the_line(HudState* hud, SimGame* g)
+static int an_announcement_is_on_the_line(HudState* hud, CameraView* camera, SimGame* g)
 {
     for (long i = 0; i < PERIOD_MAX_FRAMES; i++) {
-        update_game_screen(g->state, hud, &g->menu);
+        update_game_screen(g->state, hud, camera, &g->menu);
         if (hud->infoEventTimer == 0) return 1;
     }
     return 0;
@@ -130,12 +130,13 @@ int test_the_info_line_holds_its_message_while_paused(void)
     SimGame* g = sim_create(&setup, 0x9A05Eu);
     ASSERT_NOT_NULL(g, "sim_create returned NULL");
     HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
-    ASSERT(an_announcement_is_on_the_line(&hud, g), "the referee never announced anything");
+    CameraView camera = {0};
+    ASSERT(an_announcement_is_on_the_line(&hud, &camera, g), "the referee never announced anything");
     const GameEventType shown = hud.infoEvent;
 
     g->state->paused = 1;
     for (int i = 0; i < 500; i++) {
-        update_game_screen(g->state, &hud, &g->menu);
+        update_game_screen(g->state, &hud, &camera, &g->menu);
     }
     ASSERT_EQ((int)shown, (int)hud.infoEvent, "the paused screen still shows the message");
     ASSERT_EQ(0, hud.infoEventTimer, "and its clock has not moved: 500 screen frames, no game time");
@@ -143,7 +144,7 @@ int test_the_info_line_holds_its_message_while_paused(void)
     g->state->paused = 0;
     int cleared = 0;
     for (int i = 0; i < 500 && !cleared; i++) {
-        update_game_screen(g->state, &hud, &g->menu);
+        update_game_screen(g->state, &hud, &camera, &g->menu);
         cleared = (hud.infoEventTimer == -1);
     }
     ASSERT(cleared, "once play resumes the message runs out as usual");

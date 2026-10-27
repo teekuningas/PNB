@@ -20,10 +20,22 @@ typedef struct _HudState {
     int infoEventTimer; // frames it has been up; -1 when the line is empty
 } HudState;
 
-int init_game_screen(StateInfo* stateInfo, HudState* hud, ResourceManager* rm);
-void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo);
+// The screen's camera: where it looks from and where it looks at, this tick and last, so the draw can
+// interpolate between them. Client-local render memory like HudState — the screen moves it after each tick,
+// nothing in the engine reads it, and it is in no snapshot. (It lived in the World, where the screen wrote
+// it between ticks, so a rendered World and a headless one differed for the same seed.)
+typedef struct _CameraView {
+    Vector3D eye;
+    Vector3D lastEye;
+    Vector3D target;
+    Vector3D lastTarget;
+} CameraView;
+
+int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, ResourceManager* rm);
+void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, MenuInfo* menuInfo);
 void draw_game_screen(
-    const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs
+    const StateInfo* stateInfo, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
+    const RenderState* rs
 );
 // The screen's side of one tick that ran: the info line's clock advances, then the referee's announcement
 // is shown and consumed.

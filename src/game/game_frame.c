@@ -9,7 +9,7 @@
    Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
    WRITES: PlayerInfo, the offers to the batting side, the free-walk entitlement, the ball's flight,
-   the at-bat, GameFlowState
+   the at-bat, the home-run camera cue
       5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
       6. Snapshot        (debug)
       7. Cleanup         (clear_frame_events)
@@ -53,8 +53,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     init_execute_actions(stateInfo->match);
     init_client_input(stateInfo->clientInput);
 
-    // Consolidated Init (Game Flow + Reset Logic)
-    consolidation_init(&(stateInfo->match->gameFlowState));
+    stateInfo->match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
 
     return 0;
 }

@@ -29,6 +29,7 @@ static MatchSession match;
 static ClientInputState clientInput;
 static AIControllerState aiController;
 static HudState hud; // the game screen's own render memory — NOT synced (see HudState)
+static CameraView camera; // the game screen's camera — NOT synced (see CameraView)
 static GameRulesState rules;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
@@ -151,7 +152,7 @@ int main(int argc, char* argv[])
     draw_loading_screen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
     draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
-    result = init_game_screen(&stateInfo, &hud, resourceManager);
+    result = init_game_screen(&stateInfo, &hud, &camera, resourceManager);
     if (result != 0) {
         printf("Could not init game screen. Exiting.");
         return -1;
@@ -208,7 +209,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, 
     update_sound(stateInfo);
     switch (stateInfo->screen) {
     case SCREEN_GAME:
-        update_game_screen(stateInfo, &hud, &menuInfo);
+        update_game_screen(stateInfo, &hud, &camera, &menuInfo);
         break;
     case SCREEN_MAIN_MENU:
         update_main_menu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
@@ -226,7 +227,7 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
     switch (stateInfo->screen) {
     case SCREEN_GAME:
         // Everything within draw_game_screen is currently drawn in 3d context
-        draw_game_screen(stateInfo, &hud, alpha, rm, rs);
+        draw_game_screen(stateInfo, &hud, &camera, alpha, rm, rs);
         break;
     case SCREEN_MAIN_MENU:
         draw_main_menu(stateInfo, menuData, &menuInfo, alpha, rm, rs);

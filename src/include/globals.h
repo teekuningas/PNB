@@ -850,28 +850,18 @@ typedef struct _FreeWalkEntitlement {
     BaseID from; // the base he would walk from; BASE_NONE when nobody is
 } FreeWalkEntitlement;
 
-typedef struct _CameraState {
-    int homeRunCameraFlag;
-    // View vectors
-    Vector3D cam, look, up;
-    Vector3D statCam, statLook, statUp;
-    Vector3D skyBoxCam, skyBoxLook;
-
-    // Interpolation
-    Vector3D lastCamTargetLocation;
-    Vector3D lastCamLocation;
-    Vector3D camLocation;
-    Vector3D camTargetLocation;
-
-    // Misc
-    float lightPos[4];
-} CameraState;
+// The home-run camera cue: the engine's call that the view should pull back while a runner comes home from
+// third, held for a moment after the ball is home again with third clear. A PRESENTATION decision made
+// inside the tick — the class of thing PlayerInfo.model is — and kept in the World for the same reason:
+// what raises and drops it (a runner setting off from third, the release, a reset) happens inside the tick,
+// where the screen cannot see it from the world the tick leaves behind. It leaves for the client with the
+// graphics work, as a tick output the screen keeps its own memory of.
+typedef struct _HomeRunCameraCue {
+    int active; // the view should be the home-run one
+    int hold; // ticks since the ball came home with third clear, while active; -1 while not counting
+} HomeRunCameraCue;
 
 typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
-
-typedef struct _GameFlowState {
-    int homeRunCameraCounter;
-} GameFlowState;
 
 // What the catching team's ball-holder is doing with the ball, if anything. One at a time, which is
 // why it is one tag: a pitch and a throw both claim the same hands, and two independent flags would
@@ -1248,12 +1238,11 @@ typedef struct _MatchSession {
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     BattingOffers offers;
     FreeWalkEntitlement free_walk;
-    CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
+    HomeRunCameraCue home_run_camera;
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;
     ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking
     RunnerCommitments runner_commitments;
-    GameFlowState gameFlowState; // Milestone 11 - Game flow globals
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
 

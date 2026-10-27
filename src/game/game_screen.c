@@ -28,24 +28,32 @@
 static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
 static void
 draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
-static int init_lights(StateInfo* stateInfo);
-static void init_cam_settings(StateInfo* stateInfo);
-static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud);
+static int init_lights(void);
+static void init_camera(CameraView* camera);
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera);
 
-int init_game_screen(StateInfo* stateInfo, HudState* hud, ResourceManager* rm)
+// The view's fixed parts: which way is up, where the skybox is seen from, and the light — a point so far
+// away it is practically directional.
+static const Vector3D CAMERA_UP = {0.0f, 1.0f, 0.0f};
+static const Vector3D SKYBOX_EYE = {0.0f, 0.0f, 0.0f};
+static const float LIGHT_POSITION[4] = {
+    LIGHT_SOURCE_POSITION_X, LIGHT_SOURCE_POSITION_Y, LIGHT_SOURCE_POSITION_Z, 1.0f
+};
+
+int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, ResourceManager* rm)
 {
     int result;
 
     resource_manager_load_all_game_assets(rm);
 
-    init_cam_settings(stateInfo);
+    init_camera(camera);
 
     hud->lastMeterX = 0;
     hud->lastSwingMeterX = -1.0f; // nothing drawn yet — see the marker block
     hud->infoEvent = EVENT_NONE;
     hud->infoEventTimer = -1;
 
-    result = init_lights(stateInfo);
+    result = init_lights();
     if (result != 0) {
         printf("Could not init lights. Exiting.");
     }
@@ -65,15 +73,14 @@ int init_game_screen(StateInfo* stateInfo, HudState* hud, ResourceManager* rm)
     return 0;
 }
 
-void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
+void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, MenuInfo* menuInfo)
 {
-    BallInfo* ballInfo = &(stateInfo->match->ballInfo);
-    CameraState* cs = &(stateInfo->match->cameraState);
+    const BallInfo* ballInfo = &(stateInfo->match->ballInfo);
     // if we just changed here, load basic settings.
     if (stateInfo->changeScreen == 1) {
         stateInfo->changeScreen = 0;
         stateInfo->updated = 1;
-        load_game_screen_settings(stateInfo, hud);
+        load_game_screen_settings(stateInfo, hud, camera);
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -93,37 +100,30 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
         }
     }
     // update camera
-    cs->lastCamTargetLocation.x = cs->camTargetLocation.x;
-    cs->lastCamTargetLocation.y = cs->camTargetLocation.y;
-    cs->lastCamTargetLocation.z = cs->camTargetLocation.z;
-
-    cs->lastCamLocation.y = cs->camLocation.y;
-    cs->lastCamLocation.z = cs->camLocation.z;
-    cs->lastCamLocation.x = cs->camLocation.x;
+    camera->lastTarget = camera->target;
+    camera->lastEye = camera->eye;
     // we follow the ball with our camera
-    cs->camTargetLocation.x = ballInfo->location.x;
-    cs->camTargetLocation.y = ballInfo->location.y * 0.5f;
-    cs->camTargetLocation.z = ballInfo->location.z;
+    camera->target.x = ballInfo->location.x;
+    camera->target.y = ballInfo->location.y * 0.5f;
+    camera->target.z = ballInfo->location.z;
 
     // and our camera also moves a bit with the ball.
 
-    cs->camLocation.x = 0.1f * cs->camTargetLocation.x;
+    camera->eye.x = 0.1f * camera->target.x;
     // if we are behind the homebase
-    if (stateInfo->match->ballInfo.location.z > HOME_RADIUS) {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f +
-                            (float)fabs(cs->camTargetLocation.x) / 3;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 15.0f +
-                            (float)fabs(cs->camTargetLocation.x) / 2;
+    if (ballInfo->location.z > HOME_RADIUS) {
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f + 5.0f + (float)fabs(camera->target.x) / 3;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 15.0f + (float)fabs(camera->target.x) / 2;
     }
-    // if runner coming from third base
-    else if (stateInfo->match->cameraState.homeRunCameraFlag == 0) {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f;
+    // the normal mode
+    else if (stateInfo->match->home_run_camera.active == 0) {
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f;
     }
-    // and the normal mode
+    // and a runner coming home from third base
     else {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f + 5.0f;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 8.0f;
     }
     if (update_game_frame(stateInfo, menuInfo)) {
         hud_after_tick(hud, &stateInfo->announcement);
@@ -156,20 +156,20 @@ void hud_after_tick(HudState* hud, GameEventType* announcement)
 }
 
 void draw_game_screen(
-    const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs
+    const StateInfo* stateInfo, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
+    const RenderState* rs
 )
 {
     // Ensure the 3D rendering state is correctly set up before drawing the game screen.
     begin_3d_render(rs);
-    CameraState* cs = (CameraState*)&(stateInfo->match->cameraState);
     Vector3D look, cam, skyBoxLook;
 
-    look.x = (float)(alpha * cs->camTargetLocation.x + (1 - alpha) * cs->lastCamTargetLocation.x);
-    look.y = (float)(alpha * cs->camTargetLocation.y + (1 - alpha) * cs->lastCamTargetLocation.y);
-    look.z = (float)(alpha * cs->camTargetLocation.z + (1 - alpha) * cs->lastCamTargetLocation.z);
-    cam.y = (float)(alpha * cs->camLocation.y + (1 - alpha) * cs->lastCamLocation.y);
-    cam.z = (float)(alpha * cs->camLocation.z + (1 - alpha) * cs->lastCamLocation.z);
-    cam.x = (float)(alpha * cs->camLocation.x + (1 - alpha) * cs->lastCamLocation.x);
+    look.x = (float)(alpha * camera->target.x + (1 - alpha) * camera->lastTarget.x);
+    look.y = (float)(alpha * camera->target.y + (1 - alpha) * camera->lastTarget.y);
+    look.z = (float)(alpha * camera->target.z + (1 - alpha) * camera->lastTarget.z);
+    cam.y = (float)(alpha * camera->eye.y + (1 - alpha) * camera->lastEye.y);
+    cam.z = (float)(alpha * camera->eye.z + (1 - alpha) * camera->lastEye.z);
+    cam.x = (float)(alpha * camera->eye.x + (1 - alpha) * camera->lastEye.x);
     // with skybox we move to origin
     skyBoxLook.x = look.x - cam.x;
     skyBoxLook.y = look.y - cam.y;
@@ -179,8 +179,8 @@ void draw_game_screen(
     glDepthMask(GL_FALSE);
     glLoadIdentity();
     gluLookAt(
-        cs->skyBoxCam.x, cs->skyBoxCam.y, cs->skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, cs->up.x, cs->up.y,
-        cs->up.z
+        SKYBOX_EYE.x, SKYBOX_EYE.y, SKYBOX_EYE.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, CAMERA_UP.x, CAMERA_UP.y,
+        CAMERA_UP.z
     );
 
     draw_skybox(stateInfo, rm);
@@ -189,9 +189,9 @@ void draw_game_screen(
     glDepthMask(GL_TRUE);
 
     glLoadIdentity();
-    gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, cs->up.x, cs->up.y, cs->up.z);
+    gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, CAMERA_UP.x, CAMERA_UP.y, CAMERA_UP.z);
     glEnable(GL_LIGHTING);
-    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
+    glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
     draw_immutable_world(stateInfo, alpha, rm);
     draw_game_frame(stateInfo, alpha, rm);
@@ -202,7 +202,7 @@ void draw_game_screen(
 }
 
 // lights
-static int init_lights(StateInfo* stateInfo)
+static int init_lights(void)
 {
     // our lighting is a point light that is so far away that its practically a directional light.
     //
@@ -211,7 +211,6 @@ static int init_lights(StateInfo* stateInfo)
     float diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
     float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
     float specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    CameraState* cs = &(stateInfo->match->cameraState);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -219,11 +218,7 @@ static int init_lights(StateInfo* stateInfo)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    cs->lightPos[0] = LIGHT_SOURCE_POSITION_X;
-    cs->lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-    cs->lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-    cs->lightPos[3] = 1.0f;
-    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
+    glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
     return 0;
 }
@@ -560,12 +555,12 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     }
 }
 
-static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud)
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera)
 {
     stateInfo->paused = 0;
     hud->infoEventTimer = -1;
     // initialize cam
-    init_cam_settings(stateInfo);
+    init_camera(camera);
     // Physical world + flow + team setup
     reset_for_new_half_inning(stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
@@ -576,52 +571,12 @@ static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud)
     initialize_referee(stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->referee);
 }
 
-static void init_cam_settings(StateInfo* stateInfo)
+static void init_camera(CameraView* camera)
 {
-    CameraState* cs = &(stateInfo->match->cameraState);
-
-    cs->lastCamTargetLocation.x = 0.0f;
-    cs->lastCamTargetLocation.y = 0.0f;
-    cs->lastCamTargetLocation.z = 0.0f;
-    cs->camTargetLocation.x = 0.0f;
-    cs->camTargetLocation.y = 0.0f;
-    cs->camTargetLocation.z = -1.0f;
-    cs->lastCamLocation.x = 0.0f;
-    cs->lastCamLocation.y = 0.0f;
-    cs->lastCamLocation.z = 0.0f;
-    cs->camLocation.x = 0.0f;
-    cs->camLocation.y = 0.0f;
-    cs->camLocation.z = 0.0f;
-
-    cs->cam.x = cs->camLocation.x;
-    cs->cam.y = 0.0f;
-    cs->cam.z = 0.0f;
-    cs->up.x = 0.0f;
-    cs->up.y = 1.0f;
-    cs->up.z = 0.0f;
-    cs->look.x = 0.0f;
-    cs->look.y = 0.0f;
-    cs->look.z = 0.0f;
-
-    cs->skyBoxCam.x = 0.0f;
-    cs->skyBoxCam.y = 0.0f;
-    cs->skyBoxCam.z = 0.0f;
-    cs->skyBoxLook.x = 0.0f;
-    cs->skyBoxLook.y = 0.0f;
-    cs->skyBoxLook.z = -1.0f;
-    // these values are kinda trial and error values to move the statistics window to right place. i think proper
-    // deriving is unnecessary as we use perspective projection at the same time.
-
-    // to move statistics to safe zone of tv
-    cs->statCam.x = 0.0f;
-    cs->statCam.y = 1.9f;
-    cs->statCam.z = -1.69f;
-    cs->statUp.x = 0.0f;
-    cs->statUp.y = 0.0f;
-    cs->statUp.z = -1.0f;
-    cs->statLook.x = 0.0f;
-    cs->statLook.y = 0.0f;
-    cs->statLook.z = -1.69f;
+    camera->lastTarget = (Vector3D){0.0f, 0.0f, 0.0f};
+    camera->target = (Vector3D){0.0f, 0.0f, -1.0f};
+    camera->lastEye = (Vector3D){0.0f, 0.0f, 0.0f};
+    camera->eye = (Vector3D){0.0f, 0.0f, 0.0f};
 }
 
 int clean_game_screen(StateInfo* stateInfo)
