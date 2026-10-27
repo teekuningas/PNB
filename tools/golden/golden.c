@@ -26,7 +26,7 @@
 #include <string.h>
 
 #define NSEC 12
-static const char* SEC_NAMES[NSEC] = {"players", "ball", "pII", "play", "flow", "pitch",
+static const char* SEC_NAMES[NSEC] = {"players", "ball", "possession", "play", "flow", "pitch",
                                       "throw", "swing", "rules", "client", "ai", "out"};
 static char buf[NSEC][1 << 16];
 static int len[NSEC];
@@ -129,15 +129,15 @@ static int situation(const StateInfo* st, int pad)
     const Scoreboard* sb = &st->rules->scoreboard;
     int batting = get_batting_team_index(sb);
     int catching = (batting + 1) % 2;
-    int p = m->pII.catcherOnBaseIndex[0];
-    if ((int)sb->teams[catching].control == pad && p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p &&
+    int p = m->fielding_posts.baseman[0];
+    if ((int)sb->teams[catching].control == pad && p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
         m->playerInfo[p].cTPI.isNearHomeLocation)
         return 1;
     if ((int)sb->teams[batting].control == pad && batter_stands_ready(&m->at_bat)) return 2;
-    if ((int)sb->teams[catching].control == pad && m->pII.controlIndex != -1) {
-        if (m->pII.hasBallIndex == m->pII.controlIndex) return 3; // holding it away from the plate
-        if (m->pII.hasBallIndex == -1) {
-            const Vector3D* at = &m->playerInfo[m->pII.controlIndex].tPI.location;
+    if ((int)sb->teams[catching].control == pad && m->catchingState.controlled_fielder != -1) {
+        if (m->ballInfo.holder == m->catchingState.controlled_fielder) return 3; // holding it away from the plate
+        if (m->ballInfo.holder == -1) {
+            const Vector3D* at = &m->playerInfo[m->catchingState.controlled_fielder].tPI.location;
             const Vector3D* to = &m->catchingState.ballTargetPoint;
             float dx = to->x - at->x, dz = to->z - at->z;
             int arrows = 0;

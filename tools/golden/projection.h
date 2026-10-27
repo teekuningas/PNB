@@ -39,7 +39,7 @@ static void project_throw(const MatchSession* m)
     }
     // Which base a loose ball was thrown toward. Printed only while the ball IS loose: every reader asks it
     // with nobody holding the ball, so what it says while a hand holds one is a leftover, not play.
-    if (m->pII.hasBallIndex == -1) put(6, " going=%d", m->ballInfo.thrown_to);
+    if (m->ballInfo.holder == -1) put(6, " going=%d", m->ballInfo.thrown_to);
 }
 
 static void project_widget(const char* name, const InputWidget* w)
@@ -78,14 +78,13 @@ static void project(const StateInfo* st)
     put(1, "%d,%d,%d,%d,%d,%d,%d", b->visible, b->moving, b->currentFlightHasHitGround, b->onGround,
         b->hitsGroundToUnWound, b->needsMoveUpdate, b->lastLastLocationUpdate);
 
-    const PlayerIndexInfo* x = &m->pII;
-    for (int i = 0; i < 4; i++) put(2, "%d,%d;", x->catcherOnBaseIndex[i], x->catcherReplacerOnBaseIndex[i]);
-    for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", x->fielderRankedIndices[i]);
+    for (int i = 0; i < 4; i++) put(2, "%d,%d;", m->fielding_posts.baseman[i], m->fielding_posts.cover[i]);
+    for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", m->catchingState.chase_ranking[i]);
     int jokers[JOKER_COUNT];
     batting_team_jokers(&r->scoreboard, jokers);
     for (int i = 0; i < JOKER_COUNT; i++) put(2, "j%d,", jokers[i]);
-    put(2, "has=%d last=%d ctl=%d chg=%d", x->hasBallIndex, x->lastHadBallIndex, x->controlIndex,
-        x->changePlayerArrayIndex);
+    put(2, "has=%d last=%d ctl=%d chg=%d", m->ballInfo.holder, m->ballInfo.released_by,
+        m->catchingState.controlled_fielder, m->catchingState.ranking_cursor);
 
     put(3, "air=%d ", m->ballInfo.pitch_in_flight);
     for (int i = 0; i < BASE_COUNT; i++) put(3, "w%d,", m->runner_commitments.armed[i]);

@@ -48,7 +48,7 @@ static int run_actualizer(ScenarioContext* ctx, int budget)
     int i;
     for (i = 0; i < budget; i++) {
         tick(ctx);
-        if (ctx->state->match->pII.hasBallIndex == -1) break; // ball left the hand
+        if (ctx->state->match->ballInfo.holder == -1) break; // ball left the hand
     }
     return i;
 }
@@ -74,13 +74,13 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
         "declaring a pitch must begin the engine-owned windup"
     );
     ASSERT_EQ(1, match->catching_action.as.pitch.aimed, "an aim declared with the power is held");
-    ASSERT_EQ(12, match->pII.hasBallIndex, "ball is still in hand during the windup");
+    ASSERT_EQ(12, match->ballInfo.holder, "ball is still in hand during the windup");
 
     // Run the windup clock to its end → release.
     int windup = pitch_windup_total_frames(power);
     int frames = run_actualizer(ctx, windup + 4);
 
-    ASSERT_EQ(-1, match->pII.hasBallIndex, "the ball must leave the hand at the windup end");
+    ASSERT_EQ(-1, match->ballInfo.holder, "the ball must leave the hand at the windup end");
     ASSERT_EQ(1, match->gameEvents.pitchReleased, "release must fire the pitchReleased event");
     ASSERT_EQ(1, match->ballInfo.pitch_in_flight, "a released pitch must be in flight");
     ASSERT(frames >= windup - 1, "release must wait for the engine windup, not fire instantly");
@@ -110,7 +110,7 @@ int test_pitch_unaimed_is_valesyotto(void)
     // Run well past the windup deadline.
     run_actualizer(ctx, pitch_windup_total_frames(0.5f) + 4);
 
-    ASSERT_EQ(12, match->pII.hasBallIndex, "valesyöttö: the pitcher keeps the ball (no pitch thrown)");
+    ASSERT_EQ(12, match->ballInfo.holder, "valesyöttö: the pitcher keeps the ball (no pitch thrown)");
     ASSERT_EQ(0, match->gameEvents.pitchReleased, "valesyöttö must NOT fire pitchReleased");
     ASSERT_EQ(0, match->ballInfo.pitch_in_flight, "valesyöttö ends with no pitch in flight");
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "valesyöttö ends the catching action");
@@ -137,7 +137,7 @@ int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void)
     declare_aim(ctx, direction);
     run_actualizer(ctx, pitch_windup_total_frames(power) + 4);
 
-    ASSERT_EQ(-1, match->pII.hasBallIndex, "an aimed windup releases a real pitch");
+    ASSERT_EQ(-1, match->ballInfo.holder, "an aimed windup releases a real pitch");
     Vector3D expected = pitch_velocity_from_aim(power, direction);
     ASSERT(fabs(expected.x - match->ballInfo.velocity.x) < 0.0001f, "the late aim is the aim released");
 
@@ -183,7 +183,7 @@ int test_no_pitch_after_three_correct_pitches(void)
         CATCHING_ACTION_NONE, (int)match->catching_action.kind,
         "a batter who has spent his three correct pitches may not be pitched to"
     );
-    ASSERT_EQ(12, match->pII.hasBallIndex, "the refused pitch leaves the ball in the pitcher's hand");
+    ASSERT_EQ(12, match->ballInfo.holder, "the refused pitch leaves the ball in the pitcher's hand");
 
     // Nothing of the refused pitch is left pending to fire later: once the count would allow a pitch
     // again, a tick with nothing declared still begins nothing.

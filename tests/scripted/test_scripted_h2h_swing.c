@@ -70,9 +70,10 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
         MatchSession* m = scripted_match(g);
-        int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
+            batter_stands_ready(&m->at_bat) && m->catching_action.kind == CATCHING_ACTION_NONE &&
+            !m->ballInfo.pitch_in_flight) {
             return 1;
         }
         if (!scripted_tick(g)) return 0;
@@ -88,9 +89,9 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
 static int throw_the_ball_home(ScriptedGame* g, int budget)
 {
     MatchSession* m = scripted_match(g);
-    int pitcher = m->pII.catcherOnBaseIndex[0];
+    int pitcher = m->fielding_posts.baseman[0];
     if (pitcher == -1) return 0;
-    if (m->pII.hasBallIndex == pitcher) return 1; // already there
+    if (m->ballInfo.holder == pitcher) return 1; // already there
 
     scripted_hold(g, PITCH_PAD, KEY_2);
     scripted_hold(g, PITCH_PAD, KEY_DOWN);
@@ -102,7 +103,7 @@ static int throw_the_ball_home(ScriptedGame* g, int budget)
 
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->pII.hasBallIndex == pitcher) return 1;
+        if (scripted_match(g)->ballInfo.holder == pitcher) return 1;
     }
     return 0;
 }

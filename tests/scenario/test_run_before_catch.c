@@ -123,10 +123,10 @@ int test_run_arrival_before_catch(void)
         }
 
         // Check Catch
-        if (ctx->state->match->pII.hasBallIndex != -1 && !ballCaught) {
+        if (ctx->state->match->ballInfo.holder != -1 && !ballCaught) {
             ballCaught = 1;
             catchFrame = i;
-            printf("Frame %d: Ball caught by fielder %d\n", i, ctx->state->match->pII.hasBallIndex);
+            printf("Frame %d: Ball caught by fielder %d\n", i, ctx->state->match->ballInfo.holder);
         }
 
         // Check wounding evaluation started

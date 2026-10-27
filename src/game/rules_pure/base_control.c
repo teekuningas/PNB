@@ -22,7 +22,7 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
 
 int get_ball_at_base_index(const MatchSession* match, const FieldPositions* field_positions)
 {
-    if (match->pII.hasBallIndex == -1) {
+    if (match->ballInfo.holder == -1) {
         return -1; // No one has ball
     }
 

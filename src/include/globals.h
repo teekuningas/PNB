@@ -247,6 +247,13 @@ typedef struct _BallInfo {
     // The base a thrown ball was thrown toward, BASE_NONE for any other flight: set at the release and
     // cleared by the catch that ends it. Basemen read it so the one being thrown to stays on his base.
     BaseID thrown_to;
+
+    // Who has the ball: the player holding it, -1 while it is loose. And who let go of it last — set by
+    // every release from a hand (a pitch, a throw, a drop) and asked only while the ball is loose, so
+    // that a fielder cannot catch what he has just thrown before it has touched the ground. A hit does
+    // not set it, so a batted ball still names the pitcher.
+    int holder;
+    int released_by;
 } BallInfo;
 // struct to keep player data
 typedef struct _PlayerData {
@@ -539,6 +546,13 @@ typedef struct _CatchingTeamState {
     // fielding fact filed with the view vectors. Nothing about the camera ever read it; the comment
     // that said so was false, and the compiler had no way to notice.
     Vector3D ballTargetPoint;
+
+    // CONTROL — which fielder the catching team's controller steers, and the fielders it can hand control
+    // to. Control follows the ball: whoever catches it is controlled, a throw lets go of control, and the
+    // ranking re-plans who chases (rank_players_and_move_them).
+    int controlled_fielder; // -1 when nobody is controlled
+    int chase_ranking[RANKED_FIELDERS_COUNT]; // the fielders best placed to meet the ball, best first
+    int ranking_cursor; // which entry of chase_ranking control was last handed to; -1 when none was
 } CatchingTeamState;
 // spatial data for every player
 typedef struct _TechnicalPlayerInfo {
@@ -734,17 +748,13 @@ typedef struct _TeamInfo {
     int batterOrderIndex; // what player is next
 } TeamInfo;
 
-typedef struct _PlayerIndexInfo {
-    int catcherOnBaseIndex[4]; // whos is baseman on base i
-    int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
-    int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
-    // these, and these are also used to select players for busyCatching.
-    int hasBallIndex; // who has the ball
-    int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
-    // set to -1 when someone catches.
-    int controlIndex; // index of the controlled catching team player
-    int changePlayerArrayIndex; // fielderRankedIndices[changePlayerArrayIndex]is currently selected
-} PlayerIndexInfo;
+// Which fielder keeps which base: the baseman of each base, and the fielder who covers it while its
+// baseman is away. Set when a half-inning is set up and unchanged through it — the catching team's
+// formation, not something a play moves.
+typedef struct _FieldingPosts {
+    int baseman[BASE_COUNT];
+    int cover[BASE_COUNT];
+} FieldingPosts;
 
 // §12 Vuoronvaihto — the designation that decides when a batting turn is spent.
 // Lifetime: one half-inning, which is exactly the rule's own lifetime: the designation is re-made on
@@ -1230,7 +1240,7 @@ typedef struct _MatchSession {
     PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
     CatchingTeamState catchingState;
-    PlayerIndexInfo pII;
+    FieldingPosts fielding_posts;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     FlowControl flowControl; // MILESTONE 17 - User flow gates
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state

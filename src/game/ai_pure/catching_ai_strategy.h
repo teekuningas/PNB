@@ -88,7 +88,7 @@ MoveDeclaration decide_move_declaration(
 );
 
 int should_ai_throw(
-    const PlayerIndexInfo* playerIndices, int catcherNearHome, int replacerIndex, int replacerStage, int replacerBase,
+    int holder, int baseman, int catcherNearHome, int replacerIndex, int replacerStage, int replacerBase,
     int replacerMoving, int targetBase
 );
 

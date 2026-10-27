@@ -1,6 +1,6 @@
 # firstdiff.py A B — the first frame where two golden traces differ, and which sections moved.
 import sys
-names=["players","ball","pII","play","flow","pitch","throw","swing","rules","client","ai","out"]
+names=["players","ball","possession","play","flow","pitch","throw","swing","rules","client","ai","out"]
 a=open(sys.argv[1]).read().split('\n'); b=open(sys.argv[2]).read().split('\n')
 for la,lb in zip(a,b):
     if la!=lb:

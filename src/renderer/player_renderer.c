@@ -63,7 +63,7 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
         glDisable(GL_BLEND);
         glEnable(GL_LIGHTING);
         // and then there is the marker at the top of player who is controlled
-        if (i == stateInfo->match->pII.controlIndex) {
+        if (i == stateInfo->match->catchingState.controlled_fielder) {
             textureSelection(stateInfo, playerInfo[i].cPI.team, 0, 1, rm);
             glPushMatrix();
             glTranslatef(

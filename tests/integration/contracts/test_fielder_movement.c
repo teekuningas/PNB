@@ -38,8 +38,8 @@ static ScenarioContext* fielder_scenario(void)
     move_pitcher_away(ctx);
 
     MatchSession* m = ctx->state->match;
-    m->pII.controlIndex = FIELDER_INDEX;
-    m->pII.hasBallIndex = -1;
+    m->catchingState.controlled_fielder = FIELDER_INDEX;
+    m->ballInfo.holder = -1;
     m->playerInfo[FIELDER_INDEX].tPI.location.x = 0.0f;
     m->playerInfo[FIELDER_INDEX].tPI.location.z = 5.0f;
 
@@ -243,7 +243,7 @@ int test_move_target_refused_without_a_controlled_fielder(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    m->pII.controlIndex = -1;
+    m->catchingState.controlled_fielder = -1;
 
     declare_move_target(ctx, 0.0f, 25.0f);
     ingest_and_actualize(ctx);

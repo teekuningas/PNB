@@ -40,7 +40,7 @@ static ScenarioContext* later_windup(void)
     ScenarioContext* ctx = create_scenario();
     setup_pitcher_ready(ctx);
     MatchSession* m = ctx->state->match;
-    m->pII.controlIndex = m->pII.hasBallIndex;
+    m->catchingState.controlled_fielder = m->ballInfo.holder;
 
     intent_push(
         &ctx->state->channels.catching,
@@ -61,12 +61,12 @@ int test_drop_refused_during_a_later_windup(void)
 {
     ScenarioContext* ctx = later_windup();
     MatchSession* m = ctx->state->match;
-    const int pitcher = m->pII.hasBallIndex;
+    const int pitcher = m->ballInfo.holder;
     ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "precondition: a windup is running");
 
     intent_push(&ctx->state->channels.catching, (IntentMessage){.kind = INTENT_DROP_BALL});
     tick(ctx);
-    ASSERT_EQ(pitcher, m->pII.hasBallIndex, "the pitcher must still hold the ball: a pitch has a claim on it");
+    ASSERT_EQ(pitcher, m->ballInfo.holder, "the pitcher must still hold the ball: a pitch has a claim on it");
 
     int released = 0;
     for (int i = 0; i < 200 && !released; i++) {
@@ -84,7 +84,7 @@ int test_controlled_fielder_holds_during_a_later_windup(void)
 {
     ScenarioContext* ctx = later_windup();
     MatchSession* m = ctx->state->match;
-    const int pitcher = m->pII.hasBallIndex;
+    const int pitcher = m->ballInfo.holder;
     const Vector3D at = m->playerInfo[pitcher].tPI.location;
 
     // Only the engine stage runs here, so nothing integrates a velocity into a position: the walk shows

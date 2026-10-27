@@ -45,7 +45,7 @@ static void put_a_pitch_in_the_air(ScenarioContext* ctx)
     m->ballInfo.moving = 1;
     m->ballInfo.onGround = 0;
     m->ballInfo.currentFlightHasHitGround = 0;
-    m->pII.hasBallIndex = -1;
+    m->ballInfo.holder = -1;
     m->ballInfo.pitch_in_flight = 1;
     m->at_bat.may_leave_home = 1;
     simulate_frames(ctx, 1); // the engine solves the contact frame from the ball on this tick

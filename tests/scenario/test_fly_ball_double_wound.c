@@ -42,7 +42,7 @@ int test_fly_ball_double_wound(void)
     for (int frame = 0; frame <= 400; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = ctx->state->match->pII.hasBallIndex;
+        int hasBall = ctx->state->match->ballInfo.holder;
         int stateA = ctx->state->match->playerInfo[0].bTPI.state;
         int stateB = ctx->state->match->playerInfo[1].bTPI.state;
         int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;

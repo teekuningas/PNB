@@ -23,11 +23,11 @@
  *
  * Preconditions (the §30 tactical drop):
  *   - Runners settled ON_BASE at 2nd and 3rd, baseAtPitchStart = 2nd / 3rd (snapshotted).
- *   - The home catcher (catcherOnBaseIndex[0] = idx 12) holds the ball at home.
+ *   - The home catcher (fielding_posts.baseman[0] = idx 12) holds the ball at home.
  *   - woundingEvaluationActive = 1 (a caught fly is being evaluated).
  *
  * Expected: the AI puts one INTENT_DROP_BALL message on the catching channel; execute_actions then
- * drops the ball (hasBallIndex → -1, ball moving) and leaves the channel empty.
+ * drops the ball (ballInfo.holder → -1, ball moving) and leaves the channel empty.
  */
 int test_ai_declares_and_executes_tactical_drop(void)
 {
@@ -38,14 +38,14 @@ int test_ai_declares_and_executes_tactical_drop(void)
     place_runner_at_base(ctx, 0, BASE_THIRD, 0.0f);
     place_runner_at_base(ctx, 1, BASE_SECOND, 0.0f);
 
-    // The home catcher (idx 12 = catcherOnBaseIndex[0]) holds the ball at home plate.
+    // The home catcher (idx 12 = fielding_posts.baseman[0]) holds the ball at home plate.
     give_ball_to_pitcher(ctx);
 
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx); // sets baseAtPitchStart from current positions
 
     // Sanity: the home catcher still holds the ball after the snapshot frame.
-    ASSERT_EQ(12, match->pII.hasBallIndex, "home catcher (idx 12) should still hold the ball");
+    ASSERT_EQ(12, match->ballInfo.holder, "home catcher (idx 12) should still hold the ball");
 
     // The catching team must actually be AI-controlled — that is what makes ai_update dispatch to the
     // catching AI below. create_scenario sets team2 (the fielding team here, playsFirst=0) to CONTROL_AI.
@@ -82,7 +82,7 @@ int test_ai_declares_and_executes_tactical_drop(void)
         match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels, &ctx->state->playSoundEffect
     );
 
-    ASSERT_EQ(-1, match->pII.hasBallIndex, "drop must release the ball (hasBallIndex → -1)");
+    ASSERT_EQ(-1, match->ballInfo.holder, "drop must release the ball (ballInfo.holder → -1)");
     ASSERT_EQ(1, match->ballInfo.moving, "dropped ball should be in motion");
     ASSERT_EQ(
         0, ctx->state->channels.catching.count,

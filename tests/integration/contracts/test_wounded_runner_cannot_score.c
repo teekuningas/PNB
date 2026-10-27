@@ -58,7 +58,7 @@ int test_wounded_runner_cannot_score_run(void)
 
     // A fielder has the ball
     int fielderIdx = 15;
-    ctx->state->match->pII.hasBallIndex = fielderIdx;
+    ctx->state->match->ballInfo.holder = fielderIdx;
     ctx->state->match->playerInfo[fielderIdx].tPI.location = ctx->state->fieldPositions->secondBase;
 
     // Record runs before

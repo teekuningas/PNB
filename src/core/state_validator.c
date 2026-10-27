@@ -187,14 +187,14 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     }
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"pII\": {\n", sp);
+    fprintf(f, "%s\"possession\": {\n", sp);
     fprintf(f, "%s  \"batterIndex\": %d,\n", sp, get_active_batter_index(game));
-    fprintf(f, "%s  \"hasBallIndex\": %d,\n", sp, game->pII.hasBallIndex);
-    fprintf(f, "%s  \"controlIndex\": %d,\n", sp, game->pII.controlIndex);
-    fprintf(f, "%s  \"catcherOnBaseIndex0\": %d,\n", sp, game->pII.catcherOnBaseIndex[0]);
+    fprintf(f, "%s  \"holder\": %d,\n", sp, game->ballInfo.holder);
+    fprintf(f, "%s  \"controlled_fielder\": %d,\n", sp, game->catchingState.controlled_fielder);
+    fprintf(f, "%s  \"home_baseman\": %d,\n", sp, game->fielding_posts.baseman[0]);
     fprintf(
         f, "%s  \"isNearHome_pitcher\": %d\n", sp,
-        game->playerInfo[game->pII.catcherOnBaseIndex[0]].cTPI.isNearHomeLocation
+        game->playerInfo[game->fielding_posts.baseman[0]].cTPI.isNearHomeLocation
     );
     fprintf(f, "%s},\n", sp);
 

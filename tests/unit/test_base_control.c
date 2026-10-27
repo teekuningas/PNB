@@ -71,11 +71,11 @@ int test_get_ball_at_base_index(void)
     state.fieldPositions = &fp;
 
     // No one has ball
-    game.pII.hasBallIndex = -1;
+    game.ballInfo.holder = -1;
     ASSERT_EQ(-1, get_ball_at_base_index(&game, &fp), "Returns -1 if no one has ball");
 
     // Someone has ball, setup bases
-    game.pII.hasBallIndex = 14;
+    game.ballInfo.holder = 14;
 
     // Set up pitch plate and home radius check
     fp.pitchPlate = (Vector3D){0.0f, 0.0f, 0.0f};

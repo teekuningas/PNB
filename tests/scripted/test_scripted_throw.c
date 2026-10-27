@@ -26,8 +26,8 @@ static int tick_until_ball_holder_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
-        int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p &&
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
             m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
@@ -44,7 +44,7 @@ int test_scripted_throw_hold_release_to_base(void)
     ASSERT(tick_until_ball_holder_ready(g, 8000), "never reached a human ball-holder ready state");
 
     MatchSession* m = scripted_match(g);
-    int thrower = m->pII.hasBallIndex;
+    int thrower = m->ballInfo.holder;
     ASSERT(thrower >= 0, "the human should hold the ball at home");
 
     // The client-local throw charge widget — the human's power comes from THIS, never the engine clock.
@@ -61,12 +61,12 @@ int test_scripted_throw_hold_release_to_base(void)
         CATCHING_ACTION_THROWING, (int)m->catching_action.kind,
         "holding KEY_2 + a direction must begin the throw windup"
     );
-    ASSERT_EQ(thrower, m->pII.hasBallIndex, "the ball is still in hand while gathering");
+    ASSERT_EQ(thrower, m->ballInfo.holder, "the ball is still in hand while gathering");
     ASSERT_EQ((int)WIDGET_CHARGE, (int)tw->mode, "the client charge widget must arm when the gather begins");
 
     // Keep holding to build power (the charge widget rises while held) — the throw must NOT auto-release.
     scripted_run(g, 20);
-    ASSERT_EQ(thrower, m->pII.hasBallIndex, "a held throw does not auto-release before the human lets go");
+    ASSERT_EQ(thrower, m->ballInfo.holder, "a held throw does not auto-release before the human lets go");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "still gathering while held");
     ASSERT(tw->counter > 0, "the client charge widget builds power while KEY_2 is held (the input signal)");
 
@@ -77,7 +77,7 @@ int test_scripted_throw_hold_release_to_base(void)
     int released = 0;
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES && !released; i++) {
         scripted_tick(g);
-        if (m->pII.hasBallIndex == -1) released = 1;
+        if (m->ballInfo.holder == -1) released = 1;
     }
     float vx = m->ballInfo.velocity.x, vz = m->ballInfo.velocity.z;
     float horiz = sqrtf(vx * vx + vz * vz);

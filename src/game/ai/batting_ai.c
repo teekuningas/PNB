@@ -214,7 +214,7 @@ static void advance_runners_on_loose_hit(
 {
     const BetweenPitchState* bps = &rules->betweenPitchState;
     if (!(bps->batOutcome == BAT_OUTCOME_HIT && bps->catchHasBeenMade == 0 && match->ballInfo.thrown_to == BASE_NONE &&
-          match->pII.hasBallIndex == -1 && match->ballInfo.moving == 1 && bps->hasBallHitGround == 1 &&
+          match->ballInfo.holder == -1 && match->ballInfo.moving == 1 && bps->hasBallHitGround == 1 &&
           match->ballInfo.location.z < -10.0f && is_ball_out_of_bounds(&match->ballInfo, fieldPositions))) {
         return;
     }

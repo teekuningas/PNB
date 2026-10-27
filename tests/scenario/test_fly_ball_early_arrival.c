@@ -95,7 +95,7 @@ int test_fly_ball_early_arrival(void)
     for (int frame = 0; frame <= 800; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = match->pII.hasBallIndex;
+        int hasBall = match->ballInfo.holder;
         int batterBase = match->playerInfo[0].bTPI.baseId;
         batterState = match->playerInfo[0].bTPI.state;
         batterSafety = rules->referee.battingPlayers[0].currentSafetyBase;

@@ -86,7 +86,7 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
         // update lastLocation and location.
         vec3_set_from_vector(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
         physics_apply_velocity(&(match->ballInfo.location), &(match->ballInfo.velocity));
-        if (match->pII.hasBallIndex == -1) {
+        if (match->ballInfo.holder == -1) {
             // if ball is free then we make sure that it stays within the play area.
             if (physics_resolve_field_boundaries(
                     &(match->ballInfo.location), &(match->ballInfo.velocity), FIELD_FRONT, FIELD_BACK, FIELD_LEFT,
@@ -164,16 +164,16 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
 
 static void update_ball_to_player(MatchSession* match)
 {
-    if (match->pII.hasBallIndex != -1) {
+    if (match->ballInfo.holder != -1) {
         // if someone has ball and that someone is moving and ball movement needs updating, give it same v as the player
         // has
-        if (match->playerInfo[match->pII.hasBallIndex].cPI.moving == 1) {
+        if (match->playerInfo[match->ballInfo.holder].cPI.moving == 1) {
             if (match->ballInfo.needsMoveUpdate == 1) {
                 match->ballInfo.moving = 1;
                 match->ballInfo.needsMoveUpdate = 0;
                 vec3_set_xyz(
-                    &(match->ballInfo.velocity), match->playerInfo[match->pII.hasBallIndex].tPI.velocity.x, 0.0f,
-                    match->playerInfo[match->pII.hasBallIndex].tPI.velocity.z
+                    &(match->ballInfo.velocity), match->playerInfo[match->ballInfo.holder].tPI.velocity.x, 0.0f,
+                    match->playerInfo[match->ballInfo.holder].tPI.velocity.z
                 );
             }
         }
@@ -197,13 +197,13 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball
     // and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
     // as that could make some weird things happen. try on the next frame again.
-    if (match->pII.hasBallIndex == -1 && !match->ballInfo.pitch_in_flight && match->chase_replan == CHASE_REPLAN_NONE) {
+    if (match->ballInfo.holder == -1 && !match->ballInfo.pitch_in_flight && match->chase_replan == CHASE_REPLAN_NONE) {
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-            // so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.
+            // so we confirm that this particular player is valid to catch, by checking the ball's released_by.
             // its purpose is to deny players catching balls right after throwing them.
-            // but if ball has hit ground, we dont care about lastHadBallIndex anymore.
+            // but if ball has hit ground, we dont care about released_by anymore.
             // allow players to drop balls and catch if thrown close to them by themselves.
-            if ((i != match->pII.lastHadBallIndex || match->ballInfo.currentFlightHasHitGround == 1)) {
+            if ((i != match->ballInfo.released_by || match->ballInfo.currentFlightHasHitGround == 1)) {
                 Vector3D distance;
                 float limit = CATCH_DISTANCE;
                 distance.x = match->playerInfo[i].tPI.location.x - match->ballInfo.location.x;
@@ -215,33 +215,34 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                     int j;
                     int baseCatcherFlag = 0;
                     float p1x, p2x, p1z, p2z;
-                    if (match->pII.lastHadBallIndex != -1) {
+                    if (match->ballInfo.released_by != -1) {
                         p1x = match->playerInfo[i].tPI.location.x;
                         p1z = match->playerInfo[i].tPI.location.z;
-                        p2x = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.x;
-                        p2z = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.z;
+                        p2x = match->playerInfo[match->ballInfo.released_by].tPI.location.x;
+                        p2z = match->playerInfo[match->ballInfo.released_by].tPI.location.z;
                         if (match->ballInfo.thrown_to != BASE_NONE &&
-                            (i == match->pII.catcherOnBaseIndex[match->ballInfo.thrown_to] ||
-                             i == match->pII.catcherReplacerOnBaseIndex[match->ballInfo.thrown_to])) {
+                            (i == match->fielding_posts.baseman[match->ballInfo.thrown_to] ||
+                             i == match->fielding_posts.cover[match->ballInfo.thrown_to])) {
                             baseCatcherFlag = 1;
                         }
                     }
                     // to avoid annyoing twitching we need to check that catching player is far enough
-                    if (match->pII.lastHadBallIndex == -1 || match->ballInfo.currentFlightHasHitGround == 1 ||
+                    if (match->ballInfo.released_by == -1 || match->ballInfo.currentFlightHasHitGround == 1 ||
                         baseCatcherFlag == 1 ||
                         !vec3_is_small_enough_circle_xz(p1x - p2x, p1z - p2z, PLAYER_TOO_CLOSE_TO_CATCH_LIMIT)) {
                         // ensure that player that previously was controlled doesnt continue his key-controlled movement
                         // when key is still down when control changes. note this could be different player than the one
                         // who caught the ball.
-                        if (match->pII.controlIndex != -1 &&
-                            match->playerInfo[match->pII.controlIndex].cPI.moving == 1) {
-                            stop_movement(match->playerInfo, match->pII.controlIndex);
+                        if (match->catchingState.controlled_fielder != -1 &&
+                            match->playerInfo[match->catchingState.controlled_fielder].cPI.moving == 1) {
+                            stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
                         }
                         // if throwRecoil is 1, model will be automatically set to 0 when animation ends
                         // but if its 0, we must change it from having ball to not having ball.
-                        if (match->pII.controlIndex != -1 &&
-                            match->playerInfo[match->pII.controlIndex].cTPI.throwRecoil == 0) {
-                            match->playerInfo[match->pII.controlIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+                        if (match->catchingState.controlled_fielder != -1 &&
+                            match->playerInfo[match->catchingState.controlled_fielder].cTPI.throwRecoil == 0) {
+                            match->playerInfo[match->catchingState.controlled_fielder].cPI.model =
+                                PLAYER_ANIM_STAND_NO_BALL;
                         }
                         // set busyCatching to 0 for every one who was busy if ball is caught so that
                         // players are free to be moved to their home locations.
@@ -267,11 +268,11 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                         // make sound
                         *play_sound_effect = SOUND_CATCH;
                         match->ballInfo.thrown_to = BASE_NONE;
-                        match->pII.controlIndex = i;
-                        match->pII.hasBallIndex = i;
+                        match->catchingState.controlled_fielder = i;
+                        match->ballInfo.holder = i;
 
                         // and set running flag
-                        match->playerInfo[match->pII.controlIndex].cPI.running = 1;
+                        match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 1;
                         // stop the ball and hide it. if player starts to move again,
                         // then ball's velocity will also be updated agian.
                         match->ballInfo.visible = 0;
@@ -349,9 +350,6 @@ static void base_runner_movements_on_base_arrivals(MatchSession* match, const Re
                             }
                         }
                     }
-                    // whether we got safely to first base or were wounded, we have to set batterIndex to -1
-                    // so that next player can go batting.
-                    // if (match->pII.batterIndex == index) match->pII.batterIndex = -1;
                     // if the player arrived to a base and had it marked as 4, it means that it possibly a run.
                     if (match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
                         // if we were safe at base 3, we are not anymore.
@@ -373,39 +371,35 @@ static void basemen_replacements(MatchSession* match)
     int i;
     for (i = 0; i < BASE_COUNT; i++) {
         // if player is not in his home base
-        if (match->playerInfo[match->pII.catcherOnBaseIndex[i]].cTPI.isNearHomeLocation == 0) {
+        if (match->playerInfo[match->fielding_posts.baseman[i]].cTPI.isNearHomeLocation == 0) {
             // start moving replacer there instead if he is not moving already or if player does not control him
-            if (match->pII.catcherReplacerOnBaseIndex[i] != match->pII.controlIndex) {
-                if (match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage ==
-                    REPLACEMENT_IDLE) {
+            if (match->fielding_posts.cover[i] != match->catchingState.controlled_fielder) {
+                if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage == REPLACEMENT_IDLE) {
                     move_to_target(
-                        match->playerInfo, match->pII.catcherReplacerOnBaseIndex[i],
-                        &(match->playerInfo[match->pII.catcherOnBaseIndex[i]].tPI.homeLocation)
+                        match->playerInfo, match->fielding_posts.cover[i],
+                        &(match->playerInfo[match->fielding_posts.baseman[i]].tPI.homeLocation)
                     );
 
-                    match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage =
-                        REPLACEMENT_ACTIVE;
-                    match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = (BaseID)i;
+                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_ACTIVE;
+                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase = (BaseID)i;
                     // can go replacing even if was busy catching before.
-                    match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.busyCatching = 0;
+                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.busyCatching = 0;
                 }
             }
         }
         // if player is on his base
-        else if (match->playerInfo[match->pII.catcherOnBaseIndex[i]].cTPI.isNearHomeLocation == 1) {
+        else if (match->playerInfo[match->fielding_posts.baseman[i]].cTPI.isNearHomeLocation == 1) {
             // and there's someone there or going there, move him back ( if player doesnt control )
-            if (match->pII.catcherReplacerOnBaseIndex[i] != match->pII.controlIndex) {
-                if (match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage !=
-                    REPLACEMENT_IDLE) {
-                    if (match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase == (BaseID)i) {
+            if (match->fielding_posts.cover[i] != match->catchingState.controlled_fielder) {
+                if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage != REPLACEMENT_IDLE) {
+                    if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase == (BaseID)i) {
                         move_to_target(
-                            match->playerInfo, match->pII.catcherReplacerOnBaseIndex[i],
-                            &(match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].tPI.homeLocation)
+                            match->playerInfo, match->fielding_posts.cover[i],
+                            &(match->playerInfo[match->fielding_posts.cover[i]].tPI.homeLocation)
                         );
 
-                        match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingStage =
-                            REPLACEMENT_IDLE;
-                        match->playerInfo[match->pII.catcherReplacerOnBaseIndex[i]].cTPI.replacingBase = BASE_NONE;
+                        match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_IDLE;
+                        match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase = BASE_NONE;
                     }
                 }
             }
@@ -419,7 +413,7 @@ static void move_idling_players_to_home_location(MatchSession* match)
     // if not catching ball or replacing or in home location, move to home location.
     for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         if (match->playerInfo[i].cPI.moving == 0) {
-            if (i != match->pII.controlIndex) {
+            if (i != match->catchingState.controlled_fielder) {
                 if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
                     if (match->playerInfo[i].cTPI.replacingStage == REPLACEMENT_IDLE) {
                         if (match->playerInfo[i].cTPI.busyCatching == 0) {
@@ -438,7 +432,7 @@ static void rank_players_and_move_them(MatchSession* match)
     // whether or not it was acted on. Ranking only means something with nobody holding the ball; a
     // request is never raised with the ball in a hand, and the catch check does not run while one is
     // pending, so the hand cannot fill between the raise and here.
-    if (match->chase_replan != CHASE_REPLAN_NONE && match->pII.hasBallIndex == -1) {
+    if (match->chase_replan != CHASE_REPLAN_NONE && match->ballInfo.holder == -1) {
 
         int i, j;
         int rankedIndices[RANKED_FIELDERS_COUNT];
@@ -560,16 +554,16 @@ static void rank_players_and_move_them(MatchSession* match)
         }
         // so now we have ranked indices -array
         for (j = 0; j < RANKED_FIELDERS_COUNT; j++) {
-            match->pII.fielderRankedIndices[j] = rankedIndices[j];
+            match->catchingState.chase_ranking[j] = rankedIndices[j];
         }
 
         // then change cursor to best choice of players if flags says so
         // set for example when ball is first bat/thrown etc or when change player key is pressed.
         if (match->chase_replan == CHASE_REPLAN_AND_HAND_OVER) {
-            match->pII.changePlayerArrayIndex = 0;
+            match->catchingState.ranking_cursor = 0;
             change_player(match);
         } else {
-            match->pII.changePlayerArrayIndex = -1;
+            match->catchingState.ranking_cursor = -1;
         }
 
         // move these critical players to ball's final position
@@ -586,7 +580,7 @@ static void player_location_orientation_and_targets(MatchSession* match, const F
     for (i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         // orientation updated only if ball or player moving
         if (match->ballInfo.moving == 1 || match->playerInfo[i].cPI.moving == 1) {
-            if (i != match->pII.hasBallIndex) {
+            if (i != match->ballInfo.holder) {
                 if (match->playerInfo[i].cPI.running == 0) {
                     if (i != activeBatterIndex) {
                         set_orientation(match->playerInfo, &(match->ballInfo), i);

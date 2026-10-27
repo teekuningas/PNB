@@ -165,26 +165,27 @@ void move_ranked_to_catch(MatchSession* match)
     int i;
 
     for (i = 0; i < RANKED_FIELDERS_COUNT; i++) {
-        int index = match->pII.fielderRankedIndices[i];
+        int index = match->catchingState.chase_ranking[i];
         // controlled player wont get the chance.
-        if (index != match->pII.controlIndex && match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
+        if (index != match->catchingState.controlled_fielder &&
+            match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
             // if we are throwing ( towards a base ) we dont want the baseman there to start moving
             // as it would be nice that he is at the base when ball is caught if baserunner is going there.
             if (match->ballInfo.thrown_to == BASE_NONE ||
-                (match->pII.catcherOnBaseIndex[match->ballInfo.thrown_to] != index)) {
+                (match->fielding_posts.baseman[match->ballInfo.thrown_to] != index)) {
                 int k;
                 int done = 0;
                 // and we have special condition not to move any basemen
                 // automatically at all.
                 for (k = 0; k < BASE_COUNT; k++) {
-                    if (match->pII.catcherOnBaseIndex[k] == index) {
+                    if (match->fielding_posts.baseman[k] == index) {
                         done = 1;
                     }
                 }
                 if (done == 0) {
                     // set busycatching flag, and move player towards the target point
                     // that has been specified beforehand.
-                    match->playerInfo[match->pII.fielderRankedIndices[i]].cTPI.busyCatching = 1;
+                    match->playerInfo[match->catchingState.chase_ranking[i]].cTPI.busyCatching = 1;
                     move_to_target(match->playerInfo, index, &match->catchingState.ballTargetPoint);
                 }
             }
@@ -350,27 +351,28 @@ void change_player(MatchSession* match)
     // with nobody holding the ball, so never during a windup. Not while a pitched ball is in the air.
     if (!match->ballInfo.pitch_in_flight) {
         // player will start randomly floating after control changes to next player.
-        if (match->pII.controlIndex != -1) {
-            stop_movement(match->playerInfo, match->pII.controlIndex);
+        if (match->catchingState.controlled_fielder != -1) {
+            stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
         }
 
-        if (match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex] !=
+        if (match->catchingState.chase_ranking[match->catchingState.ranking_cursor] !=
             -1) { // set control to new index from the array
-            match->pII.controlIndex = match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex];
+            match->catchingState.controlled_fielder =
+                match->catchingState.chase_ranking[match->catchingState.ranking_cursor];
             // and set him to run
-            match->playerInfo[match->pII.controlIndex].cPI.running = 1;
+            match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 1;
             // logic about coming back from replacement if controlled
-            if (match->playerInfo[match->pII.controlIndex].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
-                match->playerInfo[match->pII.controlIndex].cTPI.replacingStage = REPLACEMENT_IDLE;
+            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
+                match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage = REPLACEMENT_IDLE;
             }
             // same for busyCatching.
-            if (match->playerInfo[match->pII.controlIndex].cTPI.busyCatching == 1) {
-                match->playerInfo[match->pII.controlIndex].cTPI.busyCatching = 0;
+            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching == 1) {
+                match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching = 0;
             }
             // move others to catch( so that the previous one for example doesnt just stop if its near the ball )
             move_ranked_to_catch(match);
             // stop player who has the selection now
-            stop_movement(match->playerInfo, match->pII.controlIndex);
+            stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
         }
     }
 }
@@ -595,26 +597,26 @@ void initialize_inning_permanent_player_information(
         // here we set catcherOnBaseIndices and catcherReplacerOnBaseIndices.
         switch (i - 12) {
         case 0:
-            match->pII.catcherOnBaseIndex[0] = i;
+            match->fielding_posts.baseman[0] = i;
             break;
         case 1:
-            match->pII.catcherOnBaseIndex[1] = i;
+            match->fielding_posts.baseman[1] = i;
             break;
         case 2:
-            match->pII.catcherOnBaseIndex[2] = i;
+            match->fielding_posts.baseman[2] = i;
             break;
         case 3:
-            match->pII.catcherOnBaseIndex[3] = i;
+            match->fielding_posts.baseman[3] = i;
             break;
         case 4:
-            match->pII.catcherReplacerOnBaseIndex[0] = i;
-            match->pII.catcherReplacerOnBaseIndex[1] = i;
+            match->fielding_posts.cover[0] = i;
+            match->fielding_posts.cover[1] = i;
             break;
         case 5:
-            match->pII.catcherReplacerOnBaseIndex[3] = i;
+            match->fielding_posts.cover[3] = i;
             break;
         case 6:
-            match->pII.catcherReplacerOnBaseIndex[2] = i;
+            match->fielding_posts.cover[2] = i;
             break;
         }
     }
@@ -648,11 +650,6 @@ void initialize_non_critical_player_information(MatchSession* match)
             match->playerInfo[i].cTPI.replacingBase = BASE_NONE;
             match->playerInfo[i].cTPI.busyCatching = 0;
             // throwRecoil already set above
-            // initialize fielderRankedIndices with the indices of five first
-            // players in positional order.
-            if (i - 12 < RANKED_FIELDERS_COUNT) {
-                match->pII.fielderRankedIndices[i - 12] = i;
-            }
         } else {
             match->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
             match->playerInfo[i].bTPI.baseId = BASE_NONE;
@@ -671,13 +668,15 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.lastLastLocationUpdate = 0;
     match->ballInfo.pitch_in_flight = 0;
     match->ballInfo.thrown_to = BASE_NONE;
+    match->ballInfo.holder = -1;
+    match->ballInfo.released_by = -1;
 }
 // Empty everything a play can have left on the table that is not physics: the catching action in progress,
 // the at-bat (the batter's cycle, his swing and his §32 right), the runners' standing orders, a chase
-// re-plan not yet answered, and the catching team's own state — where the controlled fielder was told to
-// go, and the engine's prediction of where the ball can next be met. The last of those is not producer-set, but it is
-// just as stale after a reset and it is cleared here so that ONE recipe owns the whole struct; the
-// alternative was two recipes clearing two fields of it, which is how the channel slice lost a
+// re-plan not yet answered, and the catching team's own state — who is controlled and who chases, where
+// the controlled fielder was told to go, and the engine's prediction of where the ball can next be met. The last of
+// those is not producer-set, but it is just as stale after a reset and it is cleared here so that ONE recipe owns the
+// whole struct; the alternative was two recipes clearing two fields of it, which is how the channel slice lost a
 // declaration. Each is cleared as a WHOLE STRUCT, never field by field — the field-by-field version this
 // replaced had silently missed two, and a struct assignment cannot miss a field that gets added later.
 //
@@ -686,6 +685,13 @@ void initialize_ball_info(MatchSession* match)
 void initialize_action_info(MatchSession* match)
 {
     match->catchingState = (CatchingTeamState){0};
+    // Nobody is controlled until a fielder takes the ball, and until the ball's first flight is ranked the
+    // chase order is the first five fielders by position.
+    match->catchingState.controlled_fielder = -1;
+    match->catchingState.ranking_cursor = -1;
+    for (int k = 0; k < RANKED_FIELDERS_COUNT; k++) {
+        match->catchingState.chase_ranking[k] = PLAYERS_IN_TEAM + JOKER_COUNT + k;
+    }
 
     match->catching_action = (CatchingAction){0};
 
@@ -747,14 +753,6 @@ void clear_frame_events(GameEvents* events)
     // gameInitialized removed in M18.0
 }
 
-// index information initialization, can be called when out of bounds
-void initialize_index_information(MatchSession* match)
-{
-    match->pII.hasBallIndex = -1;
-    match->pII.lastHadBallIndex = -1;
-    match->pII.controlIndex = -1;
-    match->pII.changePlayerArrayIndex = -1;
-}
 void setup_homerun_physical_state(
     MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
     const FieldPositions* field_positions, int batterResumesInPlace

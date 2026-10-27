@@ -181,7 +181,7 @@ void give_ball_to_pitcher(ScenarioContext* ctx)
     game->playerInfo[pitcherIdx].tPI.location = game->playerInfo[pitcherIdx].tPI.homeLocation;
 
     // Give them the ball and snap ball position to match
-    game->pII.hasBallIndex = pitcherIdx;
+    game->ballInfo.holder = pitcherIdx;
     game->ballInfo.location = game->playerInfo[pitcherIdx].tPI.location;
     game->ballInfo.lastLocation = game->ballInfo.location;
     game->ballInfo.moving = 0;
@@ -197,7 +197,7 @@ void setup_pitcher_ready(ScenarioContext* ctx)
     const int pitcherIdx = 12; // Lukkari, the home catcher
 
     give_ball_to_pitcher(ctx); // ball in hand at the plate
-    game->pII.catcherOnBaseIndex[0] = pitcherIdx; // the pitcher is the home catcher
+    game->fielding_posts.baseman[0] = pitcherIdx; // the pitcher is the home catcher
     game->playerInfo[pitcherIdx].cTPI.isNearHomeLocation = 1; // close enough to pitch
     game->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH; // a batter is in, standing ready
 }
@@ -225,7 +225,7 @@ void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
     game->ballInfo.velocity.y = -0.1f; // Small initial downward velocity
     game->ballInfo.velocity.z = 0.0f;
 
-    game->pII.hasBallIndex = -1; // No one has it
+    game->ballInfo.holder = -1; // No one has it
     // DO NOT set batHit here - that should be done via actual bat swing simulation
 }
 
@@ -386,10 +386,10 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
     game->ballInfo.location = fromLocation;
     game->ballInfo.lastLocation = fromLocation;
 
-    // CRITICAL: Set lastHadBallIndex to prevent self-catching
+    // CRITICAL: Set released_by to prevent self-catching
     // (Same as in throwing_system.c line 77)
-    game->pII.lastHadBallIndex = game->pII.hasBallIndex;
-    game->pII.hasBallIndex = -1;
+    game->ballInfo.released_by = game->ballInfo.holder;
+    game->ballInfo.holder = -1;
 
     // Use the game's actual sling function (sets velocity + flags)
     // Trigger fielder selection update (same as game does after throws)
@@ -428,7 +428,7 @@ void hit_fly_ball_to_location_with_time(
     // Set starting location
     game->ballInfo.location = fromLocation;
     game->ballInfo.lastLocation = fromLocation;
-    game->pII.hasBallIndex = -1;
+    game->ballInfo.holder = -1;
 
     // Launch
     generic_sling_ball(&game->ballInfo, vx, vy, vz);
@@ -477,7 +477,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     // 3. Set Ball State
     game->ballInfo.location = startPos;
     game->ballInfo.lastLocation = startPos;
-    game->pII.hasBallIndex = -1;
+    game->ballInfo.holder = -1;
     generic_sling_ball(&game->ballInfo, vx, vy, vz);
     game->ballInfo.currentFlightHasHitGround = 0;
 

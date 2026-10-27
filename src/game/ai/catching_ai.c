@@ -18,13 +18,13 @@ static void update_ai_pitching(
     IntentChannel* channel
 )
 {
-    int pitcherIndex = match->pII.catcherOnBaseIndex[0];
+    int pitcherIndex = match->fielding_posts.baseman[0];
 
     // Try to pitch when: the pitcher holds the ball at home, no catching action is in progress, no pitch
     // is already going, the batter has had a moment to settle, and the fielders are home. The AI then
     // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
     // engine owns the windup + release.
-    if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
+    if (match->ballInfo.holder == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
         match->catching_action.kind == CATCHING_ACTION_NONE && !match->ballInfo.pitch_in_flight &&
         aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
@@ -54,7 +54,7 @@ static void update_ai_pitching(
 
     // batterReadyTimer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
     // ready batter; reset whenever the batter is not ready).
-    if (batter_stands_ready(&match->at_bat) && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
+    if (batter_stands_ready(&match->at_bat) && match->fielding_posts.baseman[0] == match->ballInfo.holder &&
         aiController->batterReadyTimer == -1) {
         aiController->batterReadyTimer = 0;
     } else if (!batter_stands_ready(&match->at_bat)) {
@@ -73,11 +73,11 @@ static void steer_controlled_fielder(
     const MatchSession* match, AIControllerState* ai, const Vector3D* desired, IntentChannel* channel
 )
 {
-    int index = match->pII.controlIndex;
+    int index = match->catchingState.controlled_fielder;
     if (index == -1) return;
 
     // A different fielder is a different conversation: whatever was said about the last one says
-    // nothing about this one. controlIndex is durable world state, so noticing this is observation,
+    // nothing about this one. The controlled fielder is durable world state, so noticing this is observation,
     // not read-back.
     if (ai->lastSteeredFielder != index) {
         ai->hasDeclaredMoveTarget = 0;
@@ -108,13 +108,13 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
         return;
     }
 
-    int catcherIndex = match->pII.catcherOnBaseIndex[base];
+    int catcherIndex = match->fielding_posts.baseman[base];
     int catcherNearHome = 0;
     if (catcherIndex != -1) {
         catcherNearHome = match->playerInfo[catcherIndex].cTPI.isNearHomeLocation;
     }
 
-    int replacerIndex = match->pII.catcherReplacerOnBaseIndex[base];
+    int replacerIndex = match->fielding_posts.cover[base];
     ReplacementState replacerStage = REPLACEMENT_IDLE;
     int replacerBase = -1;
     int replacerMoving = 0;
@@ -125,7 +125,8 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     }
 
     int shouldThrow = should_ai_throw(
-        &(match->pII), catcherNearHome, replacerIndex, replacerStage, replacerBase, replacerMoving, base
+        match->ballInfo.holder, match->fielding_posts.baseman[base], catcherNearHome, replacerIndex, replacerStage,
+        replacerBase, replacerMoving, base
     );
 
     if (shouldThrow == 1) {
@@ -154,20 +155,21 @@ void update_catching_ai(
 
     // if noone has ball and someone is controlled, ai will try to move towards the target point calculated
     // in game_manipulation.
-    if (match->pII.hasBallIndex == -1 && match->pII.controlIndex != -1) {
+    if (match->ballInfo.holder == -1 && match->catchingState.controlled_fielder != -1) {
         // gate on the real execution-side mutex (no catching action in progress) — the AI's duplicate
         // aiActionEventLock/aiLockUpdate is gone.
         if (match->catching_action.kind == CATCHING_ACTION_NONE) {
             if (match->ballInfo.thrown_to == BASE_NONE || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
-                    &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->catchingState.ballTargetPoint)
+                    &match->playerInfo[match->catchingState.controlled_fielder].tPI.location,
+                    &(match->catchingState.ballTargetPoint)
                 );
                 steer_controlled_fielder(match, aiController, &target, channel);
             }
         }
     }
     // if someone has ball
-    if (match->pII.hasBallIndex != -1) {
+    if (match->ballInfo.holder != -1) {
         int index3 = get_base_controller(match, &rules->referee, (BaseID)3);
         int index2 = get_base_controller(match, &rules->referee, (BaseID)2);
 
@@ -185,17 +187,17 @@ void update_catching_ai(
             r2IsOnBase = (match->playerInfo[index2].bTPI.state == PLAYER_STATE_ON_BASE);
         }
 
-        int catcherHomeIndex = match->pII.catcherOnBaseIndex[0];
-        int hasBallIndex = match->pII.hasBallIndex;
+        int catcherHomeIndex = match->fielding_posts.baseman[0];
+        int holder = match->ballInfo.holder;
 
         if (should_ai_drop_ball(
                 &(rules->referee), &(rules->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
-                r2IsOnBase, catcherHomeIndex, hasBallIndex
+                r2IsOnBase, catcherHomeIndex, holder
             )) {
             // Declare the drop and stop there. Whether it is allowed — this catcher still holding
             // the ball, no throw or pitch with a claim on it — is the gate's decision, made once for
             // every producer, so the old AI_DROP_LOCK / dropStage wrapper has nothing left to guard
-            // against and no execution-side state left to mirror. `hasBallIndex` flips to -1 the
+            // against and no execution-side state left to mirror. `ballInfo.holder` flips to -1 the
             // frame the drop is actualized, which stops any re-issue on its own.
             intent_push(channel, (IntentMessage){.kind = INTENT_DROP_BALL});
         }
@@ -243,13 +245,14 @@ void update_catching_ai(
                 // then it must stop SHORT. Walk a carrier inside the engine's too-close-to-throw
                 // radius and it can neither throw the ball nor hand it over: a deadlock, measured
                 // on six of 264 sweep seeds before the stand-off went in.
-                int baseman = match->pII.catcherOnBaseIndex[throwBase];
-                if (match->pII.controlIndex != -1 && baseman != -1) {
+                int baseman = match->fielding_posts.baseman[throwBase];
+                if (match->catchingState.controlled_fielder != -1 && baseman != -1) {
                     Vector3D target = match->playerInfo[baseman].tPI.homeLocation;
-                    if (match->pII.controlIndex != baseman) {
+                    if (match->catchingState.controlled_fielder != baseman) {
                         Vector3D baseTarget = throw_target_point(fieldPositions, (BaseID)throwBase);
-                        target =
-                            carry_to_throw_point(&match->playerInfo[match->pII.controlIndex].tPI.location, &baseTarget);
+                        target = carry_to_throw_point(
+                            &match->playerInfo[match->catchingState.controlled_fielder].tPI.location, &baseTarget
+                        );
                     }
                     steer_controlled_fielder(match, aiController, &target, channel);
                 }

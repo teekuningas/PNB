@@ -110,13 +110,13 @@ static Permission permit(
     switch (message->kind) {
     case INTENT_CHANGE_PLAYER:
         // Control follows the ball: while somebody holds it, it is theirs.
-        if (match->pII.hasBallIndex != -1) {
+        if (match->ballInfo.holder != -1) {
             return (Permission){0, RULE_CHANGE_PLAYER_NEEDS_EMPTY_HANDS};
         }
         return (Permission){1, RULE_NONE};
 
     case INTENT_DROP_BALL:
-        if (match->pII.hasBallIndex == -1) {
+        if (match->ballInfo.holder == -1) {
             return (Permission){0, RULE_DROP_NEEDS_BALL_IN_HAND};
         }
         // A gathered throw owns the ball until the engine releases it. (One declared in this same tick
@@ -136,7 +136,7 @@ static Permission permit(
         // throw's recoil still playing — is a physical claim on the fielder's feet that holds no
         // matter who declared what, so it lives with the walking (fielder_movement.c) and is asked
         // once, there. The point itself is never validated: values are trusted, state is checked.
-        if (match->pII.controlIndex == -1) {
+        if (match->catchingState.controlled_fielder == -1) {
             return (Permission){0, RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER};
         }
         return (Permission){1, RULE_NONE};
@@ -415,7 +415,7 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
         // re-delivering the same message (a rollback repeating its last input) a no-op.
         match->catchingState.controlledMoveTarget = message->as.move_target.point;
         match->catchingState.controlledMoveTargetActive = 1;
-        match->catchingState.controlledMoveTargetFor = match->pII.controlIndex;
+        match->catchingState.controlledMoveTargetFor = match->catchingState.controlled_fielder;
         break;
     case INTENT_PITCH_POWER:
         out->pitch.powerDeclared = 1;
@@ -489,11 +489,12 @@ void execute_actions(
     // so this is the move itself and nothing else.
     if (commands.change_player) {
         // we go to next element in changePlayerArray.
-        match->pII.changePlayerArrayIndex = (match->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
+        match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
         // and try to ensure that there is difference. we dont want to end up in a endless loop
         // though so we do it only once.
-        if (match->pII.controlIndex == match->pII.fielderRankedIndices[match->pII.changePlayerArrayIndex]) {
-            match->pII.changePlayerArrayIndex = (match->pII.changePlayerArrayIndex + 1) % CHANGE_PLAYER_COUNT;
+        if (match->catchingState.controlled_fielder ==
+            match->catchingState.chase_ranking[match->catchingState.ranking_cursor]) {
+            match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
         }
         // and then set the flag, so that other parts of code can handle
         // the job

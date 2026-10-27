@@ -19,14 +19,14 @@
 //   - the pitcher is at the pitching plate
 Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received)
 {
-    const int pitcher = match->pII.catcherOnBaseIndex[0];
+    const int pitcher = match->fielding_posts.baseman[0];
     if (match->catching_action.kind != CATCHING_ACTION_NONE) {
         return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
     }
     if (batter_has_become_runner_permanently(correct_pitches_received)) {
         return (Permission){0, RULE_PITCH_BATTER_IS_A_RUNNER};
     }
-    if (pitcher == -1 || match->pII.hasBallIndex != pitcher) {
+    if (pitcher == -1 || match->ballInfo.holder != pitcher) {
         return (Permission){0, RULE_PITCH_NEEDS_BALL_AT_HOME};
     }
     if (match->ballInfo.pitch_in_flight) {
@@ -54,7 +54,7 @@ int pitch_is_being_delivered(const MatchSession* match)
 // renderer, but nothing here (or later) reads animation to drive timing.
 static void begin_windup(MatchSession* match, float power)
 {
-    int pitcher = match->pII.hasBallIndex;
+    int pitcher = match->ballInfo.holder;
 
     if (match->playerInfo[pitcher].cPI.moving == 1) {
         stop_movement(match->playerInfo, pitcher);
@@ -82,7 +82,7 @@ static void begin_windup(MatchSession* match, float power)
 // the ball leaves with velocity pitch_velocity_from_aim(power, direction).
 static void release_pitch(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
-    int pitcher = match->pII.hasBallIndex;
+    int pitcher = match->ballInfo.holder;
     const PitchWindup* pitch = &match->catching_action.as.pitch;
     Vector3D v = pitch_velocity_from_aim(pitch->power, pitch->direction);
     Vector3D target;
@@ -100,8 +100,8 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     target.z = match->playerInfo[pitcher].tPI.location.z;
     move_to_target(match->playerInfo, pitcher, &target);
 
-    match->pII.lastHadBallIndex = pitcher; // pitcher won't catch its own pitch before it grounds
-    match->pII.hasBallIndex = -1;
+    match->ballInfo.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
+    match->ballInfo.holder = -1;
     match->ballInfo.pitch_in_flight = 1;
     match->at_bat.may_leave_home = 1;
     match->cameraState.homeRunCameraFlag = 0;
@@ -134,7 +134,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
 // ball, which returns to their position; no ball/strike is counted.
 static void fake_pitch(MatchSession* match)
 {
-    int pitcher = match->pII.hasBallIndex;
+    int pitcher = match->ballInfo.holder;
 
     match->ballInfo.pitch_in_flight = 0;
     if (pitcher != -1) {

@@ -68,12 +68,12 @@ StateInfo* setup_test_state()
 
     // Initialize indices to -1
     for (int i = 0; i < 4; i++) {
-        state->match->pII.catcherOnBaseIndex[i] = -1;
-        state->match->pII.catcherReplacerOnBaseIndex[i] = -1;
+        state->match->fielding_posts.baseman[i] = -1;
+        state->match->fielding_posts.cover[i] = -1;
     }
-    state->match->pII.hasBallIndex = -1;
-    state->match->pII.lastHadBallIndex = -1;
-    state->match->pII.controlIndex = -1;
+    state->match->ballInfo.holder = -1;
+    state->match->ballInfo.released_by = -1;
+    state->match->catchingState.controlled_fielder = -1;
 
     return state;
 }

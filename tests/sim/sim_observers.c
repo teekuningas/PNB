@@ -40,7 +40,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     int runs0 = sb->teams[0].runs;
     int runs1 = sb->teams[1].runs;
     int inning = sb->inning;
-    int hasBall = g->state->match->pII.hasBallIndex;
+    int hasBall = g->state->match->ballInfo.holder;
     int pitch_in_flight = g->state->match->ballInfo.pitch_in_flight;
 
     // --- Bounds (be conservative: only flag clearly-illegal values) ---
@@ -178,7 +178,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        m->gameFlowState.ballHome, m->ballInfo.pitch_in_flight, (int)m->catching_action.kind, m->pII.hasBallIndex,
+        m->gameFlowState.ballHome, m->ballInfo.pitch_in_flight, (int)m->catching_action.kind, m->ballInfo.holder,
         m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
         batter_stands_ready(&m->at_bat), ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer,
         ai->batterReadyTimer, m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive,
@@ -232,8 +232,8 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->ballInfo.velocity.z);
     FOLD(h, m->ballInfo.moving);
     FOLD(h, m->ballInfo.onGround);
-    FOLD(h, m->pII.hasBallIndex);
-    FOLD(h, m->pII.controlIndex);
+    FOLD(h, m->ballInfo.holder);
+    FOLD(h, m->catchingState.controlled_fielder);
     // Folded as the code it was folded as when it was an enum whose in-flight value was 2, so that moving
     // it onto the ball and making it a yes/no did not move the recorded baseline.
     const int pitch_code = m->ballInfo.pitch_in_flight ? 2 : 0;
@@ -508,19 +508,19 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
     const GameRulesState* r = g->state->rules;
 
     int batOutcome = (int)r->betweenPitchState.batOutcome;
-    int control = m->pII.controlIndex;
+    int control = m->catchingState.controlled_fielder;
 
     if (!o->initialized) {
         o->initialized = 1;
         o->p_batOutcome = batOutcome;
-        o->p_controlIndex = control;
+        o->p_controlled = control;
         if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
         return;
     }
 
     // The speed probe. Only frames where the SAME player stayed controlled and was moving count —
     // a control change is a different player's position, not a step this one took.
-    if (control != -1 && control == o->p_controlIndex && m->playerInfo[control].cPI.moving == 1) {
+    if (control != -1 && control == o->p_controlled && m->playerInfo[control].cPI.moving == 1) {
         float dx = m->playerInfo[control].tPI.location.x - o->p_controlLocation.x;
         float dz = m->playerInfo[control].tPI.location.z - o->p_controlLocation.z;
         double step = sqrt((double)(dx * dx + dz * dz));
@@ -545,7 +545,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
         }
 
         long elapsed = g->frame - o->chase_start_frame;
-        if (m->pII.hasBallIndex != -1) {
+        if (m->ballInfo.holder != -1) {
             o->recoveries++;
             o->recovery_frames_sum += elapsed;
             if (elapsed > o->recovery_frames_max) o->recovery_frames_max = elapsed;
@@ -557,7 +557,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
     }
 
     o->p_batOutcome = batOutcome;
-    o->p_controlIndex = control;
+    o->p_controlled = control;
     if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
 }
 

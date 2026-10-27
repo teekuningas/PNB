@@ -28,13 +28,13 @@
 // interpretation the rules work is trying to end.
 static int controlled_fielder_may_walk(const MatchSession* match)
 {
-    if (match->pII.controlIndex == -1) return 0;
+    if (match->catchingState.controlled_fielder == -1) return 0;
     // A gathered throw owns the thrower's feet until the ball leaves the hand.
     if (match->catching_action.kind == CATCHING_ACTION_THROWING) return 0;
     // Fielders hold their positions while a pitch is in progress — its windup included.
     if (pitch_is_being_delivered(match)) return 0;
     // A throw's recoil animation has to finish before the model may be changed under it.
-    if (match->playerInfo[match->pII.controlIndex].cTPI.throwRecoil != 0) return 0;
+    if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.throwRecoil != 0) return 0;
     return 1;
 }
 
@@ -44,11 +44,11 @@ void update_controlled_fielder_movement(MatchSession* match)
     if (!controlled_fielder_may_walk(match)) return;
     // A destination belongs to the fielder it was given to. Control can pass mid-walk — a catch
     // hands it to whoever took the ball — and the newcomer has not been told anything yet.
-    if (match->catchingState.controlledMoveTargetFor != match->pII.controlIndex) return;
+    if (match->catchingState.controlledMoveTargetFor != match->catchingState.controlled_fielder) return;
 
-    int index = match->pII.controlIndex;
+    int index = match->catchingState.controlled_fielder;
     PlayerInfo* player = &match->playerInfo[index];
-    int carries_the_ball = (match->pII.hasBallIndex == index);
+    int carries_the_ball = (match->ballInfo.holder == index);
 
     float dx = match->catchingState.controlledMoveTarget.x - player->tPI.location.x;
     float dz = match->catchingState.controlledMoveTarget.z - player->tPI.location.z;

@@ -106,7 +106,7 @@ int test_fly_ball_out_and_wound(void)
         // --- Check Events ---
         if (rules->betweenPitchState.catchHasBeenMade && catchFrame == -1) {
             catchFrame = frame;
-            printf("Frame %d: CATCH by player %d\n", frame, match->pII.hasBallIndex);
+            printf("Frame %d: CATCH by player %d\n", frame, match->ballInfo.holder);
         }
 
         if (ctx->state->announcement == EVENT_OUT && outFrame == -1) {

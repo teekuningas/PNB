@@ -138,9 +138,9 @@ void action_invocations(
     // hold or release never doubles as a drop/pitch on the same key edge.
     int throw_engaged = checkThrowGesture(match, clientInput, key_states, catchingControl, &channels->catching);
     if (!throw_engaged) {
-        if (match->pII.hasBallIndex == -1) {
+        if (match->ballInfo.holder == -1) {
             checkChangePlayer(match, key_states, KEY_2, catchingControl, &channels->catching);
-        } else if (match->pII.controlIndex != match->pII.catcherOnBaseIndex[0]) {
+        } else if (match->catchingState.controlled_fielder != match->fielding_posts.baseman[0]) {
             checkDrop(match, key_states, KEY_2, catchingControl, &channels->catching);
         } else {
             checkPitch(match, clientInput, key_states, KEY_2, catchingControl, &channels->catching);
@@ -230,7 +230,7 @@ static int checkThrowGesture(
 
     // Not started yet — begin a throw only if the action key is held together with exactly one direction,
     // a ball-holder is controlled, and no catching action is already in progress.
-    if (catching == CATCHING_ACTION_NONE && key_states->down[control][KEY_2] && match->pII.hasBallIndex != -1) {
+    if (catching == CATCHING_ACTION_NONE && key_states->down[control][KEY_2] && match->ballInfo.holder != -1) {
         int arrowsHeld = 0;
         BaseID heldBase = BASE_NONE;
         for (BaseID b = 0; b < BASE_COUNT; b++) {
@@ -306,7 +306,7 @@ static void checkMove(
 
     w->framesSinceDeclared++;
 
-    int index = match->pII.controlIndex;
+    int index = match->catchingState.controlled_fielder;
     if (index == -1) {
         // Nobody to steer: forget what was said, so whoever is handed control next is told afresh.
         w->declared = 0;

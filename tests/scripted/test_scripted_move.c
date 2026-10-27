@@ -29,9 +29,10 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
-        int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
+            batter_stands_ready(&m->at_bat) && m->catching_action.kind == CATCHING_ACTION_NONE &&
+            !m->ballInfo.pitch_in_flight) {
             return 1;
         }
     }
@@ -45,8 +46,8 @@ static int tick_until_steerable(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
-        int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.controlIndex == p && m->pII.hasBallIndex == p &&
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->catchingState.controlled_fielder == p && m->ballInfo.holder == p &&
             m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
@@ -64,13 +65,13 @@ int test_scripted_move_held_key_runs_at_run_speed(void)
     ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
 
     MatchSession* m = scripted_match(g);
-    int fielder = m->pII.controlIndex;
+    int fielder = m->catchingState.controlled_fielder;
     Vector3D start = m->playerInfo[fielder].tPI.location;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     scripted_run(g, MOVE_TEST_FRAMES);
 
-    ASSERT_EQ(fielder, m->pII.controlIndex, "the same fielder was steered throughout");
+    ASSERT_EQ(fielder, m->catchingState.controlled_fielder, "the same fielder was steered throughout");
     float dz = m->playerInfo[fielder].tPI.location.z - start.z;
     float dx = m->playerInfo[fielder].tPI.location.x - start.x;
 
@@ -97,7 +98,7 @@ int test_scripted_move_release_stops_within_a_frame(void)
     ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
 
     MatchSession* m = scripted_match(g);
-    int fielder = m->pII.controlIndex;
+    int fielder = m->catchingState.controlled_fielder;
 
     scripted_hold(g, HUMAN_PAD, KEY_LEFT);
     scripted_run(g, 30);
@@ -151,14 +152,14 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     ASSERT(reached, "the human pitch never started");
 
     // Steer while the pitch is live. The fielder must not budge.
-    int fielder = m->pII.controlIndex;
+    int fielder = m->catchingState.controlled_fielder;
     ASSERT(fielder != -1, "somebody is still controlled during the pitch");
     Vector3D held_still = m->playerInfo[fielder].tPI.location;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     for (int i = 0; i < 20 && pitch_is_being_delivered(m); i++) {
         scripted_tick(g);
-        ASSERT_EQ(fielder, m->pII.controlIndex, "control did not change during the pitch window");
+        ASSERT_EQ(fielder, m->catchingState.controlled_fielder, "control did not change during the pitch window");
         float dx = m->playerInfo[fielder].tPI.location.x - held_still.x;
         float dz = m->playerInfo[fielder].tPI.location.z - held_still.z;
         ASSERT(sqrtf(dx * dx + dz * dz) < 1e-4f, "a fielder does not move while a pitch is in progress");
@@ -185,10 +186,11 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
 //    an observation that would be stale under input delay and would make two peers correct
 //    themselves differently.
 //
-//    Only the destination is taken away here, with initialize_action_info — the production function
-//    every reset recipe uses to do exactly that. Stopping and repositioning the fielder is the rest
-//    of the recipe's job, not this mechanism's, so it is deliberately left out: what is under test is
-//    that the engine ends up holding a destination again with no new input, and nothing else.
+//    Only the destination is taken away here. A real recipe empties the whole of the catching team's
+//    state — control too, which the catch that follows a reset hands back to whoever takes the ball —
+//    and stops and repositions the fielder; all of that is the rest of the recipe's job, not this
+//    mechanism's, so it is deliberately left out: what is under test is that the engine ends up holding
+//    a destination again with no new input, and nothing else.
 int test_scripted_move_held_key_survives_a_reset(void)
 {
     ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE04u);
@@ -196,15 +198,15 @@ int test_scripted_move_held_key_survives_a_reset(void)
     ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
 
     MatchSession* m = scripted_match(g);
-    int fielder = m->pII.controlIndex;
+    int fielder = m->catchingState.controlled_fielder;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     scripted_run(g, 20);
     ASSERT_EQ(1, m->playerInfo[fielder].cPI.moving, "the fielder is under way");
     ASSERT_EQ(1, m->catchingState.controlledMoveTargetActive, "and the engine is holding a destination");
 
-    // The engine forgets where it was sending him, exactly as every reset recipe does.
-    initialize_action_info(m);
+    // The engine forgets where it was sending him, as every reset recipe does.
+    m->catchingState.controlledMoveTargetActive = 0;
     ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "the destination really is gone");
 
     // Nothing about the input changes — the key is still down and the widget has nothing new to

@@ -85,7 +85,7 @@ typedef struct {
     long pitches; // pitches released (rising edge into AIRBORNE)
     long throws; // throws to a base started (rising edge into CATCHING_ACTION_THROWING — only begin_throw_windup raises
                  // it)
-    // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (hasBallIndex −1, ball moving,
+    // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (holder −1, ball moving,
     // pitch NONE, throw 0) is indistinguishable from a half-inning / HR-pair RESET that clears a
     // fielder's ball — so any state-based drop count aliases resets (verified via PBP). The drop is
     // knighted by construction instead: tests/integration/contracts/test_ai_tactical_drop.c.
@@ -151,7 +151,7 @@ typedef struct {
     // internal edge-detection state (do not set)
     int initialized;
     int p_batOutcome;
-    int p_controlIndex;
+    int p_controlled;
     Vector3D p_controlLocation;
 
     int chasing; // a batted ball is loose right now

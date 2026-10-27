@@ -62,8 +62,8 @@ static const IntentMessage DROP = {.kind = INTENT_DROP_BALL};
 static void fielder_with_ball(ScenarioContext* ctx)
 {
     MatchSession* m = ctx->state->match;
-    m->pII.hasBallIndex = FIELDER;
-    m->pII.controlIndex = FIELDER;
+    m->ballInfo.holder = FIELDER;
+    m->catchingState.controlled_fielder = FIELDER;
     m->playerInfo[FIELDER].tPI.location.x = 5.0f;
     m->playerInfo[FIELDER].tPI.location.z = 5.0f;
 }
@@ -112,7 +112,7 @@ int test_pitch_permission_names_each_rule(void)
 
     ASSERT_EQ(RULE_PITCH_BATTER_IS_A_RUNNER, pitch_may_begin(m, 3).denied_by, "§18(1): three correct pitches spent");
 
-    m->pII.hasBallIndex = FIELDER;
+    m->ballInfo.holder = FIELDER;
     ASSERT_EQ(RULE_PITCH_NEEDS_BALL_AT_HOME, pitch_may_begin(m, 0).denied_by, "the pitcher must hold the ball");
     restore(ctx, &ready);
 
@@ -147,7 +147,7 @@ int test_a_refused_pitch_begins_nothing(void)
     say(ctx, pitch_aim(0.0f));
     tick(ctx);
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "refused: no batter ready");
-    ASSERT_EQ(12, m->pII.hasBallIndex, "the ball stays in the pitcher's hand");
+    ASSERT_EQ(12, m->ballInfo.holder, "the ball stays in the pitcher's hand");
 
     m->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH;
     tick(ctx);
@@ -174,9 +174,9 @@ int test_throw_permission_names_each_rule(void)
     ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, throw_may_begin(m, fp, BASE_FIRST).denied_by, "not mid-throw");
     m->catching_action.kind = CATCHING_ACTION_NONE;
 
-    m->pII.hasBallIndex = -1;
+    m->ballInfo.holder = -1;
     ASSERT_EQ(RULE_THROW_NEEDS_BALL_IN_HAND, throw_may_begin(m, fp, BASE_FIRST).denied_by, "nothing to throw");
-    m->pII.hasBallIndex = FIELDER;
+    m->ballInfo.holder = FIELDER;
 
     m->playerInfo[FIELDER].tPI.location = fp->firstBase;
     ASSERT_EQ(
@@ -224,7 +224,7 @@ int test_contributions_need_an_action_to_contribute_to(void)
     say(ctx2, pitch_aim(0.9f));
     tick(ctx2);
     ASSERT_EQ(0, m2->catching_action.as.throw.powered, "an aim cannot power a gathering throw");
-    ASSERT_EQ(FIELDER, m2->pII.hasBallIndex, "...nor release it");
+    ASSERT_EQ(FIELDER, m2->ballInfo.holder, "...nor release it");
     cleanup_scenario(ctx2);
 
     ScenarioContext* ctx3 = create_scenario();
@@ -267,16 +267,16 @@ int test_one_catching_action_per_tick_whatever_the_order(void)
 
     ScenarioContext* ctx = create_scenario();
     setup_pitcher_ready(ctx);
-    ctx->state->match->pII.controlIndex = 12;
+    ctx->state->match->catchingState.controlled_fielder = 12;
     ASSERT(both_orders_agree(ctx, pitch_power(0.5f), throw_target(BASE_FIRST), &after), "pitch + throw: order-free");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.catching_action.kind, "the throw wins");
     cleanup_scenario(ctx);
 
     ctx = create_scenario();
     setup_pitcher_ready(ctx);
-    ctx->state->match->pII.controlIndex = 12;
+    ctx->state->match->catchingState.controlled_fielder = 12;
     ASSERT(both_orders_agree(ctx, pitch_power(0.5f), DROP, &after), "pitch + drop: order-free");
-    ASSERT_EQ(-1, after.match.pII.hasBallIndex, "the drop wins: the ball is on its way down");
+    ASSERT_EQ(-1, after.match.ballInfo.holder, "the drop wins: the ball is on its way down");
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)after.match.catching_action.kind, "and no windup began");
     cleanup_scenario(ctx);
 
@@ -284,7 +284,7 @@ int test_one_catching_action_per_tick_whatever_the_order(void)
     fielder_with_ball(ctx);
     ASSERT(both_orders_agree(ctx, DROP, throw_target(BASE_FIRST), &after), "drop + throw: order-free");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.catching_action.kind, "the throw wins");
-    ASSERT_EQ(FIELDER, after.match.pII.hasBallIndex, "and the gathering thrower still holds the ball");
+    ASSERT_EQ(FIELDER, after.match.ballInfo.holder, "and the gathering thrower still holds the ball");
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }
@@ -322,7 +322,7 @@ int test_pitch_and_throw_values_are_repeat_safe(void)
     const IntentMessage pitch[] = {pitch_power(0.4f), pitch_aim(-0.2f)};
     const int frames = pitch_windup_total_frames(0.4f) + 3;
     play(ctx, &start, pitch, 2, 1, 0, frames, &once);
-    ASSERT_EQ(-1, once.match.pII.hasBallIndex, "control: the pitch was released");
+    ASSERT_EQ(-1, once.match.ballInfo.holder, "control: the pitch was released");
     play(ctx, &start, pitch, 2, 3, 0, frames, &tripled);
     play(ctx, &start, pitch, 2, 1, 1, frames, &restated);
     ASSERT(identical(&once, &tripled), "three copies of a pitch in one frame are one pitch");
@@ -335,7 +335,7 @@ int test_pitch_and_throw_values_are_repeat_safe(void)
     const IntentMessage throw[] = {throw_target(BASE_SECOND), throw_power(0.6f)};
     const int tframes = throw_windup_total_frames(0.6f) + 3;
     play(ctx, &start, throw, 2, 1, 0, tframes, &once);
-    ASSERT_EQ(-1, once.match.pII.hasBallIndex, "control: the throw was released");
+    ASSERT_EQ(-1, once.match.ballInfo.holder, "control: the throw was released");
     play(ctx, &start, throw, 2, 3, 0, tframes, &tripled);
     play(ctx, &start, throw, 2, 1, 1, tframes, &restated);
     ASSERT(identical(&once, &tripled), "three copies of a throw in one frame are one throw");
@@ -364,7 +364,7 @@ int test_a_late_beginning_changes_nothing(void)
         tick(ctx);
     }
     capture(ctx, &clean);
-    ASSERT_EQ(-1, clean.match.pII.hasBallIndex, "control: the aimed pitch was released");
+    ASSERT_EQ(-1, clean.match.ballInfo.holder, "control: the aimed pitch was released");
 
     restore(ctx, &mid);
     say(ctx, pitch_power(0.9f)); // an older, different power, arriving mid-windup
@@ -386,7 +386,7 @@ int test_a_late_beginning_changes_nothing(void)
         tick(ctx);
     }
     capture(ctx, &clean);
-    ASSERT_EQ(-1, clean.match.pII.hasBallIndex, "control: the throw was released");
+    ASSERT_EQ(-1, clean.match.ballInfo.holder, "control: the throw was released");
 
     restore(ctx, &mid);
     say(ctx, throw_target(BASE_THIRD)); // an older, different target, arriving mid-gather

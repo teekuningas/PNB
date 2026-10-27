@@ -25,9 +25,10 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
-        int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
+            batter_stands_ready(&m->at_bat) && m->catching_action.kind == CATCHING_ACTION_NONE &&
+            !m->ballInfo.pitch_in_flight) {
             return 1;
         }
     }
@@ -101,7 +102,7 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
     ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
 
     MatchSession* m = scripted_match(g);
-    int pitcher = m->pII.catcherOnBaseIndex[0];
+    int pitcher = m->fielding_posts.baseman[0];
 
     scripted_tap(g, HUMAN_PAD, KEY_2); // press: start the power meter sweeping
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping after the start press");
@@ -113,7 +114,7 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
         if (m->ballInfo.pitch_in_flight) wentAirborne = 1;
     }
 
-    int keptBall = (m->pII.hasBallIndex == pitcher);
+    int keptBall = (m->ballInfo.holder == pitcher);
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));

@@ -123,20 +123,16 @@ int test_move_declaration_heartbeat_restates_an_unchanged_destination(void)
 
 int test_should_ai_throw_normal(void)
 {
-    PlayerIndexInfo pii = {0};
-    pii.hasBallIndex = 0;
-    pii.catcherOnBaseIndex[0] = 1;
-    // hasBallIndex != catcherIndex, catcherNearHome = 1
-    int result = should_ai_throw(&pii, 1, 99, 0, 0, 0, 0);
+    // The holder (0) is not the baseman (1), and the baseman is near home.
+    int result = should_ai_throw(0, 1, 1, 99, 0, 0, 0, 0);
     ASSERT_EQ(1, result, "Should throw if catcher is near home and doesn't have ball");
 
     // catcherNearHome = 0
-    result = should_ai_throw(&pii, 0, 99, 0, 0, 0, 0);
+    result = should_ai_throw(0, 1, 0, 99, 0, 0, 0, 0);
     ASSERT_EQ(0, result, "Should not throw if catcher not near home");
 
-    // hasBallIndex == catcherIndex
-    pii.hasBallIndex = 1;
-    result = should_ai_throw(&pii, 1, 99, 0, 0, 0, 0);
+    // the holder is the baseman
+    result = should_ai_throw(1, 1, 1, 99, 0, 0, 0, 0);
     ASSERT_EQ(0, result, "Should not throw if catcher has ball");
 
     return TEST_PASSED;
@@ -144,17 +140,14 @@ int test_should_ai_throw_normal(void)
 
 int test_should_ai_throw_replacer(void)
 {
-    PlayerIndexInfo pii = {0};
-    pii.hasBallIndex = 0;
-    pii.catcherOnBaseIndex[2] = 1;
-
-    int result = should_ai_throw(&pii, 0, 1, 1, 2, 0, 2);
+    // The holder (0) throws toward base 2, whose baseman (1) is away; the cover is player 1 too.
+    int result = should_ai_throw(0, 1, 0, 1, 1, 2, 0, 2);
     ASSERT_EQ(1, result, "Should throw to replacer in position");
 
-    result = should_ai_throw(&pii, 0, 1, 1, 1, 0, 2);
+    result = should_ai_throw(0, 1, 0, 1, 1, 1, 0, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer on wrong base");
 
-    result = should_ai_throw(&pii, 0, 1, 1, 2, 1, 2);
+    result = should_ai_throw(0, 1, 0, 1, 1, 2, 1, 2);
     ASSERT_EQ(0, result, "Should not throw if replacer is moving");
 
     return TEST_PASSED;

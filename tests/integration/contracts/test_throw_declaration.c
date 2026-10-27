@@ -40,8 +40,8 @@ static void setup_fielder_with_ball(ScenarioContext* ctx)
 {
     MatchSession* m = ctx->state->match;
     int fielderIdx = 15;
-    m->pII.hasBallIndex = fielderIdx;
-    m->pII.controlIndex = fielderIdx;
+    m->ballInfo.holder = fielderIdx;
+    m->catchingState.controlled_fielder = fielderIdx;
     m->playerInfo[fielderIdx].tPI.location.x = 5.0f;
     m->playerInfo[fielderIdx].tPI.location.z = 5.0f;
 }
@@ -68,7 +68,7 @@ static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
     int i;
     for (i = 0; i < budget; i++) {
         tick(ctx);
-        if (m->pII.hasBallIndex == -1) {
+        if (m->ballInfo.holder == -1) {
             if (frames) *frames = i + 1;
             return horiz_speed(m);
         }
@@ -120,13 +120,13 @@ int test_throw_declared_whole_releases_sized_to_power(void)
     ASSERT_EQ(
         CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "declaring a throw must begin the engine-owned windup"
     );
-    ASSERT_EQ(15, m->pII.hasBallIndex, "ball is still in hand during the windup");
+    ASSERT_EQ(15, m->ballInfo.holder, "ball is still in hand during the windup");
 
     int windup = throw_windup_total_frames(lowPower);
     int frames = 0;
     float lowSpeed = run_until_release(ctx, windup + 6, &frames);
 
-    ASSERT_EQ(-1, m->pII.hasBallIndex, "the ball must leave the hand at the windup end");
+    ASSERT_EQ(-1, m->ballInfo.holder, "the ball must leave the hand at the windup end");
     ASSERT(lowSpeed > 0.0f, "a released throw has a horizontal launch velocity");
     // frames counts from the SECOND frame onward (the first began the windup); release near the windup end.
     ASSERT(frames + 1 >= windup - 1, "release must wait for the engine windup, not fire instantly");
@@ -164,7 +164,7 @@ int test_throw_target_then_power_engine_times_release(void)
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES + 20; i++) {
         tick(ctx);
     }
-    ASSERT_EQ(15, m->pII.hasBallIndex, "a throw never releases while its power is owed");
+    ASSERT_EQ(15, m->ballInfo.holder, "a throw never releases while its power is owed");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "still winding up while pending");
     ASSERT_EQ(
         THROW_WINDUP_MAX_FRAMES, m->catching_action.timer,
@@ -175,7 +175,7 @@ int test_throw_target_then_power_engine_times_release(void)
     // releases this very tick — the "power arrived late" case.
     declare_power(ctx, 0.3f);
     tick(ctx);
-    ASSERT_EQ(-1, m->pII.hasBallIndex, "a power declared after a full windup releases immediately");
+    ASSERT_EQ(-1, m->ballInfo.holder, "a power declared after a full windup releases immediately");
     float longInitLowPowerSpeed = horiz_speed(m);
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the throw is done at release");
     cleanup_scenario(ctx);
@@ -190,7 +190,7 @@ int test_throw_target_then_power_engine_times_release(void)
 
     declare_power(ctx2, 1.0f);
     tick(ctx2); // the power does NOT fire this frame — the windup is not done
-    ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a powered throw waits out its windup");
+    ASSERT_EQ(15, m2->ballInfo.holder, "the engine owns the release: a powered throw waits out its windup");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m2->catching_action.kind, "still winding after the power");
 
     int budget = THROW_WINDUP_MAX_FRAMES + 10, frames = 0;

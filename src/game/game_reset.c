@@ -6,7 +6,6 @@ static void reset_physical_world(MatchSession* match, const FieldPositions* fiel
 {
     initialize_ball_info(match);
     initialize_action_info(match);
-    initialize_index_information(match);
     initialize_spatial_player_information(match, field_positions);
     initialize_non_critical_player_information(match);
 }

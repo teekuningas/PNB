@@ -42,7 +42,7 @@ Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
 static Vector3D line_to_base(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
     Vector3D target = throw_target_point(fieldPositions, base);
-    const Vector3D* from = &match->playerInfo[match->pII.hasBallIndex].tPI.location;
+    const Vector3D* from = &match->playerInfo[match->ballInfo.holder].tPI.location;
     return (Vector3D){.x = target.x - from->x, .y = 0.0f, .z = target.z - from->z};
 }
 
@@ -59,7 +59,7 @@ Permission throw_may_begin(const MatchSession* match, const FieldPositions* fiel
     if (match->catching_action.kind != CATCHING_ACTION_NONE) {
         return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
     }
-    if (match->pII.hasBallIndex == -1) {
+    if (match->ballInfo.holder == -1) {
         return (Permission){0, RULE_THROW_NEEDS_BALL_IN_HAND};
     }
     if (horizontal_length(line_to_base(match, fieldPositions, base)) <= THROW_TO_BASE_DISTANCE) {
@@ -73,7 +73,7 @@ Permission throw_may_begin(const MatchSession* match, const FieldPositions* fiel
 // gather animation follows the clock downstream.
 static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
-    int thrower = match->pII.hasBallIndex;
+    int thrower = match->ballInfo.holder;
     ThrowWindup windup = {.target = base, .direction = line_to_base(match, fieldPositions, base)};
     windup.distance = horizontal_length(windup.direction);
 
@@ -103,7 +103,7 @@ static void throw_release(MatchSession* match)
 {
     ThrowWindup windup = match->catching_action.as.throw;
     match->catching_action = (CatchingAction){0};
-    if (match->pII.hasBallIndex == -1) {
+    if (match->ballInfo.holder == -1) {
         return;
     }
     float power = windup.power;
@@ -111,12 +111,12 @@ static void throw_release(MatchSession* match)
     if (power > 1.0f) power = 1.0f;
 
     // release animation
-    match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_THROW_RELEASE;
-    match->playerInfo[match->pII.hasBallIndex].cPI.animationStage = 0;
-    match->playerInfo[match->pII.hasBallIndex].cPI.animationStageCount = 21;
-    match->playerInfo[match->pII.hasBallIndex].cPI.animationFrequency = 2;
+    match->playerInfo[match->ballInfo.holder].cPI.model = PLAYER_ANIM_THROW_RELEASE;
+    match->playerInfo[match->ballInfo.holder].cPI.animationStage = 0;
+    match->playerInfo[match->ballInfo.holder].cPI.animationStageCount = 21;
+    match->playerInfo[match->ballInfo.holder].cPI.animationFrequency = 2;
     // flag that the recoil animation is still going (no extra movement until it is over)
-    match->playerInfo[match->pII.hasBallIndex].cTPI.throwRecoil = 1;
+    match->playerInfo[match->ballInfo.holder].cTPI.throwRecoil = 1;
 
     // normalize the latched direction and give it a small upward component
     float dx = windup.direction.x / windup.distance;
@@ -133,13 +133,13 @@ static void throw_release(MatchSession* match)
     // Trigger fielder selection update after throw
     request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
     // prevent this player from catching the ball right after throwing
-    match->pII.lastHadBallIndex = match->pII.hasBallIndex;
-    match->pII.hasBallIndex = -1;
+    match->ballInfo.released_by = match->ballInfo.holder;
+    match->ballInfo.holder = -1;
     // set running flag to 0 so that orientation will change
-    match->playerInfo[match->pII.controlIndex].cPI.running = 0;
+    match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 0;
     // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
     // player changing.
-    match->pII.controlIndex = -1;
+    match->catchingState.controlled_fielder = -1;
 }
 
 // The throw actualizer — the single engine entry point, the throw's counterpart of the pitch's. A declared
@@ -191,14 +191,14 @@ void drop_ball(MatchSession* match)
     float dz;
 
     // players' movement will be stopped when doing this, similar to throwing.
-    if (match->playerInfo[match->pII.hasBallIndex].cPI.moving == 1) {
-        stop_movement(match->playerInfo, match->pII.hasBallIndex);
+    if (match->playerInfo[match->ballInfo.holder].cPI.moving == 1) {
+        stop_movement(match->playerInfo, match->ballInfo.holder);
     }
     // model is set to be the basic standing without ball model.
-    match->playerInfo[match->pII.hasBallIndex].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+    match->playerInfo[match->ballInfo.holder].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
     // and then just set a little upward-forward -directed value for ball so that we'll see the dropping
-    dx = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.x;
-    dz = match->playerInfo[match->pII.hasBallIndex].tPI.orientation.z;
+    dx = match->playerInfo[match->ballInfo.holder].tPI.orientation.x;
+    dz = match->playerInfo[match->ballInfo.holder].tPI.orientation.z;
     norm = (float)sqrt(dx * dx + dz * dz);
     if (norm < EPSILON) norm = 1.0f;
     dx = dx / norm;
@@ -207,8 +207,8 @@ void drop_ball(MatchSession* match)
     generic_sling_ball(&(match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT);
     // Trigger fielder selection update after drop
     request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
-    // and set the lastHadBallIndex so that this player cannot catch it before it hits ground
-    match->pII.lastHadBallIndex = match->pII.hasBallIndex;
+    // and set released_by so that this player cannot catch it before it hits ground
+    match->ballInfo.released_by = match->ballInfo.holder;
     // and no player has the ball anymore.
-    match->pII.hasBallIndex = -1;
+    match->ballInfo.holder = -1;
 }

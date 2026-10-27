@@ -293,7 +293,7 @@ static void update_wounding_logic(
 
         // Calculate threshold (extend if ball was thrown)
         int threshold;
-        if (game->pII.hasBallIndex == -1) {
+        if (game->ballInfo.holder == -1) {
             threshold = (int)(2 * WOUNDING_CATCH_THRESHOLD);
         } else {
             threshold = (int)WOUNDING_CATCH_THRESHOLD;
