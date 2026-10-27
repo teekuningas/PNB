@@ -161,7 +161,6 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s},\n", sp);
 
         fprintf(f, "%s\"gameControl\": {\n", sp);
-        fprintf(f, "%s  \"pause\": %d,\n", sp, game->flowControl.pause);
         fprintf(f, "%s  \"batter_seat_offered\": %d,\n", sp, game->offers.batter_seat);
         fprintf(f, "%s  \"free_walk_offered\": %d,\n", sp, game->offers.free_walk);
         fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
@@ -332,7 +331,7 @@ int state_validator_check(StateInfo* state)
     GameRulesState* rules = state->rules;
 
     // Skip validation if the game is already paused (avoid redundant checks/dumps)
-    if (game->flowControl.pause) return 1;
+    if (state->paused) return 1;
 
     // Invariant 1: Unique Base Occupancy (Safe players)
     // Check baseControlIndex vs Player state

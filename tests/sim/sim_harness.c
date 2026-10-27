@@ -136,8 +136,8 @@ int sim_tick(SimGame* g)
 
     // The production validator pauses the game on an invariant violation. Headless
     // there is no other pause source (no HOME key), so a set pause means a violation.
-    if (g->state->match->flowControl.pause) {
-        sim_fail(g, "state validator tripped (flowControl.pause set)");
+    if (g->state->paused) {
+        sim_fail(g, "state validator tripped (the session was paused)");
     }
 
     for (int i = 0; i < g->hook_count; i++) {

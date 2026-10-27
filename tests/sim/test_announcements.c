@@ -133,14 +133,14 @@ int test_the_info_line_holds_its_message_while_paused(void)
     ASSERT(an_announcement_is_on_the_line(&hud, g), "the referee never announced anything");
     const GameEventType shown = hud.infoEvent;
 
-    g->state->match->flowControl.pause = 1;
+    g->state->paused = 1;
     for (int i = 0; i < 500; i++) {
         update_game_screen(g->state, &hud, &g->menu);
     }
     ASSERT_EQ((int)shown, (int)hud.infoEvent, "the paused screen still shows the message");
     ASSERT_EQ(0, hud.infoEventTimer, "and its clock has not moved: 500 screen frames, no game time");
 
-    g->state->match->flowControl.pause = 0;
+    g->state->paused = 0;
     int cleared = 0;
     for (int i = 0; i < 500 && !cleared; i++) {
         update_game_screen(g->state, &hud, &g->menu);

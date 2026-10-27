@@ -706,8 +706,6 @@ void initialize_action_info(MatchSession* match)
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
 void reset_flow_state(MatchSession* match)
 {
-    // Flow control
-    match->flowControl.pause = 0;
     // No question is open after a reset, and there is no BALL whose free walk is still to be worked out.
     match->offers = (BattingOffers){0};
     match->free_walk = (FreeWalkEntitlement){.worked_out = 1, .runner = -1, .from = BASE_NONE};

@@ -16,7 +16,7 @@
 /* ---- Invariant observer ------------------------------------------------ *
  * Asserts the game never enters an invalid or stuck state. The production
  * state_validator (unique base occupancy, single batter) already guards the
- * frame via flowControl.pause; this adds bounds, monotonicity, and a no-stall
+ * frame by pausing the session; this adds bounds, monotonicity, and a no-stall
  * (liveness) check, and records that the game actually progressed. On a
  * violation it calls sim_fail(), which stops the run. */
 typedef struct {

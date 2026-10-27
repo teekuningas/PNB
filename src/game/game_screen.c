@@ -77,19 +77,19 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, MenuInfo* menuInfo)
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-        if (stateInfo->match->flowControl.pause == 0) {
-            stateInfo->match->flowControl.pause = 1;
+        if (stateInfo->paused == 0) {
+            stateInfo->paused = 1;
             state_validator_dump(stateInfo, "Manual Pause");
-        } else if (stateInfo->match->flowControl.pause == 1) {
+        } else if (stateInfo->paused == 1) {
             stateInfo->changeScreen = 1;
             stateInfo->updated = 0;
             stateInfo->screen = SCREEN_MAIN_MENU;
             menuInfo->mode = MENU_ENTRY_NORMAL;
         }
     }
-    if (stateInfo->match->flowControl.pause == 1) {
+    if (stateInfo->paused == 1) {
         if (((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-            stateInfo->match->flowControl.pause = 0;
+            stateInfo->paused = 0;
         }
     }
     // update camera
@@ -562,6 +562,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
 static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud)
 {
+    stateInfo->paused = 0;
     hud->infoEventTimer = -1;
     // initialize cam
     init_cam_settings(stateInfo);

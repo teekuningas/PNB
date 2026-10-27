@@ -832,11 +832,6 @@ typedef struct _BetweenPitchState {
     BatOutcome batOutcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
 } BetweenPitchState;
 
-// MILESTONE 17: User interaction flow control
-typedef struct _FlowControl {
-    int pause;
-} FlowControl;
-
 // The two questions the engine puts to the batting side and waits on: who takes the bat next (§27), and
 // whether the lead runner takes the free walk (§26). Consolidation raises each; its answer, a reset, or
 // the situation that raised it going away closes it. Only that a question is OPEN lives here — what a
@@ -1251,7 +1246,6 @@ typedef struct _MatchSession {
     CatchingTeamState catchingState;
     FieldingPosts fielding_posts;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
-    FlowControl flowControl; // MILESTONE 17 - User flow gates
     BattingOffers offers;
     FreeWalkEntitlement free_walk;
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
@@ -1296,6 +1290,11 @@ typedef struct _StateInfo {
     int stopSoundEffect;
     int soundEnabled;
     int currently_played_cup_match_index; // Used to pass match context to/from game screen
+    // Whether the match is paused: SESSION control, which decides whether a tick runs at all, so it is not
+    // game state and lives with whoever runs the session rather than in the World. The player pauses it
+    // from the screen, the state validator pauses it on a failed check, and starting the game screen
+    // clears it.
+    int paused;
     // addresses to important information structures
     KeyStates* keyStates;
     TeamData* teamData;

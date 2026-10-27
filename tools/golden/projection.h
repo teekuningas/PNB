@@ -94,7 +94,7 @@ static void project(const StateInfo* st)
         batting_cycle_is_open(ab),
         ab->may_leave_home, m->chase_replan != CHASE_REPLAN_NONE, m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
 
-    put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", m->flowControl.pause, m->offers.batter_seat,
+    put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
     put(4, "gfs=%d,%d;", m->gameFlowState.homeRunCameraCounter, ball_is_home(m, st->fieldPositions));
     put(4, "cam=%d;", m->cameraState.homeRunCameraFlag);

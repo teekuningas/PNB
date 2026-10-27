@@ -8,7 +8,8 @@
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
-   WRITES: PlayerInfo, FlowControl, the ball's flight, the at-bat, GameFlowState
+   WRITES: PlayerInfo, the offers to the batting side, the free-walk entitlement, the ball's flight,
+   the at-bat, GameFlowState
       5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
       6. Snapshot        (debug)
       7. Cleanup         (clear_frame_events)
@@ -60,7 +61,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 
 int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
-    if (stateInfo->match->flowControl.pause != 0) return 0;
+    if (stateInfo->paused) return 0;
     MatchSession* game = stateInfo->match;
     GameRulesState* rules = stateInfo->rules;
 
@@ -131,7 +132,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // Validate state consistency (Debug only)
     if (!state_validator_check(stateInfo)) {
         state_validator_dump(stateInfo, "State Consistency Check Failed");
-        stateInfo->match->flowControl.pause = 1;
+        stateInfo->paused = 1;
     }
 
     // 7. Clear transient events for the next frame
@@ -141,7 +142,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
 {
     // players and ball are the building blocks of all the action on the screen.
-    if (stateInfo->match->flowControl.pause == 0) {
+    if (!stateInfo->paused) {
 #ifndef NO_RENDER
         draw_player_renderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
         draw_ball(&(stateInfo->match->ballInfo), alpha, rm);

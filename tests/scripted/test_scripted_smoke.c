@@ -19,7 +19,7 @@
 
 /* ---- 1. Liveness / no-corruption ------------------------------------------------------------ *
  * A human-controlled team that does nothing, ticked through the real update_game_frame for a budget.
- * The production state validator guards every frame (a violation sets flowControl.pause, which the
+ * The production state validator guards every frame (a violation pauses the session, which the
  * harness reports as failure). The game legitimately *stalls* (a human who never acts never takes
  * their turn) — that is fine; we assert only that no frame corrupts state. */
 int test_scripted_human_runs_headless(void)

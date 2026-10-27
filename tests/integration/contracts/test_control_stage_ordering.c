@@ -58,7 +58,7 @@ int test_control_stage_precedes_execution(void)
     ASSERT_EQ(
         0, ctx->state->channels.catching.count, "no intent may be on the channel before the frame under test runs"
     );
-    ASSERT_EQ(0, ctx->state->match->flowControl.pause, "update_game_frame no-ops while paused");
+    ASSERT_EQ(0, ctx->state->paused, "update_game_frame no-ops while paused");
 
     // ---- exactly ONE frame of the real production pipeline. No stage is called by hand.
     update_game_frame(ctx->state, &ctx->menu);
