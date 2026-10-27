@@ -76,7 +76,7 @@ other_warnings=$(($(printf '%s\n' "$warnings" | grep -c 'warning:') - dead_param
 # A signature that names a parameter it never reads over-claims its edge in the
 # dependency DAG — the mirror of the missing const. A signature is meant to be the
 # function's complete, honest edge list.
-ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 34
+ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 33
 
 # A non-static function with no prototype in any header is an edge in the include
 # graph that no header records: nothing outside the file can see it declared, yet

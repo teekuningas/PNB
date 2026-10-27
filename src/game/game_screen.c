@@ -193,7 +193,7 @@ void draw_game_screen(
     glEnable(GL_LIGHTING);
     glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
-    draw_immutable_world(stateInfo, alpha, rm);
+    draw_immutable_world(rm);
     draw_game_frame(stateInfo, alpha, rm);
 
     // statistics - Switch to 2D

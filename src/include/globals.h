@@ -8,10 +8,6 @@
 #include <malloc.h>
 #include <math.h>
 
-// linux and windows code
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 // global constants
 #define PI 3.141f
 #define EPSILON 0.005f
@@ -120,14 +116,6 @@ typedef enum {
 #define BALL_SIZE 0.1f
 
 #define INIT_LOCALS_COUNT 5
-
-#define GROUND_UNIT_COUNT 30
-
-typedef struct _GroundUnit {
-    GLuint texture;
-    int x;
-    int y;
-} GroundUnit;
 
 #define DISTANCE_FROM_HOME_LOCATION_THRESHOLD 1.75f
 #define TARGET_ACHIEVED_THRESHOLD                                                                                      \
@@ -1243,7 +1231,6 @@ typedef struct _MatchSession {
     AtBat at_bat;
     ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking
     RunnerCommitments runner_commitments;
-    GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
 
     // The engine's random stream. This is World state, not an ambient service: under the tick

@@ -13,8 +13,19 @@
 #define FENCE_PIECE_WIDTH 4.0f
 #define RUNNER_BASE_OFFSET 0.8f
 
-static int initGround(StateInfo* stateInfo, ResourceManager* rm);
-static void drawGround(const StateInfo* stateInfo, ResourceManager* rm);
+// One tile of the ground: a texture laid at a place on the grid. The field's twelve painted tiles come first,
+// then the grass around them. Render-side and fixed once loaded — it used to sit in the World, a GL handle in
+// the blittable struct, though nothing in the game ever read it.
+typedef struct _GroundUnit {
+    GLuint texture;
+    int x;
+    int y;
+} GroundUnit;
+
+static GroundUnit groundUnit[GROUND_UNIT_COUNT];
+
+static int initGround(ResourceManager* rm);
+static void drawGround(ResourceManager* rm);
 
 static int initFence(ResourceManager* rm);
 static void drawFence(ResourceManager* rm);
@@ -26,7 +37,7 @@ int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
 
-    result = initGround(stateInfo, rm);
+    result = initGround(rm);
     if (result != 0) {
         printf("Initialization of ground failed.");
         return result;
@@ -46,9 +57,9 @@ int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
     return 0;
 }
 
-void draw_immutable_world(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
+void draw_immutable_world(ResourceManager* rm)
 {
-    drawGround(stateInfo, rm);
+    drawGround(rm);
     drawFence(rm);
     drawPlate(rm);
 }
@@ -130,10 +141,10 @@ static void drawFence(ResourceManager* rm)
     }
 }
 
-static void drawGround(const StateInfo* stateInfo, ResourceManager* rm)
+static void drawGround(ResourceManager* rm)
 {
     int i;
-    const GroundUnit* gu = stateInfo->match->groundUnit;
+    const GroundUnit* gu = groundUnit;
     GLuint planeModel = resource_manager_get_model(rm, "data/models/plane.obj");
 
     // here we use groundUnit[12].texture for all grass ground pieces.
@@ -168,10 +179,10 @@ static int initPlate(ResourceManager* rm)
     return 0;
 }
 
-static int initGround(StateInfo* stateInfo, ResourceManager* rm)
+static int initGround(ResourceManager* rm)
 {
     int i, j, counter;
-    GroundUnit* gu = stateInfo->match->groundUnit;
+    GroundUnit* gu = groundUnit;
     // first we create the play area, in order of groundUnit[0] being lowerleft, groundUnit[1] being second in left etc.
     for (i = 0; i < 3; i++) {
         for (j = 0; j < 4; j++) {

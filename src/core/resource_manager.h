@@ -1,6 +1,7 @@
 #ifndef RESOURCE_MANAGER_H
 #define RESOURCE_MANAGER_H
 
+#include <GL/glew.h>
 #include "globals.h"
 #include "loadobj.h"
 

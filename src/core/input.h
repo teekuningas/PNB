@@ -2,6 +2,8 @@
 #define INPUT_H
 
 #include "globals.h"
+#include <GL/glew.h> // before GLFW, which pulls in gl.h
+#include <GLFW/glfw3.h>
 
 int init_input(StateInfo* stateInfo);
 void update_input(StateInfo* stateInfo, GLFWwindow* window);
