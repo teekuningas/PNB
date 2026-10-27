@@ -131,8 +131,7 @@ static void throw_release(MatchSession* match)
     // asks it with nobody holding the ball — while the thrower gathers, the target is the windup's own.
     match->ballInfo.thrown_to = windup.target;
     // Trigger fielder selection update after throw
-    match->pRAI.refresh_catch_and_change = 1;
-    match->pRAI.init_player_selection = 1;
+    request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
     // prevent this player from catching the ball right after throwing
     match->pII.lastHadBallIndex = match->pII.hasBallIndex;
     match->pII.hasBallIndex = -1;
@@ -207,8 +206,7 @@ void drop_ball(MatchSession* match)
     // and use generic_sling_ball again to get the ball to the world.
     generic_sling_ball(&(match->ballInfo), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT);
     // Trigger fielder selection update after drop
-    match->pRAI.refresh_catch_and_change = 1;
-    match->pRAI.init_player_selection = 1;
+    request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
     // and set the lastHadBallIndex so that this player cannot catch it before it hits ground
     match->pII.lastHadBallIndex = match->pII.hasBallIndex;
     // and no player has the ball anymore.

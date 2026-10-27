@@ -487,8 +487,7 @@ void update_batting(
                             // make the ball fly in the air with new velocity
                             generic_sling_ball(&(match->ballInfo), velocity.x, velocity.y, velocity.z);
                             // Trigger fielder selection update after ball is hit
-                            match->pRAI.refresh_catch_and_change = 1;
-                            match->pRAI.init_player_selection = 1;
+                            request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
                             // and the sound
                             *playSoundEffect = SOUND_SWING;
                             // bat hits — event for referee to promote

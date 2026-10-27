@@ -385,8 +385,7 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
 
     // Use the game's actual sling function (sets velocity + flags)
     // Trigger fielder selection update (same as game does after throws)
-    game->pRAI.refresh_catch_and_change = 1;
-    game->pRAI.init_player_selection = 1;
+    request_chase_replan(game, CHASE_REPLAN_AND_HAND_OVER);
     generic_sling_ball(&game->ballInfo, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
 }
 

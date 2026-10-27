@@ -339,6 +339,11 @@ void lead_from_base(
     }
 }
 
+void request_chase_replan(MatchSession* match, ChaseReplan request)
+{
+    if (request > match->chase_replan) match->chase_replan = request;
+}
+
 void change_player(MatchSession* match)
 {
     // this is called by user explicitly and sometimes after updating change_player lists — both only
@@ -759,8 +764,7 @@ void initialize_prai_information(MatchSession* match)
     match->at_bat.cycle_open = 0;
     match->at_bat.may_leave_home = 0;
     match->at_bat.stands_ready = 0;
-    match->pRAI.refresh_catch_and_change = 0;
-    match->pRAI.init_player_selection = 0;
+    match->chase_replan = CHASE_REPLAN_NONE;
     match->at_bat.setup_pending = 0;
     for (i = 0; i < BASE_COUNT; i++) {
         match->pRAI.will_start_running[i] = 0;

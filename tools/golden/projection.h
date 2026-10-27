@@ -90,7 +90,7 @@ static void project(const StateInfo* st)
     for (int i = 0; i < BASE_COUNT; i++) put(3, "w%d,", a->will_start_running[i]);
     const AtBat* ab = &m->at_bat;
     put(3, "ib=%d br=%d bgo=%d bca=%d rcc=%d ips=%d", ab->setup_pending, ab->stands_ready, ab->cycle_open,
-        ab->may_leave_home, a->refresh_catch_and_change, a->init_player_selection);
+        ab->may_leave_home, m->chase_replan != CHASE_REPLAN_NONE, m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
 
     const FlowControl* fc = &m->flowControl;
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", fc->pause, fc->waitingForBatterDecision,

@@ -20,6 +20,8 @@ void run_to_previous_base(
 void lead_from_base(
     PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
 );
+// Ask the ranking to re-plan the chase this tick — see ChaseReplan. Never lowers a request already made.
+void request_chase_replan(MatchSession* match, ChaseReplan request);
 void change_player(MatchSession* match);
 void prepare_batter(MatchSession* match);
 void calculate_free_walk(MatchSession* match, const RefereeState* referee);

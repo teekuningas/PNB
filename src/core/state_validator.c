@@ -487,5 +487,13 @@ int state_validator_check(StateInfo* state)
         return 0;
     }
 
+    // Invariant 6: no chase re-plan is pending at the frame boundary. A change of flight asks for one and
+    // the ranking answers it later in the same tick; a request still standing here was raised after the
+    // ranking ran, by a stage that has no business changing the ball's flight.
+    if (game->chase_replan != CHASE_REPLAN_NONE) {
+        printf("\n[STATE ERROR] FATAL: a chase re-plan was requested after the ranking had run this tick\n");
+        return 0;
+    }
+
     return 1; // Valid
 }

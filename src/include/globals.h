@@ -1180,13 +1180,21 @@ typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
 } HomeRunContestState;
 
+// Re-plan the chase. Something has just changed the ball's flight — a throw, a hit or a drop sent it off,
+// or it bounced, came to rest or met the fence — so the fielders' ranking and the point the ball can next
+// be met are out of date. Whatever changed the flight raises the request; the ranking
+// (rank_players_and_move_them) answers it later in the same tick and is the one thing that clears it, so
+// nothing is ever pending at a frame boundary, and the state validator holds that.
+//
+// A throw, a hit and a drop also hand control to the best-placed fielder; a bounce or the fence only
+// re-plans. One value and not two flags: "hand control over" without "re-plan" was representable as two
+// flags and meant nothing. Raising never lowers (request_chase_replan), so a bounce in the tick of a hit
+// keeps the hit's hand-over.
+typedef enum { CHASE_REPLAN_NONE = 0, CHASE_REPLAN, CHASE_REPLAN_AND_HAND_OVER } ChaseReplan;
+
 typedef struct _PlayerRelatedActionInfo {
 
     int will_start_running[BASE_COUNT];
-
-    int refresh_catch_and_change; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
-    int init_player_selection; // and sometimes with refresh_catch_and_change we set also init_player_selection
-    // so that
 
 } PlayerRelatedActionInfo;
 
@@ -1222,6 +1230,7 @@ typedef struct _MatchSession {
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;
+    ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;
