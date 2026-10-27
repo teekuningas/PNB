@@ -243,8 +243,7 @@ void update_main_menu(
     }
     case MENU_STAGE_HOMERUN_CONTEST_1: {
         nextStage = update_homerun_contest_menu(
-            &menuData->homerun1, keyStates, menuData->stage, &menuData->pendingGameSetup,
-            (const TeamData*)stateInfo->teamData
+            &menuData->homerun1, keyStates, menuData->stage, &menuData->pendingGameSetup, stateInfo->teamData
         );
         if (nextStage != menuData->stage) {
             menuData->stage = nextStage;
@@ -253,8 +252,7 @@ void update_main_menu(
     }
     case MENU_STAGE_HOMERUN_CONTEST_2: {
         nextStage = update_homerun_contest_menu(
-            &menuData->homerun2, keyStates, menuData->stage, &menuData->pendingGameSetup,
-            (const TeamData*)stateInfo->teamData
+            &menuData->homerun2, keyStates, menuData->stage, &menuData->pendingGameSetup, stateInfo->teamData
         );
         if (nextStage != menuData->stage) {
             if (nextStage == MENU_STAGE_GO_TO_GAME) {
@@ -323,7 +321,7 @@ void draw_main_menu(
         draw_batting_order_menu(&menuData->batting_order, menuData->stage, rs, rm);
         break;
     case MENU_STAGE_TEAM_SELECTION:
-        draw_team_selection_menu(&menuData->team_selection, (const TeamData*)stateInfo->teamData, rs, rm);
+        draw_team_selection_menu(&menuData->team_selection, stateInfo->teamData, rs, rm);
         break;
     case MENU_STAGE_HUTUNKEITTO:
         draw_hutunkeitto_menu(
@@ -332,17 +330,13 @@ void draw_main_menu(
         break;
 
     case MENU_STAGE_GAME_OVER:
-        draw_game_over_menu(stateInfo->gameConclusion, (const TeamData*)stateInfo->teamData, rs, rm);
+        draw_game_over_menu(stateInfo->gameConclusion, stateInfo->teamData, rs, rm);
         break;
     case MENU_STAGE_HOMERUN_CONTEST_1:
-        draw_homerun_contest_menu(
-            &menuData->homerun1, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData
-        );
+        draw_homerun_contest_menu(&menuData->homerun1, rs, rm, stateInfo->teamData);
         break;
     case MENU_STAGE_HOMERUN_CONTEST_2:
-        draw_homerun_contest_menu(
-            &menuData->homerun2, (const RenderState*)rs, rm, (const TeamData*)stateInfo->teamData
-        );
+        draw_homerun_contest_menu(&menuData->homerun2, rs, rm, stateInfo->teamData);
         break;
     case MENU_STAGE_CUP:
         draw_cup_menu(&menuData->cup_menu, stateInfo, rs, rm);

@@ -175,6 +175,18 @@ action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='
 ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 
 # ---------------------------------------------------------------------------
+# Zero const-casts — the first principle's own claim, and until 2026-10-27 nothing counted it: the draw
+# code reached the World's camera through `(CameraState*)&(stateInfo->match->cameraState)` on a const
+# StateInfo, and every guardrail stayed green. A cast to a struct pointer is how const is thrown away, so
+# this counts every pointer cast in src/ that is not the result of an allocation; there are none, and
+# the floor is a floor.
+# ---------------------------------------------------------------------------
+pointer_casts=$(grep -rnE '\(\s*(const\s+)?[A-Za-z_][A-Za-z_0-9]*\s*\*\s*\)' src --include='*.c' --include='*.h' |
+    grep -vE '\(\s*(const\s+)?(void|char)\s*\*\s*\)' | grep -vE '\*\s*\)\s*(malloc|calloc|realloc)\(' |
+    grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
+ratchet "pointer casts other than allocations" "$pointer_casts" 0
+
+# ---------------------------------------------------------------------------
 # No read-back — the fourth law. A controller reads the world to know what is legal and to draw:
 # what a body is doing (catching_action.kind, a ball in the air) is the world. What a producer
 # DECLARED, once the engine holds it, is not — the windup's power and aim, a throw's target and
