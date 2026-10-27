@@ -941,8 +941,10 @@ typedef enum {
 typedef struct _AtBat {
     // §32: "Lyöntivuoroinen lyöjä saa edetä kotipesästä heti, kun pallo on irronnut lukkarin kädestä
     // ensimmäiseen syöttöön, riippumatta syötön laadusta." Granted when the FIRST pitch of the turn leaves
-    // the hand, and held for the rest of the turn — a right of the at-bat, not a fact about the pitch in
-    // the air, which is why nothing clears it between pitches. Seating the next batter starts it at 0.
+    // the hand. That it is then held for the rest of the turn is a READING, not the text: §32 names only
+    // when it begins, and §17 lets a batter leave home and come back to bat until he has become a runner
+    // for good. So no pitch clears it; seating the next batter starts it at 0, and so does a reset — a
+    // foul's included, which the reading would not (an open question for the rules audit).
     int may_leave_home;
 
     BattingCycle cycle;
