@@ -923,8 +923,6 @@ typedef struct _PendingActionState {
     CatchingAction catchingAction; // the pitch or throw in progress, if any
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
 
-    int run_bat_flag;
-
     // Batting related
     int batting_frame_count;
     int increase_batting_frame_count;

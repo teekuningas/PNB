@@ -349,7 +349,7 @@ void update_batting(
         }
 
         // so now can actually start thinking about advancing as the ball is in air.
-        if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE && match->pendingActionState.run_bat_flag == 0) {
+        if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
             // start the animation and advancing.
             if (match->pendingActionState.increase_batting_frame_count == 0) {
                 match->pendingActionState.increase_batting_frame_count = 1;
@@ -512,7 +512,6 @@ void update_batting(
                                 match->pRAI.will_start_running[0] = 0;
                                 if (base_index != -1) {
                                     run_to_next_base(match, fieldPositions, base_index, BASE_HOME);
-                                    match->pendingActionState.run_bat_flag = 1;
                                 }
                             }
                         }

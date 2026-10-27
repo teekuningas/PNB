@@ -68,7 +68,6 @@ void init_execute_actions(MatchSession* match)
 {
     match->pendingActionState.catchingAction = (CatchingAction){0};
     init_batting_system(match);
-    match->pendingActionState.run_bat_flag = 0;
 }
 
 // The channel's producer-side operation. It lives beside the gate that drains it because the channel

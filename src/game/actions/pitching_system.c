@@ -103,7 +103,6 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->pII.lastHadBallIndex = pitcher; // pitcher won't catch its own pitch before it grounds
     match->pII.hasBallIndex = -1;
     match->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
-    match->pendingActionState.run_bat_flag = 0;
     match->pRAI.batter_can_advance = 1;
     match->cameraState.homeRunCameraFlag = 0;
     match->gameEvents.pitchReleased = 1;

@@ -29,7 +29,6 @@ static void stand_a_batter_ready(ScenarioContext* ctx)
     m->pRAI.batter_ready = 1;
     m->pRAI.init_batter = 1;
     m->pRAI.pitch_state = PITCH_STAGE_NONE;
-    m->pendingActionState.run_bat_flag = 0;
     simulate_frames(ctx, 1); // a ready batter with no pitch in the air is what starts the at-bat
 }
 
