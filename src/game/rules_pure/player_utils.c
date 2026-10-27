@@ -26,6 +26,24 @@ int get_batting_team_index(const Scoreboard* sb)
     return (sb->inning + sb->playsFirst + sb->period) % 2;
 }
 
+void batting_team_jokers(const Scoreboard* sb, int out[JOKER_COUNT])
+{
+    const TeamInfo* team = &sb->teams[get_batting_team_index(sb)];
+    for (int k = 0; k < JOKER_COUNT; k++) {
+        out[k] = team->batterOrder[PLAYERS_IN_TEAM + k];
+    }
+    // Insertion sort into roster order: three elements.
+    for (int k = 1; k < JOKER_COUNT; k++) {
+        const int index = out[k];
+        int m = k;
+        while (m > 0 && out[m - 1] > index) {
+            out[m] = out[m - 1];
+            m--;
+        }
+        out[m] = index;
+    }
+}
+
 int team_is_ai(TeamControlMode control)
 {
     return control == CONTROL_AI;
@@ -42,8 +60,10 @@ int list_batter_candidates(const MatchSession* game, const Scoreboard* sb, const
     if (batter_seat_verdict(inTurn, inTurn, spent, (int)game->playerInfo[inTurn].bTPI.joker) == SEAT_ALLOWED) {
         out[count++] = inTurn;
     }
+    int jokers[JOKER_COUNT];
+    batting_team_jokers(sb, jokers);
     for (int i = 0; i < JOKER_COUNT; i++) {
-        const int joker = game->pII.jokerIndices[i];
+        const int joker = jokers[i];
         if (batter_seat_verdict(joker, inTurn, spent, (int)game->playerInfo[joker].bTPI.joker) == SEAT_ALLOWED) {
             out[count++] = joker;
         }

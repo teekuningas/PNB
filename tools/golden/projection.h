@@ -81,7 +81,9 @@ static void project(const StateInfo* st)
     const PlayerIndexInfo* x = &m->pII;
     for (int i = 0; i < 4; i++) put(2, "%d,%d;", x->catcherOnBaseIndex[i], x->catcherReplacerOnBaseIndex[i]);
     for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", x->fielderRankedIndices[i]);
-    for (int i = 0; i < 3; i++) put(2, "j%d,", x->jokerIndices[i]);
+    int jokers[JOKER_COUNT];
+    batting_team_jokers(&r->scoreboard, jokers);
+    for (int i = 0; i < JOKER_COUNT; i++) put(2, "j%d,", jokers[i]);
     put(2, "has=%d last=%d ctl=%d chg=%d", x->hasBallIndex, x->lastHadBallIndex, x->controlIndex,
         x->changePlayerArrayIndex);
 

@@ -739,7 +739,6 @@ typedef struct _PlayerIndexInfo {
     int catcherReplacerOnBaseIndex[4]; // who is the guy replacing base i, if normal catcher is away
     int fielderRankedIndices[RANKED_FIELDERS_COUNT]; // indices of currently important players. user can change between
     // these, and these are also used to select players for busyCatching.
-    int jokerIndices[3]; // indices of all jokers.
     int hasBallIndex; // who has the ball
     int lastHadBallIndex; // who has the ball. set to hasBallIndex when throwing, pitching, or dropping
     // set to -1 when someone catches.

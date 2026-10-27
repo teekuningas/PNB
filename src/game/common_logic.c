@@ -569,7 +569,6 @@ void initialize_inning_permanent_player_information(
 {
     int battingTeamIndex = get_batting_team_index(scoreboard);
     int i;
-    int jokerCounter = 0;
 
     // initialize batting team numbers and jokerness
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -585,10 +584,6 @@ void initialize_inning_permanent_player_information(
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         match->playerInfo[i].cPI.team = TEAM_BATTING;
 
-        if (match->playerInfo[i].bTPI.joker == JOKER_AVAILABLE) {
-            match->pII.jokerIndices[jokerCounter] = i;
-            jokerCounter++;
-        }
         match->playerInfo[i].bTPI.name = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].name;
         match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
         match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;

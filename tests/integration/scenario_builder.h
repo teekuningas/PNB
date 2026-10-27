@@ -184,6 +184,10 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
  */
 void perform_pitch(ScenarioContext* ctx, float targetX);
 
+// The k-th of the batting team's jokers, in roster order — derived from the batting order, as the
+// engine derives it.
+int scenario_joker(ScenarioContext* ctx, int k);
+
 /**
  * @brief Spend all three of the batting team's jokers.
  *

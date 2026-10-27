@@ -416,8 +416,10 @@ int state_validator_check(StateInfo* state)
     // Ablated at the gate instead, in the contract tier, where the refusal actually happens.
     if (rules->scoreboard.period < 4) {
         int unusedJokers = 0;
+        int jokers[JOKER_COUNT];
+        batting_team_jokers(&rules->scoreboard, jokers);
         for (int i = 0; i < JOKER_COUNT; i++) {
-            if (game->playerInfo[game->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) unusedJokers++;
+            if (game->playerInfo[jokers[i]].bTPI.joker == JOKER_AVAILABLE) unusedJokers++;
         }
         if (unusedJokers > rules->halfInningState.jokersLeft) {
             printf(

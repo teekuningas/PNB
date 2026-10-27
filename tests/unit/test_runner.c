@@ -92,6 +92,7 @@ int main(int argc, char* argv[])
     // Player Utils tests
     RUN_TEST(test_get_active_batter_index);
     RUN_TEST(test_get_batting_team_index);
+    RUN_TEST(test_batting_team_jokers_are_the_order_after_the_regulars);
 
     // Scoring Helpers tests
     RUN_TEST(test_should_period_end_last_half_inning_lead);

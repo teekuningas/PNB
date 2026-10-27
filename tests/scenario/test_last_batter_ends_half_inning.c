@@ -288,7 +288,7 @@ int test_joker_opening_does_not_take_the_turn(void)
                      .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
 
     // A joker opens the half-inning, which is legal and which the batting AI does routinely.
-    int joker = st->match->pII.jokerIndices[0];
+    int joker = scenario_joker(ctx, 0);
     ASSERT(take_the_bat(ctx, joker), "setup: a joker should be able to open the half-inning");
     ASSERT_EQ(
         opener,

@@ -8,6 +8,7 @@
 #include "common_logic.h"
 #include "referee.h"
 #include "execute_actions.h"
+#include "rules_pure/player_utils.h"
 #include "action_invocations.h"
 #include "vector_math.h"
 #include <stdlib.h>
@@ -141,13 +142,20 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     // DO NOT touch referee state - let referee infer it from events
 }
 
+int scenario_joker(ScenarioContext* ctx, int k)
+{
+    int jokers[JOKER_COUNT];
+    batting_team_jokers(&ctx->state->rules->scoreboard, jokers);
+    return jokers[k];
+}
+
 void exhaust_jokers(ScenarioContext* ctx)
 {
     if (!ctx || !ctx->state) return;
 
     MatchSession* game = ctx->state->match;
     for (int i = 0; i < JOKER_COUNT; i++) {
-        game->playerInfo[game->pII.jokerIndices[i]].bTPI.joker = JOKER_USED;
+        game->playerInfo[scenario_joker(ctx, i)].bTPI.joker = JOKER_USED;
     }
     ctx->state->rules->halfInningState.jokersLeft = 0;
 }

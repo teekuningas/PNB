@@ -72,3 +72,29 @@ int test_get_batting_team_index(void)
 
     return TEST_PASSED;
 }
+// The jokers are whoever the batting team placed after its nine regulars, offered in roster order — and
+// it is the BATTING team's order that is read, which changes with the half-inning.
+int test_batting_team_jokers_are_the_order_after_the_regulars(void)
+{
+    Scoreboard sb;
+    memset(&sb, 0, sizeof(Scoreboard));
+    const int order0[12] = {3, 0, 1, 2, 4, 5, 6, 7, 8, 11, 9, 10};
+    const int order1[12] = {0, 1, 2, 3, 4, 5, 6, 10, 8, 7, 11, 9};
+    memcpy(sb.teams[0].batterOrder, order0, sizeof(order0));
+    memcpy(sb.teams[1].batterOrder, order1, sizeof(order1));
+
+    int jokers[JOKER_COUNT];
+    sb.inning = 0; // team 0 bats
+    batting_team_jokers(&sb, jokers);
+    ASSERT_EQ(9, jokers[0], "team 0: places 10-12 hold 11, 9, 10 — offered in roster order");
+    ASSERT_EQ(10, jokers[1], "team 0: second joker");
+    ASSERT_EQ(11, jokers[2], "team 0: third joker");
+
+    sb.inning = 1; // team 1 bats
+    batting_team_jokers(&sb, jokers);
+    ASSERT_EQ(7, jokers[0], "team 1: its own order's places 10-12 hold 7, 11, 9");
+    ASSERT_EQ(9, jokers[1], "team 1: second joker");
+    ASSERT_EQ(11, jokers[2], "team 1: third joker");
+
+    return TEST_PASSED;
+}

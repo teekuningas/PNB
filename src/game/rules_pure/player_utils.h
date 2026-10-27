@@ -43,6 +43,12 @@ int team_is_ai(TeamControlMode control);
 /** The most candidates §27 can ever offer: the lyöntivuoroinen regular plus the three jokers. */
 #define BATTER_CANDIDATE_MAX (1 + JOKER_COUNT)
 
+// The batting team's jokers: the three places after the nine regulars in its batting order, in roster
+// (player-index) order — the order a list of candidates has always offered them in. Derived from the
+// order wherever it is asked, never stored: the copy of it the World used to keep could only ever agree
+// with the order it was copied from, or be wrong.
+void batting_team_jokers(const Scoreboard* sb, int out[JOKER_COUNT]);
+
 /**
  * @brief The players who may take the bat right now, in the order §27 offers them.
  *

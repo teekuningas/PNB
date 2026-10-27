@@ -54,7 +54,7 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
     his->lastBatter.regularOrderSpent = 1;
     his->jokersLeft = JOKER_COUNT;
     for (int i = 0; i < JOKER_COUNT; i++) {
-        m->playerInfo[m->pII.jokerIndices[i]].bTPI.joker = JOKER_AVAILABLE;
+        m->playerInfo[scenario_joker(ctx, i)].bTPI.joker = JOKER_AVAILABLE;
     }
     m->flowControl.waitingForBatterDecision = 1;
 }
@@ -128,7 +128,7 @@ int test_seat_refuses_a_spent_joker(void)
     setup_order_spent_with_jokers(ctx, &inTurnRegular);
     MatchSession* m = ctx->state->match;
 
-    const int spentJoker = m->pII.jokerIndices[0];
+    const int spentJoker = scenario_joker(ctx, 0);
     m->playerInfo[spentJoker].bTPI.joker = JOKER_USED;
     ctx->state->rules->halfInningState.jokersLeft = JOKER_COUNT - 1;
 
@@ -194,7 +194,7 @@ int test_seat_waits_for_home_then_seats_the_named_joker(void)
     MatchSession* m = ctx->state->match;
     GameRulesState* r = ctx->state->rules;
 
-    const int joker = m->pII.jokerIndices[0];
+    const int joker = scenario_joker(ctx, 0);
 
     // Home is still owned by the departing batter: a legal request, an unavailable seat.
     ASSERT_NE(-1, get_base_controller(m, &r->referee, BASE_HOME), "setup: home must still be owned");
@@ -244,7 +244,7 @@ int test_repeated_seat_requests_seat_once(void)
     r->referee.battingPlayers[runner].currentSafetyBase = BASE_FIRST;
     m->playerInfo[runner].bTPI.baseId = BASE_FIRST;
 
-    const int joker = m->pII.jokerIndices[0];
+    const int joker = scenario_joker(ctx, 0);
     declare_seat(ctx, joker);
     declare_seat(ctx, joker);
     declare_seat(ctx, joker);
@@ -280,7 +280,7 @@ int test_seat_refuses_when_no_decision_is_open(void)
 
     m->flowControl.waitingForBatterDecision = 0;
 
-    declare_seat(ctx, m->pII.jokerIndices[0]);
+    declare_seat(ctx, scenario_joker(ctx, 0));
     tick_ingest(ctx);
 
     ASSERT_EQ(-1, get_active_batter_index(m), "nobody was asked to take the bat, so nobody may");

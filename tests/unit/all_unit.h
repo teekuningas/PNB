@@ -20,6 +20,7 @@ int test_get_ball_at_base_index(void);
 // Player utils (rules_pure/player_utils.c)
 int test_get_active_batter_index(void);
 int test_get_batting_team_index(void);
+int test_batting_team_jokers_are_the_order_after_the_regulars(void);
 
 // Scoring helpers (rules_pure/scoring_helpers.c — §8/§12 period cadence)
 int test_should_period_end_last_half_inning_lead(void);
