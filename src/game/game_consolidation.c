@@ -18,9 +18,11 @@ static void enforce_legal_state(
     MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
     const BetweenPitchState* bps
 );
-static int handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules);
-static void
-update_game_flow(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo);
+static int
+handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
+static void update_game_flow(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, MenuInfo* menuInfo
+);
 
 static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
 static void apply_batter_becomes_runner(
@@ -29,9 +31,9 @@ static void apply_batter_becomes_runner(
 static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee);
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
 );
-static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules);
+static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner);
 
 // ===============================================================================================
@@ -40,7 +42,7 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
 
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
@@ -142,7 +144,8 @@ static void enforce_legal_state(
 // INTERNAL: FOUL PLAY RESET
 // ===============================================================================================
 
-static int handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules)
+static int
+handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
     // Check if Referee has triggered the reset state
     if (rules->referee.foulState == FOUL_STATE_RESETTING) {
@@ -161,8 +164,9 @@ static int handle_foul_play_reset(MatchSession* match, const FieldPositions* fie
 // INTERNAL: GAME FLOW (formerly game_analysis)
 // ===============================================================================================
 
-static void
-update_game_flow(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo)
+static void update_game_flow(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, MenuInfo* menuInfo
+)
 {
     // when player from third base starts running, we change camera view. when the situation is over we
     // wait 50 update frames, before moving to normal camera
@@ -320,7 +324,7 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
 
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
@@ -364,7 +368,7 @@ static int check_end_of_inning(
     return 1; // Signal that we handled end-of-inning
 }
 
-static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules)
+static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
     const Scoreboard* scoreboard = &rules->scoreboard;
 

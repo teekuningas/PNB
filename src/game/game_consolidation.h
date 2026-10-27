@@ -14,11 +14,11 @@ typedef struct {
 // Initializes flow control counters and state
 
 // Main update function: Reacts to Referee decisions, manages flow, and enforces physical state.
-// Referee-owned state is passed as const — consolidation READS legal state but never WRITES to it.
-// The GameRulesState* is passed for reset recipes that need to read/reset contest state.
+// The legal world is passed const, and the compiler holds it: the referee is its only runtime writer, and
+// consolidation enforces what it decided without writing any of it — the reset recipes included.
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
 );
 
 #endif

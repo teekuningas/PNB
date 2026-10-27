@@ -736,7 +736,6 @@ void clear_frame_events(GameEvents* events)
     events->ballMissedByBat = 0;
     events->ballHitGround = 0;
     events->freeWalkAccepted = 0;
-    events->freeWalkRejected = 0;
     events->batterEntered = 0;
     // gameInitialized removed in M18.0
 }

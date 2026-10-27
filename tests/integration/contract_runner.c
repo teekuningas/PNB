@@ -28,6 +28,7 @@ static void run_contract_tests(void)
     // Phase 6.5 Compound Resets
     RUN_TEST(test_compound_foul_and_end_of_inning);
     RUN_TEST(test_compound_hr_pair_and_uncatchable);
+    RUN_TEST(test_contest_side_change_starts_from_the_first_pair);
 
     // Event→Decision promotion contracts
     RUN_TEST(test_bat_outcome_promotion);

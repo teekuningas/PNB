@@ -1063,6 +1063,19 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     clear_between_pitch_state(bps);
 }
 
+// A half-inning of the home-run contest starts from its first pair: the counter the last pair left at
+// pairCount goes back to 0 at the side change, by the referee that owns it. (It used to be zeroed inside the
+// physical reset recipe — the one write to the legal world outside the referee.) A counter still inside the
+// range is kept, exactly as before: only an early end reaches the side change with one, and that ends the game
+// through the menu, which starts the next contest from 0 itself.
+static void start_contest_half_inning_at_its_first_pair(HomeRunContestState* hrcs, const Scoreboard* scoreboard)
+{
+    if (scoreboard->period < 4) return;
+    if (!(hrcs->runnerBatterPairCounter > 0 && hrcs->runnerBatterPairCounter < scoreboard->pairCount)) {
+        hrcs->runnerBatterPairCounter = 0;
+    }
+}
+
 // Advance the scoreboard at end-of-inning and determine what period transition occurs.
 // Called by referee at DETECTED→RESETTING time. Consolidation reads periodTransition
 // to know what menu/screen action to take.
@@ -1408,6 +1421,7 @@ void update_referee(
             refereeState->endInningTimer = -1;
             clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState);
             advance_scoreboard_for_inning_end(refereeState, scoreboard);
+            start_contest_half_inning_at_its_first_pair(homeRunContestState, scoreboard);
         }
     } else if (endState == END_INNING_STATE_RESETTING) {
         // Handled by referee_finalize (post-consolidation stage).

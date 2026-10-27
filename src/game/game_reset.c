@@ -15,7 +15,7 @@ static void reset_physical_world(MatchSession* match, const FieldPositions* fiel
 // NOTE: Referee has already cleared its own legal state at DETECTED→RESETTING.
 // This function does NOT touch referee-owned state (ownership boundary).
 void reset_for_new_half_inning(
-    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, GameRulesState* rules
+    MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, const GameRulesState* rules
 )
 {
     reset_physical_world(match, field_positions);
@@ -25,16 +25,14 @@ void reset_for_new_half_inning(
     initialize_inning_permanent_player_information(match, &rules->scoreboard, team_data);
 
     if (rules->scoreboard.period >= 4) {
-        if (!(rules->homeRunContestState.runnerBatterPairCounter > 0 &&
-              rules->homeRunContestState.runnerBatterPairCounter < rules->scoreboard.pairCount)) {
-            rules->homeRunContestState.runnerBatterPairCounter = 0;
-        }
+        // The referee has already set the contest's pair counter for this half-inning (at the side change),
+        // or the menu has (starting a contest).
         setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions, 0);
     }
 }
 
 // Recipe 2: Foul play — referee already restored legal state from snapshot
-void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules)
+void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
     reset_physical_world(match, field_positions);
     reset_flow_state(match);

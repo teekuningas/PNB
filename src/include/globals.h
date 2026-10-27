@@ -799,7 +799,6 @@ typedef struct _GameEvents {
     int ballMissedByBat; // Bat swung and missed
     int ballHitGround; // Ball touched the ground this frame
     int freeWalkAccepted; // Player accepted free walk
-    int freeWalkRejected; // Player rejected free walk
     int batterEntered; // New: Signal that new batter is ready
 } GameEvents;
 

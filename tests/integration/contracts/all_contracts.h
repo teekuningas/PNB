@@ -18,6 +18,7 @@ int test_no_free_walk_runs_during_end_of_inning(void);
 // Phase 6.5
 int test_compound_foul_and_end_of_inning(void);
 int test_compound_hr_pair_and_uncatchable(void);
+int test_contest_side_change_starts_from_the_first_pair(void);
 
 // Event→Decision promotion contracts
 int test_bat_outcome_promotion(void);
