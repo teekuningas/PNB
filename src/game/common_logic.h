@@ -34,7 +34,6 @@ void initialize_ball_info(MatchSession* match);
 void initialize_action_info(MatchSession* match);
 void reset_flow_state(MatchSession* match);
 void initialize_index_information(MatchSession* match);
-void initialize_prai_information(MatchSession* match);
 void setup_homerun_physical_state(
     MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
     const FieldPositions* field_positions, int batterResumesInPlace

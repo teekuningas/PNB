@@ -198,12 +198,16 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     );
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"pRAI\": {\n", sp);
+    fprintf(f, "%s\"flight\": {\n", sp);
     fprintf(f, "%s  \"pitch_in_flight\": %d,\n", sp, game->ballInfo.pitch_in_flight);
+    fprintf(f, "%s  \"thrown_to\": %d\n", sp, (int)game->ballInfo.thrown_to);
+    fprintf(f, "%s},\n", sp);
+
+    fprintf(f, "%s\"atBat\": {\n", sp);
+    fprintf(f, "%s  \"may_leave_home\": %d,\n", sp, game->at_bat.may_leave_home);
     fprintf(f, "%s  \"stands_ready\": %d,\n", sp, game->at_bat.stands_ready);
     fprintf(f, "%s  \"cycle_open\": %d,\n", sp, game->at_bat.cycle_open);
-    fprintf(f, "%s  \"setup_pending\": %d,\n", sp, game->at_bat.setup_pending);
-    fprintf(f, "%s  \"thrown_to\": %d\n", sp, (int)game->ballInfo.thrown_to);
+    fprintf(f, "%s  \"setup_pending\": %d\n", sp, game->at_bat.setup_pending);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"actionState\": {\n", sp);

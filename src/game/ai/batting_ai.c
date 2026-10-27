@@ -72,20 +72,20 @@ static void declare_batter_choice(const MatchSession* match, const GameRulesStat
 }
 
 // Before the pitch, with the ball home: arm whoever the strategy sends. Both are self-limiting, so
-// neither needs bookkeeping. The batter's command sets will_start_running[BASE_HOME] when it is
+// neither needs bookkeeping. The batter's command sets runner_commitments.armed[BASE_HOME] when it is
 // actualized, which makes its guard false next frame; an armed runner (who, on 1st/2nd, leads off) is
 // no longer ON_BASE-and-unarmed, so it is not re-commanded.
 static void arm_runners_for_the_pitch(const MatchSession* match, const GameRulesState* rules, IntentChannel* channel)
 {
     const BattingStrategy strategy = batting_strategy_now(match, rules);
-    if (strategy.runBatter == 1 && match->pRAI.will_start_running[BASE_HOME] == 0) {
+    if (strategy.runBatter == 1 && match->runner_commitments.armed[BASE_HOME] == 0) {
         declare_run(channel, BASE_HOME, RUN_FORWARD);
     }
     if (strategy.runBaseRunners == 1) {
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
             if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE &&
-                match->pRAI.will_start_running[i] == 0) {
+                match->runner_commitments.armed[i] == 0) {
                 declare_run(channel, (BaseID)i, RUN_FORWARD);
             }
         }

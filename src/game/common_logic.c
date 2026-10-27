@@ -229,7 +229,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             return;
         }
         // and set it so that next player has to have a will of his own to run
-        match->pRAI.will_start_running[base] = 0;
+        match->runner_commitments.armed[base] = 0;
         // set state to running, BUT only if we aren't already WOUNDED, OUT, or ADVANCING_FREELY
         // (which are terminal/override states that must not be downgraded)
         if (match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
@@ -278,7 +278,7 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         }
 
         // and set it so that next player has to have a will of his own to run
-        match->pRAI.will_start_running[base] = 0;
+        match->runner_commitments.armed[base] = 0;
         // we arent going forward
         match->playerRuntime[index].goingForward = 0;
         // set state to running, BUT only if we aren't already WOUNDED or OUT
@@ -680,8 +680,9 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.thrown_to = BASE_NONE;
 }
 // Empty everything a play can have left on the table that is not physics: the catching action in progress,
-// the swing, and the catching team's own state — where the controlled fielder was told to go, and the
-// engine's prediction of where the ball can next be met. The last of those is not producer-set, but it is
+// the at-bat (the batter's cycle, his swing and his §32 right), the runners' standing orders, a chase
+// re-plan not yet answered, and the catching team's own state — where the controlled fielder was told to
+// go, and the engine's prediction of where the ball can next be met. The last of those is not producer-set, but it is
 // just as stale after a reset and it is cleared here so that ONE recipe owns the whole struct; the
 // alternative was two recipes clearing two fields of it, which is how the channel slice lost a
 // declaration. Each is cleared as a WHOLE STRUCT, never field by field — the field-by-field version this
@@ -695,8 +696,12 @@ void initialize_action_info(MatchSession* match)
 
     match->catching_action = (CatchingAction){0};
 
-    match->at_bat.swing = (SwingActualization){0};
+    match->at_bat = (AtBat){0};
     match->at_bat.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
+
+    match->runner_commitments = (RunnerCommitments){0};
+
+    match->chase_replan = CHASE_REPLAN_NONE;
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -757,20 +762,6 @@ void initialize_index_information(MatchSession* match)
     match->pII.controlIndex = -1;
     match->pII.changePlayerArrayIndex = -1;
 }
-// player-related action information initialization, can be called when foul play.
-void initialize_prai_information(MatchSession* match)
-{
-    int i;
-    match->at_bat.cycle_open = 0;
-    match->at_bat.may_leave_home = 0;
-    match->at_bat.stands_ready = 0;
-    match->chase_replan = CHASE_REPLAN_NONE;
-    match->at_bat.setup_pending = 0;
-    for (i = 0; i < BASE_COUNT; i++) {
-        match->pRAI.will_start_running[i] = 0;
-    }
-}
-
 void setup_homerun_physical_state(
     MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
     const FieldPositions* field_positions, int batterResumesInPlace

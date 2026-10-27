@@ -25,7 +25,7 @@
 #include <string.h>
 
 #define NSEC 12
-static const char* SEC_NAMES[NSEC] = {"players", "ball", "pII", "pRAI", "flow", "pitch",
+static const char* SEC_NAMES[NSEC] = {"players", "ball", "pII", "play", "flow", "pitch",
                                       "throw", "swing", "rules", "client", "ai", "out"};
 static char buf[NSEC][1 << 16];
 static int len[NSEC];

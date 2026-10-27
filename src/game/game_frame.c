@@ -8,7 +8,7 @@
       3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
    Scoreboard
       4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
-   WRITES: PlayerInfo, FlowControl, pRAI, GameFlowState
+   WRITES: PlayerInfo, FlowControl, the ball's flight, the at-bat, GameFlowState
       5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
       6. Snapshot        (debug)
       7. Cleanup         (clear_frame_events)

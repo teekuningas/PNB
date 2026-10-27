@@ -117,9 +117,9 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
 
     // commit any base runners that armed to break on the pitch
     for (i = 1; i < BASE_COUNT; i++) {
-        if (match->pRAI.will_start_running[i] == 1) {
+        if (match->runner_commitments.armed[i] == 1) {
             int index = get_base_controller(match, referee, (BaseID)i);
-            match->pRAI.will_start_running[i] = 0;
+            match->runner_commitments.armed[i] = 0;
             if (index != -1) {
                 run_to_next_base(match, fieldPositions, index, (BaseID)i);
             }

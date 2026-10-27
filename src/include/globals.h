@@ -1192,11 +1192,15 @@ typedef struct _HomeRunContestState {
 // keeps the hit's hand-over.
 typedef enum { CHASE_REPLAN_NONE = 0, CHASE_REPLAN, CHASE_REPLAN_AND_HAND_OVER } ChaseReplan;
 
-typedef struct _PlayerRelatedActionInfo {
-
-    int will_start_running[BASE_COUNT];
-
-} PlayerRelatedActionInfo;
+// The runners told to go on the next pitch, per base. A RUN_FORWARD on a settled runner arms him, and the
+// engine fires the order: a base runner sets off when the next pitch leaves the hand, the batter when the
+// bat meets the ball. Held until it fires or a RUN_BACK disarms it — so it outlives a valesyöttö and a
+// missed swing, which is what "on the next pitch" means — and taken off the base the moment its runner
+// leaves it by any run. Keyed by base and not by player because the order is "whoever is on this base",
+// as the controller who gave it saw it.
+typedef struct _RunnerCommitments {
+    int armed[BASE_COUNT];
+} RunnerCommitments;
 
 typedef struct _Scoreboard {
     TeamInfo teams[2];
@@ -1224,13 +1228,13 @@ typedef struct _MatchSession {
     PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
     CatchingTeamState catchingState;
     PlayerIndexInfo pII;
-    PlayerRelatedActionInfo pRAI;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     FlowControl flowControl; // MILESTONE 17 - User flow gates
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;
     ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking
+    RunnerCommitments runner_commitments;
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;

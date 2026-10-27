@@ -72,7 +72,7 @@ int test_a_base_run_needs_a_runner(void)
     memcpy(m, &before, sizeof(MatchSession));
     run_command(ctx, BASE_FIRST, RUN_FORWARD);
     tick(ctx);
-    ASSERT_EQ(1, m->pRAI.will_start_running[BASE_FIRST], "the runner on first is armed to go on the pitch");
+    ASSERT_EQ(1, m->runner_commitments.armed[BASE_FIRST], "the runner on first is armed to go on the pitch");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

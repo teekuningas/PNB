@@ -499,9 +499,9 @@ void update_batting(
 
                             // move the batter if wanted
 
-                            if (match->pRAI.will_start_running[0] == 1) {
+                            if (match->runner_commitments.armed[0] == 1) {
                                 int base_index = get_base_controller(match, referee, BASE_HOME);
-                                match->pRAI.will_start_running[0] = 0;
+                                match->runner_commitments.armed[0] = 0;
                                 if (base_index != -1) {
                                     run_to_next_base(match, fieldPositions, base_index, BASE_HOME);
                                 }

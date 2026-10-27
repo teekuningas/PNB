@@ -623,8 +623,8 @@ static void base_run(MatchSession* match, const FieldPositions* fieldPositions, 
     if (cmd == RUN_FORWARD) {
         if (settled_on_base) {
             // Arm only — never commit a settled runner here.
-            if (match->pRAI.will_start_running[base] == 0 && match->playerInfo[index].cPI.moving == 0) {
-                match->pRAI.will_start_running[base] = 1;
+            if (match->runner_commitments.armed[base] == 0 && match->playerInfo[index].cPI.moving == 0) {
+                match->runner_commitments.armed[base] = 1;
                 if (base == BASE_FIRST || base == BASE_SECOND) {
                     lead_from_base(match->playerInfo, match->playerRuntime, fieldPositions, index);
                 }
@@ -640,7 +640,7 @@ static void base_run(MatchSession* match, const FieldPositions* fieldPositions, 
         run_to_next_base(match, fieldPositions, index, base);
     } else { // RUN_BACK
         if (settled_on_base) {
-            match->pRAI.will_start_running[base] = 0; // cancel a pending lead
+            match->runner_commitments.armed[base] = 0; // cancel a pending lead
         } else {
             run_to_previous_base(match, fieldPositions, index, base);
         }
