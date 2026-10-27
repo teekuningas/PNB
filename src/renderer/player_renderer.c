@@ -159,7 +159,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
         // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
         // and human (the AI declares power directly; the windup + arc are the same engine path).
-        const CatchingAction* action = &stateInfo->match->pendingActionState.catchingAction;
+        const CatchingAction* action = &stateInfo->match->catching_action;
         int timer = action->timer;
         int crouch = pitch_windup_crouch_frames(action->as.pitch.power);
         if (timer < PITCH_WINDUP_DOWN_FRAMES) {
@@ -185,7 +185,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
         // hold. Mapped to the full-power windup length; animationStage is ignored (the timer is master).
         // Works identically for AI and human — the same engine clock.
-        int timer = stateInfo->match->pendingActionState.catchingAction.timer;
+        int timer = stateInfo->match->catching_action.timer;
         int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;
         if (f >= THROW_LOAD_FRAMES) f = THROW_LOAD_FRAMES - 1;
         if (f < 0) f = 0;

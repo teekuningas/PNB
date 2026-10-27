@@ -26,7 +26,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
 
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->pRAI.batting_going_on == 1) return 1;
+        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
     }
     return 0;
 }
@@ -51,16 +51,16 @@ int test_scripted_aim_key_walks_the_batter_and_release_stops_him(void)
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
 
     MatchSession* m = scripted_match(g);
-    const float start = m->pendingActionState.batter_angle;
+    const float start = m->at_bat.arc_angle;
 
     const int HELD = 8;
     scripted_hold(g, HUMAN_PAD, KEY_PLUS);
     scripted_run(g, HELD);
-    const float walked = m->pendingActionState.batter_angle;
+    const float walked = m->at_bat.arc_angle;
 
     scripted_release(g, HUMAN_PAD, KEY_PLUS);
     scripted_run(g, 20);
-    const float rested = m->pendingActionState.batter_angle;
+    const float rested = m->at_bat.arc_angle;
 
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];

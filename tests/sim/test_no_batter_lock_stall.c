@@ -6,7 +6,7 @@
 //
 // When an at-bat ended (e.g. a 3rd-strike forced run) while the AI batting team still held
 // AI_BATTING_LOCK from its in-progress swing, the lock was never released: the swing's release
-// path lives inside the batter_ready block, which no longer runs once the at-bat is over. The
+// path lives inside the stands_ready block, which no longer runs once the at-bat is over. The
 // next batter decision requires AI_NO_LOCK, so the whole AI-vs-AI game deadlocked.
 //
 // Mislabelled the "inning-rollover stall" in older notes — it is not a rollover/reset bug, it

@@ -3,8 +3,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-// Largest bat angle (each side) the AI aims for. The batting system doubles batter_angle into the
-// launch heading (theta = -batter_angle*2), and the foul lines sit at about ±0.75 rad. So an angle
+// Largest bat angle (each side) the AI aims for. The batting system doubles arc_angle into the
+// launch heading (theta = -arc_angle*2), and the foul lines sit at about ±0.75 rad. So an angle
 // A maps to a launch fan of ±2A: choose A so the fan fills the fair field and only the very edges
 // clip foul. Normal swing 0.38 → ±0.76 rad (fills the field, rare foul). Bunts are short and were
 // the main out-of-bounds culprit (the old fixed ±0.5 clamped to 0.449 → ±0.90 rad, well past the

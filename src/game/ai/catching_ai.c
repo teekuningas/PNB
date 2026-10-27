@@ -24,8 +24,8 @@ static void update_ai_pitching(
     // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
     // engine owns the windup + release.
     if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
-        match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
-        match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE && aiController->batterReadyTimer > AI_PITCH_DELAY) {
+        match->catching_action.kind == CATCHING_ACTION_NONE && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+        aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
@@ -53,10 +53,10 @@ static void update_ai_pitching(
 
     // batterReadyTimer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
     // ready batter; reset whenever the batter is not ready).
-    if (match->pRAI.batter_ready == 1 && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
+    if (match->at_bat.stands_ready == 1 && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
         aiController->batterReadyTimer == -1) {
         aiController->batterReadyTimer = 0;
-    } else if (match->pRAI.batter_ready == 0) {
+    } else if (match->at_bat.stands_ready == 0) {
         aiController->batterReadyTimer = -1;
     }
     if (aiController->batterReadyTimer != -1) {
@@ -103,7 +103,7 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     // Don't start a throw if any catching action is already in progress. We read the real
     // catching action in progress directly — the AI no longer keeps a duplicate
     // throwStage/AI_THROW_LOCK state machine that had to mirror (and drifted from) it.
-    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
+    if (match->catching_action.kind != CATCHING_ACTION_NONE) {
         return;
     }
 
@@ -156,7 +156,7 @@ void update_catching_ai(
     if (match->pII.hasBallIndex == -1 && match->pII.controlIndex != -1) {
         // gate on the real execution-side mutex (no catching action in progress) — the AI's duplicate
         // aiActionEventLock/aiLockUpdate is gone.
-        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
+        if (match->catching_action.kind == CATCHING_ACTION_NONE) {
             if (match->pRAI.throw_going_to_base == -1 || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
                     &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->catchingState.ballTargetPoint)
@@ -229,7 +229,7 @@ void update_catching_ai(
             else
                 throwBase = 0;
 
-            if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
+            if (match->catching_action.kind == CATCHING_ACTION_NONE) {
                 // Two different jobs share this move, and telling them apart is what keeps the
                 // game alive.
                 //

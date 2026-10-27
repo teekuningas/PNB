@@ -56,7 +56,7 @@ static float horizontal_length(Vector3D v)
 // the base they would throw to.
 Permission throw_may_begin(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
-    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
+    if (match->catching_action.kind != CATCHING_ACTION_NONE) {
         return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
     }
     if (match->pII.hasBallIndex == -1) {
@@ -95,8 +95,7 @@ static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldP
     match->playerInfo[thrower].tPI.orientation.x = windup.direction.x;
     match->playerInfo[thrower].tPI.orientation.z = windup.direction.z;
 
-    match->pendingActionState.catchingAction =
-        (CatchingAction){.kind = CATCHING_ACTION_THROWING, .timer = 0, .as.throw = windup};
+    match->catching_action = (CatchingAction){.kind = CATCHING_ACTION_THROWING, .timer = 0, .as.throw = windup};
 }
 
 // Launch the ball toward the latched base with the DECLARED power — a trusted value (the AI's strategy, or
@@ -104,8 +103,8 @@ static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldP
 // record is zeroed, which is the engine's "this one is done".
 static void throw_release(MatchSession* match)
 {
-    ThrowWindup windup = match->pendingActionState.catchingAction.as.throw;
-    match->pendingActionState.catchingAction = (CatchingAction){0};
+    ThrowWindup windup = match->catching_action.as.throw;
+    match->catching_action = (CatchingAction){0};
     if (match->pII.hasBallIndex == -1) {
         return;
     }
@@ -150,7 +149,7 @@ static void throw_release(MatchSession* match)
 // moment the power arrives. The client never commands the release instant; the engine owns it.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared)
 {
-    CatchingAction* action = &match->pendingActionState.catchingAction;
+    CatchingAction* action = &match->catching_action;
 
     // The gate has settled what these may do: a target only when nothing else is in progress, a power
     // only while a throw is gathering or begins this tick.

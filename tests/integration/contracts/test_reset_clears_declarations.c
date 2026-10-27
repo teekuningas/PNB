@@ -26,24 +26,24 @@ int test_reset_clears_declared_intent(void)
     MatchSession* match = ctx->state->match;
 
     // A pitch aimed and mid-windup, as far as the engine is concerned.
-    match->pendingActionState.catchingAction = (CatchingAction){
-        .kind = CATCHING_ACTION_PITCHING, .timer = 30, .as.pitch = {.power = 0.75f, .aimed = 1, .direction = -0.4f}
-    };
+    match->catching_action = (CatchingAction){.kind = CATCHING_ACTION_PITCHING,
+                                              .timer = 30,
+                                              .as.pitch = {.power = 0.75f, .aimed = 1, .direction = -0.4f}};
 
     initialize_action_info(match);
 
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "no pitch survives a reset");
-    ASSERT_EQ(0, match->pendingActionState.catchingAction.timer, "no windup clock survives a reset");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "no pitch survives a reset");
+    ASSERT_EQ(0, match->catching_action.timer, "no windup clock survives a reset");
 
     // And a throw gathering, with its power in.
-    match->pendingActionState.catchingAction = (CatchingAction){
-        .kind = CATCHING_ACTION_THROWING, .timer = 12, .as.throw = {.target = BASE_SECOND, .powered = 1, .power = 1.0f}
-    };
+    match->catching_action = (CatchingAction){.kind = CATCHING_ACTION_THROWING,
+                                              .timer = 12,
+                                              .as.throw = {.target = BASE_SECOND, .powered = 1, .power = 1.0f}};
 
     initialize_action_info(match);
 
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "no throw survives a reset");
-    ASSERT_EQ(0, match->pendingActionState.catchingAction.as.throw.powered, "no declared throw power survives");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "no throw survives a reset");
+    ASSERT_EQ(0, match->catching_action.as.throw.powered, "no declared throw power survives");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

@@ -132,7 +132,7 @@ static int situation(const StateInfo* st, int pad)
     if ((int)sb->teams[catching].control == pad && p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p &&
         m->playerInfo[p].cTPI.isNearHomeLocation)
         return 1;
-    if ((int)sb->teams[batting].control == pad && m->pRAI.batter_ready) return 2;
+    if ((int)sb->teams[batting].control == pad && m->at_bat.stands_ready) return 2;
     if ((int)sb->teams[catching].control == pad && m->pII.controlIndex != -1) {
         if (m->pII.hasBallIndex == m->pII.controlIndex) return 3; // holding it away from the plate
         if (m->pII.hasBallIndex == -1) {

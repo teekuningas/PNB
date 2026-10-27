@@ -98,7 +98,7 @@ void action_invocations(
     // What these read is the catching action in progress — a windup running, a throw gathering — which is
     // the actualized physical world, the same thing a second peer would see the pitcher's body doing.
     // Never what the engine stored from this controller: there is no declaration left to read.
-    const CatchingActionKind catching = match->pendingActionState.catchingAction.kind;
+    const CatchingActionKind catching = match->catching_action.kind;
     {
         InputWidget* w = &clientInput->pitchWidget.meter;
         // A power sweep abandoned to a throw. KEY_2 is shared, and sampling the pitch on the press
@@ -210,7 +210,7 @@ static int checkThrowGesture(
 
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
-    const CatchingActionKind catching = match->pendingActionState.catchingAction.kind;
+    const CatchingActionKind catching = match->catching_action.kind;
     InputWidget* w = &clientInput->throwWidget;
 
     // A throw is gathering and our power is still owed: keep charging while held; a KEY_2 release samples
@@ -349,7 +349,7 @@ static void checkChangePlayer(
 )
 {
     if (control != CONTROL_AI) {
-        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
+        if (match->catching_action.kind == CATCHING_ACTION_NONE) {
             if (key_states->released[control][key] == 1) {
                 intent_push(channel, (IntentMessage){.kind = INTENT_CHANGE_PLAYER});
             }
@@ -364,7 +364,7 @@ static void checkDrop(
 )
 {
     if (control != CONTROL_AI) {
-        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE) {
+        if (match->catching_action.kind == CATCHING_ACTION_NONE) {
             if (key_states->released[control][key] == 1) {
                 intent_push(channel, (IntentMessage){.kind = INTENT_DROP_BALL});
             }
@@ -431,7 +431,7 @@ static void checkPitch(
 
     PitchWidget* gesture = &clientInput->pitchWidget;
     InputWidget* w = &gesture->meter;
-    const CatchingActionKind catching = match->pendingActionState.catchingAction.kind;
+    const CatchingActionKind catching = match->catching_action.kind;
 
     // (The widget is retired in action_invocations every frame — see the top of that function — so it
     // stops being drawn even after the ball leaves the pitcher's hand and checkPitch goes quiet.)
@@ -558,8 +558,8 @@ static void checkBatterAngle(
 {
     if (control == CONTROL_AI) return; // the AI declares its aim in batting_ai.c
 
-    if (match->pRAI.batting_going_on != 1) {
-        // Between at-bats the engine puts the batter back at zero (init_batter), so the cursor goes
+    if (match->at_bat.cycle_open != 1) {
+        // Between at-bats the engine puts the batter back at zero (setup_pending), so the cursor goes
         // with it. Without this the next batter would start walking toward the last one's aim.
         clientInput->batterAim = 0.0f;
         return;

@@ -197,12 +197,12 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         Vector3D target;
         // first we select the target corresponding to base argument
         if (base == BASE_HOME) {
-            if (match->pRAI.batter_can_advance == 0) return;
+            if (match->at_bat.may_leave_home == 0) return;
             target.x = field_positions->firstBaseRun.x;
             target.z = field_positions->firstBaseRun.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.
-            match->pRAI.batter_ready = 0;
-            match->pRAI.batting_going_on = 0;
+            match->at_bat.stands_ready = 0;
+            match->at_bat.cycle_open = 0;
         } else if (base == BASE_FIRST) {
             target.x = field_positions->secondBaseRun.x;
             target.z = field_positions->secondBaseRun.z;
@@ -377,11 +377,11 @@ void prepare_batter(MatchSession* match)
         // batter ready model
         match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
         // can pitch now
-        match->pRAI.batter_ready = 1;
+        match->at_bat.stands_ready = 1;
         // batterIndex has been selected before calling this function
 
         // and initialize batter so that everything is ready to go.
-        match->pRAI.init_batter = 1;
+        match->at_bat.setup_pending = 1;
     }
 }
 // so here we calculate index and base of the player who is the leadrunner so that
@@ -686,10 +686,10 @@ void initialize_action_info(MatchSession* match)
 {
     match->catchingState = (CatchingTeamState){0};
 
-    match->pendingActionState.catchingAction = (CatchingAction){0};
+    match->catching_action = (CatchingAction){0};
 
-    match->pendingActionState.swing = (SwingActualization){0};
-    match->pendingActionState.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
+    match->at_bat.swing = (SwingActualization){0};
+    match->at_bat.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
 }
 // Resets flow control, camera, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
@@ -755,13 +755,13 @@ void initialize_prai_information(MatchSession* match)
 {
     int i;
     match->pRAI.pitch_state = PITCH_STAGE_NONE;
-    match->pRAI.batting_going_on = 0;
-    match->pRAI.batter_can_advance = 0;
+    match->at_bat.cycle_open = 0;
+    match->at_bat.may_leave_home = 0;
     match->pRAI.throw_going_to_base = -1;
-    match->pRAI.batter_ready = 0;
+    match->at_bat.stands_ready = 0;
     match->pRAI.refresh_catch_and_change = 0;
     match->pRAI.init_player_selection = 0;
-    match->pRAI.init_batter = 0;
+    match->at_bat.setup_pending = 0;
     for (i = 0; i < BASE_COUNT; i++) {
         match->pRAI.will_start_running[i] = 0;
     }

@@ -25,7 +25,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
     scripted_tap(g, HUMAN_PAD, KEY_2); // accept the highlighted candidate → INTENT_SELECT_BATTER
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->pRAI.batting_going_on == 1) return 1;
+        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
     }
     return 0;
 }
@@ -34,7 +34,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
 static int tick_until_windup(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
-        if (scripted_match(g)->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) return 1;
+        if (scripted_match(g)->catching_action.kind == CATCHING_ACTION_PITCHING) return 1;
         if (!scripted_tick(g)) return 0;
     }
     return 0;
@@ -80,14 +80,14 @@ int test_scripted_swing_power_meter_arms_on_the_windup(void)
     scripted_tap(g, HUMAN_PAD, KEY_2);
 
     MatchSession* m = scripted_match(g);
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "a press during the windup must declare a power");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "a press during the windup must declare a power");
     ASSERT(
-        m->pendingActionState.swing.power > 0.0f && m->pendingActionState.swing.power <= 1.0f,
+        m->at_bat.swing.power > 0.0f && m->at_bat.swing.power <= 1.0f,
         "the declared power must be the meter's level as a value in [0,1]"
     );
     // And the client keeps its own copy rather than reading the engine's back.
     ASSERT(
-        fabsf(ci->swingWidget.power - m->pendingActionState.swing.power) < 0.0001f,
+        fabsf(ci->swingWidget.power - m->at_bat.swing.power) < 0.0001f,
         "the widget must remember what it declared — it never asks the engine"
     );
     scripted_destroy(g);
@@ -125,7 +125,7 @@ int test_scripted_swing_elevation_meter_fits_inside_the_flight(void)
     // the AI pitcher never throws one, so an assertion about it could not be shown a state it would
     // reject. It is pinned in the unit tier instead, across every pitch height, where it does bind.
     ASSERT(
-        ci->swingWidget.meter.counter_max <= m->pendingActionState.swing.contactFrame,
+        ci->swingWidget.meter.counter_max <= m->at_bat.swing.contactFrame,
         "the client's elevation sweep must fit inside the flight the engine solved for the same ball"
     );
 
@@ -139,9 +139,9 @@ int test_scripted_swing_elevation_meter_fits_inside_the_flight(void)
     }
     scripted_tap(g, HUMAN_PAD, KEY_2);
 
-    ASSERT_EQ(1, m->pendingActionState.swing.verticalActive, "a press during the descent must declare an elevation");
+    ASSERT_EQ(1, m->at_bat.swing.verticalActive, "a press during the descent must declare an elevation");
     ASSERT(
-        fabsf(m->pendingActionState.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
+        fabsf(m->at_bat.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
         "pressing as the marker crosses the sweet spot must declare a value at the sweet spot"
     );
     scripted_destroy(g);
@@ -163,12 +163,12 @@ int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void)
     scripted_run(g, 6);
     scripted_tap(g, HUMAN_PAD, KEY_2); // commit a power
     MatchSession* m = scripted_match(g);
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "the swing must be committed before it is withdrawn");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the swing must be committed before it is withdrawn");
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
 
     scripted_tap(g, HUMAN_PAD, KEY_1); // ...and think better of it
     scripted_tick(g);
-    ASSERT_EQ(1, m->pendingActionState.batting_stopped, "the withdrawal key must stop the swing");
+    ASSERT_EQ(1, m->at_bat.swing_stopped, "the withdrawal key must stop the swing");
 
     // This withdrawal lands BEFORE the body has begun any motion, so there is no shape to observe
     // yet — the claim is that when the body does start, it starts spread. There is no stored mode to
@@ -177,7 +177,7 @@ int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void)
     int moving = 0;
     for (int i = 0; i < 300 && !moving; i++) {
         scripted_tick(g);
-        moving = (m->pendingActionState.batter_moving == 1);
+        moving = (m->at_bat.swing_started == 1);
     }
     int batter = get_active_batter_index(m);
     ASSERT(moving && batter != -1, "the batter's body never started its motion");
@@ -203,19 +203,18 @@ int test_scripted_swing_silence_is_not_a_miss(void)
 
     MatchSession* m = scripted_match(g);
     for (int i = 0; i < 300; i++) {
-        if (m->pendingActionState.swing.contactFrame >= 0 &&
-            m->pendingActionState.batting_frame_count > m->pendingActionState.swing.contactFrame + 2) {
+        if (m->at_bat.swing.contactFrame >= 0 && m->at_bat.flight_frame > m->at_bat.swing.contactFrame + 2) {
             break;
         }
         scripted_tick(g); // press nothing at all
     }
 
-    ASSERT_EQ(0, m->pendingActionState.swing.powerActive, "pressing nothing must declare nothing");
+    ASSERT_EQ(0, m->at_bat.swing.powerActive, "pressing nothing must declare nothing");
     ASSERT(
         scripted_state(g)->rules->betweenPitchState.batOutcome != BAT_OUTCOME_MISSED,
         "a batter who never swung must not be recorded as having swung and missed"
     );
-    ASSERT_EQ(1, m->pendingActionState.batting_stopped, "the engine must conclude that no swing happened");
+    ASSERT_EQ(1, m->at_bat.swing_stopped, "the engine must conclude that no swing happened");
     scripted_destroy(g);
     return TEST_PASSED;
 }
@@ -234,7 +233,7 @@ int test_scripted_swing_silence_is_not_a_miss(void)
  * There is no input delay to point at yet, so the delay is simulated in the only honest way: clear
  * the engine's copy immediately after the press, exactly as an in-flight message leaves it, and watch
  * the widget. A widget that keeps its own account does not notice. Ablate by keying the arm and the
- * sample on match->pendingActionState.swing.powerActive again, and this goes red while every other
+ * sample on match->at_bat.swing.powerActive again, and this goes red while every other
  * test in the tier stays green — which is the whole point: local play cannot see this.
  */
 int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
@@ -249,13 +248,13 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
 
     scripted_run(g, 8);
     scripted_tap(g, HUMAN_PAD, KEY_2); // the human commits a power
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "the power must have been declared to begin with");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the power must have been declared to begin with");
     ASSERT_EQ((int)SWING_BEAT_LOADED, (int)ci->swingWidget.beat, "the gesture must know it has loaded");
-    float declared = m->pendingActionState.swing.power;
+    float declared = m->at_bat.swing.power;
 
     // The wire, simulated: the engine has not seen it yet.
-    m->pendingActionState.swing.powerActive = 0;
-    m->pendingActionState.swing.power = 0.0f;
+    m->at_bat.swing.powerActive = 0;
+    m->at_bat.swing.power = 0.0f;
 
     for (int i = 0; i < 20; i++) {
         scripted_tick(g);
@@ -267,9 +266,7 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
             (int)SWING_BEAT_LOADED, (int)ci->swingWidget.beat,
             "the gesture's own account of itself must not depend on the engine having received it"
         );
-        ASSERT_EQ(
-            0, m->pendingActionState.swing.powerActive, "the widget must not have declared a SECOND power on this ball"
-        );
+        ASSERT_EQ(0, m->at_bat.swing.powerActive, "the widget must not have declared a SECOND power on this ball");
     }
     // And its copy of the value is intact, so the descent it scales is still this batter's.
     ASSERT(fabsf(ci->swingWidget.power - declared) < 0.0001f, "the widget must still hold the power it declared");
@@ -328,7 +325,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     int armed = 0;
     for (int i = 0; i < 1200 && !armed; i++) {
         scripted_tick(g);
-        if (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) {
+        if (m->catching_action.kind == CATCHING_ACTION_PITCHING) {
             scripted_tick(g);
             ASSERT(
                 swing_may_be_declared(m),
@@ -346,7 +343,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     // And the beat is usable, not merely visible: a press during it declares a power, before release.
     scripted_run(g, 8);
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "a press during the second windup must declare a power");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "a press during the second windup must declare a power");
     ASSERT(
         m->pRAI.pitch_state != PITCH_STAGE_AIRBORNE, "...and it must have been declared BEFORE the ball was released"
     );
@@ -389,8 +386,8 @@ int test_scripted_swing_elevation_marker_always_starts_at_the_extreme(void)
     // Press almost immediately, while the sweep is still near the bottom: a deliberately weak swing.
     scripted_run(g, 2);
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "a power must have been declared");
-    ASSERT(m->pendingActionState.swing.power < 0.5f, "this test needs a LOW declared power to be meaningful");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "a power must have been declared");
+    ASSERT(m->at_bat.swing.power < 0.5f, "this test needs a LOW declared power to be meaningful");
 
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
     scripted_tick(g);
@@ -422,7 +419,7 @@ int test_scripted_swing_elevation_marker_always_starts_at_the_extreme(void)
 
     scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT(
-        fabsf(m->pendingActionState.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
+        fabsf(m->at_bat.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
         "and pressing there must declare the sweet spot, for a weak swing as for a full one"
     );
 
@@ -461,18 +458,18 @@ int test_scripted_swing_a_batter_who_declares_nothing_does_not_swing(void)
     int sawTheBodyStart = 0;
     for (int i = 0; i < 300; i++) {
         scripted_tick(g);
-        if (m->pendingActionState.batter_moving == 1) {
+        if (m->at_bat.swing_started == 1) {
             sawTheBodyStart = 1;
             break;
         }
-        if (m->pendingActionState.swing.consumed) break;
+        if (m->at_bat.swing.consumed) break;
     }
     ASSERT(sawTheBodyStart, "the batter's body never started its motion, so there is nothing to judge");
 
     // This is the load-bearing frame: the decision is still OPEN (nothing has stopped the swing yet,
     // and a late power would still re-shape him), and the body is nevertheless not swinging.
-    ASSERT_EQ(0, m->pendingActionState.swing.powerActive, "the premise: nothing has been declared");
-    ASSERT_EQ(0, m->pendingActionState.batting_stopped, "the premise: the backstop has not fired yet either");
+    ASSERT_EQ(0, m->at_bat.swing.powerActive, "the premise: nothing has been declared");
+    ASSERT_EQ(0, m->at_bat.swing_stopped, "the premise: the backstop has not fired yet either");
     int batter = get_active_batter_index(m);
     ASSERT(batter != -1, "there must be a batter to look at");
     ASSERT_EQ(
@@ -522,8 +519,8 @@ int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(vo
     ASSERT(!sweeping.powerCommitted, "nothing is committed before the press");
 
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    float declared = m->pendingActionState.swing.power;
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "the press must declare a power");
+    float declared = m->at_bat.swing.power;
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the press must declare a power");
 
     // THE WAIT. Every frame of it, until the ball is up: the mark is there, at the value committed,
     // and there is no moving cursor pretending to be somewhere.
@@ -577,14 +574,14 @@ int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void)
 
     scripted_run(g, 8);
     scripted_tap(g, HUMAN_PAD, KEY_2); // load
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "the power must be committed before it is withdrawn");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the power must be committed before it is withdrawn");
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
 
     // Tick until the body has committed to its motion — the state a late withdrawal has to survive.
     int moving = 0;
     for (int i = 0; i < 300 && !moving; i++) {
         scripted_tick(g);
-        moving = (m->pendingActionState.batter_moving == 1);
+        moving = (m->at_bat.swing_started == 1);
     }
     ASSERT(moving, "the batter's body never started its motion");
     int batter = get_active_batter_index(m);
@@ -597,7 +594,7 @@ int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void)
     scripted_tap(g, HUMAN_PAD, KEY_1);
     scripted_tick(g);
 
-    ASSERT_EQ(1, m->pendingActionState.batting_stopped, "the withdrawal must stop the swing");
+    ASSERT_EQ(1, m->at_bat.swing_stopped, "the withdrawal must stop the swing");
     ASSERT_EQ(
         PLAYER_ANIM_BAT_SWING_3, m->playerInfo[batter].cPI.model,
         "and the BODY must follow it — a withdrawal the batter cannot see is not a withdrawal"

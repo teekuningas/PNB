@@ -200,23 +200,23 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
 
     fprintf(f, "%s\"pRAI\": {\n", sp);
     fprintf(f, "%s  \"pitch_state\": %d,\n", sp, game->pRAI.pitch_state);
-    fprintf(f, "%s  \"batter_ready\": %d,\n", sp, game->pRAI.batter_ready);
-    fprintf(f, "%s  \"batting_going_on\": %d,\n", sp, game->pRAI.batting_going_on);
-    fprintf(f, "%s  \"init_batter\": %d,\n", sp, game->pRAI.init_batter);
+    fprintf(f, "%s  \"stands_ready\": %d,\n", sp, game->at_bat.stands_ready);
+    fprintf(f, "%s  \"cycle_open\": %d,\n", sp, game->at_bat.cycle_open);
+    fprintf(f, "%s  \"setup_pending\": %d,\n", sp, game->at_bat.setup_pending);
     fprintf(f, "%s  \"throw_going_to_base\": %d\n", sp, game->pRAI.throw_going_to_base);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"actionState\": {\n", sp);
-    fprintf(f, "%s  \"catching_action\": %d,\n", sp, (int)game->pendingActionState.catchingAction.kind);
-    fprintf(f, "%s  \"catching_action_timer\": %d,\n", sp, game->pendingActionState.catchingAction.timer);
+    fprintf(f, "%s  \"catching_action\": %d,\n", sp, (int)game->catching_action.kind);
+    fprintf(f, "%s  \"catching_action_timer\": %d,\n", sp, game->catching_action.timer);
     // The drop / change-player commands used to be dumped here as persistent flags. They are messages
     // now: declared and consumed inside one tick, so at the frame boundary this dump is taken there is
     // nothing left of them to print — what a reader wants instead is the world they produced.
     // The swing, as the engine holds it: what has been declared and the frame it will be used on.
     // No phase and no meter — there is nothing here a producer drives forward.
-    fprintf(f, "%s  \"swing_contact_frame\": %d,\n", sp, game->pendingActionState.swing.contactFrame);
-    fprintf(f, "%s  \"swing_power\": %s,\n", sp, game->pendingActionState.swing.powerActive ? "true" : "false");
-    fprintf(f, "%s  \"swing_vertical\": %s\n", sp, game->pendingActionState.swing.verticalActive ? "true" : "false");
+    fprintf(f, "%s  \"swing_contact_frame\": %d,\n", sp, game->at_bat.swing.contactFrame);
+    fprintf(f, "%s  \"swing_power\": %s,\n", sp, game->at_bat.swing.powerActive ? "true" : "false");
+    fprintf(f, "%s  \"swing_vertical\": %s\n", sp, game->at_bat.swing.verticalActive ? "true" : "false");
     fprintf(f, "%s},\n", sp);
 
     if (rules) {
@@ -458,8 +458,7 @@ int state_validator_check(StateInfo* state)
     // pitch_state did: starting a windup with the previous BALL still standing made consolidation react
     // to that BALL a second time, re-run the free-walk calculation and, with two balls standing, ask the
     // batting side a question it had already answered, in the middle of the pitch.
-    if (game->flowControl.waitingForFreeWalkDecision == 1 &&
-        game->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING) {
+    if (game->flowControl.waitingForFreeWalkDecision == 1 && game->catching_action.kind == CATCHING_ACTION_PITCHING) {
         printf("\n[STATE ERROR] FATAL: a free walk is on offer while a pitch is being wound up\n");
         return 0;
     }

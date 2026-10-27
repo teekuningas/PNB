@@ -191,7 +191,7 @@ void setup_pitcher_ready(ScenarioContext* ctx)
     give_ball_to_pitcher(ctx); // ball in hand at the plate
     game->pII.catcherOnBaseIndex[0] = pitcherIdx; // the pitcher is the home catcher
     game->playerInfo[pitcherIdx].cTPI.isNearHomeLocation = 1; // close enough to pitch
-    game->pRAI.batter_ready = 1; // a batter is in
+    game->at_bat.stands_ready = 1; // a batter is in
 }
 
 void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
@@ -476,7 +476,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 
     // 4. Set Pitch State
     game->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
-    game->pRAI.batter_can_advance = 1;
+    game->at_bat.may_leave_home = 1;
     game->gameEvents.pitchReleased = 1; // Signal event - referee will snapshot state automatically
 
     // Note: We emit pitchReleased event which triggers the referee to snapshot

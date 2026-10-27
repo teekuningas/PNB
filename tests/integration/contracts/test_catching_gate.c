@@ -103,10 +103,10 @@ int test_pitch_permission_names_each_rule(void)
 
     ASSERT_EQ(1, pitch_may_begin(m, 0).allowed, "control: a ready pitcher with a ready batter may pitch");
 
-    m->pendingActionState.catchingAction.kind = CATCHING_ACTION_THROWING;
+    m->catching_action.kind = CATCHING_ACTION_THROWING;
     ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0).denied_by, "not while a throw gathers");
     restore(ctx, &ready);
-    m->pendingActionState.catchingAction.kind = CATCHING_ACTION_PITCHING;
+    m->catching_action.kind = CATCHING_ACTION_PITCHING;
     ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0).denied_by, "not while a pitch winds up");
     restore(ctx, &ready);
 
@@ -120,7 +120,7 @@ int test_pitch_permission_names_each_rule(void)
     ASSERT_EQ(RULE_PITCH_PREVIOUS_UNRESOLVED, pitch_may_begin(m, 0).denied_by, "not before the last pitch is judged");
     restore(ctx, &ready);
 
-    m->pRAI.batter_ready = 0;
+    m->at_bat.stands_ready = 0;
     ASSERT_EQ(RULE_PITCH_NEEDS_A_READY_BATTER, pitch_may_begin(m, 0).denied_by, "nobody to pitch to");
     restore(ctx, &ready);
 
@@ -141,18 +141,18 @@ int test_a_refused_pitch_begins_nothing(void)
     ScenarioContext* ctx = create_scenario();
     setup_pitcher_ready(ctx);
     MatchSession* m = ctx->state->match;
-    m->pRAI.batter_ready = 0;
+    m->at_bat.stands_ready = 0;
 
     say(ctx, pitch_power(0.5f));
     say(ctx, pitch_aim(0.0f));
     tick(ctx);
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "refused: no batter ready");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "refused: no batter ready");
     ASSERT_EQ(12, m->pII.hasBallIndex, "the ball stays in the pitcher's hand");
 
-    m->pRAI.batter_ready = 1;
+    m->at_bat.stands_ready = 1;
     tick(ctx);
     ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind,
+        CATCHING_ACTION_NONE, (int)m->catching_action.kind,
         "once the batter is ready, nothing refused earlier begins by itself"
     );
 
@@ -170,9 +170,9 @@ int test_throw_permission_names_each_rule(void)
 
     ASSERT_EQ(1, throw_may_begin(m, fp, BASE_FIRST).allowed, "control: a fielder with the ball may throw to first");
 
-    m->pendingActionState.catchingAction.kind = CATCHING_ACTION_THROWING;
+    m->catching_action.kind = CATCHING_ACTION_THROWING;
     ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, throw_may_begin(m, fp, BASE_FIRST).denied_by, "not mid-throw");
-    m->pendingActionState.catchingAction.kind = CATCHING_ACTION_NONE;
+    m->catching_action.kind = CATCHING_ACTION_NONE;
 
     m->pII.hasBallIndex = -1;
     ASSERT_EQ(RULE_THROW_NEEDS_BALL_IN_HAND, throw_may_begin(m, fp, BASE_FIRST).denied_by, "nothing to throw");
@@ -200,11 +200,11 @@ int test_contributions_need_an_action_to_contribute_to(void)
 
     say(ctx, pitch_aim(0.3f));
     tick(ctx);
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "an aim alone begins nothing");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "an aim alone begins nothing");
     say(ctx, pitch_power(0.5f));
     tick(ctx);
-    ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "control: the power begins it");
-    ASSERT_EQ(0, m->pendingActionState.catchingAction.as.pitch.aimed, "the earlier aim was refused, not held");
+    ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "control: the power begins it");
+    ASSERT_EQ(0, m->catching_action.as.pitch.aimed, "the earlier aim was refused, not held");
     cleanup_scenario(ctx);
 
     ScenarioContext* ctx2 = create_scenario();
@@ -212,20 +212,18 @@ int test_contributions_need_an_action_to_contribute_to(void)
     MatchSession* m2 = ctx2->state->match;
     say(ctx2, throw_power(1.0f));
     tick(ctx2);
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m2->pendingActionState.catchingAction.kind, "a power alone begins nothing");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m2->catching_action.kind, "a power alone begins nothing");
     say(ctx2, throw_target(BASE_FIRST));
     tick(ctx2);
-    ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m2->pendingActionState.catchingAction.kind, "control: the target begins it"
-    );
-    ASSERT_EQ(0, m2->pendingActionState.catchingAction.as.throw.powered, "the earlier power was refused, not held");
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m2->catching_action.kind, "control: the target begins it");
+    ASSERT_EQ(0, m2->catching_action.as.throw.powered, "the earlier power was refused, not held");
 
     // And the cross-wise case, where accepting would not merely be wasted: the record is ONE union, so an
     // aim landing on a gathering throw would be written over the throw's own power, and the throw would
     // fly at the pitch's direction.
     say(ctx2, pitch_aim(0.9f));
     tick(ctx2);
-    ASSERT_EQ(0, m2->pendingActionState.catchingAction.as.throw.powered, "an aim cannot power a gathering throw");
+    ASSERT_EQ(0, m2->catching_action.as.throw.powered, "an aim cannot power a gathering throw");
     ASSERT_EQ(FIELDER, m2->pII.hasBallIndex, "...nor release it");
     cleanup_scenario(ctx2);
 
@@ -236,7 +234,7 @@ int test_contributions_need_an_action_to_contribute_to(void)
     tick(ctx3);
     say(ctx3, throw_power(0.75f));
     tick(ctx3);
-    ASSERT_EQ(0, m3->pendingActionState.catchingAction.as.pitch.aimed, "a throw's power cannot aim a windup");
+    ASSERT_EQ(0, m3->catching_action.as.pitch.aimed, "a throw's power cannot aim a windup");
     cleanup_scenario(ctx3);
     return TEST_PASSED;
 }
@@ -271,7 +269,7 @@ int test_one_catching_action_per_tick_whatever_the_order(void)
     setup_pitcher_ready(ctx);
     ctx->state->match->pII.controlIndex = 12;
     ASSERT(both_orders_agree(ctx, pitch_power(0.5f), throw_target(BASE_FIRST), &after), "pitch + throw: order-free");
-    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.pendingActionState.catchingAction.kind, "the throw wins");
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.catching_action.kind, "the throw wins");
     cleanup_scenario(ctx);
 
     ctx = create_scenario();
@@ -279,13 +277,13 @@ int test_one_catching_action_per_tick_whatever_the_order(void)
     ctx->state->match->pII.controlIndex = 12;
     ASSERT(both_orders_agree(ctx, pitch_power(0.5f), DROP, &after), "pitch + drop: order-free");
     ASSERT_EQ(-1, after.match.pII.hasBallIndex, "the drop wins: the ball is on its way down");
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)after.match.pendingActionState.catchingAction.kind, "and no windup began");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)after.match.catching_action.kind, "and no windup began");
     cleanup_scenario(ctx);
 
     ctx = create_scenario();
     fielder_with_ball(ctx);
     ASSERT(both_orders_agree(ctx, DROP, throw_target(BASE_FIRST), &after), "drop + throw: order-free");
-    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.pendingActionState.catchingAction.kind, "the throw wins");
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)after.match.catching_action.kind, "the throw wins");
     ASSERT_EQ(FIELDER, after.match.pII.hasBallIndex, "and the gathering thrower still holds the ball");
     cleanup_scenario(ctx);
     return TEST_PASSED;

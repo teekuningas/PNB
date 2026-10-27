@@ -261,8 +261,9 @@ typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } 
 
 // Base-running command intent (single-frame, consumed by execute_actions::base_run).
 // The producer (human input or AI) declares *which* of two distinct intents it wants — it is never
-// inferred from murky live-ball state (that inference, reading a stale `batter_can_advance`, was the
-// base-run slice's offense regression: a pre-pitch ARM got mis-actualized as a RUN now):
+// inferred from murky live-ball state (that inference, reading the batter's §32 right to leave home as if
+// it said "the ball is live", was the base-run slice's offense regression: a pre-pitch ARM got
+// mis-actualized as a RUN now):
 //   RUN_FORWARD — "arm / lead": the single-press intent. A settled runner arms to advance on the
 //                 next pitch (and leads off 1st/2nd). It NEVER starts a settled runner moving this
 //                 frame. This is the deferred command.
@@ -905,7 +906,7 @@ typedef struct _CatchingAction {
 // tells the engine; and whether one may be declared at all is derived from durable world state at the
 // gate (swing_may_be_declared), so there is no second copy of it to keep true.
 typedef struct _SwingActualization {
-    int contactFrame; // batting_frame_count at which the bat meets the ball; from the ball, at release
+    int contactFrame; // the at-bat's flight_frame on which the bat meets the ball; from the ball, at release
     int powerActive;
     float power;
     int verticalActive;
@@ -919,21 +920,40 @@ typedef struct _SwingActualization {
     int consumed;
 } SwingActualization;
 
-typedef struct _PendingActionState {
-    CatchingAction catchingAction; // the pitch or throw in progress, if any
+// The batter at the plate, as the engine runs him: one struct because it is one lifetime, the at-bat, and
+// everything in it is about the one player standing on the arc. Inside the at-bat the batter goes round a
+// BATTING CYCLE once per pitch he faces — he arrives at the ready spot, the cycle opens once no pitch is in
+// the air, the ball is released to him, he swings or does not, and the cycle closes when the follow-through
+// has played out and he walks back to the ready spot to begin the next.
+typedef struct _AtBat {
+    // §32: "Lyöntivuoroinen lyöjä saa edetä kotipesästä heti, kun pallo on irronnut lukkarin kädestä
+    // ensimmäiseen syöttöön, riippumatta syötön laadusta." Granted when the FIRST pitch of the turn leaves
+    // the hand, and held for the rest of the turn — a right of the at-bat, not a fact about the pitch in
+    // the air, which is why nothing clears it between pitches. Seating the next batter starts it at 0.
+    int may_leave_home;
+
+    // Where the cycle has got to. Three flags today, written at different sites: arrival at the ready
+    // spot raises `stands_ready` and `setup_pending`; the cycle opens (`cycle_open`) on the first frame
+    // with no pitch in the air, setting the body up and clearing `setup_pending`; the release lowers
+    // `stands_ready`; the end of the follow-through lowers `cycle_open`. Setting off for first base
+    // lowers both.
+    int stands_ready; // at the ready spot and no ball released to him yet — what the pitch waits for
+    int setup_pending; // arrived, and the body is set up on the cycle's first frame
+    int cycle_open; // the cycle has opened and its follow-through has not yet ended
+
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
 
-    // Batting related
-    int batting_frame_count;
-    int increase_batting_frame_count;
-    float batter_angle;
-    float batter_advance_speed;
-    float batter_advance;
-    float batter_advance_limit;
-    int batting_stopped;
-    int batter_moving;
-    int update_batter_location_and_orientation;
-} PendingActionState;
+    // The body through the cycle. Set up when the cycle opens; the engine walks it, never a producer.
+    int flight_frame; // frames of the pitch's flight the batter has watched; contactFrame is counted on it
+    int flight_clock_running; // the release has been seen and flight_frame is counting
+    float arc_angle; // where on the arc round the pitching plate he stands; walked toward the declared aim
+    float step_in; // how far he has stepped in toward the plate, a fraction of the batting radius
+    float step_in_speed;
+    float step_in_limit; // how far the body's shape lets him step in — a swing, a bunt or spread hands
+    int swing_stopped; // withdrawn, or never begun: the bat is not coming
+    int swing_started; // the swing's step-in and animation have begun
+    int pose_dirty; // location and orientation are to be recomputed from arc_angle and step_in this frame
+} AtBat;
 
 // Client-local input layer. Input *interpretation* memory — tap
 // windows, hold-charge, meter widgets — belongs to the input SOURCE (a client), NOT to the shared
@@ -1163,12 +1183,6 @@ typedef struct _PlayerRelatedActionInfo {
 
     int will_start_running[BASE_COUNT];
 
-    int init_batter; // used to initialize batter locally in
-    int batter_ready; // is batter ready to swing
-    int batting_going_on; // time starts when batter reaches ready position and ball is not in air and quits when
-                          // batting animation is over
-    int batter_can_advance;
-
     int refresh_catch_and_change; // when ball hits ground or stops etc we want to refresh changePlayerArrays.
     int init_player_selection; // and sometimes with refresh_catch_and_change we set also init_player_selection
     // so that
@@ -1205,7 +1219,8 @@ typedef struct _MatchSession {
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     FlowControl flowControl; // MILESTONE 17 - User flow gates
     CameraState cameraState; // MILESTONE 7.5 - Camera and UI state
-    PendingActionState pendingActionState; // Milestone 10 - Action globals
+    CatchingAction catching_action; // the pitch or throw in progress, if any
+    AtBat at_bat;
     GameFlowState gameFlowState; // Milestone 11 - Game flow globals
     GroundUnit groundUnit[GROUND_UNIT_COUNT];
     BallInfo ballInfo;

@@ -27,17 +27,17 @@
 
 void init_batting_system(MatchSession* match)
 {
-    match->pendingActionState.batting_frame_count = 0;
-    match->pendingActionState.increase_batting_frame_count = 0;
-    match->pendingActionState.swing = (SwingActualization){0};
-    match->pendingActionState.swing.contactFrame = -1;
-    match->pendingActionState.batter_angle = 0;
-    match->pendingActionState.batter_advance_speed = 0;
-    match->pendingActionState.batter_advance = 0;
-    match->pendingActionState.batter_advance_limit = 0;
-    match->pendingActionState.batting_stopped = 0;
-    match->pendingActionState.batter_moving = 0;
-    match->pendingActionState.update_batter_location_and_orientation = 0;
+    match->at_bat.flight_frame = 0;
+    match->at_bat.flight_clock_running = 0;
+    match->at_bat.swing = (SwingActualization){0};
+    match->at_bat.swing.contactFrame = -1;
+    match->at_bat.arc_angle = 0;
+    match->at_bat.step_in_speed = 0;
+    match->at_bat.step_in = 0;
+    match->at_bat.step_in_limit = 0;
+    match->at_bat.swing_stopped = 0;
+    match->at_bat.swing_started = 0;
+    match->at_bat.pose_dirty = 0;
 }
 
 // §27 — a named player takes the bat ("asettuu lyömään"), if the seat is free.
@@ -76,7 +76,7 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 
     // and they are safe on home base
     // cant advance yet
-    match->pRAI.batter_can_advance = 0;
+    match->at_bat.may_leave_home = 0;
     // just set default values so that the player can have a fresh start at
     // the field.
     match->playerRuntime[index].goingForward = 0;
@@ -103,13 +103,13 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 // declared power is not readable from here and must not become so.
 int swing_may_be_declared(const MatchSession* match)
 {
-    if (match->pRAI.batting_going_on != 1) return 0; // nobody is at the plate swinging
+    if (match->at_bat.cycle_open != 1) return 0; // nobody is at the plate swinging
     // There has to be a pitch on its way — the windup or the flight. The two-human soak caught this
     // asked of the old `pitch_state == WINDUP`, which was wrong from the second pitch of every
     // half-inning onward and cost the batter his entire power beat: declarable in 87 of the first
     // windup's 87 frames, and in 0 of 87 on every windup after it.
     if (!pitch_is_being_delivered(match)) return 0;
-    if (match->pendingActionState.batting_stopped == 1) return 0; // withdrawn, or never begun
+    if (match->at_bat.swing_stopped == 1) return 0; // withdrawn, or never begun
     // Spent: the bat has already met the ball. Asked of THIS swing's own record of it and not of the
     // referee's batOutcome, which is the correction the sim caught. batOutcome is sticky and
     // survives into the next pitch's windup, so a gate consulting it refused every power a batter
@@ -120,7 +120,7 @@ int swing_may_be_declared(const MatchSession* match)
     //
     // The actualizer sets this at the instant it fires and reads the same field to refuse a second
     // firing, so the question has ONE answer rather than two that happen to agree.
-    if (match->pendingActionState.swing.consumed) return 0;
+    if (match->at_bat.swing.consumed) return 0;
     return 1;
 }
 
@@ -138,14 +138,14 @@ int swing_may_be_declared(const MatchSession* match)
 //
 // It costs nothing to say so, because this is re-asked every frame: a batter stands ready, and the
 // instant a power arrives — during the crouch, or late in the flight — he takes the swing or the
-// bunt. The backstop at contact still records the DECISION (batting_stopped, so the referee judges
+// bunt. The backstop at contact still records the DECISION (swing_stopped, so the referee judges
 // the pitch on where it landed rather than on a swing that never came); this only decides what the
 // body does while the decision is still open, which is a different question with a different owner.
 static BattingMode swing_shape(const MatchSession* match)
 {
-    if (match->pendingActionState.batting_stopped == 1) return BATTING_MODE_STOP;
-    if (!match->pendingActionState.swing.powerActive) return BATTING_MODE_STOP;
-    if (match->pendingActionState.swing.power < SWING_BUNT_MAX_POWER) return BATTING_MODE_BUNT;
+    if (match->at_bat.swing_stopped == 1) return BATTING_MODE_STOP;
+    if (!match->at_bat.swing.powerActive) return BATTING_MODE_STOP;
+    if (match->at_bat.swing.power < SWING_BUNT_MAX_POWER) return BATTING_MODE_BUNT;
     return BATTING_MODE_SWING;
 }
 
@@ -178,7 +178,7 @@ static float advance_for_shape(BattingMode shape)
 // withdrawal its whole visible effect. The shape is derived where it is needed and stored nowhere.
 static void apply_shape(MatchSession* match, int batterIndex, BattingMode shape)
 {
-    match->pendingActionState.batter_advance_limit = advance_for_shape(shape);
+    match->at_bat.step_in_limit = advance_for_shape(shape);
     if (batterIndex != -1) match->playerInfo[batterIndex].cPI.model = animation_for_shape(shape);
 }
 
@@ -191,7 +191,7 @@ static void apply_shape(MatchSession* match, int batterIndex, BattingMode shape)
 // disagreeing about whose job the animation was.
 static void stop_the_swing(MatchSession* match)
 {
-    match->pendingActionState.batting_stopped = 1;
+    match->at_bat.swing_stopped = 1;
 }
 
 void update_batting(
@@ -202,22 +202,22 @@ void update_batting(
     int batterIndex = get_active_batter_index(match);
 
     // ONE SWING PER PITCH, cleared at the START of each batting cycle — before the cycle opens, so
-    // before anything can legally be declared into it (the gate requires batting_going_on).
+    // before anything can legally be declared into it (the gate requires cycle_open).
     //
-    // Keyed here rather than on init_batter, and that is a correction the sim caught: a batter is
+    // Keyed here rather than on setup_pending, and that is a correction the sim caught: a batter is
     // re-initialised whenever he is put back at the plate, which can happen after a windup has
     // already begun, so a power committed during that windup was wiped by a batter-side reset that
     // had nothing to do with it — eleven pitches in twelve went unswung at. Keying it on "no pitch
     // in progress" instead was worse: it cleared the swing mid-follow-through, and the at-bat never
     // ended. The swing belongs to the batting cycle, so the cycle's own start is where it clears.
-    if (match->pRAI.batting_going_on == 0) {
-        match->pendingActionState.swing = (SwingActualization){0};
-        match->pendingActionState.swing.contactFrame = -1;
+    if (match->at_bat.cycle_open == 0) {
+        match->at_bat.swing = (SwingActualization){0};
+        match->at_bat.swing.contactFrame = -1;
     }
 
-    if (match->pRAI.batter_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
-        match->pRAI.batting_going_on == 0) {
-        match->pRAI.batting_going_on = 1;
+    if (match->at_bat.stands_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+        match->at_bat.cycle_open == 0) {
+        match->at_bat.cycle_open = 1;
     }
     // The batting side withdrew a swing it had already committed a power to — the "väärä!" call,
     // made after the ball is in the air and worth a ball where swinging and missing is worth a
@@ -225,37 +225,37 @@ void update_batting(
     if (passDeclared) {
         stop_the_swing(match);
     }
-    // so batting_going_on goes 1 when batter arrives to its ready position and pitch is not in air.
-    if (match->pRAI.batting_going_on == 1) {
-        // we increase batting_frame_count from the moment the batter movement started.
+    // so cycle_open goes 1 when batter arrives to its ready position and pitch is not in air.
+    if (match->at_bat.cycle_open == 1) {
+        // flight_frame counts from the first frame of the cycle that sees the pitch in the air.
         // used for animation and advancing.
-        if (match->pendingActionState.increase_batting_frame_count == 1) {
-            match->pendingActionState.batting_frame_count += 1;
+        if (match->at_bat.flight_clock_running == 1) {
+            match->at_bat.flight_frame += 1;
         }
 
-        if (match->pRAI.init_batter == 1) {
+        if (match->at_bat.setup_pending == 1) {
             // so the default is to swing, we change this to BUNT_ADVANCE or SPREAD_ADVANCE
             // if the circumstances need so
-            match->pendingActionState.batter_advance_limit = SWING_ADVANCE;
+            match->at_bat.step_in_limit = SWING_ADVANCE;
             // we start with natural speeds and positions
-            match->pendingActionState.batter_angle = 0.0f;
-            match->pendingActionState.batter_advance = 0.0f;
-            match->pendingActionState.batter_advance_speed = 0.0f;
+            match->at_bat.arc_angle = 0.0f;
+            match->at_bat.step_in = 0.0f;
+            match->at_bat.step_in_speed = 0.0f;
             // aren't moving yet
-            match->pendingActionState.batter_moving = 0;
+            match->at_bat.swing_started = 0;
             // animation is yet to start
-            match->pendingActionState.batting_frame_count = 0;
+            match->at_bat.flight_frame = 0;
             // starting of the animation is yet to start
-            match->pendingActionState.increase_batting_frame_count = 0;
+            match->at_bat.flight_clock_running = 0;
             // not stopped yet
-            match->pendingActionState.batting_stopped = 0;
+            match->at_bat.swing_stopped = 0;
             // update location and orientation once here
-            match->pendingActionState.update_batter_location_and_orientation = 1;
+            match->at_bat.pose_dirty = 1;
             if (batterIndex != -1) {
                 match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
             }
             // init done, so no need to do that anymore.
-            match->pRAI.init_batter = 0;
+            match->at_bat.setup_pending = 0;
         }
         // update batters location and orientation when either advancing speed or angular speed
         // is nonzero. moving is 0 so location wont be updated with other players in different parts of code
@@ -279,24 +279,23 @@ void update_batting(
             if (target > BATTER_ANGLE_LIMIT) target = BATTER_ANGLE_LIMIT;
             if (target < -BATTER_ANGLE_LIMIT) target = -BATTER_ANGLE_LIMIT;
 
-            float delta = target - match->pendingActionState.batter_angle;
+            float delta = target - match->at_bat.arc_angle;
             if (delta > BATTER_ANGLE_SPEED_CONSTANT) {
                 delta = BATTER_ANGLE_SPEED_CONSTANT;
             } else if (delta < -BATTER_ANGLE_SPEED_CONSTANT) {
                 delta = -BATTER_ANGLE_SPEED_CONSTANT;
             }
             if (delta != 0.0f) {
-                match->pendingActionState.batter_angle += delta;
-                match->pendingActionState.update_batter_location_and_orientation = 1;
+                match->at_bat.arc_angle += delta;
+                match->at_bat.pose_dirty = 1;
             }
         }
         // if updated advanced location would be within limit that is originally SWING_ADVANCE but could
         // be changed to BUNT_ADVANCE given small power, then can proceed updating.
-        if (match->pendingActionState.batter_advance_speed != 0 &&
-            match->pendingActionState.batter_advance + match->pendingActionState.batter_advance_speed <
-                match->pendingActionState.batter_advance_limit) {
-            match->pendingActionState.batter_advance += match->pendingActionState.batter_advance_speed;
-            match->pendingActionState.update_batter_location_and_orientation = 1;
+        if (match->at_bat.step_in_speed != 0 &&
+            match->at_bat.step_in + match->at_bat.step_in_speed < match->at_bat.step_in_limit) {
+            match->at_bat.step_in += match->at_bat.step_in_speed;
+            match->at_bat.pose_dirty = 1;
         }
         // A batter standing still must have lastLocation caught up to location, or the renderer goes
         // on interpolating across the last step he took — for ever, since nothing moves him again
@@ -311,11 +310,11 @@ void update_batting(
         //
         // Idempotent: when the two are already equal the catch-up is a copy of a value onto itself.
         // fielder_movement.c does the same thing at its own arrival, for the same reason.
-        if (match->pendingActionState.update_batter_location_and_orientation == 0 && batterIndex != -1) {
+        if (match->at_bat.pose_dirty == 0 && batterIndex != -1) {
             match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
         }
         // if need for update of location and orientation
-        if (match->pendingActionState.update_batter_location_and_orientation == 1 && batterIndex != -1) {
+        if (match->at_bat.pose_dirty == 1 && batterIndex != -1) {
             float dx;
             float dz;
             float dx2;
@@ -326,16 +325,14 @@ void update_batting(
                 match->playerInfo[batterIndex].tPI.location.z
             );
             // update location with sine and cosine to new location on the circle centered at pitch plate.
-            // radius will be given by batter_advance relative to batting radius
-            // angle is given by batter_angle and the default ZERO_BATTING_ANGLE
+            // radius will be given by step_in relative to batting radius
+            // angle is given by arc_angle and the default ZERO_BATTING_ANGLE
             vec3_set_xz(
                 &(match->playerInfo[batterIndex].tPI.location),
-                (float)(fieldPositions->pitchPlate.x +
-                        cos(ZERO_BATTING_ANGLE + match->pendingActionState.batter_angle) *
-                            (BATTING_RADIUS * (1 - match->pendingActionState.batter_advance))),
-                (float)(fieldPositions->pitchPlate.z -
-                        sin(ZERO_BATTING_ANGLE + match->pendingActionState.batter_angle) *
-                            (BATTING_RADIUS * (1 - match->pendingActionState.batter_advance)))
+                (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
+                                                           (BATTING_RADIUS * (1 - match->at_bat.step_in))),
+                (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
+                                                           (BATTING_RADIUS * (1 - match->at_bat.step_in)))
             );
             // and then set the orientation of batter. here we just first select the base direction to be
             // vector from pitchplate to batter and then fix it a bit to make it look more realistic.
@@ -345,41 +342,40 @@ void update_batting(
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
             vec3_set_xz(&(match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
 
-            match->pendingActionState.update_batter_location_and_orientation = 0;
+            match->at_bat.pose_dirty = 0;
         }
 
         // so now can actually start thinking about advancing as the ball is in air.
         if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
             // start the animation and advancing.
-            if (match->pendingActionState.increase_batting_frame_count == 0) {
-                match->pendingActionState.increase_batting_frame_count = 1;
+            if (match->at_bat.flight_clock_running == 0) {
+                match->at_bat.flight_clock_running = 1;
             }
             // so at the beginning swing==BAT_ACTION_IDLE. advancing and animation doesnt necessarily start
             // immediately. if pitch is very high the batting animation will take a lot shorter time
             // than what it takes for ball to get down, so the animation and advancing will start a bit
             // later. meter updating on the hand will start immediately and power selection
             // will be available too.
-            if (match->pendingActionState.swing.contactFrame < 0) {
+            if (match->at_bat.swing.contactFrame < 0) {
                 // The frame the bat meets the ball, solved once from the ball itself: 0 = s + vt +
                 // (1/2)at^2 with s = 0, plus an experience-based nudge. Everything the swing is timed
                 // against hangs off this one number — the engine's contact test, the animation's
                 // start, and (computed independently, from the same physical ball) the human's
                 // descent. It is known the moment the ball is in the air and never revised.
                 float v = match->ballInfo.velocity.y;
-                match->pendingActionState.swing.contactFrame =
+                match->at_bat.swing.contactFrame =
                     calculate_pitch_frame_time(v, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
-                // batter_ready is zero now: the batter isn't waiting for action, it is with him.
-                match->pRAI.batter_ready = 0;
+                // stands_ready is zero now: the batter isn't waiting for action, it is with him.
+                match->at_bat.stands_ready = 0;
             }
             // so if the batter is still not moving, we'll try to figure out if we should be moving.
-            if (match->pendingActionState.batter_moving == 0 && batterIndex != -1) {
+            if (match->at_bat.swing_started == 0 && batterIndex != -1) {
                 // so at the moment there is just enough frames left that if we start animation and advancing now the
                 // ball will be at right height for the animation look correct.
-                if (match->pendingActionState.batting_frame_count >
-                    match->pendingActionState.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT) {
-                    // set batter_moving flag to 1 so that we can better handle starting points of the
+                if (match->at_bat.flight_frame > match->at_bat.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT) {
+                    // set swing_started to 1 so that we can better handle starting points of the
                     // animations
-                    match->pendingActionState.batter_moving = 1;
+                    match->at_bat.swing_started = 1;
                     apply_shape(match, batterIndex, swing_shape(match));
                     match->playerInfo[batterIndex].cPI.animationStage = 0;
                     match->playerInfo[batterIndex].cPI.animationStageCount = 34;
@@ -388,7 +384,7 @@ void update_batting(
                     // basically we are just guessing some reasonable speed.
                     // but it depends on frame hit count so its explicitly there
                     // for clarity
-                    match->pendingActionState.batter_advance_speed =
+                    match->at_bat.step_in_speed =
                         (float)GENERIC_BATTER_ADVANCE_SPEED_CONSTANT / BAT_ANIMATION_FRAME_HIT_COUNT;
                 }
             }
@@ -403,7 +399,7 @@ void update_batting(
             // Re-deriving a shape that has not changed writes the same three values it already holds,
             // which costs nothing and cannot be wrong; a guard that can be fooled about whether
             // something changed can.
-            if (match->pendingActionState.batter_moving == 1 && batterIndex != -1) {
+            if (match->at_bat.swing_started == 1 && batterIndex != -1) {
                 apply_shape(match, batterIndex, swing_shape(match));
             }
         }
@@ -411,18 +407,17 @@ void update_batting(
         // ball is actually on its way — the negative is "not known yet" and not an early deadline.
         // Without this guard the frame count starts at zero already past it, so the "nobody declared
         // a swing" backstop fires before the pitch exists and no batter ever swings again.
-        if (match->pendingActionState.swing.contactFrame < 0) {
+        if (match->at_bat.swing.contactFrame < 0) {
             return;
         }
-        // so here we check if the animation has ended and if batting_going_on is still on,
-        // so that we dont do this but once. if it is, we set batting_going_on to zero
+        // so here we check if the animation has ended and if cycle_open is still on,
+        // so that we dont do this but once. if it is, we set cycle_open to zero
         // and move the player towards ready position agian.
-        if ((match->pendingActionState.batting_frame_count > match->pendingActionState.swing.contactFrame -
-                                                                 BAT_ANIMATION_FRAME_HIT_COUNT +
-                                                                 BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
-            match->pRAI.batting_going_on == 1) {
+        if ((match->at_bat.flight_frame >
+             match->at_bat.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
+            match->at_bat.cycle_open == 1) {
             Vector3D target;
-            match->pRAI.batting_going_on = 0;
+            match->at_bat.cycle_open = 0;
 
             target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
@@ -431,13 +426,13 @@ void update_batting(
             }
         }
         // so here we check if the bat hits. this event happens always the pitch has been in air
-        else if (match->pendingActionState.batting_frame_count > match->pendingActionState.swing.contactFrame) {
+        else if (match->at_bat.flight_frame > match->at_bat.swing.contactFrame) {
             // Silence is not a swing. A producer that never declared a power has not swung, so there
             // is nothing here to miss with — no ballMissedByBat, and the referee counts a ball rather
             // than a strike. The human's meter simply loops unpressed and the AI declines outright,
             // so this backstop is what makes "say nothing" a complete and safe answer rather than a
             // hole. It is the same outcome an explicit pass reaches, arrived at without a message.
-            if (match->pendingActionState.swing.powerActive == 0) {
+            if (match->at_bat.swing.powerActive == 0) {
                 stop_the_swing(match);
             }
             // Continue only if the batter has not withdrawn and this swing has not already fired.
@@ -447,8 +442,8 @@ void update_batting(
             // batOutcome — legal state read by a physical stage, and legal state that outlives the
             // pitch it describes. Now it is a fact about the swing, with the swing's own lifetime,
             // and it is the same field the INGEST gate refuses on.
-            if (match->pendingActionState.batting_stopped == 0 && match->pendingActionState.swing.consumed == 0) {
-                match->pendingActionState.swing.consumed = 1;
+            if (match->at_bat.swing_stopped == 0 && match->at_bat.swing.consumed == 0) {
+                match->at_bat.swing.consumed = 1;
                 // if ball doesnt go too far away to left or right
                 if (match->ballInfo.location.x < BALL_MAX_OFFSET && match->ballInfo.location.x > -BALL_MAX_OFFSET) {
                     float verticalAngle;
@@ -461,14 +456,13 @@ void update_batting(
                     // enough off the sweet spot to miss, which is what "swung and never committed"
                     // should mean.
                     verticalAngle = swing_vertical_angle(
-                        match->pendingActionState.swing.verticalActive ? match->pendingActionState.swing.vertical
-                                                                       : 0.0f,
+                        match->at_bat.swing.verticalActive ? match->at_bat.swing.vertical : 0.0f,
                         match->ballInfo.velocity.y
                     );
 
                     // 2 to make it possible to bat to every direction on the field and a bit over.
-                    horizontalAngle = -match->pendingActionState.batter_angle * 2;
-                    power = match->pendingActionState.swing.power * SWING_POWER_UNITS;
+                    horizontalAngle = -match->at_bat.arc_angle * 2;
+                    power = match->at_bat.swing.power * SWING_POWER_UNITS;
                     // so now we have the two angles and the power. now we just need to find a way to
                     // convert them nicely to velocities for the ball. there should be other factors
                     // to influence velocity too.

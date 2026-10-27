@@ -22,7 +22,7 @@
 // Then WAIT for the player to physically arrive. `seat_batter` only sets a walk target, so the
 // legal seating is instant while the body is still crossing the field — and a test that starts the
 // at-bat before the body lands is measuring a batter who is standing somewhere else entirely. The
-// engine's own "in place with the bat" signal is `batter_ready` (§27's *asettuu lyömään*), so that is
+// engine's own "in place with the bat" signal is `at_bat.stands_ready` (§27's *asettuu lyömään*), so that is
 // what to wait on rather than a frame count guessed from nothing.
 static int take_the_bat(ScenarioContext* ctx, int playerIndex)
 {
@@ -37,7 +37,7 @@ static int take_the_bat(ScenarioContext* ctx, int playerIndex)
             (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = playerIndex}}
         );
         simulate_frames(ctx, 1);
-        if (ctx->state->match->pRAI.batter_ready == 1 && get_active_batter_index(ctx->state->match) == playerIndex) {
+        if (ctx->state->match->at_bat.stands_ready == 1 && get_active_batter_index(ctx->state->match) == playerIndex) {
             return 1;
         }
     }
@@ -70,7 +70,7 @@ static void bring_the_order_round_to(ScenarioContext* ctx, int playerIndex)
 // End the at-bat the way §27 means it: the batter must become *lopullisesti* a runner, which means
 // actually REACHING first — a batter who merely set off and got nowhere is sent back to the plate
 // when the ball comes home and is still in batting turn. A pitch has to come first, because the
-// batter is only released to run once the ball has left the lukkari's hand (§32, `batter_can_advance`);
+// batter is only released to run once the ball has left the lukkari's hand (§32, `at_bat.may_leave_home`);
 // running on the first try rather than the third is the batter's own choice and equally legal.
 static int run_to_first(ScenarioContext* ctx, int playerIndex)
 {

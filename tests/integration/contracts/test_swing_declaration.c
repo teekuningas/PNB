@@ -26,8 +26,8 @@ static void stand_a_batter_ready(ScenarioContext* ctx)
     setup_batter_at_home(ctx, 0);
     initialize_referee_from_physical_state(ctx);
 
-    m->pRAI.batter_ready = 1;
-    m->pRAI.init_batter = 1;
+    m->at_bat.stands_ready = 1;
+    m->at_bat.setup_pending = 1;
     m->pRAI.pitch_state = PITCH_STAGE_NONE;
     simulate_frames(ctx, 1); // a ready batter with no pitch in the air is what starts the at-bat
 }
@@ -48,7 +48,7 @@ static void put_a_pitch_in_the_air(ScenarioContext* ctx)
     m->ballInfo.currentFlightHasHitGround = 0;
     m->pII.hasBallIndex = -1;
     m->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
-    m->pRAI.batter_can_advance = 1;
+    m->at_bat.may_leave_home = 1;
     simulate_frames(ctx, 1); // the engine solves the contact frame from the ball on this tick
 }
 
@@ -80,8 +80,8 @@ static void run_to_contact(ScenarioContext* ctx)
 {
     MatchSession* match = ctx->state->match;
     for (int i = 0; i < 400; i++) {
-        if (match->pendingActionState.swing.contactFrame >= 0 &&
-            match->pendingActionState.batting_frame_count > match->pendingActionState.swing.contactFrame + 2) {
+        if (match->at_bat.swing.contactFrame >= 0 &&
+            match->at_bat.flight_frame > match->at_bat.swing.contactFrame + 2) {
             return;
         }
         tick(ctx);
@@ -99,9 +99,9 @@ int test_swing_declared_values_drive_the_contact(void)
     declare_swing(ctx, 0.8f, SWING_VERTICAL_FOCAL);
     tick(ctx);
 
-    ASSERT_EQ(1, match->pendingActionState.swing.powerActive, "the gate must store a declared power");
-    ASSERT_EQ(1, match->pendingActionState.swing.verticalActive, "the gate must store a declared elevation");
-    ASSERT(fabsf(0.8f - match->pendingActionState.swing.power) < 0.0001f, "the stored power is the declared one");
+    ASSERT_EQ(1, match->at_bat.swing.powerActive, "the gate must store a declared power");
+    ASSERT_EQ(1, match->at_bat.swing.verticalActive, "the gate must store a declared elevation");
+    ASSERT(fabsf(0.8f - match->at_bat.swing.power) < 0.0001f, "the stored power is the declared one");
 
     // A vertical at the sweet spot is a level hit whatever the ball is doing.
     float level = swing_vertical_angle(SWING_VERTICAL_FOCAL, match->ballInfo.velocity.y);
@@ -145,7 +145,7 @@ int test_swing_declarations_are_repeat_safe(void)
     declare_swing(ctx, 0.6f, 0.4f);
     declare_swing(ctx, 0.6f, 0.4f);
     tick(ctx);
-    SwingActualization afterThree = match->pendingActionState.swing;
+    SwingActualization afterThree = match->at_bat.swing;
 
     // And restating it on later frames changes nothing either.
     for (int i = 0; i < 5; i++) {
@@ -153,9 +153,9 @@ int test_swing_declarations_are_repeat_safe(void)
         tick(ctx);
     }
     ASSERT(
-        fabsf(afterThree.power - match->pendingActionState.swing.power) < 0.0001f &&
-            fabsf(afterThree.vertical - match->pendingActionState.swing.vertical) < 0.0001f &&
-            afterThree.contactFrame == match->pendingActionState.swing.contactFrame,
+        fabsf(afterThree.power - match->at_bat.swing.power) < 0.0001f &&
+            fabsf(afterThree.vertical - match->at_bat.swing.vertical) < 0.0001f &&
+            afterThree.contactFrame == match->at_bat.swing.contactFrame,
         "re-delivering a swing declaration must be a no-op — a value, never an increment"
     );
     cleanup_scenario(ctx);
@@ -176,7 +176,7 @@ int test_a_swing_never_declared_is_not_a_miss(void)
         (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->betweenPitchState.batOutcome,
         "declaring nothing must not register as a swing and a miss"
     );
-    ASSERT_EQ(1, match->pendingActionState.batting_stopped, "the engine must conclude that no swing happened");
+    ASSERT_EQ(1, match->at_bat.swing_stopped, "the engine must conclude that no swing happened");
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }
@@ -191,11 +191,11 @@ int test_a_withdrawn_swing_does_not_reach_the_ball(void)
 
     declare_swing(ctx, 0.9f, SWING_VERTICAL_FOCAL); // a committed, well-timed swing
     tick(ctx);
-    ASSERT_EQ(1, match->pendingActionState.swing.powerActive, "the swing must be committed before it is withdrawn");
+    ASSERT_EQ(1, match->at_bat.swing.powerActive, "the swing must be committed before it is withdrawn");
 
     intent_push(&ctx->state->channels.batting, (IntentMessage){.kind = INTENT_SWING_PASS});
     tick(ctx);
-    ASSERT_EQ(1, match->pendingActionState.batting_stopped, "a withdrawal must stop the swing on the tick it arrives");
+    ASSERT_EQ(1, match->at_bat.swing_stopped, "a withdrawal must stop the swing on the tick it arrives");
     // What the body DOES about it is no longer assertable here, and that is the point of the change
     // it lost: the shape used to be cached in a `batting_mode` field that nothing read, and the one
     // guard that did read it compared against a value stop_the_swing had already moved — so a
@@ -226,10 +226,8 @@ int test_a_swing_declared_with_no_pitch_is_refused(void)
     declare_swing(ctx, 0.9f, SWING_VERTICAL_FOCAL);
     tick(ctx);
 
-    ASSERT_EQ(0, match->pendingActionState.swing.powerActive, "a refused declaration must leave no trace in the world");
-    ASSERT_EQ(
-        0, match->pendingActionState.swing.verticalActive, "a refused declaration must leave no trace in the world"
-    );
+    ASSERT_EQ(0, match->at_bat.swing.powerActive, "a refused declaration must leave no trace in the world");
+    ASSERT_EQ(0, match->at_bat.swing.verticalActive, "a refused declaration must leave no trace in the world");
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }

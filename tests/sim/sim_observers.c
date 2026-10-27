@@ -160,9 +160,9 @@ void trace_observer_hook(const SimGame* g, void* ctx)
     if (!o->header_written) {
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
-                  "pitch_state,catchingAction,hasBall,"
-                  "waitBatter,waitWalk,batter_ready,swingDecided,pitchAimed,catchingTimer,batterReadyTimer,"
-                  "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,batting_going_on\n"
+                  "pitch_state,catching_action,hasBall,"
+                  "waitBatter,waitWalk,stands_ready,swingDecided,pitchAimed,catchingTimer,batterReadyTimer,"
+                  "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,cycle_open\n"
         );
         o->header_written = 1;
     }
@@ -178,12 +178,11 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->pendingActionState.catchingAction.kind,
-        m->pII.hasBallIndex, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
-        m->pRAI.batter_ready, ai->swing.decided, m->pendingActionState.catchingAction.as.pitch.aimed,
-        m->pendingActionState.catchingAction.timer, ai->batterReadyTimer, m->pendingActionState.swing.contactFrame,
-        m->pendingActionState.swing.powerActive, m->pendingActionState.swing.verticalActive, ai->swing.wrongPitch,
-        ai->swing.style, (int)r->betweenPitchState.batOutcome, m->pRAI.batting_going_on
+        m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->catching_action.kind, m->pII.hasBallIndex,
+        m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision, m->at_bat.stands_ready,
+        ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
+        m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
+        ai->swing.style, (int)r->betweenPitchState.batOutcome, m->at_bat.cycle_open
     );
 }
 
@@ -236,15 +235,15 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->pII.hasBallIndex);
     FOLD(h, m->pII.controlIndex);
     FOLD(h, m->pRAI.pitch_state);
-    FOLD(h, m->pendingActionState.catchingAction.kind);
+    FOLD(h, m->catching_action.kind);
     // The swing, as declared. This replaces the meter counter that used to be folded here — and the
     // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
     // now tracks the VALUES a producer declared rather than the level a shared meter had reached.
-    FOLD(h, m->pendingActionState.swing.contactFrame);
-    FOLD(h, m->pendingActionState.swing.powerActive);
-    FOLD(h, m->pendingActionState.swing.power);
-    FOLD(h, m->pendingActionState.swing.verticalActive);
-    FOLD(h, m->pendingActionState.swing.vertical);
+    FOLD(h, m->at_bat.swing.contactFrame);
+    FOLD(h, m->at_bat.swing.powerActive);
+    FOLD(h, m->at_bat.swing.power);
+    FOLD(h, m->at_bat.swing.verticalActive);
+    FOLD(h, m->at_bat.swing.vertical);
 
     // The engine's random stream is World state: it determines every future engine draw, so two
     // worlds that agree on everything else but not on this do NOT have the same future. The AI
@@ -320,7 +319,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_runs1 = sb->teams[1].runs;
         o->p_inning = sb->inning;
         o->p_period = sb->period;
-        o->p_throwing = (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING);
+        o->p_throwing = (m->catching_action.kind == CATCHING_ACTION_THROWING);
         for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
             o->p_baseId[i] = (int)m->playerInfo[i].bTPI.baseId;
             o->p_state[i] = (int)m->playerInfo[i].bTPI.state;
@@ -348,14 +347,14 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             // Contact only — fair/foul is the referee's later call (a foul shows up as a STRIKE).
             pbp(o, g, r, "contact (bat meets ball)");
             // Actualized power and direction of THIS batted ball (all styles), for AI tuning.
-            int power = (int)(m->pendingActionState.swing.power * SWING_POWER_UNITS + 0.5f);
+            int power = (int)(m->at_bat.swing.power * SWING_POWER_UNITS + 0.5f);
             o->contact_power_sum += power;
             o->contact_power_n++;
             if (power < o->contact_power_min) o->contact_power_min = power;
             if (power > o->contact_power_max) o->contact_power_max = power;
             // Realized horizontal launch direction of the batted ball, STYLE-1 only (the normal
             // swing — the style whose direction is meant to be a uniform fan). We read the ACTUAL
-            // ball velocity, not batter_angle: batter_angle is reset to 0 around contact, so reading
+            // ball velocity, not arc_angle: arc_angle is reset to 0 around contact, so reading
             // it here would fake a collapse to center. atan2(vx, -vz) is the true flight heading
             // (0 = straight to centre, + = one side) and is constant after launch (gravity only
             // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
@@ -407,7 +406,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     // Throw to a base started: a rising edge into CATCHING_ACTION_THROWING, which only
     // begin_throw_windup raises. (A drop counter was tried here and removed — a §30 drop's post-frame
     // state aliases a reset that also clears a fielder's ball; see sim_observers.h.)
-    int throwing = (m->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING);
+    int throwing = (m->catching_action.kind == CATCHING_ACTION_THROWING);
     if (throwing == 1 && o->p_throwing == 0) {
         o->throws++;
         pbp(o, g, r, "throw to a base (windup)");
@@ -656,22 +655,22 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     // "Every value this swing needs is now in" — the last declaration landing. Read off the declared
     // values now, where it used to be read off a phase a producer drove forward; the QUANTITY the
     // band is about, how many frames of margin the producer left, is unchanged by that.
-    const int swing_done = (m->pendingActionState.swing.powerActive && m->pendingActionState.swing.verticalActive);
-    const int batter_ready = m->pRAI.batter_ready;
+    const int swing_done = (m->at_bat.swing.powerActive && m->at_bat.swing.verticalActive);
+    const int stands_ready = m->at_bat.stands_ready;
 
     if (!o->initialized) {
         o->initialized = 1;
         o->p_batOutcome = outcome;
         o->p_swing_done = swing_done;
-        o->p_batterReady = batter_ready;
+        o->p_batterReady = stands_ready;
         o->p_ball_vy = m->ballInfo.velocity.y;
         o->p_ball_x = m->ballInfo.location.x;
-        o->p_stopped = m->pendingActionState.batting_stopped;
+        o->p_stopped = m->at_bat.swing_stopped;
         return;
     }
 
     // A fresh batter clears the decision mark: a margin is only meaningful within one pitch.
-    if (batter_ready == 1 && o->p_batterReady == 0) o->decided_frame = -1;
+    if (stands_ready == 1 && o->p_batterReady == 0) o->decided_frame = -1;
 
     if (swing_done && !o->p_swing_done) o->decided_frame = g->frame;
 
@@ -700,9 +699,8 @@ void swing_observer_hook(const SimGame* g, void* ctx)
         if (!off_plate) {
             // The elevation the swing actually produced, re-derived through the production law from
             // the values the engine used. Zero is dead centre.
-            float v = swing_vertical_angle(
-                m->pendingActionState.swing.verticalActive ? m->pendingActionState.swing.vertical : 0.0f, o->p_ball_vy
-            );
+            float v =
+                swing_vertical_angle(m->at_bat.swing.verticalActive ? m->at_bat.swing.vertical : 0.0f, o->p_ball_vy);
             float av = v < 0.0f ? -v : v;
             o->elev_abs_sum += av;
             o->elev_n++;
@@ -711,17 +709,17 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     }
 
     // A declined swing: the engine stopped the batting before contact and no outcome was ever
-    // promoted. Counted on batting_stopped's own rising edge — the first version read the batter
-    // going un-ready instead, which reads ZERO, because batter_ready drops when the swing STARTS
+    // promoted. Counted on swing_stopped's own rising edge — the first version read the batter
+    // going un-ready instead, which reads ZERO, because stands_ready drops when the swing STARTS
     // and not when it ends. An instrument's first reading is worth distrusting as much as a test's
     // first pass.
-    const int stopped = m->pendingActionState.batting_stopped;
+    const int stopped = m->at_bat.swing_stopped;
     if (stopped == 1 && o->p_stopped == 0) o->passes++;
     o->p_stopped = stopped;
 
     o->p_batOutcome = outcome;
     o->p_swing_done = swing_done;
-    o->p_batterReady = batter_ready;
+    o->p_batterReady = stands_ready;
     o->p_ball_vy = m->ballInfo.velocity.y;
     o->p_ball_x = m->ballInfo.location.x;
 }

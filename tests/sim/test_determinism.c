@@ -63,7 +63,7 @@ static unsigned long long run_once(unsigned int seed)
 // mirror of the fielder's destination. Timing moves because arrival is now exact: the key-driven
 // version added a step only while the result stayed strictly inside the arc, so it stopped a step
 // short of the end, and the AI, holding its key toward a target, overshot it by up to a full step.
-// Both errors are doubled by the launch heading (theta = -batter_angle*2), so this is aim.
+// Both errors are doubled by the launch heading (theta = -arc_angle*2), so this is aim.
 //
 // The argument that the new behaviour is the intended one is the twenty bands in
 // test_ai_offense_breakdown, recorded before any of this landed and all twenty holding — including

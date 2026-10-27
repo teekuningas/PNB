@@ -70,10 +70,10 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     // First frame begins the windup, without releasing.
     tick(ctx);
     ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)match->pendingActionState.catchingAction.kind,
+        CATCHING_ACTION_PITCHING, (int)match->catching_action.kind,
         "declaring a pitch must begin the engine-owned windup"
     );
-    ASSERT_EQ(1, match->pendingActionState.catchingAction.as.pitch.aimed, "an aim declared with the power is held");
+    ASSERT_EQ(1, match->catching_action.as.pitch.aimed, "an aim declared with the power is held");
     ASSERT_EQ(12, match->pII.hasBallIndex, "ball is still in hand during the windup");
 
     // Run the windup clock to its end → release.
@@ -91,7 +91,7 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
     ASSERT(fabs(expected.y - match->ballInfo.velocity.y) < 0.0001f, "ball vy == pitch_velocity_from_aim.y");
     ASSERT(fabs(expected.z - match->ballInfo.velocity.z) < 0.0001f, "ball vz == pitch_velocity_from_aim.z");
 
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "the pitch is done at release");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "the pitch is done at release");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -113,9 +113,7 @@ int test_pitch_unaimed_is_valesyotto(void)
     ASSERT_EQ(12, match->pII.hasBallIndex, "valesyöttö: the pitcher keeps the ball (no pitch thrown)");
     ASSERT_EQ(0, match->gameEvents.pitchReleased, "valesyöttö must NOT fire pitchReleased");
     ASSERT_EQ(PITCH_STAGE_NONE, (int)match->pRAI.pitch_state, "valesyöttö ends with no pitch in flight");
-    ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind, "valesyöttö ends the catching action"
-    );
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "valesyöttö ends the catching action");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -135,7 +133,7 @@ int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void)
     for (int i = 0; i < 20; i++) {
         tick(ctx);
     }
-    ASSERT_EQ(0, match->pendingActionState.catchingAction.as.pitch.aimed, "no aim has been declared yet");
+    ASSERT_EQ(0, match->catching_action.as.pitch.aimed, "no aim has been declared yet");
     declare_aim(ctx, direction);
     run_actualizer(ctx, pitch_windup_total_frames(power) + 4);
 
@@ -152,7 +150,7 @@ int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void)
 //    batting turn, so there is nobody to pitch to.
 //
 //    This is stated at the permission rather than left to the engine's forced run, which used to be the
-//    only thing closing the pitch: it cleared batter_ready as a side effect, and only in normal play.
+//    only thing closing the pitch: it cleared stands_ready as a side effect, and only in normal play.
 //    The home-run contest skipped it and got a fourth pitch (bug #8). The conjunct makes the fourth pitch
 //    unrepresentable in every mode instead of merely unreached in one.
 int test_no_pitch_after_three_correct_pitches(void)
@@ -166,7 +164,7 @@ int test_no_pitch_after_three_correct_pitches(void)
     declare_aim(allowed, 0.0f);
     tick(allowed);
     ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)allowed->state->match->pendingActionState.catchingAction.kind,
+        CATCHING_ACTION_PITCHING, (int)allowed->state->match->catching_action.kind,
         "with a correct pitch still owed, the windup must begin"
     );
     cleanup_scenario(allowed);
@@ -182,7 +180,7 @@ int test_no_pitch_after_three_correct_pitches(void)
     tick(ctx);
 
     ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind,
+        CATCHING_ACTION_NONE, (int)match->catching_action.kind,
         "a batter who has spent his three correct pitches may not be pitched to"
     );
     ASSERT_EQ(12, match->pII.hasBallIndex, "the refused pitch leaves the ball in the pitcher's hand");
@@ -192,7 +190,7 @@ int test_no_pitch_after_three_correct_pitches(void)
     ctx->state->rules->halfInningState.strikes = 2;
     tick(ctx);
     ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)match->pendingActionState.catchingAction.kind,
+        CATCHING_ACTION_NONE, (int)match->catching_action.kind,
         "a refused pitch is dropped, not left pending to fire later"
     );
 

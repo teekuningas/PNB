@@ -221,7 +221,7 @@ static void advance_runners_on_loose_hit(
     for (int i = 0; i < BASE_COUNT; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
         int shouldRun = 1;
-        if (i == 0 && match->pRAI.batter_can_advance == 0) continue;
+        if (i == 0 && match->at_bat.may_leave_home == 0) continue;
         if (index == -1 || match->playerRuntime[index].goingForward == 1) continue;
         // don't send a runner into a base interval someone else already occupies.
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
@@ -256,9 +256,9 @@ void update_batting_ai(
     // more of the play's outcome to choose from.
     if (match->flowControl.waitingForBatterDecision == 1 && match->gameFlowState.ballHome == 1) {
         declare_batter_choice(match, rules, channel);
-    } else if (match->pRAI.batter_ready == 1 && !airborne && match->gameFlowState.ballHome == 1) {
+    } else if (match->at_bat.stands_ready == 1 && !airborne && match->gameFlowState.ballHome == 1) {
         arm_runners_for_the_pitch(match, rules, channel);
-    } else if (match->pRAI.batter_ready == 1 && !airborne && match->gameFlowState.ballHome == 0) {
+    } else if (match->at_bat.stands_ready == 1 && !airborne && match->gameFlowState.ballHome == 0) {
         recall_leading_runners(match, rules, channel);
     } else if (airborne) {
         play_the_flight(match, rules, &aiController->swing, channel);

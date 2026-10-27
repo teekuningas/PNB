@@ -77,7 +77,7 @@ typedef struct {
     int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
-    int p_throwing; // previous frame's (catchingAction.kind == CATCHING_ACTION_THROWING)
+    int p_throwing; // previous frame's (catching_action.kind == CATCHING_ACTION_THROWING)
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
 
@@ -110,7 +110,7 @@ typedef struct {
     // two tuning questions directly: "are hits powerful enough?" and "is the direction a uniform
     // spread that lands fair most of the time?". Power is the DECLARED power in the batted-ball
     // velocity's own units (0..36) — the same scale the meter count used to arrive on.
-    // Direction is the realized horizontal launch angle (= -batter_angle*2, the production formula);
+    // Direction is the realized horizontal launch angle (= -arc_angle*2, the production formula);
     // dir_bins splits the reachable span [-1.0, +1.0] rad into 5 equal buckets (right→left) so a
     // collapse-to-center or a lopsided pull is visible at a glance.
     long contact_power_sum;
@@ -275,7 +275,7 @@ typedef struct {
     int p_swing_done; // last frame's "the swing's values are all in" reading
     long decided_frame; // frame the last value landed on; -1 = nothing declared this pitch
     int p_batterReady;
-    int p_stopped; // last frame's batting_stopped — a pass is its rising edge
+    int p_stopped; // last frame's swing_stopped — a pass is its rising edge
 
     // observed (readable after the run)
     long swings; // swings carried through to contact (hits + whiffs)

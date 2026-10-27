@@ -3,8 +3,8 @@
 
 #include "globals.h"
 
-// The batter's arc around the pitching plate. `batter_angle` is where on it he stands, and the
-// batting physics doubles it into the launch heading (theta = -batter_angle*2), so this is AIM and
+// The batter's arc around the pitching plate. `arc_angle` is where on it he stands, and the
+// batting physics doubles it into the launch heading (theta = -arc_angle*2), so this is AIM and
 // not a stance: it is the batting side's answer to the same question the fielder's destination
 // answers on the other side of the field.
 //
@@ -48,7 +48,7 @@ int swing_may_be_declared(const MatchSession* match);
 // `passDeclared` is this tick's INTENT_SWING_PASS — the batting side withdrawing a swing it had
 // already declared a power for, which is the "väärä!" call and is worth a ball rather than a strike.
 // The swing's two VALUES are not parameters: they are held engine state with a lifetime, written by
-// the gate into pendingActionState.swing, exactly as a destination or a declaration is.
+// the gate into at_bat.swing, exactly as a destination or a declaration is.
 void update_batting(
     MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int aimDeclared, float aim,
     int passDeclared, int* playSoundEffect

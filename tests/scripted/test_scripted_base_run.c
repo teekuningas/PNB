@@ -10,7 +10,7 @@
  * It proves the human input→intent mapping the slice introduced (action_invocations.c +
  * execute_actions.c::base_run): a SINGLE base-run tap = RUN_FORWARD ("arm / lead"), a DOUBLE tap = a
  * RUN_COMMIT ("run now"). The sharp behavioral difference is on the batter: with the ball live (a pitch
- * in the air, batter_can_advance == 1), a lone tap only ARMS the batter — they keep standing — while a
+ * in the air, at_bat.may_leave_home == 1), a lone tap only ARMS the batter — they keep standing — while a
  * double tap makes them break for first (the steal the user reported as broken before this mapping
  * existed). Driven entirely through the real action_invocations via scripted KeyStates.
  */
@@ -22,7 +22,7 @@ static int tick_until_ball_live(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->pRAI.batter_can_advance == 1) return 1;
+        if (scripted_match(g)->at_bat.may_leave_home == 1) return 1;
     }
     return 0;
 }
@@ -81,7 +81,7 @@ int test_scripted_double_tap_runs_batter(void)
 
     // Committed: run_to_next_base(BASE_HOME) set the batter going forward and stopped the at-bat.
     int going = scripted_match(g)->playerRuntime[bi].goingForward;
-    int batting_going_on = scripted_match(g)->pRAI.batting_going_on;
+    int cycle_open = scripted_match(g)->at_bat.cycle_open;
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
@@ -89,6 +89,6 @@ int test_scripted_double_tap_runs_batter(void)
 
     ASSERT(!failed, reason);
     ASSERT_EQ(1, going, "a double tap must COMMIT the batter to run toward first (the steal)");
-    ASSERT_EQ(0, batting_going_on, "committing the batter to run must end the at-bat");
+    ASSERT_EQ(0, cycle_open, "committing the batter to run must end the at-bat");
     return TEST_PASSED;
 }

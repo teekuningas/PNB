@@ -295,7 +295,7 @@ int test_seat_refuses_when_no_decision_is_open(void)
  * on the arc it wants to stand, and an engine behaviour walks the body there, identically for every
  * producer. These knight the walk's three properties — it converges, it arrives EXACTLY, and it is
  * idempotent — because all three are what the key-driven version got wrong, and the error is doubled
- * on its way to the launch heading (theta = -batter_angle*2).
+ * on its way to the launch heading (theta = -arc_angle*2).
  */
 
 // A batter mid-at-bat with the batting phase running, which is when aim is live.
@@ -304,10 +304,10 @@ static void setup_batter_aiming(ScenarioContext* ctx)
     MatchSession* m = ctx->state->match;
     setup_batter_at_home(ctx, 0);
     initialize_referee_from_physical_state(ctx);
-    m->pRAI.batting_going_on = 1;
-    m->pRAI.init_batter = 0;
-    m->pendingActionState.batter_angle = 0.0f;
-    m->pendingActionState.batter_advance_speed = 0.0f;
+    m->at_bat.cycle_open = 1;
+    m->at_bat.setup_pending = 0;
+    m->at_bat.arc_angle = 0.0f;
+    m->at_bat.step_in_speed = 0.0f;
 }
 
 static void declare_aim(ScenarioContext* ctx, float angle)
@@ -333,7 +333,7 @@ int test_declared_aim_walks_the_batter_and_arrives_exactly(void)
     declare_aim(ctx, target);
     tick_ingest(ctx);
     ASSERT(
-        m->pendingActionState.batter_angle > 0.0f && m->pendingActionState.batter_angle <= BATTER_ANGLE_SPEED_CONSTANT,
+        m->at_bat.arc_angle > 0.0f && m->at_bat.arc_angle <= BATTER_ANGLE_SPEED_CONSTANT,
         "one frame moves the batter by at most one arc step, toward the aim"
     );
 
@@ -343,7 +343,7 @@ int test_declared_aim_walks_the_batter_and_arrives_exactly(void)
     }
 
     ASSERT(
-        m->pendingActionState.batter_angle > target - 0.0001f && m->pendingActionState.batter_angle < target + 0.0001f,
+        m->at_bat.arc_angle > target - 0.0001f && m->at_bat.arc_angle < target + 0.0001f,
         "the batter must come to rest exactly on the declared aim, not a step past it"
     );
 
@@ -370,8 +370,7 @@ int test_aim_beyond_the_arc_stands_at_its_end(void)
     }
 
     ASSERT(
-        m->pendingActionState.batter_angle > -BATTER_ANGLE_LIMIT - 0.0001f &&
-            m->pendingActionState.batter_angle < -BATTER_ANGLE_LIMIT + 0.0001f,
+        m->at_bat.arc_angle > -BATTER_ANGLE_LIMIT - 0.0001f && m->at_bat.arc_angle < -BATTER_ANGLE_LIMIT + 0.0001f,
         "an unreachable aim must leave the batter exactly at the end of the arc"
     );
 
@@ -396,7 +395,7 @@ int test_restating_the_aim_changes_nothing(void)
         declare_aim(ctx, target);
         tick_ingest(ctx);
     }
-    const float settled = m->pendingActionState.batter_angle;
+    const float settled = m->at_bat.arc_angle;
 
     for (int f = 0; f < 5; f++) {
         declare_aim(ctx, target);
@@ -404,7 +403,7 @@ int test_restating_the_aim_changes_nothing(void)
         declare_aim(ctx, target);
         tick_ingest(ctx);
         ASSERT(
-            m->pendingActionState.batter_angle == settled,
+            m->at_bat.arc_angle == settled,
             "a batter standing on his aim must be left exactly where he is, however often he is told"
         );
     }
@@ -426,7 +425,7 @@ int test_silence_leaves_the_aim_alone(void)
 
     declare_aim(ctx, BATTER_ANGLE_LIMIT);
     tick_ingest(ctx);
-    const float afterOneStep = m->pendingActionState.batter_angle;
+    const float afterOneStep = m->at_bat.arc_angle;
     ASSERT(afterOneStep > 0.0f, "setup: the batter should have taken a step toward the aim");
 
     for (int f = 0; f < 10; f++) {
@@ -434,7 +433,7 @@ int test_silence_leaves_the_aim_alone(void)
     }
 
     ASSERT(
-        m->pendingActionState.batter_angle == afterOneStep,
+        m->at_bat.arc_angle == afterOneStep,
         "with nothing declared the batter stands still — silence is not a stale instruction"
     );
 

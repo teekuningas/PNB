@@ -19,7 +19,7 @@
 Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received)
 {
     const int pitcher = match->pII.catcherOnBaseIndex[0];
-    if (match->pendingActionState.catchingAction.kind != CATCHING_ACTION_NONE) {
+    if (match->catching_action.kind != CATCHING_ACTION_NONE) {
         return (Permission){0, RULE_CATCHING_ACTION_IN_PROGRESS};
     }
     if (batter_has_become_runner_permanently(correct_pitches_received)) {
@@ -31,7 +31,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
         return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
     }
-    if (match->pRAI.batter_ready != 1) {
+    if (match->at_bat.stands_ready != 1) {
         return (Permission){0, RULE_PITCH_NEEDS_A_READY_BATTER};
     }
     if (match->flowControl.waitingForFreeWalkDecision != 0) {
@@ -45,8 +45,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
 
 int pitch_is_being_delivered(const MatchSession* match)
 {
-    return match->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING ||
-           match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
+    return match->catching_action.kind == CATCHING_ACTION_PITCHING || match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
 }
 
 // Begin the engine-owned windup for a toss of `power`: set up the pitcher and the ball, start the
@@ -74,7 +73,7 @@ static void begin_windup(MatchSession* match, float power)
     // the ball rises from the centre of the plate
     vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
 
-    match->pendingActionState.catchingAction =
+    match->catching_action =
         (CatchingAction){.kind = CATCHING_ACTION_PITCHING, .timer = 0, .as.pitch = {.power = power}};
 }
 
@@ -83,7 +82,7 @@ static void begin_windup(MatchSession* match, float power)
 static void release_pitch(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
     int pitcher = match->pII.hasBallIndex;
-    const PitchWindup* pitch = &match->pendingActionState.catchingAction.as.pitch;
+    const PitchWindup* pitch = &match->catching_action.as.pitch;
     Vector3D v = pitch_velocity_from_aim(pitch->power, pitch->direction);
     Vector3D target;
     int i;
@@ -103,7 +102,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->pII.lastHadBallIndex = pitcher; // pitcher won't catch its own pitch before it grounds
     match->pII.hasBallIndex = -1;
     match->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
-    match->pRAI.batter_can_advance = 1;
+    match->at_bat.may_leave_home = 1;
     match->cameraState.homeRunCameraFlag = 0;
     match->gameEvents.pitchReleased = 1;
     // release animation (downstream): the windup arc (render-side, driven by the windup clock) has already
@@ -127,7 +126,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
         }
     }
 
-    match->pendingActionState.catchingAction = (CatchingAction){0};
+    match->catching_action = (CatchingAction){0};
 }
 
 // Valesyöttö (a fake): the windup ran out and nobody aimed it. No real pitch — the pitcher keeps the
@@ -142,7 +141,7 @@ static void fake_pitch(MatchSession* match)
         match->ballInfo.location.z = match->playerInfo[pitcher].tPI.location.z;
         match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
     }
-    match->pendingActionState.catchingAction = (CatchingAction){0};
+    match->catching_action = (CatchingAction){0};
 }
 
 // The pitch actualizer — the single engine entry point. A declared power begins the windup (the gate has
@@ -153,7 +152,7 @@ void update_pitch_actualization(
     MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, const PitchValues* declared
 )
 {
-    CatchingAction* action = &match->pendingActionState.catchingAction;
+    CatchingAction* action = &match->catching_action;
 
     // The gate has settled what these may do: a power only when nothing else is in progress, an aim only
     // while a pitch is winding up or begins this tick.

@@ -189,13 +189,13 @@ ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 0
 
 # ---------------------------------------------------------------------------
 # No read-back — the fourth law. A controller reads the world to know what is legal and to draw:
-# what a body is doing (catchingAction.kind, a ball in the air) is the world. What a producer
+# what a body is doing (catching_action.kind, a ball in the air) is the world. What a producer
 # DECLARED, once the engine holds it, is not — the windup's power and aim, a throw's target and
-# power (catchingAction.as), the swing's values (pendingActionState.swing). A controller that reads
+# power (catching_action.as), the swing's values (at_bat.swing). A controller that reads
 # its own declaration back is keyed to the engine's copy, which is a wire's delay late; the human
 # widgets keep their own copy instead and the AI its plan. Held at 0 in the controllers' files.
 # ---------------------------------------------------------------------------
-controller_readbacks=$(grep -nE 'catchingAction\.as|pendingActionState\.swing' src/game/action_invocations.c \
+controller_readbacks=$(grep -nE 'catching_action\.as|at_bat\.swing' src/game/action_invocations.c \
     src/game/ai/*.c | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
 ratchet "controller reads of declared values" "$controller_readbacks" 0
 

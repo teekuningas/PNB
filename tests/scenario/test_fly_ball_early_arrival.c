@@ -51,7 +51,7 @@ int test_fly_ball_early_arrival(void)
     match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
 
     // 5. Trigger batter to run
-    match->pRAI.batter_can_advance = 1;
+    match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME); // Batter: Home → 1st
 
     // 6. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
@@ -78,9 +78,7 @@ int test_fly_ball_early_arrival(void)
         "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
         match->ballInfo.location.y, match->ballInfo.location.z
     );
-    printf(
-        "  PRAI: batter_can_advance=%d, batter_ready=%d\n", match->pRAI.batter_can_advance, match->pRAI.batter_ready
-    );
+    printf("  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home, match->at_bat.stands_ready);
     printf("  BPS: batOutcome=%d\n", rules->betweenPitchState.batOutcome);
 
     // 6. Simulate and track events

@@ -39,14 +39,12 @@
 // A windup is running, and whether it has been aimed yet — the engine's own record of the pitch.
 static int winding_unaimed(const MatchSession* m)
 {
-    return m->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING &&
-           !m->pendingActionState.catchingAction.as.pitch.aimed;
+    return m->catching_action.kind == CATCHING_ACTION_PITCHING && !m->catching_action.as.pitch.aimed;
 }
 
 static int winding_aimed(const MatchSession* m)
 {
-    return m->pendingActionState.catchingAction.kind == CATCHING_ACTION_PITCHING &&
-           m->pendingActionState.catchingAction.as.pitch.aimed;
+    return m->catching_action.kind == CATCHING_ACTION_PITCHING && m->catching_action.as.pitch.aimed;
 }
 
 static void press(ScriptedGame* g, int pad, int key)
@@ -62,7 +60,7 @@ static int tick_until_batting(ScriptedGame* g, int budget)
     scripted_tap(g, BAT_PAD, KEY_2); // accept the highlighted candidate (sampled on the release edge)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->pRAI.batting_going_on == 1) return 1;
+        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
     }
     return 0;
 }
@@ -73,9 +71,8 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->pRAI.batter_ready == 1 &&
-            m->pendingActionState.catchingAction.kind == CATCHING_ACTION_NONE &&
-            m->pRAI.pitch_state == PITCH_STAGE_NONE) {
+        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
+            m->catching_action.kind == CATCHING_ACTION_NONE && m->pRAI.pitch_state == PITCH_STAGE_NONE) {
             return 1;
         }
         if (!scripted_tick(g)) return 0;
@@ -142,8 +139,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     scripted_tick(g);
     ASSERT(winding_unaimed(m), "the pitcher's power click must declare a power and leave the aim outstanding");
     ASSERT_EQ(
-        (int)CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind,
-        "committing a power must start the engine windup"
+        (int)CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "committing a power must start the engine windup"
     );
 
     /* BEAT 2 — the batter's power meter arms itself off that windup, with no key pressed, and a
@@ -152,7 +148,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     scripted_run(g, 10);
     press(g, BAT_PAD, KEY_2);
     scripted_tick(g);
-    ASSERT_EQ(1, m->pendingActionState.swing.powerActive, "the batter's press during the windup must declare a power");
+    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the batter's press during the windup must declare a power");
     ASSERT(winding_unaimed(m), "THE INTERLEAVE: the batter commits while the pitcher's gesture is still unfinished");
 
     /* BEAT 3 — the pitcher's aim meter has been descending throughout. Press it near the sweet spot
@@ -190,9 +186,9 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     }
     press(g, BAT_PAD, KEY_2);
     scripted_tick(g);
-    ASSERT_EQ(1, m->pendingActionState.swing.verticalActive, "the press during the descent must declare an elevation");
+    ASSERT_EQ(1, m->at_bat.swing.verticalActive, "the press during the descent must declare an elevation");
     ASSERT(
-        fabsf(m->pendingActionState.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
+        fabsf(m->at_bat.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
         "a press at the sweet spot must declare a value at the sweet spot"
     );
 
@@ -242,9 +238,7 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     scripted_run(g, 9);
     press(g, PITCH_PAD, KEY_2); // power committed -> windup -> the batter's meter arms
     scripted_tick(g);
-    ASSERT_EQ(
-        (int)CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "the windup must have begun"
-    );
+    ASSERT_EQ((int)CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "the windup must have begun");
     ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode, "the batter's power meter must be armed");
 
     // Let the pitcher's aim fall to the sweet spot; the batter's power sweep is still running,
@@ -268,7 +262,7 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
-    int powerActive = m->pendingActionState.swing.powerActive;
+    int powerActive = m->at_bat.swing.powerActive;
     int aimed = winding_aimed(m);
     scripted_destroy(g);
 
@@ -304,13 +298,12 @@ int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void)
         scripted_tick(g);
     }
     ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode, "with no pitch in progress the batter has no meter");
-    ASSERT_EQ(0, m->pendingActionState.swing.powerActive, "a batter cannot declare a power before a pitch exists");
+    ASSERT_EQ(0, m->at_bat.swing.powerActive, "a batter cannot declare a power before a pitch exists");
     ASSERT_EQ(
         (int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "the batting pad's key must never touch the pitching widget"
     );
     ASSERT_EQ(
-        (int)CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind,
-        "the batting pad's key must never declare a pitch"
+        (int)CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the batting pad's key must never declare a pitch"
     );
 
     // And the other way: the PITCHER runs a whole gesture, and the batter's own widget only ever
@@ -359,13 +352,13 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
     for (int round = 0; round < 5; round++) {
         if (round > 0 && !throw_the_ball_home(g, 600)) break;
         if (!tick_until_pitch_ready(g, 2000)) break;
-        if (scripted_match(g)->pRAI.batting_going_on != 1 && !tick_until_batting(g, 1200)) break;
+        if (scripted_match(g)->at_bat.cycle_open != 1 && !tick_until_batting(g, 1200)) break;
 
         // Every pitch must find both widgets idle. A stale one is the whole point of this test.
         ASSERT_EQ((int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "a new pitch must find the pitch widget retired");
         ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode, "a new pitch must find the swing widget retired");
         ASSERT_EQ((int)SWING_BEAT_POWER, (int)ci->swingWidget.beat, "a new pitch must find the gesture back at beat 1");
-        ASSERT_EQ(0, m->pendingActionState.swing.consumed, "a new pitch must find the previous swing's record cleared");
+        ASSERT_EQ(0, m->at_bat.swing.consumed, "a new pitch must find the previous swing's record cleared");
 
         press(g, PITCH_PAD, KEY_2);
         scripted_run(g, 7);
@@ -375,7 +368,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         // half-inning onward, consolidation legitimately holds pitch_state at NONE through the
         // windup while the previous pitch's result is still standing. Probing the wrong one of
         // those two is the defect this soak found on the batting side.
-        if (m->pendingActionState.catchingAction.kind != CATCHING_ACTION_PITCHING) break;
+        if (m->catching_action.kind != CATCHING_ACTION_PITCHING) break;
         pitches++;
 
         int guard = 0;
@@ -395,14 +388,14 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
             scripted_run(g, 4);
             press(g, BAT_PAD, KEY_1); // withdraw
             scripted_tick(g);
-            ASSERT_EQ(1, m->pendingActionState.batting_stopped, "the withdrawal must stop the swing");
+            ASSERT_EQ(1, m->at_bat.swing_stopped, "the withdrawal must stop the swing");
         }
         // ...and on the other rounds the batter says nothing at all, which is a complete answer.
 
         // Let the pitch resolve and the batting cycle come back round.
         for (int i = 0; i < 400; i++) {
             scripted_tick(g);
-            if (m->pRAI.pitch_state == PITCH_STAGE_NONE && m->pRAI.batting_going_on == 0) break;
+            if (m->pRAI.pitch_state == PITCH_STAGE_NONE && m->at_bat.cycle_open == 0) break;
         }
         scripted_run(g, 5);
     }

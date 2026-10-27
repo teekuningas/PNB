@@ -19,7 +19,7 @@ int calculate_pitch_frame_time(float velocity_y, float gravity, float start_heig
  * Calculates the 3D velocity vector of the batted ball.
  *
  * @param vertical_angle Calculated vertical angle
- * @param horizontal_angle Calculated horizontal angle (-batter_angle * 2)
+ * @param horizontal_angle Calculated horizontal angle (-arc_angle * 2)
  * @param power Selected power value
  * @param power_factor Player's power attribute
  * @param ball_offset_x The horizontal offset of the ball when hit (affects direction)

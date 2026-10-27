@@ -118,8 +118,7 @@ int test_throw_declared_whole_releases_sized_to_power(void)
     // First frame begins the windup (engine mutex), without releasing.
     tick(ctx);
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind,
-        "declaring a throw must begin the engine-owned windup"
+        CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "declaring a throw must begin the engine-owned windup"
     );
     ASSERT_EQ(15, m->pII.hasBallIndex, "ball is still in hand during the windup");
 
@@ -131,9 +130,7 @@ int test_throw_declared_whole_releases_sized_to_power(void)
     ASSERT(lowSpeed > 0.0f, "a released throw has a horizontal launch velocity");
     // frames counts from the SECOND frame onward (the first began the windup); release near the windup end.
     ASSERT(frames + 1 >= windup - 1, "release must wait for the engine windup, not fire instantly");
-    ASSERT_EQ(
-        CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "the catching action clears at release"
-    );
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the catching action clears at release");
     cleanup_scenario(ctx);
 
     // --- high power: same geometry → the only difference is the declared power ---
@@ -168,11 +165,9 @@ int test_throw_target_then_power_engine_times_release(void)
         tick(ctx);
     }
     ASSERT_EQ(15, m->pII.hasBallIndex, "a throw never releases while its power is owed");
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "still winding up while pending");
     ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m->pendingActionState.catchingAction.kind, "still winding up while pending"
-    );
-    ASSERT_EQ(
-        THROW_WINDUP_MAX_FRAMES, m->pendingActionState.catchingAction.timer,
+        THROW_WINDUP_MAX_FRAMES, m->catching_action.timer,
         "the windup clock caps at the full-power windup (holding past full does not overspill)"
     );
 
@@ -182,7 +177,7 @@ int test_throw_target_then_power_engine_times_release(void)
     tick(ctx);
     ASSERT_EQ(-1, m->pII.hasBallIndex, "a power declared after a full windup releases immediately");
     float longInitLowPowerSpeed = horiz_speed(m);
-    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->pendingActionState.catchingAction.kind, "the throw is done at release");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the throw is done at release");
     cleanup_scenario(ctx);
 
     // --- a short gather, then HIGH power → the engine WAITS out the windup (it owns the release instant) ---
@@ -196,9 +191,7 @@ int test_throw_target_then_power_engine_times_release(void)
     declare_power(ctx2, 1.0f);
     tick(ctx2); // the power does NOT fire this frame — the windup is not done
     ASSERT_EQ(15, m2->pII.hasBallIndex, "the engine owns the release: a powered throw waits out its windup");
-    ASSERT_EQ(
-        CATCHING_ACTION_THROWING, (int)m2->pendingActionState.catchingAction.kind, "still winding after the power"
-    );
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m2->catching_action.kind, "still winding after the power");
 
     int budget = THROW_WINDUP_MAX_FRAMES + 10, frames = 0;
     float shortInitHighPowerSpeed = run_until_release(ctx2, budget, &frames);

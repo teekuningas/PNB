@@ -61,9 +61,7 @@ int test_drop_refused_during_a_later_windup(void)
     ScenarioContext* ctx = later_windup();
     MatchSession* m = ctx->state->match;
     const int pitcher = m->pII.hasBallIndex;
-    ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "precondition: a windup is running"
-    );
+    ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "precondition: a windup is running");
 
     intent_push(&ctx->state->channels.catching, (IntentMessage){.kind = INTENT_DROP_BALL});
     tick(ctx);
@@ -97,9 +95,7 @@ int test_controlled_fielder_holds_during_a_later_windup(void)
     tick(ctx);
 
     const Vector3D v = m->playerInfo[pitcher].tPI.velocity;
-    ASSERT_EQ(
-        CATCHING_ACTION_PITCHING, (int)m->pendingActionState.catchingAction.kind, "precondition: still winding up"
-    );
+    ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "precondition: still winding up");
     ASSERT_FLOAT_EQ(0.0f, v.x, 1e-6f, "the pitcher must not be set walking during the windup");
     ASSERT_FLOAT_EQ(0.0f, v.z, 1e-6f, "the pitcher must not be set walking during the windup");
 

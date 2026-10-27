@@ -66,7 +66,7 @@ static IngestedCommands ingest_intents(
 
 void init_execute_actions(MatchSession* match)
 {
-    match->pendingActionState.catchingAction = (CatchingAction){0};
+    match->catching_action = (CatchingAction){0};
     init_batting_system(match);
 }
 
@@ -121,7 +121,7 @@ static Permission permit(
         }
         // A gathered throw owns the ball until the engine releases it. (One declared in this same tick
         // is settled after the drain, with the other claims on the ball — see settle_catching_claims.)
-        if (match->pendingActionState.catchingAction.kind == CATCHING_ACTION_THROWING) {
+        if (match->catching_action.kind == CATCHING_ACTION_THROWING) {
             return (Permission){0, RULE_DROP_NOT_WHILE_THROWING};
         }
         // A pitch has a claim on the ball from the first frame of its windup.
@@ -273,7 +273,7 @@ static int contributes_to_an_action(IntentKind kind)
 static Permission
 permit_contribution(const MatchSession* match, const IntentMessage* message, const IngestedCommands* out)
 {
-    const CatchingActionKind running = match->pendingActionState.catchingAction.kind;
+    const CatchingActionKind running = match->catching_action.kind;
     if (message->kind == INTENT_PITCH_AIM) {
         if (running == CATCHING_ACTION_PITCHING || out->pitch.powerDeclared) return (Permission){1, RULE_NONE};
         return (Permission){0, RULE_PITCH_AIM_NEEDS_A_WINDUP};
@@ -382,16 +382,16 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
         // state that owns it, and kept until the contact frame consumes it or the next batter
         // clears it. That is what makes re-delivering it a no-op — the property rollback needs,
         // and the reason a producer never has to learn whether its last message landed.
-        match->pendingActionState.swing.power = message->as.swing_power.power;
-        match->pendingActionState.swing.powerActive = 1;
+        match->at_bat.swing.power = message->as.swing_power.power;
+        match->at_bat.swing.powerActive = 1;
         break;
     case INTENT_SWING_VERTICAL:
-        match->pendingActionState.swing.vertical = message->as.swing_vertical.vertical;
-        match->pendingActionState.swing.verticalActive = 1;
+        match->at_bat.swing.vertical = message->as.swing_vertical.vertical;
+        match->at_bat.swing.verticalActive = 1;
         break;
     case INTENT_SWING_PASS:
         // A per-tick command and not held state: withdrawing is a thing that HAPPENS, and what it
-        // leaves behind (batting_stopped) is the engine's own conclusion rather than the message.
+        // leaves behind (swing_stopped) is the engine's own conclusion rather than the message.
         out->swing_pass = 1;
         break;
     case INTENT_SELECT_BATTER:
@@ -531,7 +531,7 @@ void execute_actions(
         }
     }
     // SWING — the batter's frame. The two declared VALUES are not passed: the gate wrote them into
-    // pendingActionState.swing, where they are held until the contact frame consumes them. Only the
+    // at_bat.swing, where they are held until the contact frame consumes them. Only the
     // aim and the withdrawal come through as per-tick commands, because only they are things that
     // HAPPEN; a power and an elevation are things that ARE.
     update_batting(
@@ -593,8 +593,9 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 // action_invocations or by the AI in batting_ai; execute_actions does not care which).
 //
 // The producer declares ARM vs COMMIT explicitly (RunIntent in globals.h); the actualizer NEVER
-// infers it from live-ball state. Reading the stale `batter_can_advance` to choose was the slice's
-// offense regression — a pre-pitch arm fired after a caught fly got mis-read as "ball live, run now",
+// infers it from live-ball state. Reading the batter's §32 right to leave home (`may_leave_home`, held for
+// the whole at-bat) as if it meant "the ball is live" was the slice's offense regression — a pre-pitch
+// arm fired after a caught fly got mis-read as "ball live, run now",
 // sending the next batter into a caught-fly out. With the intent explicit, that is unrepresentable.
 //
 //   RUN_FORWARD (single press — "arm / lead")
@@ -606,8 +607,8 @@ void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
 //   RUN_COMMIT (double press — "run now")
 //     - any state                 -> start for the next base immediately (a steal / chaining a hit).
 //                                    For the batter this is gated inside run_to_next_base(BASE_HOME),
-//                                    which refuses unless the ball is live, so a commit issued when
-//                                    the ball is dead is harmlessly ignored — never a mis-run.
+//                                    which refuses until the turn's first pitch has left the hand
+//                                    (§32), so a commit issued before then is harmlessly ignored.
 //   RUN_BACK
 //     - settled on base / at bat  -> disarm a pending lead.
 //     - otherwise                 -> run back to the previous base.
@@ -635,7 +636,7 @@ static void base_run(MatchSession* match, const FieldPositions* fieldPositions, 
         }
     } else if (cmd == RUN_COMMIT) {
         // Deliberate "go now". Safe for the batter even if mis-issued: run_to_next_base(BASE_HOME)
-        // self-gates on batter_can_advance.
+        // self-gates on the batter's §32 right to leave home.
         run_to_next_base(match, fieldPositions, index, base);
     } else { // RUN_BACK
         if (settled_on_base) {

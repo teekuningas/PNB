@@ -40,7 +40,7 @@ int test_run_of_honor(void)
     place_ball_over_location(ctx, ballLocation);
 
     // Critical: Mark that batter can advance
-    ctx->state->match->pRAI.batter_can_advance = 1;
+    ctx->state->match->at_bat.may_leave_home = 1;
 
     printf("Ball dropped towards (%.1f, %.1f, %.1f)\n", ballLocation.x, ballLocation.y, ballLocation.z);
 

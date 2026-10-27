@@ -46,7 +46,7 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
 
     if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE && o->prevPitchState != PITCH_STAGE_AIRBORNE) {
         o->releases++;
-        if (m->pendingActionState.swing.powerActive) {
+        if (m->at_bat.swing.powerActive) {
             o->swungReleases++;
             if (!o->planMadeSinceRelease) o->staleReleases++;
         }
