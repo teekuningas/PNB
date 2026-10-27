@@ -25,7 +25,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
     scripted_tap(g, HUMAN_PAD, KEY_2); // accept the highlighted candidate → INTENT_SELECT_BATTER
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
+        if (batting_cycle_is_open(&scripted_match(g)->at_bat)) return 1;
     }
     return 0;
 }

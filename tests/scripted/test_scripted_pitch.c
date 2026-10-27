@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "actions/batting_system.h"
 #include "scripted_harness.h"
 #include "globals.h"
 #include "action_invocations.h" // catching_widget_view — what the pitcher actually sees on the bar
@@ -25,7 +26,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
+        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
             m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }

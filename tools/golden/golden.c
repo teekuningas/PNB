@@ -18,6 +18,7 @@
 #include "sim_harness.h"
 #include "globals.h"
 #include "action_invocations.h"
+#include "actions/batting_system.h"
 #include "rules_pure/player_utils.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -132,7 +133,7 @@ static int situation(const StateInfo* st, int pad)
     if ((int)sb->teams[catching].control == pad && p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p &&
         m->playerInfo[p].cTPI.isNearHomeLocation)
         return 1;
-    if ((int)sb->teams[batting].control == pad && m->at_bat.stands_ready) return 2;
+    if ((int)sb->teams[batting].control == pad && batter_stands_ready(&m->at_bat)) return 2;
     if ((int)sb->teams[catching].control == pad && m->pII.controlIndex != -1) {
         if (m->pII.hasBallIndex == m->pII.controlIndex) return 3; // holding it away from the plate
         if (m->pII.hasBallIndex == -1) {

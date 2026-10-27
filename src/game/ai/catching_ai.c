@@ -1,6 +1,7 @@
 #include "ai/catching_ai.h"
 #include "execute_actions.h"
 #include "actions/throwing_system.h"
+#include "actions/batting_system.h"
 #include "catching_ai_strategy.h"
 #include "pitching_ai_strategy.h"
 #include "rng.h"
@@ -53,10 +54,10 @@ static void update_ai_pitching(
 
     // batterReadyTimer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
     // ready batter; reset whenever the batter is not ready).
-    if (match->at_bat.stands_ready == 1 && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
+    if (batter_stands_ready(&match->at_bat) && match->pII.catcherOnBaseIndex[0] == match->pII.hasBallIndex &&
         aiController->batterReadyTimer == -1) {
         aiController->batterReadyTimer = 0;
-    } else if (match->at_bat.stands_ready == 0) {
+    } else if (!batter_stands_ready(&match->at_bat)) {
         aiController->batterReadyTimer = -1;
     }
     if (aiController->batterReadyTimer != -1) {

@@ -1,6 +1,7 @@
 #include <string.h>
 #include "globals.h"
 #include "common_logic.h"
+#include "actions/batting_system.h" // the batting cycle an arrival begins
 #include "vector_math.h"
 #include "rng.h"
 #include "base_logic.h"
@@ -201,8 +202,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             target.x = field_positions->firstBaseRun.x;
             target.z = field_positions->firstBaseRun.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.
-            match->at_bat.stands_ready = 0;
-            match->at_bat.cycle_open = 0;
+            match->at_bat.cycle = BATTING_CYCLE_CLOSED;
         } else if (base == BASE_FIRST) {
             target.x = field_positions->secondBaseRun.x;
             target.z = field_positions->secondBaseRun.z;
@@ -381,12 +381,10 @@ void prepare_batter(MatchSession* match)
     if (batterIndex != -1) {
         // batter ready model
         match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
-        // can pitch now
-        match->at_bat.stands_ready = 1;
-        // batterIndex has been selected before calling this function
-
-        // and initialize batter so that everything is ready to go.
-        match->at_bat.setup_pending = 1;
+        // He has arrived: the pitch may come, and the cycle opens (and sets the body up) on the first frame
+        // with no pitch in the air. An arrival only begins a cycle when none is open — the batter is walked
+        // to the ready spot when a cycle has closed or before the first, and never while one is running.
+        if (!batting_cycle_is_open(&match->at_bat)) match->at_bat.cycle = BATTING_CYCLE_ARRIVED;
     }
 }
 // so here we calculate index and base of the player who is the leadrunner so that

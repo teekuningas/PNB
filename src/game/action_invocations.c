@@ -558,8 +558,8 @@ static void checkBatterAngle(
 {
     if (control == CONTROL_AI) return; // the AI declares its aim in batting_ai.c
 
-    if (match->at_bat.cycle_open != 1) {
-        // Between at-bats the engine puts the batter back at zero (setup_pending), so the cursor goes
+    if (!batting_cycle_is_open(&match->at_bat)) {
+        // Between cycles the engine puts the batter back at zero (when the next one opens), so the cursor goes
         // with it. Without this the next batter would start walking toward the last one's aim.
         clientInput->batterAim = 0.0f;
         return;

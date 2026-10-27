@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "actions/batting_system.h"
 #include "scripted_harness.h"
 #include "globals.h"
 #include "rules_pure/player_utils.h"
@@ -81,7 +82,7 @@ int test_scripted_double_tap_runs_batter(void)
 
     // Committed: run_to_next_base(BASE_HOME) set the batter going forward and stopped the at-bat.
     int going = scripted_match(g)->playerRuntime[bi].goingForward;
-    int cycle_open = scripted_match(g)->at_bat.cycle_open;
+    int cycle_open = batting_cycle_is_open(&scripted_match(g)->at_bat);
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));

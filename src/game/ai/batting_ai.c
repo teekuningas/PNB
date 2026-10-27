@@ -256,9 +256,9 @@ void update_batting_ai(
     // more of the play's outcome to choose from.
     if (match->flowControl.waitingForBatterDecision == 1 && match->gameFlowState.ballHome == 1) {
         declare_batter_choice(match, rules, channel);
-    } else if (match->at_bat.stands_ready == 1 && !airborne && match->gameFlowState.ballHome == 1) {
+    } else if (batter_stands_ready(&match->at_bat) && !airborne && match->gameFlowState.ballHome == 1) {
         arm_runners_for_the_pitch(match, rules, channel);
-    } else if (match->at_bat.stands_ready == 1 && !airborne && match->gameFlowState.ballHome == 0) {
+    } else if (batter_stands_ready(&match->at_bat) && !airborne && match->gameFlowState.ballHome == 0) {
         recall_leading_runners(match, rules, channel);
     } else if (airborne) {
         play_the_flight(match, rules, &aiController->swing, channel);

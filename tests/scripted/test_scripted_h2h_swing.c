@@ -60,7 +60,7 @@ static int tick_until_batting(ScriptedGame* g, int budget)
     scripted_tap(g, BAT_PAD, KEY_2); // accept the highlighted candidate (sampled on the release edge)
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
+        if (batting_cycle_is_open(&scripted_match(g)->at_bat)) return 1;
     }
     return 0;
 }
@@ -71,7 +71,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
+        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
             m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
@@ -352,7 +352,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
     for (int round = 0; round < 5; round++) {
         if (round > 0 && !throw_the_ball_home(g, 600)) break;
         if (!tick_until_pitch_ready(g, 2000)) break;
-        if (scripted_match(g)->at_bat.cycle_open != 1 && !tick_until_batting(g, 1200)) break;
+        if (!batting_cycle_is_open(&scripted_match(g)->at_bat) && !tick_until_batting(g, 1200)) break;
 
         // Every pitch must find both widgets idle. A stale one is the whole point of this test.
         ASSERT_EQ((int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "a new pitch must find the pitch widget retired");
@@ -394,7 +394,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         // Let the pitch resolve and the batting cycle come back round.
         for (int i = 0; i < 400; i++) {
             scripted_tick(g);
-            if (!m->ballInfo.pitch_in_flight && m->at_bat.cycle_open == 0) break;
+            if (!m->ballInfo.pitch_in_flight && !batting_cycle_is_open(&m->at_bat)) break;
         }
         scripted_run(g, 5);
     }

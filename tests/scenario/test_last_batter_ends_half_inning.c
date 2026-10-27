@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "actions/batting_system.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include "rules_pure/player_utils.h"
@@ -22,7 +23,7 @@
 // Then WAIT for the player to physically arrive. `seat_batter` only sets a walk target, so the
 // legal seating is instant while the body is still crossing the field — and a test that starts the
 // at-bat before the body lands is measuring a batter who is standing somewhere else entirely. The
-// engine's own "in place with the bat" signal is `at_bat.stands_ready` (§27's *asettuu lyömään*), so that is
+// engine's own "in place with the bat" signal is the batter standing ready (§27's *asettuu lyömään*), so that is
 // what to wait on rather than a frame count guessed from nothing.
 static int take_the_bat(ScenarioContext* ctx, int playerIndex)
 {
@@ -37,7 +38,8 @@ static int take_the_bat(ScenarioContext* ctx, int playerIndex)
             (IntentMessage){.kind = INTENT_SELECT_BATTER, .as.select_batter = {.index = playerIndex}}
         );
         simulate_frames(ctx, 1);
-        if (ctx->state->match->at_bat.stands_ready == 1 && get_active_batter_index(ctx->state->match) == playerIndex) {
+        if (batter_stands_ready(&ctx->state->match->at_bat) &&
+            get_active_batter_index(ctx->state->match) == playerIndex) {
             return 1;
         }
     }

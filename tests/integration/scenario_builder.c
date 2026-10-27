@@ -191,7 +191,7 @@ void setup_pitcher_ready(ScenarioContext* ctx)
     give_ball_to_pitcher(ctx); // ball in hand at the plate
     game->pII.catcherOnBaseIndex[0] = pitcherIdx; // the pitcher is the home catcher
     game->playerInfo[pitcherIdx].cTPI.isNearHomeLocation = 1; // close enough to pitch
-    game->at_bat.stands_ready = 1; // a batter is in
+    game->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH; // a batter is in, standing ready
 }
 
 void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)

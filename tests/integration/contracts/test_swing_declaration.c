@@ -26,8 +26,7 @@ static void stand_a_batter_ready(ScenarioContext* ctx)
     setup_batter_at_home(ctx, 0);
     initialize_referee_from_physical_state(ctx);
 
-    m->at_bat.stands_ready = 1;
-    m->at_bat.setup_pending = 1;
+    m->at_bat.cycle = BATTING_CYCLE_ARRIVED;
     m->ballInfo.pitch_in_flight = 0;
     simulate_frames(ctx, 1); // a ready batter with no pitch in the air is what starts the at-bat
 }

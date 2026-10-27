@@ -31,6 +31,12 @@
 
 void init_batting_system(MatchSession* match);
 
+// The two questions the rest of the game asks of the batting cycle, each answered in one place.
+// Standing ready: at the ready spot and no ball released to him yet — what a pitch waits for.
+int batter_stands_ready(const AtBat* at_bat);
+// Open: the cycle has begun and its follow-through has not yet played out — what a swing needs.
+int batting_cycle_is_open(const AtBat* at_bat);
+
 void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, int index);
 
 // May a swing value be declared into the world as it stands? One question, two callers: the INGEST

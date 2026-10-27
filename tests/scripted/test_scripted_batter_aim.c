@@ -26,7 +26,7 @@ static int reach_the_batting_phase(ScriptedGame* g, int budget)
 
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->at_bat.cycle_open == 1) return 1;
+        if (batting_cycle_is_open(&scripted_match(g)->at_bat)) return 1;
     }
     return 0;
 }

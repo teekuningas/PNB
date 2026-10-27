@@ -120,7 +120,7 @@ int test_pitch_permission_names_each_rule(void)
     ASSERT_EQ(RULE_PITCH_PREVIOUS_UNRESOLVED, pitch_may_begin(m, 0).denied_by, "not before the last pitch is judged");
     restore(ctx, &ready);
 
-    m->at_bat.stands_ready = 0;
+    m->at_bat.cycle = BATTING_CYCLE_CLOSED;
     ASSERT_EQ(RULE_PITCH_NEEDS_A_READY_BATTER, pitch_may_begin(m, 0).denied_by, "nobody to pitch to");
     restore(ctx, &ready);
 
@@ -141,7 +141,7 @@ int test_a_refused_pitch_begins_nothing(void)
     ScenarioContext* ctx = create_scenario();
     setup_pitcher_ready(ctx);
     MatchSession* m = ctx->state->match;
-    m->at_bat.stands_ready = 0;
+    m->at_bat.cycle = BATTING_CYCLE_CLOSED;
 
     say(ctx, pitch_power(0.5f));
     say(ctx, pitch_aim(0.0f));
@@ -149,7 +149,7 @@ int test_a_refused_pitch_begins_nothing(void)
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "refused: no batter ready");
     ASSERT_EQ(12, m->pII.hasBallIndex, "the ball stays in the pitcher's hand");
 
-    m->at_bat.stands_ready = 1;
+    m->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH;
     tick(ctx);
     ASSERT_EQ(
         CATCHING_ACTION_NONE, (int)m->catching_action.kind,

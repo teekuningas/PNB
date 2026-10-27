@@ -179,10 +179,10 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         m->gameFlowState.ballHome, m->ballInfo.pitch_in_flight, (int)m->catching_action.kind, m->pII.hasBallIndex,
-        m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision, m->at_bat.stands_ready,
-        ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
-        m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
-        ai->swing.style, (int)r->betweenPitchState.batOutcome, m->at_bat.cycle_open
+        m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
+        batter_stands_ready(&m->at_bat), ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer,
+        ai->batterReadyTimer, m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive,
+        ai->swing.wrongPitch, ai->swing.style, (int)r->betweenPitchState.batOutcome, batting_cycle_is_open(&m->at_bat)
     );
 }
 
@@ -659,7 +659,7 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     // values now, where it used to be read off a phase a producer drove forward; the QUANTITY the
     // band is about, how many frames of margin the producer left, is unchanged by that.
     const int swing_done = (m->at_bat.swing.powerActive && m->at_bat.swing.verticalActive);
-    const int stands_ready = m->at_bat.stands_ready;
+    const int stands_ready = batter_stands_ready(&m->at_bat);
 
     if (!o->initialized) {
         o->initialized = 1;

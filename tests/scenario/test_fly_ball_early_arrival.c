@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "actions/batting_system.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include "referee.h"
@@ -78,7 +79,10 @@ int test_fly_ball_early_arrival(void)
         "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
         match->ballInfo.location.y, match->ballInfo.location.z
     );
-    printf("  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home, match->at_bat.stands_ready);
+    printf(
+        "  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home,
+        batter_stands_ready(&match->at_bat)
+    );
     printf("  BPS: batOutcome=%d\n", rules->betweenPitchState.batOutcome);
 
     // 6. Simulate and track events

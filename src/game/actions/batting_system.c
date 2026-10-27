@@ -40,6 +40,16 @@ void init_batting_system(MatchSession* match)
     match->at_bat.pose_dirty = 0;
 }
 
+int batter_stands_ready(const AtBat* at_bat)
+{
+    return at_bat->cycle == BATTING_CYCLE_ARRIVED || at_bat->cycle == BATTING_CYCLE_AWAITING_PITCH;
+}
+
+int batting_cycle_is_open(const AtBat* at_bat)
+{
+    return at_bat->cycle == BATTING_CYCLE_AWAITING_PITCH || at_bat->cycle == BATTING_CYCLE_FACING_PITCH;
+}
+
 // §27 — a named player takes the bat ("asettuu lyömään"), if the seat is free.
 //
 // WHO may be seated was already settled by the INGEST gate against §27, §12 and §7. What is left
@@ -103,7 +113,7 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 // declared power is not readable from here and must not become so.
 int swing_may_be_declared(const MatchSession* match)
 {
-    if (match->at_bat.cycle_open != 1) return 0; // nobody is at the plate swinging
+    if (!batting_cycle_is_open(&match->at_bat)) return 0; // nobody is at the plate swinging
     // There has to be a pitch on its way — the windup or the flight. The two-human soak caught this
     // asked of the old `pitch_state == WINDUP`, which was wrong from the second pitch of every
     // half-inning onward and cost the batter his entire power beat: declarable in 87 of the first
@@ -202,21 +212,24 @@ void update_batting(
     int batterIndex = get_active_batter_index(match);
 
     // ONE SWING PER PITCH, cleared at the START of each batting cycle — before the cycle opens, so
-    // before anything can legally be declared into it (the gate requires cycle_open).
+    // before anything can legally be declared into it (the gate requires an open cycle).
     //
-    // Keyed here rather than on setup_pending, and that is a correction the sim caught: a batter is
+    // Keyed here rather than on the arrival, and that is a correction the sim caught: a batter is
     // re-initialised whenever he is put back at the plate, which can happen after a windup has
     // already begun, so a power committed during that windup was wiped by a batter-side reset that
     // had nothing to do with it — eleven pitches in twelve went unswung at. Keying it on "no pitch
     // in progress" instead was worse: it cleared the swing mid-follow-through, and the at-bat never
     // ended. The swing belongs to the batting cycle, so the cycle's own start is where it clears.
-    if (match->at_bat.cycle_open == 0) {
+    if (!batting_cycle_is_open(&match->at_bat)) {
         match->at_bat.swing = (SwingActualization){0};
         match->at_bat.swing.contactFrame = -1;
     }
 
-    if (match->at_bat.stands_ready == 1 && !match->ballInfo.pitch_in_flight && match->at_bat.cycle_open == 0) {
-        match->at_bat.cycle_open = 1;
+    // The cycle opens once the batter has arrived and no pitch is in the air.
+    int opens_now = 0;
+    if (match->at_bat.cycle == BATTING_CYCLE_ARRIVED && !match->ballInfo.pitch_in_flight) {
+        match->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH;
+        opens_now = 1;
     }
     // The batting side withdrew a swing it had already committed a power to — the "väärä!" call,
     // made after the ball is in the air and worth a ball where swinging and missing is worth a
@@ -224,15 +237,16 @@ void update_batting(
     if (passDeclared) {
         stop_the_swing(match);
     }
-    // so cycle_open goes 1 when batter arrives to its ready position and pitch is not in air.
-    if (match->at_bat.cycle_open == 1) {
+    if (batting_cycle_is_open(&match->at_bat)) {
         // flight_frame counts from the first frame of the cycle that sees the pitch in the air.
         // used for animation and advancing.
         if (match->at_bat.flight_clock_running == 1) {
             match->at_bat.flight_frame += 1;
         }
 
-        if (match->at_bat.setup_pending == 1) {
+        // The body is set up on the frame the cycle opens. Nothing can have been declared into it yet: the
+        // gate asked swing_may_be_declared at the top of this tick, when the cycle was still shut.
+        if (opens_now) {
             // so the default is to swing, we change this to BUNT_ADVANCE or SPREAD_ADVANCE
             // if the circumstances need so
             match->at_bat.step_in_limit = SWING_ADVANCE;
@@ -253,8 +267,6 @@ void update_batting(
             if (batterIndex != -1) {
                 match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
             }
-            // init done, so no need to do that anymore.
-            match->at_bat.setup_pending = 0;
         }
         // update batters location and orientation when either advancing speed or angular speed
         // is nonzero. moving is 0 so location wont be updated with other players in different parts of code
@@ -364,8 +376,8 @@ void update_batting(
                 float v = match->ballInfo.velocity.y;
                 match->at_bat.swing.contactFrame =
                     calculate_pitch_frame_time(v, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
-                // stands_ready is zero now: the batter isn't waiting for action, it is with him.
-                match->at_bat.stands_ready = 0;
+                // He is no longer standing ready: the ball is not waited for, it is on its way to him.
+                match->at_bat.cycle = BATTING_CYCLE_FACING_PITCH;
             }
             // so if the batter is still not moving, we'll try to figure out if we should be moving.
             if (match->at_bat.swing_started == 0 && batterIndex != -1) {
@@ -409,14 +421,14 @@ void update_batting(
         if (match->at_bat.swing.contactFrame < 0) {
             return;
         }
-        // so here we check if the animation has ended and if cycle_open is still on,
-        // so that we dont do this but once. if it is, we set cycle_open to zero
+        // so here we check if the animation has ended and if the cycle is still open,
+        // so that we dont do this but once. if it is, we close the cycle
         // and move the player towards ready position agian.
         if ((match->at_bat.flight_frame >
              match->at_bat.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
-            match->at_bat.cycle_open == 1) {
+            batting_cycle_is_open(&match->at_bat)) {
             Vector3D target;
-            match->at_bat.cycle_open = 0;
+            match->at_bat.cycle = BATTING_CYCLE_CLOSED;
 
             target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);

@@ -933,6 +933,17 @@ typedef struct _SwingActualization {
     int consumed;
 } SwingActualization;
 
+// Where the batting cycle has got to — one pitch faced, from the ready spot to the end of the follow-through.
+// One value where there used to be three flags (ready, setup-pending, going-on) written at six sites, whose
+// eight combinations held four meanings; measured over every golden run before the merge, those four were
+// the only ones that ever occurred, so nothing was lost by making the other four unsayable.
+typedef enum {
+    BATTING_CYCLE_CLOSED = 0, // nobody at the ready spot: no batter yet, walking up, or set off for first
+    BATTING_CYCLE_ARRIVED, // at the ready spot; the cycle opens, and the body is set up, once no pitch is in the air
+    BATTING_CYCLE_AWAITING_PITCH, // open, standing ready, no ball released to him yet
+    BATTING_CYCLE_FACING_PITCH // the ball was released to him; open until the follow-through has played out
+} BattingCycle;
+
 // The batter at the plate, as the engine runs him: one struct because it is one lifetime, the at-bat, and
 // everything in it is about the one player standing on the arc. Inside the at-bat the batter goes round a
 // BATTING CYCLE once per pitch he faces — he arrives at the ready spot, the cycle opens once no pitch is in
@@ -945,14 +956,7 @@ typedef struct _AtBat {
     // the air, which is why nothing clears it between pitches. Seating the next batter starts it at 0.
     int may_leave_home;
 
-    // Where the cycle has got to. Three flags today, written at different sites: arrival at the ready
-    // spot raises `stands_ready` and `setup_pending`; the cycle opens (`cycle_open`) on the first frame
-    // with no pitch in the air, setting the body up and clearing `setup_pending`; the release lowers
-    // `stands_ready`; the end of the follow-through lowers `cycle_open`. Setting off for first base
-    // lowers both.
-    int stands_ready; // at the ready spot and no ball released to him yet — what the pitch waits for
-    int setup_pending; // arrived, and the body is set up on the cycle's first frame
-    int cycle_open; // the cycle has opened and its follow-through has not yet ended
+    BattingCycle cycle;
 
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
 

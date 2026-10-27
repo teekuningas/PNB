@@ -88,7 +88,9 @@ static void project(const StateInfo* st)
     put(3, "air=%d ", m->ballInfo.pitch_in_flight);
     for (int i = 0; i < BASE_COUNT; i++) put(3, "w%d,", m->runner_commitments.armed[i]);
     const AtBat* ab = &m->at_bat;
-    put(3, "ib=%d br=%d bgo=%d bca=%d rcc=%d ips=%d", ab->setup_pending, ab->stands_ready, ab->cycle_open,
+    // The batting cycle, printed as the three flags it used to be: arrived (setup pending), standing ready, open.
+    put(3, "ib=%d br=%d bgo=%d bca=%d rcc=%d ips=%d", ab->cycle == BATTING_CYCLE_ARRIVED, batter_stands_ready(ab),
+        batting_cycle_is_open(ab),
         ab->may_leave_home, m->chase_replan != CHASE_REPLAN_NONE, m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
 
     const FlowControl* fc = &m->flowControl;
@@ -110,7 +112,7 @@ static void project(const StateInfo* st)
         (double)s->vertical, s->consumed);
     // The batter's body through a batting cycle. Printed only while a cycle is open: every field is set up
     // when one opens and read only inside it, so between cycles they are leftovers, not play.
-    if (ab->cycle_open) {
+    if (batting_cycle_is_open(ab)) {
         put(7, "bfc=%d ibfc=%d ang=%a as=%a adv=%a lim=%a stop=%d mov=%d upd=%d", ab->flight_frame,
             ab->flight_clock_running, (double)ab->arc_angle, (double)ab->step_in_speed, (double)ab->step_in,
             (double)ab->step_in_limit, ab->swing_stopped, ab->swing_started, ab->pose_dirty);

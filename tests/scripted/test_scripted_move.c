@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "actions/batting_system.h"
 #include "scripted_harness.h"
 #include "actions/pitching_system.h"
 #include "globals.h"
@@ -29,7 +30,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
-        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
+        if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && batter_stands_ready(&m->at_bat) &&
             m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }

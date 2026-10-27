@@ -304,8 +304,7 @@ static void setup_batter_aiming(ScenarioContext* ctx)
     MatchSession* m = ctx->state->match;
     setup_batter_at_home(ctx, 0);
     initialize_referee_from_physical_state(ctx);
-    m->at_bat.cycle_open = 1;
-    m->at_bat.setup_pending = 0;
+    m->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH;
     m->at_bat.arc_angle = 0.0f;
     m->at_bat.step_in_speed = 0.0f;
 }

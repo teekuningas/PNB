@@ -1,4 +1,5 @@
 #include "actions/pitching_system.h"
+#include "actions/batting_system.h" // a pitch waits for a batter standing ready
 #include "rules_pure/rules_strikes.h"
 #include "common_logic.h"
 #include "vector_math.h"
@@ -31,7 +32,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (match->ballInfo.pitch_in_flight) {
         return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
     }
-    if (match->at_bat.stands_ready != 1) {
+    if (!batter_stands_ready(&match->at_bat)) {
         return (Permission){0, RULE_PITCH_NEEDS_A_READY_BATTER};
     }
     if (match->flowControl.waitingForFreeWalkDecision != 0) {
