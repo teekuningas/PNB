@@ -25,9 +25,9 @@
 #define BASES_X 0.50f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
-static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
+static void draw_skybox(ResourceManager* rm);
 static void
-draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
+draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
 static int init_lights(void);
 static void init_camera(CameraView* camera);
 static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera);
@@ -156,7 +156,7 @@ void hud_after_tick(HudState* hud, GameEventType* announcement)
 }
 
 void draw_game_screen(
-    const StateInfo* stateInfo, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
+    const SceneView* scene, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
     const RenderState* rs
 )
 {
@@ -183,7 +183,7 @@ void draw_game_screen(
         CAMERA_UP.z
     );
 
-    draw_skybox(stateInfo, rm);
+    draw_skybox(rm);
 
     // Re-enable depth writes for the rest of the scene.
     glDepthMask(GL_TRUE);
@@ -194,11 +194,11 @@ void draw_game_screen(
     glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
     draw_immutable_world(rm);
-    draw_game_frame(stateInfo, alpha, rm);
+    draw_game_frame(scene->match, &scene->rules->scoreboard, scene->paused, alpha, rm);
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
-    draw_statistics_2d(stateInfo, hud, alpha, rm, rs);
+    draw_statistics_2d(scene, hud, alpha, rm, rs);
 }
 
 // lights
@@ -223,7 +223,7 @@ static int init_lights(void)
     return 0;
 }
 
-static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
+static void draw_skybox(ResourceManager* rm)
 {
     glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/skybox.tga"));
     glPushMatrix();
@@ -233,7 +233,7 @@ static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
 }
 
 static void
-draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs)
+draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs)
 {
     char* str4;
     char str5[2] = "x";
@@ -263,8 +263,8 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
     // OUTS (Far Left)
     float outs_x = CENTER_X + OUTS_OFFSET_X;
-    if (stateInfo->rules->scoreboard.period < 4) {
-        switch (stateInfo->rules->halfInningState.outs) {
+    if (scene->rules->scoreboard.period < 4) {
+        switch (scene->rules->halfInningState.outs) {
         case 3:
             print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
             break;
@@ -317,7 +317,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
             break;
         }
         print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
-    } else if (stateInfo->match->offers.free_walk == 1) {
+    } else if (scene->match->offers.free_walk == 1) {
         print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
     } else {
         // Who the panel is about: the candidate the human is looking at while a decision is open,
@@ -329,53 +329,51 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
         // and the second is asked of the plate, which is the fact it was always really about.
         int index;
         int shouldContinue = 1;
-        if (stateInfo->rules->scoreboard.period < 4) {
-            if (stateInfo->match->offers.batter_seat == 1) {
+        if (scene->rules->scoreboard.period < 4) {
+            if (scene->match->offers.batter_seat == 1) {
                 int candidates[BATTER_CANDIDATE_MAX];
                 int count = list_batter_candidates(
-                    stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->halfInningState, candidates
+                    scene->match, &scene->rules->scoreboard, &scene->rules->halfInningState, candidates
                 );
-                int cursor = stateInfo->clientInput->batterWidget.highlight;
+                int cursor = scene->input->batterWidget.highlight;
                 if (count <= 0)
                     shouldContinue = 0;
                 else
                     index = candidates[(cursor >= 0 && cursor < count) ? cursor : 0];
             } else {
-                index = get_active_batter_index(stateInfo->match);
+                index = get_active_batter_index(scene->match);
                 if (index == -1) shouldContinue = 0;
             }
         } else {
-            int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
-            int pairIdx = stateInfo->rules->homeRunContestState.runnerBatterPairCounter;
+            int battingTeamIndex = get_batting_team_index(&scene->rules->scoreboard);
+            int pairIdx = scene->rules->homeRunContestState.runnerBatterPairCounter;
             // pairIdx reaches pairCount at end-of-inning; clamp so we never read past the
             // current pair row of batterRunnerIndices.
-            if (pairIdx < 0 || pairIdx >= stateInfo->rules->scoreboard.pairCount) {
+            if (pairIdx < 0 || pairIdx >= scene->rules->scoreboard.pairCount) {
                 shouldContinue = 0;
             } else {
-                index = stateInfo->rules->scoreboard.teams[battingTeamIndex].batterRunnerIndices[0][pairIdx];
+                index = scene->rules->scoreboard.teams[battingTeamIndex].batterRunnerIndices[0][pairIdx];
                 if (index == -1) shouldContinue = 0;
             }
         }
         if (shouldContinue == 1) {
-            int speed = stateInfo->match->playerInfo[index].bTPI.speed;
-            int power = stateInfo->match->playerInfo[index].bTPI.power;
+            int speed = scene->match->playerInfo[index].bTPI.speed;
+            int power = scene->match->playerInfo[index].bTPI.power;
             char p_str[32];
             sprintf(p_str, "S%d P%d", speed, power);
             print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
-            if (stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&
-                stateInfo->rules->scoreboard.period < 4) {
+            if (scene->match->playerInfo[index].bTPI.joker != JOKER_REGULAR && scene->rules->scoreboard.period < 4) {
                 str5[0] = 'J';
             } else {
-                str5[0] = (char)(((int)'0') + stateInfo->match->playerInfo[index].bTPI.number);
+                str5[0] = (char)(((int)'0') + scene->match->playerInfo[index].bTPI.number);
             }
             // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
             print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
             // The name is the roster's, looked up where it is shown: the World holds no pointers.
-            const int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
-            str4 =
-                stateInfo->teamData[stateInfo->rules->scoreboard.teams[battingTeamIndex].value - 1].players[index].name;
+            const int battingTeamIndex = get_batting_team_index(&scene->rules->scoreboard);
+            str4 = scene->teams[scene->rules->scoreboard.teams[battingTeamIndex].value - 1].players[index].name;
             print_text_2d(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
         }
     }
@@ -385,8 +383,8 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
     // Inning
     char inn_str[16] = "I  ";
-    if (stateInfo->rules->scoreboard.period < 4) {
-        inn_str[2] = (char)(((int)'0') + stateInfo->rules->scoreboard.inning / 2 + 1);
+    if (scene->rules->scoreboard.period < 4) {
+        inn_str[2] = (char)(((int)'0') + scene->rules->scoreboard.inning / 2 + 1);
     } else {
         inn_str[2] = '0';
     }
@@ -394,23 +392,21 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
     // Balls
     char ball_str[16] = "B  ";
-    if (stateInfo->rules->halfInningState.balls < 10) {
-        ball_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.balls);
+    if (scene->rules->halfInningState.balls < 10) {
+        ball_str[2] = (char)(((int)'0') + scene->rules->halfInningState.balls);
     } else {
-        sprintf(ball_str, "B%d", stateInfo->rules->halfInningState.balls);
+        sprintf(ball_str, "B%d", scene->rules->halfInningState.balls);
     }
     print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Strikes
     char strike_str[16] = "S  ";
-    strike_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.strikes);
+    strike_str[2] = (char)(((int)'0') + scene->rules->halfInningState.strikes);
     print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Runs
     char runs_str[32];
-    sprintf(
-        runs_str, "R %d - %d", stateInfo->rules->scoreboard.teams[0].runs, stateInfo->rules->scoreboard.teams[1].runs
-    );
+    sprintf(runs_str, "R %d - %d", scene->rules->scoreboard.teams[0].runs, scene->rules->scoreboard.teams[1].runs);
     print_text_2d(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
 
     // METER (Right-Center)
@@ -427,7 +423,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     // with the bar's left/right ends (no gap) — its travel range is (meter_w − marker_w), not meter_w.
     float marker_w = 5.0f;
     float marker_travel = meter_w - marker_w;
-    meterX = 0.16f * catching_widget_view(stateInfo->clientInput);
+    meterX = 0.16f * catching_widget_view(scene->input);
 
     float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * hud->lastMeterX) / 0.16f * marker_travel;
     hud->lastMeterX = meterX;
@@ -438,7 +434,7 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
 
     // The batting side's bar, asked of the gesture itself — as the catching side's is above — rather
     // than of a number the engine carries for it.
-    SwingMeterView swing = swing_widget_view(&stateInfo->clientInput->swingWidget);
+    SwingMeterView swing = swing_widget_view(&scene->input->swingWidget);
 
     // The MOVING marker exists only while something is actually sweeping. Drawing it unconditionally
     // parked a marker at the bar's left edge whenever there was no cursor — including through the
@@ -465,8 +461,8 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     // to the far right on power-lock). Shown only during the human aim phase; the AI drives no widget, so
     // an AI pitch never shows a marker. Render-only — reads the gesture's own copy of what it declared,
     // which is correct even while the declaration is still on its way to the engine.
-    if (stateInfo->clientInput->pitchWidget.meter.mode == WIDGET_DESCENT) {
-        float locked_power = stateInfo->clientInput->pitchWidget.power;
+    if (scene->input->pitchWidget.meter.mode == WIDGET_DESCENT) {
+        float locked_power = scene->input->pitchWidget.power;
         float power_marker_x = meter_screen_x + locked_power * marker_travel;
         draw_texture_2d(
             resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,
@@ -509,37 +505,32 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
     // Base Runners
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         int index = i;
-        if (stateInfo->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
+        if (scene->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
             float phase = 0.0f;
             BaseID base = BASE_HOME;
             float distance;
             // Logic copied from original
-            if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
-                if (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
+            if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
+                if (scene->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
                     phase = 0.0f;
                 } else {
-                    distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
-                    phase = (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
+                    distance = scene->field->firstBaseRun.z - HOME_LINE_Z;
+                    phase = (scene->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
                 }
                 base = BASE_HOME;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
-                distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
-                phase =
-                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) /
-                    distance;
+            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
+                distance = scene->field->secondBaseRun.x - scene->field->firstBaseRun.x;
+                phase = (scene->match->playerInfo[index].tPI.location.x - scene->field->firstBaseRun.x) / distance;
                 base = BASE_FIRST;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
-                distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
-                phase =
-                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) /
-                    distance;
+            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
+                distance = scene->field->thirdBaseRun.x - scene->field->secondBaseRun.x;
+                phase = (scene->match->playerInfo[index].tPI.location.x - scene->field->secondBaseRun.x) / distance;
                 base = BASE_SECOND;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
-                distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
-                phase = (stateInfo->match->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) /
-                        distance;
+            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
+                distance = HOME_LINE_Z - scene->field->thirdBaseRun.z;
+                phase = (scene->match->playerInfo[index].tPI.location.z - scene->field->thirdBase.z) / distance;
                 base = BASE_THIRD;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
                 phase = 0.0f;
                 base = BASE_HOME_SCORED;
             }

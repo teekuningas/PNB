@@ -12,16 +12,17 @@
 #define SELECTION_BALL_SCALE 0.2f
 
 // Forward declarations for static helper functions
-static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type, ResourceManager* rm);
-static void modelSelection(const StateInfo* stateInfo, int index, ResourceManager* rm);
+static void textureSelection(const Scoreboard* scoreboard, int team, int joker, int type, ResourceManager* rm);
+static void modelSelection(const MatchSession* match, int index, ResourceManager* rm);
 
 int init_player_renderer(ResourceManager* rm)
 {
     return 0;
 }
 
-void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm)
+void draw_player_renderer(const MatchSession* match, const Scoreboard* scoreboard, double alpha, ResourceManager* rm)
 {
+    const PlayerInfo* playerInfo = match->playerInfo;
     int i;
     int j = 0;
     double angle;
@@ -42,8 +43,8 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
 
         // and we render. first texture is selected, as there are different teams and within teams there are jokers
         // and nonjokers. and then the model is selected and it also calls the display list.
-        textureSelection(stateInfo, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0, rm);
-        modelSelection(stateInfo, i, rm);
+        textureSelection(scoreboard, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0, rm);
+        modelSelection(match, i, rm);
         // and then there is the shadow.
         // we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same
         // height.
@@ -63,8 +64,8 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
         glDisable(GL_BLEND);
         glEnable(GL_LIGHTING);
         // and then there is the marker at the top of player who is controlled
-        if (i == stateInfo->match->catchingState.controlled_fielder) {
-            textureSelection(stateInfo, playerInfo[i].cPI.team, 0, 1, rm);
+        if (i == match->catchingState.controlled_fielder) {
+            textureSelection(scoreboard, playerInfo[i].cPI.team, 0, 1, rm);
             glPushMatrix();
             glTranslatef(
                 (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x),
@@ -78,19 +79,17 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
     }
 }
 
-static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type, ResourceManager* rm)
+static void textureSelection(const Scoreboard* scoreboard, int team, int joker, int type, ResourceManager* rm)
 {
     // Calculate who is currently batting to map "team" (role) to actual team index
     // team 0 = batting team, team 1 = catching team
-    int battingTeamIndex = (stateInfo->rules->scoreboard.inning + stateInfo->rules->scoreboard.playsFirst +
-                            stateInfo->rules->scoreboard.period) %
-                           2;
+    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
     int actualTeamIndex = (team + battingTeamIndex) % 2;
 
     // theres two types of texture selections, texture selection for player and texture selection for marker.
     if (type == 0) {
         char path[128];
-        int team_val = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].value;
+        int team_val = scoreboard->teams[actualTeamIndex].value;
         if (joker == 0) {
             sprintf(path, "data/textures/team%d.tga", team_val);
         } else {
@@ -101,7 +100,7 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
     // and here, should we use green, blue or red ball on top of a player.
     // depends on who controls.
     else if (type == 1) {
-        int control = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].control;
+        int control = scoreboard->teams[actualTeamIndex].control;
         if (control == 0) {
             glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"));
         } else if (control == 1) {
@@ -112,15 +111,14 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
     }
 }
 
-static void modelSelection(const StateInfo* stateInfo, int index, ResourceManager* rm)
+static void modelSelection(const MatchSession* match, int index, ResourceManager* rm)
 {
     // and then we must select which mesh we use and call the corresponding display list.
     // for animations we just use the animationStage, that is being updated in game_manipulation, as index
     // in mesh arrays.
-    int animIndex = stateInfo->match->playerInfo[index].cPI.animationStage /
-                    stateInfo->match->playerInfo[index].cPI.animationFrequency;
+    int animIndex = match->playerInfo[index].cPI.animationStage / match->playerInfo[index].cPI.animationFrequency;
     char path[128];
-    switch (stateInfo->match->playerInfo[index].cPI.model) {
+    switch (match->playerInfo[index].cPI.model) {
     case PLAYER_ANIM_STAND_NO_BALL:
         glCallList(resource_manager_get_model(rm, "data/models/player_glove_without_ball_standing.obj"));
         break;
@@ -159,7 +157,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
         // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
         // and human (the AI declares power directly; the windup + arc are the same engine path).
-        const CatchingAction* action = &stateInfo->match->catching_action;
+        const CatchingAction* action = &match->catching_action;
         int timer = action->timer;
         int crouch = pitch_windup_crouch_frames(action->as.pitch.power);
         if (timer < PITCH_WINDUP_DOWN_FRAMES) {
@@ -185,7 +183,7 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
         // hold. Mapped to the full-power windup length; animationStage is ignored (the timer is master).
         // Works identically for AI and human — the same engine clock.
-        int timer = stateInfo->match->catching_action.timer;
+        int timer = match->catching_action.timer;
         int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;
         if (f >= THROW_LOAD_FRAMES) f = THROW_LOAD_FRAMES - 1;
         if (f < 0) f = 0;

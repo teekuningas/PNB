@@ -227,7 +227,17 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
     switch (stateInfo->screen) {
     case SCREEN_GAME:
         // Everything within draw_game_screen is currently drawn in 3d context
-        draw_game_screen(stateInfo, &hud, &camera, alpha, rm, rs);
+        {
+            const SceneView scene = {
+                .match = stateInfo->match,
+                .rules = stateInfo->rules,
+                .field = stateInfo->fieldPositions,
+                .teams = stateInfo->teamData,
+                .input = stateInfo->clientInput,
+                .paused = stateInfo->paused,
+            };
+            draw_game_screen(&scene, &hud, &camera, alpha, rm, rs);
+        }
         break;
     case SCREEN_MAIN_MENU:
         draw_main_menu(stateInfo, menuData, &menuInfo, alpha, rm, rs);

@@ -31,10 +31,23 @@ typedef struct _CameraView {
     Vector3D lastTarget;
 } CameraView;
 
+// What the screen draws from, const all the way down: the two worlds, the field's geometry, the rosters, this
+// machine's input widgets (the bars are drawn from them), and whether the session is paused. A const StateInfo
+// was not that — its members are pointers, and const does not reach through them; the draw code once cleared
+// legal state that way. The caller assembles this from what it holds, and the draw code can name nothing else.
+typedef struct _SceneView {
+    const MatchSession* match;
+    const GameRulesState* rules;
+    const FieldPositions* field;
+    const TeamData* teams;
+    const ClientInputState* input;
+    int paused;
+} SceneView;
+
 int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, ResourceManager* rm);
 void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, MenuInfo* menuInfo);
 void draw_game_screen(
-    const StateInfo* stateInfo, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
+    const SceneView* scene, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
     const RenderState* rs
 );
 // The screen's side of one tick that ran: the info line's clock advances, then the referee's announcement

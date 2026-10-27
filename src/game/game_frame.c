@@ -138,13 +138,15 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     clear_frame_events(&stateInfo->match->gameEvents);
     return 1;
 }
-void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
+void draw_game_frame(
+    const MatchSession* match, const Scoreboard* scoreboard, int paused, double alpha, ResourceManager* rm
+)
 {
     // players and ball are the building blocks of all the action on the screen.
-    if (!stateInfo->paused) {
+    if (!paused) {
 #ifndef NO_RENDER
-        draw_player_renderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
-        draw_ball(&(stateInfo->match->ballInfo), alpha, rm);
+        draw_player_renderer(match, scoreboard, alpha, rm);
+        draw_ball(&(match->ballInfo), alpha, rm);
 #endif
     }
 }
