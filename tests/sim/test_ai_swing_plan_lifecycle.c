@@ -22,7 +22,7 @@
 #define PERIOD_MAX_FRAMES 120000L
 
 typedef struct {
-    PitchCycleState prevPitchState;
+    int prevPitchInFlight;
     int prevDecided;
     int planMadeSinceRelease;
 
@@ -44,7 +44,7 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
         o->planMadeSinceRelease = 1;
     }
 
-    if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE && o->prevPitchState != PITCH_STAGE_AIRBORNE) {
+    if (m->ballInfo.pitch_in_flight && !o->prevPitchInFlight) {
         o->releases++;
         if (m->at_bat.swing.powerActive) {
             o->swungReleases++;
@@ -55,7 +55,7 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
     }
 
     o->prevDecided = plan->decided;
-    o->prevPitchState = m->pRAI.pitch_state;
+    o->prevPitchInFlight = m->ballInfo.pitch_in_flight;
 }
 
 static int three_half_innings_done(const SimGame* g)
@@ -74,7 +74,7 @@ int test_ai_swing_plan_lives_one_pitch(void)
         SimGame* g = sim_create(&setup, seeds[s]);
         ASSERT_NOT_NULL(g, "sim_create returned NULL");
 
-        PlanLifecycleObserver o = {.prevPitchState = PITCH_STAGE_NONE};
+        PlanLifecycleObserver o = {.prevPitchInFlight = 0};
         sim_attach(g, plan_lifecycle_hook, &o);
         sim_run_until(g, three_half_innings_done, PERIOD_MAX_FRAMES);
         int failed = g->failed;

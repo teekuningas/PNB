@@ -26,7 +26,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && m->pRAI.pitch_state == PITCH_STAGE_NONE) {
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
     }
@@ -74,7 +74,7 @@ int test_scripted_pitch_two_pingpongs_strike(void)
     int released = 0;
     for (int i = 0; i < 200 && !released; i++) {
         scripted_tick(g);
-        if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+        if (m->ballInfo.pitch_in_flight) {
             launch_vx = m->ballInfo.velocity.x;
             released = 1;
         }
@@ -109,7 +109,7 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
     int wentAirborne = 0;
     for (int i = 0; i < 250; i++) {
         scripted_tick(g);
-        if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) wentAirborne = 1;
+        if (m->ballInfo.pitch_in_flight) wentAirborne = 1;
     }
 
     int keptBall = (m->pII.hasBallIndex == pitcher);
@@ -161,7 +161,7 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     float max_horiz_speed = 0.0f;
     for (int i = 0; i < 400; i++) {
         scripted_tick(g);
-        if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) airborne = 1;
+        if (m->ballInfo.pitch_in_flight) airborne = 1;
         if (airborne) {
             float vx = m->ballInfo.velocity.x, vz = m->ballInfo.velocity.z;
             float horiz = sqrtf(vx * vx + vz * vz);

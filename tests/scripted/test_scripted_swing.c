@@ -43,7 +43,7 @@ static int tick_until_windup(ScriptedGame* g, int budget)
 static int tick_until_airborne(ScriptedGame* g, int budget)
 {
     for (int i = 0; i < budget; i++) {
-        if (scripted_match(g)->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) return 1;
+        if (scripted_match(g)->ballInfo.pitch_in_flight) return 1;
         if (!scripted_tick(g)) return 0;
     }
     return 0;
@@ -344,9 +344,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     scripted_run(g, 8);
     scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT_EQ(1, m->at_bat.swing.powerActive, "a press during the second windup must declare a power");
-    ASSERT(
-        m->pRAI.pitch_state != PITCH_STAGE_AIRBORNE, "...and it must have been declared BEFORE the ball was released"
-    );
+    ASSERT(!m->ballInfo.pitch_in_flight, "...and it must have been declared BEFORE the ball was released");
 
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
@@ -526,7 +524,7 @@ int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(vo
     // and there is no moving cursor pretending to be somewhere.
     int waited = 0;
     for (int i = 0; i < 900; i++) {
-        if (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) break;
+        if (m->ballInfo.pitch_in_flight) break;
         SwingMeterView v = swing_widget_view(&ci->swingWidget);
         ASSERT(v.powerCommitted, "the committed power must stay on the bar for the whole wait");
         ASSERT(fabsf(v.power - declared) < 0.0001f, "...and it must stay at the value that was committed, not drift");

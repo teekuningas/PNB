@@ -41,7 +41,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     int runs1 = sb->teams[1].runs;
     int inning = sb->inning;
     int hasBall = g->state->match->pII.hasBallIndex;
-    int pitch_state = (int)g->state->match->pRAI.pitch_state;
+    int pitch_in_flight = g->state->match->ballInfo.pitch_in_flight;
 
     // --- Bounds (be conservative: only flag clearly-illegal values) ---
     // The 3-out rule applies to normal/super innings (period < 4); the homerun
@@ -85,13 +85,13 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         o->p_runs1 = runs1;
         o->p_inning = inning;
         o->p_hasBall = hasBall;
-        o->p_pitchState = pitch_state;
+        o->p_pitchInFlight = pitch_in_flight;
         return;
     }
 
     // Count a pitch on the rising edge into AIRBORNE. (gameEvents.pitchReleased can't be
     // used here: update_game_frame clears frame events before observers run.)
-    if (pitch_state == PITCH_STAGE_AIRBORNE && o->p_pitchState != PITCH_STAGE_AIRBORNE) {
+    if (pitch_in_flight && !o->p_pitchInFlight) {
         o->pitches++;
     }
 
@@ -125,7 +125,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
                         (runs0 != o->p_runs0) || (runs1 != o->p_runs1) || (inning != o->p_inning);
     if (count_changed) o->count_changes++;
 
-    int progressed = count_changed || (hasBall != o->p_hasBall) || (pitch_state != o->p_pitchState);
+    int progressed = count_changed || (hasBall != o->p_hasBall) || (pitch_in_flight != o->p_pitchInFlight);
     if (progressed) {
         o->last_progress_frame = g->frame;
     } else if (o->stall_limit > 0 && (g->frame - o->last_progress_frame) > o->stall_limit) {
@@ -140,7 +140,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     o->p_runs1 = runs1;
     o->p_inning = inning;
     o->p_hasBall = hasBall;
-    o->p_pitchState = pitch_state;
+    o->p_pitchInFlight = pitch_in_flight;
 }
 
 /* ---- Trace observer ---------------------------------------------------- */
@@ -160,7 +160,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
     if (!o->header_written) {
         fprintf(
             o->f, "frame,period,inning,outs,balls,strikes,runs0,runs1,onBase,ballHome,"
-                  "pitch_state,catching_action,hasBall,"
+                  "pitch_in_flight,catching_action,hasBall,"
                   "waitBatter,waitWalk,stands_ready,swingDecided,pitchAimed,catchingTimer,batterReadyTimer,"
                   "contactFrame,swingPower,swingVert,wrongPitch,batStyle,batOutcome,cycle_open\n"
         );
@@ -178,7 +178,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        m->gameFlowState.ballHome, (int)m->pRAI.pitch_state, (int)m->catching_action.kind, m->pII.hasBallIndex,
+        m->gameFlowState.ballHome, m->ballInfo.pitch_in_flight, (int)m->catching_action.kind, m->pII.hasBallIndex,
         m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision, m->at_bat.stands_ready,
         ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
         m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
@@ -234,7 +234,10 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->ballInfo.onGround);
     FOLD(h, m->pII.hasBallIndex);
     FOLD(h, m->pII.controlIndex);
-    FOLD(h, m->pRAI.pitch_state);
+    // Folded as the code it was folded as when it was an enum whose in-flight value was 2, so that moving
+    // it onto the ball and making it a yes/no did not move the recorded baseline.
+    const int pitch_code = m->ballInfo.pitch_in_flight ? 2 : 0;
+    FOLD(h, pitch_code);
     FOLD(h, m->catching_action.kind);
     // The swing, as declared. This replaces the meter counter that used to be folded here — and the
     // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
@@ -303,13 +306,13 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     const HalfInningState* h = &r->halfInningState;
     const Scoreboard* sb = &r->scoreboard;
 
-    int pitch_state = (int)m->pRAI.pitch_state;
+    int pitch_in_flight = m->ballInfo.pitch_in_flight;
     int batOutcome = (int)r->betweenPitchState.batOutcome;
     int foulState = (int)r->referee.foulState;
 
     if (!o->initialized) {
         o->initialized = 1;
-        o->p_pitchState = pitch_state;
+        o->p_pitchInFlight = pitch_in_flight;
         o->p_batOutcome = batOutcome;
         o->p_foulState = foulState;
         o->p_outs = h->outs;
@@ -335,7 +338,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     }
 
     // Pitch released: rising edge into AIRBORNE (gameEvents.pitchReleased is already cleared).
-    if (pitch_state == PITCH_STAGE_AIRBORNE && o->p_pitchState != PITCH_STAGE_AIRBORNE) {
+    if (pitch_in_flight && !o->p_pitchInFlight) {
         o->pitches++;
         pbp(o, g, r, "pitch released");
     }
@@ -470,7 +473,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_state[i] = state;
     }
 
-    o->p_pitchState = pitch_state;
+    o->p_pitchInFlight = pitch_in_flight;
     o->p_batOutcome = batOutcome;
     o->p_foulState = foulState;
     o->p_outs = h->outs;

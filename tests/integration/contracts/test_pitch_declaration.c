@@ -82,7 +82,7 @@ int test_pitch_aimed_releases_with_declared_velocity(void)
 
     ASSERT_EQ(-1, match->pII.hasBallIndex, "the ball must leave the hand at the windup end");
     ASSERT_EQ(1, match->gameEvents.pitchReleased, "release must fire the pitchReleased event");
-    ASSERT_EQ(PITCH_STAGE_AIRBORNE, (int)match->pRAI.pitch_state, "pitch_state must be AIRBORNE after release");
+    ASSERT_EQ(1, match->ballInfo.pitch_in_flight, "a released pitch must be in flight");
     ASSERT(frames >= windup - 1, "release must wait for the engine windup, not fire instantly");
 
     // The decisive assertion: the launch velocity is a pure function of the DECLARED values.
@@ -112,7 +112,7 @@ int test_pitch_unaimed_is_valesyotto(void)
 
     ASSERT_EQ(12, match->pII.hasBallIndex, "valesyöttö: the pitcher keeps the ball (no pitch thrown)");
     ASSERT_EQ(0, match->gameEvents.pitchReleased, "valesyöttö must NOT fire pitchReleased");
-    ASSERT_EQ(PITCH_STAGE_NONE, (int)match->pRAI.pitch_state, "valesyöttö ends with no pitch in flight");
+    ASSERT_EQ(0, match->ballInfo.pitch_in_flight, "valesyöttö ends with no pitch in flight");
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)match->catching_action.kind, "valesyöttö ends the catching action");
 
     cleanup_scenario(ctx);

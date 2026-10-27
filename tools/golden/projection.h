@@ -39,7 +39,7 @@ static void project_throw(const MatchSession* m)
     }
     // Which base a loose ball was thrown toward. Printed only while the ball IS loose: every reader asks it
     // with nobody holding the ball, so what it says while a hand holds one is a leftover, not play.
-    if (m->pII.hasBallIndex == -1) put(6, " going=%d", m->pRAI.throw_going_to_base);
+    if (m->pII.hasBallIndex == -1) put(6, " going=%d", m->ballInfo.thrown_to);
 }
 
 static void project_widget(const char* name, const InputWidget* w)
@@ -86,7 +86,7 @@ static void project(const StateInfo* st)
         x->changePlayerArrayIndex);
 
     const PlayerRelatedActionInfo* a = &m->pRAI;
-    put(3, "air=%d ", a->pitch_state == PITCH_STAGE_AIRBORNE);
+    put(3, "air=%d ", m->ballInfo.pitch_in_flight);
     for (int i = 0; i < BASE_COUNT; i++) put(3, "w%d,", a->will_start_running[i]);
     const AtBat* ab = &m->at_bat;
     put(3, "ib=%d br=%d bgo=%d bca=%d rcc=%d ips=%d", ab->setup_pending, ab->stands_ready, ab->cycle_open,

@@ -72,7 +72,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && m->pRAI.pitch_state == PITCH_STAGE_NONE) {
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
         if (!scripted_tick(g)) return 0;
@@ -167,7 +167,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     int airborne = 0;
     for (int i = 0; i < 250 && !airborne; i++) {
         scripted_tick(g);
-        airborne = (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE);
+        airborne = (m->ballInfo.pitch_in_flight);
     }
     ASSERT(airborne, "the two-click pitch must release");
     scripted_tick(g);
@@ -364,9 +364,8 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         scripted_run(g, 7);
         press(g, PITCH_PAD, KEY_2); // power -> windup
         scripted_tick(g);
-        // Asked of the engine's pitch mutex, not of pitch_state: from the second pitch of a
-        // half-inning onward, consolidation legitimately holds pitch_state at NONE through the
-        // windup while the previous pitch's result is still standing. Probing the wrong one of
+        // Asked of the engine's pitch mutex, not of the ball's pitch_in_flight, which is 0 for the
+        // whole windup — no pitched ball is in the air until the release. Probing the wrong one of
         // those two is the defect this soak found on the batting side.
         if (m->catching_action.kind != CATCHING_ACTION_PITCHING) break;
         pitches++;
@@ -395,7 +394,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         // Let the pitch resolve and the batting cycle come back round.
         for (int i = 0; i < 400; i++) {
             scripted_tick(g);
-            if (m->pRAI.pitch_state == PITCH_STAGE_NONE && m->at_bat.cycle_open == 0) break;
+            if (!m->ballInfo.pitch_in_flight && m->at_bat.cycle_open == 0) break;
         }
         scripted_run(g, 5);
     }

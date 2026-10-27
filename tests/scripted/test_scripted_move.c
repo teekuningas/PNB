@@ -30,7 +30,7 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.hasBallIndex == p && m->pII.controlIndex == p && m->at_bat.stands_ready == 1 &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && m->pRAI.pitch_state == PITCH_STAGE_NONE) {
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
     }
@@ -46,7 +46,7 @@ static int tick_until_steerable(ScriptedGame* g, int budget)
         MatchSession* m = scripted_match(g);
         int p = m->pII.catcherOnBaseIndex[0];
         if (p != -1 && m->pII.controlIndex == p && m->pII.hasBallIndex == p &&
-            m->catching_action.kind == CATCHING_ACTION_NONE && m->pRAI.pitch_state == PITCH_STAGE_NONE) {
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ballInfo.pitch_in_flight) {
             return 1;
         }
     }

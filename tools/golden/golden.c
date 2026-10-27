@@ -74,7 +74,7 @@ static void observe(const SimGame* g, void* ctx)
     }
     const MatchSession* m = g->state->match;
     int cca = catching_action_code(m);
-    int airborne = m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
+    int airborne = m->ballInfo.pitch_in_flight;
     int hit = g->state->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT;
     if (cca == 2 && cov.lastCca != 2) cov.windups++;
     if (cca == 1 && cov.lastCca != 1) cov.throws++;

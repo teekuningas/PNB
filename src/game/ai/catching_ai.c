@@ -24,7 +24,7 @@ static void update_ai_pitching(
     // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
     // engine owns the windup + release.
     if (match->pII.hasBallIndex == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
-        match->catching_action.kind == CATCHING_ACTION_NONE && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+        match->catching_action.kind == CATCHING_ACTION_NONE && !match->ballInfo.pitch_in_flight &&
         aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
@@ -157,7 +157,7 @@ void update_catching_ai(
         // gate on the real execution-side mutex (no catching action in progress) — the AI's duplicate
         // aiActionEventLock/aiLockUpdate is gone.
         if (match->catching_action.kind == CATCHING_ACTION_NONE) {
-            if (match->pRAI.throw_going_to_base == -1 || match->ballInfo.currentFlightHasHitGround == 1) {
+            if (match->ballInfo.thrown_to == BASE_NONE || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
                     &match->playerInfo[match->pII.controlIndex].tPI.location, &(match->catchingState.ballTargetPoint)
                 );

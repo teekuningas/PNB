@@ -234,6 +234,19 @@ typedef struct _BallInfo {
                              // after wounding catch so, it is set to 0 when the catch is made.
     int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
     int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
+
+    // What the loose ball's current flight IS, beside what it is doing. Both are set when the ball leaves
+    // a hand and gone by the time a hand has it again, which is the same lifetime as
+    // currentFlightHasHitGround's — so they live with it, on the ball, rather than in a grab-bag of
+    // "action info" beside it.
+    //
+    // A pitched ball in the air, not yet judged: set at the release, and over when the bat meets it or
+    // the referee pronounces the pitch (the first time it touches the ground). Exactly that question and
+    // no other — the windup is the catching action's, and pitch_is_being_delivered asks both.
+    int pitch_in_flight;
+    // The base a thrown ball was thrown toward, BASE_NONE for any other flight: set at the release and
+    // cleared by the catch that ends it. Basemen read it so the one being thrown to stays on his base.
+    BaseID thrown_to;
 } BallInfo;
 // struct to keep player data
 typedef struct _PlayerData {
@@ -1167,19 +1180,7 @@ typedef struct _HomeRunContestState {
     int runnerBatterPairCounter;
 } HomeRunContestState;
 
-// Is a pitched ball in the air? Exactly that question and no other: the windup belongs to the catching
-// action (pitch_is_being_delivered asks both), so there is no third state for anything to forget to
-// clear — a resolved pitch goes back to NONE once, when its result is pronounced.
-typedef enum {
-    PITCH_STAGE_NONE = 0,
-    PITCH_STAGE_AIRBORNE = 2 // the ball is on its way to the plate; 2 as it always was — checksums fold it raw
-} PitchCycleState;
-
 typedef struct _PlayerRelatedActionInfo {
-
-    PitchCycleState pitch_state; // a pitched ball is in the air — see PitchCycleState
-
-    int throw_going_to_base; // to avoid moving basecatchers out in the wild when ball is thrown to them.
 
     int will_start_running[BASE_COUNT];
 

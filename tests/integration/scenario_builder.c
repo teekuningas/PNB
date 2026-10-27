@@ -475,7 +475,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     game->ballInfo.currentFlightHasHitGround = 0;
 
     // 4. Set Pitch State
-    game->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
+    game->ballInfo.pitch_in_flight = 1;
     game->at_bat.may_leave_home = 1;
     game->gameEvents.pitchReleased = 1; // Signal event - referee will snapshot state automatically
 

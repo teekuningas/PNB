@@ -175,19 +175,6 @@ action_flags_lines=$(grep -rE 'aF\.|ActionFlags' src --include='*.c' --include='
 ratchet "lines touching ActionFlags" "$action_flags_lines" 0
 
 # ---------------------------------------------------------------------------
-# A signal that asks one question. pRAI.pitch_state used to carry a windup state that
-# consolidation wiped on every windup after a half-inning's first, so it read NONE right through
-# them and four readers were misled before the last was found. The windup now belongs to the
-# catching action alone and pitch_state has two values: a pitched ball is in the air, or it is
-# not. Every reading asks exactly that, in those words (== or != AIRBORNE), and this holds the
-# count of any other phrasing at 0 — a floor, as with ActionFlags — so a third state, or a
-# reading that leans on what NONE used to mean, has to argue its way in.
-# ---------------------------------------------------------------------------
-pitch_state_readers=$(grep -rnE 'pitch_state (==|!=)' src --include='*.c' | grep -v 'AIRBORNE' |
-    grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
-ratchet "pitch_state readings other than AIRBORNE" "$pitch_state_readers" 0
-
-# ---------------------------------------------------------------------------
 # No read-back — the fourth law. A controller reads the world to know what is legal and to draw:
 # what a body is doing (catching_action.kind, a ball in the air) is the world. What a producer
 # DECLARED, once the engine holds it, is not — the windup's power and aim, a throw's target and

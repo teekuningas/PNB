@@ -28,7 +28,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (pitcher == -1 || match->pII.hasBallIndex != pitcher) {
         return (Permission){0, RULE_PITCH_NEEDS_BALL_AT_HOME};
     }
-    if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+    if (match->ballInfo.pitch_in_flight) {
         return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
     }
     if (match->at_bat.stands_ready != 1) {
@@ -45,7 +45,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
 
 int pitch_is_being_delivered(const MatchSession* match)
 {
-    return match->catching_action.kind == CATCHING_ACTION_PITCHING || match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
+    return match->catching_action.kind == CATCHING_ACTION_PITCHING || match->ballInfo.pitch_in_flight;
 }
 
 // Begin the engine-owned windup for a toss of `power`: set up the pitcher and the ball, start the
@@ -101,7 +101,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
 
     match->pII.lastHadBallIndex = pitcher; // pitcher won't catch its own pitch before it grounds
     match->pII.hasBallIndex = -1;
-    match->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
+    match->ballInfo.pitch_in_flight = 1;
     match->at_bat.may_leave_home = 1;
     match->cameraState.homeRunCameraFlag = 0;
     match->gameEvents.pitchReleased = 1;
@@ -135,7 +135,7 @@ static void fake_pitch(MatchSession* match)
 {
     int pitcher = match->pII.hasBallIndex;
 
-    match->pRAI.pitch_state = PITCH_STAGE_NONE;
+    match->ballInfo.pitch_in_flight = 0;
     if (pitcher != -1) {
         match->ballInfo.location.x = match->playerInfo[pitcher].tPI.location.x;
         match->ballInfo.location.z = match->playerInfo[pitcher].tPI.location.z;

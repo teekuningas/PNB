@@ -8,14 +8,14 @@
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
 
 // Is a pitch physically on its way — the pitcher winding up, or the ball in the air? Two halves with two
-// homes: the windup is the catching action's, the flight is `pitch_state`'s, and this is the one place
-// that asks both.
+// homes: the windup is the catching action's, the flight is the ball's (`pitch_in_flight`), and this is the
+// one place that asks both.
 //
 // One definition, because callers used to improvise their own and disagree: the batter's window
-// (batting_system.c) and the batting controller's plan lifetime (batting_ai.c) once asked `pitch_state`
-// alone, back when it also carried a windup state that consolidation wiped on every windup after a
-// half-inning's first — which cost the batter the entire power beat on all but the opening pitch. That
-// state is gone; `pitch_state` now answers only the question it always answered truthfully.
+// (batting_system.c) and the batting controller's plan lifetime (batting_ai.c) once asked the flight alone,
+// back when the field that held it also carried a windup state that consolidation wiped on every windup
+// after a half-inning's first — which cost the batter the entire power beat on all but the opening pitch.
+// That state is gone; the ball's flag answers only the question it always answered truthfully.
 int pitch_is_being_delivered(const MatchSession* match);
 
 // May a pitch begin in the world as it stands? The INGEST gate asks it of a declared power; the answer names

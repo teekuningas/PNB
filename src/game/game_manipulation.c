@@ -197,7 +197,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball
     // and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
     // as that could make some weird things happen. try on the next frame again.
-    if (match->pII.hasBallIndex == -1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
+    if (match->pII.hasBallIndex == -1 && !match->ballInfo.pitch_in_flight &&
         match->pRAI.refresh_catch_and_change != 1) {
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             // so we confirm that this particular player is valid to catch, by checking his lastHadBallIndex.
@@ -221,9 +221,9 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
                         p1z = match->playerInfo[i].tPI.location.z;
                         p2x = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.x;
                         p2z = match->playerInfo[match->pII.lastHadBallIndex].tPI.location.z;
-                        if (match->pRAI.throw_going_to_base != -1 &&
-                            (i == match->pII.catcherOnBaseIndex[match->pRAI.throw_going_to_base] ||
-                             i == match->pII.catcherReplacerOnBaseIndex[match->pRAI.throw_going_to_base])) {
+                        if (match->ballInfo.thrown_to != BASE_NONE &&
+                            (i == match->pII.catcherOnBaseIndex[match->ballInfo.thrown_to] ||
+                             i == match->pII.catcherReplacerOnBaseIndex[match->ballInfo.thrown_to])) {
                             baseCatcherFlag = 1;
                         }
                     }
@@ -267,7 +267,7 @@ check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_pos
 
                         // make sound
                         *play_sound_effect = SOUND_CATCH;
-                        match->pRAI.throw_going_to_base = -1;
+                        match->ballInfo.thrown_to = BASE_NONE;
                         match->pII.controlIndex = i;
                         match->pII.hasBallIndex = i;
 
@@ -460,7 +460,7 @@ static void rank_players_and_move_them(MatchSession* match)
         float distance;
         float evaluation;
         if (match->ballInfo.currentFlightHasHitGround == 0) {
-            if (match->pRAI.throw_going_to_base == -1) {
+            if (match->ballInfo.thrown_to == BASE_NONE) {
                 s = 1.1f; // when batting the height is something like this
             } else {
                 s = BALL_HEIGHT_WITH_PLAYER;

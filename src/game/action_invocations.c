@@ -674,7 +674,7 @@ static void checkSwing(
     if (control == CONTROL_AI) return; // the AI decides two numbers and says them; it has no gesture
 
     SwingWidget* w = &clientInput->swingWidget;
-    const int airborne = (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE);
+    const int airborne = (match->ballInfo.pitch_in_flight);
 
     // The gesture is over when there is no swing to declare into. Asked of the physical world, never
     // of what the engine has stored from us — so a swing cut short by a batter forced to run, a foul

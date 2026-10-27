@@ -769,7 +769,7 @@ static void update_pitch_resolution(
 )
 {
     // Check if a pitch has physically concluded (hit ground) while still logically active
-    if (events->ballHitGround && game->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+    if (events->ballHitGround && game->ballInfo.pitch_in_flight) {
 
         if (betweenPitchState->batOutcome == BAT_OUTCOME_NONE) {
             // No swing: resolve by ball position (strike zone check)

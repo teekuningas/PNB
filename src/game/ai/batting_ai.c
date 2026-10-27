@@ -213,7 +213,7 @@ static void advance_runners_on_loose_hit(
 )
 {
     const BetweenPitchState* bps = &rules->betweenPitchState;
-    if (!(bps->batOutcome == BAT_OUTCOME_HIT && bps->catchHasBeenMade == 0 && match->pRAI.throw_going_to_base == -1 &&
+    if (!(bps->batOutcome == BAT_OUTCOME_HIT && bps->catchHasBeenMade == 0 && match->ballInfo.thrown_to == BASE_NONE &&
           match->pII.hasBallIndex == -1 && match->ballInfo.moving == 1 && bps->hasBallHitGround == 1 &&
           match->ballInfo.location.z < -10.0f && is_ball_out_of_bounds(&match->ballInfo, fieldPositions))) {
         return;
@@ -244,7 +244,7 @@ void update_batting_ai(
     AIControllerState* aiController, IntentChannel* channel
 )
 {
-    const int airborne = match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE;
+    const int airborne = match->ballInfo.pitch_in_flight;
 
     // Take the walk, restated for as long as it is offered: an answer that means the same thing every
     // time it arrives needs no edge and no memory.
@@ -274,7 +274,7 @@ void update_batting_ai(
     // the very frame it was made, and the elevation never arrived.
     //
     // "No pitch at all" is pitch_is_being_delivered — the windup or the flight — the same correction the
-    // batter's window needed. Asked of `pitch_state` alone, back when it lied about windups, this cleared
+    // batter's window needed. Asked of the flight alone, back when its flag lied about windups, this cleared
     // the plan on EVERY frame of every windup after a half-inning's first — so the moment that window
     // opened, the controller re-decided its power, elevation and aim afresh each frame, burning three RNG
     // draws a frame and keeping only whatever the last one happened to be.

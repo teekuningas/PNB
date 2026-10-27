@@ -169,8 +169,8 @@ void move_ranked_to_catch(MatchSession* match)
         if (index != match->pII.controlIndex && match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
             // if we are throwing ( towards a base ) we dont want the baseman there to start moving
             // as it would be nice that he is at the base when ball is caught if baserunner is going there.
-            if (match->pRAI.throw_going_to_base == -1 ||
-                (match->pII.catcherOnBaseIndex[match->pRAI.throw_going_to_base] != index)) {
+            if (match->ballInfo.thrown_to == BASE_NONE ||
+                (match->pII.catcherOnBaseIndex[match->ballInfo.thrown_to] != index)) {
                 int k;
                 int done = 0;
                 // and we have special condition not to move any basemen
@@ -343,7 +343,7 @@ void change_player(MatchSession* match)
 {
     // this is called by user explicitly and sometimes after updating change_player lists — both only
     // with nobody holding the ball, so never during a windup. Not while a pitched ball is in the air.
-    if (match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE) {
+    if (!match->ballInfo.pitch_in_flight) {
         // player will start randomly floating after control changes to next player.
         if (match->pII.controlIndex != -1) {
             stop_movement(match->playerInfo, match->pII.controlIndex);
@@ -671,6 +671,8 @@ void initialize_ball_info(MatchSession* match)
     match->ballInfo.hitsGroundToUnWound = 0;
     match->ballInfo.needsMoveUpdate = 0;
     match->ballInfo.lastLastLocationUpdate = 0;
+    match->ballInfo.pitch_in_flight = 0;
+    match->ballInfo.thrown_to = BASE_NONE;
 }
 // Empty everything a play can have left on the table that is not physics: the catching action in progress,
 // the swing, and the catching team's own state — where the controlled fielder was told to go, and the
@@ -713,9 +715,9 @@ void reset_flow_state(MatchSession* match)
     consolidation_init(&(match->gameFlowState));
     init_game_manipulation(&(match->gameFlowState));
 
-    // Action state. The catching action in progress belongs to initialize_action_info (in
-    // reset_physical_world, which every recipe runs before this) — one owner per field.
-    match->pRAI.throw_going_to_base = -1;
+    // The catching action in progress belongs to initialize_action_info, and the ball's flight to
+    // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one
+    // owner per field.
     // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
     // separation as the reset-recipe rule: physical resets never touch referee state. Client input is initialized once
@@ -754,10 +756,8 @@ void initialize_index_information(MatchSession* match)
 void initialize_prai_information(MatchSession* match)
 {
     int i;
-    match->pRAI.pitch_state = PITCH_STAGE_NONE;
     match->at_bat.cycle_open = 0;
     match->at_bat.may_leave_home = 0;
-    match->pRAI.throw_going_to_base = -1;
     match->at_bat.stands_ready = 0;
     match->pRAI.refresh_catch_and_change = 0;
     match->pRAI.init_player_selection = 0;

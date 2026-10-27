@@ -116,7 +116,7 @@ int test_pitch_permission_names_each_rule(void)
     ASSERT_EQ(RULE_PITCH_NEEDS_BALL_AT_HOME, pitch_may_begin(m, 0).denied_by, "the pitcher must hold the ball");
     restore(ctx, &ready);
 
-    m->pRAI.pitch_state = PITCH_STAGE_AIRBORNE;
+    m->ballInfo.pitch_in_flight = 1;
     ASSERT_EQ(RULE_PITCH_PREVIOUS_UNRESOLVED, pitch_may_begin(m, 0).denied_by, "not before the last pitch is judged");
     restore(ctx, &ready);
 

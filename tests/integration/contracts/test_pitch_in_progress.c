@@ -9,10 +9,11 @@
  *
  * Two rules hold while the pitcher is winding up: the ball cannot be dropped (the pitch has a claim on
  * it), and the controlled fielder — the pitcher, whose hand the ball is in — stays where the windup put
- * him. Both used to ask `pRAI.pitch_state`, which then carried a windup state that consolidation zeroed
+ * him. Both used to ask the pitch-state field, which then carried a windup state that consolidation zeroed
  * on every frame the previous pitch's result still stood — the whole of every windup after a
- * half-inning's first. On those windups both rules were off. The windup state has since left
- * `pitch_state` altogether; the test still builds the later-windup world, because that is the claim.
+ * half-inning's first. On those windups both rules were off. The windup state has since left that
+ * field altogether (it is the ball's `pitch_in_flight` now); the test still builds the later-windup world, because that
+ * is the claim.
  *
  * Nothing the game's own producers do reaches it — the human's drop key is for a holder who is not the
  * pitcher, and neither controller steers during a windup — but the gate is the one place a declared
@@ -32,8 +33,8 @@ static void tick(ScenarioContext* ctx)
 }
 
 // The pitcher, controlled and holding the ball, is in the middle of a windup that is NOT the
-// half-inning's first: the previous pitch's result still stands, so consolidation has zeroed
-// pitch_state, and the engine's own record that a pitch is being delivered is the catching action.
+// half-inning's first: the previous pitch's result still stands, so no pitch is in flight, and the engine's own record
+// that a pitch is being delivered is the catching action.
 static ScenarioContext* later_windup(void)
 {
     ScenarioContext* ctx = create_scenario();
@@ -51,7 +52,7 @@ static ScenarioContext* later_windup(void)
     tick(ctx); // the windup begins
 
     ctx->state->rules->betweenPitchState.pitchResult = PITCH_RESULT_BALL; // the previous pitch, still standing
-    m->pRAI.pitch_state = PITCH_STAGE_NONE; // ...and what consolidation does to pitch_state because of it
+    m->ballInfo.pitch_in_flight = 0; // ...and what consolidation does to the flight flag because of it
     return ctx;
 }
 
@@ -70,7 +71,7 @@ int test_drop_refused_during_a_later_windup(void)
     int released = 0;
     for (int i = 0; i < 200 && !released; i++) {
         tick(ctx);
-        released = (m->pRAI.pitch_state == PITCH_STAGE_AIRBORNE);
+        released = (m->ballInfo.pitch_in_flight);
     }
     ASSERT(released, "the windup must still end in the pitch that was declared");
 

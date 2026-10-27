@@ -134,6 +134,9 @@ static unsigned long long run_once(unsigned int seed)
 // consolidation react to that BALL a second time, so the free-walk calculation is no longer re-run
 // mid-windup (42 golden runs: two offers had been raised in the middle of a pitch, now none, and the
 // state validator holds it at none). Same frame counts on all three seeds, every band held.
+//
+// HELD 2026-10-27 when the flag moved onto the ball as `pitch_in_flight`, a yes/no: the checksum folds
+// it as the code the enum used to have (2 in flight, 0 not), so a representation change is not a play.
 #define SIM_BEHAVIOUR_BASELINE_HASH 0x19f40d41e20f8075ULL
 
 int test_ai_vs_ai_determinism(void)

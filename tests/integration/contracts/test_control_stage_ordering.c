@@ -78,7 +78,7 @@ int test_control_stage_precedes_execution(void)
     // AI's pre-pitch pause needs batterReadyTimer > AI_PITCH_DELAY — but pin it anyway, so a future
     // change that lets a pitch fire here turns this red instead of quietly proving nothing.
     ASSERT_EQ(
-        PITCH_STAGE_NONE, (int)match->pRAI.pitch_state,
+        0, match->ballInfo.pitch_in_flight,
         "no pitch may have been released this frame — the ball must have left the hand via the DROP"
     );
     ASSERT_EQ(

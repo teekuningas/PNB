@@ -215,8 +215,7 @@ void update_batting(
         match->at_bat.swing.contactFrame = -1;
     }
 
-    if (match->at_bat.stands_ready == 1 && match->pRAI.pitch_state != PITCH_STAGE_AIRBORNE &&
-        match->at_bat.cycle_open == 0) {
+    if (match->at_bat.stands_ready == 1 && !match->ballInfo.pitch_in_flight && match->at_bat.cycle_open == 0) {
         match->at_bat.cycle_open = 1;
     }
     // The batting side withdrew a swing it had already committed a power to — the "väärä!" call,
@@ -346,7 +345,7 @@ void update_batting(
         }
 
         // so now can actually start thinking about advancing as the ball is in air.
-        if (match->pRAI.pitch_state == PITCH_STAGE_AIRBORNE) {
+        if (match->ballInfo.pitch_in_flight) {
             // start the animation and advancing.
             if (match->at_bat.flight_clock_running == 0) {
                 match->at_bat.flight_clock_running = 1;
@@ -495,9 +494,9 @@ void update_batting(
                             // bat hits — event for referee to promote
                             match->gameEvents.ballHitByBat = 1;
                             // not a pitch anymore
-                            match->pRAI.pitch_state = PITCH_STAGE_NONE;
+                            match->ballInfo.pitch_in_flight = 0;
                             // no throw going on now
-                            match->pRAI.throw_going_to_base = -1;
+                            match->ballInfo.thrown_to = BASE_NONE;
 
                             // move the batter if wanted
 

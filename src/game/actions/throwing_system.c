@@ -74,8 +74,6 @@ Permission throw_may_begin(const MatchSession* match, const FieldPositions* fiel
 static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
     int thrower = match->pII.hasBallIndex;
-    // which base the throw is going to keeps basemen from wandering out to catch it
-    match->pRAI.throw_going_to_base = (int)base;
     ThrowWindup windup = {.target = base, .direction = line_to_base(match, fieldPositions, base)};
     windup.distance = horizontal_length(windup.direction);
 
@@ -128,6 +126,10 @@ static void throw_release(MatchSession* match)
         &(match->ballInfo), dx * power * THROW_POWER_CONSTANT, dy + windup.distance * THROW_DISTANCE_CONSTANT,
         dz * power * THROW_POWER_CONSTANT
     );
+    // The flight is a throw to that base, which keeps the baseman there from wandering out to meet it.
+    // Set at the release and not at the gather: it is a fact about the ball in the air, and every reader
+    // asks it with nobody holding the ball — while the thrower gathers, the target is the windup's own.
+    match->ballInfo.thrown_to = windup.target;
     // Trigger fielder selection update after throw
     match->pRAI.refresh_catch_and_change = 1;
     match->pRAI.init_player_selection = 1;

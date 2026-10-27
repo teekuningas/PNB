@@ -25,7 +25,7 @@ typedef struct {
     // internal progress tracking (do not set)
     int initialized;
     long last_progress_frame;
-    int p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_hasBall, p_pitchState;
+    int p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_hasBall, p_pitchInFlight;
 
     // observed totals (readable after the run for "game progressed" assertions)
     long pitches; // pitchReleased events seen
@@ -74,7 +74,7 @@ typedef struct {
 
     // internal edge-detection state (do not set)
     int initialized;
-    int p_pitchState, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
+    int p_pitchInFlight, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
     int p_throwing; // previous frame's (catching_action.kind == CATCHING_ACTION_THROWING)

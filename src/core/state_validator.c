@@ -199,11 +199,11 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"pRAI\": {\n", sp);
-    fprintf(f, "%s  \"pitch_state\": %d,\n", sp, game->pRAI.pitch_state);
+    fprintf(f, "%s  \"pitch_in_flight\": %d,\n", sp, game->ballInfo.pitch_in_flight);
     fprintf(f, "%s  \"stands_ready\": %d,\n", sp, game->at_bat.stands_ready);
     fprintf(f, "%s  \"cycle_open\": %d,\n", sp, game->at_bat.cycle_open);
     fprintf(f, "%s  \"setup_pending\": %d,\n", sp, game->at_bat.setup_pending);
-    fprintf(f, "%s  \"throw_going_to_base\": %d\n", sp, game->pRAI.throw_going_to_base);
+    fprintf(f, "%s  \"thrown_to\": %d\n", sp, (int)game->ballInfo.thrown_to);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"actionState\": {\n", sp);
@@ -454,8 +454,8 @@ int state_validator_check(StateInfo* state)
     // Invariant 4b: no free walk is on offer while a pitch is being wound up.
     //
     // The lukkari may not begin a windup while an offer is open (pitch_may_begin), so the only way the
-    // two can meet is an offer raised AFTER the windup began — which is what the old windup state in
-    // pitch_state did: starting a windup with the previous BALL still standing made consolidation react
+    // two can meet is an offer raised AFTER the windup began — which is what the windup state the
+    // pitch flag used to carry did: starting a windup with the previous BALL still standing made consolidation react
     // to that BALL a second time, re-run the free-walk calculation and, with two balls standing, ask the
     // batting side a question it had already answered, in the middle of the pitch.
     if (game->flowControl.waitingForFreeWalkDecision == 1 && game->catching_action.kind == CATCHING_ACTION_PITCHING) {
