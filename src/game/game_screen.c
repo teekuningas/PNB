@@ -372,7 +372,10 @@ draw_statistics_2d(const StateInfo* stateInfo, HudState* hud, double alpha, Reso
             // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
             print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
-            str4 = stateInfo->match->playerInfo[index].bTPI.name;
+            // The name is the roster's, looked up where it is shown: the World holds no pointers.
+            const int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
+            str4 =
+                stateInfo->teamData[stateInfo->rules->scoreboard.teams[battingTeamIndex].value - 1].players[index].name;
             print_text_2d(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
         }
     }

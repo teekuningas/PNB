@@ -26,4 +26,7 @@ int test_ai_swing_plan_lives_one_pitch(void);
 int test_announcements_do_not_depend_on_the_screen(void);
 int test_the_info_line_holds_its_message_while_paused(void);
 
+// The screen writes nothing into the World, and the World holds no pointers: screened and bare, the same bytes.
+int test_the_screen_writes_nothing_into_the_world(void);
+
 #endif /* ALL_SIMS_H */

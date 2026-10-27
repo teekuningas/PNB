@@ -648,7 +648,6 @@ typedef enum { JOKER_REGULAR = 0, JOKER_AVAILABLE = 1, JOKER_USED = 2 } JokerSta
 
 // batting team related flags.
 typedef struct _BattingTeamPlayerInfo {
-    char* name; // some info to be shown in screen to guide player
     int speed; // used to make some player a bit faster than others
     int power; // used to make some players bat a bit harder than others
     int number; // number is shown on screen

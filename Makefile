@@ -69,7 +69,8 @@ _OBJ_SIMS = tests/sim/sim_harness.o \
             tests/sim/test_world_retick.o \
             tests/sim/test_ai_ignores_frame_events.o \
             tests/sim/test_ai_swing_plan_lifecycle.o \
-            tests/sim/test_announcements.o
+            tests/sim/test_announcements.o \
+            tests/sim/test_screen_writes_nothing.o
 
 # Scripted-human test objects (headless, drive the REAL action_invocations via scripted KeyStates,
 # live in tests/scripted/). Reuses the sim harness + observers (boot, real rosters, validator).

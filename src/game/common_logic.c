@@ -586,7 +586,6 @@ void initialize_inning_permanent_player_information(
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         match->playerInfo[i].cPI.team = TEAM_BATTING;
 
-        match->playerInfo[i].bTPI.name = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].name;
         match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
         match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
     }
