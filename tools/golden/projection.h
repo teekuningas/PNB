@@ -37,7 +37,9 @@ static void project_throw(const MatchSession* m)
     } else {
         put(6, "-");
     }
-    put(6, " going=%d", m->pRAI.throw_going_to_base);
+    // Which base a loose ball was thrown toward. Printed only while the ball IS loose: every reader asks it
+    // with nobody holding the ball, so what it says while a hand holds one is a leftover, not play.
+    if (m->pII.hasBallIndex == -1) put(6, " going=%d", m->pRAI.throw_going_to_base);
 }
 
 static void project_widget(const char* name, const InputWidget* w)
@@ -107,8 +109,7 @@ static void project(const StateInfo* st)
     const SwingActualization* s = &p->swing;
     put(7, "cf=%d pa=%d p=%a va=%d v=%a c=%d;", s->contactFrame, s->powerActive, (double)s->power, s->verticalActive,
         (double)s->vertical, s->consumed);
-    put(7, "rbf=%d bfc=%d ibfc=%d ang=%a as=%a adv=%a lim=%a stop=%d mov=%d upd=%d", p->run_bat_flag,
-        p->batting_frame_count, p->increase_batting_frame_count, (double)p->batter_angle,
+    put(7, "bfc=%d ibfc=%d ang=%a as=%a adv=%a lim=%a stop=%d mov=%d upd=%d", p->batting_frame_count, p->increase_batting_frame_count, (double)p->batter_angle,
         (double)p->batter_advance_speed, (double)p->batter_advance, (double)p->batter_advance_limit,
         p->batting_stopped, p->batter_moving, p->update_batter_location_and_orientation);
 
