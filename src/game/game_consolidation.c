@@ -40,7 +40,6 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
 
 void consolidation_init(GameFlowState* gameFlowState)
 {
-    gameFlowState->closeToGround = 0;
     gameFlowState->homeRunCameraCounter = -1;
 }
 

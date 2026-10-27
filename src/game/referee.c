@@ -1254,7 +1254,7 @@ void update_referee(
                     }
                 }
 
-                int ballHome = game->gameFlowState.ballHome;
+                const int ballHome = (ballAtBase == 0);
                 BaseID batterBaseId = BASE_NONE;
                 PlayerUnitState batterState = PLAYER_STATE_IDLE;
 
@@ -1309,10 +1309,10 @@ void update_referee(
             // §12. (1) three burns. (2)/(3) the batting order has run its course AND the ball is in
             // a home fielder's hands AND no jokers remain — all three conjuncts, as written. The
             // engine used to collapse this into "the phantom pool and the jokers are both spent".
-            wants_inning_end = (halfInningState->outs >= 3) ||
-                               (halfInningState->lastBatter.turnExhausted && halfInningState->jokersLeft == 0 &&
-                                game->gameFlowState.ballHome == 1) ||
-                               (halfInningState->endPeriod == 1);
+            wants_inning_end =
+                (halfInningState->outs >= 3) ||
+                (halfInningState->lastBatter.turnExhausted && halfInningState->jokersLeft == 0 && ballAtBase == 0) ||
+                (halfInningState->endPeriod == 1);
         }
     }
 

@@ -20,6 +20,7 @@
 #include "action_invocations.h"
 #include "actions/batting_system.h"
 #include "rules_pure/player_utils.h"
+#include "rules_pure/base_control.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

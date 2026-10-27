@@ -31,7 +31,7 @@
 #define PLAYER_TOO_CLOSE_TO_CATCH_LIMIT 15.0f
 
 static void update_ball_to_player(MatchSession* match);
-static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState);
+static void update_ball_status(MatchSession* match);
 static void
 check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_positions, int* play_sound_effect);
 static void player_location_orientation_and_targets(MatchSession* match, const FieldPositions* field_positions);
@@ -48,8 +48,8 @@ void game_manipulation(
     MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, int* play_sound_effect
 )
 {
-    update_ball_status(match, &(match->gameFlowState)); // update ball's location due to velocity, also update ball's
-                                                        // velocity due to gravity, and set some flags related to ball
+    update_ball_status(match); // update ball's location due to velocity, also update ball's
+                               // velocity due to gravity, and set some flags related to ball
     check_if_ball_can_be_caught(match, field_positions, play_sound_effect);
     check_if_near_home_location(match);
     basemen_replacements(match);
@@ -70,12 +70,7 @@ void game_manipulation(
     update_models(match);
 }
 
-void init_game_manipulation(GameFlowState* gameFlowState)
-{
-    gameFlowState->closeToGround = 0;
-}
-
-static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState)
+static void update_ball_status(MatchSession* match)
 {
     if (match->ballInfo.lastLastLocationUpdate == 1) {
         vec3_set_from_vector(&(match->ballInfo.lastLocation), &(match->ballInfo.location));
@@ -100,11 +95,6 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                 physics_apply_gravity(&(match->ballInfo.velocity), 1.0f);
                 // if ball now comes close to the ground
                 if (physics_check_ground_collision(match->ballInfo.location.y, BALL_SIZE / 2)) {
-                    // we check out of bounds situation only if we are close to ground to avoid
-                    // unnecesaary overhead
-                    if (gameFlowState->closeToGround == 0) {
-                        gameFlowState->closeToGround = 1;
-                    }
                     // it could be its first time
                     if (match->ballInfo.currentFlightHasHitGround ==
                         0) { // to avoid situation where it feels like player changing key doesnt work
@@ -138,10 +128,6 @@ static void update_ball_status(MatchSession* match, GameFlowState* gameFlowState
                         request_chase_replan(match, CHASE_REPLAN);
                         match->ballInfo.location.y = BALL_SIZE / 2;
                         match->ballInfo.velocity.y = 0.0f;
-                    }
-                } else {
-                    if (gameFlowState->closeToGround == 1) {
-                        gameFlowState->closeToGround = 0;
                     }
                 }
 
@@ -847,15 +833,11 @@ update_ball_home_status(MatchSession* match, const FieldPositions* field_positio
 {
     int ballAtBase = get_ball_at_base_index(match, field_positions);
     if (ballAtBase == 0) {
-        match->gameFlowState.ballHome = 1;
-
         // Camera logic from checkForOuts
         if (match->gameFlowState.homeRunCameraCounter == -1 && match->cameraState.homeRunCameraFlag == 1 &&
             (get_base_controller(match, referee, BASE_THIRD) == -1 ||
              match->playerInfo[get_base_controller(match, referee, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
             match->gameFlowState.homeRunCameraCounter = 0;
         }
-    } else {
-        match->gameFlowState.ballHome = 0;
     }
 }

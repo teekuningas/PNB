@@ -864,9 +864,7 @@ typedef struct _CameraState {
 typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
 
 typedef struct _GameFlowState {
-    int closeToGround;
     int homeRunCameraCounter;
-    int ballHome; // Moved from HalfInningState (Logic state: ball is at home base)
 } GameFlowState;
 
 // What the catching team's ball-holder is doing with the ball, if anything. One at a time, which is

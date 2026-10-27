@@ -27,4 +27,9 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
  */
 int get_ball_at_base_index(const MatchSession* match, const FieldPositions* field_positions);
 
+// Is the ball home — held by somebody inside the home area? Asked wherever it matters and never stored:
+// it used to be cached in the World once a frame, a second copy of this same question that the referee
+// and the batting controller read while the referee also asked the question itself.
+int ball_is_home(const MatchSession* match, const FieldPositions* field_positions);
+
 #endif // BASE_CONTROL_H

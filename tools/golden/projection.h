@@ -97,7 +97,7 @@ static void project(const StateInfo* st)
     const FlowControl* fc = &m->flowControl;
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", fc->pause, fc->waitingForBatterDecision,
         fc->waitingForFreeWalkDecision, fc->freeWalkCalculationMade, fc->freeWalkIndex, (int)fc->freeWalkBase);
-    put(4, "gfs=%d,%d;", m->gameFlowState.homeRunCameraCounter, m->gameFlowState.ballHome);
+    put(4, "gfs=%d,%d;", m->gameFlowState.homeRunCameraCounter, ball_is_home(m, st->fieldPositions));
     put(4, "cam=%d;", m->cameraState.homeRunCameraFlag);
     V(4, m->catchingState.controlledMoveTarget);
     put(4, "%d,%d;", m->catchingState.controlledMoveTargetActive, m->catchingState.controlledMoveTargetFor);

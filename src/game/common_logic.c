@@ -714,15 +714,11 @@ void reset_flow_state(MatchSession* match)
     match->flowControl.freeWalkIndex = -1;
     match->flowControl.freeWalkBase = BASE_NONE;
 
-    // Flow state
-    match->gameFlowState.ballHome = 0;
-
     // Frame events (cleared every frame, but ensure clean start)
     clear_frame_events(&match->gameEvents);
 
     // Subsystem initialization
     consolidation_init(&(match->gameFlowState));
-    init_game_manipulation(&(match->gameFlowState));
 
     // The catching action in progress belongs to initialize_action_info, and the ball's flight to
     // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one

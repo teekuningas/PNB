@@ -110,7 +110,8 @@ static const char* state_to_string(PlayerUnitState s)
     }
 }
 
-static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, int indent)
+static void
+print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldPositions* fieldPositions, int indent)
 {
     // Helper for indentation
     char sp[16];
@@ -179,7 +180,7 @@ static void print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, 
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"gameFlowState\": {\n", sp);
-    fprintf(f, "%s  \"ballHome\": %d", sp, game->gameFlowState.ballHome);
+    fprintf(f, "%s  \"ballHome\": %d", sp, ball_is_home(game, fieldPositions));
     if (rules) {
         fprintf(f, ",\n%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);
     } else {
@@ -299,7 +300,7 @@ void state_validator_dump(StateInfo* state, const char* reason)
 
     // Current State
     fprintf(f, "  \"currentState\": {\n");
-    print_game_json(f, game, rules, 4);
+    print_game_json(f, game, rules, state->fieldPositions, 4);
     fprintf(f, "\n  },\n");
 
     // History
@@ -312,7 +313,7 @@ void state_validator_dump(StateInfo* state, const char* reason)
         fprintf(f, "      \"seq\": %d,\n", g_history[idx].frameCount);
         fprintf(f, "      \"label\": \"%s\",\n", g_history[idx].label);
         fprintf(f, "      \"snapshot\": {\n");
-        print_game_json(f, &g_history[idx].snapshot, NULL, 8); // No global info for snapshots
+        print_game_json(f, &g_history[idx].snapshot, NULL, state->fieldPositions, 8); // No global info for snapshots
         fprintf(f, "\n      }\n");
         fprintf(f, "    }%s\n", (i < g_historyCount - 1) ? "," : "");
     }

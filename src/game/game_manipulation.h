@@ -8,6 +8,5 @@
 void game_manipulation(
     MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, int* play_sound_effect
 );
-void init_game_manipulation(GameFlowState* gameFlowState);
 
 #endif /* GAME_MANIPULATION_H */

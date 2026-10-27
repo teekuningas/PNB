@@ -55,8 +55,6 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     // Consolidated Init (Game Flow + Reset Logic)
     consolidation_init(&(stateInfo->match->gameFlowState));
 
-    init_game_manipulation(&(stateInfo->match->gameFlowState));
-
     return 0;
 }
 

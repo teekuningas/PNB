@@ -75,11 +75,10 @@ void move_pitcher_away(ScenarioContext* ctx);
  *
  * In pesäpallo, the pitcher stands at home plate. This helper ensures the
  * ball is physically held by the pitcher at their home location, so that
- * gameManipulation computes ballHome = 1.
+ * ball_is_home() answers yes.
  *
- * Use this when your test needs the ball to be "home" — setting
- * gameFlowState.ballHome directly won't survive a pipeline frame because
- * gameManipulation recomputes it from physics every frame.
+ * Use this when your test needs the ball to be "home" — it is a question asked
+ * of where the ball is and who holds it, so the ball has to be put there.
  *
  * Do NOT combine with move_pitcher_away in the same test.
  *

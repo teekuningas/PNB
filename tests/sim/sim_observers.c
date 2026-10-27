@@ -1,5 +1,6 @@
 #include "sim_observers.h"
-#include "actions/batting_system.h" // BALL_MAX_OFFSET and SWING_POWER_UNITS
+#include "actions/batting_system.h"
+#include "rules_pure/base_control.h" // BALL_MAX_OFFSET and SWING_POWER_UNITS
 #include "actions_pure/swing_geometry.h" // the launch-elevation law the swing observer re-derives
 #include "actions_pure/pitching_physics.h" // VERTICAL_ANGLE_LIMIT — where the physics starts missing
 #include "rules_pure/player_utils.h" // get_active_batter_index — who is at the plate
@@ -178,8 +179,8 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
         r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        m->gameFlowState.ballHome, m->ballInfo.pitch_in_flight, (int)m->catching_action.kind, m->ballInfo.holder,
-        m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
+        ball_is_home(m, g->state->fieldPositions), m->ballInfo.pitch_in_flight, (int)m->catching_action.kind,
+        m->ballInfo.holder, m->flowControl.waitingForBatterDecision, m->flowControl.waitingForFreeWalkDecision,
         batter_stands_ready(&m->at_bat), ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer,
         ai->batterReadyTimer, m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive,
         ai->swing.wrongPitch, ai->swing.style, (int)r->betweenPitchState.batOutcome, batting_cycle_is_open(&m->at_bat)

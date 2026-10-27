@@ -60,3 +60,8 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
 
     return -1;
 }
+
+int ball_is_home(const MatchSession* match, const FieldPositions* field_positions)
+{
+    return get_ball_at_base_index(match, field_positions) == 0;
+}
