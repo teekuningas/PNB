@@ -109,9 +109,13 @@ static void project(const StateInfo* st)
     const SwingActualization* s = &ab->swing;
     put(7, "cf=%d pa=%d p=%a va=%d v=%a c=%d;", s->contactFrame, s->powerActive, (double)s->power, s->verticalActive,
         (double)s->vertical, s->consumed);
-    put(7, "bfc=%d ibfc=%d ang=%a as=%a adv=%a lim=%a stop=%d mov=%d upd=%d", ab->flight_frame,
-        ab->flight_clock_running, (double)ab->arc_angle, (double)ab->step_in_speed, (double)ab->step_in,
-        (double)ab->step_in_limit, ab->swing_stopped, ab->swing_started, ab->pose_dirty);
+    // The batter's body through a batting cycle. Printed only while a cycle is open: every field is set up
+    // when one opens and read only inside it, so between cycles they are leftovers, not play.
+    if (ab->cycle_open) {
+        put(7, "bfc=%d ibfc=%d ang=%a as=%a adv=%a lim=%a stop=%d mov=%d upd=%d", ab->flight_frame,
+            ab->flight_clock_running, (double)ab->arc_angle, (double)ab->step_in_speed, (double)ab->step_in,
+            (double)ab->step_in_limit, ab->swing_stopped, ab->swing_started, ab->pose_dirty);
+    }
 
     put(8, "%016llx", fnv(r, sizeof(*r), 1469598103934665603ULL));
 
