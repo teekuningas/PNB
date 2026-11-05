@@ -167,8 +167,8 @@ golden_harness: $(OBJ_SCRIPTED)
 	@mkdir -p $(ODIR)
 	@$(CC) tools/golden/golden.c $(OBJ_SCRIPTED) -o $(ODIR)/golden_harness $(CFLAGS) $(LFLAGS)
 
-# The architectural numbers that may only go down (globals.h includers, dead
-# parameters, function-quality audit coverage, ...). The script carries the floors
+# The architectural numbers that may only go down (dead parameters, what the engine
+# can see, function-quality audit coverage, ...). The script carries the floors
 # and is the definition of each measurement; IDIR is passed in so the sweep can
 # never drift from the build's own include path.
 .PHONY: guardrails

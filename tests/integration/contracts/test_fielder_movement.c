@@ -217,7 +217,7 @@ int test_restating_the_move_target_changes_nothing(void)
 }
 
 // 5. And the same law within a single frame: two identical messages in one tick are one message.
-//    Same-kind duplicates are last-write-wins by construction (globals.h), which for a value that
+//    Same-kind duplicates are last-write-wins by construction (intents.h), which for a value that
 //    equals itself means the second one is free.
 int test_duplicate_messages_in_one_frame_equal_one(void)
 {

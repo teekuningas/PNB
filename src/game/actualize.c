@@ -145,7 +145,7 @@ static void take_free_walk_decision(
 // Base running — the shared actualizer for the RunIntent command (set by the human in
 // action_invocations or by the AI in batting_ai; the actualizer does not care which).
 //
-// The producer declares ARM vs COMMIT explicitly (RunIntent in globals.h); the actualizer NEVER
+// The producer declares ARM vs COMMIT explicitly (RunIntent in intents.h); the actualizer NEVER
 // infers it from live-ball state. Reading the batter's §32 right to leave home (`may_leave_home`, held for
 // the whole at-bat) as if it meant "the ball is live" was the slice's offense regression — a pre-pitch
 // arm fired after a caught fly got mis-read as "ball live, run now",

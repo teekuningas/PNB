@@ -777,7 +777,7 @@ static void checkBattingTeamRun(
 {
     if (control != CONTROL_AI) {
         // One key per base, mapping the human's single/double press to the explicit RunIntent
-        // (globals.h): a SINGLE tap = RUN_FORWARD ("arm / lead") on a settled runner, or RUN_BACK
+        // (intents.h): a SINGLE tap = RUN_FORWARD ("arm / lead") on a settled runner, or RUN_BACK
         // ("come back") on a runner who has stepped off / is mid-run; a DOUBLE tap (a second release
         // within run_press_window frames) = RUN_COMMIT ("run now" — the steal / leg it to the next
         // base). The engine actualizes for the runner's exact state (see base_run in actualize.c).

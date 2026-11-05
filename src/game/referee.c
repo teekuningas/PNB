@@ -14,7 +14,7 @@
 #include "rules_side_change.h"
 
 // Referee-specific timing thresholds (in frames)
-// BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from globals.h
+// BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from field.h
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
