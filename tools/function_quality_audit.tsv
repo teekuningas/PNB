@@ -83,7 +83,7 @@ audited	src/game/rules_pure/rules_batting_order.c	written to the audit standard 
 audited	src/game/rules_pure/rules_side_change.c	written to the audit standard by the last-batter slice; includes nothing — the first proof-of-concept for the planned foundation.h split
 audited	src/game/rules_pure/rules_strikes.c	purity verified
 audited	src/game/rules_pure/scoring_helpers.c	purity verified
-open	src/game/runner_paths.c	split from common_logic.c (2026-11-05): a runner along the bases, and run_to_target, the run that only a batting player makes.
+open	src/game/runner_paths.c	split from common_logic.c (2026-11-05): a runner along the bases, and run_to_target, the run that only a batting player makes. OPEN FINDING (2026-11-05 audit): §32 — the batter may leave home once the turn's first pitch has left the lukkari's hand — is asked inside run_to_next_base, not at the gate: a RUN_COMMIT the gate let through is silently dropped there, a permission with no RuleId, against the claim that every permission is the gate's. It also guards the engine's own commits (the release, the hit), where it can never refuse, so moving it is the rules project's: a RuleId at the gate for the batter's commit, and the mechanic's check kept as an invariant or deleted.
 audited	src/game/simulate.c	SIMULATE, the order of the physical step (2026-11-05). Detection is not a stage of its own because it is not after the motion: the catch is asked against the fielders where the previous tick left them.
 open	src/menu/batting_order_menu.c	
 open	src/menu/cup_menu.c	

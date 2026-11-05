@@ -4,7 +4,8 @@
 #include "player_motion.h"
 
 // A batting player's movement along the bases: on to the next, back to the previous, or a lead off the
-// one he holds. Whether he may is not asked here — the gate and the referee have already decided.
+// one he holds. One question is still asked here rather than at the gate: the batter does not leave home
+// before his §32 right to (run_to_next_base returns without moving him).
 void run_to_next_base(MatchSession* match, const FieldPositions* field_positions, int index, BaseID base);
 void run_to_previous_base(MatchSession* match, const FieldPositions* field_positions, int index, BaseID base);
 void lead_from_base(
