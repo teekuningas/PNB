@@ -43,6 +43,13 @@ typedef struct ScriptedGame {
  */
 ScriptedGame* scripted_create(TeamID team1, TeamID team2, TeamControlMode c1, TeamControlMode c2, unsigned int seed);
 
+/**
+ * @brief Boot a real headless game of any mode from a GameSetup (e.g. a super inning or a home-run
+ * contest from src/include/fixtures.h), with the setup's control modes. scripted_create is this with a
+ * normal-game setup.
+ */
+ScriptedGame* scripted_create_from_setup(const GameSetup* setup, unsigned int seed);
+
 /** Set / clear the held state of a key on a pad for subsequent ticks (held persists until changed). */
 void scripted_hold(ScriptedGame* g, int pad, int key);
 void scripted_release(ScriptedGame* g, int pad, int key);

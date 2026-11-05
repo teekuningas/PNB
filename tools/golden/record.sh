@@ -35,6 +35,10 @@ OBJS=$(nix develop "$REPO" --command $MK golden-print-objs 2>/dev/null)
 FLAGS=$(nix develop "$REPO" --command $MK golden-print-flags 2>/dev/null)
 nix develop "$REPO" --command gcc tools/golden/golden.c $OBJS $FLAGS -o "$OUT/golden"
 RUNS="sim0 sim1 sim2 sim3 sim4 sim5 $(for i in $(seq 0 11); do printf "catch%s bat%s h2h%s " $i $i $i; done)"
+# The other two modes, if this tree's harness knows them (it has since the contest and super-inning runs).
+if grep -q supsim tools/golden/golden.c; then
+    RUNS="$RUNS $(for i in $(seq 0 5); do printf "supsim%s suph2h%s hrsim%s hrh2h%s " $i $i $i $i; done)"
+fi
 for r in $RUNS; do ("$OUT/golden" "$OUT" "$r" > "$OUT/$r.log" 2>&1) & done
 wait
 if [ -n "$REF" ]; then cd "$REPO"; git worktree remove --force "$TREE"; fi

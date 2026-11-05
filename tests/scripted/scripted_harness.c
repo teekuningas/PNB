@@ -3,15 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-ScriptedGame* scripted_create(TeamID team1, TeamID team2, TeamControlMode c1, TeamControlMode c2, unsigned int seed)
+ScriptedGame* scripted_create_from_setup(const GameSetup* setup, unsigned int seed)
 {
     ScriptedGame* g = malloc(sizeof(ScriptedGame));
     memset(g, 0, sizeof(ScriptedGame));
+    g->sim = sim_create(setup, seed);
+    return g;
+}
 
+ScriptedGame* scripted_create(TeamID team1, TeamID team2, TeamControlMode c1, TeamControlMode c2, unsigned int seed)
+{
     GameSetup setup;
     sim_make_normal_setup(&setup, team1, team2, c1, c2);
-    g->sim = sim_create(&setup, seed);
-    return g;
+    return scripted_create_from_setup(&setup, seed);
 }
 
 void scripted_hold(ScriptedGame* g, int pad, int key)

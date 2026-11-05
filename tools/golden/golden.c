@@ -10,12 +10,16 @@
 // The runs: six AI-vs-AI seeds, and twelve seeds each of a fuzzed human catching, batting, and on both
 // sides — a key-stream generator that knows enough of the game (a ready pitcher, a batter up, a loose ball)
 // to reach pitches, fakes, throws and swings rather than wander. It is deterministic: same build, same file.
+// Those 42 play normal mode. The other two modes each get six AI-vs-AI seeds and six fuzzed humans on both
+// sides: the super inning (one inning each way, from a tied game) and the home-run contest (pairs of a
+// batter and a runner, played to the contest's end) — code a normal game never reaches.
 //
 // projection.h is the version-specific half: how this tree's structs answer the semantic questions. A
 // commit that reshapes a struct edits it so that it prints the same thing from the new shape, and the
 // traces of the commit before and after can then be compared directly. See record.sh.
 #include "scripted_harness.h"
 #include "sim_harness.h"
+#include "fixtures.h" // src/include/fixtures.h — the GameSetup of each mode
 #include "globals.h"
 #include "action_invocations.h"
 #include "actions/batting_system.h"
@@ -57,6 +61,10 @@ static unsigned long long fnv(const void* p, size_t n, unsigned long long h)
 typedef struct {
     long pitches, fakes, throws, windups, hits, frames, walkOffers, walkOffersMidWindup;
     int lastCca, lastHit, lastWalk;
+    // What a run reached of the legal flow: half-innings begun, runs and runs of honor scored, fouls,
+    // contest pairs ended, and the frames in which a foul's reset and a pair's end were both pending.
+    long halfInnings, runs, honors, fouls, pairEnds, foulDuringPairEnd;
+    int lastInning, lastRuns, lastHonors, lastFoul, lastPair, started;
 } Coverage;
 
 static FILE* out;
@@ -94,6 +102,22 @@ static void observe(const SimGame* g, void* ctx)
     cov.lastHit = hit;
     cov.lastCca = cca;
     cov.frames++;
+
+    const GameRulesState* r = g->state->rules;
+    int runs = r->scoreboard.teams[0].runs + r->scoreboard.teams[1].runs, honors = 0;
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) honors += r->referee.battingPlayers[i].runOfHonorScored != 0;
+    int foul = r->referee.foulState == FOUL_STATE_DETECTED;
+    int pair = r->referee.nextPairTransitionState == HR_PAIR_STATE_DETECTED;
+    if (cov.started) {
+        if (r->scoreboard.inning != cov.lastInning) cov.halfInnings++;
+        if (runs > cov.lastRuns) cov.runs += runs - cov.lastRuns;
+        if (honors > cov.lastHonors) cov.honors += honors - cov.lastHonors;
+        if (foul && !cov.lastFoul) cov.fouls++;
+        if (pair && !cov.lastPair) cov.pairEnds++;
+    }
+    if (foul && pair) cov.foulDuringPairEnd++;
+    cov.lastInning = r->scoreboard.inning, cov.lastRuns = runs, cov.lastHonors = honors;
+    cov.lastFoul = foul, cov.lastPair = pair, cov.started = 1;
 }
 
 // ---- the fuzzed human ---------------------------------------------------------------------------
@@ -214,9 +238,20 @@ static void plan_gesture(Fuzzer* f, Queue* q, int sit)
     }
 }
 
-static int run_scripted(TeamControlMode c1, TeamControlMode c2, unsigned int seed, unsigned int fuzzSeed, long cap)
+typedef enum { MODE_NORMAL, MODE_SUPER, MODE_CONTEST } Mode;
+
+static void make_setup(GameSetup* setup, Mode mode, TeamControlMode c1, TeamControlMode c2)
 {
-    ScriptedGame* g = scripted_create(0, 1, c1, c2, seed);
+    if (mode == MODE_SUPER) fixture_create_super_inning(setup, 0, 1, c1, c2);
+    else if (mode == MODE_CONTEST) fixture_create_homerun_contest(setup, 0, 1, c1, c2);
+    else sim_make_normal_setup(setup, 0, 1, c1, c2);
+}
+
+static int run_scripted(Mode mode, TeamControlMode c1, TeamControlMode c2, unsigned int seed, unsigned int fuzzSeed, long cap)
+{
+    GameSetup setup;
+    make_setup(&setup, mode, c1, c2);
+    ScriptedGame* g = scripted_create_from_setup(&setup, seed);
     if (!g) return 1;
     scripted_attach(g, observe, NULL);
     Fuzzer f[2] = {{.rng = fuzzSeed | 1u}, {.rng = (fuzzSeed * 2654435761u) | 1u}};
@@ -240,10 +275,10 @@ static int run_scripted(TeamControlMode c1, TeamControlMode c2, unsigned int see
     return 0;
 }
 
-static int run_sim(unsigned int seed, long cap)
+static int run_sim(Mode mode, unsigned int seed, long cap)
 {
     GameSetup setup;
-    sim_make_normal_setup(&setup, 0, 1, CONTROL_AI, CONTROL_AI);
+    make_setup(&setup, mode, CONTROL_AI, CONTROL_AI);
     SimGame* g = sim_create(&setup, seed);
     if (!g) return 1;
     sim_attach(g, observe, NULL);
@@ -258,7 +293,10 @@ static int run_sim(unsigned int seed, long cap)
 int main(int argc, char** argv)
 {
     if (argc < 3) {
-        fprintf(stderr, "usage: golden OUTDIR RUN [dumpFrom dumpTo]   (RUN: sim0-5, catch0-11, bat0-11, h2h0-11)\n");
+        fprintf(stderr, "usage: golden OUTDIR RUN [dumpFrom dumpTo]\n"
+                        "  RUN: sim0-5, catch0-11, bat0-11, h2h0-11   (normal game)\n"
+                        "       supsim0-5, suph2h0-5                  (super inning)\n"
+                        "       hrsim0-5, hrh2h0-5                    (home-run contest)\n");
         return 2;
     }
     const char* dir = argv[1];
@@ -272,19 +310,30 @@ int main(int argc, char** argv)
 
     unsigned int n = 0;
     int rc = 1;
+    // sscanf matches each literal prefix whole, so "supsim3" is never read as "sim3": one prefix, one family.
     if (sscanf(run, "sim%u", &n) == 1) {
         static const unsigned int seeds[] = {0x1234ABCDu, 0x0000AAAAu, 0xBBBB0000u, 0x5EED0001u, 0x5EED0002u, 0x5EED0003u};
-        rc = run_sim(seeds[n % 6], 60000);
+        rc = run_sim(MODE_NORMAL, seeds[n % 6], 60000);
     } else if (sscanf(run, "catch%u", &n) == 1) {
-        rc = run_scripted(CONTROL_AI, CONTROL_PLAYER_1, 0xC0000000u + n, 0xF0000000u + n * 7919u, 40000);
+        rc = run_scripted(MODE_NORMAL, CONTROL_AI, CONTROL_PLAYER_1, 0xC0000000u + n, 0xF0000000u + n * 7919u, 40000);
     } else if (sscanf(run, "bat%u", &n) == 1) {
-        rc = run_scripted(CONTROL_PLAYER_1, CONTROL_AI, 0xB0000000u + n, 0xE0000000u + n * 7919u, 40000);
+        rc = run_scripted(MODE_NORMAL, CONTROL_PLAYER_1, CONTROL_AI, 0xB0000000u + n, 0xE0000000u + n * 7919u, 40000);
     } else if (sscanf(run, "h2h%u", &n) == 1) {
-        rc = run_scripted(CONTROL_PLAYER_1, CONTROL_PLAYER_2, 0xD0000000u + n, 0xD1000000u + n * 7919u, 40000);
+        rc = run_scripted(MODE_NORMAL, CONTROL_PLAYER_1, CONTROL_PLAYER_2, 0xD0000000u + n, 0xD1000000u + n * 7919u, 40000);
+    } else if (sscanf(run, "supsim%u", &n) == 1) {
+        rc = run_sim(MODE_SUPER, 0x50500000u + n, 60000);
+    } else if (sscanf(run, "suph2h%u", &n) == 1) {
+        rc = run_scripted(MODE_SUPER, CONTROL_PLAYER_1, CONTROL_PLAYER_2, 0x50510000u + n, 0x50520000u + n * 7919u, 40000);
+    } else if (sscanf(run, "hrsim%u", &n) == 1) {
+        rc = run_sim(MODE_CONTEST, 0x48520000u + n, 60000);
+    } else if (sscanf(run, "hrh2h%u", &n) == 1) {
+        rc = run_scripted(MODE_CONTEST, CONTROL_PLAYER_1, CONTROL_PLAYER_2, 0x48530000u + n, 0x48540000u + n * 7919u, 40000);
     }
     fprintf(out, "# coverage frames=%ld windups=%ld pitches=%ld fakes=%ld throws=%ld hits=%ld\n", cov.frames,
             cov.windups, cov.pitches, cov.fakes, cov.throws, cov.hits);
     fprintf(out, "# walks offers=%ld midWindup=%ld\n", cov.walkOffers, cov.walkOffersMidWindup);
+    fprintf(out, "# flow halfInnings=%ld runs=%ld honors=%ld fouls=%ld pairEnds=%ld foulDuringPairEnd=%ld\n",
+            cov.halfInnings, cov.runs, cov.honors, cov.fouls, cov.pairEnds, cov.foulDuringPairEnd);
     fclose(out);
     return rc;
 }
