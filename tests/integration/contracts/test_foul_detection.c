@@ -3,7 +3,6 @@
 #include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 /**
  * CONTRACT: When the ball hits the ground out of bounds after a bat hit,

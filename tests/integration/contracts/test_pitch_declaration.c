@@ -4,7 +4,6 @@
 #include "intent_channel.h"
 #include "ingest.h"
 #include "actualize.h"
-#include "actions/pitching_system.h"
 #include "actions_pure/pitching_physics.h"
 #include "intents.h"
 #include "world.h"

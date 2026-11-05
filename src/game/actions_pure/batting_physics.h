@@ -1,7 +1,6 @@
 #ifndef BATTING_PHYSICS_H
 #define BATTING_PHYSICS_H
 
-#include "vector_math.h"
 #include "foundation.h"
 
 /**

@@ -4,7 +4,6 @@
 #include "key_states.h"
 #include "team_data.h"
 #include "render.h"
-#include "font.h"
 #include "menu_helpers.h"
 #include "player_utils.h"
 #include <string.h>

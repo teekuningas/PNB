@@ -10,11 +10,8 @@
 #include "client_input.h"
 #include "ai/ai_memory.h"
 #include "field_layout.h"
-#include "fill_player_data.h"
-#include "game_setup.h"
 #include "referee.h"
 #include "game_frame.h"
-#include "game_consolidation.h"
 #include "ai/ai_controller.h"
 #include <stdlib.h>
 #include <string.h>

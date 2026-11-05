@@ -1,4 +1,5 @@
 #include "game_reset.h"
+#include "rules_pure/player_utils.h"
 #include <stdio.h>
 #include <math.h>
 #include "field.h"
@@ -17,9 +18,7 @@
 #include "intent_channel.h"
 #include "ingest.h"
 #include "actualize.h"
-#include "rules_pure/player_utils.h"
 #include "action_invocations.h"
-#include "vector_math.h"
 #include <stdlib.h>
 #include <string.h>
 

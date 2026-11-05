@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "field.h"
+#include "render.h"
 #include "display.h"
 #include "key_states.h"
 #include "tick_outputs.h"
@@ -18,7 +19,6 @@
 #include "fill_player_data.h"
 #include "main_menu.h"
 #include "loading_screen_menu.h"
-#include "menu_helpers.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "fixtures.h"

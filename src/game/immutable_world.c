@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include "field.h"
 #include "session.h"
-#include "render.h"
 #include "immutable_world.h"
 #include "field_layout.h"
 

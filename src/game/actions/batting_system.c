@@ -1,4 +1,5 @@
 #include "actions/batting_system.h"
+#include "actions_pure/pitching_physics.h"
 #include "field.h"
 #include "tick_outputs.h"
 #include "rules_state.h"
@@ -12,7 +13,6 @@
 #include "actions_pure/batting_physics.h"
 #include "actions_pure/swing_geometry.h"
 #include <math.h>
-#include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 

@@ -1,7 +1,6 @@
 #ifndef INTEGRATION_FIXTURES_H
 #define INTEGRATION_FIXTURES_H
 
-#include "immutable_world.h"
 #include "world.h"
 #include "session.h"
 

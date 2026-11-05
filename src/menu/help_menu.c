@@ -3,7 +3,6 @@
 #include "display.h"
 #include "key_states.h"
 #include "render.h"
-#include "font.h"
 #include "resource_manager.h"
 #include "menu_helpers.h"
 

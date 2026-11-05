@@ -2,7 +2,6 @@
 #include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 /**
  * CONTRACT: The referee promotes ballHitByBat/ballMissedByBat events to

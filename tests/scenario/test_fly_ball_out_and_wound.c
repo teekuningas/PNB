@@ -4,7 +4,6 @@
 #include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
-#include "referee.h"
 #include "base_control.h"
 #include <stdio.h>
 #include <math.h>

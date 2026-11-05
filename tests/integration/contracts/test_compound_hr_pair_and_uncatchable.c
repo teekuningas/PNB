@@ -2,7 +2,6 @@
 #include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 int test_compound_hr_pair_and_uncatchable(void)
 {

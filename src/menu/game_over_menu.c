@@ -1,6 +1,6 @@
 #include "game_over_menu.h"
+#include "render.h"
 #include "tick_outputs.h"
-#include "font.h"
 #include "menu_helpers.h"
 #include <stdio.h>
 #include "display.h"

@@ -34,7 +34,6 @@
 #include "frame_events.h"
 
 #include "game_frame.h"
-#include "game_setup.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
 #include "state_validator.h"
 #include "referee.h"

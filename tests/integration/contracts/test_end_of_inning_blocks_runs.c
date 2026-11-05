@@ -3,7 +3,6 @@
 #include "world.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 /**
  * CONTRACT: Once the referee has decided the inning is ending

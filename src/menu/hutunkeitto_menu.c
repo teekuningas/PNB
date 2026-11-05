@@ -1,6 +1,5 @@
 #include "hutunkeitto_menu.h"
 #include "render.h"
-#include "font.h"
 #include <stdio.h>
 #include "display.h"
 #include "key_states.h"

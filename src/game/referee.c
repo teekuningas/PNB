@@ -10,7 +10,6 @@
 #include "base_logic.h"
 #include "rules_pure/player_utils.h"
 #include "scoring_helpers.h"
-#include "vector_math.h"
 #include "base_control.h"
 #include "rules_side_change.h"
 

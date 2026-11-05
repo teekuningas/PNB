@@ -7,7 +7,6 @@
 #include "player_motion.h"
 #include "actions/batting_system.h"
 #include "frame_events.h"
-#include "referee.h"
 #include "rng.h"
 #include "rules_pure/player_utils.h"
 

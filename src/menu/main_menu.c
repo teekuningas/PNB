@@ -5,7 +5,6 @@
 #include "rules_state.h"
 #include "session.h"
 #include "render.h"
-#include "font.h"
 #include "rng.h"
 
 #include "main_menu.h"
@@ -18,7 +17,6 @@
 #include "game_over_menu.h"
 #include "help_menu.h"
 #include "menu_helpers.h"
-#include "loading_screen_menu.h"
 #include "cup_menu.h"
 #include "cup.h"
 #include "input.h"

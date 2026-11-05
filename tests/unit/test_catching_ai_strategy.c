@@ -2,7 +2,6 @@
 #include "field.h"
 #include "rules_state.h"
 #include "catching_ai_strategy.h"
-#include "base_logic.h"
 #include <math.h>
 
 static Vector3D at(float x, float z)

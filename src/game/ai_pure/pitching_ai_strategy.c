@@ -1,5 +1,4 @@
 #include "pitching_ai_strategy.h"
-#include "actions_pure/pitching_physics.h"
 
 // Semantic pitch-aim tuning (feel knobs; tune at the graphical pass). The direction jitter is kept small
 // enough that the AI's "strike" pitches land inside |x| < PLATE_WIDTH/2 even at the highest toss height.

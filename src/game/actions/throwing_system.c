@@ -5,7 +5,6 @@
 #include "ball_flight.h"
 #include "player_motion.h"
 #include "fielder_behaviours.h"
-#include "vector_math.h"
 #include <math.h>
 
 #define THROW_POWER_CONSTANT 0.65f

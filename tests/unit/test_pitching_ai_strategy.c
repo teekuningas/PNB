@@ -1,6 +1,5 @@
 #include "test_helpers.h"
 #include "pitching_ai_strategy.h"
-#include "pitching_physics.h"
 #include <stdio.h>
 
 int test_decide_pitch_aim(void)

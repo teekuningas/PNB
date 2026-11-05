@@ -7,7 +7,6 @@
 #include "all_scripted.h"
 #include "actions/batting_system.h"
 #include "actions_pure/swing_geometry.h"
-#include "actions_pure/pitching_physics.h"
 #include <math.h>
 
 /*

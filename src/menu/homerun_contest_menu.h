@@ -2,7 +2,6 @@
 #define HOMERUN_CONTEST_MENU_H
 
 #include "menu_types.h"
-#include "input.h"
 #include "resource_manager.h"
 #include "key_states.h"
 #include "team_data.h"

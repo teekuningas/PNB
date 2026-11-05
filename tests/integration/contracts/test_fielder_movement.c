@@ -10,9 +10,7 @@
 #include "world.h"
 #include <math.h>
 #include <string.h>
-#include "base_control.h"
 #include "game_reset.h"
-#include "rules_pure/player_utils.h"
 
 /**
  * CONTRACT: the controlled fielder's movement is a DESTINATION, and the engine owns the walk.

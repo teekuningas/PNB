@@ -5,7 +5,6 @@
 #include "rules_state.h"
 #include "intents.h"
 #include "world.h"
-#include "pitching_physics.h"
 
 // Where the pitcher stands while the pitch is delivered.
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD

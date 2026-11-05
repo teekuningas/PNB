@@ -2,6 +2,7 @@
 #define GAME_SCREEN_H
 
 #include "field.h"
+#include "render.h"
 #include "tick_outputs.h"
 #include "team_data.h"
 #include "rules_state.h"

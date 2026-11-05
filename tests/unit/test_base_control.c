@@ -4,7 +4,6 @@
 #include "rules_state.h"
 #include "world.h"
 #include "session.h"
-#include "vector_math.h"
 #include <string.h>
 
 int test_get_base_controller(void)

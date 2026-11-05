@@ -7,6 +7,7 @@
 */
 
 #include "runner_paths.h"
+#include "player_motion.h"
 #include <math.h>
 #include "field.h"
 #include "world.h"

@@ -4,7 +4,6 @@
 #include "world.h"
 #include "ai/ai_memory.h"
 #include "sim_harness.h"
-#include "sim_observers.h"
 
 // The batting controller's per-pitch memory lives exactly as long as the pitch, and the controller
 // alone ends it.

@@ -10,6 +10,7 @@
 #include "intent_channel.h"
 #include "actions/throwing_system.h"
 #include "actions/pitching_system.h"
+#include "actions_pure/pitching_physics.h" // the windup's crouch, which the aim widget times itself to
 #include "actions/batting_system.h" // the batter arc constants — the aim cursor moves across the same arc
 #include "actions_pure/swing_geometry.h" // the swing minigame's shape, shared with the engine and the test
 #include "actions_pure/batting_physics.h" // the flight solution, so the descent sizes itself from the ball

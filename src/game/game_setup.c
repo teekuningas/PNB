@@ -2,8 +2,6 @@
 #include "tick_outputs.h"
 #include "rules_state.h"
 #include "session.h"
-#include "rules_pure/player_utils.h"
-#include "referee.h"
 #include "rng.h"
 #include "ai/ai_controller.h"
 #include <string.h>

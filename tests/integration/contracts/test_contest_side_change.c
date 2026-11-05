@@ -3,7 +3,6 @@
 #include "world.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 // CONTRACT: in the home-run contest, the side change hands the next half-inning its FIRST pair.
 //

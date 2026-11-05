@@ -1,4 +1,5 @@
 #include "actions/pitching_system.h"
+#include "actions_pure/pitching_physics.h"
 #include "field.h"
 #include "rules_state.h"
 #include "intents.h"
@@ -8,7 +9,6 @@
 #include "player_motion.h"
 #include "runner_paths.h"
 #include "vector_math.h"
-#include "base_logic.h"
 #include "base_control.h"
 
 #define ANIMATION_FREQUENCY 3

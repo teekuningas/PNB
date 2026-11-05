@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "actions_pure/pitching_physics.h"
 #include "field.h"
 #include "rules_state.h"
 #include "intents.h"
