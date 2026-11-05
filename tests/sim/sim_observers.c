@@ -212,10 +212,11 @@ static void fold_bytes(unsigned long long* h, const void* p, size_t n)
 
 void checksum_observer_hook(const SimGame* g, void* ctx)
 {
-    // Fingerprint *curated game-meaningful state*, not raw MatchSession bytes: the player
-    // structs embed char* name pointers whose heap addresses differ between runs, which
-    // would make an honest, deterministic game look nondeterministic. These fields are the
-    // actual simulation state.
+    // Fingerprint *curated game-meaningful state*, not raw MatchSession bytes, so that a struct
+    // reshaped without changing what the game does (a field moved, a padding byte) leaves it alone.
+    // (It began as a workaround for player name pointers inside the World; there are none now.)
+    // Each field is folded at its own sizeof, so a field changing TYPE still moves it: a refactor
+    // that turns a folded int into a bool should fold it at a fixed width first, in a commit of its own.
     ChecksumObserver* o = (ChecksumObserver*)ctx;
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
