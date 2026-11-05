@@ -1,12 +1,12 @@
 /*
-    body_movement.c — every body moves one step, part of SIMULATE.
+    body_step.c — every body takes its step, part of SIMULATE (the bodies' counterpart to ball_flight.c).
 
     Location and orientation from velocity, runners along their paths, and a runner's arrival at a base,
     which is where the frame's playerArrivedAtBase event is born — detected inside the step that makes
     it, then answered at once by the runners' own movement on arrival.
 */
 
-#include "body_movement.h"
+#include "body_step.h"
 #include "field.h"
 #include "rules_state.h"
 #include "world.h"

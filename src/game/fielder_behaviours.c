@@ -3,8 +3,9 @@
 
     What every fielder does that no controller asked for, identical under every controller: knowing
     whether he is near his post, basemen covering for each other, idle fielders going home, and the chase
-    ranking that sends the best-placed fielders after a loose ball. These are behaviours, never "AI": the
-    controlled fielder's own walk is ACTUALIZE's, from the destination his controller declared.
+    ranking that sends the best-placed fielders after a loose ball and through which control is handed
+    over. These are behaviours, never "AI": the controlled fielder's own walk is ACTUALIZE's, from the
+    destination his controller declared.
 */
 
 #include "fielder_behaviours.h"

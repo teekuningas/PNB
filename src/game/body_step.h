@@ -1,5 +1,5 @@
-#ifndef BODY_MOVEMENT_H
-#define BODY_MOVEMENT_H
+#ifndef BODY_STEP_H
+#define BODY_STEP_H
 
 #include "field.h"
 #include "rules_state.h"
@@ -10,4 +10,4 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
 // Runners who arrived this frame settle, or carry on along their path.
 void base_runner_movements_on_base_arrivals(MatchSession* match, const RefereeState* referee);
 
-#endif /* BODY_MOVEMENT_H */
+#endif /* BODY_STEP_H */

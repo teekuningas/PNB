@@ -78,7 +78,7 @@ void update_controlled_fielder_movement(MatchSession* match)
     float norm = (float)sqrt(dx * dx + dz * dz);
     if (norm < EPSILON) norm = 1.0f;
 
-    // Facing along the path. For a fielder NOT carrying the ball, body_movement.c turns this toward
+    // Facing along the path. For a fielder NOT carrying the ball, body_step.c turns this toward
     // the ball again later in the same frame — the override the key-driven path lived under too, kept
     // unchanged here.
     player->tPI.orientation.x = dx;

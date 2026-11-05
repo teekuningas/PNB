@@ -4,7 +4,8 @@
     Run the engine's own fixed order of actualization — throw windup, fielder movement, control changes,
     drops, the pitch clock, batting, base running — reading the commands the INGEST gate left. The order
     here is the engine's, never the order messages happened to arrive in, so which producer spoke first
-    can never change the simulation. Nothing here asks a permission: the gate already has.
+    can never change the simulation. The gate has asked the permissions; what is left here is physics
+    (a seat still taken by a batter who has not yet lost home), and §32, which the runner's path asks.
 */
 
 #include "actualize.h"

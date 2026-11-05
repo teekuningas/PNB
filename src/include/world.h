@@ -198,7 +198,7 @@ typedef struct _FieldingPosts {
 
 // MILESTONE 16 (Phase 1): Transient event notifications
 // Events are set this frame, cleared next frame
-// Written by: the actualizers (actualize.c, actions/) and SIMULATE (ball_flight.c, ball_catch.c, body_movement.c)
+// Written by: the actualizers (actualize.c, actions/) and SIMULATE (ball_flight.c, ball_catch.c, body_step.c)
 // Read by: referee.c, others
 typedef struct _GameEvents {
     // Event flags (cleared each frame)

@@ -5,7 +5,8 @@
     the frame top — decide what each message is PERMITTED to do against the world as it stands at the
     top of this tick, and interpret the survivors into engine-shaped commands. Nothing intent-shaped
     survives ingestion: what comes out is a plain per-tick command block, and the channels are empty from
-    here to the end of the frame. Every permission in the game is asked here, and every refusal names the
+    here to the end of the frame. Every permission in the game is asked here but one — the batter leaving
+    home before his §32 right to, still asked by his path (runner_paths.c) — and every refusal names the
     rule that made it.
 */
 

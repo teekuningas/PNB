@@ -14,7 +14,7 @@
 #include "ball_flight.h"
 #include "ball_catch.h"
 #include "fielder_behaviours.h"
-#include "body_movement.h"
+#include "body_step.h"
 #include "drawn_state.h"
 
 void simulate(

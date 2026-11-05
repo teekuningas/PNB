@@ -2,7 +2,7 @@
     ball_catch.c — a fielder meets the loose ball, part of SIMULATE.
 
     It runs right after the ball's flight and before any fielder moves this tick, so it sees the fielders
-    where the previous tick left them: moving it after the fielders' behaviours would move every catch.
+    where the previous tick left them; asked anywhere later in the step, catches would fall on other frames.
     A catch is detected and enacted at once — possession, control, the ball's state — and the frame's
     catchMade event is born here; whether it was a koppi is the referee's question, not this file's.
 */
