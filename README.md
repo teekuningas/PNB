@@ -11,7 +11,12 @@ All commands run inside the Nix dev shell (provides the toolchain):
 ```bash
 nix develop --command make main      # build the game
 ./main --windowed                    # run it (or: make run)
+./main --windowed --fixture super-inning      # start straight in a tied super inning
+./main --windowed --fixture homerun-contest   # ... or in the home-run contest
 ```
+
+`--fixture cup-final-super-inning` starts a cup final's super inning; `--control1`/`--control2`
+(0 = pad 1, 1 = pad 2, 2 = AI; default pad 1 against the AI) and `--team1`/`--team2` choose who plays.
 
 Tests
 -----
@@ -42,8 +47,8 @@ nix develop --command bash -c "make sim_runner && SIM_TRACE=1 ./sim_runner"
 Guardrails
 ----------
 
-Some architectural numbers here are only allowed to go down — files including the
-`globals.h` monolith, parameters no function reads, files still awaiting the
+Some architectural numbers here are only allowed to go down — parameters no function
+reads, engine files whose includes can see past the engine, files still awaiting the
 function-quality audit. `make check` runs these as its last step; `make guardrails`
 runs them alone:
 
