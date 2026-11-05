@@ -8,8 +8,8 @@
  * CONTRACT: the CONTROL stage runs BEFORE execution, in the same tick.
  *
  * This knights the control-stage slice. `ai_update` used to sit third inside stage 2, *after*
- * `execute_actions` had already run, so an intent the AI declared on frame N was not consumed until
- * frame N+1 — a one-frame input buffer that was an accident of call placement, never a design
+ * the gate and actualizer (then `execute_actions`) had already run, so an intent the AI declared on frame N was not
+ * consumed until frame N+1 — a one-frame input buffer that was an accident of call placement, never a design
  * (controller symmetry, law 1). That slice moved it into a CONTROL stage at the frame top beside
  * `action_invocations`, so both producers declare into the same settled end-of-previous-tick world and
  * both are consumed by the same frame's execution.
@@ -21,7 +21,7 @@
  *
  * The probe is the §30 tactical drop, because it is the one AI intent that is a pure consume-on-read
  * command reachable in a constructed state: the drop is declared by `update_catching_ai` and
- * fully actualized inside `execute_actions` in the same breath. ONE production `update_game_frame` is
+ * fully actualized by INGEST and ACTUALIZE in the same breath. ONE production `update_game_frame` is
  * therefore enough to separate "control before execution" from "control after execution".
  *
  * The state is built inline rather than shared with test_ai_tactical_drop.c on purpose: that test asks
@@ -69,7 +69,7 @@ int test_control_stage_precedes_execution(void)
         12, match->ballInfo.released_by,
         "the drop must have been ACTUALIZED this frame: released_by is the dropper's fingerprint, "
         "set only by drop_ball(). Still -1 means the CONTROL stage's intent was not consumed until the "
-        "next frame — i.e. ai_update is running after execute_actions again"
+        "next frame — i.e. ai_update is running after the gate again"
     );
     ASSERT_EQ(-1, match->ballInfo.holder, "the dropped ball must be loose (ballInfo.holder → -1)");
     ASSERT_EQ(1, match->ballInfo.moving, "the dropped ball must be in motion");

@@ -6,7 +6,6 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/rules_strikes.h"
-#include "execute_actions.h"
 #include "game_reset.h"
 #include "referee.h"
 
@@ -246,7 +245,7 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
                 // land in some way.
                 if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
                     // if that happens we can now start.
-                    // this will give work to action_invocations.c and execute_actions.c
+                    // a controller may now name a batter, and the gate will let it through
                     match->offers.batter_seat = 1;
                 }
             }

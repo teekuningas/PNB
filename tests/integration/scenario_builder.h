@@ -91,7 +91,7 @@ void give_ball_to_pitcher(ScenarioContext* ctx);
  *
  * Composes give_ball_to_pitcher with the remaining can_begin_windup() conditions: the pitcher (idx 12) is
  * the home baseman (fielding_posts.baseman[0]) and near home, and a batter is ready. After this, declaring a
- * pitch power on the catching channel and ticking execute_actions runs the engine-owned windup. The canonical way to
+ * pitch power on the catching channel and ticking INGEST + ACTUALIZE runs the engine-owned windup. The canonical way to
  * reach a pitch-ready state — reused by the pitch (and later swing) tests rather than re-set inline.
  *
  * Do NOT combine with move_pitcher_away in the same test.

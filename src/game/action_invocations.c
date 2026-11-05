@@ -2,7 +2,7 @@
 
 #include "globals.h"
 #include "action_invocations.h"
-#include "execute_actions.h" // intent_push — the channel op lives with the gate that drains it
+#include "intent_channel.h"
 #include "actions/throwing_system.h"
 #include "actions/pitching_system.h"
 #include "actions/batting_system.h" // the batter arc constants — the aim cursor moves across the same arc
@@ -774,7 +774,7 @@ static void checkBattingTeamRun(
         // (globals.h): a SINGLE tap = RUN_FORWARD ("arm / lead") on a settled runner, or RUN_BACK
         // ("come back") on a runner who has stepped off / is mid-run; a DOUBLE tap (a second release
         // within run_press_window frames) = RUN_COMMIT ("run now" — the steal / leg it to the next
-        // base). The engine actualizes for the runner's exact state (see execute_actions::base_run).
+        // base). The engine actualizes for the runner's exact state (see base_run in actualize.c).
         // This is honest input→intent interpretation in the input layer — not game logic, not an AI
         // click-sim (the AI declares RUN_COMMIT directly in batting_ai.c).
         if (key_states->released[control][key]) {

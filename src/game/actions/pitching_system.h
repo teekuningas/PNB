@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "pitching_physics.h"
 
-// Constants moved from execute_actions.c
+// Where the pitcher stands while the pitch is delivered.
 #define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
 
 // Is a pitch physically on its way — the pitcher winding up, or the ball in the air? Two halves with two
@@ -33,7 +33,7 @@ typedef struct _PitchValues {
 
 // The pitch actualizer: a power begins the windup, an aim is held until release, and the engine's
 // clock decides when the ball leaves — aimed, a real pitch; unaimed, a valesyöttö. Called once per
-// frame from execute_actions.
+// frame from actualize.
 void update_pitch_actualization(
     MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions, const PitchValues* declared
 );

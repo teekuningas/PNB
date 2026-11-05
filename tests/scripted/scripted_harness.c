@@ -63,7 +63,7 @@ void scripted_tap(ScriptedGame* g, int pad, int key)
     scripted_hold(g, pad, key);
     scripted_tick(g); // key down (declarations fire on the release edge, not the press)
     scripted_release(g, pad, key);
-    scripted_tick(g); // release edge -> action_invocations sets the intent, execute_actions consumes it
+    scripted_tick(g); // release edge -> action_invocations sets the intent, the gate consumes it
 }
 
 int scripted_tick_until_batter_decision(ScriptedGame* g, int budget)

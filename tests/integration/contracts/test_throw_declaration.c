@@ -1,7 +1,9 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "actions/throwing_system.h"
 #include "globals.h"
 #include <math.h>
@@ -16,8 +18,8 @@
  *   - target, then power (human): the target starts the windup (so the gather runs while the human picks
  *     power on the meter); the power hands the engine the value and it releases once the windup for that
  *     power completes — immediately if it already elapsed, else it waits.
- * We construct a ball-holder away from a base and drive the REAL execute_actions through the catching
- * channel (no AI, no meter). Calling execute_actions directly (not the full frame) keeps the thrown ball
+ * We construct a ball-holder away from a base and drive the REAL gate and actualizer through the catching
+ * channel (no AI, no meter). Calling those two stages directly (not the full frame) keeps the thrown ball
  * un-fielded so the launch velocity can be read at the release frame.
  */
 
@@ -48,10 +50,13 @@ static void setup_fielder_with_ball(ScenarioContext* ctx)
 
 static void tick(ScenarioContext* ctx)
 {
-    execute_actions(
-        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-        &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+        );
+    }
 }
 
 static float horiz_speed(const MatchSession* m)
@@ -60,7 +65,7 @@ static float horiz_speed(const MatchSession* m)
     return sqrtf(vx * vx + vz * vz);
 }
 
-// Run execute_actions until the ball leaves the hand; return the launch horizontal speed (or -1). Also
+// Run INGEST + ACTUALIZE until the ball leaves the hand; return the launch horizontal speed (or -1). Also
 // reports the number of frames ticked via *frames.
 static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
 {

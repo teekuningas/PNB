@@ -2,7 +2,7 @@
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
-#include "execute_actions.h" // intent_push
+#include "intent_channel.h"
 
 /**
  * TEST: Free Walk Resolution

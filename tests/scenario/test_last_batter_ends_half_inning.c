@@ -3,7 +3,7 @@
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include "rules_pure/player_utils.h"
-#include "execute_actions.h" // intent_push — these tests declare the seating as a producer does
+#include "intent_channel.h"
 
 /*
  * §12 Vuoronvaihto — the half-inning ends on the designated last batter, not on a pool of nine.

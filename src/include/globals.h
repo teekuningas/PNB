@@ -267,7 +267,7 @@ typedef enum {
 
 typedef enum { FREE_WALK_IDLE = 0, FREE_WALK_ACCEPT = 1, FREE_WALK_REJECT = 2 } FreeWalkAction;
 
-// Base-running command intent (single-frame, consumed by execute_actions::base_run).
+// Base-running command intent (single-frame, consumed by actualize.c's base_run).
 // The producer (human input or AI) declares *which* of two distinct intents it wants — it is never
 // inferred from murky live-ball state (that inference, reading the batter's §32 right to leave home as if
 // it said "the ball is live", was the base-run slice's offense regression: a pre-pitch ARM got
@@ -296,8 +296,8 @@ typedef struct _PitchAim {
 // THE INTENT CHANNEL — one per team, a PARAMETER of the tick, never World state.
 //
 // A controller (human input, AI, a scripted test, one day a remote peer) produces nothing but value
-// messages into its own team's channel during the CONTROL stage at the frame top. The INGEST gate at
-// the head of execute_actions drains both channels in the same tick, decides what each message is
+// messages into its own team's channel during the CONTROL stage at the frame top. The INGEST gate
+// (ingest.c) drains both channels in the same tick, decides what each message is
 // PERMITTED to do, and interprets it into engine-shaped form. The channel is therefore filled and
 // emptied inside one tick and is empty at every frame boundary — the state validator checks exactly
 // that, every frame, so "a parameter, not state" is a fact rather than an intention.

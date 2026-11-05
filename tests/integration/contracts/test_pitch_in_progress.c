@@ -1,7 +1,9 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include <math.h>
 
 /**
@@ -26,10 +28,13 @@
 
 static void tick(ScenarioContext* ctx)
 {
-    execute_actions(
-        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-        &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+        );
+    }
 }
 
 // The pitcher, controlled and holding the ball, is in the middle of a windup that is NOT the

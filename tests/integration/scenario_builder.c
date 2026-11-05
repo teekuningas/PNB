@@ -7,7 +7,9 @@
 #include "game_frame.h"
 #include "common_logic.h"
 #include "referee.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "rules_pure/player_utils.h"
 #include "action_invocations.h"
 #include "vector_math.h"
@@ -285,12 +287,16 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
 
     for (int i = 0; i < maxFrames; i++) {
         // action_invocations() is intentionally omitted here: in this tier the TEST is the producer.
-        // It declares intent straight onto the channel (intent_push), and the gate at the head of
-        // execute_actions judges and drains it exactly as it would a human's or the AI's.
-        execute_actions(
-            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-            &ctx->state->playSoundEffect
-        );
+        // It declares intent straight onto the channel (intent_push), and the INGEST gate
+        // judges and drains it exactly as it would a human's or the AI's.
+        {
+            IngestedCommands ingested =
+                ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            actualize(
+                ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested,
+                &ctx->state->playSoundEffect
+            );
+        }
         game_manipulation(
             ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
         );

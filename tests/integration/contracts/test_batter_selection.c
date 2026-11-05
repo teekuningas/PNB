@@ -1,7 +1,9 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/base_control.h"
 #include "globals.h"
@@ -69,10 +71,13 @@ static void declare_seat(ScenarioContext* ctx, int index)
 
 static void tick_ingest(ScenarioContext* ctx)
 {
-    execute_actions(
-        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-        &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+        );
+    }
 }
 
 /**

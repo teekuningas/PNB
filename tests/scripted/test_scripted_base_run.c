@@ -9,7 +9,7 @@
  * is now stable, so it is knighted, per "testing is knighting").
  *
  * It proves the human input→intent mapping the slice introduced (action_invocations.c +
- * execute_actions.c::base_run): a SINGLE base-run tap = RUN_FORWARD ("arm / lead"), a DOUBLE tap = a
+ * actualize.c's base_run): a SINGLE base-run tap = RUN_FORWARD ("arm / lead"), a DOUBLE tap = a
  * RUN_COMMIT ("run now"). The sharp behavioral difference is on the batter: with the ball live (a pitch
  * in the air, at_bat.may_leave_home == 1), a lone tap only ARMS the batter — they keep standing — while a
  * double tap makes them break for first (the steal the user reported as broken before this mapping

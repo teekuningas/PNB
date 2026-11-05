@@ -2,7 +2,8 @@
 #include "test_helpers.h"
 #include "all_contracts.h"
 #include "ai/ai_controller.h"
-#include "execute_actions.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "rules_pure/player_utils.h"
 #include "globals.h"
 
@@ -26,7 +27,7 @@
  *   - The home catcher (fielding_posts.baseman[0] = idx 12) holds the ball at home.
  *   - woundingEvaluationActive = 1 (a caught fly is being evaluated).
  *
- * Expected: the AI puts one INTENT_DROP_BALL message on the catching channel; execute_actions then
+ * Expected: the AI puts one INTENT_DROP_BALL message on the catching channel; the gate and actualizer then
  * drops the ball (ballInfo.holder → -1, ball moving) and leaves the channel empty.
  */
 int test_ai_declares_and_executes_tactical_drop(void)
@@ -78,9 +79,11 @@ int test_ai_declares_and_executes_tactical_drop(void)
     ASSERT_EQ(0, ctx->state->channels.batting.count, "a controller may only write its OWN team's channel");
 
     // The gate permits it, the engine actualizes it, and the ball leaves the hand.
-    execute_actions(
-        match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels, &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect);
+    }
 
     ASSERT_EQ(-1, match->ballInfo.holder, "drop must release the ball (ballInfo.holder → -1)");
     ASSERT_EQ(1, match->ballInfo.moving, "dropped ball should be in motion");

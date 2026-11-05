@@ -1,91 +1,26 @@
 /*
-    execute_actions.c — the INGEST gate, and intent execution.
+    ingest.c — the INGEST gate, stage 2 of the tick.
 
-    Two jobs, in this order, once per tick:
-
-    1. INGEST. Drain both teams' intent channels — everything the controllers declared during the
-       CONTROL stage at the frame top — decide what each message is PERMITTED to do against the world
-       as it stands at the top of this tick, and interpret the survivors into engine-shaped commands.
-       Nothing intent-shaped survives ingestion: what comes out is a plain per-tick command block, and
-       the channels are empty from here to the end of the frame.
-
-    2. ACTUALIZE. Run the engine's own fixed order of actualization — throw windup, fielder movement,
-       control changes, drops, the pitch clock, batting, base running — reading those commands. The
-       order here is the engine's, never the order messages happened to arrive in, so which producer
-       spoke first can never change the simulation.
-
-    Every action now arrives on the channel. The persistent flag struct that stages used to read
-    instead is gone: its last field was the swing's phase, and the swing became two declared values.
+    Drain both teams' intent channels — everything the controllers declared during the CONTROL stage at
+    the frame top — decide what each message is PERMITTED to do against the world as it stands at the
+    top of this tick, and interpret the survivors into engine-shaped commands. Nothing intent-shaped
+    survives ingestion: what comes out is a plain per-tick command block, and the channels are empty from
+    here to the end of the frame. Every permission in the game is asked here, and every refusal names the
+    rule that made it.
 */
 
-#include "execute_actions.h"
+#include "ingest.h"
+#include "actions/batting_system.h"
 #include "common_logic.h"
 #include "vector_math.h"
-#include "actions/pitching_system.h"
-#include "actions/batting_system.h"
-#include "actions/throwing_system.h"
-#include "actions/fielder_movement.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/rules_batting_order.h"
-
-#define ANIMATION_FREQUENCY 3
-
-static void take_free_walk_decision(
-    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
-);
-static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd);
-
-// What ingestion leaves behind: this tick's commands, in engine terms. It is a local of
-// execute_actions, so it cannot outlive the tick, cannot be snapshot, and cannot be read by a
-// controller — the same guarantees the channel itself has, carried through the interpretation step.
-// A held value with a lifetime of its own (a destination, a swing's power) is written straight into the
-// engine state that owns it instead; the pitch's and the throw's values come through here because what
-// they contribute to — a windup — may not exist until the actualizer begins it this very tick.
-typedef struct _IngestedCommands {
-    int change_player; // hand control to the next fielder
-    int drop_ball; // put the held ball down
-    FreeWalkAction take_free_walk; // FREE_WALK_IDLE when no answer was given this tick
-    RunIntent base_run[BASE_COUNT]; // per base, RUN_NONE where nothing was commanded
-    int base_runner[BASE_COUNT]; // who the command was for: the base's runner at the top of the tick
-    int seat_batter_index; // who to seat as the next batter; -1 when nobody was named this tick
-    int swing_angle_declared; // 0 when the batting side said nothing about its aim this tick
-    float swing_angle;
-    int swing_pass; // the batting side withdrew its swing this tick
-    PitchValues pitch;
-    ThrowValues throw;
-} IngestedCommands;
 
 static Permission permit(
     const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions,
     const IntentMessage* message
 );
-static IngestedCommands ingest_intents(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels
-);
-
-void init_execute_actions(MatchSession* match)
-{
-    match->catching_action = (CatchingAction){0};
-    init_batting_system(match);
-}
-
-// The channel's producer-side operation. It lives beside the gate that drains it because the channel
-// has exactly two operations and no other owner yet; when the intent types stop needing the whole
-// globals.h monolith they get a file of their own.
-//
-// A full channel raises `overflowed` rather than growing or wrapping. Dropping the oldest message
-// would be the same bug with better manners: an intent silently lost is a divergence between two
-// machines that agreed on everything else.
-void intent_push(IntentChannel* channel, IntentMessage message)
-{
-    if (channel->count >= INTENT_CHANNEL_CAPACITY) {
-        channel->overflowed = 1;
-        return;
-    }
-    channel->message[channel->count] = message;
-    channel->count++;
-}
 
 // The permission rules — the one place a declared intent is told no.
 //
@@ -233,7 +168,7 @@ static Permission permit(
         // fielder controlled at the top of the tick, so the actualizer moves exactly that player even
         // if something later in the same tick were to change who holds the base. Nothing can: holding a
         // base is the referee's safety plus the player's baseId, the legal world is const for the whole
-        // of execute_actions, and the only baseId written before base running is a newly seated
+        // of INGEST and ACTUALIZE, and the only baseId written before base running is a newly seated
         // batter's, who holds no safety until the referee grants it. Measured as well, over 42 golden
         // runs: all 1,656 base-run commands found the same runner at the gate as at the actualizer.
         if (get_base_controller(match, &rules->referee, message->as.base_run.base) == -1) {
@@ -284,7 +219,7 @@ permit_contribution(const MatchSession* match, const IntentMessage* message, con
 
 // A throw, a drop and a pitch all claim the ball-holder's hands, and each was judged against the world
 // at the top of the tick — so all three can have been allowed, each on its own. Only one can happen.
-// The engine's own actualization order decides — throw, then drop, then pitch, the order execute_actions
+// The engine's own actualization order decides — throw, then drop, then pitch, the order actualize
 // has always run them in — so the outcome never depends on where the messages sat in the ring. The
 // losers are refused: a drop by RULE_DROP_NOT_WHILE_THROWING, a pitch by RULE_ONE_CATCHING_ACTION_PER_TICK.
 static void settle_catching_claims(IngestedCommands* out)
@@ -442,7 +377,7 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
 // THE INGEST GATE. Both channels are drained here and nowhere else, and they are left empty — which
 // is what makes the channel a parameter of the tick rather than a place intent can accumulate. The
 // state validator checks that emptiness at the end of every frame.
-static IngestedCommands ingest_intents(
+IngestedCommands ingest_intents(
     MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels
 )
 {
@@ -453,197 +388,4 @@ static IngestedCommands ingest_intents(
     ingest_channel(match, rules, fieldPositions, &channels->catching, 0, &commands);
 
     return commands;
-}
-
-void execute_actions(
-    MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannels* channels,
-    int* playSoundEffect
-)
-{
-    int i;
-
-    // INGEST first: every controller's declarations for this tick, judged against one settled world,
-    // become engine commands here. After this line no intent-shaped thing is left to read.
-    IngestedCommands commands = ingest_intents(match, rules, fieldPositions, channels);
-
-    /*
-     * CATCHING TEAM
-     */
-
-    // THROW — a declared target begins the gather, a declared power is held on it, and the engine releases
-    // once the power is known and its windup has elapsed: one rule for both producers, no client
-    // "fire-now" edge. The AI declares both values in one tick; a human declares the power when it lets
-    // go of the key, a trusted value from its own charge widget — never a live meter or this clock.
-    update_throw_actualization(match, fieldPositions, &commands.throw);
-    // MOVE — the engine walks the controlled fielder toward the destination the gate stored. One
-    // behaviour for every producer: the four per-direction key flags that used to be read here are
-    // gone, and with them the last thing about movement that was shaped like an input device. It
-    // runs after the throw actualizer on purpose — a throw declared this tick has already claimed
-    // the fielder's feet by the time we get here.
-    update_controlled_fielder_movement(match);
-    // (No charging-thrower facing pass: the throw windup begins the instant a throw is declared —
-    // begin_throw_windup faces the thrower at the target base and movement is suppressed for the whole
-    // windup — so there is no pre-windup charge window whose orientation needs a separate writer.)
-
-    // Hand control to the next fielder. The gate has already established that nobody holds the ball,
-    // so this is the move itself and nothing else.
-    if (commands.change_player) {
-        // we go to next element in changePlayerArray.
-        match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
-        // and try to ensure that there is difference. we dont want to end up in a endless loop
-        // though so we do it only once.
-        if (match->catchingState.controlled_fielder ==
-            match->catchingState.chase_ranking[match->catchingState.ranking_cursor]) {
-            match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
-        }
-        // and then set the flag, so that other parts of code can handle
-        // the job
-        change_player(match);
-    }
-    // Put the held ball on the ground. Permission (someone is holding it, and no throw or pitch has a
-    // claim on it) was settled at the gate; nothing between there and here can have taken the ball
-    // away, because a release requires exactly the throw the gate refuses to drop through.
-    if (commands.drop_ball) {
-        drop_ball(match);
-    }
-    // PITCH — a declared power begins the windup, a declared aim is held on it, and the engine's clock
-    // decides the release: aimed, a real pitch; unaimed, a valesyöttö. No meter read, no phase.
-    update_pitch_actualization(match, &rules->referee, fieldPositions, &commands.pitch);
-
-    /*
-     * BATTING TEAM
-     */
-    // §27: somebody was named to take the bat. The seating owns the one question the gate left it —
-    // whether the seat is physically free — because a batter who has left the plate keeps safety at
-    // home for a while yet, and that is true of the body whoever asked for what.
-    if (commands.seat_batter_index != -1) {
-        seat_batter(match, &rules->referee, fieldPositions, commands.seat_batter_index);
-    }
-    // The offered free walk was answered this tick — taking it starts the run, declining it just
-    // closes the offer. Either answer ends the prompt.
-    if (commands.take_free_walk != FREE_WALK_IDLE) {
-        take_free_walk_decision(match, &rules->scoreboard, fieldPositions, commands.take_free_walk == FREE_WALK_ACCEPT);
-    }
-
-    // baserunners must be able to run!
-    for (i = 0; i < BASE_COUNT; i++) {
-        if (commands.base_run[i] != RUN_NONE) {
-            base_run(match, fieldPositions, i, commands.base_runner[i], commands.base_run[i]);
-        }
-    }
-    // SWING — the batter's frame. The two declared VALUES are not passed: the gate wrote them into
-    // at_bat.swing, where they are held until the contact frame consumes them. Only the
-    // aim and the withdrawal come through as per-tick commands, because only they are things that
-    // HAPPEN; a power and an elevation are things that ARE.
-    update_batting(
-        match, &rules->referee, fieldPositions, commands.swing_angle_declared, commands.swing_angle,
-        commands.swing_pass, playSoundEffect
-    );
-}
-
-static void take_free_walk_decision(
-    MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
-)
-{
-    if (accepted) {
-        int index = match->free_walk.runner;
-        BaseID base = match->free_walk.from;
-        if (index != -1) {
-            // there can be a little gap between the decision and when the possibility to decide came
-            // so player might have run already to the following base, and free walk actually
-            // gave him the right to go to just that base.
-            // so if he still has the same base as before we can go on
-            if (scoreboard->period >= 4) {
-                // REFEREE MIGRATION: Logic moved to referee.c
-                // We just signal the event here.
-                match->gameEvents.freeWalkAccepted = 1;
-
-            } else {
-                BaseID currentBaseId = match->playerInfo[index].bTPI.baseId;
-
-                if (currentBaseId == base) {
-                    if (base != BASE_THIRD) {
-                        // Start running to the next base
-                        run_to_next_base(match, fieldPositions, index, base);
-                        // Protected from wounds/tags while advancing freely
-                        match->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
-                    }
-                    // 3rd base: no physical run needed — referee scores the run directly
-                    // and sets hasScored, which causes enforceLegalState to remove the player
-                }
-                // REFEREE MIGRATION: Logic moved to referee.c
-                // We just signal the event here.
-                match->gameEvents.freeWalkAccepted = 1;
-            }
-        }
-    }
-    // no more decision to make.
-    match->offers.free_walk = 0;
-}
-void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
-{
-    // Make ball visible and moving
-    ballInfo->visible = 1;
-    ballInfo->moving = 1;
-
-    // Set the velocity
-    vec3_set_xyz(&(ballInfo->velocity), x, y, z);
-}
-
-// Base running — the shared actualizer for the RunIntent command (set by the human in
-// action_invocations or by the AI in batting_ai; execute_actions does not care which).
-//
-// The producer declares ARM vs COMMIT explicitly (RunIntent in globals.h); the actualizer NEVER
-// infers it from live-ball state. Reading the batter's §32 right to leave home (`may_leave_home`, held for
-// the whole at-bat) as if it meant "the ball is live" was the slice's offense regression — a pre-pitch
-// arm fired after a caught fly got mis-read as "ball live, run now",
-// sending the next batter into a caught-fly out. With the intent explicit, that is unrepresentable.
-//
-//   RUN_FORWARD (single press — "arm / lead")
-//     - settled on base / at bat  -> arm to advance on the next pitch (release_pitch commits a base
-//                                    runner, the hit commits the batter), and lead off 1st/2nd. If
-//                                    still settling onto the base (mid-move), wait this frame. NEVER
-//                                    starts a settled runner moving now — that is RUN_COMMIT's job.
-//     - leading / already running -> keep going to the next base.
-//   RUN_COMMIT (double press — "run now")
-//     - any state                 -> start for the next base immediately (a steal / chaining a hit).
-//                                    For the batter this is gated inside run_to_next_base(BASE_HOME),
-//                                    which refuses until the turn's first pitch has left the hand
-//                                    (§32), so a commit issued before then is harmlessly ignored.
-//   RUN_BACK
-//     - settled on base / at bat  -> disarm a pending lead.
-//     - otherwise                 -> run back to the previous base.
-//
-// The command is single-frame and consumed here; it encodes no timing (the old AI double-click sim
-// is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
-static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd)
-{
-    PlayerUnitState state = match->playerInfo[index].bTPI.state;
-    int settled_on_base = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
-
-    if (cmd == RUN_FORWARD) {
-        if (settled_on_base) {
-            // Arm only — never commit a settled runner here.
-            if (match->runner_commitments.armed[base] == 0 && match->playerInfo[index].cPI.moving == 0) {
-                match->runner_commitments.armed[base] = 1;
-                if (base == BASE_FIRST || base == BASE_SECOND) {
-                    lead_from_base(match->playerInfo, match->playerRuntime, fieldPositions, index);
-                }
-            }
-            // else: already armed, or still settling onto the base — wait.
-        } else {
-            // Leading or mid-run: keep going to the next base.
-            run_to_next_base(match, fieldPositions, index, base);
-        }
-    } else if (cmd == RUN_COMMIT) {
-        // Deliberate "go now". Safe for the batter even if mis-issued: run_to_next_base(BASE_HOME)
-        // self-gates on the batter's §32 right to leave home.
-        run_to_next_base(match, fieldPositions, index, base);
-    } else { // RUN_BACK
-        if (settled_on_base) {
-            match->runner_commitments.armed[base] = 0; // cancel a pending lead
-        } else {
-            run_to_previous_base(match, fieldPositions, index, base);
-        }
-    }
 }

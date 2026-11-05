@@ -64,7 +64,7 @@ int scripted_tick(ScriptedGame* g);
 
 /**
  * @brief One tap = a key-down frame then a release frame (declarations fire on the release edge:
- * action_invocations sets the intent, execute_actions consumes it).
+ * action_invocations sets the intent, the gate consumes it).
  */
 void scripted_tap(ScriptedGame* g, int pad, int key);
 

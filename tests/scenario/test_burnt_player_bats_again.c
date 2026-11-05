@@ -1,7 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
-#include "execute_actions.h" // intent_push — the seating is declared, not written
+#include "intent_channel.h"
 #include "rules_pure/player_utils.h"
 
 /**

@@ -1,7 +1,7 @@
 #include "actions/batting_system.h"
 #include "common_logic.h"
 #include "vector_math.h"
-#include "execute_actions.h"
+#include "actualize.h"
 #include "actions/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include "actions_pure/swing_geometry.h"
@@ -10,7 +10,7 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
-// Macros moved from execute_actions.c (the arc constants live in the header — the aim widget
+// The batting actualizer's own constants (the arc constants live in the header — the aim widget
 // nudges its cursor across the same arc at the same rate).
 #define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f
 

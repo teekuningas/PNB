@@ -18,7 +18,8 @@
 #include "globals.h"
 #include "ball.h"
 #include "player.h"
-#include "execute_actions.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "action_invocations.h"
 #include "ai/ai_controller.h"
 #include "game_consolidation.h"
@@ -50,7 +51,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    init_execute_actions(stateInfo->match);
+    init_actualization(stateInfo->match);
     init_client_input(stateInfo->clientInput);
 
     stateInfo->match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
@@ -90,7 +91,8 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
     // geometry, the tick's input (the channels) and its one output — a signature is its complete
     // edge list. The client's input memory is not among them: only stage 1 ever names it.
-    execute_actions(game, rules, stateInfo->fieldPositions, &stateInfo->channels, &stateInfo->playSoundEffect);
+    IngestedCommands commands = ingest_intents(game, rules, stateInfo->fieldPositions, &stateInfo->channels);
+    actualize(game, rules, stateInfo->fieldPositions, &commands, &stateInfo->playSoundEffect);
     game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
     // 3. Referee (Legal State Authority)

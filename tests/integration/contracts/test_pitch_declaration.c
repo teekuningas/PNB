@@ -1,7 +1,9 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "actions/pitching_system.h"
 #include "actions_pure/pitching_physics.h"
 #include "globals.h"
@@ -14,7 +16,7 @@
  * The producer says a power, which begins the windup, and an aim, which is held on it; the engine runs
  * its own deterministic clock and resolves — aimed when the windup ends → a real pitch whose velocity ==
  * pitch_velocity_from_aim(power, direction); never aimed in time → valesyöttö (a fake, the pitcher keeps
- * the ball). We construct the ready state and drive the REAL execute_actions through the catching
+ * the ball). We construct the ready state and drive the REAL gate and actualizer through the catching
  * channel, no AI and no meter.
  */
 
@@ -35,13 +37,16 @@ static void declare_aim(ScenarioContext* ctx, float direction)
 
 static void tick(ScenarioContext* ctx)
 {
-    execute_actions(
-        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-        &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+        );
+    }
 }
 
-// Run execute_actions until the pitcher no longer holds the ball (release) or a frame budget elapses.
+// Run INGEST + ACTUALIZE until the pitcher no longer holds the ball (release) or a frame budget elapses.
 // Returns the number of frames ticked.
 static int run_actualizer(ScenarioContext* ctx, int budget)
 {

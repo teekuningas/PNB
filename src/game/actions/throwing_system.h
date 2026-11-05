@@ -53,7 +53,7 @@ typedef struct _ThrowValues {
 } ThrowValues;
 
 // The throw actualizer: a target begins the gather, a power is held on it, and the ball leaves once the
-// power is known and its windup has elapsed. Called once per frame from execute_actions. Timing is the
+// power is known and its windup has elapsed. Called once per frame from actualize. Timing is the
 // master; the animation only follows.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared);
 

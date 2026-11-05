@@ -1,7 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
 #include "actions/batting_system.h"
 #include "actions_pure/swing_geometry.h"
 #include "actions_pure/pitching_physics.h"

@@ -1,7 +1,9 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "globals.h"
 #include <math.h>
 #include <string.h>
@@ -59,10 +61,13 @@ static void declare_move_target(ScenarioContext* ctx, float x, float z)
 // instant ingestion and actualization have run and nothing has integrated it yet.
 static void ingest_and_actualize(ScenarioContext* ctx)
 {
-    execute_actions(
-        ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels,
-        &ctx->state->playSoundEffect
-    );
+    {
+        IngestedCommands ingested =
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+        actualize(
+            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+        );
+    }
 }
 
 static float speed_xz(const MatchSession* m, int index)

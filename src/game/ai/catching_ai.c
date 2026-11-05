@@ -1,5 +1,5 @@
 #include "ai/catching_ai.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
 #include "actions/throwing_system.h"
 #include "actions/batting_system.h"
 #include "catching_ai_strategy.h"

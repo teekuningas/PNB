@@ -3,7 +3,7 @@
 
 #include "ai/batting_ai.h"
 #include "batting_ai_strategy.h"
-#include "execute_actions.h"
+#include "intent_channel.h"
 #include "actions/batting_system.h"
 #include "actions/pitching_system.h" // pitch_is_being_delivered — the plan lives exactly as long as the pitch
 #include "rng.h"
