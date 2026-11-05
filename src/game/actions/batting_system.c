@@ -12,6 +12,9 @@
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 
+// How the batter's body takes this swing: a full swing, a bunt, or no swing at all.
+typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP = 2 } BattingMode;
+
 // The batting actualizer's own constants (the arc constants live in the header — the aim widget
 // nudges its cursor across the same arc at the same rate).
 #define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f

@@ -6,6 +6,9 @@
 #include "game_setup.h"
 #include "cup.h"
 
+// The menus' layout slots.
+#define SLOT_COUNT 14
+
 #define ARROW_SCALE 0.05f
 #define ARROW_SMALLER_SCALE 0.03f
 
