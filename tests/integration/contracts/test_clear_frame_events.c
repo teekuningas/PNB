@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "common_logic.h"
+#include "game_frame.h"
 #include "globals.h"
 
 /**

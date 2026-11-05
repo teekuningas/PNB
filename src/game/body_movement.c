@@ -7,7 +7,9 @@
 */
 
 #include "body_movement.h"
-#include "common_logic.h"
+#include "player_motion.h"
+#include "runner_paths.h"
+#include "actions/batting_system.h"
 #include "vector_math.h"
 #include "base_logic.h"
 #include "base_control.h"

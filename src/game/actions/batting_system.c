@@ -1,5 +1,7 @@
 #include "actions/batting_system.h"
-#include "common_logic.h"
+#include "player_motion.h"
+#include "runner_paths.h"
+#include "fielder_behaviours.h"
 #include "vector_math.h"
 #include "ball_flight.h"
 #include "actions/pitching_system.h"
@@ -530,3 +532,18 @@ void update_batting(
         }
     }
 }
+
+void prepare_batter(MatchSession* match)
+{
+    int batterIndex = get_active_batter_index(match);
+    if (batterIndex != -1) {
+        // batter ready model
+        match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
+        // He has arrived: the pitch may come, and the cycle opens (and sets the body up) on the first frame
+        // with no pitch in the air. An arrival only begins a cycle when none is open — the batter is walked
+        // to the ready spot when a cycle has closed or before the first, and never while one is running.
+        if (!batting_cycle_is_open(&match->at_bat)) match->at_bat.cycle = BATTING_CYCLE_ARRIVED;
+    }
+}
+// so here we calculate index and base of the player who is the leadrunner so that
+// we can move him if thats the decision.

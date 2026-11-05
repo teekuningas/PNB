@@ -12,4 +12,6 @@ void reset_for_next_pair(
     const HomeRunContestState* hrcs
 );
 
+void initialize_action_info(MatchSession* match);
+
 #endif // GAME_RESET_H

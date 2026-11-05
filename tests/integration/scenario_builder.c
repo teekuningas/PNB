@@ -6,7 +6,8 @@
 #include "simulate.h"
 #include "ball_flight.h"
 #include "game_frame.h"
-#include "common_logic.h"
+#include "runner_paths.h"
+#include "fielder_behaviours.h"
 #include "referee.h"
 #include "intent_channel.h"
 #include "ingest.h"
@@ -247,7 +248,7 @@ void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, 
     // Call the game's base-running machinery
     // Note: run_to_previous_base treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base
     // 3). But the game logic's `run_to_previous_base` actually takes `BaseID base` as the "current base" or "base we
-    // are retreating FROM"? Let's check common_logic.c: void run_to_previous_base(MatchSession* match, FieldPositions*
+    // are retreating FROM"? Let's check runner_paths.c: void run_to_previous_base(MatchSession* match, FieldPositions*
     // fieldPositions, int index, BaseID base) if(base == BASE_HOME) ... target = ready pos if(base == BASE_FIRST) ...
     // target = firstBaseRun So `base` is the destination base.
 

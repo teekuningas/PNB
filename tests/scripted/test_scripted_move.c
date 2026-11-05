@@ -3,7 +3,6 @@
 #include "scripted_harness.h"
 #include "actions/pitching_system.h"
 #include "globals.h"
-#include "common_logic.h"
 #include <math.h>
 
 /*

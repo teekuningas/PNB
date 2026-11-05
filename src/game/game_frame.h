@@ -14,4 +14,7 @@ void draw_game_frame(
 );
 int clean_game_frame(StateInfo* stateInfo);
 
+// CLEAR, the tick's last stage: the frame's events end with the frame.
+void clear_frame_events(GameEvents* events);
+
 #endif /* GAME_FRAME_H */

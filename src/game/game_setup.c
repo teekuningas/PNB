@@ -1,5 +1,4 @@
 #include "game_setup.h"
-#include "common_logic.h"
 #include "rules_pure/player_utils.h"
 #include "referee.h"
 #include "rng.h"
@@ -49,7 +48,7 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
 
     // Initialize batterOrder for ALL game modes.
     // CRITICAL: batterOrder defines the jersey numbers (1-9 for regulars, 0 for jokers)
-    // via initialize_inning_permanent_player_information() in common_logic.c.
+    // via initialize_inning_permanent_player_information() in game_reset.c.
     //
     // In GAME_MODE_HOMERUN_CONTEST:
     //   - batterOrder is NOT used to determine who bats (that uses batterRunnerIndices)

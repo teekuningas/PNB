@@ -1,6 +1,22 @@
 #include "game_reset.h"
-#include "common_logic.h"
+#include "player_motion.h"
+#include "actions/batting_system.h"
+#include "game_frame.h"
 #include "referee.h"
+#include "rng.h"
+#include "rules_pure/player_utils.h"
+
+static void initialize_ball_info(MatchSession* match);
+static void initialize_inning_permanent_player_information(
+    MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
+);
+static void initialize_non_critical_player_information(MatchSession* match);
+static void initialize_spatial_player_information(MatchSession* match, const FieldPositions* field_positions);
+static void reset_flow_state(MatchSession* match);
+static void setup_homerun_physical_state(
+    MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
+    const FieldPositions* field_positions, int batterResumesInPlace
+);
 
 static void reset_physical_world(MatchSession* match, const FieldPositions* field_positions)
 {
@@ -98,4 +114,351 @@ void reset_for_next_pair(
     reset_physical_world(match, field_positions);
     reset_flow_state(match);
     setup_homerun_physical_state(match, scoreboard, hrcs, field_positions, 0);
+}
+
+// ---- the reset building blocks the recipes above compose ----
+
+static void initialize_spatial_player_information(MatchSession* match, const FieldPositions* field_positions)
+{
+    int i;
+    const Vector3D* fieldPosition;
+    int battingTeamPlacement[PLAYERS_IN_TEAM + JOKER_COUNT];
+    // create array that has 0-11 in random order to give batting players in home
+    // circle a nicer visual feelin'
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        battingTeamPlacement[i] = -1;
+    }
+    i = 0;
+    while (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
+        int random = seeded_rand(&match->rngSeed, PLAYERS_IN_TEAM + JOKER_COUNT);
+        if (battingTeamPlacement[random] == -1) {
+            battingTeamPlacement[random] = i;
+            i++;
+        }
+    }
+    // when out of bounds situation or inning ends, we swing the ball in the air and let the pitcher
+    // catch it
+    match->ballInfo.velocity.x = BALL_INIT_SPEED_X;
+    match->ballInfo.velocity.y = BALL_INIT_SPEED_Y;
+    match->ballInfo.velocity.z = BALL_INIT_SPEED_Z;
+    match->ballInfo.location.x = BALL_INIT_LOCATION_X;
+    match->ballInfo.location.y = BALL_INIT_LOCATION_Y;
+    match->ballInfo.location.z = BALL_INIT_LOCATION_Z;
+
+    match->ballInfo.lastLocation.x = match->ballInfo.location.x;
+    match->ballInfo.lastLocation.y = match->ballInfo.location.y;
+    match->ballInfo.lastLocation.z = match->ballInfo.location.z;
+    // set locations and models for batting team players
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i]) / 20.0f);
+        match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
+
+        match->playerInfo[i].tPI.homeLocation.x =
+            (float)(field_positions->pitchPlate.x +
+                    (HOME_RADIUS)*radiusFix *
+                        cos(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
+        match->playerInfo[i].tPI.homeLocation.y = BALL_HEIGHT_WITH_PLAYER;
+        match->playerInfo[i].tPI.homeLocation.z =
+            (float)(field_positions->pitchPlate.z +
+                    (HOME_RADIUS)*radiusFix *
+                        sin(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
+        match->playerInfo[i].tPI.location.x = match->playerInfo[i].tPI.homeLocation.x;
+        match->playerInfo[i].tPI.location.y = match->playerInfo[i].tPI.homeLocation.y;
+        match->playerInfo[i].tPI.location.z = match->playerInfo[i].tPI.homeLocation.z;
+        match->playerInfo[i].tPI.orientation.x = match->ballInfo.location.x - match->playerInfo[i].tPI.location.x;
+        match->playerInfo[i].tPI.orientation.y = match->ballInfo.location.y - match->playerInfo[i].tPI.location.y;
+        match->playerInfo[i].tPI.orientation.z = match->ballInfo.location.z - match->playerInfo[i].tPI.location.z;
+        match->playerInfo[i].tPI.lastLocation.x = match->playerInfo[i].tPI.location.x;
+        match->playerInfo[i].tPI.lastLocation.y = match->playerInfo[i].tPI.location.y;
+        match->playerInfo[i].tPI.lastLocation.z = match->playerInfo[i].tPI.location.z;
+    }
+    // set locations and models for fielders. here we need positions set.
+    for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+
+        switch (i - 12) {
+        case 0:
+            fieldPosition = &(field_positions->pitcher);
+            break;
+        case 1:
+            fieldPosition = &(field_positions->firstBase);
+            break;
+        case 2:
+            fieldPosition = &(field_positions->secondBase);
+            break;
+        case 3:
+            fieldPosition = &(field_positions->thirdBase);
+            break;
+        case 4:
+            fieldPosition = &(field_positions->bottomRightCatcher);
+            break;
+        case 5:
+            fieldPosition = &(field_positions->middleLeftCatcher);
+            break;
+        case 6:
+            fieldPosition = &(field_positions->middleRightCatcher);
+            break;
+        case 7:
+            fieldPosition = &(field_positions->backLeftCatcher);
+            break;
+        case 8:
+            fieldPosition = &(field_positions->backRightCatcher);
+            break;
+        default:
+            fieldPosition = &(field_positions->pitchPlate);
+            break;
+        }
+        match->playerInfo[i].tPI.homeLocation.x = fieldPosition->x;
+        match->playerInfo[i].tPI.homeLocation.y = fieldPosition->y;
+        match->playerInfo[i].tPI.homeLocation.z = fieldPosition->z;
+
+        match->playerInfo[i].tPI.location.x = match->playerInfo[i].tPI.homeLocation.x;
+        match->playerInfo[i].tPI.location.y = match->playerInfo[i].tPI.homeLocation.y;
+        match->playerInfo[i].tPI.location.z = match->playerInfo[i].tPI.homeLocation.z;
+
+        match->playerInfo[i].tPI.orientation.x = match->ballInfo.location.x - match->playerInfo[i].tPI.location.x;
+        match->playerInfo[i].tPI.orientation.y = match->ballInfo.location.y - match->playerInfo[i].tPI.location.y;
+        match->playerInfo[i].tPI.orientation.z = match->ballInfo.location.z - match->playerInfo[i].tPI.location.z;
+
+        match->playerInfo[i].tPI.lastLocation.x = match->playerInfo[i].tPI.location.x;
+        match->playerInfo[i].tPI.lastLocation.y = match->playerInfo[i].tPI.location.y;
+        match->playerInfo[i].tPI.lastLocation.z = match->playerInfo[i].tPI.location.z;
+    }
+    // these are set for every player.
+    for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        match->playerInfo[i].tPI.velocity.x = 0.0f;
+        match->playerInfo[i].tPI.velocity.y = 0.0f;
+        match->playerInfo[i].tPI.velocity.z = 0.0f;
+        match->playerInfo[i].tPI.targetLocation.x = 0.0f;
+        match->playerInfo[i].tPI.targetLocation.y = 0.0f;
+        match->playerInfo[i].tPI.targetLocation.z = 0.0f;
+    }
+}
+// here we initialize players' stat information, and team information, whether they are joker or not,
+// their number etc. all is information that is not going to be reinitialized when out of bounds -
+// situation happens
+static void initialize_inning_permanent_player_information(
+    MatchSession* match, const Scoreboard* scoreboard, const TeamData* team_data
+)
+{
+    int battingTeamIndex = get_batting_team_index(scoreboard);
+    int i;
+
+    // initialize batting team numbers and jokerness
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        if (i < PLAYERS_IN_TEAM) {
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.number = i + 1;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.joker = JOKER_REGULAR;
+        } else {
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.number = 0;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.joker = JOKER_AVAILABLE;
+        }
+    }
+    // initialize batting team
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        match->playerInfo[i].cPI.team = TEAM_BATTING;
+
+        match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
+        match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
+    }
+    // initialize fielders
+    for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        match->playerInfo[i].cPI.team = TEAM_CATCHING;
+
+        // here we set catcherOnBaseIndices and catcherReplacerOnBaseIndices.
+        switch (i - 12) {
+        case 0:
+            match->fielding_posts.baseman[0] = i;
+            break;
+        case 1:
+            match->fielding_posts.baseman[1] = i;
+            break;
+        case 2:
+            match->fielding_posts.baseman[2] = i;
+            break;
+        case 3:
+            match->fielding_posts.baseman[3] = i;
+            break;
+        case 4:
+            match->fielding_posts.cover[0] = i;
+            match->fielding_posts.cover[1] = i;
+            break;
+        case 5:
+            match->fielding_posts.cover[3] = i;
+            break;
+        case 6:
+            match->fielding_posts.cover[2] = i;
+            break;
+        }
+    }
+}
+// information that can be flushed
+static void initialize_non_critical_player_information(MatchSession* match)
+{
+    int i;
+    for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        // MILESTONE 7.5: Initialize control state
+        match->playerRuntime[i].arrivedToBase = 0;
+        match->playerRuntime[i].passedPathPoint = 0;
+        match->playerRuntime[i].goingForward = 0;
+        match->playerRuntime[i].hasMadeRunOnThirdBase = 0;
+
+        match->playerInfo[i].cPI.animationFrequency = 1;
+        match->playerInfo[i].cPI.animationStage = 0;
+        match->playerInfo[i].cPI.animationStageCount = 0;
+        match->playerInfo[i].cPI.moving = 0;
+        match->playerInfo[i].cPI.running = 0;
+        match->playerInfo[i].cPI.looksForTarget = 0;
+        match->playerInfo[i].cPI.lastLastLocationUpdate = 1;
+
+        // Critical: throwRecoil must be 0 for all players so move_to_target doesn't block
+        match->playerInfo[i].cTPI.throwRecoil = 0;
+
+        if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
+
+            match->playerInfo[i].cTPI.isNearHomeLocation = 1;
+            match->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
+            match->playerInfo[i].cTPI.replacingBase = BASE_NONE;
+            match->playerInfo[i].cTPI.busyCatching = 0;
+            // throwRecoil already set above
+        } else {
+            match->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
+            match->playerInfo[i].bTPI.baseId = BASE_NONE;
+        }
+    }
+}
+// ball flags
+static void initialize_ball_info(MatchSession* match)
+{
+    match->ballInfo.visible = 1;
+    match->ballInfo.moving = 1;
+    match->ballInfo.currentFlightHasHitGround = 0;
+    match->ballInfo.onGround = 0;
+    match->ballInfo.hitsGroundToUnWound = 0;
+    match->ballInfo.needsMoveUpdate = 0;
+    match->ballInfo.lastLastLocationUpdate = 0;
+    match->ballInfo.pitch_in_flight = 0;
+    match->ballInfo.thrown_to = BASE_NONE;
+    match->ballInfo.holder = -1;
+    match->ballInfo.released_by = -1;
+}
+// Empty everything a play can have left on the table that is not physics: the catching action in progress,
+// the at-bat (the batter's cycle, his swing and his §32 right), the runners' standing orders, a chase
+// re-plan not yet answered, and the catching team's own state — who is controlled and who chases, where
+// the controlled fielder was told to go, and the engine's prediction of where the ball can next be met. The last of
+// those is not producer-set, but it is just as stale after a reset and it is cleared here so that ONE recipe owns the
+// whole struct; the alternative was two recipes clearing two fields of it, which is how the channel slice lost a
+// declaration. Each is cleared as a WHOLE STRUCT, never field by field — the field-by-field version this
+// replaced had silently missed two, and a struct assignment cannot miss a field that gets added later.
+//
+// The message channel needs no counterpart here: it is drained to empty inside every tick, so a
+// reset has nothing of it to clean up.
+void initialize_action_info(MatchSession* match)
+{
+    match->catchingState = (CatchingTeamState){0};
+    // Nobody is controlled until a fielder takes the ball, and until the ball's first flight is ranked the
+    // chase order is the first five fielders by position.
+    match->catchingState.controlled_fielder = -1;
+    match->catchingState.ranking_cursor = -1;
+    for (int k = 0; k < RANKED_FIELDERS_COUNT; k++) {
+        match->catchingState.chase_ranking[k] = PLAYERS_IN_TEAM + JOKER_COUNT + k;
+    }
+
+    match->catching_action = (CatchingAction){0};
+
+    match->at_bat = (AtBat){0};
+    match->at_bat.swing.contactFrame = -1; // no ball in the air, so no frame to meet it on
+
+    match->runner_commitments = (RunnerCommitments){0};
+
+    match->chase_replan = CHASE_REPLAN_NONE;
+}
+// Resets flow control, camera, subsystems, and frame events for a clean restart.
+// Does NOT touch referee-owned state (BPS, HIS, RefereeState).
+static void reset_flow_state(MatchSession* match)
+{
+    // No question is open after a reset, and there is no BALL whose free walk is still to be worked out.
+    match->offers = (BattingOffers){0};
+    match->free_walk = (FreeWalkEntitlement){.worked_out = 1, .runner = -1, .from = BASE_NONE};
+
+    // Frame events (cleared every frame, but ensure clean start)
+    clear_frame_events(&match->gameEvents);
+
+    // The home-run camera is back to the normal view, and not counting.
+    match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
+
+    // The catching action in progress belongs to initialize_action_info, and the ball's flight to
+    // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one
+    // owner per field.
+    // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
+    // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
+    // separation as the reset-recipe rule: physical resets never touch referee state. Client input is initialized once
+    // and self-clears during play (each gesture's own guards disengage when its preconditions fail), so a foul/inning
+    // reset needs to do nothing to it.
+    // The same holds for the AI's memory (AIControllerState), in both directions: a controller notices a reset by
+    // observing the world it leaves behind, never by the engine reaching in to clear it.
+}
+
+static void setup_homerun_physical_state(
+    MatchSession* match, const Scoreboard* scoreboard, const HomeRunContestState* hrcs,
+    const FieldPositions* field_positions, int batterResumesInPlace
+)
+{
+    int battingTeamIndex = get_batting_team_index(scoreboard);
+    Vector3D target;
+    int i;
+    if (hrcs->runnerBatterPairCounter < scoreboard->pairCount) {
+        int runnerIndex = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][hrcs->runnerBatterPairCounter];
+        int batterIndex = scoreboard->teams[battingTeamIndex].batterRunnerIndices[0][hrcs->runnerBatterPairCounter];
+        // batter
+        if (batterIndex != -1) {
+            match->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
+            match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
+            match->playerInfo[batterIndex].bTPI.number = hrcs->runnerBatterPairCounter + 1;
+            // move player to default batter ready position
+            target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            // On a foul/out-of-bounds reset the same batter resumes, so start them already at
+            // the plate — move_to_target then settles them straight into the ready stance
+            // instead of walking them in from the reset position.
+            if (batterResumesInPlace) {
+                match->playerInfo[batterIndex].tPI.location.x = target.x;
+                match->playerInfo[batterIndex].tPI.location.z = target.z;
+                match->playerInfo[batterIndex].tPI.lastLocation = match->playerInfo[batterIndex].tPI.location;
+            }
+            move_to_target(match->playerInfo, batterIndex, &target);
+        }
+        // runner
+        if (runnerIndex != -1) {
+            match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
+            match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
+
+            match->playerInfo[runnerIndex].tPI.location.x = field_positions->thirdBaseRun.x;
+            match->playerInfo[runnerIndex].tPI.location.y = field_positions->thirdBaseRun.y;
+            match->playerInfo[runnerIndex].tPI.location.z = field_positions->thirdBaseRun.z;
+            match->playerInfo[runnerIndex].tPI.lastLocation.x = match->playerInfo[runnerIndex].tPI.location.x;
+            match->playerInfo[runnerIndex].tPI.lastLocation.y = match->playerInfo[runnerIndex].tPI.location.y;
+            match->playerInfo[runnerIndex].tPI.lastLocation.z = match->playerInfo[runnerIndex].tPI.location.z;
+            match->playerInfo[runnerIndex].tPI.orientation.x = -match->playerInfo[runnerIndex].tPI.location.x;
+            match->playerInfo[runnerIndex].tPI.orientation.y = 0.0f;
+            match->playerInfo[runnerIndex].tPI.orientation.z = -match->playerInfo[runnerIndex].tPI.location.x;
+        }
+
+        // set other runners next to the third base.
+        for (i = hrcs->runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
+            int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
+            if (index != -1) {
+                match->playerInfo[index].tPI.location.x =
+                    field_positions->thirdBaseRun.x - 2.0f - (i - (hrcs->runnerBatterPairCounter + 1)) * 1.5f;
+                match->playerInfo[index].tPI.location.y = field_positions->thirdBaseRun.y;
+                match->playerInfo[index].tPI.location.z = field_positions->thirdBaseRun.z;
+                match->playerInfo[index].tPI.lastLocation.x = match->playerInfo[index].tPI.location.x;
+                match->playerInfo[index].tPI.lastLocation.y = match->playerInfo[index].tPI.location.y;
+                match->playerInfo[index].tPI.lastLocation.z = match->playerInfo[index].tPI.location.z;
+                match->playerInfo[index].tPI.orientation.x = -match->playerInfo[index].tPI.location.x;
+                match->playerInfo[index].tPI.orientation.y = 0.0f;
+                match->playerInfo[index].tPI.orientation.z = -match->playerInfo[index].tPI.location.x;
+            }
+        }
+    }
 }

@@ -10,7 +10,6 @@
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "fixtures.h"
-#include "common_logic.h"
 #include "cup.h"
 #include "state_validator.h"
 

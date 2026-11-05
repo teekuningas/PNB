@@ -8,7 +8,7 @@
 */
 
 #include "ball_catch.h"
-#include "common_logic.h"
+#include "player_motion.h"
 #include "vector_math.h"
 
 #define CATCH_DISTANCE 2.6f

@@ -8,8 +8,10 @@
 */
 
 #include "fielder_behaviours.h"
-#include "common_logic.h"
+#include "player_motion.h"
 #include "vector_math.h"
+
+static void move_ranked_to_catch(MatchSession* match);
 
 #define EVALUATION_CONSTANT_IN_AIR 200.0f
 #define EVALUATION_CONSTANT_AFTER_HIT_ONCE 5.0f
@@ -248,4 +250,74 @@ void rank_players_and_move_them(MatchSession* match)
         move_ranked_to_catch(match);
     }
     match->chase_replan = CHASE_REPLAN_NONE;
+}
+
+static void move_ranked_to_catch(MatchSession* match)
+{
+    int i;
+
+    for (i = 0; i < RANKED_FIELDERS_COUNT; i++) {
+        int index = match->catchingState.chase_ranking[i];
+        // controlled player wont get the chance.
+        if (index != match->catchingState.controlled_fielder &&
+            match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
+            // if we are throwing ( towards a base ) we dont want the baseman there to start moving
+            // as it would be nice that he is at the base when ball is caught if baserunner is going there.
+            if (match->ballInfo.thrown_to == BASE_NONE ||
+                (match->fielding_posts.baseman[match->ballInfo.thrown_to] != index)) {
+                int k;
+                int done = 0;
+                // and we have special condition not to move any basemen
+                // automatically at all.
+                for (k = 0; k < BASE_COUNT; k++) {
+                    if (match->fielding_posts.baseman[k] == index) {
+                        done = 1;
+                    }
+                }
+                if (done == 0) {
+                    // set busycatching flag, and move player towards the target point
+                    // that has been specified beforehand.
+                    match->playerInfo[match->catchingState.chase_ranking[i]].cTPI.busyCatching = 1;
+                    move_to_target(match->playerInfo, index, &match->catchingState.ballTargetPoint);
+                }
+            }
+        }
+    }
+}
+
+void request_chase_replan(MatchSession* match, ChaseReplan request)
+{
+    if (request > match->chase_replan) match->chase_replan = request;
+}
+
+void change_player(MatchSession* match)
+{
+    // this is called by user explicitly and sometimes after updating change_player lists — both only
+    // with nobody holding the ball, so never during a windup. Not while a pitched ball is in the air.
+    if (!match->ballInfo.pitch_in_flight) {
+        // player will start randomly floating after control changes to next player.
+        if (match->catchingState.controlled_fielder != -1) {
+            stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
+        }
+
+        if (match->catchingState.chase_ranking[match->catchingState.ranking_cursor] !=
+            -1) { // set control to new index from the array
+            match->catchingState.controlled_fielder =
+                match->catchingState.chase_ranking[match->catchingState.ranking_cursor];
+            // and set him to run
+            match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 1;
+            // logic about coming back from replacement if controlled
+            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
+                match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage = REPLACEMENT_IDLE;
+            }
+            // same for busyCatching.
+            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching == 1) {
+                match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching = 0;
+            }
+            // move others to catch( so that the previous one for example doesnt just stop if its near the ball )
+            move_ranked_to_catch(match);
+            // stop player who has the selection now
+            stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
+        }
+    }
 }

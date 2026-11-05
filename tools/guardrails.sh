@@ -119,8 +119,10 @@ globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
 # became five owners' headers plus SIMULATE's (ball flight, the catch, fielder behaviours, body movement,
 # the fenced drawn state), and a header that names MatchSession can only name the monolith until it
 # dissolves. execute_actions' split cost nothing (ingest.h and actualize.h reach it through the actions'
-# headers). The dissolution — the next step of the same session — pays these back with the rest.
-ratchet "files including globals.h" "$globals_includers" 92
+# headers). The dissolution pays these back with the rest.
+# 92 → 91 the same day: common_logic.c dissolved into its owners — two new headers (player_motion.h,
+# runner_paths.h), the rest joining headers that already existed — for −3.
+ratchet "files including globals.h" "$globals_includers" 91
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:

@@ -10,7 +10,6 @@
 #include "render.h"
 #include "font.h"
 #include "game_screen.h"
-#include "common_logic.h"
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"

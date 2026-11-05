@@ -5,7 +5,6 @@ int get_active_batter_index(const MatchSession* game)
 {
     if (!game) return -1;
 
-    // Based on game_frame.c and common_logic.c:
     // Indices 0 to 11 (PLAYERS_IN_TEAM + JOKER_COUNT) are always the current batting team.
     // Indices 12 to 20 are the fielding team.
 

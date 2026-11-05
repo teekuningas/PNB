@@ -1,5 +1,6 @@
 #include "game_consolidation.h"
-#include "common_logic.h"
+#include "player_motion.h"
+#include "runner_paths.h"
 #include "game_setup.h" // For setRunnerAndBatter and initialization helpers
 #include "base_logic.h"
 #include "base_control.h"
@@ -7,6 +8,8 @@
 #include "rules_pure/rules_strikes.h"
 #include "game_reset.h"
 #include "referee.h"
+
+static void calculate_free_walk(MatchSession* match, const RefereeState* referee);
 
 // ===============================================================================================
 // FORWARD DECLARATIONS
@@ -403,3 +406,59 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
     game_conclusion->period3Runs[0] = scoreboard->teams[0].period3Runs;
     game_conclusion->period3Runs[1] = scoreboard->teams[1].period3Runs;
 }
+
+static void calculate_free_walk(MatchSession* match, const RefereeState* referee)
+{
+    int i;
+    BaseID maxBaseAtPitchStart = BASE_NONE;
+    BaseID maxBaseId = BASE_NONE;
+    int maxIndex = -1;
+    // we go throush every (nonwounded) candidate and check who has the biggest base value
+    // if there are many of those who have same base value, we will pick the one who has
+    // the biggest baseAtPitchStart value. if both are same for some reason
+    // then the selection will be quite random but shouldn't happen often and shouldn't be a big deal
+    // either.
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        int index = i;
+        if (match->playerInfo[index].bTPI.baseId != BASE_NONE &&
+            match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
+            BaseID currentBaseId = match->playerInfo[index].bTPI.baseId;
+
+            // SANITY CHECK: If player is at HOME base, they MUST be the active batter.
+            int batterIndex = get_active_batter_index(match);
+            if (currentBaseId == BASE_HOME && index != batterIndex) {
+                printf(
+                    "[CRITICAL LOGIC ERROR] Ghost Runner detected! Player %d is at BASE_HOME but batterIndex is %d. "
+                    "Ignoring.\n",
+                    index, batterIndex
+                );
+                continue;
+            }
+
+            // Use base_cmp to compare bases semantically (replaces >=)
+            if (base_cmp(currentBaseId, maxBaseId) >= 0) {
+                if (currentBaseId == maxBaseId) {
+                    if (base_cmp(referee->battingPlayers[index].baseAtPitchStart, maxBaseAtPitchStart) > 0) {
+                        maxBaseId = currentBaseId;
+                        maxBaseAtPitchStart = referee->battingPlayers[index].baseAtPitchStart;
+                        maxIndex = index;
+                    }
+                } else {
+                    maxBaseId = currentBaseId;
+                    maxBaseAtPitchStart = referee->battingPlayers[index].baseAtPitchStart;
+                    maxIndex = index;
+                }
+            }
+        }
+    }
+    match->free_walk.runner = maxIndex;
+    if (maxIndex != -1)
+        match->free_walk.from = match->playerInfo[maxIndex].bTPI.baseId;
+    else
+        match->free_walk.from = BASE_NONE;
+}
+/*
+    Here we initialize all the locations and velocities so that players will be in their correct
+    positions and orientations on the field and ball looks like its thrown to pitcher. Models
+    are updated also. Before calling this the fielding team must have its position-attributes filled.
+*/

@@ -60,4 +60,7 @@ void update_batting(
     int passDeclared, int* playSoundEffect
 );
 
+// The batter has reached the ready spot: he takes the ready pose, and a batting cycle opens if none is.
+void prepare_batter(MatchSession* match);
+
 #endif

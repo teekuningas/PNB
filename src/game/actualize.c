@@ -8,7 +8,8 @@
 */
 
 #include "actualize.h"
-#include "common_logic.h"
+#include "runner_paths.h"
+#include "fielder_behaviours.h"
 #include "actions/pitching_system.h"
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"

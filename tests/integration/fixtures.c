@@ -4,7 +4,6 @@
 #include "game_setup.h"
 #include "referee.h"
 #include "game_frame.h"
-#include "common_logic.h"
 #include "game_consolidation.h"
 #include "ai/ai_controller.h"
 #include <stdlib.h>

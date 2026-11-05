@@ -1,7 +1,7 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "common_logic.h"
+#include "game_reset.h"
 #include "globals.h"
 
 /**

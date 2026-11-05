@@ -9,7 +9,6 @@
 #include "vector_math.h"
 #include "base_control.h"
 #include "rules_side_change.h"
-#include "common_logic.h"
 
 // Referee-specific timing thresholds (in frames)
 // BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from globals.h

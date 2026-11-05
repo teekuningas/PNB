@@ -30,12 +30,23 @@
 #include "simulate.h"
 
 #include "game_frame.h"
-#include "common_logic.h"
 #include "game_setup.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
+
+void clear_frame_events(GameEvents* events)
+{
+    events->catchMade = 0;
+    events->playerArrivedAtBase = 0;
+    events->pitchReleased = 0;
+    events->ballHitByBat = 0;
+    events->ballMissedByBat = 0;
+    events->ballHitGround = 0;
+    events->freeWalkAccepted = 0;
+    events->batterEntered = 0;
+}
 
 int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 {
