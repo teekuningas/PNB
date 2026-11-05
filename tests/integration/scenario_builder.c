@@ -3,7 +3,8 @@
 #include "fixtures.h"
 #include "game_setup.h"
 #include "game_consolidation.h"
-#include "game_manipulation.h"
+#include "simulate.h"
+#include "ball_flight.h"
 #include "game_frame.h"
 #include "common_logic.h"
 #include "referee.h"
@@ -297,7 +298,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
                 &ctx->state->playSoundEffect
             );
         }
-        game_manipulation(
+        simulate(
             ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
         );
 

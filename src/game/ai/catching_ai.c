@@ -153,8 +153,8 @@ void update_catching_ai(
     // releases the ball when it completes. throwStage / AI_THROW_LOCK / the meter-watch / the
     // timeout-abort fallback all deleted with it.)
 
-    // if noone has ball and someone is controlled, ai will try to move towards the target point calculated
-    // in game_manipulation.
+    // if noone has ball and someone is controlled, ai will try to move towards the target point the
+    // fielders' chase ranking predicted (fielder_behaviours.c).
     if (match->ballInfo.holder == -1 && match->catchingState.controlled_fielder != -1) {
         // gate on the real execution-side mutex (no catching action in progress) — the AI's duplicate
         // aiActionEventLock/aiLockUpdate is gone.

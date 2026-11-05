@@ -12,7 +12,6 @@
 #include "ingest.h"
 #include "actions/batting_system.h"
 #include "common_logic.h"
-#include "vector_math.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/rules_batting_order.h"

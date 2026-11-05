@@ -1,7 +1,7 @@
 #include "actions/batting_system.h"
 #include "common_logic.h"
 #include "vector_math.h"
-#include "actualize.h"
+#include "ball_flight.h"
 #include "actions/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include "actions_pure/swing_geometry.h"

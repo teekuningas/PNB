@@ -54,7 +54,7 @@ void update_controlled_fielder_movement(MatchSession* match)
     float dz = match->catchingState.controlledMoveTarget.z - player->tPI.location.z;
 
     // Arrival is adjudicated here and nowhere else. looksForTarget is the AUTO-movers' arrival
-    // machinery in game_manipulation (runners on their paths, ranked fielders chasing a ball); a
+    // machinery in SIMULATE (runners on their paths, ranked fielders chasing a ball); a
     // player that was auto-chasing a moment before it became the controlled one would otherwise be
     // walked by one mover and stopped by another, on two different notions of "there".
     player->cPI.looksForTarget = 0;
@@ -76,7 +76,7 @@ void update_controlled_fielder_movement(MatchSession* match)
     float norm = (float)sqrt(dx * dx + dz * dz);
     if (norm < EPSILON) norm = 1.0f;
 
-    // Facing along the path. For a fielder NOT carrying the ball, game_manipulation turns this toward
+    // Facing along the path. For a fielder NOT carrying the ball, body_movement.c turns this toward
     // the ball again later in the same frame — the override the key-driven path lived under too, kept
     // unchanged here.
     player->tPI.orientation.x = dx;

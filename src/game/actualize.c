@@ -9,14 +9,10 @@
 
 #include "actualize.h"
 #include "common_logic.h"
-#include "vector_math.h"
 #include "actions/pitching_system.h"
 #include "actions/batting_system.h"
 #include "actions/throwing_system.h"
 #include "actions/fielder_movement.h"
-#include "base_control.h"
-#include "rules_pure/player_utils.h"
-#include "rules_pure/rules_batting_order.h"
 
 static void take_free_walk_decision(
     MatchSession* match, const Scoreboard* scoreboard, const FieldPositions* fieldPositions, int accepted
@@ -139,16 +135,6 @@ static void take_free_walk_decision(
     }
     // no more decision to make.
     match->offers.free_walk = 0;
-}
-
-void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
-{
-    // Make ball visible and moving
-    ballInfo->visible = 1;
-    ballInfo->moving = 1;
-
-    // Set the velocity
-    vec3_set_xyz(&(ballInfo->velocity), x, y, z);
 }
 
 // Base running — the shared actualizer for the RunIntent command (set by the human in

@@ -13,6 +13,5 @@ void actualize(
 );
 
 void init_actualization(MatchSession* match);
-void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z);
 
 #endif /* ACTUALIZE_H */

@@ -1,18 +1,22 @@
 /*
-    game_frame.c — The per-frame game pipeline.
+    game_frame.c — the per-frame game pipeline, the tick.
 
-    Each frame executes 7 stages in strict order:
-      1. Control         (action_invocations + ai_update) — EVERY producer, reading the same settled world,
-                         writing nothing but value messages into its own team's intent channel
-      2. Physics & Logic (execute_actions: INGEST the channels, then actualize; + game_manipulation)
-      3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
-   Scoreboard
-      4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
-   WRITES: PlayerInfo, the offers to the batting side, the free-walk entitlement, the ball's flight,
-   the at-bat, the home-run camera cue
-      5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
-      6. Snapshot        (debug)
-      7. Cleanup         (clear_frame_events)
+    Each frame runs its stages in strict order, each named for its role:
+      1. CONTROL      action_invocations + ai_update — every producer, reading the same settled world,
+                      writing nothing but value messages into its own team's intent channel
+      2. INGEST       ingest_intents — the gate: drains the channels, asks every permission, returns the
+                      tick's commands
+      3. ACTUALIZE    actualize — the engine's own actualization order over those commands
+      4. SIMULATE     simulate — the physical step: the ball, the catch, the fielders, the bodies; the
+                      ground, the catch and the arrivals are detected inside the steps that make them
+      5. ADJUDICATE   update_referee — WRITES the legal world: RefereeState, HalfInningState,
+                      BetweenPitchState, Scoreboard, HomeRunContestState
+      6. ENFORCE      consolidation_update — READS the legal world (const); WRITES the bodies, the offers
+                      to the batting side, the free-walk entitlement, the ball's flight, the at-bat, the
+                      home-run camera cue, and performs the reset recipes
+      7. SETTLE       referee_finalize — WRITES RefereeState (RESETTING→NONE only), after the resets
+      8. VALIDATE     the pitch-start snapshot and the state validator (debug)
+      9. CLEAR        clear_frame_events
 */
 
 #include "globals.h"
@@ -23,7 +27,7 @@
 #include "action_invocations.h"
 #include "ai/ai_controller.h"
 #include "game_consolidation.h"
-#include "game_manipulation.h"
+#include "simulate.h"
 
 #include "game_frame.h"
 #include "common_logic.h"
@@ -86,27 +90,32 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     );
     ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController, &stateInfo->channels);
 
-    // 2. Physics & Logic
     // StateInfo is destructured here (the assembly point): each stage receives exactly the
     // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
     // geometry, the tick's input (the channels) and its one output — a signature is its complete
-    // edge list. The client's input memory is not among them: only stage 1 ever names it.
-    IngestedCommands commands = ingest_intents(game, rules, stateInfo->fieldPositions, &stateInfo->channels);
-    actualize(game, rules, stateInfo->fieldPositions, &commands, &stateInfo->playSoundEffect);
-    game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
+    // edge list. The client's input memory is not among them: only CONTROL ever names it.
 
-    // 3. Referee (Legal State Authority)
-    // Runs AFTER physics to ensure legal state matches physical events
+    // 2. INGEST — every controller's declarations, judged against the world as it stands now. After this
+    // line the channels are empty and no intent-shaped thing is left to read; what survives is a local
+    // of this tick, handed to the next stage and gone with the frame.
+    IngestedCommands commands = ingest_intents(game, rules, stateInfo->fieldPositions, &stateInfo->channels);
+
+    // 3. ACTUALIZE — the engine's own order, whatever order the messages came in.
+    actualize(game, rules, stateInfo->fieldPositions, &commands, &stateInfo->playSoundEffect);
+
+    // 4. SIMULATE — the physical world takes its step.
+    simulate(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
+
+    // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
+    // pronounces what it means.
     update_referee(
         stateInfo->match, stateInfo->fieldPositions, &rules->referee, &rules->halfInningState,
         &rules->betweenPitchState, &rules->scoreboard, &rules->homeRunContestState, &stateInfo->announcement
     );
 
-    // 4. Consolidation (Reaction Phase)
-    // - Updates Game Flow (innings, user prompts)
-    // - Handles Physical Resets (Foul Play)
-    // - Enforces Legal State (Outs, Scoring)
-    // Referee-owned state passed via GameRulesState — consolidation reads but minimally writes.
+    // 6. ENFORCE — the legal decisions made physical: the burnt and the scored leave the field, the
+    // batting side is asked its questions, and a reset the referee called for is performed. It reads
+    // the legal world const; only the referee writes it.
     ConsolidationOutput consolidation_output;
     consolidation_update(
         game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo,
@@ -120,12 +129,11 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         stateInfo->updated = 0;
     }
 
-    // 5. Referee Finalize (Post-Consolidation)
-    // Handles RESETTING→NONE transitions after consolidation has performed
-    // physical resets. Scans the new physical world and establishes legal tracking.
+    // 7. SETTLE — the referee closes the RESETTING→NONE handshake once the resets are done, and
+    // rescans the new physical world to establish its legal tracking.
     referee_finalize(stateInfo->match, &rules->referee, &rules->betweenPitchState);
 
-    // 6. Capture snapshot after all updates when pitch is released
+    // 8. VALIDATE — capture a snapshot when a pitch is released, then check the state's invariants.
     if (stateInfo->match->gameEvents.pitchReleased) {
         state_validator_capture_snapshot(stateInfo, "PITCH_START");
     }
@@ -136,7 +144,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         stateInfo->paused = 1;
     }
 
-    // 7. Clear transient events for the next frame
+    // 9. CLEAR — the frame's events end with the frame.
     clear_frame_events(&stateInfo->match->gameEvents);
     return 1;
 }

@@ -1,6 +1,5 @@
 #include "game_consolidation.h"
 #include "common_logic.h"
-#include "game_manipulation.h"
 #include "game_setup.h" // For setRunnerAndBatter and initialization helpers
 #include "base_logic.h"
 #include "base_control.h"

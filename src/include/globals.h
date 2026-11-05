@@ -528,7 +528,8 @@ typedef struct _CatchingTeamState {
 
     // Where the engine reckons the ball can next be met: the prediction it ranks fielders against
     // and walks the auto-chasers to, and the point a catching controller aims its fielder at.
-    // Computed each frame in game_manipulation from the ball's flight.
+    // Computed from the ball's flight by the fielders' chase ranking (fielder_behaviours.c), whenever a
+    // chase re-plan is asked for — not every frame.
     //
     // It lived in CameraState until the movement slice, which was simply the wrong drawer — a
     // fielding fact filed with the view vectors. Nothing about the camera ever read it; the comment
@@ -786,7 +787,7 @@ typedef struct _HalfInningState {
 
 // MILESTONE 16 (Phase 1): Transient event notifications
 // Events are set this frame, cleared next frame
-// Written by: execute_actions.c, game_manipulation.c
+// Written by: the actualizers (actualize.c, actions/) and SIMULATE (ball_flight.c, ball_catch.c, body_movement.c)
 // Read by: referee.c, others
 typedef struct _GameEvents {
     // Event flags (cleared each frame)

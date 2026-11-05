@@ -114,7 +114,7 @@ static void textureSelection(const Scoreboard* scoreboard, int team, int joker, 
 static void modelSelection(const MatchSession* match, int index, ResourceManager* rm)
 {
     // and then we must select which mesh we use and call the corresponding display list.
-    // for animations we just use the animationStage, that is being updated in game_manipulation, as index
+    // for animations we just use the animationStage, that is being updated in drawn_state.c, as index
     // in mesh arrays.
     int animIndex = match->playerInfo[index].cPI.animationStage / match->playerInfo[index].cPI.animationFrequency;
     char path[128];

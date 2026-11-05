@@ -438,7 +438,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
                 pbp(o, g, r, "runner reached third");
             } else if (base == BASE_HOME_SCORED && prev == BASE_THIRD) {
                 // KNOWN OVERCOUNT (found 2026-08-17 — recorded, not fixed here).
-                // This is a PHYSICAL arrival at home, not a run: game_manipulation sets baseId to
+                // This is a PHYSICAL arrival at home, not a run: body_movement.c sets baseId to
                 // BASE_HOME_SCORED even for a runner already WOUNDED or OUT (it only preserves the
                 // state), while §41 / is_regular_run correctly denies the run to a wounded runner. So
                 // this counter — and the word "SCORED" below — can fire with no run awarded, which is

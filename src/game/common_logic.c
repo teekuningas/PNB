@@ -6,7 +6,6 @@
 #include "rng.h"
 #include "base_logic.h"
 #include "game_consolidation.h"
-#include "game_manipulation.h"
 #include "base_control.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
