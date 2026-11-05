@@ -373,7 +373,7 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
     }
 
     // Sort by baseAtPitchStart (HIGHER bases first: THIRD=3, SECOND=2, FIRST=1, HOME=0)
-    // So lead_from_base runners (higher bases) processed first, rear runners processed last and win conflicts
+    // So lead runners (higher bases) processed first, rear runners processed last and win conflicts
     for (int i = 0; i < playerCount - 1; i++) {
         for (int j = i + 1; j < playerCount; j++) {
             BaseID baseI = referee->battingPlayers[sortedPlayers[i]].baseAtPitchStart;

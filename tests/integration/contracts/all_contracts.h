@@ -3,6 +3,9 @@
 
 // Lifecycle contract tests
 int test_clear_frame_events_completeness(void);
+// SIMULATE asks the catch against the fielders where the previous tick left them
+int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void);
+int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void);
 
 // Referee reaction contract tests
 int test_referee_starts_wounding_on_catch(void);

@@ -153,10 +153,10 @@ void lead_from_base(
     if (index != -1) {
         int done = 0;
         Vector3D target;
-        // now to lead_from_base we must be either on first base or second base, as it doesnt make much sense in
+        // now to lead off we must be either on first base or second base, as it doesnt make much sense in
         // third base nor in homebase.
         if (playerInfo[index].bTPI.baseId == BASE_FIRST) {
-            // lead_from_base target is selected by adding a small step to current location to next bases' direction
+            // the lead target is selected by adding a small step to current location to next bases' direction
             // using firstBase  instead of location in the difference is because we want the step size to stay
             // same
             target.x = playerInfo[index].tPI.location.x +

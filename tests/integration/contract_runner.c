@@ -13,6 +13,8 @@ static void run_contract_tests(void)
 
     // Lifecycle contracts
     RUN_TEST(test_clear_frame_events_completeness);
+    RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
+    RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 
     // Referee reaction contracts
     RUN_TEST(test_referee_starts_wounding_on_catch);

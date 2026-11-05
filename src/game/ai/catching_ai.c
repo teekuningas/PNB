@@ -201,7 +201,7 @@ void update_catching_ai(
             // frame the drop is actualized, which stops any re-issue on its own.
             intent_push(channel, (IntentMessage){.kind = INTENT_DROP_BALL});
         }
-        // otherwise we throw or move towards a base where lead_from_base player is going. if lead_from_base player is
+        // otherwise we throw or move towards a base where the lead player is going. if the lead player is
         // going nowhere we take ball to home base.
         else {
             BaseID leadBase = BASE_NONE;
