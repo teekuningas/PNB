@@ -1,7 +1,8 @@
 #ifndef PLAYER_RENDERER_H
 #define PLAYER_RENDERER_H
 
-#include "../include/globals.h" // For MatchSession and Scoreboard
+#include "rules_state.h"
+#include "world.h"
 #include "../core/resource_manager.h"
 
 // Function to initialize player rendering resources (textures, models)

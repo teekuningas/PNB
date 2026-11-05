@@ -1,4 +1,7 @@
 #include "scripted_harness.h"
+#include "key_states.h"
+#include "world.h"
+#include "session.h"
 
 #include <stdlib.h>
 #include <string.h>

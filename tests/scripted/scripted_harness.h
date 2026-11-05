@@ -2,6 +2,9 @@
 #define SCRIPTED_HARNESS_H
 
 #include "sim_harness.h"
+#include "key_states.h"
+#include "world.h"
+#include "session.h"
 
 /**
  * @file scripted_harness.h

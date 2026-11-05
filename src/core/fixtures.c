@@ -1,4 +1,6 @@
 #include "fixtures.h"
+#include <stdlib.h>
+#include "rules_state.h"
 #include <string.h>
 
 // Default teams and controls

@@ -2,6 +2,10 @@
 #define INGEST_H
 
 #include "actions/pitching_system.h" // PitchValues — what a pitch declaration contributes
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "actions/throwing_system.h" // ThrowValues — what a throw declaration contributes
 
 // What ingestion leaves behind: this tick's commands, in engine terms. It is a local of the tick

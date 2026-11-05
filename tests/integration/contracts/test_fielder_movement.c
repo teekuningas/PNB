@@ -4,7 +4,10 @@
 #include "intent_channel.h"
 #include "ingest.h"
 #include "actualize.h"
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include <math.h>
 #include <string.h>
 #include "base_control.h"

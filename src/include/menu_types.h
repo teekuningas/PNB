@@ -1,7 +1,7 @@
 #ifndef MENU_TYPES_H
 #define MENU_TYPES_H
 
-#include "globals.h"
+#include "foundation.h"
 #include "render.h"
 #include "game_setup.h"
 #include "cup.h"

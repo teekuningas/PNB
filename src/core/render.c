@@ -1,6 +1,8 @@
 #include <time.h>
 
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "display.h"
 #include "render.h"
 
 #include "stb_image.h"

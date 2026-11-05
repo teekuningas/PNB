@@ -1,4 +1,8 @@
 #include "sim_observers.h"
+#include <stdio.h>
+#include "rules_state.h"
+#include "world.h"
+#include "ai/ai_memory.h"
 #include "actions/batting_system.h"
 #include "rules_pure/base_control.h" // BALL_MAX_OFFSET and SWING_POWER_UNITS
 #include "actions_pure/swing_geometry.h" // the launch-elevation law the swing observer re-derives

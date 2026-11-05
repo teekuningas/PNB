@@ -1,4 +1,5 @@
 #include "vector_math.h"
+#include "foundation.h"
 #include <math.h>
 
 float vec3_distance_xz(const Vector3D* a, const Vector3D* b)

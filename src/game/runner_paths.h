@@ -2,6 +2,8 @@
 #define RUNNER_PATHS_H
 
 #include "player_motion.h"
+#include "field.h"
+#include "world.h"
 
 // A batting player's movement along the bases: on to the next, back to the previous, or a lead off the
 // one he holds. One question is still asked here rather than at the gate: the batter does not leave home

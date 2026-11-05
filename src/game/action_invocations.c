@@ -1,6 +1,11 @@
 // The human controller: key states and client-local widgets in, value messages on the team's channel out.
 
-#include "globals.h"
+#include "field.h"
+#include "key_states.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "client_input.h"
 #include "action_invocations.h"
 #include "intent_channel.h"
 #include "actions/throwing_system.h"

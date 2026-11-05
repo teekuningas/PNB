@@ -1,7 +1,8 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include "globals.h"
+#include "key_states.h"
+#include "session.h"
 #include <GL/glew.h> // before GLFW, which pulls in gl.h
 #include <GLFW/glfw3.h>
 

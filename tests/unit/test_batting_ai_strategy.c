@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "rules_state.h"
 #include "batting_ai_strategy.h"
 #include <stdio.h>
 #include <math.h>

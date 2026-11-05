@@ -1,7 +1,7 @@
 #ifndef FIELDER_BEHAVIOURS_H
 #define FIELDER_BEHAVIOURS_H
 
-#include "globals.h"
+#include "world.h"
 
 // Each moving fielder learns whether he is near his post.
 void check_if_near_home_location(MatchSession* match);

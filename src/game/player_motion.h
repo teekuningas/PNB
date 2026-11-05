@@ -1,7 +1,8 @@
 #ifndef PLAYER_MOTION_H
 #define PLAYER_MOTION_H
 
-#include "globals.h"
+#include "field.h"
+#include "world.h"
 
 // A body's movement primitives: stop it, face it at the ball, walk it to a point, walk it off the field.
 // Every mover in the engine — the actualizers, the fielders' behaviours, enforcement — moves a body

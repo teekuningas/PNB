@@ -1,7 +1,8 @@
 #ifndef CATCHING_AI_STRATEGY_H
 #define CATCHING_AI_STRATEGY_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
 
 #ifdef __cplusplus
 extern "C" {

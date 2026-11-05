@@ -4,7 +4,7 @@
    the playerInfo-structure.
 */
 
-#include "globals.h"
+#include "session.h"
 #include "player.h"
 #ifndef NO_RENDER
 #include "../renderer/player_renderer.h"

@@ -1,7 +1,7 @@
 #ifndef FIELD_LAYOUT_H
 #define FIELD_LAYOUT_H
 
-#include "globals.h"
+#include "field.h"
 
 /**
  * @brief Initializes the field positions with standard Pesäpallo field dimensions.

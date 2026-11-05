@@ -1,7 +1,7 @@
 #ifndef FIELDER_MOVEMENT_H
 #define FIELDER_MOVEMENT_H
 
-#include "globals.h"
+#include "world.h"
 
 // The controlled fielder's walk — an ENGINE BEHAVIOUR, not a controller and not "AI".
 //

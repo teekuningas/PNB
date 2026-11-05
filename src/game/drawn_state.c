@@ -9,6 +9,9 @@
 */
 
 #include "drawn_state.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 #include "base_control.h"
 
 // so for animations we need to change mesh after certain intervals.

@@ -1,4 +1,5 @@
 #include "scoring_helpers.h"
+#include "rules_state.h"
 
 int should_period_end(
     const Scoreboard* sb, int batting_runs, int catching_runs, int batting_period0_runs, int catching_period0_runs

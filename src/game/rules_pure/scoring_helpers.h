@@ -1,7 +1,7 @@
 #ifndef SCORING_HELPERS_H
 #define SCORING_HELPERS_H
 
-#include "globals.h"
+#include "rules_state.h"
 
 /**
  * @brief Determines if the current period should end after a run is scored.

@@ -1,6 +1,8 @@
 #define MA_IMPLEMENTATION
 
-#include "globals.h"
+#include <stddef.h>
+#include "tick_outputs.h"
+#include "session.h"
 #include "sound.h"
 #include "miniaudio.h"
 

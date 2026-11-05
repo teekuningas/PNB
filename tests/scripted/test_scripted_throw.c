@@ -1,6 +1,9 @@
 #include "test_helpers.h"
 #include "scripted_harness.h"
-#include "globals.h"
+#include <stdio.h>
+#include "key_states.h"
+#include "world.h"
+#include "client_input.h"
 #include "actions/throwing_system.h" // THROW_WINDUP_MAX_FRAMES (release-window budget)
 #include <math.h>
 

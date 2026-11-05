@@ -5,7 +5,9 @@
 #include "ingest.h"
 #include "actualize.h"
 #include "rules_pure/player_utils.h"
-#include "globals.h"
+#include "intents.h"
+#include "world.h"
+#include "ai/ai_memory.h"
 
 /**
  * CONTRACT: the catching AI's tactical-drop intent (§30 taktinen pudotus), end to end.

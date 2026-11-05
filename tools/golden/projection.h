@@ -1,3 +1,8 @@
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
+#include "ai/ai_memory.h"
 // The version-specific half of the golden projection: how this tree's structs answer the semantic
 // questions golden.c asks. Edit THIS file when a refactor reshapes a struct, keeping every line it prints
 // the same. Values a refactor legitimately leaves stale (a union half nobody is using, a scratch field the

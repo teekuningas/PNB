@@ -1,4 +1,7 @@
 #include "game_setup.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "session.h"
 #include "rules_pure/player_utils.h"
 #include "referee.h"
 #include "rng.h"

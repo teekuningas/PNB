@@ -1,4 +1,5 @@
 #include "cup.h"
+#include <stdio.h>
 #include "rng.h"
 #include <stdlib.h>
 #include <math.h> // For log2

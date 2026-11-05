@@ -2,7 +2,10 @@
 #include "actions/batting_system.h"
 #include "scripted_harness.h"
 #include "actions/pitching_system.h"
-#include "globals.h"
+#include "field.h"
+#include "key_states.h"
+#include "world.h"
+#include "client_input.h"
 #include <math.h>
 
 /*

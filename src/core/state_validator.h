@@ -1,7 +1,7 @@
 #ifndef STATE_VALIDATOR_H
 #define STATE_VALIDATOR_H
 
-#include "globals.h"
+#include "session.h"
 
 // Initialize the validator with an output file path (or NULL to disable dumping)
 void state_validator_init(const char* jsonPath);

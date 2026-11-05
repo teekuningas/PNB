@@ -1,6 +1,10 @@
 #include <mxml.h>
 
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "team_data.h"
+#include "session.h"
 #include "fill_player_data.h"
 
 static int freeTeam(TeamData* teamData);

@@ -1,7 +1,7 @@
 #ifndef IMMUTABLE_WORLD_H
 #define IMMUTABLE_WORLD_H
 
-#include "globals.h"
+#include "session.h"
 #include "resource_manager.h"
 
 int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm);

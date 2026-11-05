@@ -1,4 +1,8 @@
 #include "actions/batting_system.h"
+#include "field.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
 #include "player_motion.h"
 #include "runner_paths.h"
 #include "fielder_behaviours.h"

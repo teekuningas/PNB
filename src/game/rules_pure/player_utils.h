@@ -1,7 +1,8 @@
 #ifndef PLAYER_UTILS_H
 #define PLAYER_UTILS_H
 
-#include "globals.h"
+#include "rules_state.h"
+#include "world.h"
 
 /**
  * @brief Finds the index of the player who is currently at bat.

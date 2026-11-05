@@ -1,7 +1,12 @@
 #include "game_consolidation.h"
+#include "tick_outputs.h"
+#include <stdio.h>
+#include "field.h"
+#include "team_data.h"
+#include "rules_state.h"
+#include "world.h"
 #include "player_motion.h"
 #include "runner_paths.h"
-#include "game_setup.h" // For setRunnerAndBatter and initialization helpers
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
@@ -21,9 +26,7 @@ static void enforce_legal_state(
 );
 static int
 handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
-static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, MenuInfo* menuInfo
-);
+static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
 
 static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
 static void apply_batter_becomes_runner(
@@ -32,7 +35,7 @@ static void apply_batter_becomes_runner(
 static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee);
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 );
 static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner);
@@ -43,7 +46,7 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
 
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
@@ -52,12 +55,13 @@ void consolidation_update(
     // Initialize output
     output->request_screen_change = 0;
     output->target_screen = SCREEN_GAME;
+    output->period_transition = PERIOD_TRANSITION_NONE;
 
     // 0. Check for Physical Resets FIRST (these reset the world)
     // If any reset happens, abort all further processing for this frame
 
     // Check for end-of-inning reset
-    if (check_end_of_inning(match, field_positions, team_data, game_conclusion, rules, menuInfo, output)) {
+    if (check_end_of_inning(match, field_positions, team_data, game_conclusion, rules, output)) {
         return;
     }
 
@@ -73,7 +77,7 @@ void consolidation_update(
 
     // 1. Game Flow Analysis (The Game Master)
     // Decides if we need to pause for input, etc.
-    update_game_flow(match, field_positions, rules, menuInfo);
+    update_game_flow(match, field_positions, rules);
 
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
@@ -165,9 +169,7 @@ handle_foul_play_reset(MatchSession* match, const FieldPositions* field_position
 // INTERNAL: GAME FLOW (formerly game_analysis)
 // ===============================================================================================
 
-static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, MenuInfo* menuInfo
-)
+static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
     // when player from third base starts running, we change camera view. when the situation is over we
     // wait 50 update frames, before moving to normal camera
@@ -325,7 +327,7 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
 
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, const GameRulesState* rules, MenuInfo* menuInfo, ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
@@ -344,24 +346,11 @@ static int check_end_of_inning(
         // Normal next-inning within same period — just reset physical world
         reset_for_new_half_inning(match, field_positions, team_data, rules);
     } else {
-        // Period transition — route to appropriate menu
-        switch (transition) {
-        case PERIOD_TRANSITION_INTER_PERIOD:
-            menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
-            break;
-        case PERIOD_TRANSITION_SUPER_INNING:
-            menuInfo->mode = MENU_ENTRY_SUPER_INNING;
-            break;
-        case PERIOD_TRANSITION_HOMERUN_CONTEST:
-            menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
-            break;
-        case PERIOD_TRANSITION_GAME_OVER:
+        // Period transition — the session routes to the menu this transition calls for
+        if (transition == PERIOD_TRANSITION_GAME_OVER) {
             populate_game_conclusion(game_conclusion, scoreboard, referee->periodTransitionWinner);
-            menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            break;
-        default:
-            break;
         }
+        output->period_transition = transition;
         output->request_screen_change = 1;
         output->target_screen = SCREEN_MAIN_MENU;
     }

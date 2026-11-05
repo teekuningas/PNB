@@ -1,4 +1,5 @@
 #include "intent_channel.h"
+#include "intents.h"
 
 // A full channel raises `overflowed` rather than growing or wrapping. Dropping the oldest message
 // would be the same bug with better manners: an intent silently lost is a divergence between two

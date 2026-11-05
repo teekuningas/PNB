@@ -1,7 +1,10 @@
 #ifndef REFEREE_H
 #define REFEREE_H
 
-#include "globals.h"
+#include "field.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
 
 /**
  * @brief Initialize referee by scanning the physical world.

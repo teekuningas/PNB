@@ -1,7 +1,7 @@
 #ifndef RULES_RUNS_H
 #define RULES_RUNS_H
 
-#include "globals.h"
+#include "foundation.h"
 
 /**
  * Checks if a regular run is scored (player reaches home safely).

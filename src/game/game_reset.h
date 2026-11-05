@@ -1,7 +1,10 @@
 #ifndef GAME_RESET_H
 #define GAME_RESET_H
 
-#include "globals.h"
+#include "field.h"
+#include "team_data.h"
+#include "rules_state.h"
+#include "world.h"
 
 void reset_for_new_half_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data, const GameRulesState* rules

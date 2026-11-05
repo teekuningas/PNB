@@ -1,4 +1,9 @@
 #include "sim_harness.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
+#include "client_input.h"
+#include "ai/ai_memory.h"
 
 // The test-state allocator lives in tests/integration/. Reference it by relative
 // path so the quoted include resolves there and not to src/include/fixtures.h

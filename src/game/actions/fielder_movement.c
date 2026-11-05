@@ -1,4 +1,6 @@
 #include "actions/fielder_movement.h"
+#include "field.h"
+#include "world.h"
 #include "vector_math.h"
 #include "actions/pitching_system.h" // pitch_is_being_delivered — the one honest reading of "a pitch is on"
 #include <math.h>

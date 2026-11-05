@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
 

@@ -2,7 +2,6 @@
 #define FIXTURES_H
 
 #include "game_setup.h"
-#include "globals.h"
 
 // Fixture configuration for command-line parsing
 typedef struct {

@@ -1,4 +1,7 @@
 #include "scenario_builder.h"
+#include <math.h>
+#include "field.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
 #include "simulate.h"

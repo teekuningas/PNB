@@ -1,4 +1,7 @@
 #include "ball_renderer.h"
+#include "field.h"
+#include "display.h"
+#include "world.h"
 #include "../core/render.h" // For GL-related functions and MeshObject
 #include <GL/glew.h>
 #include <GL/gl.h>

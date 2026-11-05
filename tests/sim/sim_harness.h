@@ -1,7 +1,11 @@
 #ifndef SIM_HARNESS_H
 #define SIM_HARNESS_H
 
-#include "globals.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
+#include "ai/ai_memory.h"
 #include "menu_types.h"
 #include "game_setup.h"
 

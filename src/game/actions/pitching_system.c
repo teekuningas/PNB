@@ -1,4 +1,8 @@
 #include "actions/pitching_system.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "actions/batting_system.h" // a pitch waits for a batter standing ready
 #include "rules_pure/rules_strikes.h"
 #include "player_motion.h"

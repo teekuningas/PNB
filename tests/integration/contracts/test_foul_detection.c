@@ -1,4 +1,6 @@
 #include "scenario_builder.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
 #include "referee.h"

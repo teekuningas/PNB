@@ -2,6 +2,7 @@
 #define BATTING_PHYSICS_H
 
 #include "vector_math.h"
+#include "foundation.h"
 
 /**
  * Calculates the time (in frames) for a pitch to reach the target height (usually 0).

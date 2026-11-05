@@ -1,7 +1,7 @@
 #ifndef VECTOR_MATH_H
 #define VECTOR_MATH_H
 
-#include "globals.h"
+#include "foundation.h"
 
 // Pure vector math utility functions
 // These have no side effects and don't depend on game state

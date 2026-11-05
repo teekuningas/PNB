@@ -2,6 +2,8 @@
 #define INTEGRATION_FIXTURES_H
 
 #include "immutable_world.h"
+#include "world.h"
+#include "session.h"
 
 StateInfo* setup_test_state();
 void cleanup_test_state(StateInfo* state);

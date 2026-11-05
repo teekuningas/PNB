@@ -1,7 +1,9 @@
 #ifndef GAME_FRAME_H
 #define GAME_FRAME_H
 
-#include "globals.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 
@@ -13,8 +15,5 @@ void draw_game_frame(
     const MatchSession* match, const Scoreboard* scoreboard, int paused, double alpha, ResourceManager* rm
 );
 int clean_game_frame(StateInfo* stateInfo);
-
-// CLEAR, the tick's last stage: the frame's events end with the frame.
-void clear_frame_events(GameEvents* events);
 
 #endif /* GAME_FRAME_H */

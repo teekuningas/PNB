@@ -1,7 +1,7 @@
 #ifndef BALL_FLIGHT_H
 #define BALL_FLIGHT_H
 
-#include "globals.h"
+#include "world.h"
 
 // A loose ball flies one step and meets the fence and the ground; ballHitGround is raised here.
 void update_ball_status(MatchSession* match);

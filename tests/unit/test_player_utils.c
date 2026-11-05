@@ -1,6 +1,7 @@
 #include "test_helpers.h"
 #include "player_utils.h"
-#include "globals.h"
+#include "rules_state.h"
+#include "world.h"
 #include <string.h>
 
 int test_get_active_batter_index(void)

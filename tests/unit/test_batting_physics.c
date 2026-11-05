@@ -3,6 +3,7 @@
 // — that the elevation law behaves — is pinned harder in test_swing_geometry.c, which proves the law
 // that replaced them reproduces them exactly over the whole reachable grid.
 #include "test_helpers.h"
+#include "foundation.h"
 #include "batting_physics.h"
 #include <stdio.h>
 #include <math.h>

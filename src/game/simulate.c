@@ -8,6 +8,9 @@
 */
 
 #include "simulate.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 #include "ball_flight.h"
 #include "ball_catch.h"
 #include "fielder_behaviours.h"

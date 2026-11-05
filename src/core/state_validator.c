@@ -1,4 +1,8 @@
 #include "state_validator.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

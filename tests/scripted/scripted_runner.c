@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include <stdio.h>
 #include "all_scripted.h"
 
 int tests_run = 0;

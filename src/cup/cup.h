@@ -1,8 +1,6 @@
 #ifndef CUP_H
 #define CUP_H
 
-#include "globals.h"
-
 typedef int TeamID;
 
 #define CUP_MATCH_NO_WINNER ((TeamID) - 1)

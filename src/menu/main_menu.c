@@ -1,4 +1,9 @@
-#include "globals.h"
+#include <stddef.h>
+#include "display.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "session.h"
 #include "render.h"
 #include "font.h"
 #include "rng.h"

@@ -8,6 +8,10 @@
 */
 
 #include "actualize.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "runner_paths.h"
 #include "fielder_behaviours.h"
 #include "actions/pitching_system.h"

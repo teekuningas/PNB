@@ -1,6 +1,6 @@
 #include "test_helpers.h"
 #include "base_logic.h"
-#include "globals.h"
+#include "world.h"
 #include <string.h>
 
 int test_base_sequence(void)

@@ -1,7 +1,9 @@
 #ifndef BASE_CONTROL_H
 #define BASE_CONTROL_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 /**
  * @brief Determines which player currently "controls" (is safe at) a given base.

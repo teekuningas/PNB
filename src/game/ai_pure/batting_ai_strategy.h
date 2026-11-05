@@ -1,7 +1,7 @@
 #ifndef BATTING_AI_STRATEGY_H
 #define BATTING_AI_STRATEGY_H
 
-#include "globals.h"
+#include "rules_state.h"
 
 typedef struct {
     int style; // 0=bunt, 1=normal, 2=wound

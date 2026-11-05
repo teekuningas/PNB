@@ -1,4 +1,6 @@
 #include "test_helpers.h"
+#include "field.h"
+#include "rules_state.h"
 #include "catching_ai_strategy.h"
 #include "base_logic.h"
 #include <math.h>

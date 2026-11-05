@@ -1,7 +1,11 @@
 #ifndef ACTION_INVOCATIONS_H
 #define ACTION_INVOCATIONS_H
 
-#include "globals.h"
+#include "key_states.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "client_input.h"
 
 // The human half of the CONTROL stage: key states in, declared intent out.
 // Reads scoreboard (const) for team assignment, referee (const) for base ownership (to interpret a

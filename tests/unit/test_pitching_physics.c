@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "pitching_physics.h"
 #include <stdio.h>
 #include <math.h>

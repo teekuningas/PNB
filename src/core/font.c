@@ -9,7 +9,6 @@
     now (menu_helpers.c, game_screen.c), so those copies are gone.
 */
 
-#include "globals.h"
 #include "render.h"
 
 #include "font.h"

@@ -1,7 +1,8 @@
 #ifndef MAIN_MENU_H
 #define MAIN_MENU_H
 
-#include "globals.h"
+#include "key_states.h"
+#include "session.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "render.h"

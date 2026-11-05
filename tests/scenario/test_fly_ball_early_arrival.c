@@ -1,4 +1,6 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
+#include "world.h"
 #include "actions/batting_system.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"

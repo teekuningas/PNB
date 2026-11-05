@@ -1,7 +1,12 @@
 #include "game_reset.h"
+#include <math.h>
+#include "field.h"
+#include "team_data.h"
+#include "rules_state.h"
+#include "world.h"
 #include "player_motion.h"
 #include "actions/batting_system.h"
-#include "game_frame.h"
+#include "frame_events.h"
 #include "referee.h"
 #include "rng.h"
 #include "rules_pure/player_utils.h"

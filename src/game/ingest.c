@@ -10,6 +10,10 @@
 */
 
 #include "ingest.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "actions/batting_system.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"

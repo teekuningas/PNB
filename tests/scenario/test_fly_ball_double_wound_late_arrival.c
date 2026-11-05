@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>

@@ -19,7 +19,10 @@
       9. CLEAR        clear_frame_events
 */
 
-#include "globals.h"
+#include <stdio.h>
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include "ball.h"
 #include "player.h"
 #include "ingest.h"
@@ -28,6 +31,7 @@
 #include "ai/ai_controller.h"
 #include "game_consolidation.h"
 #include "simulate.h"
+#include "frame_events.h"
 
 #include "game_frame.h"
 #include "game_setup.h"
@@ -36,16 +40,26 @@
 #include "referee.h"
 #include "rules_pure/player_utils.h"
 
-void clear_frame_events(GameEvents* events)
+// The menu a period's end opens, from why it ended. The session's routing, not the engine's: ENFORCE only says
+// that the game screen is done and which transition finished it.
+static void route_menu(MenuInfo* menuInfo, PeriodTransitionType transition)
 {
-    events->catchMade = 0;
-    events->playerArrivedAtBase = 0;
-    events->pitchReleased = 0;
-    events->ballHitByBat = 0;
-    events->ballMissedByBat = 0;
-    events->ballHitGround = 0;
-    events->freeWalkAccepted = 0;
-    events->batterEntered = 0;
+    switch (transition) {
+    case PERIOD_TRANSITION_INTER_PERIOD:
+        menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
+        break;
+    case PERIOD_TRANSITION_SUPER_INNING:
+        menuInfo->mode = MENU_ENTRY_SUPER_INNING;
+        break;
+    case PERIOD_TRANSITION_HOMERUN_CONTEST:
+        menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
+        break;
+    case PERIOD_TRANSITION_GAME_OVER:
+        menuInfo->mode = MENU_ENTRY_GAME_OVER;
+        break;
+    default:
+        break;
+    }
 }
 
 int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
@@ -129,12 +143,12 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // the legal world const; only the referee writes it.
     ConsolidationOutput consolidation_output;
     consolidation_update(
-        game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo,
-        &consolidation_output
+        game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, &consolidation_output
     );
 
     // Handle screen transition requests from consolidation
     if (consolidation_output.request_screen_change) {
+        route_menu(menuInfo, consolidation_output.period_transition);
         stateInfo->screen = consolidation_output.target_screen;
         stateInfo->changeScreen = 1;
         stateInfo->updated = 0;

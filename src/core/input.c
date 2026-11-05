@@ -3,7 +3,8 @@
    places when needed.
 */
 
-#include "globals.h"
+#include "key_states.h"
+#include "session.h"
 #include "input.h"
 
 static int buttonsJustReleased[3][KEY_COUNT];

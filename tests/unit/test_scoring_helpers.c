@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "rules_state.h"
 #include "scoring_helpers.h"
 #include <string.h>
 

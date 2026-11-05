@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include <stdio.h>
 #include "fixtures.h"
 #include "contracts/all_contracts.h"
 

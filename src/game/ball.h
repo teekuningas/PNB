@@ -1,7 +1,7 @@
 #ifndef BALL_H
 #define BALL_H
 
-#include "globals.h"
+#include "world.h"
 #include "resource_manager.h"
 
 int init_ball(ResourceManager* rm);

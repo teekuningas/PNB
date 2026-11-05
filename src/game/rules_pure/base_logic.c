@@ -1,4 +1,6 @@
 #include "base_logic.h"
+#include "field.h"
+#include "world.h"
 
 BaseID base_get_next(BaseID id)
 {

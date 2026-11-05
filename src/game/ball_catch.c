@@ -8,6 +8,9 @@
 */
 
 #include "ball_catch.h"
+#include "field.h"
+#include "tick_outputs.h"
+#include "world.h"
 #include "player_motion.h"
 #include "vector_math.h"
 

@@ -2,6 +2,7 @@
 #define TEST_HELPERS_H
 
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 // Simple test framework macros

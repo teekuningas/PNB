@@ -6,7 +6,9 @@
 #ifndef GAME_OVER_MENU_H
 #define GAME_OVER_MENU_H
 
-#include "globals.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "team_data.h"
 #include "render.h"
 #include "resource_manager.h"
 #include "menu_types.h"

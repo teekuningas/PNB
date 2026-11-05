@@ -1,7 +1,11 @@
 #ifndef AI_CONTROLLER_H
 #define AI_CONTROLLER_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "ai/ai_memory.h"
 
 // The AI half of the CONTROL stage (pipeline stage 1, at the frame top — game_frame.c), the mirror of
 // action_invocations. Reads the settled World const, writes its own private memory and each AI team's

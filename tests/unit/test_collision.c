@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "collision.h"
 #include "vector_math.h"
 #include <stdio.h>

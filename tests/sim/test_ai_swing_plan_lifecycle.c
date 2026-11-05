@@ -1,4 +1,8 @@
 #include "test_helpers.h"
+#include "tick_outputs.h"
+#include <stdio.h>
+#include "world.h"
+#include "ai/ai_memory.h"
 #include "sim_harness.h"
 #include "sim_observers.h"
 

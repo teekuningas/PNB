@@ -1,4 +1,5 @@
 #include "rules_strikes.h"
+#include "rules_state.h"
 
 PitchResult determine_pitch_result(float ball_x, float plate_width)
 {

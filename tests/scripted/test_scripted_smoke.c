@@ -1,6 +1,7 @@
 #include "test_helpers.h"
 #include "scripted_harness.h"
-#include "globals.h"
+#include <stdio.h>
+#include "key_states.h"
 
 /*
  * Scripted-human harness — PLUMBING smoke tests only (Phase 0b).

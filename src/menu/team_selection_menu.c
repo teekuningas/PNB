@@ -1,4 +1,7 @@
 #include "team_selection_menu.h"
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
 #include "render.h"
 #include "font.h"
 #include "menu_types.h"

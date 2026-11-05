@@ -2,6 +2,7 @@
 #define SIM_OBSERVERS_H
 
 #include "sim_harness.h"
+#include "foundation.h"
 #include <stdio.h>
 
 /**

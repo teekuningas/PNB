@@ -2,6 +2,9 @@
 #define ACTUALIZE_H
 
 #include "ingest.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 // ACTUALIZE — stage 3 of the tick. The engine's own fixed order of actualization, reading the commands
 // INGEST left: the throw's windup, the controlled fielder's walk, control changes, drops, the pitch clock,

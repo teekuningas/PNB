@@ -76,7 +76,7 @@ other_warnings=$(($(printf '%s\n' "$warnings" | grep -c 'warning:') - dead_param
 # A signature that names a parameter it never reads over-claims its edge in the
 # dependency DAG — the mirror of the missing const. A signature is meant to be the
 # function's complete, honest edge list.
-ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 32
+ratchet "dead parameters (-Wunused-parameter)" "$dead_params" 31
 
 # A non-static function with no prototype in any header is an edge in the include
 # graph that no header records: nothing outside the file can see it declared, yet
@@ -88,41 +88,48 @@ ratchet "functions with no prototype (src/)" "$no_prototype" 0
 ratchet "other -Wall/-Wextra warnings" "$other_warnings" 0
 
 # ---------------------------------------------------------------------------
-# The include graph should become the ownership graph: a file that includes only
-# what it owns physically cannot name RefereeState. Today one 977-line header
-# hands everything to everyone. The planned foundation.h split drives this to zero.
+# The include graph is the ownership graph. Until 2026-11-05 one 1,296-line header,
+# globals.h, handed every type to every file (its last floor was 91 includers — 94 in
+# fact: three path-qualified includes the count never matched). It was split by owner
+# and deleted; every file now includes the header of every cluster it names. What that
+# buys is measured here on the CLOSURE the compiler computes (gcc -MM), so an edge cannot
+# hide behind a transitive include:
+#   - the World's header reaches neither the legal world, the tick's input, the session
+#     nor a controller's memory — code holding only world.h cannot name any of them;
+#   - no engine file reaches a controller's memory, the session, the menus, the screen
+#     or the keys. The engine is everything under src/game and src/physics except the
+#     files named below — the controllers, the client and the assembly points — so a new
+#     file is held to the engine's standard unless it is deliberately named here.
 # ---------------------------------------------------------------------------
-globals_includers=$(grep -rl '#include "globals.h"' src tests | wc -l)
-# 84 → 85 on 2026-08-24, deliberately: a new contract test that names MatchSession and a declaration
-# type. Every new file naming a World type costs one here until the foundation.h split lands, and the
-# honest options are to pay it or to hide the dependency behind a transitive include — which would
-# leave the number looking better while the coupling stayed exactly the same. Paid, not hidden.
-#
-# 85 → 87 on 2026-08-27, deliberately, for the fielder-movement slice: the engine mover's header
-# (it takes a MatchSession) and the contract test that drives it. The alternative was to leave the
-# mover inside throwing_system.c, where the key-driven version lived — a file about the throw
-# holding the walk, which is what made the movement code hard to find in the first place. The .c
-# takes globals.h through its own header, as every other file under src/game/actions does, so the
-# cost here is the honest one and not one include padded onto it.
-#
-# 87 → 88 the same day: the scripted-human test for movement, which names MatchSession exactly as
-# every other file in that tier does.
-#
-# 88 → 89 on 2026-08-28: the batter-selection contract tests, which build the §12 window and name
-# MatchSession, IntentMessage and JokerStatus to do it. The rule they exercise, rules_batting_order.c,
-# includes NOTHING and costs zero here — the price is the test that drives the engine, not the rule.
-# 89 → 88 on 2026-10-10, the controller-eviction slice: +1 for ai/ai_controller.h, the CONTROL stage's AI
-# half moving out of the execution stage's header where it never belonged, paid openly; −2 for
-# batting_ai.c and execute_actions.c, which named globals.h directly beside their own header that
-# already provides it — the house convention, not a hidden dependency.
-# 88 → 92 on 2026-11-05, Session 3a's stage split, paid openly: game_manipulation.c's one header
-# became five owners' headers plus SIMULATE's (ball flight, the catch, fielder behaviours, body movement,
-# the fenced drawn state), and a header that names MatchSession can only name the monolith until it
-# dissolves. execute_actions' split cost nothing (ingest.h and actualize.h reach it through the actions'
-# headers). The dissolution pays these back with the rest.
-# 92 → 91 the same day: common_logic.c dissolved into its owners — two new headers (player_motion.h,
-# runner_paths.h), the rest joining headers that already existed — for −3.
-ratchet "files including globals.h" "$globals_includers" 91
+NOT_ENGINE="src/game/action_invocations.c src/game/game_frame.c src/game/game_screen.c src/game/game_setup.c src/game/ball.c src/game/player.c src/game/immutable_world.c"
+FORBIDDEN_TO_ENGINE='/(client_input|ai_memory|session|menu_types|render|display|key_states)\.h$'
+engine_files=$(find src/game src/physics -name '*.c' -not -path 'src/game/ai/*' -not -path 'src/game/ai_pure/*' | sort)
+engine_leaks=0
+for f in $engine_files; do
+    case " $NOT_ENGINE " in *" $f "*) continue ;; esac
+    # A closure that cannot be computed is a failure, never an empty (and so clean) one.
+    if ! deps=$(gcc -MM $IDIR "$f" 2>/dev/null); then
+        engine_leaks=$((engine_leaks + 1))
+        problems="${problems}  $f: gcc -MM could not compute its include closure
+"
+        continue
+    fi
+    reached=$(echo "$deps" | tr ' \\' '\n\n' | grep -E "$FORBIDDEN_TO_ENGINE")
+    if [ -n "$reached" ]; then
+        engine_leaks=$((engine_leaks + 1))
+        problems="${problems}  $f can see: $(echo $reached | tr '\n' ' ')
+"
+    fi
+done
+if world_deps=$(echo '#include "world.h"' | gcc -MM $IDIR -x c - 2>/dev/null); then
+    world_reaches=$(echo "$world_deps" | tr ' \\' '\n\n' | grep -cE '/(rules_state|intents|session|client_input|ai_memory)\.h$')
+else
+    world_reaches=1
+    problems="${problems}  world.h: gcc -MM could not compute its include closure
+"
+fi
+ratchet "engine files that can see past the engine" "$engine_leaks" 0
+ratchet "headers the World's header can see past it" "$world_reaches" 0
 
 # ---------------------------------------------------------------------------
 # Function-quality audit coverage. Two separate things are checked:

@@ -1,4 +1,8 @@
 #include "test_helpers.h"
+#include <stdio.h>
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
 #include "sim_harness.h"
 #include "game_screen.h"
 #include "game_frame.h"

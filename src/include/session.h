@@ -14,18 +14,6 @@
 #include "key_states.h"
 #include "team_data.h"
 
-// game states
-typedef enum { SCREEN_LOADING, SCREEN_MAIN_MENU, SCREEN_GAME } ScreenState;
-
-typedef struct _GameConclusion {
-    int winner;
-    int period0Runs[2];
-    int period1Runs[2];
-    int period2Runs[2];
-    int period3Runs[2];
-    int isCupGame;
-} GameConclusion;
-
 // Held by pointer and defined by their owners: the cup (src/cup), and the two controllers' memories.
 typedef struct _Cup Cup;
 typedef struct _ClientInputState ClientInputState;

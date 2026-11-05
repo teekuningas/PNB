@@ -1,4 +1,8 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "session.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>

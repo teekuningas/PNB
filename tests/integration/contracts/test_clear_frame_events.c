@@ -1,6 +1,6 @@
 #include "test_helpers.h"
-#include "game_frame.h"
-#include "globals.h"
+#include "frame_events.h"
+#include "world.h"
 
 /**
  * CONTRACT: clear_frame_events clears ALL fields in GameEvents.

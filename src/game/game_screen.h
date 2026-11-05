@@ -1,7 +1,13 @@
 #ifndef GAME_SCREEN_H
 #define GAME_SCREEN_H
 
-#include "globals.h"
+#include "field.h"
+#include "tick_outputs.h"
+#include "team_data.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 

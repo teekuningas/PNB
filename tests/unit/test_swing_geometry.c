@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "field.h"
 #include "all_unit.h"
 #include "actions_pure/swing_geometry.h"
 #include "actions_pure/batting_physics.h"

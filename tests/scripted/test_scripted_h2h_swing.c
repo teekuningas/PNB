@@ -1,4 +1,8 @@
 #include "test_helpers.h"
+#include <stdio.h>
+#include "key_states.h"
+#include "world.h"
+#include "client_input.h"
 #include "scripted_harness.h"
 #include "all_scripted.h"
 #include "actions/batting_system.h"

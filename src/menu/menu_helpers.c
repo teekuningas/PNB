@@ -1,4 +1,7 @@
 #include "menu_helpers.h"
+#include <string.h>
+#include "display.h"
+#include "session.h"
 #include "resource_manager.h"
 #include "render.h"
 #include "font.h"

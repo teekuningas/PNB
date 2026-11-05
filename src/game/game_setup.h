@@ -1,7 +1,8 @@
 #ifndef GAME_SETUP_H
 #define GAME_SETUP_H
 
-#include "globals.h"
+#include "rules_state.h"
+#include "session.h"
 #include "cup.h"
 
 // Enum to represent the game mode, decoupling game logic from menu specifics.

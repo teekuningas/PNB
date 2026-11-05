@@ -1,7 +1,7 @@
 #ifndef SCENARIO_BUILDER_H
 #define SCENARIO_BUILDER_H
 
-#include "globals.h"
+#include "session.h"
 #include "menu_types.h"
 
 /**

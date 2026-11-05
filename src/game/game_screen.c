@@ -4,7 +4,16 @@
    immutable_world, but here we draw the skybox and some status information for user.
 */
 
-#include "globals.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "field.h"
+#include "display.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
 #include "immutable_world.h"
 #include "game_frame.h"
 #include "render.h"

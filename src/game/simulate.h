@@ -1,7 +1,9 @@
 #ifndef SIMULATE_H
 #define SIMULATE_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 // SIMULATE — stage 4 of the tick. The physical world takes one step: the ball flies and meets the ground,
 // a fielder may meet the ball, the fielders' behaviours, every body moves and runners arrive, the held

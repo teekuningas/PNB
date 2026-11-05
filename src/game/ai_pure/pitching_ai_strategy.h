@@ -1,8 +1,6 @@
 #ifndef PITCHING_AI_STRATEGY_H
 #define PITCHING_AI_STRATEGY_H
 
-#include "globals.h"
-
 // A pitch as the AI decides it: both values at once, which it then declares as PITCH_POWER and
 // PITCH_AIM on the same tick. A human reaches the same two values across the dance instead, one click
 // each — the engine cannot tell the difference, because only the values ever reach it.

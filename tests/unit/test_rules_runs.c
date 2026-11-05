@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "rules_runs.h"
 
 // Parameters for is_regular_run:

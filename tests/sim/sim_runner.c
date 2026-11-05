@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include <stdio.h>
 #include "all_sims.h"
 
 int tests_run = 0;
@@ -14,6 +15,7 @@ int main(void)
     RUN_TEST(test_half_inning_seed_sweep);
     RUN_TEST(test_ai_vs_ai_homerun);
     RUN_TEST(test_homerun_contest_seed_sweep);
+    RUN_TEST(test_a_period_end_opens_the_menu_its_transition_calls_for);
     RUN_TEST(test_ai_vs_ai_determinism);
     RUN_TEST(test_different_seeds_produce_different_games);
     RUN_TEST(test_sim_hash_matches_recorded_baseline);

@@ -1,7 +1,11 @@
 #include "game_over_menu.h"
+#include "tick_outputs.h"
 #include "font.h"
 #include "menu_helpers.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
 #include "input.h"
 
 MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates)

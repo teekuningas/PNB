@@ -8,6 +8,8 @@
 */
 
 #include "ball_flight.h"
+#include "field.h"
+#include "world.h"
 #include "fielder_behaviours.h"
 #include "ball_physics.h"
 #include "collision.h"

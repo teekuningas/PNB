@@ -1,4 +1,16 @@
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "field.h"
+#include "display.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
+#include "ai/ai_memory.h"
 #include "game_screen.h"
 #include "input.h"
 #include "sound.h"

@@ -1,4 +1,7 @@
 #include "base_control.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 #include "vector_math.h"
 
 int get_base_controller(const MatchSession* game, const RefereeState* referee, BaseID base)

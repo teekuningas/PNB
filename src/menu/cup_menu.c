@@ -1,4 +1,8 @@
 #include "cup_menu.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "session.h"
 #include "font.h"
 #include "render.h"
 #include "menu_helpers.h"

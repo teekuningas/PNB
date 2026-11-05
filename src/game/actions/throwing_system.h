@@ -1,7 +1,9 @@
 #ifndef THROWING_SYSTEM_H
 #define THROWING_SYSTEM_H
 
-#include "globals.h"
+#include "field.h"
+#include "intents.h"
+#include "world.h"
 
 // The throw windup is an engine-owned, deterministic clock (CatchingAction.timer) — the shared "central
 // authority" both networked peers agree on, and the throw's counterpart of the pitch windup.

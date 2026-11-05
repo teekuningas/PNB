@@ -1,7 +1,8 @@
 #ifndef BASE_LOGIC_H
 #define BASE_LOGIC_H
 
-#include "globals.h"
+#include "field.h"
+#include "world.h"
 #include <stdbool.h>
 
 /**

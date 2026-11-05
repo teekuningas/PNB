@@ -1,7 +1,7 @@
 #ifndef LOADING_SCREEN_MENU_H
 #define LOADING_SCREEN_MENU_H
 
-#include "globals.h"
+#include "session.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "render.h"

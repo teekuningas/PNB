@@ -3,7 +3,8 @@
 #include "cup.h" // Cup API used by the fixture tests below
 #include "fixtures.h"
 #include "menu_types.h"
-#include "globals.h"
+#include <stdio.h>
+#include "rules_state.h"
 #include <string.h>
 
 int tests_run = 0;

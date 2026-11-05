@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include <stdio.h>
 #include "fixtures.h"
 #include "all_scenarios.h"
 

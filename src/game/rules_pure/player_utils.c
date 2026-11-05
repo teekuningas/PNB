@@ -1,4 +1,6 @@
 #include "player_utils.h"
+#include "rules_state.h"
+#include "world.h"
 #include "rules_batting_order.h"
 
 int get_active_batter_index(const MatchSession* game)

@@ -20,7 +20,10 @@
 #include "scripted_harness.h"
 #include "sim_harness.h"
 #include "fixtures.h" // src/include/fixtures.h — the GameSetup of each mode
-#include "globals.h"
+#include "key_states.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include "action_invocations.h"
 #include "actions/batting_system.h"
 #include "rules_pure/player_utils.h"

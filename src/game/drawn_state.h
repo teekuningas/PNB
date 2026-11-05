@@ -1,7 +1,9 @@
 #ifndef DRAWN_STATE_H
 #define DRAWN_STATE_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 // Advance each player's animation and pick his mesh; a throw's recoil ends here.
 void update_models(MatchSession* match);

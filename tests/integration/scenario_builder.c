@@ -1,11 +1,16 @@
 #include "game_reset.h"
+#include <stdio.h>
+#include <math.h>
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 #include "scenario_builder.h"
 #include "fixtures.h"
 #include "game_setup.h"
 #include "game_consolidation.h"
 #include "simulate.h"
 #include "ball_flight.h"
-#include "game_frame.h"
+#include "frame_events.h"
 #include "runner_paths.h"
 #include "fielder_behaviours.h"
 #include "referee.h"
@@ -312,7 +317,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         ConsolidationOutput consolidation_output;
         consolidation_update(
             ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, rules,
-            &ctx->menu, &consolidation_output
+            &consolidation_output
         );
         // Handle screen transition in test context
         if (consolidation_output.request_screen_change) {

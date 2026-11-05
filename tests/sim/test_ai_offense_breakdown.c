@@ -1,4 +1,6 @@
 #include "test_helpers.h"
+#include "tick_outputs.h"
+#include <stdio.h>
 #include "sim_harness.h"
 #include "sim_observers.h"
 #include <stdlib.h>

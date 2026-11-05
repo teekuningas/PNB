@@ -1,4 +1,5 @@
 #include "rules_runs.h"
+#include "foundation.h"
 
 int is_regular_run(BaseID player_base, int player_is_wounded)
 {

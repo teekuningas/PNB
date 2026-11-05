@@ -1,4 +1,8 @@
 #include "test_helpers.h"
+#include <stdio.h>
+#include "intents.h"
+#include "world.h"
+#include "ai/ai_memory.h"
 #include "sim_harness.h"
 #include "game_frame.h"
 #include "ai/ai_controller.h"

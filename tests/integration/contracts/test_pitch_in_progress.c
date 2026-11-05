@@ -1,4 +1,7 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
 #include "intent_channel.h"

@@ -2,6 +2,7 @@
 #define HELP_MENU_H
 
 #include "menu_types.h"
+#include "key_states.h"
 #include "input.h"
 #include "resource_manager.h"
 

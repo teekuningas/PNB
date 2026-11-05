@@ -1,5 +1,8 @@
 #include "homerun_contest_menu.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
 #include "render.h"
 #include "font.h"
 #include "menu_helpers.h"

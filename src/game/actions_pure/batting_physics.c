@@ -1,4 +1,5 @@
 #include "batting_physics.h"
+#include "foundation.h"
 #include <math.h>
 
 int calculate_pitch_frame_time(float velocity_y, float gravity, float start_height, int tweak_frames)

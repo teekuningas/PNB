@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "rules_outs.h"
 
 int test_forced_out_at_first_base(void)

@@ -1,7 +1,10 @@
 #ifndef PITCHING_SYSTEM_H
 #define PITCHING_SYSTEM_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "pitching_physics.h"
 
 // Where the pitcher stands while the pitch is delivered.

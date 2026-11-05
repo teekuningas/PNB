@@ -1,7 +1,7 @@
 #ifndef RULES_STRIKES_H
 #define RULES_STRIKES_H
 
-#include "globals.h"
+#include "rules_state.h"
 
 /**
  * Pure function to determine the outcome of a pitch.

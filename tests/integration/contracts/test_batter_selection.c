@@ -6,7 +6,9 @@
 #include "actualize.h"
 #include "rules_pure/player_utils.h"
 #include "rules_pure/base_control.h"
-#include "globals.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
 #include "actions/batting_system.h" // the batter arc constants the aim walks across
 
 /**

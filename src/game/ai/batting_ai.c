@@ -1,4 +1,9 @@
 #include <math.h>
+#include "field.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "ai/ai_memory.h"
 #include <stdlib.h>
 
 #include "ai/batting_ai.h"

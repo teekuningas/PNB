@@ -6,6 +6,7 @@ int test_ai_vs_ai_half_inning(void);
 int test_half_inning_seed_sweep(void);
 int test_ai_vs_ai_homerun(void);
 int test_homerun_contest_seed_sweep(void);
+int test_a_period_end_opens_the_menu_its_transition_calls_for(void);
 int test_ai_vs_ai_determinism(void);
 int test_different_seeds_produce_different_games(void);
 int test_sim_hash_matches_recorded_baseline(void);

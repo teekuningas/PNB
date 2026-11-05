@@ -7,6 +7,9 @@
 */
 
 #include "runner_paths.h"
+#include <math.h>
+#include "field.h"
+#include "world.h"
 #include "vector_math.h"
 
 static void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)

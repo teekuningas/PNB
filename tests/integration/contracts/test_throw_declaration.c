@@ -5,7 +5,9 @@
 #include "ingest.h"
 #include "actualize.h"
 #include "actions/throwing_system.h"
-#include "globals.h"
+#include <stddef.h>
+#include "intents.h"
+#include "world.h"
 #include <math.h>
 
 /**

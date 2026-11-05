@@ -1,4 +1,5 @@
 #include "batting_ai_strategy.h"
+#include "rules_state.h"
 #include "actions_pure/swing_geometry.h"
 #include <math.h>
 #include <stdlib.h>

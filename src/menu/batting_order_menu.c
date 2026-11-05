@@ -1,7 +1,10 @@
 #include "batting_order_menu.h"
 #include "render.h"
 #include "font.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "session.h"
 #include "menu_types.h"
 #include "menu_helpers.h"
 #include <string.h>

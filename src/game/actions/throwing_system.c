@@ -1,4 +1,7 @@
 #include "throwing_system.h"
+#include "field.h"
+#include "intents.h"
+#include "world.h"
 #include "ball_flight.h"
 #include "player_motion.h"
 #include "fielder_behaviours.h"

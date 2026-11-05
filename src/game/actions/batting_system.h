@@ -1,7 +1,9 @@
 #ifndef BATTING_SYSTEM_H
 #define BATTING_SYSTEM_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 // The batter's arc around the pitching plate. `arc_angle` is where on it he stands, and the
 // batting physics doubles it into the launch heading (theta = -arc_angle*2), so this is AIM and

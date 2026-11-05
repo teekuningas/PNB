@@ -1,7 +1,7 @@
 #ifndef PITCHING_PHYSICS_H
 #define PITCHING_PHYSICS_H
 
-#include "globals.h" // for Vector3D
+#include "foundation.h"
 
 #define PITCH_BASE_SPEED 0.065f // dy at power 0 (minimum toss height)
 #define PITCH_POWER_CONSTANT 0.12f // extra dy per unit power

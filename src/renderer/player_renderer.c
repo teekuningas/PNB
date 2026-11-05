@@ -1,4 +1,8 @@
 #include "player_renderer.h"
+#include <stdio.h>
+#include "display.h"
+#include "rules_state.h"
+#include "world.h"
 #include "../core/render.h" // For GL-related functions and MeshObject
 #include "actions/pitching_system.h" // PITCH_WINDUP_FRAMES (windup clock → animation arc)
 #include "actions/throwing_system.h" // THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES (throw gather arc)

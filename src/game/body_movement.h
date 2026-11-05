@@ -1,7 +1,9 @@
 #ifndef BODY_MOVEMENT_H
 #define BODY_MOVEMENT_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 // Every body takes one step toward its target and faces where it should; arrivals are raised here.
 void player_location_orientation_and_targets(MatchSession* match, const FieldPositions* field_positions);

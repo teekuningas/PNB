@@ -2,6 +2,8 @@
 #define CUP_MENU_H
 
 #include "menu_types.h"
+#include "key_states.h"
+#include "session.h"
 #include "input.h" // For KeyStates
 #include "resource_manager.h"
 

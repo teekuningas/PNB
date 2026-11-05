@@ -1,4 +1,5 @@
 #include "catching_ai_strategy.h"
+#include "rules_state.h"
 #include "base_logic.h"
 #include <math.h>
 

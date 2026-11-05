@@ -1,7 +1,10 @@
 #include "test_helpers.h"
 #include "actions/batting_system.h"
 #include "scripted_harness.h"
-#include "globals.h"
+#include <stdio.h>
+#include "key_states.h"
+#include "world.h"
+#include "client_input.h"
 #include "action_invocations.h" // catching_widget_view — what the pitcher actually sees on the bar
 #include <math.h>
 

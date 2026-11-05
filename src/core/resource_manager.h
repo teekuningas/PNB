@@ -2,7 +2,6 @@
 #define RESOURCE_MANAGER_H
 
 #include <GL/glew.h>
-#include "globals.h"
 #include "loadobj.h"
 
 // Using a simple fixed-size array for now. Can be improved later.

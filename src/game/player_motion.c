@@ -7,6 +7,8 @@
 */
 
 #include "player_motion.h"
+#include "field.h"
+#include "world.h"
 #include "vector_math.h"
 
 /*

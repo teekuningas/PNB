@@ -1,6 +1,9 @@
 #include "test_helpers.h"
 #include "base_control.h"
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include "vector_math.h"
 #include <string.h>
 

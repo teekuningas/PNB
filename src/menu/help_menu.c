@@ -1,6 +1,7 @@
 #include "help_menu.h"
 #include "menu_types.h"
-#include "globals.h"
+#include "display.h"
+#include "key_states.h"
 #include "render.h"
 #include "font.h"
 #include "resource_manager.h"

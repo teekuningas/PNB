@@ -8,6 +8,9 @@
 */
 
 #include "fielder_behaviours.h"
+#include <math.h>
+#include "field.h"
+#include "world.h"
 #include "player_motion.h"
 #include "vector_math.h"
 

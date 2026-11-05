@@ -1,4 +1,5 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "sim_harness.h"
 #include "sim_observers.h"
 #include "game_frame.h"

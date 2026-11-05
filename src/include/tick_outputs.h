@@ -1,9 +1,9 @@
 #ifndef TICK_OUTPUTS_H
 #define TICK_OUTPUTS_H
 
-// The tick's outputs for the client alone — the sound to play, the announcement to show. Each is an
-// out-parameter of the tick, emptied by its producer every tick and never World state, so whether a screen
-// consumed one can never reach a future frame.
+// What the tick hands out rather than keeps: the sound to play and the announcement to show, for the
+// client; the screen a period's end asks for and how the match ended, for the session. None of it is World
+// state, so whether anybody consumed it can never reach a future frame.
 
 typedef enum {
     EVENT_NONE = 0,
@@ -23,5 +23,18 @@ typedef enum {
 #define SOUND_MENU 1
 #define SOUND_SWING 2
 #define SOUND_CATCH 3
+
+// Which screen the program is on; the tick may ask for another (a period or the match ending).
+typedef enum { SCREEN_LOADING, SCREEN_MAIN_MENU, SCREEN_GAME } ScreenState;
+
+// How a match ended, written by ENFORCE when it ends and read by the game-over screen.
+typedef struct _GameConclusion {
+    int winner;
+    int period0Runs[2];
+    int period1Runs[2];
+    int period2Runs[2];
+    int period3Runs[2];
+    int isCupGame;
+} GameConclusion;
 
 #endif /* TICK_OUTPUTS_H */

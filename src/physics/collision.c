@@ -1,5 +1,5 @@
 #include "collision.h"
-#include "../include/globals.h" // For Vector3D (already included via collision.h -> vector_math.h, but good to be explicit for constants)
+#include "foundation.h"
 
 int physics_check_ground_collision(float y_pos, float ground_level)
 {

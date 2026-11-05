@@ -1,4 +1,5 @@
 #include "pitching_physics.h"
+#include "foundation.h"
 
 Vector3D pitch_velocity_from_aim(float power, float direction)
 {

@@ -1,4 +1,5 @@
 #include "field_layout.h"
+#include "field.h"
 #include <math.h>
 
 void field_init_positions(FieldPositions* positions)

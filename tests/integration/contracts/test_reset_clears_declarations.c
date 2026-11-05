@@ -2,7 +2,7 @@
 #include "test_helpers.h"
 #include "all_contracts.h"
 #include "game_reset.h"
-#include "globals.h"
+#include "world.h"
 
 /**
  * CONTRACT: a reset leaves no declared intent behind.

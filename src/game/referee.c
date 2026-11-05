@@ -1,4 +1,8 @@
 #include <string.h>
+#include "field.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
 #include "referee.h"
 #include "rules_outs.h"
 #include "rules_runs.h"

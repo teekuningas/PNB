@@ -1,7 +1,9 @@
 #include "test_helpers.h"
 #include "actions/batting_system.h"
 #include "scripted_harness.h"
-#include "globals.h"
+#include <stdio.h>
+#include "key_states.h"
+#include "world.h"
 #include "rules_pure/player_utils.h"
 
 /*
