@@ -2,7 +2,7 @@
 
 ## Philosophy
 
-Contract tests prove that **pipeline stages cooperate correctly** at the frame level. Unlike scenario tests (which simulate full games), contract tests set a precise precondition, run exactly 1 frame through the real pipeline, and verify the immediate reaction.
+Contract tests prove that **pipeline stages cooperate correctly** at the frame level. Unlike scenario tests (which simulate full plays), contract tests set a precise precondition, run exactly 1 frame through the real pipeline, and verify the immediate reaction.
 
 They answer questions like:
 - "When `catchMade` fires, does the referee start wounding evaluation?"
@@ -22,43 +22,23 @@ Contract tests share the same infrastructure as scenario tests:
 - `fixtures.c/h` — State allocation and cleanup
 - `scenario_builder.c/h` — `create_scenario()`, `simulate_frames()`, player placement
 
-The key difference: scenario tests run hundreds of frames to simulate baseball plays.
+The key difference: scenario tests run hundreds of frames to simulate pesäpallo plays.
 Contract tests run 1 frame to verify a single stage reaction.
 
 ## Writing a Contract Test
 
-```c
-int test_referee_reacts_to_event(void)
-{
-    // 1. Create a standard game state
-    ScenarioContext* ctx = create_scenario();
+Start from a nearby test, such as
+[`test_referee_reacts_to_catch.c`](contracts/test_referee_reacts_to_catch.c),
+rather than copying a second example that can drift from the executable one:
 
-    // 2. Place actors in known positions
-    place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f);
-    setup_batter_at_home(ctx, 1);
-    move_pitcher_away(ctx);
+1. Create a `ScenarioContext`, place the actors, and establish the legal pitch-start snapshot.
+2. Set the precise precondition. Physical state and frame events live in `ctx->state->match`;
+   legal state lives in `ctx->state->rules`, never inside `match`.
+3. Stabilize unrelated physics, then call `simulate_frames(ctx, 1)`.
+4. Assert the immediate verdict and relevant non-effects, and clean up the scenario.
+5. Ablate the mechanism the test defends and require the test to fail.
 
-    // 3. Initialize legal state from physical positions
-    initialize_referee_from_physical_state(ctx);
-    snapshot_pitch_start_state(ctx);
-
-    // 4. Set the specific precondition being tested
-    ctx->state->match->gameEvents.catchMade = 1;
-    ctx->state->match->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
-
-    // 5. Run exactly 1 pipeline frame
-    simulate_frames(ctx, 1);
-
-    // 6. Assert the contract
-    ASSERT_EQ(1, ctx->state->match->referee.woundingEvaluationActive,
-              "Wounding evaluation should start");
-
-    cleanup_scenario(ctx);
-    return TEST_PASSED;
-}
-```
-
-## Current Tests
+## Examples (not the full inventory)
 
 | Test | Contract Verified |
 |------|-------------------|
@@ -75,7 +55,9 @@ int test_referee_reacts_to_event(void)
 ## Running
 
 ```bash
-nix develop --command make integration_test   # Contract tests (9 tests)
-nix develop --command make scenario_test      # Scenario tests (15 tests)
-nix develop --command make test               # Unit tests (61 tests)
+nix develop --command make integration_test   # Contract tests
+nix develop --command make scenario_test      # Scenario tests
+nix develop --command make test               # Unit tests
 ```
+
+The runners report the current counts; `contracts/all_contracts.h` is the contract inventory.

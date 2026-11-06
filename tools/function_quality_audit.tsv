@@ -42,11 +42,11 @@ open	src/core/sound.c
 open	src/core/state_validator.c	
 open	src/core/vector_math.c	
 open	src/cup/cup.c	cup_menu const-correctness is tracked as known debt
-deferred	src/game/action_invocations.c	channel part 2 re-keys the pitch and throw widgets in this file
+open	src/game/action_invocations.c	channel part 2 landed 2026-10-11; no pending rewrite blocks the audit. Input-delay gesture timing remains netplay work.
 audited	src/game/actions/batting_system.c	OPEN FINDING: update_batting is ~330 lines doing five things (clear the swing, open the cycle, actualize a pass, walk the aim, run the animation to contact). Splitting it wants the batter/pitch lifecycle seam nothing writes down yet, so it is recorded rather than forced
 audited	src/game/actions/fielder_movement.c	audited on arrival, which is the cheapest moment: one concept (the controlled fielder walks to its destination), no dead parameters, and the idempotence it claims is proved by contract test rather than asserted in a comment
-deferred	src/game/actions/pitching_system.c	channel part 2 merges the declaration into the actualization here
-deferred	src/game/actions/throwing_system.c	channel part 2 merges the declaration into the actualization here
+open	src/game/actions/pitching_system.c	channel part 2 landed 2026-10-11; no pending rewrite blocks the audit
+open	src/game/actions/throwing_system.c	channel part 2 landed 2026-10-11; no pending rewrite blocks the audit
 open	src/game/actions_pure/batting_physics.c	
 open	src/game/actions_pure/pitching_physics.c	
 audited	src/game/actions_pure/swing_geometry.c	purity verified — three total functions of their arguments, no state, no branch on anything but the arguments' own ranges. Written and audited in the same commit, which is the only honest moment: a file whose whole content is one derivation is read completely by whoever derived it, and reading it again later proves less. The clamps are the only conditionals and each has a named reason at its use site (a sweep of zero frames would be an unrepresentable state; a power outside [0,1] must clamp rather than invert the meter).

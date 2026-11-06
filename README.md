@@ -24,10 +24,10 @@ Tests
 **One command before you commit:**
 
 ```bash
-nix develop --command make check    # build + all five test tiers + guardrails + golden-tool tests
+nix develop --command make check    # build + all five test tiers + guardrails + tool tests
 ```
 
-It stops at the first failure and changes nothing on disk. The five tiers are also
+It stops at the first failure and never rewrites tracked source files. The five tiers are also
 runnable individually:
 
 ```bash
@@ -55,14 +55,17 @@ tools/golden/compare.sh /tmp/pnb-golden/before /tmp/pnb-golden/after
 
 Recording directories must be empty and outside the repository. Failed runs, incomplete
 traces, missing runs on either side, and differences return failure; sameness is not rule
-correctness. `nix develop --command make golden_tool_test` tests the tools alone.
+correctness. `nix develop --command make golden_tool_test` tests the golden tools,
+including real `int`/`bool` layout probes; `nix develop --command make naming_tool_test`
+tests the naming measurements.
 
 Guardrails
 ----------
 
 Some architectural numbers here are only allowed to go down — parameters no function
 reads, engine files whose includes can see past the engine, files still awaiting the
-function-quality audit. `make check` runs these as its last step; `make guardrails`
+function-quality audit, mixed-case struct fields, and player abbreviations. `make check`
+runs these alongside the exported-surface and tool tests; `make guardrails`
 runs them alone:
 
 ```bash
@@ -73,6 +76,12 @@ nix develop --command make format        # the fixer: clang-format, in place
 The floors live in `tools/guardrails.sh`, which is also the definition of each
 measurement. Improving a number means lowering its floor in the same commit; the
 script says so when it notices, so a ratchet cannot quietly slacken.
+
+The naming measurement uses compiler-recognized file-scope fields in `src/` (not
+comments, type names, or function locals), and abbreviation words in C sources/headers
+under `src/`, `tests/`, and `tools/`. Names are changed by compiler-reported call sites,
+not by text substitution. Fingerprints fold integers at 32 bits; this protects storage
+refactors, not cross-machine floating-point agreement or a wire format.
 
 `guardrails` only ever *reports* — including the formatting row. `make format` is the
 one target that edits your files, and it is deliberately separate.
