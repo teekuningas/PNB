@@ -212,6 +212,17 @@ controller_readbacks=$(grep -nE 'catching_action\.as|at_bat\.swing' src/game/act
     src/game/ai/*.c | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | wc -l)
 ratchet "controller reads of declared values" "$controller_readbacks" 0
 
+# Field declarations come from the compiler, not a regex over comments or types.
+# The abbreviation row includes tests and the golden projection: every caller
+# must carry a renamed member, not just the production files.
+if ! naming_counts=$(bash tools/naming_debt.sh "$IDIR"); then
+    echo "guardrails.sh: could not measure naming debt" >&2
+    exit 2
+fi
+read -r camel_fields player_abbreviations <<< "$naming_counts"
+ratchet "mixed-case file-scope struct fields" "$camel_fields" 196
+ratchet "player sub-struct abbreviation words" "$player_abbreviations" 881
+
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is
 # one-way on purpose — the code is the thing that is true, and the docs describe it.
