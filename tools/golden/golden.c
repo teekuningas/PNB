@@ -272,10 +272,12 @@ static int run_scripted(Mode mode, TeamControlMode c1, TeamControlMode c2, unsig
         }
         if (!scripted_tick(g)) break;
     }
-    fprintf(out, "# end frame=%ld failed=%d reason=%s\n", scripted_frame(g), scripted_failed(g),
-            scripted_failed(g) ? scripted_fail_reason(g) : "-");
+    int failed = scripted_failed(g);
+    fprintf(
+        out, "# end frame=%ld failed=%d reason=%s\n", scripted_frame(g), failed, failed ? scripted_fail_reason(g) : "-"
+    );
     scripted_destroy(g);
-    return 0;
+    return failed ? 1 : 0;
 }
 
 static int run_sim(Mode mode, unsigned int seed, long cap)
@@ -288,9 +290,10 @@ static int run_sim(Mode mode, unsigned int seed, long cap)
     for (long i = 0; i < cap; i++) {
         if (!sim_tick(g)) break;
     }
-    fprintf(out, "# end frame=%ld failed=%d reason=%s\n", g->frame, g->failed, g->failed ? g->fail_reason : "-");
+    int failed = g->failed;
+    fprintf(out, "# end frame=%ld failed=%d reason=%s\n", g->frame, failed, failed ? g->fail_reason : "-");
     sim_destroy(g);
-    return 0;
+    return failed ? 1 : 0;
 }
 
 int main(int argc, char** argv)
@@ -308,7 +311,10 @@ int main(int argc, char** argv)
     char path[512];
     snprintf(path, sizeof(path), "%s/%s.trace", dir, run);
     out = fopen(path, "w");
-    if (!out) return 2;
+    if (!out) {
+        perror(path);
+        return 2;
+    }
     memset(&cov, 0, sizeof(cov));
 
     unsigned int n = 0;
@@ -337,6 +343,10 @@ int main(int argc, char** argv)
     fprintf(out, "# walks offers=%ld midWindup=%ld\n", cov.walkOffers, cov.walkOffersMidWindup);
     fprintf(out, "# flow halfInnings=%ld runs=%ld honors=%ld fouls=%ld pairEnds=%ld foulDuringPairEnd=%ld\n",
             cov.halfInnings, cov.runs, cov.honors, cov.fouls, cov.pairEnds, cov.foulDuringPairEnd);
-    fclose(out);
+    int write_failed = ferror(out);
+    if (fclose(out) != 0 || write_failed) {
+        fprintf(stderr, "golden: could not write complete trace %s\n", path);
+        return 2;
+    }
     return rc;
 }

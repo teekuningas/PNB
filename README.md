@@ -24,7 +24,7 @@ Tests
 **One command before you commit:**
 
 ```bash
-nix develop --command make check    # build + all five test tiers + guardrails
+nix develop --command make check    # build + all five test tiers + guardrails + golden-tool tests
 ```
 
 It stops at the first failure and changes nothing on disk. The five tiers are also
@@ -43,6 +43,19 @@ The sim tier can also emit per-frame CSV traces of how game state evolves:
 nix develop --command bash -c "make sim_runner && SIM_TRACE=1 ./sim_runner"
 # writes sim_trace_half_inning.csv and sim_trace_homerun.csv
 ```
+
+For behaviour-preserving refactors, record 66 seeded games (AI and fuzzed human keys,
+including the super inning and contest) before and after, then compare:
+
+```bash
+tools/golden/record.sh /tmp/pnb-golden/before HEAD
+tools/golden/record.sh /tmp/pnb-golden/after
+tools/golden/compare.sh /tmp/pnb-golden/before /tmp/pnb-golden/after
+```
+
+Recording directories must be empty and outside the repository. Failed runs, incomplete
+traces, missing runs on either side, and differences return failure; sameness is not rule
+correctness. `nix develop --command make golden_tool_test` tests the tools alone.
 
 Guardrails
 ----------

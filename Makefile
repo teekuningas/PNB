@@ -152,9 +152,9 @@ check:
 	@$(MAKE) --no-print-directory scripted_test
 	@$(MAKE) --no-print-directory guardrails
 	@$(MAKE) --no-print-directory dead_exports
-	@$(MAKE) --no-print-directory golden_harness
+	@$(MAKE) --no-print-directory golden_tool_test
 	@echo
-	@echo "  make check: build + all five tiers + guardrails + the exported surface, all green."
+	@echo "  make check: build + all five tiers + guardrails + the exported surface + golden tools, all green."
 
 # The golden-trace harness is a tool, not a tier (tools/golden/record.sh runs it), but it is COMPILED
 # here: its projection.h names the structs a refactor moves, and a move that forgot to carry the
@@ -163,6 +163,11 @@ check:
 golden_harness: $(OBJ_SCRIPTED)
 	@mkdir -p $(ODIR)
 	@$(CC) tools/golden/golden.c $(OBJ_SCRIPTED) -o $(ODIR)/golden_harness $(CFLAGS) $(LFLAGS)
+
+.PHONY: golden_tool_test
+golden_tool_test: golden_harness
+	@$(CC) tools/golden/golden.c tools/golden/test_failures.c $(OBJ_SCRIPTED) -o $(ODIR)/golden_failure_probe $(CFLAGS) $(LFLAGS) -Wl,--wrap=sim_tick -Wl,--wrap=scripted_tick
+	@python3 tools/golden/test_tools.py $(ODIR)/golden_harness $(ODIR)/golden_failure_probe
 
 # The architectural numbers that may only go down (dead parameters, what the engine
 # can see, function-quality audit coverage, ...). The script carries the floors
