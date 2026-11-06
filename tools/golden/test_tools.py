@@ -1,6 +1,8 @@
 import os
+import re
 from pathlib import Path
 import subprocess
+import shlex
 import sys
 import tempfile
 import time
@@ -9,6 +11,7 @@ import unittest
 TOOLS = Path(__file__).resolve().parent
 HARNESS = Path(sys.argv.pop(1)).resolve()
 FAILURE_HARNESS = Path(sys.argv.pop(1)).resolve()
+CFLAGS = shlex.split(sys.argv.pop(1))
 
 
 def trace(hash_value="0000000000000000", failed=0):
@@ -203,6 +206,50 @@ class GoldenToolsTest(unittest.TestCase):
         result = self.run_tool(HARNESS, self.root, "sim0")
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("could not write complete trace", result.stderr)
+
+    def test_hashes_ignore_flag_width_but_observe_changed_values(self):
+        flags = {
+            "rules_state.h": (
+                "hasScored", "runOfHonorScored", "hasPendingRun", "hasPendingRunOfHonor",
+                "woundingEvaluationActive", "woundingEvaluationFinished", "ballInThirdBaseSincePitch",
+                "homerunPairHasPitch", "hasBattedAgain", "regularOrderSpent", "turnExhausted",
+                "endPeriod", "catchHasBeenMade", "hasBallHitGround", "isCupGame",
+            ),
+            "world.h": ("moving", "onGround", "pitch_in_flight", "powerActive", "verticalActive"),
+        }
+        results = {}
+        for profile, storage in (("wide", "int"), ("narrow", "bool")):
+            directory = self.root / profile
+            directory.mkdir()
+            for header, fields in flags.items():
+                content = (TOOLS.parents[1] / "src/include" / header).read_text()
+                for field in fields:
+                    content, changed = re.subn(rf"\b(?:int|bool) {field};", f"{storage} {field};", content)
+                    self.assertGreater(changed, 0, f"fixture no longer names {header}:{field}")
+                (directory / header).write_text("#include <stdbool.h>\n" + content)
+            binary = directory / "hash_probe"
+            compiled = subprocess.run(
+                ["gcc", f"-I{directory}", *CFLAGS, "-DNO_RENDER",
+                 "-include", str(directory / "world.h"), "-include", str(directory / "rules_state.h"),
+                 *(["-DWIDE_FLAGS"] if profile == "wide" else []),
+                 "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
+                 str(TOOLS / "test_hashes.c"), "tests/sim/sim_observers.c",
+                 "src/game/rules_pure/base_control.c", "src/game/rules_pure/player_utils.c",
+                 "src/game/actions/batting_system.c", "src/game/action_invocations.c",
+                 "src/core/vector_math.c", "-lm", "-o", str(binary)],
+                cwd=TOOLS.parents[1], text=True, capture_output=True, timeout=60,
+            )
+            self.assertEqual(compiled.returncode, 0, compiled.stderr)
+            result = self.run_tool(binary)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            results[profile] = result.stdout.splitlines()
+        self.assertIn("width 4 ", results["wide"][0])
+        self.assertIn("width 1 ", results["narrow"][0])
+        self.assertNotEqual(results["wide"][0].split()[-1], results["narrow"][0].split()[-1])
+        self.assertEqual(results["wide"][1:], results["narrow"][1:])
+        hashes = [line.split()[1:] for line in results["wide"][1:]]
+        self.assertTrue(all(a[0] != b[0] for a, b in zip(hashes, hashes[1:8])))
+        self.assertNotEqual(hashes[-2][1], hashes[-1][1], "a changed legal counter disappeared")
 
 
 if __name__ == "__main__":

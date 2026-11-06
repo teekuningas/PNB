@@ -168,7 +168,7 @@ golden_harness: $(OBJ_SCRIPTED)
 .PHONY: golden_tool_test
 golden_tool_test: golden_harness
 	@$(CC) tools/golden/golden.c tools/golden/test_failures.c $(OBJ_SCRIPTED) -o $(ODIR)/golden_failure_probe $(CFLAGS) $(LFLAGS) -Wl,--wrap=sim_tick -Wl,--wrap=scripted_tick
-	@python3 tools/golden/test_tools.py $(ODIR)/golden_harness $(ODIR)/golden_failure_probe
+	@python3 tools/golden/test_tools.py $(ODIR)/golden_harness $(ODIR)/golden_failure_probe "$(CFLAGS)"
 
 .PHONY: naming_tool_test
 naming_tool_test:

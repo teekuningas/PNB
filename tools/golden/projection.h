@@ -3,11 +3,85 @@
 #include "session.h"
 #include "client_input.h"
 #include "ai/ai_memory.h"
+#include <stdint.h>
 // The version-specific half of the golden projection: how this tree's structs answer the semantic
 // questions golden.c asks. Edit THIS file when a refactor reshapes a struct, keeping every line it prints
 // the same. Values a refactor legitimately leaves stale (a union half nobody is using, a scratch field the
 // next action overwrites) are printed only while they mean something, so a trace records play and not
 // leftovers.
+
+static unsigned long long rules_projection_hash(const GameRulesState* r)
+{
+    unsigned long long h = 1469598103934665603ULL;
+    // Four-byte values in declaration order preserve the old all-integer fingerprint,
+    // without inheriting a future bool's width or a struct's padding.
+#define RULE_VALUE(v) do { const uint32_t word = (v); h = fnv(&word, sizeof(word), h); } while (0)
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        const RefereePlayerState* p = &r->referee.battingPlayers[i];
+        RULE_VALUE(p->status);
+        RULE_VALUE(p->baseAtPitchStart);
+        RULE_VALUE(p->currentSafetyBase);
+        RULE_VALUE(p->hasScored);
+        RULE_VALUE(p->runOfHonorScored);
+        RULE_VALUE(p->hasPendingRun);
+        RULE_VALUE(p->hasPendingRunOfHonor);
+    }
+    RULE_VALUE(r->referee.strikesAtPitchStart);
+    RULE_VALUE(r->referee.woundingEvaluationActive);
+    RULE_VALUE(r->referee.woundingEvaluationFinished);
+    RULE_VALUE(r->referee.woundingEvaluationTimer);
+    RULE_VALUE(r->referee.foulState);
+    RULE_VALUE(r->referee.foulTimer);
+    RULE_VALUE(r->referee.nextPairTransitionState);
+    RULE_VALUE(r->referee.nextPairTimer);
+    RULE_VALUE(r->referee.endOfInningState);
+    RULE_VALUE(r->referee.endInningTimer);
+    RULE_VALUE(r->referee.periodTransition);
+    RULE_VALUE(r->referee.periodTransitionWinner);
+    RULE_VALUE(r->referee.ballInThirdBaseSincePitch);
+    RULE_VALUE(r->referee.homerunPairHasPitch);
+    RULE_VALUE(r->halfInningState.outs);
+    RULE_VALUE(r->halfInningState.balls);
+    RULE_VALUE(r->halfInningState.strikes);
+    RULE_VALUE(r->halfInningState.runsInTheInning);
+    RULE_VALUE(r->halfInningState.endPeriod);
+    RULE_VALUE(r->halfInningState.jokersLeft);
+    RULE_VALUE(r->halfInningState.lastBatter.designatedIndex);
+    RULE_VALUE(r->halfInningState.lastBatter.lastRegularIndex);
+    RULE_VALUE(r->halfInningState.lastBatter.hasBattedAgain);
+    RULE_VALUE(r->halfInningState.lastBatter.regularOrderSpent);
+    RULE_VALUE(r->halfInningState.lastBatter.turnExhausted);
+    RULE_VALUE(r->betweenPitchState.catchHasBeenMade);
+    RULE_VALUE(r->betweenPitchState.hasBallHitGround);
+    RULE_VALUE(r->betweenPitchState.pitchResult);
+    RULE_VALUE(r->betweenPitchState.batOutcome);
+    RULE_VALUE(r->homeRunContestState.runnerBatterPairCounter);
+    for (int i = 0; i < 2; i++) {
+        const TeamInfo* t = &r->scoreboard.teams[i];
+        RULE_VALUE(t->value);
+        RULE_VALUE(t->control);
+        RULE_VALUE(t->runs);
+        RULE_VALUE(t->period0Runs);
+        RULE_VALUE(t->period1Runs);
+        RULE_VALUE(t->period2Runs);
+        RULE_VALUE(t->period3Runs);
+        for (size_t role = 0; role < sizeof(t->batterRunnerIndices) / sizeof(t->batterRunnerIndices[0]); role++)
+            for (size_t pair = 0; pair < sizeof(t->batterRunnerIndices[0]) / sizeof(t->batterRunnerIndices[0][0]); pair++)
+                RULE_VALUE(t->batterRunnerIndices[role][pair]);
+        for (size_t slot = 0; slot < sizeof(t->batterOrder) / sizeof(t->batterOrder[0]); slot++)
+            RULE_VALUE(t->batterOrder[slot]);
+        RULE_VALUE(t->batterOrderIndex);
+    }
+    RULE_VALUE(r->scoreboard.halfInningsInPeriod);
+    RULE_VALUE(r->scoreboard.inning);
+    RULE_VALUE(r->scoreboard.period);
+    RULE_VALUE(r->scoreboard.mode);
+    RULE_VALUE(r->scoreboard.pairCount);
+    RULE_VALUE(r->scoreboard.playsFirst);
+    RULE_VALUE(r->scoreboard.isCupGame);
+#undef RULE_VALUE
+    return h;
+}
 
 // 0 none, 1 throwing, 2 pitching
 static int catching_action_code(const MatchSession* m)
@@ -122,7 +196,7 @@ static void project(const StateInfo* st)
             (double)ab->step_in_limit, ab->swing_stopped, ab->swing_started, ab->pose_dirty);
     }
 
-    put(8, "%016llx", fnv(r, sizeof(*r), 1469598103934665603ULL));
+    put(8, "%016llx", rules_projection_hash(r));
 
     const ClientInputState* c = st->clientInput;
     for (int i = 0; i < BASE_COUNT; i++) put(9, "rp%d,", c->run_press_window[i]);

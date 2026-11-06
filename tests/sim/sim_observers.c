@@ -1,5 +1,6 @@
 #include "sim_observers.h"
 #include <stdio.h>
+#include <stdint.h>
 #include "rules_state.h"
 #include "world.h"
 #include "ai/ai_memory.h"
@@ -210,13 +211,19 @@ static void fold_bytes(unsigned long long* h, const void* p, size_t n)
 }
 #define FOLD(h, v) fold_bytes(&(h), &(v), sizeof(v))
 
+static void fold_integer(unsigned long long* h, uint32_t value)
+{
+    fold_bytes(h, &value, sizeof(value));
+}
+#define FOLD_INTEGER(h, v) fold_integer(&(h), (v))
+
 void checksum_observer_hook(const SimGame* g, void* ctx)
 {
     // Fingerprint *curated game-meaningful state*, not raw MatchSession bytes, so that a struct
     // reshaped without changing what the game does (a field moved, a padding byte) leaves it alone.
     // (It began as a workaround for player name pointers inside the World; there are none now.)
-    // Each field is folded at its own sizeof, so a field changing TYPE still moves it: a refactor
-    // that turns a folded int into a bool should fold it at a fixed width first, in a commit of its own.
+    // Integers occupy four bytes in the fingerprint regardless of their storage type; floats
+    // retain their own representation. Turning a flag into a bool is not a change in play.
     ChecksumObserver* o = (ChecksumObserver*)ctx;
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
@@ -227,8 +234,8 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
         FOLD(h, p->tPI.location.x);
         FOLD(h, p->tPI.location.y);
         FOLD(h, p->tPI.location.z);
-        FOLD(h, p->bTPI.baseId);
-        FOLD(h, p->bTPI.state);
+        FOLD_INTEGER(h, p->bTPI.baseId);
+        FOLD_INTEGER(h, p->bTPI.state);
     }
     FOLD(h, m->ballInfo.location.x);
     FOLD(h, m->ballInfo.location.y);
@@ -236,48 +243,48 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD(h, m->ballInfo.velocity.x);
     FOLD(h, m->ballInfo.velocity.y);
     FOLD(h, m->ballInfo.velocity.z);
-    FOLD(h, m->ballInfo.moving);
-    FOLD(h, m->ballInfo.onGround);
-    FOLD(h, m->ballInfo.holder);
-    FOLD(h, m->catchingState.controlled_fielder);
+    FOLD_INTEGER(h, m->ballInfo.moving);
+    FOLD_INTEGER(h, m->ballInfo.onGround);
+    FOLD_INTEGER(h, m->ballInfo.holder);
+    FOLD_INTEGER(h, m->catchingState.controlled_fielder);
     // Folded as the code it was folded as when it was an enum whose in-flight value was 2, so that moving
     // it onto the ball and making it a yes/no did not move the recorded baseline.
     const int pitch_code = m->ballInfo.pitch_in_flight ? 2 : 0;
-    FOLD(h, pitch_code);
-    FOLD(h, m->catching_action.kind);
+    FOLD_INTEGER(h, pitch_code);
+    FOLD_INTEGER(h, m->catching_action.kind);
     // The swing, as declared. This replaces the meter counter that used to be folded here — and the
     // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
     // now tracks the VALUES a producer declared rather than the level a shared meter had reached.
-    FOLD(h, m->at_bat.swing.contactFrame);
-    FOLD(h, m->at_bat.swing.powerActive);
+    FOLD_INTEGER(h, m->at_bat.swing.contactFrame);
+    FOLD_INTEGER(h, m->at_bat.swing.powerActive);
     FOLD(h, m->at_bat.swing.power);
-    FOLD(h, m->at_bat.swing.verticalActive);
+    FOLD_INTEGER(h, m->at_bat.swing.verticalActive);
     FOLD(h, m->at_bat.swing.vertical);
 
     // The engine's random stream is World state: it determines every future engine draw, so two
     // worlds that agree on everything else but not on this do NOT have the same future. The AI
     // controller's seed is deliberately NOT folded in — it lives outside the World by design.
-    FOLD(h, m->rngSeed);
+    FOLD_INTEGER(h, m->rngSeed);
 
-    FOLD(h, r->halfInningState.outs);
-    FOLD(h, r->halfInningState.balls);
-    FOLD(h, r->halfInningState.strikes);
-    FOLD(h, r->scoreboard.inning);
-    FOLD(h, r->scoreboard.period);
-    FOLD(h, r->scoreboard.teams[0].runs);
-    FOLD(h, r->scoreboard.teams[1].runs);
-    FOLD(h, r->scoreboard.teams[0].batterOrderIndex);
-    FOLD(h, r->scoreboard.teams[1].batterOrderIndex);
+    FOLD_INTEGER(h, r->halfInningState.outs);
+    FOLD_INTEGER(h, r->halfInningState.balls);
+    FOLD_INTEGER(h, r->halfInningState.strikes);
+    FOLD_INTEGER(h, r->scoreboard.inning);
+    FOLD_INTEGER(h, r->scoreboard.period);
+    FOLD_INTEGER(h, r->scoreboard.teams[0].runs);
+    FOLD_INTEGER(h, r->scoreboard.teams[1].runs);
+    FOLD_INTEGER(h, r->scoreboard.teams[0].batterOrderIndex);
+    FOLD_INTEGER(h, r->scoreboard.teams[1].batterOrderIndex);
 
     // §12's own state. The batting order alone does not say when the turn ends: the designation, the
     // joker count and the pronounced verdict each determine a different future, so a checksum that
     // omitted them would call two genuinely different half-innings identical. (The counters this
     // replaced were never folded — the omission is being closed, not inherited.)
-    FOLD(h, r->halfInningState.jokersLeft);
-    FOLD(h, r->halfInningState.lastBatter.designatedIndex);
-    FOLD(h, r->halfInningState.lastBatter.lastRegularIndex);
-    FOLD(h, r->halfInningState.lastBatter.hasBattedAgain);
-    FOLD(h, r->halfInningState.lastBatter.turnExhausted);
+    FOLD_INTEGER(h, r->halfInningState.jokersLeft);
+    FOLD_INTEGER(h, r->halfInningState.lastBatter.designatedIndex);
+    FOLD_INTEGER(h, r->halfInningState.lastBatter.lastRegularIndex);
+    FOLD_INTEGER(h, r->halfInningState.lastBatter.hasBattedAgain);
+    FOLD_INTEGER(h, r->halfInningState.lastBatter.turnExhausted);
 
     o->hash = h;
 }
