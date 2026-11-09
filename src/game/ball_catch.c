@@ -66,17 +66,18 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                             stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
                         }
                         if (match->catchingState.controlled_fielder != -1 &&
-                            match->playerInfo[match->catchingState.controlled_fielder].cTPI.throw_recovery_ticks == 0) {
+                            match->playerInfo[match->catchingState.controlled_fielder].fielding.throw_recovery_ticks ==
+                                0) {
                             record_player_activity(
                                 &match->playerInfo[match->catchingState.controlled_fielder].events,
                                 PLAYER_ACTIVITY_MOVEMENT_CANCELLED, false
                             );
                         }
-                        // set busyCatching to 0 for every one who was busy if ball is caught so that
+                        // set busy_catching to 0 for every one who was busy if ball is caught so that
                         // players are free to be moved to their home locations.
                         for (j = PLAYERS_IN_TEAM + JOKER_COUNT; j < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; j++) {
-                            if (match->playerInfo[j].cTPI.busyCatching == 1) {
-                                match->playerInfo[j].cTPI.busyCatching = 0;
+                            if (match->playerInfo[j].fielding.busy_catching == 1) {
+                                match->playerInfo[j].fielding.busy_catching = 0;
                                 // also stop them so that decisions about moving to home location can be made.
                                 stop_movement(match->playerInfo, j);
                             }

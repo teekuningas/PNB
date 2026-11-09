@@ -70,7 +70,7 @@ int test_run_of_honor(void)
 
     // === Run to SECOND ===
     printf("\n--- Running FIRST → SECOND ---\n");
-    ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
+    ctx->state->match->playerInfo[batterIndex].path.going_forward = 1;
     trigger_player_run_to_next_base(ctx, batterIndex, BASE_FIRST);
 
     int framesSecond = 0;
@@ -97,7 +97,7 @@ int test_run_of_honor(void)
         "runOfHonorScored flag before: %d\n", ctx->state->rules->referee.battingPlayers[batterIndex].runOfHonorScored
     );
 
-    ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
+    ctx->state->match->playerInfo[batterIndex].path.going_forward = 1;
     trigger_player_run_to_next_base(ctx, batterIndex, BASE_SECOND);
 
     int framesThird = 0;
@@ -114,7 +114,7 @@ int test_run_of_honor(void)
                 "  baseAtPitchStart: %d (HOME)\n",
                 ctx->state->rules->referee.battingPlayers[batterIndex].baseAtPitchStart
             );
-            printf("  goingForward: %d\n", ctx->state->match->playerRuntime[batterIndex].goingForward);
+            printf("  goingForward: %d\n", ctx->state->match->playerInfo[batterIndex].path.going_forward);
             printf(
                 "  wounded: %d\n",
                 ctx->state->match->playerInfo[batterIndex].batting.presence.state == PLAYER_STATE_WOUNDED

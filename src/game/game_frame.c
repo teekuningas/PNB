@@ -53,7 +53,7 @@ static void collect_player_facts(MatchSession* match, PlayerTickFacts* facts)
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         facts[i] = (PlayerTickFacts){.activity = match->playerInfo[i].events,
                                      .holds_ball = match->ballInfo.holder == i,
-                                     .throw_recovering = match->playerInfo[i].cTPI.throw_recovery_ticks != 0};
+                                     .throw_recovering = match->playerInfo[i].fielding.throw_recovery_ticks != 0};
         match->playerInfo[i].events = (PlayerActivityEvents){0};
     }
 }

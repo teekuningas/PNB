@@ -104,13 +104,11 @@ typedef struct _PlayerBody {
     Vector3D orientation;
 } PlayerBody;
 
-// MILESTONE 7.5 - Separating Control State from Domain State
-typedef struct _PlayerRuntimeState {
-    int arrivedToBase; // Optimization flag
-    int passedPathPoint; // State machine variable
-    int goingForward; // Direction tracking
-    int hasMadeRunOnThirdBase; // Guard flag
-} PlayerRuntimeState;
+typedef struct _PlayerPathState {
+    int arrived_at_base; // Raised by the body step, consumed within the same SIMULATE.
+    int waypoint; // 0..2 for the third-home route and for terminal exit choreography.
+    int going_forward;
+} PlayerPathState;
 
 // Copied from the batting roster at half-inning setup.
 typedef struct _PlayerAttributes {
@@ -143,23 +141,22 @@ typedef struct _PlayerMotion {
     int sync_previous_location; // One body-step request to catch interpolation up after a stop.
 } PlayerMotion;
 
-typedef struct _CatchingTeamPlayerInfo {
-    int position; // pitcher, catcher, 1st baseman..
-    int isNearHomeLocation; // used to do base replacing stuff.
-    ReplacementState
-        replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
-    BaseID replacingBase; // in which base is the player replacing
-    int busyCatching; // flag set when player is trying to run in hopes of catching the ball
+typedef struct _FieldingPlayerState {
+    int near_home; // Cached proximity to the formation post.
+    ReplacementState replacement;
+    BaseID replacement_base;
+    int busy_catching;
     int throw_recovery_ticks; // Physical movement lock; decremented at the end of SIMULATE.
-} CatchingTeamPlayerInfo;
+} FieldingPlayerState;
 
 typedef struct _PlayerInfo {
     PlayerBody body;
     TeamSide side; // The slot's current role, not a stable roster identity.
     PlayerMotion motion;
-    CatchingTeamPlayerInfo cTPI;
+    FieldingPlayerState fielding;
     PlayerAttributes attributes;
     BattingPlayerState batting;
+    PlayerPathState path;
     PlayerActivityEvents events; // Drained at the SIMULATE boundary and again by CLEAR.
 
 } PlayerInfo;
@@ -344,7 +341,6 @@ typedef struct _RunnerCommitments {
 
 typedef struct _MatchSession {
     PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
-    PlayerRuntimeState playerRuntime[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // Milestone 7.5 - Control state
     CatchingTeamState catchingState;
     FieldingPosts fielding_posts;
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)

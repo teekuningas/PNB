@@ -97,6 +97,16 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
         };
         for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             m->playerInfo[i].body.home_location = (Vector3D){1000.0f, 1000.0f, 1000.0f};
+            m->playerInfo[i].path.arrived_at_base = 1;
+            m->playerInfo[i].path.waypoint = 2;
+            m->playerInfo[i].path.going_forward = 1;
+            m->playerInfo[i].fielding.throw_recovery_ticks = 17;
+            if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
+                m->playerInfo[i].fielding.near_home = 0;
+                m->playerInfo[i].fielding.replacement = REPLACEMENT_ACTIVE;
+                m->playerInfo[i].fielding.replacement_base = BASE_THIRD;
+                m->playerInfo[i].fielding.busy_catching = 1;
+            }
         }
         if (recipe == 0) {
             reset_for_new_half_inning(m, &positions, ctx->state->teamData, ctx->state->rules);
@@ -113,6 +123,19 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
             reset_for_next_pair(m, &positions, scoreboard, &ctx->state->rules->homeRunContestState);
         }
 
+        for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+            ASSERT_EQ(0, m->playerInfo[i].path.arrived_at_base, "every reset drains every arrival latch");
+            ASSERT_EQ(0, m->playerInfo[i].path.waypoint, "every reset starts a fresh route");
+            ASSERT_EQ(0, m->playerInfo[i].path.going_forward, "every reset clears the old route direction");
+            ASSERT_EQ(0, m->playerInfo[i].fielding.throw_recovery_ticks, "every slot loses old throw recovery");
+            if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
+                const FieldingPlayerState* fielding = &m->playerInfo[i].fielding;
+                ASSERT_EQ(1, fielding->near_home, "reset fielders start at their formation posts");
+                ASSERT_EQ(REPLACEMENT_IDLE, fielding->replacement, "old replacement activity is cancelled");
+                ASSERT_EQ(BASE_NONE, fielding->replacement_base, "the old replacement base is forgotten");
+                ASSERT_EQ(0, fielding->busy_catching, "the old chase does not survive a reset");
+            }
+        }
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             const Vector3D* home = &m->playerInfo[i].body.home_location;
             float dx = home->x - positions.pitchPlate.x;
@@ -148,10 +171,10 @@ int test_idle_fielder_returns_to_its_home_geometry(void)
     Vector3D home = p->body.home_location;
     p->body.location = (Vector3D){home.x - 3.0f, home.y, home.z - 4.0f};
     p->motion.moving = 0;
-    p->cTPI.isNearHomeLocation = 0;
-    p->cTPI.replacingStage = REPLACEMENT_IDLE;
-    p->cTPI.busyCatching = 0;
-    p->cTPI.throw_recovery_ticks = 0;
+    p->fielding.near_home = 0;
+    p->fielding.replacement = REPLACEMENT_IDLE;
+    p->fielding.busy_catching = 0;
+    p->fielding.throw_recovery_ticks = 0;
     m->catchingState.controlled_fielder = -1;
 
     move_idling_players_to_home_location(m);

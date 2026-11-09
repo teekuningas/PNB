@@ -301,11 +301,9 @@ static void initialize_non_critical_player_information(MatchSession* match)
 {
     int i;
     for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        // MILESTONE 7.5: Initialize control state
-        match->playerRuntime[i].arrivedToBase = 0;
-        match->playerRuntime[i].passedPathPoint = 0;
-        match->playerRuntime[i].goingForward = 0;
-        match->playerRuntime[i].hasMadeRunOnThirdBase = 0;
+        match->playerInfo[i].path.arrived_at_base = 0;
+        match->playerInfo[i].path.waypoint = 0;
+        match->playerInfo[i].path.going_forward = 0;
 
         match->playerInfo[i].events =
             (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_RESET, .started = PLAYER_ACTIVITY_RESET};
@@ -314,14 +312,14 @@ static void initialize_non_critical_player_information(MatchSession* match)
         match->playerInfo[i].motion.following_target = 0;
         match->playerInfo[i].motion.sync_previous_location = 1;
 
-        match->playerInfo[i].cTPI.throw_recovery_ticks = 0;
+        match->playerInfo[i].fielding.throw_recovery_ticks = 0;
 
         if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
 
-            match->playerInfo[i].cTPI.isNearHomeLocation = 1;
-            match->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
-            match->playerInfo[i].cTPI.replacingBase = BASE_NONE;
-            match->playerInfo[i].cTPI.busyCatching = 0;
+            match->playerInfo[i].fielding.near_home = 1;
+            match->playerInfo[i].fielding.replacement = REPLACEMENT_IDLE;
+            match->playerInfo[i].fielding.replacement_base = BASE_NONE;
+            match->playerInfo[i].fielding.busy_catching = 0;
         } else {
             match->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
             match->playerInfo[i].batting.presence.base_id = BASE_NONE;

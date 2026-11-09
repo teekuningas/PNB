@@ -138,7 +138,7 @@ int test_pitch_permission_names_each_rule(void)
     ASSERT_EQ(RULE_PITCH_NOT_DURING_FREE_WALK_OFFER, pitch_may_begin(m, 0).denied_by, "§26: answer the walk first");
     restore(ctx, &ready);
 
-    m->playerInfo[12].cTPI.isNearHomeLocation = 0;
+    m->playerInfo[12].fielding.near_home = 0;
     ASSERT_EQ(RULE_PITCHER_OFF_THE_PLATE, pitch_may_begin(m, 0).denied_by, "the pitcher must be at the plate");
 
     cleanup_scenario(ctx);

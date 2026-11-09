@@ -31,6 +31,6 @@ void simulate(
     base_runner_movements_on_base_arrivals(match, referee); // answered the frame they happen
     update_ball_to_player(match); // the held ball follows its holder's new step
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-        advance_throw_recovery(&match->playerInfo[i].cTPI);
+        advance_throw_recovery(&match->playerInfo[i].fielding);
     }
 }

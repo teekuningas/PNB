@@ -105,7 +105,7 @@ static void enforce_legal_state(
             if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT) {
                 match->playerInfo[i].batting.presence.state = PLAYER_STATE_OUT;
                 match->playerInfo[i].batting.presence.base_id = BASE_NONE;
-                move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+                move_player_out(match->playerInfo, field_positions, i);
             }
         }
 
@@ -114,7 +114,7 @@ static void enforce_legal_state(
             match->playerInfo[i].batting.presence.state != PLAYER_STATE_SCORED) {
             match->playerInfo[i].batting.presence.state = PLAYER_STATE_SCORED;
             match->playerInfo[i].batting.presence.base_id = BASE_NONE;
-            move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+            move_player_out(match->playerInfo, field_positions, i);
         }
 
         // 3. React to WOUNDED
@@ -122,7 +122,7 @@ static void enforce_legal_state(
             if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED) {
                 match->playerInfo[i].batting.presence.state = PLAYER_STATE_WOUNDED;
                 match->playerInfo[i].batting.presence.base_id = BASE_NONE;
-                move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+                move_player_out(match->playerInfo, field_positions, i);
             }
         }
 

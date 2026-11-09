@@ -167,7 +167,7 @@ static int situation(const StateInfo* st, int pad)
     int catching = (batting + 1) % 2;
     int p = m->fielding_posts.baseman[0];
     if ((int)sb->teams[catching].control == pad && p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
-        m->playerInfo[p].cTPI.isNearHomeLocation)
+        m->playerInfo[p].fielding.near_home)
         return 1;
     if ((int)sb->teams[batting].control == pad && batter_stands_ready(&m->at_bat)) return 2;
     if ((int)sb->teams[catching].control == pad && m->catchingState.controlled_fielder != -1) {

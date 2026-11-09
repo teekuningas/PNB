@@ -53,7 +53,7 @@ int test_fly_ball_double_wound(void)
         Vector3D posB = ctx->state->match->playerInfo[1].body.location;
         int statusA = ctx->state->rules->referee.battingPlayers[0].status;
         int statusB = ctx->state->rules->referee.battingPlayers[1].status;
-        int goingFwdA = ctx->state->match->playerRuntime[0].goingForward;
+        int goingFwdA = ctx->state->match->playerInfo[0].path.going_forward;
         int timer = ctx->state->rules->referee.woundingEvaluationTimer;
 
         // Verbose logging for transition frames

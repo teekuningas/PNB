@@ -24,7 +24,7 @@ int test_runner_scores_from_third(void)
     snapshot_pitch_start_state(ctx);
 
     // Set runtime state AFTER initialization to avoid it being reset
-    ctx->state->match->playerRuntime[0].passedPathPoint = 1;
+    ctx->state->match->playerInfo[0].path.waypoint = 1;
 
     // Drop ball in the outfield so it hits ground naturally
     Vector3D ballTarget = {30.0f, 0.0f, 40.0f}; // Far in outfield, away from any base

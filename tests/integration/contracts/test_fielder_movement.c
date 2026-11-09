@@ -284,7 +284,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    CatchingTeamPlayerInfo* fielding = &m->playerInfo[FIELDER_INDEX].cTPI;
+    FieldingPlayerState* fielding = &m->playerInfo[FIELDER_INDEX].fielding;
 
     // Everything a play can leave behind on the catching side.
     m->catchingState.controlledMoveTarget.x = 17.0f;

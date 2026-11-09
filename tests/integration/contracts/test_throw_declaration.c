@@ -228,7 +228,7 @@ static int check_throw_recovery(int animation_profile)
     PlayerInfo* thrower = &m->playerInfo[15];
     PlayerMotion* activity = &thrower->motion;
     PlayerBody* body = &thrower->body;
-    CatchingTeamPlayerInfo* fielding = &thrower->cTPI;
+    FieldingPlayerState* fielding = &thrower->fielding;
     declare_target(ctx, BASE_FIRST);
     declare_power(ctx, 0.3f);
     ASSERT(run_until_release(ctx, 100, NULL) > 0.0f, "a real declared throw must release");
@@ -237,7 +237,7 @@ static int check_throw_recovery(int animation_profile)
     PlayerAnimation* animation = &view.players[15];
     Vector3D release_position = body->location;
     body->home_location = (Vector3D){25.0f, 0.0f, 25.0f};
-    fielding->isNearHomeLocation = 0;
+    fielding->near_home = 0;
     m->ballInfo.location = (Vector3D){0.0f, 100.0f, 0.0f};
     m->ballInfo.velocity = (Vector3D){0};
     m->ballInfo.moving = 0;

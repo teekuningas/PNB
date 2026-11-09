@@ -135,7 +135,7 @@ play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingP
         // longer going forward the command stops.
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
-            if (index != -1 && match->playerRuntime[index].goingForward == 1) {
+            if (index != -1 && match->playerInfo[index].path.going_forward == 1) {
                 declare_run(channel, (BaseID)i, RUN_BACK);
             }
         }
@@ -211,7 +211,7 @@ static void commit_swing_power(
 // a foul — a läpilyönti — not a loose ball).
 //
 // This is a deliberate "run now", so it declares RUN_COMMIT (the AI's equivalent of a human
-// double-press), not RUN_FORWARD, which only arms. Once a runner is goingForward it is not re-issued, so
+// double-press), not RUN_FORWARD, which only arms. Once a runner is going_forward it is not re-issued, so
 // there is no double-click simulation to sequence.
 static void advance_runners_on_loose_hit(
     const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannel* channel
@@ -227,7 +227,7 @@ static void advance_runners_on_loose_hit(
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
         int shouldRun = 1;
         if (i == 0 && match->at_bat.may_leave_home == 0) continue;
-        if (index == -1 || match->playerRuntime[index].goingForward == 1) continue;
+        if (index == -1 || match->playerInfo[index].path.going_forward == 1) continue;
         // don't send a runner into a base interval someone else already occupies.
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
             BaseID bid = match->playerInfo[j].batting.presence.base_id;

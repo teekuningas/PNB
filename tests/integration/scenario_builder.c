@@ -143,9 +143,8 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     }
 
     // Set runtime state
-    game->playerRuntime[playerIndex].arrivedToBase = (progressToNext < 0.1f) ? 1 : 0;
-    game->playerRuntime[playerIndex].goingForward = 1;
-    game->playerRuntime[playerIndex].hasMadeRunOnThirdBase = 0;
+    game->playerInfo[playerIndex].path.arrived_at_base = (progressToNext < 0.1f) ? 1 : 0;
+    game->playerInfo[playerIndex].path.going_forward = 1;
 
     // DO NOT touch referee state - let referee infer it from events
 }
@@ -206,7 +205,7 @@ void setup_pitcher_ready(ScenarioContext* ctx)
 
     give_ball_to_pitcher(ctx); // ball in hand at the plate
     game->fielding_posts.baseman[0] = pitcherIdx; // the pitcher is the home catcher
-    game->playerInfo[pitcherIdx].cTPI.isNearHomeLocation = 1; // close enough to pitch
+    game->playerInfo[pitcherIdx].fielding.near_home = 1; // close enough to pitch
     game->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH; // a batter is in, standing ready
 }
 
@@ -277,8 +276,8 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
     // Referee state is NOT set here - let initialize_referee_from_physical_state() handle it
 
     // Runtime state
-    game->playerRuntime[playerIndex].goingForward = 0;
-    game->playerRuntime[playerIndex].passedPathPoint = 0;
+    game->playerInfo[playerIndex].path.going_forward = 0;
+    game->playerInfo[playerIndex].path.waypoint = 0;
 }
 
 int simulate_frames(ScenarioContext* ctx, int maxFrames)

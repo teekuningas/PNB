@@ -121,7 +121,7 @@ static void score_a_run_from_third(ScenarioContext* ctx, int runnerIndex)
 {
     place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
     snapshot_pitch_start_state(ctx);
-    ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
+    ctx->state->match->playerInfo[runnerIndex].path.waypoint = 1;
 
     Vector3D outfield = {30.0f, 0.0f, 40.0f};
     place_ball_over_location(ctx, outfield);

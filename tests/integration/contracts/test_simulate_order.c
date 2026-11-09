@@ -69,8 +69,8 @@ static void walk_fielder(MatchSession* m, int i, Vector3D ball, float dz, float 
     motion->moving = 1;
     motion->following_target = 1;
     motion->running = 0;
-    p->cTPI.busyCatching = 0;
-    p->cTPI.throw_recovery_ticks = 0;
+    p->fielding.busy_catching = 0;
+    p->fielding.throw_recovery_ticks = 0;
 }
 
 static float xz_distance(const MatchSession* m, int i, Vector3D ball)

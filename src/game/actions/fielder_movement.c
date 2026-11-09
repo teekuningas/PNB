@@ -35,7 +35,7 @@ static int controlled_fielder_may_walk(const MatchSession* match)
     if (match->catching_action.kind == CATCHING_ACTION_THROWING) return 0;
     // Fielders hold their positions while a pitch is in progress — its windup included.
     if (pitch_is_being_delivered(match)) return 0;
-    if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.throw_recovery_ticks != 0) return 0;
+    if (match->playerInfo[match->catchingState.controlled_fielder].fielding.throw_recovery_ticks != 0) return 0;
     return 1;
 }
 

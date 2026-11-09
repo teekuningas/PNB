@@ -29,14 +29,14 @@ static void update_ai_pitching(
     // is already going, the batter has had a moment to settle, and the fielders are home. The AI then
     // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
     // engine owns the windup + release.
-    if (match->ballInfo.holder == pitcherIndex && match->playerInfo[pitcherIndex].cTPI.isNearHomeLocation == 1 &&
+    if (match->ballInfo.holder == pitcherIndex && match->playerInfo[pitcherIndex].fielding.near_home == 1 &&
         match->catching_action.kind == CATCHING_ACTION_NONE && !match->ballInfo.pitch_in_flight &&
         aiController->batterReadyTimer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) fielders_home = 0;
+            if (match->playerInfo[i].fielding.near_home == 0) fielders_home = 0;
         }
 
         if (fielders_home) {
@@ -116,7 +116,7 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     int catcherIndex = match->fielding_posts.baseman[base];
     int catcherNearHome = 0;
     if (catcherIndex != -1) {
-        catcherNearHome = match->playerInfo[catcherIndex].cTPI.isNearHomeLocation;
+        catcherNearHome = match->playerInfo[catcherIndex].fielding.near_home;
     }
 
     int replacerIndex = match->fielding_posts.cover[base];
@@ -124,8 +124,8 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     int replacerBase = -1;
     int replacerMoving = 0;
     if (replacerIndex != -1) {
-        replacerStage = match->playerInfo[replacerIndex].cTPI.replacingStage;
-        replacerBase = match->playerInfo[replacerIndex].cTPI.replacingBase;
+        replacerStage = match->playerInfo[replacerIndex].fielding.replacement;
+        replacerBase = match->playerInfo[replacerIndex].fielding.replacement_base;
         replacerMoving = match->playerInfo[replacerIndex].motion.moving;
     }
 

@@ -35,15 +35,15 @@ void check_if_near_home_location(MatchSession* match)
             float dx = match->playerInfo[i].body.location.x - match->playerInfo[i].body.home_location.x;
             float dz = match->playerInfo[i].body.location.z - match->playerInfo[i].body.home_location.z;
             // if we are already close, we check if happen to have gone out.
-            if (match->playerInfo[i].cTPI.isNearHomeLocation == 1) {
+            if (match->playerInfo[i].fielding.near_home == 1) {
                 if (vec3_is_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 0) {
-                    match->playerInfo[i].cTPI.isNearHomeLocation = 0;
+                    match->playerInfo[i].fielding.near_home = 0;
                 }
             }
             // if are out we check if happened to wander in.
-            else if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
+            else if (match->playerInfo[i].fielding.near_home == 0) {
                 if (vec3_is_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 1) {
-                    match->playerInfo[i].cTPI.isNearHomeLocation = 1;
+                    match->playerInfo[i].fielding.near_home = 1;
                 }
             }
         }
@@ -55,35 +55,35 @@ void basemen_replacements(MatchSession* match)
     int i;
     for (i = 0; i < BASE_COUNT; i++) {
         // if player is not in his home base
-        if (match->playerInfo[match->fielding_posts.baseman[i]].cTPI.isNearHomeLocation == 0) {
+        if (match->playerInfo[match->fielding_posts.baseman[i]].fielding.near_home == 0) {
             // start moving replacer there instead if he is not moving already or if player does not control him
             if (match->fielding_posts.cover[i] != match->catchingState.controlled_fielder) {
-                if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage == REPLACEMENT_IDLE) {
+                if (match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement == REPLACEMENT_IDLE) {
                     move_to_target(
                         match->playerInfo, match->fielding_posts.cover[i],
                         &(match->playerInfo[match->fielding_posts.baseman[i]].body.home_location)
                     );
 
-                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_ACTIVE;
-                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase = (BaseID)i;
+                    match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement = REPLACEMENT_ACTIVE;
+                    match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement_base = (BaseID)i;
                     // can go replacing even if was busy catching before.
-                    match->playerInfo[match->fielding_posts.cover[i]].cTPI.busyCatching = 0;
+                    match->playerInfo[match->fielding_posts.cover[i]].fielding.busy_catching = 0;
                 }
             }
         }
         // if player is on his base
-        else if (match->playerInfo[match->fielding_posts.baseman[i]].cTPI.isNearHomeLocation == 1) {
+        else if (match->playerInfo[match->fielding_posts.baseman[i]].fielding.near_home == 1) {
             // and there's someone there or going there, move him back ( if player doesnt control )
             if (match->fielding_posts.cover[i] != match->catchingState.controlled_fielder) {
-                if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage != REPLACEMENT_IDLE) {
-                    if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase == (BaseID)i) {
+                if (match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement != REPLACEMENT_IDLE) {
+                    if (match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement_base == (BaseID)i) {
                         move_to_target(
                             match->playerInfo, match->fielding_posts.cover[i],
                             &(match->playerInfo[match->fielding_posts.cover[i]].body.home_location)
                         );
 
-                        match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_IDLE;
-                        match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase = BASE_NONE;
+                        match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement = REPLACEMENT_IDLE;
+                        match->playerInfo[match->fielding_posts.cover[i]].fielding.replacement_base = BASE_NONE;
                     }
                 }
             }
@@ -98,9 +98,9 @@ void move_idling_players_to_home_location(MatchSession* match)
     for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         if (match->playerInfo[i].motion.moving == 0) {
             if (i != match->catchingState.controlled_fielder) {
-                if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
-                    if (match->playerInfo[i].cTPI.replacingStage == REPLACEMENT_IDLE) {
-                        if (match->playerInfo[i].cTPI.busyCatching == 0) {
+                if (match->playerInfo[i].fielding.near_home == 0) {
+                    if (match->playerInfo[i].fielding.replacement == REPLACEMENT_IDLE) {
+                        if (match->playerInfo[i].fielding.busy_catching == 0) {
                             move_to_target(match->playerInfo, i, &(match->playerInfo[i].body.home_location));
                         }
                     }
@@ -264,7 +264,7 @@ static void move_ranked_to_catch(MatchSession* match)
         int index = match->catchingState.chase_ranking[i];
         // controlled player wont get the chance.
         if (index != match->catchingState.controlled_fielder &&
-            match->playerInfo[index].cTPI.replacingStage == REPLACEMENT_IDLE) {
+            match->playerInfo[index].fielding.replacement == REPLACEMENT_IDLE) {
             // if we are throwing ( towards a base ) we dont want the baseman there to start moving
             // as it would be nice that he is at the base when ball is caught if baserunner is going there.
             if (match->ballInfo.thrown_to == BASE_NONE ||
@@ -281,7 +281,7 @@ static void move_ranked_to_catch(MatchSession* match)
                 if (done == 0) {
                     // set busycatching flag, and move player towards the target point
                     // that has been specified beforehand.
-                    match->playerInfo[match->catchingState.chase_ranking[i]].cTPI.busyCatching = 1;
+                    match->playerInfo[match->catchingState.chase_ranking[i]].fielding.busy_catching = 1;
                     move_to_target(match->playerInfo, index, &match->catchingState.ballTargetPoint);
                 }
             }
@@ -311,12 +311,12 @@ void change_player(MatchSession* match)
             // and set him to run
             match->playerInfo[match->catchingState.controlled_fielder].motion.running = 1;
             // logic about coming back from replacement if controlled
-            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
-                match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage = REPLACEMENT_IDLE;
+            if (match->playerInfo[match->catchingState.controlled_fielder].fielding.replacement == REPLACEMENT_ACTIVE) {
+                match->playerInfo[match->catchingState.controlled_fielder].fielding.replacement = REPLACEMENT_IDLE;
             }
-            // same for busyCatching.
-            if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching == 1) {
-                match->playerInfo[match->catchingState.controlled_fielder].cTPI.busyCatching = 0;
+            // same for busy_catching.
+            if (match->playerInfo[match->catchingState.controlled_fielder].fielding.busy_catching == 1) {
+                match->playerInfo[match->catchingState.controlled_fielder].fielding.busy_catching = 0;
             }
             // move others to catch( so that the previous one for example doesnt just stop if its near the ball )
             move_ranked_to_catch(match);

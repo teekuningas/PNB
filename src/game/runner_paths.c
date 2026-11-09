@@ -67,12 +67,12 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             // if we are running home, there is the "flag" point, and we must change the direction there.
             // how it matters here is that if we have already passed the flag, we must run towards homebase,
             // if not, we must run towards flag.
-            if (match->playerRuntime[index].passedPathPoint == 0) {
+            if (match->playerInfo[index].path.waypoint == 0) {
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
 
                 match->gameEvents.homeward_runs_started++;
-            } else if (match->playerRuntime[index].passedPathPoint == 1) {
+            } else if (match->playerInfo[index].path.waypoint == 1) {
                 target.x = field_positions->homeRunPoint.x;
                 target.z = field_positions->homeRunPoint.z;
             } else {
@@ -92,7 +92,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             match->playerInfo[index].batting.presence.state = PLAYER_STATE_RUNNING;
         }
         // and we are moving forward
-        match->playerRuntime[index].goingForward = 1;
+        match->playerInfo[index].path.going_forward = 1;
         // and run_to_target can continue the job with index and the already set target.
         run_to_target(match->playerInfo, index, &target);
     }
@@ -117,10 +117,10 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
             target.z = field_positions->secondBaseRun.z;
         } else if (base == BASE_THIRD) {
             // here we again select the target by our current location relative to flag
-            if (match->playerRuntime[index].passedPathPoint == 0) {
+            if (match->playerInfo[index].path.waypoint == 0) {
                 target.x = field_positions->thirdBaseRun.x;
                 target.z = field_positions->thirdBaseRun.z;
-            } else if (match->playerRuntime[index].passedPathPoint == 1) {
+            } else if (match->playerInfo[index].path.waypoint == 1) {
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
             } else {
@@ -134,7 +134,7 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         // and set it so that next player has to have a will of his own to run
         match->runner_commitments.armed[base] = 0;
         // we arent going forward
-        match->playerRuntime[index].goingForward = 0;
+        match->playerInfo[index].path.going_forward = 0;
         // set state to running, BUT only if we aren't already WOUNDED or OUT
         if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
             match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT) {
@@ -146,9 +146,7 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
     }
 }
 
-void lead_from_base(
-    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
-)
+void lead_from_base(PlayerInfo* playerInfo, const FieldPositions* field_positions, int index)
 {
     if (index != -1) {
         int done = 0;
@@ -188,7 +186,7 @@ void lead_from_base(
             // now we in fact are leading
             playerInfo[index].batting.presence.state = PLAYER_STATE_LEADING;
             // but we dont set going forward flag.
-            playerRuntime[index].goingForward = 0;
+            playerInfo[index].path.going_forward = 0;
         }
     }
 }

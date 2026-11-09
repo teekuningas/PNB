@@ -197,8 +197,7 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(f, "%s  \"controlled_fielder\": %d,\n", sp, game->catchingState.controlled_fielder);
     fprintf(f, "%s  \"home_baseman\": %d,\n", sp, game->fielding_posts.baseman[0]);
     fprintf(
-        f, "%s  \"isNearHome_pitcher\": %d\n", sp,
-        game->playerInfo[game->fielding_posts.baseman[0]].cTPI.isNearHomeLocation
+        f, "%s  \"isNearHome_pitcher\": %d\n", sp, game->playerInfo[game->fielding_posts.baseman[0]].fielding.near_home
     );
     fprintf(f, "%s},\n", sp);
 
@@ -260,8 +259,8 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->body.location.x, p->body.location.z);
         // Runtime state
         fprintf(
-            f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp, game->playerRuntime[i].goingForward,
-            game->playerRuntime[i].arrivedToBase
+            f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp,
+            game->playerInfo[i].path.going_forward, game->playerInfo[i].path.arrived_at_base
         );
 
         // Referee State - Only valid for batting team (indices 0-11)

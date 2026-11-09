@@ -17,7 +17,7 @@
 void stop_movement(PlayerInfo* playerInfo, int index)
 {
     if (index != -1) {
-        if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
+        if (playerInfo[index].fielding.throw_recovery_ticks == 0) {
             record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_MOVEMENT_CANCELLED, false);
         }
         playerInfo[index].motion.following_target = 0;
@@ -50,7 +50,7 @@ void set_orientation(PlayerBody* body, const Vector3D* ball_location)
 void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
-        if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
+        if (playerInfo[index].fielding.throw_recovery_ticks == 0) {
             float dx;
             float dz;
             float norm;
@@ -81,9 +81,7 @@ void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 }
 // so this function is called when outs happen but also when wounds happen. it just moves
 // players out of the field and then to homebase.
-void move_player_out(
-    PlayerInfo* playerInfo, PlayerRuntimeState* playerRuntime, const FieldPositions* field_positions, int index
-)
+void move_player_out(PlayerInfo* playerInfo, const FieldPositions* field_positions, int index)
 {
     Vector3D target;
     // we are walking
@@ -97,7 +95,7 @@ void move_player_out(
         target.z = field_positions->rightPoint.z + 10.0f;
     }
     // path point not passed yet.
-    playerRuntime[index].passedPathPoint = 0;
+    playerInfo[index].path.waypoint = 0;
 
     // and move to target takes care of the rest.
     move_to_target(playerInfo, index, &target);

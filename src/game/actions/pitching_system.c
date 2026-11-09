@@ -41,7 +41,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (match->offers.free_walk != 0) {
         return (Permission){0, RULE_PITCH_NOT_DURING_FREE_WALK_OFFER};
     }
-    if (match->playerInfo[pitcher].cTPI.isNearHomeLocation != 1) {
+    if (match->playerInfo[pitcher].fielding.near_home != 1) {
         return (Permission){0, RULE_PITCHER_OFF_THE_PLATE};
     }
     return (Permission){1, RULE_NONE};

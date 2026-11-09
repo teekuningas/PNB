@@ -107,7 +107,7 @@ static void throw_release(MatchSession* match)
     if (power > 1.0f) power = 1.0f;
 
     record_player_activity(&match->playerInfo[match->ballInfo.holder].events, PLAYER_ACTIVITY_THROW_RELEASED, true);
-    match->playerInfo[match->ballInfo.holder].cTPI.throw_recovery_ticks = THROW_RECOVERY_TICKS;
+    match->playerInfo[match->ballInfo.holder].fielding.throw_recovery_ticks = THROW_RECOVERY_TICKS;
 
     // normalize the latched direction and give it a small upward component
     float dx = windup.direction.x / windup.distance;
@@ -133,7 +133,7 @@ static void throw_release(MatchSession* match)
     match->catchingState.controlled_fielder = -1;
 }
 
-void advance_throw_recovery(CatchingTeamPlayerInfo* fielding)
+void advance_throw_recovery(FieldingPlayerState* fielding)
 {
     if (fielding->throw_recovery_ticks > 0) fielding->throw_recovery_ticks--;
 }

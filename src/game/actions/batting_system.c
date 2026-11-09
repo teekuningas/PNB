@@ -97,9 +97,8 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
     match->at_bat.may_leave_home = 0;
     // just set default values so that the player can have a fresh start at
     // the field.
-    match->playerRuntime[index].goingForward = 0;
-    match->playerRuntime[index].passedPathPoint = 0;
-    match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
+    match->playerInfo[index].path.going_forward = 0;
+    match->playerInfo[index].path.waypoint = 0;
     // if he is a (unused) joker player, mark him as used.
     // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
     if (match->playerInfo[index].batting.joker == JOKER_AVAILABLE) {

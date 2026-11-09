@@ -26,6 +26,10 @@ static void run_contract_tests(void)
     RUN_TEST(test_half_inning_replaces_batting_attributes_and_resources);
     RUN_TEST(test_foul_restores_presence_without_replacing_batting_resources);
     RUN_TEST(test_contest_pair_numbers_and_presence_have_distinct_lifetimes);
+    RUN_TEST(test_third_home_route_visits_flag_before_physical_arrival);
+    RUN_TEST(test_third_home_retreat_returns_via_flag_to_third);
+    RUN_TEST(test_terminal_players_complete_all_exit_legs);
+    RUN_TEST(test_simulate_raises_and_consumes_each_runner_arrival);
     RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
     RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 

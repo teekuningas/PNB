@@ -144,13 +144,14 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
         put(0, "c%d,%d,%d,%d,%d,%d,%d,%d,%d;", p->side, p->motion.moving, p->motion.running, p->motion.following_target,
             p->motion.sync_previous_location, (int)players->players[i].model, players->players[i].frame_tick,
             players->players[i].frame_count, players->players[i].ticks_per_frame);
-        // The historical slot observes active recovery, independently of its countdown representation.
-        put(0, "f%d,%d,%d,%d,%d,%d;", p->cTPI.position, p->cTPI.isNearHomeLocation, (int)p->cTPI.replacingStage,
-            (int)p->cTPI.replacingBase, p->cTPI.busyCatching, p->cTPI.throw_recovery_ticks != 0);
+        // Keep the never-used position slot zero; recovery retains its historical active/not-active slot.
+        put(0, "f%d,%d,%d,%d,%d,%d;", 0, p->fielding.near_home, (int)p->fielding.replacement,
+            (int)p->fielding.replacement_base, p->fielding.busy_catching, p->fielding.throw_recovery_ticks != 0);
         put(0, "b%d,%d,%d,%d,%d,%d;", p->attributes.speed, p->attributes.power, p->batting.number, (int)p->batting.joker,
             (int)p->batting.presence.state, (int)p->batting.presence.base_id);
-        const PlayerRuntimeState* rt = &m->playerRuntime[i];
-        put(0, "r%d,%d,%d,%d;", rt->arrivedToBase, rt->passedPathPoint, rt->goingForward, rt->hasMadeRunOnThirdBase);
+        const PlayerPathState* path = &p->path;
+        // The removed write-only guard occupied the final historical zero slot.
+        put(0, "r%d,%d,%d,%d;", path->arrived_at_base, path->waypoint, path->going_forward, 0);
     }
 
     const BallInfo* b = &m->ballInfo;

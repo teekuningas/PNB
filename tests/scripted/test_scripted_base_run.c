@@ -57,7 +57,7 @@ int test_scripted_single_tap_does_not_run_batter(void)
     scripted_run(g, 5);
 
     // Armed, not committed: the batter is still at bat and not going forward.
-    int going = scripted_match(g)->playerRuntime[bi].goingForward;
+    int going = scripted_match(g)->playerInfo[bi].path.going_forward;
     int state = (int)scripted_match(g)->playerInfo[bi].batting.presence.state;
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
@@ -85,7 +85,7 @@ int test_scripted_double_tap_runs_batter(void)
     scripted_run(g, 5);
 
     // Committed: run_to_next_base(BASE_HOME) set the batter going forward and stopped the at-bat.
-    int going = scripted_match(g)->playerRuntime[bi].goingForward;
+    int going = scripted_match(g)->playerInfo[bi].path.going_forward;
     int cycle_open = batting_cycle_is_open(&scripted_match(g)->at_bat);
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];

@@ -57,7 +57,7 @@ typedef struct _ThrowValues {
 // power is known and its windup has elapsed. Called once per frame from actualize. Timing is the
 // master; the animation only follows.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared);
-void advance_throw_recovery(CatchingTeamPlayerInfo* fielding);
+void advance_throw_recovery(FieldingPlayerState* fielding);
 
 void drop_ball(MatchSession* match);
 

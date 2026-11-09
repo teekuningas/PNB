@@ -45,9 +45,9 @@ int test_run_arrival_before_ball_lands(void)
     ctx->state->match->playerInfo[runnerIndex].body.location = startLoc;
     ctx->state->match->playerInfo[runnerIndex].body.previous_location = startLoc;
 
-    // Set runtime state: passedPathPoint=1 means "past corner flag, run to homeRunPoint"
+    // waypoint=1 means "past corner flag, run to homeRunPoint"
     // Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)
-    ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
+    ctx->state->match->playerInfo[runnerIndex].path.waypoint = 1;
 
     printf(
         "Setup: Runner %d placed close to home at (%.1f, %.1f, %.1f)\n", runnerIndex, startLoc.x, startLoc.y, startLoc.z
