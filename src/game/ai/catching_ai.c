@@ -126,7 +126,7 @@ static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentCha
     if (replacerIndex != -1) {
         replacerStage = match->playerInfo[replacerIndex].cTPI.replacingStage;
         replacerBase = match->playerInfo[replacerIndex].cTPI.replacingBase;
-        replacerMoving = match->playerInfo[replacerIndex].cPI.moving;
+        replacerMoving = match->playerInfo[replacerIndex].motion.moving;
     }
 
     int shouldThrow = should_ai_throw(
@@ -166,7 +166,7 @@ void update_catching_ai(
         if (match->catching_action.kind == CATCHING_ACTION_NONE) {
             if (match->ballInfo.thrown_to == BASE_NONE || match->ballInfo.currentFlightHasHitGround == 1) {
                 Vector3D target = chase_point(
-                    &match->playerInfo[match->catchingState.controlled_fielder].tPI.location,
+                    &match->playerInfo[match->catchingState.controlled_fielder].body.location,
                     &(match->catchingState.ballTargetPoint)
                 );
                 steer_controlled_fielder(match, aiController, &target, channel);
@@ -252,11 +252,11 @@ void update_catching_ai(
                 // on six of 264 sweep seeds before the stand-off went in.
                 int baseman = match->fielding_posts.baseman[throwBase];
                 if (match->catchingState.controlled_fielder != -1 && baseman != -1) {
-                    Vector3D target = match->playerInfo[baseman].tPI.homeLocation;
+                    Vector3D target = match->playerInfo[baseman].body.home_location;
                     if (match->catchingState.controlled_fielder != baseman) {
                         Vector3D baseTarget = throw_target_point(fieldPositions, (BaseID)throwBase);
                         target = carry_to_throw_point(
-                            &match->playerInfo[match->catchingState.controlled_fielder].tPI.location, &baseTarget
+                            &match->playerInfo[match->catchingState.controlled_fielder].body.location, &baseTarget
                         );
                     }
                     steer_controlled_fielder(match, aiController, &target, channel);

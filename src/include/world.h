@@ -95,15 +95,14 @@ typedef struct _CatchingTeamState {
     int chase_ranking[RANKED_FIELDERS_COUNT]; // the fielders best placed to meet the ball, best first
     int ranking_cursor; // which entry of chase_ranking control was last handed to; -1 when none was
 } CatchingTeamState;
-// spatial data for every player
-typedef struct _TechnicalPlayerInfo {
+typedef struct _PlayerBody {
     Vector3D location;
-    Vector3D lastLocation;
-    Vector3D homeLocation;
-    Vector3D targetLocation;
+    Vector3D previous_location;
+    Vector3D home_location;
+    Vector3D target_location;
     Vector3D velocity;
     Vector3D orientation;
-} TechnicalPlayerInfo;
+} PlayerBody;
 
 // MILESTONE 7.5 - Separating Control State from Domain State
 typedef struct _PlayerRuntimeState {
@@ -131,17 +130,12 @@ typedef enum { TEAM_BATTING = 0, TEAM_CATCHING = 1 } TeamSide;
 
 typedef enum { REPLACEMENT_IDLE = 0, REPLACEMENT_ACTIVE = 1 } ReplacementState;
 
-typedef struct _CommonPlayerInfo {
-    // player information. name is shown on the screen sometimes, team is used in players.c
-    // and stats are used to make players behave in different ways on some situations.
-    TeamSide team;
-
-    int moving; // 0 doesnt, 1 moves
-    int running; // 0 doesnt, 1 runs
-    int looksForTarget; // used in conjuction with targetLocation when trying to go catching a ball for example
-    int lastLastLocationUpdate; // player needs to have his lastLocation updated, necessary when controlling player and
-                                // moving stops. twitching without this
-} CommonPlayerInfo;
+typedef struct _PlayerMotion {
+    int moving;
+    int running; // Also locks automatic facing, even when stationary.
+    int following_target;
+    int sync_previous_location; // One body-step request to catch interpolation up after a stop.
+} PlayerMotion;
 
 typedef struct _CatchingTeamPlayerInfo {
     int position; // pitcher, catcher, 1st baseman..
@@ -154,8 +148,9 @@ typedef struct _CatchingTeamPlayerInfo {
 } CatchingTeamPlayerInfo;
 
 typedef struct _PlayerInfo {
-    TechnicalPlayerInfo tPI;
-    CommonPlayerInfo cPI;
+    PlayerBody body;
+    TeamSide side; // The slot's current role, not a stable roster identity.
+    PlayerMotion motion;
     CatchingTeamPlayerInfo cTPI;
     BattingTeamPlayerInfo bTPI;
     PlayerActivityEvents events; // Drained at the SIMULATE boundary and again by CLEAR.

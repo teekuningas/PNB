@@ -15,8 +15,8 @@ int test_batter_forced_out_at_first(void)
     setup_batter_at_home(ctx, 0);
 
     Vector3D firstBase = ctx->state->fieldPositions->firstBase;
-    ctx->state->match->playerInfo[13].tPI.location = firstBase;
-    ctx->state->match->playerInfo[13].tPI.homeLocation = firstBase;
+    ctx->state->match->playerInfo[13].body.location = firstBase;
+    ctx->state->match->playerInfo[13].body.home_location = firstBase;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);

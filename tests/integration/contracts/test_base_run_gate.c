@@ -51,7 +51,7 @@ static int one_runner_on_first(ScenarioContext* ctx)
     const int runner = 3;
     m->playerInfo[runner].bTPI.baseId = BASE_FIRST;
     m->playerInfo[runner].bTPI.state = PLAYER_STATE_ON_BASE;
-    m->playerInfo[runner].cPI.moving = 0;
+    m->playerInfo[runner].motion.moving = 0;
     referee->battingPlayers[runner].currentSafetyBase = BASE_FIRST;
     referee->battingPlayers[runner].baseAtPitchStart = BASE_FIRST;
     referee->battingPlayers[runner].status = PLAYER_STATUS_ACTIVE;

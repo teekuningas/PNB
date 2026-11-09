@@ -18,8 +18,8 @@ int test_fly_ball_runner_wounded(void)
 
     int fielderIdx = 15;
     Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->playerInfo[fielderIdx].body.home_location = fielderLoc;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);

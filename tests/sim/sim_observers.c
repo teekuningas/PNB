@@ -231,9 +231,9 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
 
     for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         const PlayerInfo* p = &m->playerInfo[i];
-        FOLD(h, p->tPI.location.x);
-        FOLD(h, p->tPI.location.y);
-        FOLD(h, p->tPI.location.z);
+        FOLD(h, p->body.location.x);
+        FOLD(h, p->body.location.y);
+        FOLD(h, p->body.location.z);
         FOLD_INTEGER(h, p->bTPI.baseId);
         FOLD_INTEGER(h, p->bTPI.state);
     }
@@ -527,15 +527,15 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
         o->initialized = 1;
         o->p_batOutcome = batOutcome;
         o->p_controlled = control;
-        if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
+        if (control != -1) o->p_controlLocation = m->playerInfo[control].body.location;
         return;
     }
 
     // The speed probe. Only frames where the SAME player stayed controlled and was moving count —
     // a control change is a different player's position, not a step this one took.
-    if (control != -1 && control == o->p_controlled && m->playerInfo[control].cPI.moving == 1) {
-        float dx = m->playerInfo[control].tPI.location.x - o->p_controlLocation.x;
-        float dz = m->playerInfo[control].tPI.location.z - o->p_controlLocation.z;
+    if (control != -1 && control == o->p_controlled && m->playerInfo[control].motion.moving == 1) {
+        float dx = m->playerInfo[control].body.location.x - o->p_controlLocation.x;
+        float dz = m->playerInfo[control].body.location.z - o->p_controlLocation.z;
         double step = sqrt((double)(dx * dx + dz * dz));
         if (step < FIELDING_MAX_HONEST_STEP) {
             o->step_frames++;
@@ -551,8 +551,8 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
 
     if (o->chasing) {
         if (control != -1) {
-            float dx = m->playerInfo[control].tPI.location.x - m->catchingState.ballTargetPoint.x;
-            float dz = m->playerInfo[control].tPI.location.z - m->catchingState.ballTargetPoint.z;
+            float dx = m->playerInfo[control].body.location.x - m->catchingState.ballTargetPoint.x;
+            float dz = m->playerInfo[control].body.location.z - m->catchingState.ballTargetPoint.z;
             o->chase_samples++;
             o->chase_dist_sum += sqrt((double)(dx * dx + dz * dz));
         }
@@ -571,7 +571,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
 
     o->p_batOutcome = batOutcome;
     o->p_controlled = control;
-    if (control != -1) o->p_controlLocation = m->playerInfo[control].tPI.location;
+    if (control != -1) o->p_controlLocation = m->playerInfo[control].body.location;
 }
 
 void batting_selection_observer_init(BattingSelectionObserver* o)

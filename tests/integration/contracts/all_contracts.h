@@ -9,6 +9,10 @@ int test_camera_facts_distinguish_resets_from_flow_short_circuits(void);
 int test_player_view_preserves_phase_and_restart_boundaries(void);
 int test_player_activity_facts_survive_same_tick_arrival(void);
 int test_player_view_resets_before_batter_readiness(void);
+int test_player_facing_preserves_planar_displacement(void);
+int test_player_stops_preserve_distinct_facing_and_sync(void);
+int test_player_reset_recipes_rebuild_home_geometry(void);
+int test_idle_fielder_returns_to_its_home_geometry(void);
 // SIMULATE asks the catch against the fielders where the previous tick left them
 int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void);
 int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void);

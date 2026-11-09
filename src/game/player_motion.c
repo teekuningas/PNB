@@ -20,30 +20,27 @@ void stop_movement(PlayerInfo* playerInfo, int index)
         if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
             record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_MOVEMENT_CANCELLED, false);
         }
-        playerInfo[index].cPI.looksForTarget = 0;
-        playerInfo[index].cPI.moving = 0;
+        playerInfo[index].motion.following_target = 0;
+        playerInfo[index].motion.moving = 0;
 
-        playerInfo[index].cPI.lastLastLocationUpdate = 1;
+        playerInfo[index].motion.sync_previous_location = 1;
     }
 }
 // this is for batting team players
-void stop_target_looking_player(PlayerInfo* playerInfo, int index)
+void stop_target_looking_player(PlayerMotion* motion)
 {
-    playerInfo[index].cPI.moving = 0;
-    playerInfo[index].cPI.running = 0;
-    playerInfo[index].cPI.looksForTarget = 0;
-    playerInfo[index].cPI.lastLastLocationUpdate = 1;
+    motion->moving = 0;
+    motion->running = 0;
+    motion->following_target = 0;
+    motion->sync_previous_location = 1;
 }
 
-void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i)
+void set_orientation(PlayerBody* body, const Vector3D* ball_location)
 {
-    // simply set player to orient towards the ball
-    if (i != -1) {
-        float dx = ballInfo->location.x - playerInfo[i].tPI.location.x;
-        float dz = ballInfo->location.z - playerInfo[i].tPI.location.z;
-        playerInfo[i].tPI.orientation.x = dx;
-        playerInfo[i].tPI.orientation.z = dz;
-    }
+    float dx = ball_location->x - body->location.x;
+    float dz = ball_location->z - body->location.z;
+    body->orientation.x = dx;
+    body->orientation.z = dz;
 }
 
 /*
@@ -57,26 +54,26 @@ void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
             float dx;
             float dz;
             float norm;
-            playerInfo[index].tPI.targetLocation.x = target->x;
-            playerInfo[index].tPI.targetLocation.z = target->z;
-            // looksForTarget is important flag to avoid unnecessary
+            playerInfo[index].body.target_location.x = target->x;
+            playerInfo[index].body.target_location.z = target->z;
+            // following_target is important flag to avoid unnecessary
             // overhead of checking whether the player has
             // arrived to target location.
-            playerInfo[index].cPI.looksForTarget = 1;
+            playerInfo[index].motion.following_target = 1;
             // first find the unit vector for direction and then set player's
             // velocity to be the direction vector times the walk_speed.
-            dx = playerInfo[index].tPI.targetLocation.x - playerInfo[index].tPI.location.x;
-            dz = playerInfo[index].tPI.targetLocation.z - playerInfo[index].tPI.location.z;
+            dx = playerInfo[index].body.target_location.x - playerInfo[index].body.location.x;
+            dz = playerInfo[index].body.target_location.z - playerInfo[index].body.location.z;
 
-            norm = vec3_distance_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
+            norm = vec3_distance_xz(&playerInfo[index].body.target_location, &playerInfo[index].body.location);
 
             if (norm < EPSILON) norm = 1.0f;
-            vec3_set_xz(&playerInfo[index].tPI.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
+            vec3_set_xz(&playerInfo[index].body.velocity, dx * WALK_SPEED / norm, dz * WALK_SPEED / norm);
             // if the player for some reason was running before this, set that to 0.
             // could happen for example if baserunner gets out.
-            playerInfo[index].cPI.running = 0;
+            playerInfo[index].motion.running = 0;
             // and set moving to 1 so that player's location will be updated.
-            playerInfo[index].cPI.moving = 1;
+            playerInfo[index].motion.moving = 1;
 
             record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_WALKING_TO_TARGET, true);
         }
@@ -90,9 +87,9 @@ void move_player_out(
 {
     Vector3D target;
     // we are walking
-    playerInfo[index].cPI.running = 0;
+    playerInfo[index].motion.running = 0;
     // left or right?
-    if (playerInfo[index].tPI.location.x < 0) {
+    if (playerInfo[index].body.location.x < 0) {
         target.x = field_positions->leftPoint.x - 5.0f;
         target.z = field_positions->leftPoint.z + 10.0f;
     } else {

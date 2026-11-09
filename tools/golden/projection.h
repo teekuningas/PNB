@@ -136,13 +136,13 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         const PlayerInfo* p = &m->playerInfo[i];
         put(0, "[%d]", i);
-        V(0, p->tPI.location);
-        V(0, p->tPI.lastLocation);
-        V(0, p->tPI.targetLocation);
-        V(0, p->tPI.velocity);
-        V(0, p->tPI.orientation);
-        put(0, "c%d,%d,%d,%d,%d,%d,%d,%d,%d;", p->cPI.team, p->cPI.moving, p->cPI.running, p->cPI.looksForTarget,
-            p->cPI.lastLastLocationUpdate, (int)players->players[i].model, players->players[i].frame_tick,
+        V(0, p->body.location);
+        V(0, p->body.previous_location);
+        V(0, p->body.target_location);
+        V(0, p->body.velocity);
+        V(0, p->body.orientation);
+        put(0, "c%d,%d,%d,%d,%d,%d,%d,%d,%d;", p->side, p->motion.moving, p->motion.running, p->motion.following_target,
+            p->motion.sync_previous_location, (int)players->players[i].model, players->players[i].frame_tick,
             players->players[i].frame_count, players->players[i].ticks_per_frame);
         // The historical slot observes active recovery, independently of its countdown representation.
         put(0, "f%d,%d,%d,%d,%d,%d;", p->cTPI.position, p->cTPI.isNearHomeLocation, (int)p->cTPI.replacingStage,

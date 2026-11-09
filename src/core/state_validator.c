@@ -253,11 +253,11 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
 
         fprintf(f, "%s  {\n", sp);
         fprintf(f, "%s    \"id\": %d,\n", sp, i);
-        fprintf(f, "%s    \"team\": %d,\n", sp, p->cPI.team);
+        fprintf(f, "%s    \"team\": %d,\n", sp, p->side);
         fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
         fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
         fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
-        fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->tPI.location.x, p->tPI.location.z);
+        fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->body.location.x, p->body.location.z);
         // Runtime state
         fprintf(
             f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp, game->playerRuntime[i].goingForward,

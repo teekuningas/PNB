@@ -220,8 +220,8 @@ if ! naming_counts=$(bash tools/naming_debt.sh "$IDIR"); then
     exit 2
 fi
 read -r camel_fields player_abbreviations <<< "$naming_counts"
-ratchet "mixed-case file-scope struct fields" "$camel_fields" 192
-ratchet "player sub-struct abbreviation words" "$player_abbreviations" 800
+ratchet "mixed-case file-scope struct fields" "$camel_fields" 185
+ratchet "player sub-struct abbreviation words" "$player_abbreviations" 394
 
 # ---------------------------------------------------------------------------
 # The docs depend on the code; the code must NOT depend on the docs. That edge is

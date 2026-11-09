@@ -93,7 +93,7 @@ int test_controlled_fielder_holds_during_a_later_windup(void)
     ScenarioContext* ctx = later_windup();
     MatchSession* m = ctx->state->match;
     const int pitcher = m->ballInfo.holder;
-    const Vector3D at = m->playerInfo[pitcher].tPI.location;
+    const Vector3D at = m->playerInfo[pitcher].body.location;
 
     // Only the engine stage runs here, so nothing integrates a velocity into a position: the walk shows
     // up as the velocity the mover sets, which is what is read.
@@ -103,7 +103,7 @@ int test_controlled_fielder_holds_during_a_later_windup(void)
     intent_push(&ctx->state->channels.catching, move);
     tick(ctx);
 
-    const Vector3D v = m->playerInfo[pitcher].tPI.velocity;
+    const Vector3D v = m->playerInfo[pitcher].body.velocity;
     ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "precondition: still winding up");
     ASSERT_FLOAT_EQ(0.0f, v.x, 1e-6f, "the pitcher must not be set walking during the windup");
     ASSERT_FLOAT_EQ(0.0f, v.z, 1e-6f, "the pitcher must not be set walking during the windup");

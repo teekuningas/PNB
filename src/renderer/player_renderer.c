@@ -35,20 +35,20 @@ void draw_player_renderer(
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT + PLAYERS_IN_TEAM; i++) {
         j++;
         // calculate the angle in which player is facing
-        angle = atan2(-playerInfo[i].tPI.orientation.z, playerInfo[i].tPI.orientation.x) * 180.0f / PI;
+        angle = atan2(-playerInfo[i].body.orientation.z, playerInfo[i].body.orientation.x) * 180.0f / PI;
         // for every player we also move and rotate the players to right places
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x),
-            (float)playerInfo[i].tPI.location.y,
-            (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+            (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x),
+            (float)playerInfo[i].body.location.y,
+            (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
         );
         glScalef(PLAYER_SCALE, PLAYER_SCALE, PLAYER_SCALE);
         glRotatef((float)(angle + 90), 0.0f, 1.0f, 0.0f);
 
         // and we render. first texture is selected, as there are different teams and within teams there are jokers
         // and nonjokers. and then the model is selected and it also calls the display list.
-        textureSelection(scoreboard, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0, rm);
+        textureSelection(scoreboard, playerInfo[i].side, playerInfo[i].bTPI.joker, 0, rm);
         modelSelection(match, &players->players[i], rm);
         // and then there is the shadow.
         // we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same
@@ -58,9 +58,10 @@ void draw_player_renderer(
         glDisable(GL_LIGHTING);
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x - 0.2f),
+            (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x -
+                    0.2f),
             SHADOW_HEIGHT + 0.001f * j,
-            (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+            (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
         );
         glScalef(1.0f, 1.0f, 0.6f);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -70,12 +71,12 @@ void draw_player_renderer(
         glEnable(GL_LIGHTING);
         // and then there is the marker at the top of player who is controlled
         if (i == match->catchingState.controlled_fielder) {
-            textureSelection(scoreboard, playerInfo[i].cPI.team, 0, 1, rm);
+            textureSelection(scoreboard, playerInfo[i].side, 0, 1, rm);
             glPushMatrix();
             glTranslatef(
-                (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x),
-                (float)playerInfo[i].tPI.location.y + 2.0f,
-                (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+                (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x),
+                (float)playerInfo[i].body.location.y + 2.0f,
+                (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
             );
             glScalef(SELECTION_BALL_SCALE, SELECTION_BALL_SCALE, SELECTION_BALL_SCALE);
             glCallList(resource_manager_get_model(rm, "data/models/pallo.obj"));

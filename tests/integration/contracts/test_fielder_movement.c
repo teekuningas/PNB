@@ -43,8 +43,8 @@ static ScenarioContext* fielder_scenario(void)
     MatchSession* m = ctx->state->match;
     m->catchingState.controlled_fielder = FIELDER_INDEX;
     m->ballInfo.holder = -1;
-    m->playerInfo[FIELDER_INDEX].tPI.location.x = 0.0f;
-    m->playerInfo[FIELDER_INDEX].tPI.location.z = 5.0f;
+    m->playerInfo[FIELDER_INDEX].body.location.x = 0.0f;
+    m->playerInfo[FIELDER_INDEX].body.location.z = 5.0f;
 
     initialize_referee_from_physical_state(ctx);
     return ctx;
@@ -73,8 +73,8 @@ static void ingest_and_actualize(ScenarioContext* ctx)
 
 static float speed_xz(const MatchSession* m, int index)
 {
-    float vx = m->playerInfo[index].tPI.velocity.x;
-    float vz = m->playerInfo[index].tPI.velocity.z;
+    float vx = m->playerInfo[index].body.velocity.x;
+    float vz = m->playerInfo[index].body.velocity.z;
     return sqrtf(vx * vx + vz * vz);
 }
 
@@ -116,10 +116,10 @@ int test_move_target_sets_velocity_toward_the_point(void)
     declare_move_target(ctx, 0.0f, 25.0f); // straight ahead in +z
     ingest_and_actualize(ctx);
 
-    ASSERT_EQ(1, m->playerInfo[FIELDER_INDEX].cPI.moving, "a declared destination starts the fielder moving");
+    ASSERT_EQ(1, m->playerInfo[FIELDER_INDEX].motion.moving, "a declared destination starts the fielder moving");
     ASSERT_FLOAT_EQ(RUN_SPEED, speed_xz(m, FIELDER_INDEX), 1e-5f, "the controlled fielder runs, it does not walk");
-    ASSERT(m->playerInfo[FIELDER_INDEX].tPI.velocity.z > 0.0f, "and it is heading toward the point, not away");
-    ASSERT_FLOAT_EQ(0.0f, m->playerInfo[FIELDER_INDEX].tPI.velocity.x, 1e-5f, "no sideways drift on a straight line");
+    ASSERT(m->playerInfo[FIELDER_INDEX].body.velocity.z > 0.0f, "and it is heading toward the point, not away");
+    ASSERT_FLOAT_EQ(0.0f, m->playerInfo[FIELDER_INDEX].body.velocity.x, 1e-5f, "no sideways drift on a straight line");
     ASSERT_EQ(1, m->ballInfo.needsMoveUpdate, "a change of the carrier's velocity has to be offered to a carried ball");
 
     cleanup_scenario(ctx);
@@ -132,12 +132,12 @@ int test_move_target_at_the_fielder_is_a_no_op(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    Vector3D where = m->playerInfo[FIELDER_INDEX].tPI.location;
+    Vector3D where = m->playerInfo[FIELDER_INDEX].body.location;
 
     for (int i = 0; i < 10; i++) {
         declare_move_target(ctx, where.x, where.z);
         ingest_and_actualize(ctx);
-        ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].cPI.moving, "a fielder sent where it stands does not set off");
+        ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].motion.moving, "a fielder sent where it stands does not set off");
         ASSERT_FLOAT_EQ(0.0f, speed_xz(m, FIELDER_INDEX), 1e-6f, "and has no velocity to integrate");
     }
 
@@ -155,9 +155,9 @@ int test_move_target_stops_on_arrival(void)
     declare_move_target(ctx, 0.0f, 10.0f); // 5 units away: ~42 frames at RUN_SPEED
     simulate_frames(ctx, 200);
 
-    ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].cPI.moving, "the fielder stops when it gets there");
-    float dz = m->playerInfo[FIELDER_INDEX].tPI.location.z - 10.0f;
-    float dx = m->playerInfo[FIELDER_INDEX].tPI.location.x;
+    ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].motion.moving, "the fielder stops when it gets there");
+    float dz = m->playerInfo[FIELDER_INDEX].body.location.z - 10.0f;
+    float dx = m->playerInfo[FIELDER_INDEX].body.location.x;
     ASSERT(sqrtf(dx * dx + dz * dz) <= TARGET_ACHIEVED_THRESHOLD, "and it stops AT the point it was sent to");
     ASSERT_EQ(
         1, m->catchingState.controlledMoveTargetActive,
@@ -168,14 +168,16 @@ int test_move_target_stops_on_arrival(void)
     // reached. This is what the non-idempotent spike did on every tick — arrive, stop, be sent to
     // the point it was standing on, start — and that oscillation alone was enough to push the
     // home-run contest out of a legal state. The fielder must not twitch, and must not drift.
-    Vector3D settled = m->playerInfo[FIELDER_INDEX].tPI.location;
+    Vector3D settled = m->playerInfo[FIELDER_INDEX].body.location;
     for (int i = 0; i < 200; i++) {
         declare_move_target(ctx, 0.0f, 10.0f);
         simulate_frames(ctx, 1);
-        ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].cPI.moving, "restating a reached destination never restarts a walk");
+        ASSERT_EQ(
+            0, m->playerInfo[FIELDER_INDEX].motion.moving, "restating a reached destination never restarts a walk"
+        );
     }
-    float driftX = m->playerInfo[FIELDER_INDEX].tPI.location.x - settled.x;
-    float driftZ = m->playerInfo[FIELDER_INDEX].tPI.location.z - settled.z;
+    float driftX = m->playerInfo[FIELDER_INDEX].body.location.x - settled.x;
+    float driftZ = m->playerInfo[FIELDER_INDEX].body.location.z - settled.z;
     ASSERT_FLOAT_EQ(0.0f, sqrtf(driftX * driftX + driftZ * driftZ), 1e-6f, "and the fielder does not creep");
 
     cleanup_scenario(ctx);

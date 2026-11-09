@@ -36,8 +36,8 @@ int test_run_arrival_before_catch(void)
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
-    ctx->state->match->playerInfo[runnerIndex].tPI.location = startLoc;
-    ctx->state->match->playerInfo[runnerIndex].tPI.lastLocation = startLoc;
+    ctx->state->match->playerInfo[runnerIndex].body.location = startLoc;
+    ctx->state->match->playerInfo[runnerIndex].body.previous_location = startLoc;
 
     // Set runtime state: passedPathPoint=1 means "past corner flag, run to homeRunPoint"
     ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
@@ -50,8 +50,8 @@ int test_run_arrival_before_catch(void)
     // 3. Position a fielder at first base to catch the ball
     int fielderIdx = 14;
     Vector3D fielderLoc = ctx->state->fieldPositions->firstBase;
-    ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->playerInfo[fielderIdx].body.home_location = fielderLoc;
 
     // 4. Initialize referee from physical state (referee doesn't mind runner is off-base)
     initialize_referee_from_physical_state(ctx);

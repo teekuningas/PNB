@@ -82,14 +82,14 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 
                 // 6. Restore Physical Locations for field runners
                 if (match->playerInfo[j].bTPI.baseId == BASE_FIRST) {
-                    match->playerInfo[j].tPI.location.x = field_positions->firstBaseRun.x;
-                    match->playerInfo[j].tPI.location.z = field_positions->firstBaseRun.z;
+                    match->playerInfo[j].body.location.x = field_positions->firstBaseRun.x;
+                    match->playerInfo[j].body.location.z = field_positions->firstBaseRun.z;
                 } else if (match->playerInfo[j].bTPI.baseId == BASE_SECOND) {
-                    match->playerInfo[j].tPI.location.x = field_positions->secondBaseRun.x;
-                    match->playerInfo[j].tPI.location.z = field_positions->secondBaseRun.z;
+                    match->playerInfo[j].body.location.x = field_positions->secondBaseRun.x;
+                    match->playerInfo[j].body.location.z = field_positions->secondBaseRun.z;
                 } else if (match->playerInfo[j].bTPI.baseId == BASE_THIRD) {
-                    match->playerInfo[j].tPI.location.x = field_positions->thirdBaseRun.x;
-                    match->playerInfo[j].tPI.location.z = field_positions->thirdBaseRun.z;
+                    match->playerInfo[j].body.location.x = field_positions->thirdBaseRun.x;
+                    match->playerInfo[j].body.location.z = field_positions->thirdBaseRun.z;
                 }
             } else {
                 // Restore OUT/SCORED/WOUNDED so enforcement does not start their exit again.
@@ -156,24 +156,24 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i]) / 20.0f);
 
-        match->playerInfo[i].tPI.homeLocation.x =
+        match->playerInfo[i].body.home_location.x =
             (float)(field_positions->pitchPlate.x +
                     (HOME_RADIUS)*radiusFix *
                         cos(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
-        match->playerInfo[i].tPI.homeLocation.y = BALL_HEIGHT_WITH_PLAYER;
-        match->playerInfo[i].tPI.homeLocation.z =
+        match->playerInfo[i].body.home_location.y = BALL_HEIGHT_WITH_PLAYER;
+        match->playerInfo[i].body.home_location.z =
             (float)(field_positions->pitchPlate.z +
                     (HOME_RADIUS)*radiusFix *
                         sin(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
-        match->playerInfo[i].tPI.location.x = match->playerInfo[i].tPI.homeLocation.x;
-        match->playerInfo[i].tPI.location.y = match->playerInfo[i].tPI.homeLocation.y;
-        match->playerInfo[i].tPI.location.z = match->playerInfo[i].tPI.homeLocation.z;
-        match->playerInfo[i].tPI.orientation.x = match->ballInfo.location.x - match->playerInfo[i].tPI.location.x;
-        match->playerInfo[i].tPI.orientation.y = match->ballInfo.location.y - match->playerInfo[i].tPI.location.y;
-        match->playerInfo[i].tPI.orientation.z = match->ballInfo.location.z - match->playerInfo[i].tPI.location.z;
-        match->playerInfo[i].tPI.lastLocation.x = match->playerInfo[i].tPI.location.x;
-        match->playerInfo[i].tPI.lastLocation.y = match->playerInfo[i].tPI.location.y;
-        match->playerInfo[i].tPI.lastLocation.z = match->playerInfo[i].tPI.location.z;
+        match->playerInfo[i].body.location.x = match->playerInfo[i].body.home_location.x;
+        match->playerInfo[i].body.location.y = match->playerInfo[i].body.home_location.y;
+        match->playerInfo[i].body.location.z = match->playerInfo[i].body.home_location.z;
+        match->playerInfo[i].body.orientation.x = match->ballInfo.location.x - match->playerInfo[i].body.location.x;
+        match->playerInfo[i].body.orientation.y = match->ballInfo.location.y - match->playerInfo[i].body.location.y;
+        match->playerInfo[i].body.orientation.z = match->ballInfo.location.z - match->playerInfo[i].body.location.z;
+        match->playerInfo[i].body.previous_location.x = match->playerInfo[i].body.location.x;
+        match->playerInfo[i].body.previous_location.y = match->playerInfo[i].body.location.y;
+        match->playerInfo[i].body.previous_location.z = match->playerInfo[i].body.location.z;
     }
     // Place fielders in their posts.
     for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -210,30 +210,30 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
             fieldPosition = &(field_positions->pitchPlate);
             break;
         }
-        match->playerInfo[i].tPI.homeLocation.x = fieldPosition->x;
-        match->playerInfo[i].tPI.homeLocation.y = fieldPosition->y;
-        match->playerInfo[i].tPI.homeLocation.z = fieldPosition->z;
+        match->playerInfo[i].body.home_location.x = fieldPosition->x;
+        match->playerInfo[i].body.home_location.y = fieldPosition->y;
+        match->playerInfo[i].body.home_location.z = fieldPosition->z;
 
-        match->playerInfo[i].tPI.location.x = match->playerInfo[i].tPI.homeLocation.x;
-        match->playerInfo[i].tPI.location.y = match->playerInfo[i].tPI.homeLocation.y;
-        match->playerInfo[i].tPI.location.z = match->playerInfo[i].tPI.homeLocation.z;
+        match->playerInfo[i].body.location.x = match->playerInfo[i].body.home_location.x;
+        match->playerInfo[i].body.location.y = match->playerInfo[i].body.home_location.y;
+        match->playerInfo[i].body.location.z = match->playerInfo[i].body.home_location.z;
 
-        match->playerInfo[i].tPI.orientation.x = match->ballInfo.location.x - match->playerInfo[i].tPI.location.x;
-        match->playerInfo[i].tPI.orientation.y = match->ballInfo.location.y - match->playerInfo[i].tPI.location.y;
-        match->playerInfo[i].tPI.orientation.z = match->ballInfo.location.z - match->playerInfo[i].tPI.location.z;
+        match->playerInfo[i].body.orientation.x = match->ballInfo.location.x - match->playerInfo[i].body.location.x;
+        match->playerInfo[i].body.orientation.y = match->ballInfo.location.y - match->playerInfo[i].body.location.y;
+        match->playerInfo[i].body.orientation.z = match->ballInfo.location.z - match->playerInfo[i].body.location.z;
 
-        match->playerInfo[i].tPI.lastLocation.x = match->playerInfo[i].tPI.location.x;
-        match->playerInfo[i].tPI.lastLocation.y = match->playerInfo[i].tPI.location.y;
-        match->playerInfo[i].tPI.lastLocation.z = match->playerInfo[i].tPI.location.z;
+        match->playerInfo[i].body.previous_location.x = match->playerInfo[i].body.location.x;
+        match->playerInfo[i].body.previous_location.y = match->playerInfo[i].body.location.y;
+        match->playerInfo[i].body.previous_location.z = match->playerInfo[i].body.location.z;
     }
     // these are set for every player.
     for (i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        match->playerInfo[i].tPI.velocity.x = 0.0f;
-        match->playerInfo[i].tPI.velocity.y = 0.0f;
-        match->playerInfo[i].tPI.velocity.z = 0.0f;
-        match->playerInfo[i].tPI.targetLocation.x = 0.0f;
-        match->playerInfo[i].tPI.targetLocation.y = 0.0f;
-        match->playerInfo[i].tPI.targetLocation.z = 0.0f;
+        match->playerInfo[i].body.velocity.x = 0.0f;
+        match->playerInfo[i].body.velocity.y = 0.0f;
+        match->playerInfo[i].body.velocity.z = 0.0f;
+        match->playerInfo[i].body.target_location.x = 0.0f;
+        match->playerInfo[i].body.target_location.y = 0.0f;
+        match->playerInfo[i].body.target_location.z = 0.0f;
     }
 }
 // here we initialize players' stat information, and team information, whether they are joker or not,
@@ -258,14 +258,14 @@ static void initialize_inning_permanent_player_information(
     }
     // initialize batting team
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        match->playerInfo[i].cPI.team = TEAM_BATTING;
+        match->playerInfo[i].side = TEAM_BATTING;
 
         match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
         match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
     }
     // initialize fielders
     for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        match->playerInfo[i].cPI.team = TEAM_CATCHING;
+        match->playerInfo[i].side = TEAM_CATCHING;
 
         // here we set catcherOnBaseIndices and catcherReplacerOnBaseIndices.
         switch (i - 12) {
@@ -307,10 +307,10 @@ static void initialize_non_critical_player_information(MatchSession* match)
 
         match->playerInfo[i].events =
             (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_RESET, .started = PLAYER_ACTIVITY_RESET};
-        match->playerInfo[i].cPI.moving = 0;
-        match->playerInfo[i].cPI.running = 0;
-        match->playerInfo[i].cPI.looksForTarget = 0;
-        match->playerInfo[i].cPI.lastLastLocationUpdate = 1;
+        match->playerInfo[i].motion.moving = 0;
+        match->playerInfo[i].motion.running = 0;
+        match->playerInfo[i].motion.following_target = 0;
+        match->playerInfo[i].motion.sync_previous_location = 1;
 
         match->playerInfo[i].cTPI.throw_recovery_ticks = 0;
 
@@ -418,9 +418,9 @@ static void setup_homerun_physical_state(
             // the plate — move_to_target then settles them straight into the ready stance
             // instead of walking them in from the reset position.
             if (batterResumesInPlace) {
-                match->playerInfo[batterIndex].tPI.location.x = target.x;
-                match->playerInfo[batterIndex].tPI.location.z = target.z;
-                match->playerInfo[batterIndex].tPI.lastLocation = match->playerInfo[batterIndex].tPI.location;
+                match->playerInfo[batterIndex].body.location.x = target.x;
+                match->playerInfo[batterIndex].body.location.z = target.z;
+                match->playerInfo[batterIndex].body.previous_location = match->playerInfo[batterIndex].body.location;
             }
             move_to_target(match->playerInfo, batterIndex, &target);
         }
@@ -429,31 +429,31 @@ static void setup_homerun_physical_state(
             match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
             match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
 
-            match->playerInfo[runnerIndex].tPI.location.x = field_positions->thirdBaseRun.x;
-            match->playerInfo[runnerIndex].tPI.location.y = field_positions->thirdBaseRun.y;
-            match->playerInfo[runnerIndex].tPI.location.z = field_positions->thirdBaseRun.z;
-            match->playerInfo[runnerIndex].tPI.lastLocation.x = match->playerInfo[runnerIndex].tPI.location.x;
-            match->playerInfo[runnerIndex].tPI.lastLocation.y = match->playerInfo[runnerIndex].tPI.location.y;
-            match->playerInfo[runnerIndex].tPI.lastLocation.z = match->playerInfo[runnerIndex].tPI.location.z;
-            match->playerInfo[runnerIndex].tPI.orientation.x = -match->playerInfo[runnerIndex].tPI.location.x;
-            match->playerInfo[runnerIndex].tPI.orientation.y = 0.0f;
-            match->playerInfo[runnerIndex].tPI.orientation.z = -match->playerInfo[runnerIndex].tPI.location.x;
+            match->playerInfo[runnerIndex].body.location.x = field_positions->thirdBaseRun.x;
+            match->playerInfo[runnerIndex].body.location.y = field_positions->thirdBaseRun.y;
+            match->playerInfo[runnerIndex].body.location.z = field_positions->thirdBaseRun.z;
+            match->playerInfo[runnerIndex].body.previous_location.x = match->playerInfo[runnerIndex].body.location.x;
+            match->playerInfo[runnerIndex].body.previous_location.y = match->playerInfo[runnerIndex].body.location.y;
+            match->playerInfo[runnerIndex].body.previous_location.z = match->playerInfo[runnerIndex].body.location.z;
+            match->playerInfo[runnerIndex].body.orientation.x = -match->playerInfo[runnerIndex].body.location.x;
+            match->playerInfo[runnerIndex].body.orientation.y = 0.0f;
+            match->playerInfo[runnerIndex].body.orientation.z = -match->playerInfo[runnerIndex].body.location.x;
         }
 
         // set other runners next to the third base.
         for (i = hrcs->runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
             int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
             if (index != -1) {
-                match->playerInfo[index].tPI.location.x =
+                match->playerInfo[index].body.location.x =
                     field_positions->thirdBaseRun.x - 2.0f - (i - (hrcs->runnerBatterPairCounter + 1)) * 1.5f;
-                match->playerInfo[index].tPI.location.y = field_positions->thirdBaseRun.y;
-                match->playerInfo[index].tPI.location.z = field_positions->thirdBaseRun.z;
-                match->playerInfo[index].tPI.lastLocation.x = match->playerInfo[index].tPI.location.x;
-                match->playerInfo[index].tPI.lastLocation.y = match->playerInfo[index].tPI.location.y;
-                match->playerInfo[index].tPI.lastLocation.z = match->playerInfo[index].tPI.location.z;
-                match->playerInfo[index].tPI.orientation.x = -match->playerInfo[index].tPI.location.x;
-                match->playerInfo[index].tPI.orientation.y = 0.0f;
-                match->playerInfo[index].tPI.orientation.z = -match->playerInfo[index].tPI.location.x;
+                match->playerInfo[index].body.location.y = field_positions->thirdBaseRun.y;
+                match->playerInfo[index].body.location.z = field_positions->thirdBaseRun.z;
+                match->playerInfo[index].body.previous_location.x = match->playerInfo[index].body.location.x;
+                match->playerInfo[index].body.previous_location.y = match->playerInfo[index].body.location.y;
+                match->playerInfo[index].body.previous_location.z = match->playerInfo[index].body.location.z;
+                match->playerInfo[index].body.orientation.x = -match->playerInfo[index].body.location.x;
+                match->playerInfo[index].body.orientation.y = 0.0f;
+                match->playerInfo[index].body.orientation.z = -match->playerInfo[index].body.location.x;
             }
         }
     }

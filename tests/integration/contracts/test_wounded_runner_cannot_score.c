@@ -33,7 +33,7 @@ int test_wounded_runner_cannot_score_run(void)
     // with referee status WOUND_PENDING (doomed but not yet physically wounded)
     ctx->state->match->playerInfo[0].bTPI.state = PLAYER_STATE_ON_BASE;
     ctx->state->match->playerInfo[0].bTPI.baseId = BASE_HOME_SCORED;
-    ctx->state->match->playerInfo[0].tPI.location = ctx->state->fieldPositions->pitchPlate;
+    ctx->state->match->playerInfo[0].body.location = ctx->state->fieldPositions->pitchPlate;
 
     // Place batter at home (inactive for this test)
     setup_batter_at_home(ctx, 1);
@@ -61,7 +61,7 @@ int test_wounded_runner_cannot_score_run(void)
     // A fielder has the ball
     int fielderIdx = 15;
     ctx->state->match->ballInfo.holder = fielderIdx;
-    ctx->state->match->playerInfo[fielderIdx].tPI.location = ctx->state->fieldPositions->secondBase;
+    ctx->state->match->playerInfo[fielderIdx].body.location = ctx->state->fieldPositions->secondBase;
 
     // Record runs before
     int battingTeamIndex = get_batting_team_index(&ctx->state->rules->scoreboard);

@@ -34,9 +34,9 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
             if ((i != match->ballInfo.released_by || match->ballInfo.currentFlightHasHitGround == 1)) {
                 Vector3D distance;
                 float limit = CATCH_DISTANCE;
-                distance.x = match->playerInfo[i].tPI.location.x - match->ballInfo.location.x;
-                distance.z = match->playerInfo[i].tPI.location.z - match->ballInfo.location.z;
-                distance.y = 2 * match->playerInfo[i].tPI.location.y / 5 - match->ballInfo.location.y;
+                distance.x = match->playerInfo[i].body.location.x - match->ballInfo.location.x;
+                distance.z = match->playerInfo[i].body.location.z - match->ballInfo.location.z;
+                distance.y = 2 * match->playerInfo[i].body.location.y / 5 - match->ballInfo.location.y;
                 // check if ball is close enough to this particular player.
                 if (vec3_is_small_enough_sphere(&distance, limit) == 1) {
                     // weird things would happen
@@ -44,10 +44,10 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                     int baseCatcherFlag = 0;
                     float p1x, p2x, p1z, p2z;
                     if (match->ballInfo.released_by != -1) {
-                        p1x = match->playerInfo[i].tPI.location.x;
-                        p1z = match->playerInfo[i].tPI.location.z;
-                        p2x = match->playerInfo[match->ballInfo.released_by].tPI.location.x;
-                        p2z = match->playerInfo[match->ballInfo.released_by].tPI.location.z;
+                        p1x = match->playerInfo[i].body.location.x;
+                        p1z = match->playerInfo[i].body.location.z;
+                        p2x = match->playerInfo[match->ballInfo.released_by].body.location.x;
+                        p2z = match->playerInfo[match->ballInfo.released_by].body.location.z;
                         if (match->ballInfo.thrown_to != BASE_NONE &&
                             (i == match->fielding_posts.baseman[match->ballInfo.thrown_to] ||
                              i == match->fielding_posts.cover[match->ballInfo.thrown_to])) {
@@ -62,7 +62,7 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                         // when key is still down when control changes. note this could be different player than the one
                         // who caught the ball.
                         if (match->catchingState.controlled_fielder != -1 &&
-                            match->playerInfo[match->catchingState.controlled_fielder].cPI.moving == 1) {
+                            match->playerInfo[match->catchingState.controlled_fielder].motion.moving == 1) {
                             stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
                         }
                         if (match->catchingState.controlled_fielder != -1 &&
@@ -99,7 +99,7 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                         match->ballInfo.holder = i;
 
                         // and set running flag
-                        match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 1;
+                        match->playerInfo[match->catchingState.controlled_fielder].motion.running = 1;
                         // stop the ball and hide it. if player starts to move again,
                         // then ball's velocity will also be updated agian.
                         match->ballInfo.visible = 0;
@@ -107,7 +107,7 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                         match->ballInfo.onGround = 0;
                         match->ballInfo.currentFlightHasHitGround = 0;
                         // and set ball's location to player's location (X, Z), but use proper held height (Y)
-                        vec3_set_from_vector(&(match->ballInfo.location), &(match->playerInfo[i].tPI.location));
+                        vec3_set_from_vector(&(match->ballInfo.location), &(match->playerInfo[i].body.location));
                         match->ballInfo.location.y = BALL_HEIGHT_WITH_PLAYER;
                     }
                 }

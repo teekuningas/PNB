@@ -30,10 +30,10 @@ void check_if_near_home_location(MatchSession* match)
     int i;
     for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         // we check it only for moving players to reduce overhead a bit.
-        if (match->playerInfo[i].cPI.moving == 1) {
+        if (match->playerInfo[i].motion.moving == 1) {
 
-            float dx = match->playerInfo[i].tPI.location.x - match->playerInfo[i].tPI.homeLocation.x;
-            float dz = match->playerInfo[i].tPI.location.z - match->playerInfo[i].tPI.homeLocation.z;
+            float dx = match->playerInfo[i].body.location.x - match->playerInfo[i].body.home_location.x;
+            float dz = match->playerInfo[i].body.location.z - match->playerInfo[i].body.home_location.z;
             // if we are already close, we check if happen to have gone out.
             if (match->playerInfo[i].cTPI.isNearHomeLocation == 1) {
                 if (vec3_is_small_enough_circle_xz(dx, dz, DISTANCE_FROM_HOME_LOCATION_THRESHOLD) == 0) {
@@ -61,7 +61,7 @@ void basemen_replacements(MatchSession* match)
                 if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage == REPLACEMENT_IDLE) {
                     move_to_target(
                         match->playerInfo, match->fielding_posts.cover[i],
-                        &(match->playerInfo[match->fielding_posts.baseman[i]].tPI.homeLocation)
+                        &(match->playerInfo[match->fielding_posts.baseman[i]].body.home_location)
                     );
 
                     match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_ACTIVE;
@@ -79,7 +79,7 @@ void basemen_replacements(MatchSession* match)
                     if (match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingBase == (BaseID)i) {
                         move_to_target(
                             match->playerInfo, match->fielding_posts.cover[i],
-                            &(match->playerInfo[match->fielding_posts.cover[i]].tPI.homeLocation)
+                            &(match->playerInfo[match->fielding_posts.cover[i]].body.home_location)
                         );
 
                         match->playerInfo[match->fielding_posts.cover[i]].cTPI.replacingStage = REPLACEMENT_IDLE;
@@ -96,12 +96,12 @@ void move_idling_players_to_home_location(MatchSession* match)
     int i;
     // if not catching ball or replacing or in home location, move to home location.
     for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-        if (match->playerInfo[i].cPI.moving == 0) {
+        if (match->playerInfo[i].motion.moving == 0) {
             if (i != match->catchingState.controlled_fielder) {
                 if (match->playerInfo[i].cTPI.isNearHomeLocation == 0) {
                     if (match->playerInfo[i].cTPI.replacingStage == REPLACEMENT_IDLE) {
                         if (match->playerInfo[i].cTPI.busyCatching == 0) {
-                            move_to_target(match->playerInfo, i, &(match->playerInfo[i].tPI.homeLocation));
+                            move_to_target(match->playerInfo, i, &(match->playerInfo[i].body.home_location));
                         }
                     }
                 }
@@ -204,12 +204,12 @@ void rank_players_and_move_them(MatchSession* match)
             float dx; // vector from ball drop to player
             float dz;
             float distance2;
-            dx = match->playerInfo[i].tPI.location.x - evalBallX;
-            dz = match->playerInfo[i].tPI.location.z - evalBallZ;
+            dx = match->playerInfo[i].body.location.x - evalBallX;
+            dz = match->playerInfo[i].body.location.z - evalBallZ;
             distance = (float)sqrt(dx * dx + dz * dz);
             if (distance < EPSILON) distance = 1.0f;
-            dx = match->playerInfo[i].tPI.location.x - match->ballInfo.location.x;
-            dz = match->playerInfo[i].tPI.location.z - match->ballInfo.location.z;
+            dx = match->playerInfo[i].body.location.x - match->ballInfo.location.x;
+            dz = match->playerInfo[i].body.location.z - match->ballInfo.location.z;
             distance2 = (float)sqrt(dx * dx + dz * dz);
             if (distance2 < EPSILON) distance2 = 1.0f;
             dx = dx / distance2;
@@ -309,7 +309,7 @@ void change_player(MatchSession* match)
             match->catchingState.controlled_fielder =
                 match->catchingState.chase_ranking[match->catchingState.ranking_cursor];
             // and set him to run
-            match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 1;
+            match->playerInfo[match->catchingState.controlled_fielder].motion.running = 1;
             // logic about coming back from replacement if controlled
             if (match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage == REPLACEMENT_ACTIVE) {
                 match->playerInfo[match->catchingState.controlled_fielder].cTPI.replacingStage = REPLACEMENT_IDLE;

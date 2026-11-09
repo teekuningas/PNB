@@ -60,14 +60,14 @@ static Vector3D hang_ball_in_open_field(MatchSession* m)
 static void walk_fielder(MatchSession* m, int i, Vector3D ball, float dz, float sign)
 {
     PlayerInfo* p = &m->playerInfo[i];
-    TechnicalPlayerInfo* body = &p->tPI;
-    CommonPlayerInfo* motion = &p->cPI;
+    PlayerBody* body = &p->body;
+    PlayerMotion* motion = &p->motion;
     body->location = (Vector3D){ball.x, 0.0f, ball.z + dz};
-    body->lastLocation = body->location;
+    body->previous_location = body->location;
     body->velocity = (Vector3D){0.0f, 0.0f, sign * WALK_SPEED};
-    body->targetLocation = (Vector3D){ball.x, 0.0f, ball.z + dz + sign * 10.0f};
+    body->target_location = (Vector3D){ball.x, 0.0f, ball.z + dz + sign * 10.0f};
     motion->moving = 1;
-    motion->looksForTarget = 1;
+    motion->following_target = 1;
     motion->running = 0;
     p->cTPI.busyCatching = 0;
     p->cTPI.throw_recovery_ticks = 0;
@@ -75,7 +75,7 @@ static void walk_fielder(MatchSession* m, int i, Vector3D ball, float dz, float 
 
 static float xz_distance(const MatchSession* m, int i, Vector3D ball)
 {
-    float dx = m->playerInfo[i].tPI.location.x - ball.x, dz = m->playerInfo[i].tPI.location.z - ball.z;
+    float dx = m->playerInfo[i].body.location.x - ball.x, dz = m->playerInfo[i].body.location.z - ball.z;
     return sqrtf(dx * dx + dz * dz);
 }
 

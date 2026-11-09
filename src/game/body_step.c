@@ -25,11 +25,11 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
 
     for (i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         // orientation updated only if ball or player moving
-        if (match->ballInfo.moving == 1 || match->playerInfo[i].cPI.moving == 1) {
+        if (match->ballInfo.moving == 1 || match->playerInfo[i].motion.moving == 1) {
             if (i != match->ballInfo.holder) {
-                if (match->playerInfo[i].cPI.running == 0) {
+                if (match->playerInfo[i].motion.running == 0) {
                     if (i != activeBatterIndex) {
-                        set_orientation(match->playerInfo, &(match->ballInfo), i);
+                        set_orientation(&match->playerInfo[i].body, &match->ballInfo.location);
                     }
                 }
             }
@@ -38,53 +38,53 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
     // move players
     for (i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         // players only moved if moving-flag is set to 1.
-        if (match->playerInfo[i].cPI.moving == 1) {
+        if (match->playerInfo[i].motion.moving == 1) {
             vec3_set_xz(
-                &match->playerInfo[i].tPI.lastLocation, match->playerInfo[i].tPI.location.x,
-                match->playerInfo[i].tPI.location.z
+                &match->playerInfo[i].body.previous_location, match->playerInfo[i].body.location.x,
+                match->playerInfo[i].body.location.z
             );
             // if we are pressing against the fences, fence wont give up. we need to tell that to ball also.
             // this can happen only for fielders.
             if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-                if ((match->playerInfo[i].tPI.location.z > FIELD_FRONT - FENCE_OFFSET &&
-                     match->playerInfo[i].tPI.velocity.z > 0) ||
-                    (match->playerInfo[i].tPI.location.z < FIELD_BACK + FENCE_OFFSET &&
-                     match->playerInfo[i].tPI.velocity.z < 0)) {
+                if ((match->playerInfo[i].body.location.z > FIELD_FRONT - FENCE_OFFSET &&
+                     match->playerInfo[i].body.velocity.z > 0) ||
+                    (match->playerInfo[i].body.location.z < FIELD_BACK + FENCE_OFFSET &&
+                     match->playerInfo[i].body.velocity.z < 0)) {
                     match->ballInfo.needsMoveUpdate = 1;
-                    match->playerInfo[i].tPI.velocity.z = 0.0f;
+                    match->playerInfo[i].body.velocity.z = 0.0f;
                 }
-                if ((match->playerInfo[i].tPI.location.x > FIELD_RIGHT - FENCE_OFFSET &&
-                     match->playerInfo[i].tPI.velocity.x > 0) ||
-                    (match->playerInfo[i].tPI.location.x < FIELD_LEFT + FENCE_OFFSET &&
-                     match->playerInfo[i].tPI.velocity.x < 0)) {
-                    match->playerInfo[i].tPI.velocity.x = 0.0f;
+                if ((match->playerInfo[i].body.location.x > FIELD_RIGHT - FENCE_OFFSET &&
+                     match->playerInfo[i].body.velocity.x > 0) ||
+                    (match->playerInfo[i].body.location.x < FIELD_LEFT + FENCE_OFFSET &&
+                     match->playerInfo[i].body.velocity.x < 0)) {
+                    match->playerInfo[i].body.velocity.x = 0.0f;
                     match->ballInfo.needsMoveUpdate = 1;
                 }
             }
             // update the location by player's current velocity.
             vec3_add_xz(
-                &match->playerInfo[i].tPI.location, match->playerInfo[i].tPI.velocity.x,
-                match->playerInfo[i].tPI.velocity.z
+                &match->playerInfo[i].body.location, match->playerInfo[i].body.velocity.x,
+                match->playerInfo[i].body.velocity.z
             );
 
             // DEBUG for Wounded Players
             if (match->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) {
                 // printf("[DEBUG] Player %d WOUNDED Moving. Pos: (%.2f, %.2f) Vel: (%.2f, %.2f) Target: (%.2f,
-                // %.2f)\n", i, match->playerInfo[i].tPI.location.x,
-                // match->playerInfo[i].tPI.location.z, match->playerInfo[i].tPI.velocity.x,
-                // match->playerInfo[i].tPI.velocity.z, match->playerInfo[i].tPI.targetLocation.x,
-                // match->playerInfo[i].tPI.targetLocation.z);
+                // %.2f)\n", i, match->playerInfo[i].body.location.x,
+                // match->playerInfo[i].body.location.z, match->playerInfo[i].body.velocity.x,
+                // match->playerInfo[i].body.velocity.z, match->playerInfo[i].body.target_location.x,
+                // match->playerInfo[i].body.target_location.z);
             }
 
             // a lot of movement in the game is handled by these se called targets. we set target location and
-            // looksToTarget flag for a player and he will move to that direction with constant velocity until he
+            // following_target flag for a player and he will move to that direction with constant velocity until he
             // reaches the target. reaching is decided here. but first step to optimize this process is to have this
-            // looksForTarget flag so that we can distinct between user moved players and automatically moved players.
-            if (match->playerInfo[i].cPI.looksForTarget == 1) {
+            // following_target flag so that we can distinct between user moved players and automatically moved players.
+            if (match->playerInfo[i].motion.following_target == 1) {
                 // so here we now check if we happened to be close enough to our target so that we could wrap this
                 // journey up.
-                float dx = match->playerInfo[i].tPI.location.x - match->playerInfo[i].tPI.targetLocation.x;
-                float dz = match->playerInfo[i].tPI.location.z - match->playerInfo[i].tPI.targetLocation.z;
+                float dx = match->playerInfo[i].body.location.x - match->playerInfo[i].body.target_location.x;
+                float dz = match->playerInfo[i].body.location.z - match->playerInfo[i].body.target_location.z;
                 if (vec3_is_small_enough_circle_xz(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
                     int needToStop = 1;
                     if (i == activeBatterIndex && match->playerRuntime[i].goingForward == 0) {
@@ -102,7 +102,7 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                         if ((match->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
                             (match->playerInfo[i].bTPI.state == PLAYER_STATE_SCORED) ||
                             (match->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
-                             match->playerInfo[i].cPI.running == 0)) {
+                             match->playerInfo[i].motion.running == 0)) {
                             Vector3D target;
                             if (match->playerRuntime[i].passedPathPoint == 0) {
                                 match->playerRuntime[i].passedPathPoint = 1;
@@ -110,11 +110,11 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                 target.z = field_positions->pitchPlate.z + HOME_RADIUS;
                             } else if (match->playerRuntime[i].passedPathPoint == 1) {
                                 match->playerRuntime[i].passedPathPoint = 2;
-                                target.x = match->playerInfo[i].tPI.homeLocation.x;
-                                target.z = match->playerInfo[i].tPI.homeLocation.z;
+                                target.x = match->playerInfo[i].body.home_location.x;
+                                target.z = match->playerInfo[i].body.home_location.z;
                             } else {
-                                stop_target_looking_player(match->playerInfo, i);
-                                set_orientation(match->playerInfo, &(match->ballInfo), i);
+                                stop_target_looking_player(&match->playerInfo[i].motion);
+                                set_orientation(&match->playerInfo[i].body, &match->ballInfo.location);
                                 continue;
                             }
                             // and move to target
@@ -173,8 +173,8 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                         match->playerRuntime[i].goingForward = 0;
                                         match->gameEvents.playerArrivedAtBase = 1;
                                         match->playerRuntime[i].arrivedToBase = 1;
-                                        target.x = match->playerInfo[i].tPI.homeLocation.x;
-                                        target.z = match->playerInfo[i].tPI.homeLocation.z;
+                                        target.x = match->playerInfo[i].body.home_location.x;
+                                        target.z = match->playerInfo[i].body.home_location.z;
                                         move_to_target(match->playerInfo, i, &target);
                                         needToStop = 0;
                                     }
@@ -191,7 +191,7 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                             match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
                                             match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
                                         }
-                                        stop_target_looking_player(match->playerInfo, i);
+                                        stop_target_looking_player(&match->playerInfo[i].motion);
                                         needToStop = 0;
                                     }
                                 }
@@ -201,19 +201,19 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                     // if procedures higher didnt handle stopping themselves
                     // we stop the player here.
                     if (needToStop == 1) {
-                        stop_target_looking_player(match->playerInfo, i);
-                        set_orientation(match->playerInfo, &(match->ballInfo), i);
+                        stop_target_looking_player(&match->playerInfo[i].motion);
+                        set_orientation(&match->playerInfo[i].body, &match->ballInfo.location);
                     }
                 }
             }
         }
-        // if we dont move, it could be that we just stopped, so lets see if we should update our lastLocation.
-        if (match->playerInfo[i].cPI.lastLastLocationUpdate == 1) {
+        // if we dont move, it could be that we just stopped, so sync the previous position.
+        if (match->playerInfo[i].motion.sync_previous_location == 1) {
             vec3_set_xz(
-                &match->playerInfo[i].tPI.lastLocation, match->playerInfo[i].tPI.location.x,
-                match->playerInfo[i].tPI.location.z
+                &match->playerInfo[i].body.previous_location, match->playerInfo[i].body.location.x,
+                match->playerInfo[i].body.location.z
             );
-            match->playerInfo[i].cPI.lastLastLocationUpdate = 0;
+            match->playerInfo[i].motion.sync_previous_location = 0;
         }
     }
 }

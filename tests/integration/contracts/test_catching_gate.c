@@ -74,8 +74,8 @@ static void fielder_with_ball(ScenarioContext* ctx)
     MatchSession* m = ctx->state->match;
     m->ballInfo.holder = FIELDER;
     m->catchingState.controlled_fielder = FIELDER;
-    m->playerInfo[FIELDER].tPI.location.x = 5.0f;
-    m->playerInfo[FIELDER].tPI.location.z = 5.0f;
+    m->playerInfo[FIELDER].body.location.x = 5.0f;
+    m->playerInfo[FIELDER].body.location.z = 5.0f;
 }
 
 // The World, captured whole, as test_fielder_movement does: MatchSession + GameRulesState is all of it.
@@ -188,7 +188,7 @@ int test_throw_permission_names_each_rule(void)
     ASSERT_EQ(RULE_THROW_NEEDS_BALL_IN_HAND, throw_may_begin(m, fp, BASE_FIRST).denied_by, "nothing to throw");
     m->ballInfo.holder = FIELDER;
 
-    m->playerInfo[FIELDER].tPI.location = fp->firstBase;
+    m->playerInfo[FIELDER].body.location = fp->firstBase;
     ASSERT_EQ(
         RULE_THROW_TARGET_TOO_CLOSE, throw_may_begin(m, fp, BASE_FIRST).denied_by,
         "a fielder standing on first does not throw to first"

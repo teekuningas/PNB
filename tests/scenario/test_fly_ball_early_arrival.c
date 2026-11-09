@@ -48,8 +48,8 @@ int test_fly_ball_early_arrival(void)
 
     int fielderIdx = 16; // Center fielder
     Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    match->playerInfo[fielderIdx].tPI.location = fielderLoc;
-    match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+    match->playerInfo[fielderIdx].body.location = fielderLoc;
+    match->playerInfo[fielderIdx].body.home_location = fielderLoc;
 
     // 5. Trigger batter to run
     match->at_bat.may_leave_home = 1;
@@ -69,7 +69,7 @@ int test_fly_ball_early_arrival(void)
     printf("Initial state:\n");
     printf(
         "  Batter: baseId=%d, state=%d, position=(%.1f, %.1f)\n", match->playerInfo[0].bTPI.baseId,
-        match->playerInfo[0].bTPI.state, match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+        match->playerInfo[0].bTPI.state, match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
     );
     printf(
         "  Referee: baseAtPitchStart=%d, currentSafetyBase=%d\n", rules->referee.battingPlayers[0].baseAtPitchStart,
@@ -111,7 +111,7 @@ int test_fly_ball_early_arrival(void)
                 batterSafety, batterBaseAtPitchStart, batterStatus
             );
             printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
             );
         }
 
@@ -124,7 +124,7 @@ int test_fly_ball_early_arrival(void)
                 batterBaseAtPitchStart, batterStatus
             );
             printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
             );
         }
 
@@ -153,7 +153,7 @@ int test_fly_ball_early_arrival(void)
             printf(
                 "  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d Status=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n", frame,
                 batterState, batterBase, batterSafety, batterBaseAtPitchStart, batterStatus, ballAtBase, hasBall,
-                match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+                match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
             );
         }
 

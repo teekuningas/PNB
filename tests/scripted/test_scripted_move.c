@@ -68,14 +68,14 @@ int test_scripted_move_held_key_runs_at_run_speed(void)
 
     MatchSession* m = scripted_match(g);
     int fielder = m->catchingState.controlled_fielder;
-    Vector3D start = m->playerInfo[fielder].tPI.location;
+    Vector3D start = m->playerInfo[fielder].body.location;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     scripted_run(g, MOVE_TEST_FRAMES);
 
     ASSERT_EQ(fielder, m->catchingState.controlled_fielder, "the same fielder was steered throughout");
-    float dz = m->playerInfo[fielder].tPI.location.z - start.z;
-    float dx = m->playerInfo[fielder].tPI.location.x - start.x;
+    float dz = m->playerInfo[fielder].body.location.z - start.z;
+    float dx = m->playerInfo[fielder].body.location.x - start.x;
 
     // North is -z. One frame of slack at each end for the declare/ingest/actualize ordering.
     float expected = MOVE_TEST_FRAMES * RUN_SPEED;
@@ -104,16 +104,16 @@ int test_scripted_move_release_stops_within_a_frame(void)
 
     scripted_hold(g, HUMAN_PAD, KEY_LEFT);
     scripted_run(g, 30);
-    ASSERT_EQ(1, m->playerInfo[fielder].cPI.moving, "the fielder is under way before the release");
+    ASSERT_EQ(1, m->playerInfo[fielder].motion.moving, "the fielder is under way before the release");
 
     scripted_release(g, HUMAN_PAD, KEY_LEFT);
     scripted_tick(g);
 
-    ASSERT_EQ(0, m->playerInfo[fielder].cPI.moving, "releasing every direction stops the fielder at once");
-    Vector3D settled = m->playerInfo[fielder].tPI.location;
+    ASSERT_EQ(0, m->playerInfo[fielder].motion.moving, "releasing every direction stops the fielder at once");
+    Vector3D settled = m->playerInfo[fielder].body.location;
     scripted_run(g, 30);
-    float dx = m->playerInfo[fielder].tPI.location.x - settled.x;
-    float dz = m->playerInfo[fielder].tPI.location.z - settled.z;
+    float dx = m->playerInfo[fielder].body.location.x - settled.x;
+    float dz = m->playerInfo[fielder].body.location.z - settled.z;
     ASSERT(sqrtf(dx * dx + dz * dz) < 1e-4f, "and it stays stopped — a released key does not coast");
 
     scripted_destroy(g);
@@ -156,14 +156,14 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     // Steer while the pitch is live. The fielder must not budge.
     int fielder = m->catchingState.controlled_fielder;
     ASSERT(fielder != -1, "somebody is still controlled during the pitch");
-    Vector3D held_still = m->playerInfo[fielder].tPI.location;
+    Vector3D held_still = m->playerInfo[fielder].body.location;
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     for (int i = 0; i < 20 && pitch_is_being_delivered(m); i++) {
         scripted_tick(g);
         ASSERT_EQ(fielder, m->catchingState.controlled_fielder, "control did not change during the pitch window");
-        float dx = m->playerInfo[fielder].tPI.location.x - held_still.x;
-        float dz = m->playerInfo[fielder].tPI.location.z - held_still.z;
+        float dx = m->playerInfo[fielder].body.location.x - held_still.x;
+        float dz = m->playerInfo[fielder].body.location.z - held_still.z;
         ASSERT(sqrtf(dx * dx + dz * dz) < 1e-4f, "a fielder does not move while a pitch is in progress");
     }
 
@@ -204,7 +204,7 @@ int test_scripted_move_held_key_survives_a_reset(void)
 
     scripted_hold(g, HUMAN_PAD, KEY_UP);
     scripted_run(g, 20);
-    ASSERT_EQ(1, m->playerInfo[fielder].cPI.moving, "the fielder is under way");
+    ASSERT_EQ(1, m->playerInfo[fielder].motion.moving, "the fielder is under way");
     ASSERT_EQ(1, m->catchingState.controlledMoveTargetActive, "and the engine is holding a destination");
 
     // The engine forgets where it was sending him, as every reset recipe does.

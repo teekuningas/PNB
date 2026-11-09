@@ -43,7 +43,7 @@ Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
 static Vector3D line_to_base(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base)
 {
     Vector3D target = throw_target_point(fieldPositions, base);
-    const Vector3D* from = &match->playerInfo[match->ballInfo.holder].tPI.location;
+    const Vector3D* from = &match->playerInfo[match->ballInfo.holder].body.location;
     return (Vector3D){.x = target.x - from->x, .y = 0.0f, .z = target.z - from->z};
 }
 
@@ -79,15 +79,15 @@ static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldP
     windup.distance = horizontal_length(windup.direction);
 
     // Stop the thrower if moving — the gather animation has no foot movement.
-    if (match->playerInfo[thrower].cPI.moving == 1) {
+    if (match->playerInfo[thrower].motion.moving == 1) {
         stop_movement(match->playerInfo, thrower);
     }
     record_player_activity(&match->playerInfo[thrower].events, PLAYER_ACTIVITY_THROW_BEGUN, true);
     // Avoid twitching if a move key is still down while the thrower can't move.
-    match->playerInfo[thrower].cPI.lastLastLocationUpdate = 1;
+    match->playerInfo[thrower].motion.sync_previous_location = 1;
     // Face the target base.
-    match->playerInfo[thrower].tPI.orientation.x = windup.direction.x;
-    match->playerInfo[thrower].tPI.orientation.z = windup.direction.z;
+    match->playerInfo[thrower].body.orientation.x = windup.direction.x;
+    match->playerInfo[thrower].body.orientation.z = windup.direction.z;
 
     match->catching_action = (CatchingAction){.kind = CATCHING_ACTION_THROWING, .timer = 0, .as.throw = windup};
 }
@@ -127,7 +127,7 @@ static void throw_release(MatchSession* match)
     match->ballInfo.released_by = match->ballInfo.holder;
     match->ballInfo.holder = -1;
     // set running flag to 0 so that orientation will change
-    match->playerInfo[match->catchingState.controlled_fielder].cPI.running = 0;
+    match->playerInfo[match->catchingState.controlled_fielder].motion.running = 0;
     // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
     // player changing.
     match->catchingState.controlled_fielder = -1;
@@ -187,13 +187,13 @@ void drop_ball(MatchSession* match)
     float dz;
 
     // players' movement will be stopped when doing this, similar to throwing.
-    if (match->playerInfo[match->ballInfo.holder].cPI.moving == 1) {
+    if (match->playerInfo[match->ballInfo.holder].motion.moving == 1) {
         stop_movement(match->playerInfo, match->ballInfo.holder);
     }
     record_player_activity(&match->playerInfo[match->ballInfo.holder].events, PLAYER_ACTIVITY_BALL_DROPPED, false);
     // and then just set a little upward-forward -directed value for ball so that we'll see the dropping
-    dx = match->playerInfo[match->ballInfo.holder].tPI.orientation.x;
-    dz = match->playerInfo[match->ballInfo.holder].tPI.orientation.z;
+    dx = match->playerInfo[match->ballInfo.holder].body.orientation.x;
+    dz = match->playerInfo[match->ballInfo.holder].body.orientation.z;
     norm = (float)sqrt(dx * dx + dz * dz);
     if (norm < EPSILON) norm = 1.0f;
     dx = dx / norm;

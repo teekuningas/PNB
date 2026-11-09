@@ -21,28 +21,28 @@ static void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* tar
         float speed;
         float norm;
         // so set target location
-        playerInfo[index].tPI.targetLocation.x = target->x;
-        playerInfo[index].tPI.targetLocation.z = target->z;
+        playerInfo[index].body.target_location.x = target->x;
+        playerInfo[index].body.target_location.z = target->z;
         // looking for target yeah
-        playerInfo[index].cPI.looksForTarget = 1;
+        playerInfo[index].motion.following_target = 1;
         // find the direction
-        dx = playerInfo[index].tPI.targetLocation.x - playerInfo[index].tPI.location.x;
-        dz = playerInfo[index].tPI.targetLocation.z - playerInfo[index].tPI.location.z;
+        dx = playerInfo[index].body.target_location.x - playerInfo[index].body.location.x;
+        dz = playerInfo[index].body.target_location.z - playerInfo[index].body.location.z;
 
-        norm = vec3_distance_xz(&playerInfo[index].tPI.targetLocation, &playerInfo[index].tPI.location);
+        norm = vec3_distance_xz(&playerInfo[index].body.target_location, &playerInfo[index].body.location);
 
         if (norm < EPSILON) norm = 1.0f;
         // set the velocity
 
         speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED / 16) * playerInfo[index].bTPI.speed;
-        vec3_set_xz(&playerInfo[index].tPI.velocity, dx * speed / norm, dz * speed / norm);
+        vec3_set_xz(&playerInfo[index].body.velocity, dx * speed / norm, dz * speed / norm);
         // we are running now, ( so for example our orientation wont change now unless we stop running)
-        playerInfo[index].cPI.running = 1;
+        playerInfo[index].motion.running = 1;
         // we are moving too
-        playerInfo[index].cPI.moving = 1;
+        playerInfo[index].motion.moving = 1;
         // orientation to our direction
-        playerInfo[index].tPI.orientation.x = dx;
-        playerInfo[index].tPI.orientation.z = dz;
+        playerInfo[index].body.orientation.x = dx;
+        playerInfo[index].body.orientation.z = dz;
         record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_RUNNING_ROUTE, true);
     }
 }
@@ -159,22 +159,22 @@ void lead_from_base(
             // the lead target is selected by adding a small step to current location to next bases' direction
             // using firstBase  instead of location in the difference is because we want the step size to stay
             // same
-            target.x = playerInfo[index].tPI.location.x +
+            target.x = playerInfo[index].body.location.x +
                        LEAD_STEP * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x);
-            target.z = playerInfo[index].tPI.location.z +
+            target.z = playerInfo[index].body.location.z +
                        LEAD_STEP * (field_positions->secondBaseRun.z - field_positions->firstBaseRun.z);
             // if we go over half way, we disallow any leading, you should just run from there.
-            if (playerInfo[index].tPI.location.x >
+            if (playerInfo[index].body.location.x >
                 field_positions->firstBaseRun.x +
                     0.5f * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x))
                 done = 1;
         } else if (playerInfo[index].bTPI.baseId == BASE_SECOND) {
             // same as in previous but from second to third base
-            target.x = playerInfo[index].tPI.location.x +
+            target.x = playerInfo[index].body.location.x +
                        LEAD_STEP * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x);
-            target.z = playerInfo[index].tPI.location.z +
+            target.z = playerInfo[index].body.location.z +
                        LEAD_STEP * (field_positions->thirdBaseRun.z - field_positions->secondBaseRun.z);
-            if (playerInfo[index].tPI.location.x <
+            if (playerInfo[index].body.location.x <
                 field_positions->secondBaseRun.x +
                     0.5f * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x))
                 done = 1;

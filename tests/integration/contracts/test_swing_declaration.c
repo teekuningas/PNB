@@ -98,7 +98,7 @@ int test_batting_motion_and_recovery_follow_physical_time(void)
         ScenarioContext* ctx = create_scenario();
         ASSERT(reach_a_live_pitch(ctx), "a real pitch must open the swing");
         MatchSession* m = ctx->state->match;
-        CommonPlayerInfo* activity = &m->playerInfo[0].cPI;
+        PlayerMotion* activity = &m->playerInfo[0].motion;
         PlayerView view;
         player_view_init(&view, m);
         int contact = m->at_bat.swing.contactFrame;

@@ -49,8 +49,8 @@ static void setup_fielder_with_ball(ScenarioContext* ctx)
     int fielderIdx = 15;
     m->ballInfo.holder = fielderIdx;
     m->catchingState.controlled_fielder = fielderIdx;
-    m->playerInfo[fielderIdx].tPI.location.x = 5.0f;
-    m->playerInfo[fielderIdx].tPI.location.z = 5.0f;
+    m->playerInfo[fielderIdx].body.location.x = 5.0f;
+    m->playerInfo[fielderIdx].body.location.z = 5.0f;
 }
 
 static void tick(ScenarioContext* ctx)
@@ -226,8 +226,8 @@ static int check_throw_recovery(int animation_profile)
     setup_fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
     PlayerInfo* thrower = &m->playerInfo[15];
-    CommonPlayerInfo* activity = &thrower->cPI;
-    TechnicalPlayerInfo* body = &thrower->tPI;
+    PlayerMotion* activity = &thrower->motion;
+    PlayerBody* body = &thrower->body;
     CatchingTeamPlayerInfo* fielding = &thrower->cTPI;
     declare_target(ctx, BASE_FIRST);
     declare_power(ctx, 0.3f);
@@ -236,7 +236,7 @@ static int check_throw_recovery(int animation_profile)
     player_view_init(&view, m);
     PlayerAnimation* animation = &view.players[15];
     Vector3D release_position = body->location;
-    body->homeLocation = (Vector3D){25.0f, 0.0f, 25.0f};
+    body->home_location = (Vector3D){25.0f, 0.0f, 25.0f};
     fielding->isNearHomeLocation = 0;
     m->ballInfo.location = (Vector3D){0.0f, 100.0f, 0.0f};
     m->ballInfo.velocity = (Vector3D){0};

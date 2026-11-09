@@ -136,7 +136,7 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
  * A batter who has stopped aiming is drawn where he stands, not between where he stands and where he
  * was.
  *
- * `tPI.lastLocation` is the previous frame's position and the renderer interpolates from it, so a
+ * `body.previous_location` is the previous frame's position and the renderer interpolates from it, so a
  * body that stops moving must have the two brought level. Nothing does that on its own: the batting
  * system writes location only on the frames the batter actually moves, so the last step he took stays
  * described by the pair for ever, and he is drawn vibrating between its two ends — an arc step apart,
@@ -162,8 +162,8 @@ int test_scripted_aim_leaves_no_interpolation_gap_when_it_stops(void)
 
     const int b = get_active_batter_index(m);
     ASSERT_NE(-1, b, "setup: somebody must be at the plate");
-    const float dx = m->playerInfo[b].tPI.location.x - m->playerInfo[b].tPI.lastLocation.x;
-    const float dz = m->playerInfo[b].tPI.location.z - m->playerInfo[b].tPI.lastLocation.z;
+    const float dx = m->playerInfo[b].body.location.x - m->playerInfo[b].body.previous_location.x;
+    const float dz = m->playerInfo[b].body.location.z - m->playerInfo[b].body.previous_location.z;
 
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
@@ -173,7 +173,7 @@ int test_scripted_aim_leaves_no_interpolation_gap_when_it_stops(void)
     ASSERT(!failed, reason);
     ASSERT(
         fabsf(dx) < 0.0001f && fabsf(dz) < 0.0001f,
-        "a batter standing still must have lastLocation level with location, or he is drawn trembling"
+        "a batter standing still must have previous_location level with location, or he is drawn trembling"
     );
     return TEST_PASSED;
 }

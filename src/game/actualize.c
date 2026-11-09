@@ -177,7 +177,7 @@ static void base_run(MatchSession* match, const FieldPositions* fieldPositions, 
     if (cmd == RUN_FORWARD) {
         if (settled_on_base) {
             // Arm only — never commit a settled runner here.
-            if (match->runner_commitments.armed[base] == 0 && match->playerInfo[index].cPI.moving == 0) {
+            if (match->runner_commitments.armed[base] == 0 && match->playerInfo[index].motion.moving == 0) {
                 match->runner_commitments.armed[base] = 1;
                 if (base == BASE_FIRST || base == BASE_SECOND) {
                     lead_from_base(match->playerInfo, match->playerRuntime, fieldPositions, index);

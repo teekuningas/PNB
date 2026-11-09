@@ -525,24 +525,24 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
             float distance;
             // Logic copied from original
             if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
-                if (scene->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
+                if (scene->match->playerInfo[index].body.location.z - HOME_LINE_Z > 0) {
                     phase = 0.0f;
                 } else {
                     distance = scene->field->firstBaseRun.z - HOME_LINE_Z;
-                    phase = (scene->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
+                    phase = (scene->match->playerInfo[index].body.location.z - HOME_LINE_Z) / distance;
                 }
                 base = BASE_HOME;
             } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
                 distance = scene->field->secondBaseRun.x - scene->field->firstBaseRun.x;
-                phase = (scene->match->playerInfo[index].tPI.location.x - scene->field->firstBaseRun.x) / distance;
+                phase = (scene->match->playerInfo[index].body.location.x - scene->field->firstBaseRun.x) / distance;
                 base = BASE_FIRST;
             } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
                 distance = scene->field->thirdBaseRun.x - scene->field->secondBaseRun.x;
-                phase = (scene->match->playerInfo[index].tPI.location.x - scene->field->secondBaseRun.x) / distance;
+                phase = (scene->match->playerInfo[index].body.location.x - scene->field->secondBaseRun.x) / distance;
                 base = BASE_SECOND;
             } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
                 distance = HOME_LINE_Z - scene->field->thirdBaseRun.z;
-                phase = (scene->match->playerInfo[index].tPI.location.z - scene->field->thirdBase.z) / distance;
+                phase = (scene->match->playerInfo[index].body.location.z - scene->field->thirdBase.z) / distance;
                 base = BASE_THIRD;
             } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
                 phase = 0.0f;

@@ -104,13 +104,13 @@ void update_ball_to_player(MatchSession* match)
     if (match->ballInfo.holder != -1) {
         // if someone has ball and that someone is moving and ball movement needs updating, give it same v as the player
         // has
-        if (match->playerInfo[match->ballInfo.holder].cPI.moving == 1) {
+        if (match->playerInfo[match->ballInfo.holder].motion.moving == 1) {
             if (match->ballInfo.needsMoveUpdate == 1) {
                 match->ballInfo.moving = 1;
                 match->ballInfo.needsMoveUpdate = 0;
                 vec3_set_xyz(
-                    &(match->ballInfo.velocity), match->playerInfo[match->ballInfo.holder].tPI.velocity.x, 0.0f,
-                    match->playerInfo[match->ballInfo.holder].tPI.velocity.z
+                    &(match->ballInfo.velocity), match->playerInfo[match->ballInfo.holder].body.velocity.x, 0.0f,
+                    match->playerInfo[match->ballInfo.holder].body.velocity.z
                 );
             }
         }

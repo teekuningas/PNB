@@ -34,7 +34,7 @@ int test_referee_starts_wounding_on_catch(void)
     // Place a fielder near third to hold the ball after "catching" it
     int fielderIdx = 15;
     Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
+    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
 
     // Initialize legal state and snapshot pitch-start positions
     initialize_referee_from_physical_state(ctx);
@@ -44,7 +44,7 @@ int test_referee_starts_wounding_on_catch(void)
     // Advance runner physically past their pitch-start base (simulate they ran)
     ctx->state->match->playerInfo[0].bTPI.state = PLAYER_STATE_RUNNING;
     ctx->state->match->playerInfo[0].bTPI.baseId = BASE_SECOND;
-    ctx->state->match->playerInfo[0].tPI.location = ctx->state->fieldPositions->secondBase;
+    ctx->state->match->playerInfo[0].body.location = ctx->state->fieldPositions->secondBase;
 
     // Set contract preconditions: fly ball caught
     ctx->state->match->gameEvents.catchMade = 1;

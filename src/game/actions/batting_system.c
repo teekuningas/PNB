@@ -271,7 +271,7 @@ void update_batting(
             // update location and orientation once here
             match->at_bat.pose_dirty = 1;
             if (batterIndex != -1) {
-                match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
+                match->playerInfo[batterIndex].motion.sync_previous_location = 1;
             }
         }
         // update batters location and orientation when either advancing speed or angular speed
@@ -314,7 +314,7 @@ void update_batting(
             match->at_bat.step_in += match->at_bat.step_in_speed;
             match->at_bat.pose_dirty = 1;
         }
-        // A batter standing still must have lastLocation caught up to location, or the renderer goes
+        // A batter standing still must have previous_location caught up to location, or the renderer goes
         // on interpolating across the last step he took — for ever, since nothing moves him again
         // until the next aim. Drawn, that is a body vibrating between two points one arc step apart.
         //
@@ -328,7 +328,7 @@ void update_batting(
         // Idempotent: when the two are already equal the catch-up is a copy of a value onto itself.
         // fielder_movement.c does the same thing at its own arrival, for the same reason.
         if (match->at_bat.pose_dirty == 0 && batterIndex != -1) {
-            match->playerInfo[batterIndex].cPI.lastLastLocationUpdate = 1;
+            match->playerInfo[batterIndex].motion.sync_previous_location = 1;
         }
         // if need for update of location and orientation
         if (match->at_bat.pose_dirty == 1 && batterIndex != -1) {
@@ -336,16 +336,16 @@ void update_batting(
             float dz;
             float dx2;
             float dz2;
-            // update lastLocation for smooth movement
+            // update previous_location for smooth movement
             vec3_set_xz(
-                &(match->playerInfo[batterIndex].tPI.lastLocation), match->playerInfo[batterIndex].tPI.location.x,
-                match->playerInfo[batterIndex].tPI.location.z
+                &(match->playerInfo[batterIndex].body.previous_location),
+                match->playerInfo[batterIndex].body.location.x, match->playerInfo[batterIndex].body.location.z
             );
             // update location with sine and cosine to new location on the circle centered at pitch plate.
             // radius will be given by step_in relative to batting radius
             // angle is given by arc_angle and the default ZERO_BATTING_ANGLE
             vec3_set_xz(
-                &(match->playerInfo[batterIndex].tPI.location),
+                &(match->playerInfo[batterIndex].body.location),
                 (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
                                                            (BATTING_RADIUS * (1 - match->at_bat.step_in))),
                 (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
@@ -353,11 +353,11 @@ void update_batting(
             );
             // and then set the orientation of batter. here we just first select the base direction to be
             // vector from pitchplate to batter and then fix it a bit to make it look more realistic.
-            dx = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].tPI.location.x;
-            dz = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].tPI.location.z;
+            dx = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].body.location.x;
+            dz = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].body.location.z;
             dx2 = (float)(cos(BATTER_ANGLE_FIX) * dx - sin(BATTER_ANGLE_FIX) * dz);
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
-            vec3_set_xz(&(match->playerInfo[batterIndex].tPI.orientation), dx2, dz2);
+            vec3_set_xz(&(match->playerInfo[batterIndex].body.orientation), dx2, dz2);
 
             match->at_bat.pose_dirty = 0;
         }

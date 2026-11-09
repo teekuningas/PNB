@@ -59,17 +59,17 @@ static void begin_windup(MatchSession* match, float power)
 {
     int pitcher = match->ballInfo.holder;
 
-    if (match->playerInfo[pitcher].cPI.moving == 1) {
+    if (match->playerInfo[pitcher].motion.moving == 1) {
         stop_movement(match->playerInfo, pitcher);
     }
     record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_BEGUN, true);
     // force the pitcher exactly onto the pitching spot (a windup may begin from slightly off)
-    match->playerInfo[pitcher].tPI.location.x = match->playerInfo[pitcher].tPI.homeLocation.x;
-    match->playerInfo[pitcher].tPI.location.z = match->playerInfo[pitcher].tPI.homeLocation.z;
-    match->playerInfo[pitcher].cPI.lastLastLocationUpdate = 1;
+    match->playerInfo[pitcher].body.location.x = match->playerInfo[pitcher].body.home_location.x;
+    match->playerInfo[pitcher].body.location.z = match->playerInfo[pitcher].body.home_location.z;
+    match->playerInfo[pitcher].motion.sync_previous_location = 1;
     // face the plate
-    match->playerInfo[pitcher].tPI.orientation.x = -1.0f;
-    match->playerInfo[pitcher].tPI.orientation.z = 0.0f;
+    match->playerInfo[pitcher].body.orientation.x = -1.0f;
+    match->playerInfo[pitcher].body.orientation.z = 0.0f;
     // the ball rises from the centre of the plate
     vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
 
@@ -95,8 +95,8 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     vec3_set_xyz(&(match->ballInfo.velocity), v.x, v.y, v.z);
 
     // nudge the pitcher aside as the ball leaves
-    target.x = match->playerInfo[pitcher].tPI.location.x + PITCHER_MOVE_AWAY_OFFSET;
-    target.z = match->playerInfo[pitcher].tPI.location.z;
+    target.x = match->playerInfo[pitcher].body.location.x + PITCHER_MOVE_AWAY_OFFSET;
+    target.z = match->playerInfo[pitcher].body.location.z;
     move_to_target(match->playerInfo, pitcher, &target);
 
     match->ballInfo.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
@@ -128,8 +128,8 @@ static void fake_pitch(MatchSession* match)
 
     match->ballInfo.pitch_in_flight = 0;
     if (pitcher != -1) {
-        match->ballInfo.location.x = match->playerInfo[pitcher].tPI.location.x;
-        match->ballInfo.location.z = match->playerInfo[pitcher].tPI.location.z;
+        match->ballInfo.location.x = match->playerInfo[pitcher].body.location.x;
+        match->ballInfo.location.z = match->playerInfo[pitcher].body.location.z;
         record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_FAKED, false);
     }
     match->catching_action = (CatchingAction){0};

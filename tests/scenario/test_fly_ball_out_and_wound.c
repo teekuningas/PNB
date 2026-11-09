@@ -63,13 +63,13 @@ int test_fly_ball_out_and_wound(void)
 
     int fielderIdx = 16; // Center fielder
     Vector3D centerField = {0.0f, 0.0f, 30.0f};
-    match->playerInfo[fielderIdx].tPI.location = centerField;
-    match->playerInfo[fielderIdx].tPI.homeLocation = centerField;
+    match->playerInfo[fielderIdx].body.location = centerField;
+    match->playerInfo[fielderIdx].body.home_location = centerField;
 
     int secondBasemanIdx = 18;
     Vector3D secondBase = ctx->state->fieldPositions->secondBase;
-    match->playerInfo[secondBasemanIdx].tPI.location = secondBase;
-    match->playerInfo[secondBasemanIdx].tPI.homeLocation = secondBase;
+    match->playerInfo[secondBasemanIdx].body.location = secondBase;
+    match->playerInfo[secondBasemanIdx].body.home_location = secondBase;
 
     // 5. Trigger runners to advance
     match->at_bat.may_leave_home = 1;
@@ -98,7 +98,7 @@ int test_fly_ball_out_and_wound(void)
         if (catchFrame != -1 && throwTriggered == 0) {
             throwTriggered = 1;
             throwStartFrame = frame;
-            scenario_throw_ball_to_base(ctx, match->playerInfo[fielderIdx].tPI.location, BASE_SECOND);
+            scenario_throw_ball_to_base(ctx, match->playerInfo[fielderIdx].body.location, BASE_SECOND);
             printf("Frame %d: Throw to 2nd base triggered\n", frame);
         }
 
@@ -172,9 +172,9 @@ int test_fly_ball_out_and_wound(void)
             printf(
                 "  F%3d: RunnerA[St=%d Bs=%d Pos=(%.1f,%.1f)] BatterB[St=%d Bs=%d Pos=(%.1f,%.1f)] Ball[AtBase=%d]\n",
                 frame, match->playerInfo[0].bTPI.state, match->playerInfo[0].bTPI.baseId,
-                match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z,
-                match->playerInfo[1].bTPI.state, match->playerInfo[1].bTPI.baseId, match->playerInfo[1].tPI.location.x,
-                match->playerInfo[1].tPI.location.z, ballAtBase
+                match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z,
+                match->playerInfo[1].bTPI.state, match->playerInfo[1].bTPI.baseId, match->playerInfo[1].body.location.x,
+                match->playerInfo[1].body.location.z, ballAtBase
             );
         }
     }
@@ -191,12 +191,12 @@ int test_fly_ball_out_and_wound(void)
     printf(
         "Batter: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n", match->playerInfo[1].bTPI.state,
         match->playerInfo[1].bTPI.baseId, rules->referee.battingPlayers[1].currentSafetyBase,
-        match->playerInfo[1].tPI.location.x, match->playerInfo[1].tPI.location.y, match->playerInfo[1].tPI.location.z
+        match->playerInfo[1].body.location.x, match->playerInfo[1].body.location.y, match->playerInfo[1].body.location.z
     );
     printf(
         "Runner A: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n", match->playerInfo[0].bTPI.state,
         match->playerInfo[0].bTPI.baseId, rules->referee.battingPlayers[0].currentSafetyBase,
-        match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.y, match->playerInfo[0].tPI.location.z
+        match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.y, match->playerInfo[0].body.location.z
     );
     printf("\nFor reference:\n");
     printf(

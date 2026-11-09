@@ -127,9 +127,9 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     position.z = startPos.z + (endPos.z - startPos.z) * progressToNext;
 
     // ONLY set PHYSICAL state - let referee handle legal state
-    game->playerInfo[playerIndex].tPI.location = position;
-    game->playerInfo[playerIndex].tPI.lastLocation = position;
-    game->playerInfo[playerIndex].tPI.homeLocation = startPos;
+    game->playerInfo[playerIndex].body.location = position;
+    game->playerInfo[playerIndex].body.previous_location = position;
+    game->playerInfo[playerIndex].body.home_location = startPos;
 
     // Set logical state
     if (progressToNext < 0.1f) {
@@ -175,7 +175,7 @@ void move_pitcher_away(ScenarioContext* ctx)
     // Move pitcher (Lukkari, player index 12) far away from home plate
     // so they don't catch fly balls or interfere with runners
     Vector3D away = {100.0f, 0.0f, 100.0f};
-    ctx->state->match->playerInfo[12].tPI.location = away;
+    ctx->state->match->playerInfo[12].body.location = away;
 }
 
 void give_ball_to_pitcher(ScenarioContext* ctx)
@@ -186,11 +186,11 @@ void give_ball_to_pitcher(ScenarioContext* ctx)
     int pitcherIdx = 12; // Lukkari stands at home plate in pesäpallo
 
     // Ensure pitcher is at their home location (near home plate)
-    game->playerInfo[pitcherIdx].tPI.location = game->playerInfo[pitcherIdx].tPI.homeLocation;
+    game->playerInfo[pitcherIdx].body.location = game->playerInfo[pitcherIdx].body.home_location;
 
     // Give them the ball and snap ball position to match
     game->ballInfo.holder = pitcherIdx;
-    game->ballInfo.location = game->playerInfo[pitcherIdx].tPI.location;
+    game->ballInfo.location = game->playerInfo[pitcherIdx].body.location;
     game->ballInfo.lastLocation = game->ballInfo.location;
     game->ballInfo.moving = 0;
     game->ballInfo.onGround = 1;
@@ -266,9 +266,9 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
     MatchSession* game = ctx->state->match;
 
     // Physical state: at home plate
-    game->playerInfo[playerIndex].tPI.location = ctx->state->fieldPositions->pitchPlate;
-    game->playerInfo[playerIndex].tPI.location.z += 1.0f; // Slightly in front
-    game->playerInfo[playerIndex].tPI.homeLocation = game->playerInfo[playerIndex].tPI.location;
+    game->playerInfo[playerIndex].body.location = ctx->state->fieldPositions->pitchPlate;
+    game->playerInfo[playerIndex].body.location.z += 1.0f; // Slightly in front
+    game->playerInfo[playerIndex].body.home_location = game->playerInfo[playerIndex].body.location;
 
     // Logical state: ready to bat/run
     game->playerInfo[playerIndex].bTPI.baseId = BASE_HOME;

@@ -321,7 +321,7 @@ static void checkMove(
         return;
     }
 
-    Vector3D from = match->playerInfo[index].tPI.location;
+    Vector3D from = match->playerInfo[index].body.location;
     Vector3D point;
     if (held == 0) {
         point = from;

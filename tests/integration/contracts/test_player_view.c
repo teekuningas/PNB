@@ -58,7 +58,7 @@ int test_player_activity_facts_survive_same_tick_arrival(void)
     MatchSession* match = ctx->state->match;
     PlayerView view;
     player_view_init(&view, match);
-    move_to_target(match->playerInfo, 1, &match->playerInfo[1].tPI.location);
+    move_to_target(match->playerInfo, 1, &match->playerInfo[1].body.location);
     ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "the real pipeline runs");
     const TickFacts* facts = &ctx->state->tick_facts;
     ASSERT_EQ(PLAYER_ACTIVITY_WALKING_TO_TARGET, facts->simulated_players[1].activity.started, "the walk began");

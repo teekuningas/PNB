@@ -42,8 +42,8 @@ int test_run_arrival_before_ball_lands(void)
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
-    ctx->state->match->playerInfo[runnerIndex].tPI.location = startLoc;
-    ctx->state->match->playerInfo[runnerIndex].tPI.lastLocation = startLoc;
+    ctx->state->match->playerInfo[runnerIndex].body.location = startLoc;
+    ctx->state->match->playerInfo[runnerIndex].body.previous_location = startLoc;
 
     // Set runtime state: passedPathPoint=1 means "past corner flag, run to homeRunPoint"
     // Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)

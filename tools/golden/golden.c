@@ -173,7 +173,7 @@ static int situation(const StateInfo* st, int pad)
     if ((int)sb->teams[catching].control == pad && m->catchingState.controlled_fielder != -1) {
         if (m->ballInfo.holder == m->catchingState.controlled_fielder) return 3; // holding it away from the plate
         if (m->ballInfo.holder == -1) {
-            const Vector3D* at = &m->playerInfo[m->catchingState.controlled_fielder].tPI.location;
+            const Vector3D* at = &m->playerInfo[m->catchingState.controlled_fielder].body.location;
             const Vector3D* to = &m->catchingState.ballTargetPoint;
             float dx = to->x - at->x, dz = to->z - at->z;
             int arrows = 0;

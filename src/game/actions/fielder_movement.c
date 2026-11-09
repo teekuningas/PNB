@@ -50,22 +50,22 @@ void update_controlled_fielder_movement(MatchSession* match)
     int index = match->catchingState.controlled_fielder;
     PlayerInfo* player = &match->playerInfo[index];
 
-    float dx = match->catchingState.controlledMoveTarget.x - player->tPI.location.x;
-    float dz = match->catchingState.controlledMoveTarget.z - player->tPI.location.z;
+    float dx = match->catchingState.controlledMoveTarget.x - player->body.location.x;
+    float dz = match->catchingState.controlledMoveTarget.z - player->body.location.z;
 
-    // Arrival is adjudicated here and nowhere else. looksForTarget is the AUTO-movers' arrival
+    // Arrival is adjudicated here and nowhere else. following_target is the AUTO-movers' arrival
     // machinery in SIMULATE (runners on their paths, ranked fielders chasing a ball); a
     // player that was auto-chasing a moment before it became the controlled one would otherwise be
     // walked by one mover and stopped by another, on two different notions of "there".
-    player->cPI.looksForTarget = 0;
+    player->motion.following_target = 0;
 
     if (vec3_is_small_enough_circle_xz(dx, dz, TARGET_ACHIEVED_THRESHOLD)) {
         // Already standing on it: nothing to do, and doing nothing is the point. This branch is what
         // makes a restated destination a no-op rather than a fresh departure.
-        if (player->cPI.moving == 1) {
-            vec3_set_xz(&player->tPI.velocity, 0.0f, 0.0f);
-            player->cPI.moving = 0;
-            player->cPI.lastLastLocationUpdate = 1;
+        if (player->motion.moving == 1) {
+            vec3_set_xz(&player->body.velocity, 0.0f, 0.0f);
+            player->motion.moving = 0;
+            player->motion.sync_previous_location = 1;
             record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_ARRIVAL, false);
             // A carried ball comes to rest with its carrier.
             match->ballInfo.needsMoveUpdate = 1;
@@ -79,17 +79,17 @@ void update_controlled_fielder_movement(MatchSession* match)
     // Facing along the path. For a fielder NOT carrying the ball, body_step.c turns this toward
     // the ball again later in the same frame — the override the key-driven path lived under too, kept
     // unchanged here.
-    player->tPI.orientation.x = dx;
-    player->tPI.orientation.z = dz;
+    player->body.orientation.x = dx;
+    player->body.orientation.z = dz;
 
-    vec3_set_xz(&player->tPI.velocity, dx * RUN_SPEED / norm, dz * RUN_SPEED / norm);
+    vec3_set_xz(&player->body.velocity, dx * RUN_SPEED / norm, dz * RUN_SPEED / norm);
     // Only a raised needsMoveUpdate hands the carrier's velocity to the ball it is holding.
     match->ballInfo.needsMoveUpdate = 1;
 
-    record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_RUNNING, player->cPI.moving == 0);
+    record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_RUNNING, player->motion.moving == 0);
 
     // An interruption leaves the destination standing, so movement resumes on the next tick.
-    if (player->cPI.moving == 0) {
-        player->cPI.moving = 1;
+    if (player->motion.moving == 0) {
+        player->motion.moving = 1;
     }
 }
