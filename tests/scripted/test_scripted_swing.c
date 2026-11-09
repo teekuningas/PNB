@@ -10,9 +10,15 @@
 #include "rules_pure/player_utils.h" // get_active_batter_index — whose body we are watching
 #include "action_invocations.h" // swing_widget_view — what the batter actually sees on the bar
 #include "actions_pure/swing_geometry.h"
+#include "player_view.h"
 #include <math.h>
 
 #define HUMAN_PAD CONTROL_PLAYER_1 /* the batting team (team 0) is the human */
+
+static void observe_player_view(const SimGame* game, void* context)
+{
+    player_view_after_tick(context, &game->state->tick_facts);
+}
 
 /*
  * The human SWING, headless — the whole gesture driven through a real KeyStates and the real
@@ -162,6 +168,9 @@ int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void)
 {
     ScriptedGame* g = scripted_create(0, 1, HUMAN_PAD, CONTROL_AI, 0x5A1F00Du);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    PlayerView view;
+    player_view_init(&view, scripted_match(g));
+    scripted_attach(g, observe_player_view, &view);
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
@@ -187,7 +196,7 @@ int test_scripted_swing_can_be_withdrawn_after_the_power_is_committed(void)
     int batter = get_active_batter_index(m);
     ASSERT(moving && batter != -1, "the batter's body never started its motion");
     ASSERT_EQ(
-        PLAYER_ANIM_BAT_SWING_3, m->playerInfo[batter].cPI.model,
+        PLAYER_ANIM_BAT_SWING_3, view.players[batter].model,
         "a swing withdrawn before the motion began must never start as a swing"
     );
     scripted_destroy(g);
@@ -452,6 +461,9 @@ int test_scripted_swing_a_batter_who_declares_nothing_does_not_swing(void)
 {
     ScriptedGame* g = scripted_create(0, 1, HUMAN_PAD, CONTROL_AI, 0x5A1F011u);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    PlayerView view;
+    player_view_init(&view, scripted_match(g));
+    scripted_attach(g, observe_player_view, &view);
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
 
@@ -476,7 +488,7 @@ int test_scripted_swing_a_batter_who_declares_nothing_does_not_swing(void)
     int batter = get_active_batter_index(m);
     ASSERT(batter != -1, "there must be a batter to look at");
     ASSERT_EQ(
-        PLAYER_ANIM_BAT_SWING_3, m->playerInfo[batter].cPI.model,
+        PLAYER_ANIM_BAT_SWING_3, view.players[batter].model,
         "a batter who has declared nothing must not be making a swing with his body"
     );
 
@@ -570,6 +582,9 @@ int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void)
 {
     ScriptedGame* g = scripted_create(0, 1, HUMAN_PAD, CONTROL_AI, 0x5A1F013u);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    PlayerView view;
+    player_view_init(&view, scripted_match(g));
+    scripted_attach(g, observe_player_view, &view);
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
@@ -589,9 +604,7 @@ int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void)
     ASSERT(moving, "the batter's body never started its motion");
     int batter = get_active_batter_index(m);
     ASSERT(batter != -1, "there must be a batter to look at");
-    ASSERT(
-        m->playerInfo[batter].cPI.model != PLAYER_ANIM_BAT_SWING_3, "the premise: he is swinging, not already spread"
-    );
+    ASSERT(view.players[batter].model != PLAYER_ANIM_BAT_SWING_3, "the premise: he is swinging, not already spread");
 
     // ...and think better of it, with the bat already on its way.
     scripted_tap(g, HUMAN_PAD, KEY_1);
@@ -599,7 +612,7 @@ int test_scripted_swing_withdrawal_reshapes_the_body_mid_motion(void)
 
     ASSERT_EQ(1, m->at_bat.swing_stopped, "the withdrawal must stop the swing");
     ASSERT_EQ(
-        PLAYER_ANIM_BAT_SWING_3, m->playerInfo[batter].cPI.model,
+        PLAYER_ANIM_BAT_SWING_3, view.players[batter].model,
         "and the BODY must follow it — a withdrawal the batter cannot see is not a withdrawal"
     );
 

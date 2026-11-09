@@ -65,11 +65,12 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                             match->playerInfo[match->catchingState.controlled_fielder].cPI.moving == 1) {
                             stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
                         }
-                        // Keep the release pose while the previous carrier is still recovering.
                         if (match->catchingState.controlled_fielder != -1 &&
                             match->playerInfo[match->catchingState.controlled_fielder].cTPI.throw_recovery_ticks == 0) {
-                            match->playerInfo[match->catchingState.controlled_fielder].cPI.model =
-                                PLAYER_ANIM_STAND_NO_BALL;
+                            record_player_activity(
+                                &match->playerInfo[match->catchingState.controlled_fielder].events,
+                                PLAYER_ACTIVITY_MOVEMENT_CANCELLED, false
+                            );
                         }
                         // set busyCatching to 0 for every one who was busy if ball is caught so that
                         // players are free to be moved to their home locations.
@@ -86,8 +87,7 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                         // replaces it, so a fielder stopped by the catch walks on by itself next
                         // tick. That is what smooth_out_movement used to fake by turning the held
                         // key flags back on.)
-                        // set the has ball model.
-                        match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
+                        record_player_activity(&match->playerInfo[i].events, PLAYER_ACTIVITY_BALL_CAUGHT, false);
 
                         // Emit catch event (referee will evaluate if it's a wounding catch)
                         match->gameEvents.catchMade = 1;

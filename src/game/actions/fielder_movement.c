@@ -49,7 +49,6 @@ void update_controlled_fielder_movement(MatchSession* match)
 
     int index = match->catchingState.controlled_fielder;
     PlayerInfo* player = &match->playerInfo[index];
-    int carries_the_ball = (match->ballInfo.holder == index);
 
     float dx = match->catchingState.controlledMoveTarget.x - player->tPI.location.x;
     float dz = match->catchingState.controlledMoveTarget.z - player->tPI.location.z;
@@ -67,7 +66,7 @@ void update_controlled_fielder_movement(MatchSession* match)
             vec3_set_xz(&player->tPI.velocity, 0.0f, 0.0f);
             player->cPI.moving = 0;
             player->cPI.lastLastLocationUpdate = 1;
-            player->cPI.model = carries_the_ball ? PLAYER_ANIM_STAND_WITH_BALL : PLAYER_ANIM_STAND_NO_BALL;
+            record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_ARRIVAL, false);
             // A carried ball comes to rest with its carrier.
             match->ballInfo.needsMoveUpdate = 1;
         }
@@ -87,16 +86,10 @@ void update_controlled_fielder_movement(MatchSession* match)
     // Only a raised needsMoveUpdate hands the carrier's velocity to the ball it is holding.
     match->ballInfo.needsMoveUpdate = 1;
 
-    player->cPI.model = carries_the_ball ? PLAYER_ANIM_RUN_WITH_BALL : PLAYER_ANIM_RUN_NO_BALL;
+    record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_RUNNING, player->cPI.moving == 0);
 
-    // The stride restarts when the walk does and never while it is running. This function runs every
-    // tick; resetting the animation stage on each one would freeze the fielder mid-step. It is also
-    // the resume path: an engine interruption that stops the fielder (a catch, a movement reset)
-    // leaves the destination standing, so the walk picks itself up here on the next tick.
+    // An interruption leaves the destination standing, so movement resumes on the next tick.
     if (player->cPI.moving == 0) {
         player->cPI.moving = 1;
-        player->cPI.animationStage = 0;
-        player->cPI.animationStageCount = 20;
-        player->cPI.animationFrequency = 3;
     }
 }

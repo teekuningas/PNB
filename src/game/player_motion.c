@@ -1,9 +1,7 @@
 /*
     player_motion.c — a body's movement primitives.
 
-    They set where a body is going and how fast, and the pose it takes while it goes; SIMULATE's body step
-    then moves it. That they also choose a mesh and an animation is the drawn state the World still
-    stores (drawn_state.c), not a second job.
+    They set where a body is going and how fast; SIMULATE's body step then moves it.
 */
 
 #include "player_motion.h"
@@ -19,9 +17,8 @@
 void stop_movement(PlayerInfo* playerInfo, int index)
 {
     if (index != -1) {
-        // and after stopping movement, also ensure that no animation stays.
         if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
-            playerInfo[index].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+            record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_MOVEMENT_CANCELLED, false);
         }
         playerInfo[index].cPI.looksForTarget = 0;
         playerInfo[index].cPI.moving = 0;
@@ -81,15 +78,7 @@ void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
             // and set moving to 1 so that player's location will be updated.
             playerInfo[index].cPI.moving = 1;
 
-            // choose different walking animation for fielders and batting team.
-            if (index < PLAYERS_IN_TEAM + JOKER_COUNT) {
-                playerInfo[index].cPI.model = PLAYER_ANIM_WALK_BARE;
-            } else {
-                playerInfo[index].cPI.model = PLAYER_ANIM_WALK_NO_BALL;
-            }
-            playerInfo[index].cPI.animationStage = 0;
-            playerInfo[index].cPI.animationStageCount = 16;
-            playerInfo[index].cPI.animationFrequency = 3;
+            record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_WALKING_TO_TARGET, true);
         }
     }
 }

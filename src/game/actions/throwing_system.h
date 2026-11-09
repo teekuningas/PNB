@@ -34,10 +34,6 @@
 // Physical recovery after release, including the release tick's SIMULATE step.
 #define THROW_RECOVERY_TICKS 42
 
-// Frame count of the throw-gather (throw_load) animation mesh sequence. The render arc maps the windup
-// clock across these frames (timing dictates animation), so the gather deepens as the windup runs.
-#define THROW_LOAD_FRAMES 11
-
 // How long the windup for a declared power lasts (unit-tested). The release waits for it, whoever declared.
 int throw_windup_total_frames(float power);
 

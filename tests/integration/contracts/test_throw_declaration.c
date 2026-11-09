@@ -6,7 +6,7 @@
 #include "actualize.h"
 #include "actions/throwing_system.h"
 #include "ball_catch.h"
-#include "drawn_state.h"
+#include "player_view.h"
 #include "simulate.h"
 #include <stddef.h>
 #include "intents.h"
@@ -232,6 +232,9 @@ static int check_throw_recovery(int animation_profile)
     declare_target(ctx, BASE_FIRST);
     declare_power(ctx, 0.3f);
     ASSERT(run_until_release(ctx, 100, NULL) > 0.0f, "a real declared throw must release");
+    PlayerView view;
+    player_view_init(&view, m);
+    PlayerAnimation* animation = &view.players[15];
     Vector3D release_position = body->location;
     body->homeLocation = (Vector3D){25.0f, 0.0f, 25.0f};
     fielding->isNearHomeLocation = 0;
@@ -241,25 +244,29 @@ static int check_throw_recovery(int animation_profile)
     m->chase_replan = CHASE_REPLAN_NONE;
 
     if (animation_profile == 1) {
-        activity->model = PLAYER_ANIM_STAND_NO_BALL;
+        animation->model = PLAYER_ANIM_STAND_NO_BALL;
     } else if (animation_profile == 2) {
-        activity->animationStageCount = 1;
-        activity->animationFrequency = 1;
+        animation->frame_count = 1;
+        animation->ticks_per_frame = 1;
     } else if (animation_profile == 3) {
-        activity->animationStageCount = 1000;
-        activity->animationFrequency = 17;
+        animation->frame_count = 1000;
+        animation->ticks_per_frame = 17;
     } else if (animation_profile == 4) {
         m->ballInfo.location = body->location;
         m->ballInfo.currentFlightHasHitGround = 1;
         check_if_ball_can_be_caught(m, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
         ASSERT_EQ(15, m->ballInfo.holder, "the recovering thrower can catch a ball after it has bounced");
-        ASSERT_EQ(PLAYER_ANIM_STAND_WITH_BALL, activity->model, "the real catch replaces the release pose");
+        TickFacts facts = {0};
+        facts.enforced_players[15].activity = m->playerInfo[15].events;
+        facts.enforced_players[15].holds_ball = true;
+        player_view_after_tick(&view, &facts);
+        ASSERT_EQ(PLAYER_ANIM_STAND_WITH_BALL, animation->model, "the real catch replaces the release pose");
     }
 
     for (int tick_index = 0; tick_index < 42; tick_index++) {
         if (animation_profile == 2) {
             for (int draw = 0; draw < 5; draw++)
-                update_models(m);
+                player_view_after_tick(&view, &(TickFacts){0});
         }
         ASSERT(fielding->throw_recovery_ticks != 0, "presentation cannot finish physical recovery early");
         m->catchingState.controlled_fielder = 15;

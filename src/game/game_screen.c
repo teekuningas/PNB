@@ -48,7 +48,7 @@ static const float LIGHT_POSITION[4] = {
     LIGHT_SOURCE_POSITION_X, LIGHT_SOURCE_POSITION_Y, LIGHT_SOURCE_POSITION_Z, 1.0f
 };
 
-int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, ResourceManager* rm)
+int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, PlayerView* players, ResourceManager* rm)
 {
     int result;
 
@@ -78,10 +78,13 @@ int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, Re
         return -1;
     }
 
+    player_view_init(players, stateInfo->match);
     return 0;
 }
 
-void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, MenuInfo* menuInfo)
+void update_game_screen(
+    StateInfo* stateInfo, HudState* hud, CameraView* camera, PlayerView* players, MenuInfo* menuInfo
+)
 {
     const BallInfo* ballInfo = &(stateInfo->match->ballInfo);
     // if we just changed here, load basic settings.
@@ -89,6 +92,7 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera,
         stateInfo->changeScreen = 0;
         stateInfo->updated = 1;
         load_game_screen_settings(stateInfo, hud, camera);
+        player_view_init(players, stateInfo->match);
     }
     // with home-key, one can return to main menu.
     if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
@@ -135,6 +139,7 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera,
     }
     if (update_game_frame(stateInfo, menuInfo)) {
         home_run_view_after_tick(&camera->home_run, &stateInfo->tick_facts);
+        player_view_after_tick(players, &stateInfo->tick_facts);
         hud_after_tick(hud, &stateInfo->announcement);
     }
 }
@@ -203,7 +208,7 @@ void draw_game_screen(
     glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
     draw_immutable_world(rm);
-    draw_game_frame(scene->match, &scene->rules->scoreboard, scene->paused, alpha, rm);
+    draw_game_frame(scene->match, &scene->rules->scoreboard, scene->players, scene->paused, alpha, rm);
 
     // statistics - Switch to 2D
     begin_2d_render(rs);

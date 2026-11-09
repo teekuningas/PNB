@@ -2,6 +2,14 @@
 #define TICK_OUTPUTS_H
 
 #include <stdbool.h>
+#include "foundation.h"
+#include "player_events.h"
+
+typedef struct _PlayerTickFacts {
+    PlayerActivityEvents activity;
+    bool holds_ball;
+    bool throw_recovering;
+} PlayerTickFacts;
 
 // What the tick hands out rather than keeps: the sound to play and the announcement to show, for the
 // client; the screen a period's end asks for and how the match ended, for the session. None of it is World
@@ -22,6 +30,8 @@ typedef struct _TickFacts {
     bool world_reset;
     bool enforcement_completed;
     bool homeward_run_started_in_enforcement;
+    PlayerTickFacts simulated_players[PLAYERS_IN_TEAM * 2 + JOKER_COUNT];
+    PlayerTickFacts enforced_players[PLAYERS_IN_TEAM * 2 + JOKER_COUNT];
 } TickFacts;
 
 typedef enum {

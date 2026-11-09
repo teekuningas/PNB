@@ -15,7 +15,6 @@
 #include "ball_catch.h"
 #include "fielder_behaviours.h"
 #include "body_step.h"
-#include "drawn_state.h"
 #include "actions/throwing_system.h"
 
 void simulate(
@@ -34,5 +33,4 @@ void simulate(
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         advance_throw_recovery(&match->playerInfo[i].cTPI);
     }
-    update_models(match);
 }

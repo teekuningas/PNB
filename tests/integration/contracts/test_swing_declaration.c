@@ -8,7 +8,7 @@
 #include "actions/batting_system.h"
 #include "actions_pure/swing_geometry.h"
 #include "actions_pure/pitching_physics.h"
-#include "drawn_state.h"
+#include "player_view.h"
 #include "vector_math.h"
 #include <math.h>
 
@@ -99,6 +99,8 @@ int test_batting_motion_and_recovery_follow_physical_time(void)
         ASSERT(reach_a_live_pitch(ctx), "a real pitch must open the swing");
         MatchSession* m = ctx->state->match;
         CommonPlayerInfo* activity = &m->playerInfo[0].cPI;
+        PlayerView view;
+        player_view_init(&view, m);
         int contact = m->at_bat.swing.contactFrame;
         ASSERT(contact > 60, "the pitch must leave enough time to observe the preparation boundary");
         m->at_bat.swing.powerActive = 1;
@@ -109,12 +111,10 @@ int test_batting_motion_and_recovery_follow_physical_time(void)
         while (m->at_bat.flight_frame <= contact + 42) {
             int next_tick = m->at_bat.flight_frame + 1;
             if (changed_animation) {
-                activity->model = PLAYER_ANIM_STAND_BARE;
-                activity->animationStage = 0;
-                activity->animationStageCount = 1;
-                activity->animationFrequency = 1;
+                view.players[0] =
+                    (PlayerAnimation){.model = PLAYER_ANIM_STAND_BARE, .frame_count = 1, .ticks_per_frame = 1};
                 for (int draw = 0; draw < 5; draw++)
-                    update_models(m);
+                    player_view_after_tick(&view, &(TickFacts){0});
             }
             update_batting(
                 m, &ctx->state->rules->referee, ctx->state->fieldPositions, 0, 0.0f, 0, &ctx->state->playSoundEffect

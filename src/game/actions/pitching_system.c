@@ -11,8 +11,6 @@
 #include "vector_math.h"
 #include "base_control.h"
 
-#define ANIMATION_FREQUENCY 3
-
 // May a pitch begin in the world as it stands? Asked by the INGEST gate of a declared power, against the
 // world at the top of the tick, and answered with the rule that refuses it:
 //   - nothing else is being done with the ball — no pitch already winding, no throw gathering
@@ -64,11 +62,7 @@ static void begin_windup(MatchSession* match, float power)
     if (match->playerInfo[pitcher].cPI.moving == 1) {
         stop_movement(match->playerInfo, pitcher);
     }
-    // crouch animation (renderer-facing; downstream of the clock, never an input to it)
-    match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_PITCH_WINDUP;
-    match->playerInfo[pitcher].cPI.animationStage = 0;
-    match->playerInfo[pitcher].cPI.animationStageCount = PITCH_DOWN_MAX;
-    match->playerInfo[pitcher].cPI.animationFrequency = ANIMATION_FREQUENCY;
+    record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_BEGUN, true);
     // force the pitcher exactly onto the pitching spot (a windup may begin from slightly off)
     match->playerInfo[pitcher].tPI.location.x = match->playerInfo[pitcher].tPI.homeLocation.x;
     match->playerInfo[pitcher].tPI.location.z = match->playerInfo[pitcher].tPI.homeLocation.z;
@@ -110,15 +104,7 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->ballInfo.pitch_in_flight = 1;
     match->at_bat.may_leave_home = 1;
     match->gameEvents.pitchReleased = 1;
-    // release animation (downstream): the windup arc (render-side, driven by the windup clock) has already
-    // played the full down→up motion and lands on the final pitch_up frame exactly now — so at release we
-    // just HOLD that follow-through pose (animationStage pinned to the last frame; update_models holds a
-    // non-loop at its end) until movement takes over. This replaces the old bug where the up-swing only
-    // fired here, after the ball had already left.
-    match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_PITCH_THROW;
-    match->playerInfo[pitcher].cPI.animationFrequency = ANIMATION_FREQUENCY;
-    match->playerInfo[pitcher].cPI.animationStageCount = PITCH_UP_MAX;
-    match->playerInfo[pitcher].cPI.animationStage = PITCH_UP_MAX * ANIMATION_FREQUENCY - 1;
+    record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_RELEASED, true);
 
     // commit any base runners that armed to break on the pitch
     for (i = 1; i < BASE_COUNT; i++) {
@@ -144,7 +130,7 @@ static void fake_pitch(MatchSession* match)
     if (pitcher != -1) {
         match->ballInfo.location.x = match->playerInfo[pitcher].tPI.location.x;
         match->ballInfo.location.z = match->playerInfo[pitcher].tPI.location.z;
-        match->playerInfo[pitcher].cPI.model = PLAYER_ANIM_STAND_WITH_BALL;
+        record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_FAKED, false);
     }
     match->catching_action = (CatchingAction){0};
 }

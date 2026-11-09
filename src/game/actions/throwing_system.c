@@ -12,8 +12,6 @@
 
 #define DROP_BALL_CONSTANT 0.02f
 
-#define THROW_ANIMATION_FREQUENCY 3
-
 // Windup sizing: how long the physical windup for a declared power lasts. Once the power is known the engine
 // releases when its clock reaches this — for BOTH producers. A human's clock starts earlier (with the
 // target, running while it picks power on the client charge widget), so by the time its power arrives the
@@ -84,12 +82,7 @@ static void begin_throw_windup(MatchSession* match, const FieldPositions* fieldP
     if (match->playerInfo[thrower].cPI.moving == 1) {
         stop_movement(match->playerInfo, thrower);
     }
-    // Gather animation (renderer-facing; downstream of the clock — the render arc maps the windup timer
-    // across the gather frames, so animationStage here is just the initial pose, not the driver).
-    match->playerInfo[thrower].cPI.model = PLAYER_ANIM_THROW_WINDUP;
-    match->playerInfo[thrower].cPI.animationStage = 0;
-    match->playerInfo[thrower].cPI.animationStageCount = THROW_LOAD_FRAMES;
-    match->playerInfo[thrower].cPI.animationFrequency = THROW_ANIMATION_FREQUENCY;
+    record_player_activity(&match->playerInfo[thrower].events, PLAYER_ACTIVITY_THROW_BEGUN, true);
     // Avoid twitching if a move key is still down while the thrower can't move.
     match->playerInfo[thrower].cPI.lastLastLocationUpdate = 1;
     // Face the target base.
@@ -113,11 +106,7 @@ static void throw_release(MatchSession* match)
     if (power < 0.0f) power = 0.0f;
     if (power > 1.0f) power = 1.0f;
 
-    // release animation
-    match->playerInfo[match->ballInfo.holder].cPI.model = PLAYER_ANIM_THROW_RELEASE;
-    match->playerInfo[match->ballInfo.holder].cPI.animationStage = 0;
-    match->playerInfo[match->ballInfo.holder].cPI.animationStageCount = 21;
-    match->playerInfo[match->ballInfo.holder].cPI.animationFrequency = 2;
+    record_player_activity(&match->playerInfo[match->ballInfo.holder].events, PLAYER_ACTIVITY_THROW_RELEASED, true);
     match->playerInfo[match->ballInfo.holder].cTPI.throw_recovery_ticks = THROW_RECOVERY_TICKS;
 
     // normalize the latched direction and give it a small upward component
@@ -201,8 +190,7 @@ void drop_ball(MatchSession* match)
     if (match->playerInfo[match->ballInfo.holder].cPI.moving == 1) {
         stop_movement(match->playerInfo, match->ballInfo.holder);
     }
-    // model is set to be the basic standing without ball model.
-    match->playerInfo[match->ballInfo.holder].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+    record_player_activity(&match->playerInfo[match->ballInfo.holder].events, PLAYER_ACTIVITY_BALL_DROPPED, false);
     // and then just set a little upward-forward -directed value for ball so that we'll see the dropping
     dx = match->playerInfo[match->ballInfo.holder].tPI.orientation.x;
     dz = match->playerInfo[match->ballInfo.holder].tPI.orientation.z;

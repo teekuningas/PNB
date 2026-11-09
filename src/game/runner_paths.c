@@ -43,11 +43,7 @@ static void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* tar
         // orientation to our direction
         playerInfo[index].tPI.orientation.x = dx;
         playerInfo[index].tPI.orientation.z = dz;
-        // and set the running animation
-        playerInfo[index].cPI.model = PLAYER_ANIM_RUN_BARE;
-        playerInfo[index].cPI.animationStage = 0;
-        playerInfo[index].cPI.animationStageCount = 20;
-        playerInfo[index].cPI.animationFrequency = 3;
+        record_player_activity(&playerInfo[index].events, PLAYER_ACTIVITY_RUNNING_ROUTE, true);
     }
 }
 void run_to_next_base(MatchSession* match, const FieldPositions* field_positions, int index, BaseID base)

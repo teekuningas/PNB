@@ -6,8 +6,6 @@
 #define PITCH_BASE_SPEED 0.065f // dy at power 0 (minimum toss height)
 #define PITCH_POWER_CONSTANT 0.12f // extra dy per unit power
 #define PITCH_ANGLE_CONSTANT 0.15f // dx per unit placement (direction)
-#define PITCH_DOWN_MAX 9 // crouch (pitch_down) frame count — render only (frames loaded 1..9)
-#define PITCH_UP_MAX 13 // rise/throw (pitch_up) frame count — render only (frames loaded 1..13)
 // How far off level a swing's launch elevation may be and still be a hit. It is the swing minigame's
 // real difficulty knob: the timing tolerance is LIMIT/(GAIN*ball_vy), so this scales every hit window
 // by the same factor and leaves the difficulty GRADIENT between low and high pitches untouched —

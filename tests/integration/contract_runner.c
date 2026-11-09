@@ -16,6 +16,9 @@ static void run_contract_tests(void)
     RUN_TEST(test_home_run_view_preserves_phase_and_hold_boundaries);
     RUN_TEST(test_homeward_run_facts_survive_clear_and_legal_enforcement);
     RUN_TEST(test_camera_facts_distinguish_resets_from_flow_short_circuits);
+    RUN_TEST(test_player_view_preserves_phase_and_restart_boundaries);
+    RUN_TEST(test_player_activity_facts_survive_same_tick_arrival);
+    RUN_TEST(test_player_view_resets_before_batter_readiness);
     RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
     RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 

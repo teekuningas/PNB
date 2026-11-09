@@ -48,6 +48,16 @@ static ThirdBaseControl observe_third_base_control(const MatchSession* match, co
                                                                         : THIRD_CONTROLLER_OFF_BASE;
 }
 
+static void collect_player_facts(MatchSession* match, PlayerTickFacts* facts)
+{
+    for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+        facts[i] = (PlayerTickFacts){.activity = match->playerInfo[i].events,
+                                     .holds_ball = match->ballInfo.holder == i,
+                                     .throw_recovering = match->playerInfo[i].cTPI.throw_recovery_ticks != 0};
+        match->playerInfo[i].events = (PlayerActivityEvents){0};
+    }
+}
+
 // The menu a period's end opens, from why it ended. The session's routing, not the engine's: ENFORCE only says
 // that the game screen is done and which transition finished it.
 static void route_menu(MenuInfo* menuInfo, PeriodTransitionType transition)
@@ -146,6 +156,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
         .ball_home = ball_is_home(game, stateInfo->fieldPositions),
         .third_base_control = observe_third_base_control(game, &rules->referee)
     };
+    collect_player_facts(game, facts.simulated_players);
 
     // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
     // pronounces what it means.
@@ -164,6 +175,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     facts.world_reset = consolidation_output.world_reset;
     facts.enforcement_completed = consolidation_output.enforcement_completed;
     facts.homeward_run_started_in_enforcement = game->gameEvents.homeward_runs_started > homeward_runs;
+    collect_player_facts(game, facts.enforced_players);
     stateInfo->tick_facts = facts;
 
     // Handle screen transition requests from consolidation
@@ -194,13 +206,14 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     return 1;
 }
 void draw_game_frame(
-    const MatchSession* match, const Scoreboard* scoreboard, int paused, double alpha, ResourceManager* rm
+    const MatchSession* match, const Scoreboard* scoreboard, const PlayerView* players, int paused, double alpha,
+    ResourceManager* rm
 )
 {
     // players and ball are the building blocks of all the action on the screen.
     if (!paused) {
 #ifndef NO_RENDER
-        draw_player_renderer(match, scoreboard, alpha, rm);
+        draw_player_renderer(match, scoreboard, players, alpha, rm);
         draw_ball(&(match->ballInfo), alpha, rm);
 #endif
     }

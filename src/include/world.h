@@ -7,6 +7,7 @@
 // so code holding only this header can name neither.
 
 #include "foundation.h"
+#include "player_events.h"
 
 typedef enum {
     PLAYER_STATE_IDLE = 0,
@@ -126,26 +127,6 @@ typedef struct _BattingTeamPlayerInfo {
     BaseID baseId;
 } BattingTeamPlayerInfo;
 
-typedef enum {
-    PLAYER_ANIM_STAND_NO_BALL = 0,
-    PLAYER_ANIM_STAND_WITH_BALL = 1,
-    PLAYER_ANIM_WALK_NO_BALL = 2,
-    PLAYER_ANIM_WALK_WITH_BALL = 3,
-    PLAYER_ANIM_RUN_NO_BALL = 4,
-    PLAYER_ANIM_RUN_WITH_BALL = 5,
-    PLAYER_ANIM_PITCH_WINDUP = 6,
-    PLAYER_ANIM_PITCH_THROW = 7,
-    PLAYER_ANIM_THROW_WINDUP = 8,
-    PLAYER_ANIM_THROW_RELEASE = 9,
-    PLAYER_ANIM_STAND_BARE = 10,
-    PLAYER_ANIM_WALK_BARE = 11,
-    PLAYER_ANIM_RUN_BARE = 12,
-    PLAYER_ANIM_BATTER_READY = 13,
-    PLAYER_ANIM_BAT_SWING_1 = 14,
-    PLAYER_ANIM_BAT_SWING_2 = 15,
-    PLAYER_ANIM_BAT_SWING_3 = 16
-} PlayerAnimationModel;
-
 typedef enum { TEAM_BATTING = 0, TEAM_CATCHING = 1 } TeamSide;
 
 typedef enum { REPLACEMENT_IDLE = 0, REPLACEMENT_ACTIVE = 1 } ReplacementState;
@@ -160,14 +141,6 @@ typedef struct _CommonPlayerInfo {
     int looksForTarget; // used in conjuction with targetLocation when trying to go catching a ball for example
     int lastLastLocationUpdate; // player needs to have his lastLocation updated, necessary when controlling player and
                                 // moving stops. twitching without this
-    /* how to intepret the model number:
-        See PlayerAnimationModel enum above
-    */
-    PlayerAnimationModel model;
-    int animationStage;
-    int animationStageCount;
-    int animationFrequency;
-
 } CommonPlayerInfo;
 
 typedef struct _CatchingTeamPlayerInfo {
@@ -185,6 +158,7 @@ typedef struct _PlayerInfo {
     CommonPlayerInfo cPI;
     CatchingTeamPlayerInfo cTPI;
     BattingTeamPlayerInfo bTPI;
+    PlayerActivityEvents events; // Drained at the SIMULATE boundary and again by CLEAR.
 
 } PlayerInfo;
 

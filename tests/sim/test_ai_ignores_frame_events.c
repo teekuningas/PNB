@@ -73,6 +73,13 @@ static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents
 {
     sim_restore_world(cap, g);
     g->state->match->gameEvents = events;
+    PlayerActivityEvents activity = events.catchMade
+                                        ? (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_RUNNING_ROUTE,
+                                                                 .started = PLAYER_ACTIVITY_WALKING_TO_TARGET}
+                                        : (PlayerActivityEvents){0};
+    for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+        g->state->match->playerInfo[i].events = activity;
+    }
 
     // Each probe starts from an empty channel, so what it holds afterwards is this probe's
     // declarations and nothing carried over from the previous one.
@@ -89,6 +96,10 @@ static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents
     // gameEvents is the input we varied on purpose, so it cannot take part in the comparison.
     // Everything else in MatchSession does.
     memset(&out->match.gameEvents, 0, sizeof(GameEvents));
+    for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+        out->wrote_an_event |= memcmp(&out->match.playerInfo[i].events, &activity, sizeof(activity)) != 0;
+        out->match.playerInfo[i].events = (PlayerActivityEvents){0};
+    }
 }
 
 int test_ai_ignores_frame_events(void)

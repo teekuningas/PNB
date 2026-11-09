@@ -3,8 +3,8 @@
 #include "display.h"
 #include "rules_state.h"
 #include "world.h"
-#include "actions/throwing_system.h" // THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES (throw gather arc)
-#include "actions_pure/pitching_physics.h" // PITCH_DOWN_MAX / PITCH_UP_MAX (pitch frame counts)
+#include "actions/throwing_system.h" // THROW_WINDUP_MAX_FRAMES (throw gather arc)
+#include "actions_pure/pitching_physics.h" // the pitch windup's physical segments
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <stdlib.h> // For malloc
@@ -15,14 +15,17 @@
 
 // Forward declarations for static helper functions
 static void textureSelection(const Scoreboard* scoreboard, int team, int joker, int type, ResourceManager* rm);
-static void modelSelection(const MatchSession* match, int index, ResourceManager* rm);
+static void modelSelection(const MatchSession* match, const PlayerAnimation* animation, ResourceManager* rm);
 
 int init_player_renderer(ResourceManager* rm)
 {
     return 0;
 }
 
-void draw_player_renderer(const MatchSession* match, const Scoreboard* scoreboard, double alpha, ResourceManager* rm)
+void draw_player_renderer(
+    const MatchSession* match, const Scoreboard* scoreboard, const PlayerView* players, double alpha,
+    ResourceManager* rm
+)
 {
     const PlayerInfo* playerInfo = match->playerInfo;
     int i;
@@ -46,7 +49,7 @@ void draw_player_renderer(const MatchSession* match, const Scoreboard* scoreboar
         // and we render. first texture is selected, as there are different teams and within teams there are jokers
         // and nonjokers. and then the model is selected and it also calls the display list.
         textureSelection(scoreboard, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0, rm);
-        modelSelection(match, i, rm);
+        modelSelection(match, &players->players[i], rm);
         // and then there is the shadow.
         // we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same
         // height.
@@ -113,14 +116,11 @@ static void textureSelection(const Scoreboard* scoreboard, int team, int joker, 
     }
 }
 
-static void modelSelection(const MatchSession* match, int index, ResourceManager* rm)
+static void modelSelection(const MatchSession* match, const PlayerAnimation* animation, ResourceManager* rm)
 {
-    // and then we must select which mesh we use and call the corresponding display list.
-    // for animations we just use the animationStage, that is being updated in drawn_state.c, as index
-    // in mesh arrays.
-    int animIndex = match->playerInfo[index].cPI.animationStage / match->playerInfo[index].cPI.animationFrequency;
+    int animIndex = animation->frame_tick / animation->ticks_per_frame;
     char path[128];
-    switch (match->playerInfo[index].cPI.model) {
+    switch (animation->model) {
     case PLAYER_ANIM_STAND_NO_BALL:
         glCallList(resource_manager_get_model(rm, "data/models/player_glove_without_ball_standing.obj"));
         break;
@@ -157,7 +157,7 @@ static void modelSelection(const MatchSession* match, int index, ResourceManager
         // Windup arc driven by the engine windup CLOCK (timing dictates animation, never the reverse), in
         // three segments matching pitch_windup_total_frames: a fixed crouch DOWN, a power-scaled crouch
         // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
-        // ball leaves. animationStage is ignored here — the timer is the master. Works identically for AI
+        // ball leaves. The clip clock is ignored here — the timer is the master. Works identically for AI
         // and human (the AI declares power directly; the windup + arc are the same engine path).
         const CatchingAction* action = &match->catching_action;
         int timer = action->timer;
@@ -183,7 +183,7 @@ static void modelSelection(const MatchSession* match, int index, ResourceManager
     case PLAYER_ANIM_THROW_WINDUP: {
         // Gather arc driven by the engine windup CLOCK (timing dictates animation, never the reverse): the
         // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
-        // hold. Mapped to the full-power windup length; animationStage is ignored (the timer is master).
+        // hold. Mapped to the full-power windup length; the clip clock is ignored (the timer is master).
         // Works identically for AI and human — the same engine clock.
         int timer = match->catching_action.timer;
         int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;

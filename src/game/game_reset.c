@@ -76,7 +76,7 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 
                 // 5. Handle the Batter - Physical State Only
                 if (restoreBase == BASE_HOME) {
-                    // Prepare batter for next pitch (animation etc)
+                    // Restore readiness for the next pitch.
                     prepare_batter(match);
                 }
 
@@ -92,7 +92,7 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
                     match->playerInfo[j].tPI.location.z = field_positions->thirdBaseRun.z;
                 }
             } else {
-                // Restore OUT/SCORED/WOUNDED states to avoid re-triggering animations
+                // Restore OUT/SCORED/WOUNDED so enforcement does not start their exit again.
                 // This is physical state sync
                 if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
                     match->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
@@ -152,10 +152,9 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
     match->ballInfo.lastLocation.x = match->ballInfo.location.x;
     match->ballInfo.lastLocation.y = match->ballInfo.location.y;
     match->ballInfo.lastLocation.z = match->ballInfo.location.z;
-    // set locations and models for batting team players
+    // Place the batting team around home.
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i]) / 20.0f);
-        match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
 
         match->playerInfo[i].tPI.homeLocation.x =
             (float)(field_positions->pitchPlate.x +
@@ -176,9 +175,8 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
         match->playerInfo[i].tPI.lastLocation.y = match->playerInfo[i].tPI.location.y;
         match->playerInfo[i].tPI.lastLocation.z = match->playerInfo[i].tPI.location.z;
     }
-    // set locations and models for fielders. here we need positions set.
+    // Place fielders in their posts.
     for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
 
         switch (i - 12) {
         case 0:
@@ -307,9 +305,8 @@ static void initialize_non_critical_player_information(MatchSession* match)
         match->playerRuntime[i].goingForward = 0;
         match->playerRuntime[i].hasMadeRunOnThirdBase = 0;
 
-        match->playerInfo[i].cPI.animationFrequency = 1;
-        match->playerInfo[i].cPI.animationStage = 0;
-        match->playerInfo[i].cPI.animationStageCount = 0;
+        match->playerInfo[i].events =
+            (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_RESET, .started = PLAYER_ACTIVITY_RESET};
         match->playerInfo[i].cPI.moving = 0;
         match->playerInfo[i].cPI.running = 0;
         match->playerInfo[i].cPI.looksForTarget = 0;

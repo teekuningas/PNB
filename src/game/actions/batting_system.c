@@ -25,8 +25,6 @@ typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP 
 
 #define SWING_PREPARATION_TICKS 60
 #define SWING_RECOVERY_TICKS 42
-#define SWING_CLIP_FRAMES 34
-#define SWING_CLIP_TICKS_PER_FRAME 3
 #define BUNT_THRESHOLD 20
 
 #define BUNT_ADVANCE 1.0f
@@ -169,13 +167,6 @@ static BattingMode swing_shape(const MatchSession* match)
     return BATTING_MODE_SWING;
 }
 
-static int animation_for_shape(BattingMode shape)
-{
-    if (shape == BATTING_MODE_BUNT) return PLAYER_ANIM_BAT_SWING_2;
-    if (shape == BATTING_MODE_STOP) return PLAYER_ANIM_BAT_SWING_3;
-    return PLAYER_ANIM_BAT_SWING_1;
-}
-
 static float advance_for_shape(BattingMode shape)
 {
     if (shape == BATTING_MODE_BUNT) return BUNT_ADVANCE; // the bunt needs the body nearer the ball
@@ -183,8 +174,8 @@ static float advance_for_shape(BattingMode shape)
     return SWING_ADVANCE;
 }
 
-// Put the body into a shape: the mode, how far it may step in, and the animation it plays. Three
-// values that are all functions of the same one, so they are set in ONE place and never apart.
+// Actualize the stroke and its physical step-in limit. The client chooses its animation from
+// the published activity; no model or clip value enters the engine.
 //
 // They used to be set in three, and the third only set two of them — which is how a withdrawal came
 // to stop the swing everywhere except on screen. There was a `batting_mode` field holding the shape,
@@ -195,11 +186,16 @@ static float advance_for_shape(BattingMode shape)
 //
 // The field is gone. Nothing ever read it except that guard, so it was a cache of a pure function of
 // the declaration that could disagree with the declaration — and the one time it did, it cost the
-// withdrawal its whole visible effect. The shape is derived where it is needed and stored nowhere.
-static void apply_shape(MatchSession* match, int batterIndex, BattingMode shape)
+// withdrawal its whole visible effect. The shape is derived, not cached as persistent physical state.
+static void apply_shape(MatchSession* match, int batterIndex, BattingMode shape, bool started)
 {
     match->at_bat.step_in_limit = advance_for_shape(shape);
-    if (batterIndex != -1) match->playerInfo[batterIndex].cPI.model = animation_for_shape(shape);
+    if (batterIndex != -1) {
+        PlayerActivity activity = PLAYER_ACTIVITY_SWINGING;
+        if (shape == BATTING_MODE_BUNT) activity = PLAYER_ACTIVITY_BUNTING;
+        if (shape == BATTING_MODE_STOP) activity = PLAYER_ACTIVITY_WITHDRAWING;
+        record_player_activity(&match->playerInfo[batterIndex].events, activity, started);
+    }
 }
 
 // Withdraw the swing: the bat is not coming, so there is nothing to miss with. Reached by an explicit
@@ -395,10 +391,7 @@ void update_batting(
                     // set swing_started to 1 so that we can better handle starting points of the
                     // animations
                     match->at_bat.swing_started = 1;
-                    apply_shape(match, batterIndex, swing_shape(match));
-                    match->playerInfo[batterIndex].cPI.animationStage = 0;
-                    match->playerInfo[batterIndex].cPI.animationStageCount = SWING_CLIP_FRAMES;
-                    match->playerInfo[batterIndex].cPI.animationFrequency = SWING_CLIP_TICKS_PER_FRAME;
+                    apply_shape(match, batterIndex, swing_shape(match), true);
                     match->at_bat.step_in_speed =
                         (float)GENERIC_BATTER_ADVANCE_SPEED_CONSTANT / SWING_PREPARATION_TICKS;
                 }
@@ -411,11 +404,11 @@ void update_batting(
             // Applied unconditionally rather than only when the shape CHANGES. The guard that used to
             // stand here was comparing against a value a second writer had already moved, so the one
             // case it was meant to serve — a withdrawal, mid-motion — was the exact case it skipped.
-            // Re-deriving a shape that has not changed writes the same three values it already holds,
+            // Re-deriving an unchanged shape publishes the same activity and physical step-in limit,
             // which costs nothing and cannot be wrong; a guard that can be fooled about whether
             // something changed can.
             if (match->at_bat.swing_started == 1 && batterIndex != -1) {
-                apply_shape(match, batterIndex, swing_shape(match));
+                apply_shape(match, batterIndex, swing_shape(match), false);
             }
         }
         // Everything below is timed against the contact frame, and there is no contact frame until a
@@ -535,8 +528,7 @@ void prepare_batter(MatchSession* match)
 {
     int batterIndex = get_active_batter_index(match);
     if (batterIndex != -1) {
-        // batter ready model
-        match->playerInfo[batterIndex].cPI.model = PLAYER_ANIM_BATTER_READY;
+        record_player_activity(&match->playerInfo[batterIndex].events, PLAYER_ACTIVITY_BATTER_READY, false);
         // He has arrived: the pitch may come, and the cycle opens (and sets the body up) on the first frame
         // with no pitch in the air. An arrival only begins a cycle when none is open — the batter is walked
         // to the ready spot when a cycle has closed or before the first, and never while one is running.

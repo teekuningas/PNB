@@ -4,6 +4,7 @@
 #include "client_input.h"
 #include "ai/ai_memory.h"
 #include "home_run_view.h"
+#include "player_view.h"
 #include <stdint.h>
 // The version-specific half of the golden projection: how this tree's structs answer the semantic
 // questions golden.c asks. Edit THIS file when a refactor reshapes a struct, keeping every line it prints
@@ -127,7 +128,7 @@ static void project_widget(const char* name, const InputWidget* w)
     put(9, "%s=%d,%d,%d,%d;", name, w->counter, w->counter_max, w->dir, (int)w->mode);
 }
 
-static void project(const StateInfo* st, const HomeRunView* home_run)
+static void project(const StateInfo* st, const HomeRunView* home_run, const PlayerView* players)
 {
     const MatchSession* m = st->match;
     const GameRulesState* r = st->rules;
@@ -141,8 +142,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run)
         V(0, p->tPI.velocity);
         V(0, p->tPI.orientation);
         put(0, "c%d,%d,%d,%d,%d,%d,%d,%d,%d;", p->cPI.team, p->cPI.moving, p->cPI.running, p->cPI.looksForTarget,
-            p->cPI.lastLastLocationUpdate, (int)p->cPI.model, p->cPI.animationStage, p->cPI.animationStageCount,
-            p->cPI.animationFrequency);
+            p->cPI.lastLastLocationUpdate, (int)players->players[i].model, players->players[i].frame_tick,
+            players->players[i].frame_count, players->players[i].ticks_per_frame);
         // The historical slot observes active recovery, independently of its countdown representation.
         put(0, "f%d,%d,%d,%d,%d,%d;", p->cTPI.position, p->cTPI.isNearHomeLocation, (int)p->cTPI.replacingStage,
             (int)p->cTPI.replacingBase, p->cTPI.busyCatching, p->cTPI.throw_recovery_ticks != 0);

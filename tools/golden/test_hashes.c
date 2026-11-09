@@ -11,7 +11,8 @@ static void print_semantic_hashes(const SimGame* game)
     for (int s = 0; s < NSEC; s++)
         len[s] = 0, buf[s][0] = 0;
     HomeRunView home_run = {0};
-    project(game->state, &home_run);
+    PlayerView players = {0};
+    project(game->state, &home_run, &players);
     printf("semantic %016llx %s\n", checksum.hash, buf[8]);
 }
 

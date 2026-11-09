@@ -90,12 +90,7 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                     if (i == activeBatterIndex && match->playerRuntime[i].goingForward == 0) {
                         prepare_batter(match);
                     } else {
-                        // select correct model for catchers.
-                        if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-                            match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
-                        } else {
-                            match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_BARE;
-                        }
+                        record_player_activity(&match->playerInfo[i].events, PLAYER_ACTIVITY_TARGET_REACHED, false);
                     }
                     // if no out is made of this player ( batting team player )
                     if (i < PLAYERS_IN_TEAM + JOKER_COUNT) {
