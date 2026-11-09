@@ -31,6 +31,9 @@
 // sizes the windup to it. The human never uses it (power comes from the hold duration).
 #define THROW_POWER_DEFAULT (3.0f / 4.0f)
 
+// Physical recovery after release, including the release tick's SIMULATE step.
+#define THROW_RECOVERY_TICKS 42
+
 // Frame count of the throw-gather (throw_load) animation mesh sequence. The render arc maps the windup
 // clock across these frames (timing dictates animation), so the gather deepens as the windup runs.
 #define THROW_LOAD_FRAMES 11
@@ -58,6 +61,7 @@ typedef struct _ThrowValues {
 // power is known and its windup has elapsed. Called once per frame from actualize. Timing is the
 // master; the animation only follows.
 void update_throw_actualization(MatchSession* match, const FieldPositions* fieldPositions, const ThrowValues* declared);
+void advance_throw_recovery(CatchingTeamPlayerInfo* fielding);
 
 void drop_ball(MatchSession* match);
 

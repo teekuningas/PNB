@@ -177,7 +177,7 @@ typedef struct _CatchingTeamPlayerInfo {
         replacingStage; // 1 is going to replace or is at the base, 0 is coming back or is at home location.
     BaseID replacingBase; // in which base is the player replacing
     int busyCatching; // flag set when player is trying to run in hopes of catching the ball
-    int throwRecoil; // 1 when throwing animation is still going on. set one when ball leaves.
+    int throw_recovery_ticks; // Physical movement lock; decremented at the end of SIMULATE.
 } CatchingTeamPlayerInfo;
 
 typedef struct _PlayerInfo {

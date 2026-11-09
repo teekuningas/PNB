@@ -315,8 +315,7 @@ static void initialize_non_critical_player_information(MatchSession* match)
         match->playerInfo[i].cPI.looksForTarget = 0;
         match->playerInfo[i].cPI.lastLastLocationUpdate = 1;
 
-        // Critical: throwRecoil must be 0 for all players so move_to_target doesn't block
-        match->playerInfo[i].cTPI.throwRecoil = 0;
+        match->playerInfo[i].cTPI.throw_recovery_ticks = 0;
 
         if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
 
@@ -324,7 +323,6 @@ static void initialize_non_critical_player_information(MatchSession* match)
             match->playerInfo[i].cTPI.replacingStage = REPLACEMENT_IDLE;
             match->playerInfo[i].cTPI.replacingBase = BASE_NONE;
             match->playerInfo[i].cTPI.busyCatching = 0;
-            // throwRecoil already set above
         } else {
             match->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
             match->playerInfo[i].bTPI.baseId = BASE_NONE;

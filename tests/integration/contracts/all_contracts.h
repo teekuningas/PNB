@@ -61,6 +61,8 @@ int test_a_base_run_for_no_base_is_malformed(void);
 int test_throw_windup_frames_scale_with_power(void);
 int test_throw_declared_whole_releases_sized_to_power(void);
 int test_throw_target_then_power_engine_times_release(void);
+int test_throw_recovery_preserves_the_movement_boundary(void);
+int test_throw_recovery_is_independent_of_animation(void);
 
 // Fielder-movement contracts (the destination message and the engine mover)
 int test_move_target_sets_velocity_toward_the_point(void);
@@ -91,6 +93,7 @@ int test_swing_declarations_are_repeat_safe(void);
 int test_a_swing_never_declared_is_not_a_miss(void);
 int test_a_withdrawn_swing_does_not_reach_the_ball(void);
 int test_a_swing_declared_with_no_pitch_is_refused(void);
+int test_batting_motion_and_recovery_follow_physical_time(void);
 
 // A pitch is in progress for its whole windup, on every pitch of a half-inning, not only the first.
 int test_drop_refused_during_a_later_windup(void);

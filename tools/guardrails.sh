@@ -220,7 +220,7 @@ if ! naming_counts=$(bash tools/naming_debt.sh "$IDIR"); then
     exit 2
 fi
 read -r camel_fields player_abbreviations <<< "$naming_counts"
-ratchet "mixed-case file-scope struct fields" "$camel_fields" 196
+ratchet "mixed-case file-scope struct fields" "$camel_fields" 195
 ratchet "player sub-struct abbreviation words" "$player_abbreviations" 881
 
 # ---------------------------------------------------------------------------

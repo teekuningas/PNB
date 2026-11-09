@@ -8,6 +8,7 @@
 #include "actions/batting_system.h"
 #include "actions_pure/swing_geometry.h"
 #include "actions_pure/pitching_physics.h"
+#include "drawn_state.h"
 #include "vector_math.h"
 #include <math.h>
 
@@ -86,8 +87,53 @@ static void run_to_contact(ScenarioContext* ctx)
             match->at_bat.flight_frame > match->at_bat.swing.contactFrame + 2) {
             return;
         }
+
         tick(ctx);
     }
+}
+
+int test_batting_motion_and_recovery_follow_physical_time(void)
+{
+    for (int changed_animation = 0; changed_animation < 2; changed_animation++) {
+        ScenarioContext* ctx = create_scenario();
+        ASSERT(reach_a_live_pitch(ctx), "a real pitch must open the swing");
+        MatchSession* m = ctx->state->match;
+        CommonPlayerInfo* activity = &m->playerInfo[0].cPI;
+        int contact = m->at_bat.swing.contactFrame;
+        ASSERT(contact > 60, "the pitch must leave enough time to observe the preparation boundary");
+        m->at_bat.swing.powerActive = 1;
+        m->at_bat.swing.power = 0.8f;
+        m->at_bat.swing.verticalActive = 1;
+        m->at_bat.swing.vertical = SWING_VERTICAL_FOCAL;
+
+        while (m->at_bat.flight_frame <= contact + 42) {
+            int next_tick = m->at_bat.flight_frame + 1;
+            if (changed_animation) {
+                activity->model = PLAYER_ANIM_STAND_BARE;
+                activity->animationStage = 0;
+                activity->animationStageCount = 1;
+                activity->animationFrequency = 1;
+                for (int draw = 0; draw < 5; draw++)
+                    update_models(m);
+            }
+            update_batting(
+                m, &ctx->state->rules->referee, ctx->state->fieldPositions, 0, 0.0f, 0, &ctx->state->playSoundEffect
+            );
+            ASSERT_EQ(next_tick, m->at_bat.flight_frame, "only the physical step advances the swing clock");
+            ASSERT_EQ(next_tick > contact - 60, m->at_bat.swing_started, "preparation starts strictly inside 60 ticks");
+            if (next_tick > contact - 60) {
+                ASSERT_FLOAT_EQ(0.7f / 60, m->at_bat.step_in_speed, 1e-7f, "physical preparation sets step-in speed");
+            }
+            ASSERT_EQ(next_tick > contact, m->gameEvents.ballHitByBat, "contact keeps its strict physical boundary");
+            ASSERT_EQ(
+                next_tick <= contact + 42, batting_cycle_is_open(&m->at_bat),
+                "the physical cycle closes strictly after 42 recovery ticks"
+            );
+        }
+        ASSERT_EQ(1, activity->moving, "closing the physical cycle walks the batter back to readiness");
+        cleanup_scenario(ctx);
+    }
+    return TEST_PASSED;
 }
 
 // 1. The declared values ARE the swing: the launch elevation at contact is the pure function of the

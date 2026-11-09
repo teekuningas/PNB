@@ -142,8 +142,9 @@ static void project(const StateInfo* st)
         put(0, "c%d,%d,%d,%d,%d,%d,%d,%d,%d;", p->cPI.team, p->cPI.moving, p->cPI.running, p->cPI.looksForTarget,
             p->cPI.lastLastLocationUpdate, (int)p->cPI.model, p->cPI.animationStage, p->cPI.animationStageCount,
             p->cPI.animationFrequency);
+        // The historical slot observes active recovery, independently of its countdown representation.
         put(0, "f%d,%d,%d,%d,%d,%d;", p->cTPI.position, p->cTPI.isNearHomeLocation, (int)p->cTPI.replacingStage,
-            (int)p->cTPI.replacingBase, p->cTPI.busyCatching, p->cTPI.throwRecoil);
+            (int)p->cTPI.replacingBase, p->cTPI.busyCatching, p->cTPI.throw_recovery_ticks != 0);
         put(0, "b%d,%d,%d,%d,%d,%d;", p->bTPI.speed, p->bTPI.power, p->bTPI.number, (int)p->bTPI.joker,
             (int)p->bTPI.state, (int)p->bTPI.baseId);
         const PlayerRuntimeState* rt = &m->playerRuntime[i];

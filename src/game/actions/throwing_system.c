@@ -118,8 +118,7 @@ static void throw_release(MatchSession* match)
     match->playerInfo[match->ballInfo.holder].cPI.animationStage = 0;
     match->playerInfo[match->ballInfo.holder].cPI.animationStageCount = 21;
     match->playerInfo[match->ballInfo.holder].cPI.animationFrequency = 2;
-    // flag that the recoil animation is still going (no extra movement until it is over)
-    match->playerInfo[match->ballInfo.holder].cTPI.throwRecoil = 1;
+    match->playerInfo[match->ballInfo.holder].cTPI.throw_recovery_ticks = THROW_RECOVERY_TICKS;
 
     // normalize the latched direction and give it a small upward component
     float dx = windup.direction.x / windup.distance;
@@ -143,6 +142,11 @@ static void throw_release(MatchSession* match)
     // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
     // player changing.
     match->catchingState.controlled_fielder = -1;
+}
+
+void advance_throw_recovery(CatchingTeamPlayerInfo* fielding)
+{
+    if (fielding->throw_recovery_ticks > 0) fielding->throw_recovery_ticks--;
 }
 
 // The throw actualizer — the single engine entry point, the throw's counterpart of the pitch's. A declared

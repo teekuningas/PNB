@@ -23,9 +23,10 @@ typedef enum { BATTING_MODE_SWING = 0, BATTING_MODE_BUNT = 1, BATTING_MODE_STOP 
 // nudges its cursor across the same arc at the same rate).
 #define GENERIC_BATTER_ADVANCE_SPEED_CONSTANT 0.7f
 
-#define ANIMATION_FREQUENCY 3
-#define BAT_ANIMATION_FRAME_HIT_COUNT (20 * ANIMATION_FREQUENCY)
-#define BAT_ANIMATION_FRAME_TOTAL_COUNT (34 * ANIMATION_FREQUENCY)
+#define SWING_PREPARATION_TICKS 60
+#define SWING_RECOVERY_TICKS 42
+#define SWING_CLIP_FRAMES 34
+#define SWING_CLIP_TICKS_PER_FRAME 3
 #define BUNT_THRESHOLD 20
 
 #define BUNT_ADVANCE 1.0f
@@ -390,22 +391,16 @@ void update_batting(
             }
             // so if the batter is still not moving, we'll try to figure out if we should be moving.
             if (match->at_bat.swing_started == 0 && batterIndex != -1) {
-                // so at the moment there is just enough frames left that if we start animation and advancing now the
-                // ball will be at right height for the animation look correct.
-                if (match->at_bat.flight_frame > match->at_bat.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT) {
+                if (match->at_bat.flight_frame > match->at_bat.swing.contactFrame - SWING_PREPARATION_TICKS) {
                     // set swing_started to 1 so that we can better handle starting points of the
                     // animations
                     match->at_bat.swing_started = 1;
                     apply_shape(match, batterIndex, swing_shape(match));
                     match->playerInfo[batterIndex].cPI.animationStage = 0;
-                    match->playerInfo[batterIndex].cPI.animationStageCount = 34;
-                    match->playerInfo[batterIndex].cPI.animationFrequency = 3;
-                    // give player some speed to use for advancing.
-                    // basically we are just guessing some reasonable speed.
-                    // but it depends on frame hit count so its explicitly there
-                    // for clarity
+                    match->playerInfo[batterIndex].cPI.animationStageCount = SWING_CLIP_FRAMES;
+                    match->playerInfo[batterIndex].cPI.animationFrequency = SWING_CLIP_TICKS_PER_FRAME;
                     match->at_bat.step_in_speed =
-                        (float)GENERIC_BATTER_ADVANCE_SPEED_CONSTANT / BAT_ANIMATION_FRAME_HIT_COUNT;
+                        (float)GENERIC_BATTER_ADVANCE_SPEED_CONSTANT / SWING_PREPARATION_TICKS;
                 }
             }
             // The body follows whatever is declared NOW, so a declaration that lands after the swing
@@ -430,11 +425,7 @@ void update_batting(
         if (match->at_bat.swing.contactFrame < 0) {
             return;
         }
-        // so here we check if the animation has ended and if the cycle is still open,
-        // so that we dont do this but once. if it is, we close the cycle
-        // and move the player towards ready position agian.
-        if ((match->at_bat.flight_frame >
-             match->at_bat.swing.contactFrame - BAT_ANIMATION_FRAME_HIT_COUNT + BAT_ANIMATION_FRAME_TOTAL_COUNT) &&
+        if ((match->at_bat.flight_frame > match->at_bat.swing.contactFrame + SWING_RECOVERY_TICKS) &&
             batting_cycle_is_open(&match->at_bat)) {
             Vector3D target;
             match->at_bat.cycle = BATTING_CYCLE_CLOSED;

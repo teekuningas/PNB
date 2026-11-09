@@ -20,7 +20,7 @@ void stop_movement(PlayerInfo* playerInfo, int index)
 {
     if (index != -1) {
         // and after stopping movement, also ensure that no animation stays.
-        if (playerInfo[index].cTPI.throwRecoil == 0) {
+        if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
             playerInfo[index].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
         }
         playerInfo[index].cPI.looksForTarget = 0;
@@ -56,10 +56,7 @@ void set_orientation(PlayerInfo* playerInfo, const BallInfo* ballInfo, int i)
 void move_to_target(PlayerInfo* playerInfo, int index, const Vector3D* target)
 {
     if (index != -1) {
-        // cant start this if throw is going on. when ball is thrown the
-        // control will often change automatically and we dont want the player to
-        // start moving with walking animation before its throw animation has finished.
-        if (playerInfo[index].cTPI.throwRecoil == 0) {
+        if (playerInfo[index].cTPI.throw_recovery_ticks == 0) {
             float dx;
             float dz;
             float norm;

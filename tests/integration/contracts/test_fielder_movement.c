@@ -282,6 +282,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
+    CatchingTeamPlayerInfo* fielding = &m->playerInfo[FIELDER_INDEX].cTPI;
 
     // Everything a play can leave behind on the catching side.
     m->catchingState.controlledMoveTarget.x = 17.0f;
@@ -289,6 +290,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
     m->catchingState.controlledMoveTargetActive = 1;
     m->catchingState.ballTargetPoint.x = -9.0f;
     m->catchingState.ballTargetPoint.z = 31.0f;
+    fielding->throw_recovery_ticks = 1;
 
     reset_for_foul_play(m, ctx->state->fieldPositions, ctx->state->rules);
 
@@ -300,23 +302,28 @@ int test_reset_recipes_leave_no_fielding_state(void)
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.controlledMoveTarget.z, 1e-6f, "and no coordinates of it either");
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.x, 1e-6f, "nor a prediction about a ball that is gone");
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "nor a prediction about a ball that is gone");
+    ASSERT_EQ(0, fielding->throw_recovery_ticks, "a foul cancels physical throw recovery");
 
     // The other two recipes, on the same claim.
     m->catchingState.controlledMoveTarget.x = 5.0f;
     m->catchingState.controlledMoveTargetActive = 1;
     m->catchingState.ballTargetPoint.z = 12.0f;
+    fielding->throw_recovery_ticks = 1;
     reset_for_new_half_inning(m, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
     ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a half-inning reset leaves no destination");
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a half-inning reset leaves no prediction");
+    ASSERT_EQ(0, fielding->throw_recovery_ticks, "a half-inning cancels physical throw recovery");
 
     m->catchingState.controlledMoveTarget.x = 5.0f;
     m->catchingState.controlledMoveTargetActive = 1;
     m->catchingState.ballTargetPoint.z = 12.0f;
+    fielding->throw_recovery_ticks = 1;
     reset_for_next_pair(
         m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homeRunContestState
     );
     ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a contest-pair reset leaves no destination");
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a contest-pair reset leaves no prediction");
+    ASSERT_EQ(0, fielding->throw_recovery_ticks, "a contest pair cancels physical throw recovery");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

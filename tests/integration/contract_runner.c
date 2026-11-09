@@ -54,6 +54,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_a_swing_never_declared_is_not_a_miss);
     RUN_TEST(test_a_withdrawn_swing_does_not_reach_the_ball);
     RUN_TEST(test_a_swing_declared_with_no_pitch_is_refused);
+    RUN_TEST(test_batting_motion_and_recovery_follow_physical_time);
     RUN_TEST(test_drop_refused_during_a_later_windup);
     RUN_TEST(test_controlled_fielder_holds_during_a_later_windup);
     RUN_TEST(test_pitch_unaimed_is_valesyotto);
@@ -77,6 +78,8 @@ static void run_contract_tests(void)
     RUN_TEST(test_throw_windup_frames_scale_with_power);
     RUN_TEST(test_throw_declared_whole_releases_sized_to_power);
     RUN_TEST(test_throw_target_then_power_engine_times_release);
+    RUN_TEST(test_throw_recovery_preserves_the_movement_boundary);
+    RUN_TEST(test_throw_recovery_is_independent_of_animation);
 
     printf("\n--- Fielder movement (the destination message and the engine mover) ---\n");
     RUN_TEST(test_move_target_sets_velocity_toward_the_point);

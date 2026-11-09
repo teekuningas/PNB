@@ -3,9 +3,8 @@
 
     The players' meshes and animation stages, and the home-run camera cue. Both are display values the
     engine keeps in the blittable World rather than letting the client derive them from what is
-    happening — a named, fenced debt, not a design. They leave together, with the living-game work after
-    the merge: update_models still ends a throw's recoil, which game logic reads, and the cue is raised
-    and dropped by things that happen inside the tick, invisible in the world the tick leaves behind.
+    happening — a named, fenced debt, not a design. Physical recovery owns its clock; animation only
+    follows it. The cue is raised and dropped inside the tick, invisible in the world it leaves behind.
 */
 
 #include "drawn_state.h"
@@ -44,14 +43,11 @@ void update_models(MatchSession* match)
             }
             break;
         case PLAYER_ANIM_THROW_RELEASE:
-            // here we do the same thing but set recoil to 0 after animation so that player can start moving and stuff
-            // again.
-            if (match->playerInfo[i].cPI.animationStage !=
-                match->playerInfo[i].cPI.animationStageCount * match->playerInfo[i].cPI.animationFrequency - 1) {
-                match->playerInfo[i].cPI.animationStage = (match->playerInfo[i].cPI.animationStage + 1);
-            } else {
-                match->playerInfo[i].cTPI.throwRecoil = 0;
+            if (match->playerInfo[i].cTPI.throw_recovery_ticks == 0) {
                 match->playerInfo[i].cPI.model = PLAYER_ANIM_STAND_NO_BALL;
+            } else if (match->playerInfo[i].cPI.animationStage !=
+                       match->playerInfo[i].cPI.animationStageCount * match->playerInfo[i].cPI.animationFrequency - 1) {
+                match->playerInfo[i].cPI.animationStage = (match->playerInfo[i].cPI.animationStage + 1);
             }
             break;
         case PLAYER_ANIM_WALK_BARE:

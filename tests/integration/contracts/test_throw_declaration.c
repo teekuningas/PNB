@@ -5,6 +5,9 @@
 #include "ingest.h"
 #include "actualize.h"
 #include "actions/throwing_system.h"
+#include "ball_catch.h"
+#include "drawn_state.h"
+#include "simulate.h"
 #include <stddef.h>
 #include "intents.h"
 #include "world.h"
@@ -214,5 +217,86 @@ int test_throw_target_then_power_engine_times_release(void)
         "launch velocity tracks the DECLARED power value, not the hold/clock (the engine↔client contract)"
     );
     cleanup_scenario(ctx2);
+    return TEST_PASSED;
+}
+
+static int check_throw_recovery(int animation_profile)
+{
+    ScenarioContext* ctx = create_scenario();
+    setup_fielder_with_ball(ctx);
+    MatchSession* m = ctx->state->match;
+    PlayerInfo* thrower = &m->playerInfo[15];
+    CommonPlayerInfo* activity = &thrower->cPI;
+    TechnicalPlayerInfo* body = &thrower->tPI;
+    CatchingTeamPlayerInfo* fielding = &thrower->cTPI;
+    declare_target(ctx, BASE_FIRST);
+    declare_power(ctx, 0.3f);
+    ASSERT(run_until_release(ctx, 100, NULL) > 0.0f, "a real declared throw must release");
+    Vector3D release_position = body->location;
+    body->homeLocation = (Vector3D){25.0f, 0.0f, 25.0f};
+    fielding->isNearHomeLocation = 0;
+    m->ballInfo.location = (Vector3D){0.0f, 100.0f, 0.0f};
+    m->ballInfo.velocity = (Vector3D){0};
+    m->ballInfo.moving = 0;
+    m->chase_replan = CHASE_REPLAN_NONE;
+
+    if (animation_profile == 1) {
+        activity->model = PLAYER_ANIM_STAND_NO_BALL;
+    } else if (animation_profile == 2) {
+        activity->animationStageCount = 1;
+        activity->animationFrequency = 1;
+    } else if (animation_profile == 3) {
+        activity->animationStageCount = 1000;
+        activity->animationFrequency = 17;
+    } else if (animation_profile == 4) {
+        m->ballInfo.location = body->location;
+        m->ballInfo.currentFlightHasHitGround = 1;
+        check_if_ball_can_be_caught(m, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+        ASSERT_EQ(15, m->ballInfo.holder, "the recovering thrower can catch a ball after it has bounced");
+        ASSERT_EQ(PLAYER_ANIM_STAND_WITH_BALL, activity->model, "the real catch replaces the release pose");
+    }
+
+    for (int tick_index = 0; tick_index < 42; tick_index++) {
+        if (animation_profile == 2) {
+            for (int draw = 0; draw < 5; draw++)
+                update_models(m);
+        }
+        ASSERT(fielding->throw_recovery_ticks != 0, "presentation cannot finish physical recovery early");
+        m->catchingState.controlled_fielder = 15;
+        intent_push(
+            &ctx->state->channels.catching,
+            (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target = {.point = {25.0f, 0.0f, 25.0f}}}
+        );
+        tick(ctx);
+        ASSERT_EQ(0, activity->moving, "ACTUALIZE cannot move the recovering thrower, even on the last tick");
+        // Automatic home-return must also stay blocked through this tick's body step.
+        m->catchingState.controlled_fielder = -1;
+        simulate(m, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect);
+        ASSERT_EQ(tick_index < 41, fielding->throw_recovery_ticks != 0, "recovery lasts exactly 42 SIMULATE steps");
+        ASSERT_FLOAT_EQ(release_position.x, body->location.x, 1e-6f, "recovery stays active through body movement");
+        ASSERT_FLOAT_EQ(release_position.z, body->location.z, 1e-6f, "the last recovery tick cannot move the body");
+    }
+
+    m->catchingState.controlled_fielder = 15;
+    intent_push(
+        &ctx->state->channels.catching,
+        (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target = {.point = {25.0f, 0.0f, 25.0f}}}
+    );
+    tick(ctx);
+    ASSERT_EQ(1, activity->moving, "movement resumes in the ACTUALIZE after recovery expires");
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+int test_throw_recovery_preserves_the_movement_boundary(void)
+{
+    return check_throw_recovery(0);
+}
+
+int test_throw_recovery_is_independent_of_animation(void)
+{
+    for (int profile = 1; profile <= 4; profile++) {
+        if (check_throw_recovery(profile) != TEST_PASSED) return TEST_FAILED;
+    }
     return TEST_PASSED;
 }

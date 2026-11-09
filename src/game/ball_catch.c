@@ -65,10 +65,9 @@ void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* fiel
                             match->playerInfo[match->catchingState.controlled_fielder].cPI.moving == 1) {
                             stop_movement(match->playerInfo, match->catchingState.controlled_fielder);
                         }
-                        // if throwRecoil is 1, model will be automatically set to 0 when animation ends
-                        // but if its 0, we must change it from having ball to not having ball.
+                        // Keep the release pose while the previous carrier is still recovering.
                         if (match->catchingState.controlled_fielder != -1 &&
-                            match->playerInfo[match->catchingState.controlled_fielder].cTPI.throwRecoil == 0) {
+                            match->playerInfo[match->catchingState.controlled_fielder].cTPI.throw_recovery_ticks == 0) {
                             match->playerInfo[match->catchingState.controlled_fielder].cPI.model =
                                 PLAYER_ANIM_STAND_NO_BALL;
                         }
