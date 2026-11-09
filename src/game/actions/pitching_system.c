@@ -109,7 +109,6 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->ballInfo.holder = -1;
     match->ballInfo.pitch_in_flight = 1;
     match->at_bat.may_leave_home = 1;
-    match->home_run_camera.active = 0;
     match->gameEvents.pitchReleased = 1;
     // release animation (downstream): the windup arc (render-side, driven by the windup clock) has already
     // played the full down→up motion and lands on the final pitch_up frame exactly now — so at release we

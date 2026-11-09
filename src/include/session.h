@@ -51,6 +51,7 @@ typedef struct _StateInfo {
     // empties it at the top of every tick and the screen consumes it, and it is in no snapshot, so whether
     // anybody displayed an announcement can never reach a future frame.
     GameEventType announcement;
+    TickFacts tick_facts; // complete tick observations, read-only to their client consumers
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
     GameConclusion* gameConclusion;

@@ -14,6 +14,8 @@ typedef struct {
     int request_screen_change; // 1 if consolidation wants to leave game screen
     ScreenState target_screen; // Which screen to go to (e.g., SCREEN_MAIN_MENU)
     PeriodTransitionType period_transition; // why: which menu the session should open, while a change is requested
+    bool world_reset;
+    bool enforcement_completed; // no reset or period/pair transition interrupted this tick
 } ConsolidationOutput;
 
 // Initializes flow control counters and state

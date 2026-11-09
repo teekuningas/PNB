@@ -1,9 +1,28 @@
 #ifndef TICK_OUTPUTS_H
 #define TICK_OUTPUTS_H
 
+#include <stdbool.h>
+
 // What the tick hands out rather than keeps: the sound to play and the announcement to show, for the
 // client; the screen a period's end asks for and how the match ended, for the session. None of it is World
 // state, so whether anybody consumed it can never reach a future frame.
+
+// Absence of a controller does not mean every runner from third has resolved: a live runner may
+// have lost safety there.
+typedef enum { THIRD_NO_CONTROLLER, THIRD_CONTROLLER_ON_BASE, THIRD_CONTROLLER_OFF_BASE } ThirdBaseControl;
+
+// Facts that a final snapshot cannot recover: route starts and pitch release can be followed by
+// arrivals or resets in the same tick. Base control is observed before ADJUDICATE; enforcement
+// can start another route after game flow has advanced. No view state or rendering commands.
+typedef struct _TickFacts {
+    bool pitch_released;
+    bool homeward_run_started;
+    bool ball_home;
+    ThirdBaseControl third_base_control;
+    bool world_reset;
+    bool enforcement_completed;
+    bool homeward_run_started_in_enforcement;
+} TickFacts;
 
 typedef enum {
     EVENT_NONE = 0,

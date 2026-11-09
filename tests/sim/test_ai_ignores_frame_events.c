@@ -51,12 +51,13 @@ static GameEvents all_events_set(void)
     e.ballHitGround = 1;
     e.freeWalkAccepted = 1;
     e.batterEntered = 1;
+    e.homeward_runs_started = 1;
     return e;
 }
 
 // If GameEvents gains a field, this stops compiling and all_events_set() must be extended. The
 // test must never quietly stop covering part of the struct it exists to vary.
-_Static_assert(sizeof(GameEvents) == 8 * sizeof(int), "GameEvents changed — extend all_events_set()");
+_Static_assert(sizeof(GameEvents) == 9 * sizeof(int), "GameEvents changed — extend all_events_set()");
 
 // Everything the controller stage is allowed to touch: the physical world it declares intents
 // into, and its own private memory. Captured after the stage runs, so two probes can be compared.

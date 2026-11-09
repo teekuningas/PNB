@@ -196,22 +196,20 @@ typedef struct _FieldingPosts {
     int cover[BASE_COUNT];
 } FieldingPosts;
 
-// MILESTONE 16 (Phase 1): Transient event notifications
-// Events are set this frame, cleared next frame
-// Written by: the actualizers (actualize.c, actions/) and SIMULATE (ball_flight.c, ball_catch.c, body_step.c)
-// Read by: referee.c, others
+// One-tick physical facts, drained by CLEAR. ACTUALIZE and SIMULATE produce them; ENFORCE can also
+// start runner routes. Read by the referee and the tick's output assembly, never by controllers.
 typedef struct _GameEvents {
     // Event flags (cleared each frame)
     int catchMade; // Fly ball was caught
     int playerArrivedAtBase; // Runner arrived at base
 
-    // Future events (not yet used)
     int pitchReleased; // Ball left pitcher's hand
     int ballHitByBat; // Bat made contact
     int ballMissedByBat; // Bat swung and missed
     int ballHitGround; // Ball touched the ground this frame
     int freeWalkAccepted; // Player accepted free walk
     int batterEntered; // New: Signal that new batter is ready
+    int homeward_runs_started; // Number of third-to-home routes begun this tick, before CLEAR.
 } GameEvents;
 
 // The two questions the engine puts to the batting side and waits on: who takes the bat next (§27), and
@@ -231,17 +229,6 @@ typedef struct _FreeWalkEntitlement {
     int runner; // the lead runner it entitles; -1 when nobody is
     BaseID from; // the base he would walk from; BASE_NONE when nobody is
 } FreeWalkEntitlement;
-
-// The home-run camera cue: the engine's call that the view should pull back while a runner comes home from
-// third, held for a moment after the ball is home again with third clear. A PRESENTATION decision made
-// inside the tick — the class of thing PlayerInfo.model is — and kept in the World for the same reason:
-// what raises and drops it (a runner setting off from third, the release, a reset) happens inside the tick,
-// where the screen cannot see it from the world the tick leaves behind. It leaves for the client with the
-// graphics work, as a tick output the screen keeps its own memory of.
-typedef struct _HomeRunCameraCue {
-    int active; // the view should be the home-run one
-    int hold; // ticks since the ball came home with third clear, while active; -1 while not counting
-} HomeRunCameraCue;
 
 // What the catching team's ball-holder is doing with the ball, if anything. One at a time, which is
 // why it is one tag: a pitch and a throw both claim the same hands, and two independent flags would
@@ -387,7 +374,6 @@ typedef struct _MatchSession {
     GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
     BattingOffers offers;
     FreeWalkEntitlement free_walk;
-    HomeRunCameraCue home_run_camera;
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;
     ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking

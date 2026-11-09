@@ -101,8 +101,8 @@ ratchet "other -Wall/-Wextra warnings" "$other_warnings" 0
 #     files named below — the controllers, the client and the assembly points — so a new
 #     file is held to the engine's standard unless it is deliberately named here.
 # ---------------------------------------------------------------------------
-NOT_ENGINE="src/game/action_invocations.c src/game/game_frame.c src/game/game_screen.c src/game/game_setup.c src/game/ball.c src/game/player.c src/game/immutable_world.c"
-FORBIDDEN_TO_ENGINE='/(client_input|ai_memory|session|menu_types|render|display|key_states)\.h$'
+NOT_ENGINE="src/game/action_invocations.c src/game/game_frame.c src/game/game_screen.c src/game/game_setup.c src/game/ball.c src/game/player.c src/game/immutable_world.c src/game/home_run_view.c"
+FORBIDDEN_TO_ENGINE='/(client_input|ai_memory|session|menu_types|render|display|key_states|home_run_view)\.h$'
 engine_files=$(find src/game src/physics -name '*.c' -not -path 'src/game/ai/*' -not -path 'src/game/ai_pure/*' | sort)
 engine_leaks=0
 for f in $engine_files; do
@@ -122,7 +122,7 @@ for f in $engine_files; do
     fi
 done
 if world_deps=$(echo '#include "world.h"' | gcc -MM $IDIR -x c - 2>/dev/null); then
-    world_reaches=$(echo "$world_deps" | tr ' \\' '\n\n' | grep -cE '/(rules_state|intents|session|client_input|ai_memory)\.h$')
+    world_reaches=$(echo "$world_deps" | tr ' \\' '\n\n' | grep -cE '/(rules_state|intents|session|client_input|ai_memory|home_run_view)\.h$')
 else
     world_reaches=1
     problems="${problems}  world.h: gcc -MM could not compute its include closure

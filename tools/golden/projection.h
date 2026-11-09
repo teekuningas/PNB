@@ -3,6 +3,7 @@
 #include "session.h"
 #include "client_input.h"
 #include "ai/ai_memory.h"
+#include "home_run_view.h"
 #include <stdint.h>
 // The version-specific half of the golden projection: how this tree's structs answer the semantic
 // questions golden.c asks. Edit THIS file when a refactor reshapes a struct, keeping every line it prints
@@ -126,7 +127,7 @@ static void project_widget(const char* name, const InputWidget* w)
     put(9, "%s=%d,%d,%d,%d;", name, w->counter, w->counter_max, w->dir, (int)w->mode);
 }
 
-static void project(const StateInfo* st)
+static void project(const StateInfo* st, const HomeRunView* home_run)
 {
     const MatchSession* m = st->match;
     const GameRulesState* r = st->rules;
@@ -176,8 +177,8 @@ static void project(const StateInfo* st)
 
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
-    put(4, "gfs=%d,%d;", m->home_run_camera.hold, ball_is_home(m, st->fieldPositions));
-    put(4, "cam=%d;", m->home_run_camera.active);
+    put(4, "gfs=%d,%d;", home_run->hold_ticks, ball_is_home(m, st->fieldPositions));
+    put(4, "cam=%d;", home_run->active);
     V(4, m->catchingState.controlledMoveTarget);
     put(4, "%d,%d;", m->catchingState.controlledMoveTargetActive, m->catchingState.controlledMoveTargetFor);
     V(4, m->catchingState.ballTargetPoint);

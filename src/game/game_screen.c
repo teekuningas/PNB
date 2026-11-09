@@ -124,7 +124,7 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera,
         camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 15.0f + (float)fabs(camera->target.x) / 2;
     }
     // the normal mode
-    else if (stateInfo->match->home_run_camera.active == 0) {
+    else if (camera->home_run.active == 0) {
         camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f;
         camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f;
     }
@@ -134,6 +134,7 @@ void update_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera,
         camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 8.0f;
     }
     if (update_game_frame(stateInfo, menuInfo)) {
+        home_run_view_after_tick(&camera->home_run, &stateInfo->tick_facts);
         hud_after_tick(hud, &stateInfo->announcement);
     }
 }
@@ -575,6 +576,7 @@ static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, Camer
 
 static void init_camera(CameraView* camera)
 {
+    camera->home_run = (HomeRunView){.hold_ticks = -1};
     camera->lastTarget = (Vector3D){0.0f, 0.0f, 0.0f};
     camera->target = (Vector3D){0.0f, 0.0f, -1.0f};
     camera->lastEye = (Vector3D){0.0f, 0.0f, 0.0f};

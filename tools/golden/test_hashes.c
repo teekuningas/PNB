@@ -10,7 +10,8 @@ static void print_semantic_hashes(const SimGame* game)
     checksum_observer_hook(game, &checksum);
     for (int s = 0; s < NSEC; s++)
         len[s] = 0, buf[s][0] = 0;
-    project(game->state);
+    HomeRunView home_run = {0};
+    project(game->state, &home_run);
     printf("semantic %016llx %s\n", checksum.hash, buf[8]);
 }
 

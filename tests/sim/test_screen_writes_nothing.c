@@ -34,10 +34,14 @@ int test_the_screen_writes_nothing_into_the_world(void)
     );
 
     HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
-    CameraView camera = {0};
+    CameraView camera = {.home_run = {.hold_ticks = -1}};
+    TickFacts facts[SCREEN_TEST_FRAMES];
+    HomeRunView views[SCREEN_TEST_FRAMES];
     for (int frame = 0; frame < SCREEN_TEST_FRAMES; frame++) {
         update_game_screen(screened->state, &hud, &camera, &screened->menu);
         update_game_frame(bare->state, &bare->menu);
+        facts[frame] = bare->state->tick_facts;
+        views[frame] = camera.home_run;
         if (memcmp(screened->state->match, bare->state->match, sizeof(MatchSession)) != 0) {
             printf("    MatchSession differs after frame %d\n", frame);
             ASSERT(0, "the screen must not change the physical world");
@@ -48,6 +52,13 @@ int test_the_screen_writes_nothing_into_the_world(void)
         }
     }
     ASSERT(camera.target.x != 0.0f || camera.target.z != -1.0f, "and the screen really did run: its camera moved");
+
+    HomeRunView replayed = {.hold_ticks = -1};
+    for (int frame = 0; frame < SCREEN_TEST_FRAMES; frame++) {
+        home_run_view_after_tick(&replayed, &facts[frame]);
+        ASSERT_EQ(views[frame].active, replayed.active, "delayed tick-fact replay reproduces the screen's framing");
+        ASSERT_EQ(views[frame].hold_ticks, replayed.hold_ticks, "replay needs no camera state in the World");
+    }
 
     sim_destroy(screened);
     sim_destroy(bare);

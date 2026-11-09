@@ -375,7 +375,7 @@ void initialize_action_info(MatchSession* match)
 
     match->chase_replan = CHASE_REPLAN_NONE;
 }
-// Resets flow control, camera, subsystems, and frame events for a clean restart.
+// Resets flow control, subsystems, and frame events for a clean restart.
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
 static void reset_flow_state(MatchSession* match)
 {
@@ -385,9 +385,6 @@ static void reset_flow_state(MatchSession* match)
 
     // Frame events (cleared every frame, but ensure clean start)
     clear_frame_events(&match->gameEvents);
-
-    // The home-run camera is back to the normal view, and not counting.
-    match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
 
     // The catching action in progress belongs to initialize_action_info, and the ball's flight to
     // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one

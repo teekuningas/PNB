@@ -1,17 +1,14 @@
 /*
     drawn_state.c — what the World still stores because it is DRAWN, part of SIMULATE.
 
-    The players' meshes and animation stages, and the home-run camera cue. Both are display values the
+    The players' meshes and animation stages are display values the
     engine keeps in the blittable World rather than letting the client derive them from what is
     happening — a named, fenced debt, not a design. Physical recovery owns its clock; animation only
-    follows it. The cue is raised and dropped inside the tick, invisible in the world it leaves behind.
+    follows it.
 */
 
 #include "drawn_state.h"
-#include "field.h"
-#include "rules_state.h"
 #include "world.h"
-#include "base_control.h"
 
 // so for animations we need to change mesh after certain intervals.
 void update_models(MatchSession* match)
@@ -72,17 +69,6 @@ void update_models(MatchSession* match)
         case PLAYER_ANIM_BATTER_READY:
         default:
             break;
-        }
-    }
-}
-
-void update_home_run_camera(MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee)
-{
-    if (ball_is_home(match, field_positions)) {
-        if (match->home_run_camera.hold == -1 && match->home_run_camera.active == 1 &&
-            (get_base_controller(match, referee, BASE_THIRD) == -1 ||
-             match->playerInfo[get_base_controller(match, referee, BASE_THIRD)].bTPI.state == PLAYER_STATE_ON_BASE)) {
-            match->home_run_camera.hold = 0;
         }
     }
 }

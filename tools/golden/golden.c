@@ -24,6 +24,7 @@
 #include "rules_state.h"
 #include "world.h"
 #include "session.h"
+#include "home_run_view.h"
 #include "action_invocations.h"
 #include "actions/batting_system.h"
 #include "rules_pure/player_utils.h"
@@ -76,9 +77,10 @@ static Coverage cov;
 
 static void observe(const SimGame* g, void* ctx)
 {
-    (void)ctx;
+    HomeRunView* home_run = ctx;
+    home_run_view_after_tick(home_run, &g->state->tick_facts);
     for (int s = 0; s < NSEC; s++) len[s] = 0, buf[s][0] = 0;
-    project(g->state);
+    project(g->state, home_run);
     fprintf(out, "%ld", g->frame);
     for (int s = 0; s < NSEC; s++) fprintf(out, " %016llx", fnv(buf[s], len[s], 1469598103934665603ULL));
     fprintf(out, "\n");
@@ -256,7 +258,8 @@ static int run_scripted(Mode mode, TeamControlMode c1, TeamControlMode c2, unsig
     make_setup(&setup, mode, c1, c2);
     ScriptedGame* g = scripted_create_from_setup(&setup, seed);
     if (!g) return 1;
-    scripted_attach(g, observe, NULL);
+    HomeRunView home_run = {.hold_ticks = -1};
+    scripted_attach(g, observe, &home_run);
     Fuzzer f[2] = {{.rng = fuzzSeed | 1u}, {.rng = (fuzzSeed * 2654435761u) | 1u}};
     Queue q[2];
     memset(q, 0, sizeof(q));
@@ -286,7 +289,8 @@ static int run_sim(Mode mode, unsigned int seed, long cap)
     make_setup(&setup, mode, CONTROL_AI, CONTROL_AI);
     SimGame* g = sim_create(&setup, seed);
     if (!g) return 1;
-    sim_attach(g, observe, NULL);
+    HomeRunView home_run = {.hold_ticks = -1};
+    sim_attach(g, observe, &home_run);
     for (long i = 0; i < cap; i++) {
         if (!sim_tick(g)) break;
     }

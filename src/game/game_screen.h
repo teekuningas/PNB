@@ -11,6 +11,7 @@
 #include "client_input.h"
 #include "menu_types.h"
 #include "resource_manager.h"
+#include "home_run_view.h"
 
 // The HUD's own memory: where its markers were drawn last, for the render interpolator, and the info
 // line's current message and how long it has been up. Client-local render memory, owned by whoever runs
@@ -36,6 +37,7 @@ typedef struct _CameraView {
     Vector3D lastEye;
     Vector3D target;
     Vector3D lastTarget;
+    HomeRunView home_run;
 } CameraView;
 
 // What the screen draws from, const all the way down: the two worlds, the field's geometry, the rosters, this

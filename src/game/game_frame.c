@@ -12,8 +12,8 @@
       5. ADJUDICATE   update_referee — WRITES the legal world: RefereeState, HalfInningState,
                       BetweenPitchState, Scoreboard, HomeRunContestState
       6. ENFORCE      consolidation_update — READS the legal world (const); WRITES the bodies, the offers
-                      to the batting side, the free-walk entitlement, the ball's flight, the at-bat, the
-                      home-run camera cue, and performs the reset recipes
+                      to the batting side, the free-walk entitlement, the ball's flight and the at-bat;
+                      performs the reset recipes
       7. SETTLE       referee_finalize — WRITES RefereeState (RESETTING→NONE only), after the resets
       8. VALIDATE     the pitch-start snapshot and the state validator (debug)
       9. CLEAR        clear_frame_events
@@ -38,6 +38,15 @@
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
+#include "base_control.h"
+
+static ThirdBaseControl observe_third_base_control(const MatchSession* match, const RefereeState* referee)
+{
+    int runner = get_base_controller(match, referee, BASE_THIRD);
+    if (runner == -1) return THIRD_NO_CONTROLLER;
+    return match->playerInfo[runner].bTPI.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
+                                                                        : THIRD_CONTROLLER_OFF_BASE;
+}
 
 // The menu a period's end opens, from why it ended. The session's routing, not the engine's: ENFORCE only says
 // that the game screen is done and which transition finished it.
@@ -82,7 +91,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     init_actualization(stateInfo->match);
     init_client_input(stateInfo->clientInput);
 
-    stateInfo->match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
+    stateInfo->tick_facts = (TickFacts){0};
 
     return 0;
 }
@@ -116,7 +125,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 
     // StateInfo is destructured here (the assembly point): each stage receives exactly the
     // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
-    // geometry, the tick's input (the channels) and its one output — a signature is its complete
+    // geometry, the tick's input (the channels) and outputs — a signature is its complete
     // edge list. The client's input memory is not among them: only CONTROL ever names it.
 
     // 2. INGEST — every controller's declarations, judged against the world as it stands now. After this
@@ -129,6 +138,14 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 
     // 4. SIMULATE — the physical world takes its step.
     simulate(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
+
+    int homeward_runs = game->gameEvents.homeward_runs_started;
+    TickFacts facts = {
+        .pitch_released = game->gameEvents.pitchReleased,
+        .homeward_run_started = homeward_runs != 0,
+        .ball_home = ball_is_home(game, stateInfo->fieldPositions),
+        .third_base_control = observe_third_base_control(game, &rules->referee)
+    };
 
     // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
     // pronounces what it means.
@@ -144,6 +161,10 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     consolidation_update(
         game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, &consolidation_output
     );
+    facts.world_reset = consolidation_output.world_reset;
+    facts.enforcement_completed = consolidation_output.enforcement_completed;
+    facts.homeward_run_started_in_enforcement = game->gameEvents.homeward_runs_started > homeward_runs;
+    stateInfo->tick_facts = facts;
 
     // Handle screen transition requests from consolidation
     if (consolidation_output.request_screen_change) {

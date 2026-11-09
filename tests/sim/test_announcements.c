@@ -132,16 +132,19 @@ int test_the_info_line_holds_its_message_while_paused(void)
     SimGame* g = sim_create(&setup, 0x9A05Eu);
     ASSERT_NOT_NULL(g, "sim_create returned NULL");
     HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
-    CameraView camera = {0};
+    CameraView camera = {.home_run = {.hold_ticks = -1}};
     ASSERT(an_announcement_is_on_the_line(&hud, &camera, g), "the referee never announced anything");
     const GameEventType shown = hud.infoEvent;
 
     g->state->paused = 1;
+    camera.home_run = (HomeRunView){.active = 1, .hold_ticks = 7};
     for (int i = 0; i < 500; i++) {
         update_game_screen(g->state, &hud, &camera, &g->menu);
     }
     ASSERT_EQ((int)shown, (int)hud.infoEvent, "the paused screen still shows the message");
     ASSERT_EQ(0, hud.infoEventTimer, "and its clock has not moved: 500 screen frames, no game time");
+    ASSERT_EQ(1, camera.home_run.active, "the paused screen holds its homeward framing");
+    ASSERT_EQ(7, camera.home_run.hold_ticks, "screen updates without ticks cannot advance the camera hold");
 
     g->state->paused = 0;
     int cleared = 0;

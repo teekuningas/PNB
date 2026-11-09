@@ -75,7 +75,7 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
 
-                match->home_run_camera.active = 1;
+                match->gameEvents.homeward_runs_started++;
             } else if (match->playerRuntime[index].passedPathPoint == 1) {
                 target.x = field_positions->homeRunPoint.x;
                 target.z = field_positions->homeRunPoint.z;

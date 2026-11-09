@@ -24,8 +24,9 @@ static void enforce_legal_state(
     MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee,
     const BetweenPitchState* bps
 );
-static int
-handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
+static int handle_foul_play_reset(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
+);
 static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
 
 static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
@@ -37,7 +38,9 @@ static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
     GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 );
-static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
+static int check_next_pair(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
+);
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner);
 
 // ===============================================================================================
@@ -56,6 +59,8 @@ void consolidation_update(
     output->request_screen_change = 0;
     output->target_screen = SCREEN_GAME;
     output->period_transition = PERIOD_TRANSITION_NONE;
+    output->world_reset = 0;
+    output->enforcement_completed = 0;
 
     // 0. Check for Physical Resets FIRST (these reset the world)
     // If any reset happens, abort all further processing for this frame
@@ -66,12 +71,12 @@ void consolidation_update(
     }
 
     // Check for next pair reset (homerun contest)
-    if (check_next_pair(match, field_positions, rules)) {
+    if (check_next_pair(match, field_positions, rules, output)) {
         return;
     }
 
     // Check for foul play (out of bounds) reset
-    if (handle_foul_play_reset(match, field_positions, rules)) {
+    if (handle_foul_play_reset(match, field_positions, rules, output)) {
         return;
     }
 
@@ -82,6 +87,7 @@ void consolidation_update(
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
     enforce_legal_state(match, field_positions, referee, bps);
+    output->enforcement_completed = 1;
 }
 
 // ===============================================================================================
@@ -149,12 +155,14 @@ static void enforce_legal_state(
 // INTERNAL: FOUL PLAY RESET
 // ===============================================================================================
 
-static int
-handle_foul_play_reset(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
+static int handle_foul_play_reset(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
+)
 {
     // Check if Referee has triggered the reset state
     if (rules->referee.foulState == FOUL_STATE_RESETTING) {
         reset_for_foul_play(match, field_positions, rules);
+        output->world_reset = 1;
 
         // Note: Referee will transition state to NONE in referee_finalize
         return 1; // Signal that we reset
@@ -171,15 +179,6 @@ handle_foul_play_reset(MatchSession* match, const FieldPositions* field_position
 
 static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
-    // when player from third base starts running, we change camera view. when the situation is over we
-    // wait 50 update frames, before moving to normal camera
-    if (match->home_run_camera.hold >= 0) {
-        match->home_run_camera.hold++;
-        if (match->home_run_camera.hold > 50) {
-            match->home_run_camera = (HomeRunCameraCue){.active = 0, .hold = -1};
-        }
-    }
-
     check_next_batter_decision(match, rules);
 
     // §18(1) holds in every mode: a batter who has received his three correct pitches is permanently a
@@ -345,6 +344,7 @@ static int check_end_of_inning(
     if (transition == PERIOD_TRANSITION_NONE) {
         // Normal next-inning within same period — just reset physical world
         reset_for_new_half_inning(match, field_positions, team_data, rules);
+        output->world_reset = 1;
     } else {
         // Period transition — the session routes to the menu this transition calls for
         if (transition == PERIOD_TRANSITION_GAME_OVER) {
@@ -358,7 +358,9 @@ static int check_end_of_inning(
     return 1; // Signal that we handled end-of-inning
 }
 
-static int check_next_pair(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
+static int check_next_pair(
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
+)
 {
     const Scoreboard* scoreboard = &rules->scoreboard;
 
@@ -375,6 +377,7 @@ static int check_next_pair(MatchSession* match, const FieldPositions* field_posi
             if (rules->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
                 // Physical Reset for Next Pair
                 reset_for_next_pair(match, field_positions, scoreboard, &rules->homeRunContestState);
+                output->world_reset = 1;
             }
             return 1; // Signal that we reset
         }

@@ -13,6 +13,9 @@ static void run_contract_tests(void)
 
     // Lifecycle contracts
     RUN_TEST(test_clear_frame_events_completeness);
+    RUN_TEST(test_home_run_view_preserves_phase_and_hold_boundaries);
+    RUN_TEST(test_homeward_run_facts_survive_clear_and_legal_enforcement);
+    RUN_TEST(test_camera_facts_distinguish_resets_from_flow_short_circuits);
     RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
     RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 

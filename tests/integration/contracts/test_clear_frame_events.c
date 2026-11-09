@@ -24,6 +24,7 @@ int test_clear_frame_events_completeness(void)
     events.ballHitGround = 1;
     events.freeWalkAccepted = 1;
     events.batterEntered = 1;
+    events.homeward_runs_started = 2;
 
     clear_frame_events(&events);
 
@@ -36,11 +37,12 @@ int test_clear_frame_events_completeness(void)
     ASSERT_EQ(0, events.ballHitGround, "ballHitGround cleared");
     ASSERT_EQ(0, events.freeWalkAccepted, "freeWalkAccepted cleared");
     ASSERT_EQ(0, events.batterEntered, "batterEntered cleared");
+    ASSERT_EQ(0, events.homeward_runs_started, "homeward route starts cleared");
 
     // Guard: if GameEvents gains a new field, this assertion fails.
     // 9 int fields × sizeof(int) = expected size.
     // Update clear_frame_events(), the field checks above, AND this count.
-    ASSERT_EQ(8 * sizeof(int), sizeof(GameEvents), "GameEvents size changed — update clear_frame_events and this test");
+    ASSERT_EQ(9 * sizeof(int), sizeof(GameEvents), "GameEvents size changed — update clear_frame_events and this test");
 
     return TEST_PASSED;
 }
