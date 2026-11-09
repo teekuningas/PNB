@@ -112,19 +112,25 @@ typedef struct _PlayerRuntimeState {
     int hasMadeRunOnThirdBase; // Guard flag
 } PlayerRuntimeState;
 
+// Copied from the batting roster at half-inning setup.
+typedef struct _PlayerAttributes {
+    int speed;
+    int power;
+} PlayerAttributes;
+
 typedef enum { JOKER_REGULAR = 0, JOKER_AVAILABLE = 1, JOKER_USED = 2 } JokerStatus;
 
-// batting team related flags.
-typedef struct _BattingTeamPlayerInfo {
-    int speed; // used to make some player a bit faster than others
-    int power; // used to make some players bat a bit harder than others
-    int number; // number is shown on screen
-    JokerStatus joker; // 0 regular player, 1 has right to be used, 2 has been used already
-
-    // MILESTONE 7 (DATA RENAISSANCE) - Type-safe state fields
+// Physical participation and base progress; legal safety/status stay with the referee.
+typedef struct _BattingPresence {
     PlayerUnitState state;
-    BaseID baseId;
-} BattingTeamPlayerInfo;
+    BaseID base_id;
+} BattingPresence;
+
+typedef struct _BattingPlayerState {
+    int number; // Display number; contest setup substitutes the current pair number.
+    JokerStatus joker;
+    BattingPresence presence;
+} BattingPlayerState;
 
 typedef enum { TEAM_BATTING = 0, TEAM_CATCHING = 1 } TeamSide;
 
@@ -152,7 +158,8 @@ typedef struct _PlayerInfo {
     TeamSide side; // The slot's current role, not a stable roster identity.
     PlayerMotion motion;
     CatchingTeamPlayerInfo cTPI;
-    BattingTeamPlayerInfo bTPI;
+    PlayerAttributes attributes;
+    BattingPlayerState batting;
     PlayerActivityEvents events; // Drained at the SIMULATE boundary and again by CLEAR.
 
 } PlayerInfo;

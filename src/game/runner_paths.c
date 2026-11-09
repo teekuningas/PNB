@@ -34,7 +34,7 @@ static void run_to_target(PlayerInfo* playerInfo, int index, const Vector3D* tar
         if (norm < EPSILON) norm = 1.0f;
         // set the velocity
 
-        speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED / 16) * playerInfo[index].bTPI.speed;
+        speed = BATTING_TEAM_RUN_FACTOR * RUN_SPEED + (RUN_SPEED / 16) * playerInfo[index].attributes.speed;
         vec3_set_xz(&playerInfo[index].body.velocity, dx * speed / norm, dz * speed / norm);
         // we are running now, ( so for example our orientation wont change now unless we stop running)
         playerInfo[index].motion.running = 1;
@@ -86,10 +86,10 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         match->runner_commitments.armed[base] = 0;
         // set state to running, BUT only if we aren't already WOUNDED, OUT, or ADVANCING_FREELY
         // (which are terminal/override states that must not be downgraded)
-        if (match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
-            match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT &&
-            match->playerInfo[index].bTPI.state != PLAYER_STATE_ADVANCING_FREELY) {
-            match->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
+        if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
+            match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT &&
+            match->playerInfo[index].batting.presence.state != PLAYER_STATE_ADVANCING_FREELY) {
+            match->playerInfo[index].batting.presence.state = PLAYER_STATE_RUNNING;
         }
         // and we are moving forward
         match->playerRuntime[index].goingForward = 1;
@@ -136,9 +136,9 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         // we arent going forward
         match->playerRuntime[index].goingForward = 0;
         // set state to running, BUT only if we aren't already WOUNDED or OUT
-        if (match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
-            match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
-            match->playerInfo[index].bTPI.state = PLAYER_STATE_RUNNING;
+        if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
+            match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT) {
+            match->playerInfo[index].batting.presence.state = PLAYER_STATE_RUNNING;
         }
         // and run_to_target can handle the rest
 
@@ -155,7 +155,7 @@ void lead_from_base(
         Vector3D target;
         // now to lead off we must be either on first base or second base, as it doesnt make much sense in
         // third base nor in homebase.
-        if (playerInfo[index].bTPI.baseId == BASE_FIRST) {
+        if (playerInfo[index].batting.presence.base_id == BASE_FIRST) {
             // the lead target is selected by adding a small step to current location to next bases' direction
             // using firstBase  instead of location in the difference is because we want the step size to stay
             // same
@@ -168,7 +168,7 @@ void lead_from_base(
                 field_positions->firstBaseRun.x +
                     0.5f * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x))
                 done = 1;
-        } else if (playerInfo[index].bTPI.baseId == BASE_SECOND) {
+        } else if (playerInfo[index].batting.presence.base_id == BASE_SECOND) {
             // same as in previous but from second to third base
             target.x = playerInfo[index].body.location.x +
                        LEAD_STEP * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x);
@@ -186,7 +186,7 @@ void lead_from_base(
             // walk to our target
             move_to_target(playerInfo, index, &target);
             // now we in fact are leading
-            playerInfo[index].bTPI.state = PLAYER_STATE_LEADING;
+            playerInfo[index].batting.presence.state = PLAYER_STATE_LEADING;
             // but we dont set going forward flag.
             playerRuntime[index].goingForward = 0;
         }

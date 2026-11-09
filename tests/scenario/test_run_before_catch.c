@@ -115,12 +115,12 @@ int test_run_arrival_before_catch(void)
         }
 
         // Check Arrival
-        if (ctx->state->match->playerInfo[runnerIndex].bTPI.baseId == BASE_HOME_SCORED && !arrived) {
+        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
             arrived = 1;
             arrivalFrame = i;
             printf(
                 "Frame %d: Runner arrived at HOME (baseId=4, state=%d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].bTPI.state
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.state
             );
         }
 
@@ -151,26 +151,27 @@ int test_run_arrival_before_catch(void)
             );
             printf(
                 "  Runner state=%d, hasPendingWound=%d, hasPendingRun=%d\n",
-                ctx->state->match->playerInfo[runnerIndex].bTPI.state,
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.state,
                 ctx->state->rules->referee.battingPlayers[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED,
                 ctx->state->rules->referee.battingPlayers[runnerIndex].hasPendingRun
             );
             printf(
                 "  Runner baseId=%d, baseAtPitchStart=%d, status=%d\n",
-                ctx->state->match->playerInfo[runnerIndex].bTPI.baseId,
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id,
                 ctx->state->rules->referee.battingPlayers[runnerIndex].baseAtPitchStart,
                 ctx->state->rules->referee.battingPlayers[runnerIndex].status
             );
         }
 
         // Check Runner wounded
-        if (ctx->state->match->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED && !runnerWounded) {
+        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED &&
+            !runnerWounded) {
             runnerWounded = 1;
             woundFrame = i;
             printf(
                 "Frame %d: Runner WOUNDED (state=%d, baseId=%d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].bTPI.state,
-                ctx->state->match->playerInfo[runnerIndex].bTPI.baseId
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.state,
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id
             );
         }
 
@@ -247,7 +248,7 @@ int test_run_arrival_before_catch(void)
     printf("Runs after: %d (expected: 0)\n", runsAfter);
 
     // Check final runner state
-    int finalWounded = (ctx->state->match->playerInfo[runnerIndex].bTPI.state == PLAYER_STATE_WOUNDED);
+    int finalWounded = (ctx->state->match->playerInfo[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED);
     printf("Runner wounded (final): %d (expected: 1)\n", finalWounded);
     printf("Wounding evaluation finished: %d\n", woundingFinished);
 

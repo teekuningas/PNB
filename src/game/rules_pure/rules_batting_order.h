@@ -21,7 +21,7 @@
  */
 
 /* The JokerStatus values, restated here so this header includes nothing. A caller passes
- * `(int)playerInfo[i].bTPI.joker`. The names below say what the enum's do not: the field answers
+ * `(int)playerInfo[i].batting.joker`. The names below say what the enum's do not: the field answers
  * "is this a jokeripelaaja, and is he spent?", and its first value is the "no, a varsinainen
  * pelaaja" case. */
 #define JOKER_STATUS_NOT_A_JOKER 0 /* varsinainen pelaaja — in the batting order */

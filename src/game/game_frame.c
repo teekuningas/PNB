@@ -44,8 +44,8 @@ static ThirdBaseControl observe_third_base_control(const MatchSession* match, co
 {
     int runner = get_base_controller(match, referee, BASE_THIRD);
     if (runner == -1) return THIRD_NO_CONTROLLER;
-    return match->playerInfo[runner].bTPI.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
-                                                                        : THIRD_CONTROLLER_OFF_BASE;
+    return match->playerInfo[runner].batting.presence.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
+                                                                                    : THIRD_CONTROLLER_OFF_BASE;
 }
 
 static void collect_player_facts(MatchSession* match, PlayerTickFacts* facts)

@@ -30,8 +30,8 @@ int test_free_walk_resolution(void)
     initialize_referee_from_physical_state(ctx);
 
     printf(
-        "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx, game->playerInfo[runnerIdx].bTPI.baseId,
-        rules->referee.battingPlayers[runnerIdx].currentSafetyBase
+        "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx,
+        game->playerInfo[runnerIdx].batting.presence.base_id, rules->referee.battingPlayers[runnerIdx].currentSafetyBase
     );
 
     // 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
@@ -55,13 +55,14 @@ int test_free_walk_resolution(void)
 
     printf(
         "[TEST] After acceptance: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
-        game->playerInfo[runnerIdx].bTPI.state, PLAYER_STATE_ADVANCING_FREELY,
+        game->playerInfo[runnerIdx].batting.presence.state, PLAYER_STATE_ADVANCING_FREELY,
         rules->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND
     );
 
     // CHECK 1: Action system started movement
     ASSERT_EQ(
-        PLAYER_STATE_ADVANCING_FREELY, game->playerInfo[runnerIdx].bTPI.state, "Player state should be ADVANCING_FREELY"
+        PLAYER_STATE_ADVANCING_FREELY, game->playerInfo[runnerIdx].batting.presence.state,
+        "Player state should be ADVANCING_FREELY"
     );
 
     // CHECK 2: Referee granted safety at NEXT base (2nd) immediately
@@ -77,7 +78,7 @@ int test_free_walk_resolution(void)
     int arrivedAt2nd = 0;
     for (int frame = 0; frame < 500; frame++) {
         simulate_frames(ctx, 1);
-        if (game->playerInfo[runnerIdx].bTPI.baseId == BASE_SECOND) {
+        if (game->playerInfo[runnerIdx].batting.presence.base_id == BASE_SECOND) {
             arrivedAt2nd = 1;
             printf("[TEST] Runner arrived at 2nd base (frame %d)\n", frame);
             break;
@@ -86,7 +87,7 @@ int test_free_walk_resolution(void)
 
     // CHECK 4: Runner physically arrived at destination
     ASSERT_EQ(1, arrivedAt2nd, "Runner should physically arrive at 2nd base");
-    ASSERT_EQ(BASE_SECOND, game->playerInfo[runnerIdx].bTPI.baseId, "Runner baseId should be SECOND");
+    ASSERT_EQ(BASE_SECOND, game->playerInfo[runnerIdx].batting.presence.base_id, "Runner baseId should be SECOND");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -122,8 +123,8 @@ int test_free_walk_is_not_offered_to_nobody(void)
 
     // The whole inner side is off the field: the batter has been burnt and no runner is left.
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        m->playerInfo[i].bTPI.baseId = BASE_NONE;
-        m->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
+        m->playerInfo[i].batting.presence.base_id = BASE_NONE;
+        m->playerInfo[i].batting.presence.state = PLAYER_STATE_OUT;
         r->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
     }
 

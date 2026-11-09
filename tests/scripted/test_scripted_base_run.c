@@ -49,14 +49,16 @@ int test_scripted_single_tap_does_not_run_batter(void)
 
     int bi = setup_live_batter(g);
     ASSERT(bi >= 0, "could not get a live batter (selection / AI pitch never happened)");
-    ASSERT_EQ(PLAYER_STATE_AT_BAT, (int)scripted_match(g)->playerInfo[bi].bTPI.state, "batter should be AT_BAT");
+    ASSERT_EQ(
+        PLAYER_STATE_AT_BAT, (int)scripted_match(g)->playerInfo[bi].batting.presence.state, "batter should be AT_BAT"
+    );
 
     scripted_tap(g, HUMAN_PAD, KEY_DOWN); // single tap on the home/first key
     scripted_run(g, 5);
 
     // Armed, not committed: the batter is still at bat and not going forward.
     int going = scripted_match(g)->playerRuntime[bi].goingForward;
-    int state = (int)scripted_match(g)->playerInfo[bi].bTPI.state;
+    int state = (int)scripted_match(g)->playerInfo[bi].batting.presence.state;
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));

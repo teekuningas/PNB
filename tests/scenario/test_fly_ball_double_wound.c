@@ -44,10 +44,10 @@ int test_fly_ball_double_wound(void)
         simulate_frames(ctx, 1);
 
         int hasBall = ctx->state->match->ballInfo.holder;
-        int stateA = ctx->state->match->playerInfo[0].bTPI.state;
-        int stateB = ctx->state->match->playerInfo[1].bTPI.state;
-        int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
-        int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
+        int stateA = ctx->state->match->playerInfo[0].batting.presence.state;
+        int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
+        int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
+        int baseB = ctx->state->match->playerInfo[1].batting.presence.base_id;
         int safeA = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
         int safeB = ctx->state->rules->referee.battingPlayers[1].currentSafetyBase;
         Vector3D posB = ctx->state->match->playerInfo[1].body.location;

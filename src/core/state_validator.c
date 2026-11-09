@@ -254,9 +254,9 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s  {\n", sp);
         fprintf(f, "%s    \"id\": %d,\n", sp, i);
         fprintf(f, "%s    \"team\": %d,\n", sp, p->side);
-        fprintf(f, "%s    \"baseId\": %d,\n", sp, p->bTPI.baseId);
-        fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->bTPI.baseId));
-        fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->bTPI.state));
+        fprintf(f, "%s    \"baseId\": %d,\n", sp, p->batting.presence.base_id);
+        fprintf(f, "%s    \"baseStr\": \"%s\",\n", sp, base_to_string(p->batting.presence.base_id));
+        fprintf(f, "%s    \"state\": \"%s\",\n", sp, state_to_string(p->batting.presence.state));
         fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->body.location.x, p->body.location.z);
         // Runtime state
         fprintf(
@@ -343,23 +343,23 @@ int state_validator_check(StateInfo* state)
         int idx = get_base_controller(game, &rules->referee, b);
         if (idx != -1) {
             // Player at this index MUST be at this base (enforced by get_base_controller definition)
-            if (game->playerInfo[idx].bTPI.baseId != (BaseID)b) {
+            if (game->playerInfo[idx].batting.presence.base_id != (BaseID)b) {
                 printf(
                     "\n[STATE ERROR] FATAL: Base %d controlled by %d, but player is at base %d\n", b, idx,
-                    game->playerInfo[idx].bTPI.baseId
+                    game->playerInfo[idx].batting.presence.base_id
                 );
                 return 0; // Invalid
             }
 
             // Player MUST not be in invalid states for controlling a base
-            if (game->playerInfo[idx].bTPI.state == PLAYER_STATE_OUT ||
-                game->playerInfo[idx].bTPI.state == PLAYER_STATE_WOUNDED ||
-                game->playerInfo[idx].bTPI.state == PLAYER_STATE_SCORED ||
-                game->playerInfo[idx].bTPI.state == PLAYER_STATE_IDLE) {
+            if (game->playerInfo[idx].batting.presence.state == PLAYER_STATE_OUT ||
+                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_WOUNDED ||
+                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_SCORED ||
+                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_IDLE) {
                 printf(
                     "\n[STATE ERROR] FATAL: Base %d controlled by %d, but player state is %s (Invalid for "
                     "controller)\n",
-                    b, idx, state_to_string(game->playerInfo[idx].bTPI.state)
+                    b, idx, state_to_string(game->playerInfo[idx].batting.presence.state)
                 );
                 return 0; // Invalid
             }
@@ -369,14 +369,14 @@ int state_validator_check(StateInfo* state)
     // Invariant 2: Batter Consistency
     int activeBatterCount = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+        if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
             activeBatterCount++;
 
             // Must be at home
-            if (game->playerInfo[i].bTPI.baseId != BASE_HOME) {
+            if (game->playerInfo[i].batting.presence.base_id != BASE_HOME) {
                 printf(
                     "\n[STATE ERROR] FATAL: Player %d is AT_BAT but at base %d (Must be BASE_HOME)\n", i,
-                    game->playerInfo[i].bTPI.baseId
+                    game->playerInfo[i].batting.presence.base_id
                 );
                 return 0;
             }
@@ -423,7 +423,7 @@ int state_validator_check(StateInfo* state)
         int jokers[JOKER_COUNT];
         batting_team_jokers(&rules->scoreboard, jokers);
         for (int i = 0; i < JOKER_COUNT; i++) {
-            if (game->playerInfo[jokers[i]].bTPI.joker == JOKER_AVAILABLE) unusedJokers++;
+            if (game->playerInfo[jokers[i]].batting.joker == JOKER_AVAILABLE) unusedJokers++;
         }
         if (unusedJokers > rules->halfInningState.jokersLeft) {
             printf(

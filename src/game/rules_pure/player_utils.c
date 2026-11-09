@@ -14,7 +14,7 @@ int get_active_batter_index(const MatchSession* game)
 
     for (int i = 0; i < limit; i++) {
         // We look for the player specifically marked as AT_BAT
-        if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+        if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
             return i;
         }
     }
@@ -58,14 +58,14 @@ int list_batter_candidates(const MatchSession* game, const Scoreboard* sb, const
     const int spent = his->lastBatter.regularOrderSpent;
     int count = 0;
 
-    if (batter_seat_verdict(inTurn, inTurn, spent, (int)game->playerInfo[inTurn].bTPI.joker) == SEAT_ALLOWED) {
+    if (batter_seat_verdict(inTurn, inTurn, spent, (int)game->playerInfo[inTurn].batting.joker) == SEAT_ALLOWED) {
         out[count++] = inTurn;
     }
     int jokers[JOKER_COUNT];
     batting_team_jokers(sb, jokers);
     for (int i = 0; i < JOKER_COUNT; i++) {
         const int joker = jokers[i];
-        if (batter_seat_verdict(joker, inTurn, spent, (int)game->playerInfo[joker].bTPI.joker) == SEAT_ALLOWED) {
+        if (batter_seat_verdict(joker, inTurn, spent, (int)game->playerInfo[joker].batting.joker) == SEAT_ALLOWED) {
             out[count++] = joker;
         }
     }

@@ -48,7 +48,7 @@ void draw_player_renderer(
 
         // and we render. first texture is selected, as there are different teams and within teams there are jokers
         // and nonjokers. and then the model is selected and it also calls the display list.
-        textureSelection(scoreboard, playerInfo[i].side, playerInfo[i].bTPI.joker, 0, rm);
+        textureSelection(scoreboard, playerInfo[i].side, playerInfo[i].batting.joker, 0, rm);
         modelSelection(match, &players->players[i], rm);
         // and then there is the shadow.
         // we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same

@@ -14,7 +14,7 @@
  *
  * These are scenario-tier tests, so everything below goes through a real mechanism: batters take the
  * bat by declaring the INTENT_SELECT_BATTER a human key or the AI controller declares, and they
- * leave it by running through the engine's own base-running machinery. Nothing sets `bTPI.state` or
+ * leave it by running through the engine's own base-running machinery. Nothing sets `batting.presence.state` or
  * emits a `gameEvents` flag by hand — a test that manufactures the state it is checking knights
  * nothing. The one thing these tests do set directly is referee-owned LEGAL state
  * (a burn), which is this tier's stated power and what `test_burnt_player_bats_again` already does.

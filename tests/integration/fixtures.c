@@ -105,8 +105,8 @@ void cleanup_test_state(StateInfo* state)
 
 void set_test_player_state(StateInfo* state, int playerIndex, PlayerUnitState newState)
 {
-    BattingTeamPlayerInfo* b = &state->match->playerInfo[playerIndex].bTPI;
+    BattingPresence* presence = &state->match->playerInfo[playerIndex].batting.presence;
 
     // Simply set the new state enum - no legacy flags needed
-    b->state = newState;
+    presence->state = newState;
 }

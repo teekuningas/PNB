@@ -107,7 +107,8 @@ static Permission permit(
         const int inTurn = rules->scoreboard.teams[battingTeamIndex]
                                .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
         switch (batter_seat_verdict(
-            index, inTurn, rules->halfInningState.lastBatter.regularOrderSpent, (int)match->playerInfo[index].bTPI.joker
+            index, inTurn, rules->halfInningState.lastBatter.regularOrderSpent,
+            (int)match->playerInfo[index].batting.joker
         )) {
         case SEAT_NOT_IN_BATTING_TURN:
             return (Permission){0, RULE_BATTER_NOT_IN_BATTING_TURN};
@@ -170,8 +171,8 @@ static Permission permit(
         // The gate binds it to that player (ingest_message), the way a destination is bound to the
         // fielder controlled at the top of the tick, so the actualizer moves exactly that player even
         // if something later in the same tick were to change who holds the base. Nothing can: holding a
-        // base is the referee's safety plus the player's baseId, the legal world is const for the whole
-        // of INGEST and ACTUALIZE, and the only baseId written before base running is a newly seated
+        // base is the referee's safety plus the player's base_id, the legal world is const for the whole
+        // of INGEST and ACTUALIZE, and the only base_id written before base running is a newly seated
         // batter's, who holds no safety until the referee grants it. Measured as well, over 42 golden
         // runs: all 1,656 base-run commands found the same runner at the gate as at the actualizer.
         if (get_base_controller(match, &rules->referee, message->as.base_run.base) == -1) {

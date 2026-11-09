@@ -14,7 +14,7 @@
  *
  * The gate asks who holds the base and binds the command to that player; with nobody there it refuses,
  * and the actualizer is never asked to move nobody. The binding is the frame-top reading by
- * construction: holding a base is the referee's safety plus the player's baseId, and nothing between
+ * construction: holding a base is the referee's safety plus the player's base_id, and nothing between
  * the gate and the base running can change either for a player who already holds one.
  */
 
@@ -44,13 +44,13 @@ static int one_runner_on_first(ScenarioContext* ctx)
     RefereeState* referee = &ctx->state->rules->referee;
     initialize_referee_from_physical_state(ctx);
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        m->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
-        m->playerInfo[i].bTPI.baseId = BASE_NONE;
+        m->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
+        m->playerInfo[i].batting.presence.base_id = BASE_NONE;
         referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
     }
     const int runner = 3;
-    m->playerInfo[runner].bTPI.baseId = BASE_FIRST;
-    m->playerInfo[runner].bTPI.state = PLAYER_STATE_ON_BASE;
+    m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
+    m->playerInfo[runner].batting.presence.state = PLAYER_STATE_ON_BASE;
     m->playerInfo[runner].motion.moving = 0;
     referee->battingPlayers[runner].currentSafetyBase = BASE_FIRST;
     referee->battingPlayers[runner].baseAtPitchStart = BASE_FIRST;

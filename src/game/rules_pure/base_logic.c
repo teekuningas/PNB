@@ -94,7 +94,7 @@ int count_active_batting_players(const PlayerInfo* players)
         // Player is considered active on field if they have a valid base assignment.
         // This includes AT_BAT (Base 0), SAFE (Bases 1-3), RUNNING (between bases).
         // It excludes BASE_NONE (Out, Wounded/removed, Scored/removed).
-        if (players[i].bTPI.baseId != BASE_NONE) {
+        if (players[i].batting.presence.base_id != BASE_NONE) {
             count++;
         }
     }

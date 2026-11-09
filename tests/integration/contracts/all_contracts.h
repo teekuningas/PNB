@@ -13,6 +13,9 @@ int test_player_facing_preserves_planar_displacement(void);
 int test_player_stops_preserve_distinct_facing_and_sync(void);
 int test_player_reset_recipes_rebuild_home_geometry(void);
 int test_idle_fielder_returns_to_its_home_geometry(void);
+int test_half_inning_replaces_batting_attributes_and_resources(void);
+int test_foul_restores_presence_without_replacing_batting_resources(void);
+int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void);
 // SIMULATE asks the catch against the fielders where the previous tick left them
 int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void);
 int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void);

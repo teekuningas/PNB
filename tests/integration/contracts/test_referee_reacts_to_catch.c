@@ -42,8 +42,8 @@ int test_referee_starts_wounding_on_catch(void)
     // After snapshot: runner 0 has baseAtPitchStart = BASE_FIRST
 
     // Advance runner physically past their pitch-start base (simulate they ran)
-    ctx->state->match->playerInfo[0].bTPI.state = PLAYER_STATE_RUNNING;
-    ctx->state->match->playerInfo[0].bTPI.baseId = BASE_SECOND;
+    ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_RUNNING;
+    ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_SECOND;
     ctx->state->match->playerInfo[0].body.location = ctx->state->fieldPositions->secondBase;
 
     // Set contract preconditions: fly ball caught

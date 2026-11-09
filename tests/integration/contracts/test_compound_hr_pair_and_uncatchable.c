@@ -32,7 +32,7 @@ int test_compound_hr_pair_and_uncatchable(void)
     // Clear all batting players' safety so pair-end conditions trigger
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         ctx->state->rules->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
-        ctx->state->match->playerInfo[i].bTPI.baseId = BASE_NONE;
+        ctx->state->match->playerInfo[i].batting.presence.base_id = BASE_NONE;
     }
 
     // Run exactly 1 pipeline frame

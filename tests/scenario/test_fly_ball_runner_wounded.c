@@ -31,8 +31,8 @@ int test_fly_ball_runner_wounded(void)
     int woundDetected = 0;
     for (int frame = 0; frame <= 800; frame += 50) {
         if (frame > 0) simulate_frames(ctx, 50);
-        if (ctx->state->match->playerInfo[0].bTPI.state == PLAYER_STATE_WOUNDED ||
-            ctx->state->match->playerInfo[0].bTPI.baseId == BASE_NONE) {
+        if (ctx->state->match->playerInfo[0].batting.presence.state == PLAYER_STATE_WOUNDED ||
+            ctx->state->match->playerInfo[0].batting.presence.base_id == BASE_NONE) {
             woundDetected = 1;
             break;
         }

@@ -40,6 +40,7 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_home_run_view.o \
                  tests/integration/contracts/test_player_view.o \
                  tests/integration/contracts/test_player_motion.o \
+                 tests/integration/contracts/test_batting_lifetimes.o \
                  tests/integration/contracts/test_simulate_order.o \
                  tests/integration/contracts/test_reset_clears_declarations.o \
                  tests/integration/contracts/test_referee_reacts_to_catch.o \

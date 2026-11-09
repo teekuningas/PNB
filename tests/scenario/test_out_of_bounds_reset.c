@@ -39,7 +39,8 @@ int test_out_of_bounds_reset(void)
     move_pitcher_away(ctx);
 
     printf(
-        "[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n", ctx->state->match->playerInfo[0].bTPI.baseId,
+        "[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
+        ctx->state->match->playerInfo[0].batting.presence.base_id,
         ctx->state->rules->referee.battingPlayers[0].currentSafetyBase
     );
 
@@ -68,13 +69,13 @@ int test_out_of_bounds_reset(void)
         PlayerInfo* runner = &ctx->state->match->playerInfo[0];
 
         // Check if runner reached 2nd base
-        if (!reachedSecond && runner->bTPI.baseId == BASE_SECOND) {
+        if (!reachedSecond && runner->batting.presence.base_id == BASE_SECOND) {
             int currentSafety = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
             if (currentSafety == BASE_SECOND) {
                 reachedSecond = 1;
                 printf(
                     "[TEST] Frame %d: Runner 0 reached 2nd Base. baseId=%d, currentSafety=%d (SAFE)\n", frame,
-                    runner->bTPI.baseId, currentSafety
+                    runner->batting.presence.base_id, currentSafety
                 );
             } else {
                 // Log even if safety not yet granted
@@ -82,7 +83,7 @@ int test_out_of_bounds_reset(void)
                 if (frame != lastLogFrame) {
                     printf(
                         "[TEST] Frame %d: Runner 0 at 2nd Base. baseId=%d, currentSafety=%d (Waiting for safety...)\n",
-                        frame, runner->bTPI.baseId, currentSafety
+                        frame, runner->batting.presence.base_id, currentSafety
                     );
                     lastLogFrame = frame;
                 }
@@ -98,14 +99,14 @@ int test_out_of_bounds_reset(void)
         // Check for Reset (Runner returned to 1st base)
         // Reset happens when outOfBounds flag is cleared? Or just players moved?
         // "Foul Play" usually resets players to baseAtPitchStart.
-        if (outOfBoundsDetected && runner->bTPI.baseId == BASE_FIRST) {
+        if (outOfBoundsDetected && runner->batting.presence.base_id == BASE_FIRST) {
             int currentSafety = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
             // Ensure it's not just a glitch, but he is SAFE there
             if (currentSafety == BASE_FIRST) {
                 resetDetected = 1;
                 printf(
                     "[TEST] Frame %d: Runner 0 returned to 1st Base. baseId=%d, currentSafety=%d (Reset successful)\n",
-                    frame, runner->bTPI.baseId, currentSafety
+                    frame, runner->batting.presence.base_id, currentSafety
                 );
                 break;
             }

@@ -23,6 +23,9 @@ static void run_contract_tests(void)
     RUN_TEST(test_player_stops_preserve_distinct_facing_and_sync);
     RUN_TEST(test_player_reset_recipes_rebuild_home_geometry);
     RUN_TEST(test_idle_fielder_returns_to_its_home_geometry);
+    RUN_TEST(test_half_inning_replaces_batting_attributes_and_resources);
+    RUN_TEST(test_foul_restores_presence_without_replacing_batting_resources);
+    RUN_TEST(test_contest_pair_numbers_and_presence_have_distinct_lifetimes);
     RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
     RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 

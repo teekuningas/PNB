@@ -111,7 +111,7 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
 
         int shown = candidates[cursor];
         ASSERT_NE(
-            (int)JOKER_USED, (int)m->playerInfo[shown].bTPI.joker, "§7: a spent joker must never be on the cursor"
+            (int)JOKER_USED, (int)m->playerInfo[shown].batting.joker, "§7: a spent joker must never be on the cursor"
         );
         scripted_tap(g, HUMAN_PAD, KEY_1);
     }

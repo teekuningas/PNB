@@ -129,11 +129,12 @@ static void take_free_walk_decision(
             // so player might have run already to the following base, and free walk actually
             // gave him the right to go to just that base.
             // so if he still has the same base as before we can go on
-            if (scoreboard->period < 4 && match->playerInfo[index].bTPI.baseId == base && base != BASE_THIRD) {
+            if (scoreboard->period < 4 && match->playerInfo[index].batting.presence.base_id == base &&
+                base != BASE_THIRD) {
                 // Start running to the next base
                 run_to_next_base(match, fieldPositions, index, base);
                 // Protected from wounds/tags while advancing freely
-                match->playerInfo[index].bTPI.state = PLAYER_STATE_ADVANCING_FREELY;
+                match->playerInfo[index].batting.presence.state = PLAYER_STATE_ADVANCING_FREELY;
             }
             // 3rd base: no physical run needed — the referee scores the run directly and sets
             // hasScored, which is what makes enforce_legal_state remove the player
@@ -171,7 +172,7 @@ static void take_free_walk_decision(
 // is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
 static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd)
 {
-    PlayerUnitState state = match->playerInfo[index].bTPI.state;
+    PlayerUnitState state = match->playerInfo[index].batting.presence.state;
     int settled_on_base = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
 
     if (cmd == RUN_FORWARD) {

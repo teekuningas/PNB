@@ -86,14 +86,14 @@ int test_count_active_batting_players(void)
     memset(players, 0, sizeof(players));
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        players[i].bTPI.baseId = BASE_NONE; // All inactive
+        players[i].batting.presence.base_id = BASE_NONE; // All inactive
     }
 
     ASSERT_EQ(0, count_active_batting_players(players), "0 active players");
 
-    players[0].bTPI.baseId = BASE_HOME; // At bat
-    players[2].bTPI.baseId = BASE_FIRST; // Safe
-    players[4].bTPI.baseId = BASE_SECOND; // Running
+    players[0].batting.presence.base_id = BASE_HOME; // At bat
+    players[2].batting.presence.base_id = BASE_FIRST; // Safe
+    players[4].batting.presence.base_id = BASE_SECOND; // Running
 
     ASSERT_EQ(3, count_active_batting_players(players), "3 active players");
 

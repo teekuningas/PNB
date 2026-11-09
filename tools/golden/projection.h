@@ -147,8 +147,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
         // The historical slot observes active recovery, independently of its countdown representation.
         put(0, "f%d,%d,%d,%d,%d,%d;", p->cTPI.position, p->cTPI.isNearHomeLocation, (int)p->cTPI.replacingStage,
             (int)p->cTPI.replacingBase, p->cTPI.busyCatching, p->cTPI.throw_recovery_ticks != 0);
-        put(0, "b%d,%d,%d,%d,%d,%d;", p->bTPI.speed, p->bTPI.power, p->bTPI.number, (int)p->bTPI.joker,
-            (int)p->bTPI.state, (int)p->bTPI.baseId);
+        put(0, "b%d,%d,%d,%d,%d,%d;", p->attributes.speed, p->attributes.power, p->batting.number, (int)p->batting.joker,
+            (int)p->batting.presence.state, (int)p->batting.presence.base_id);
         const PlayerRuntimeState* rt = &m->playerRuntime[i];
         put(0, "r%d,%d,%d,%d;", rt->arrivedToBase, rt->passedPathPoint, rt->goingForward, rt->hasMadeRunOnThirdBase);
     }

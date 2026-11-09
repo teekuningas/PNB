@@ -85,8 +85,8 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
 
     // new batting team player on the field.
     // has base of zero, is on base and original base is zero too.
-    match->playerInfo[index].bTPI.baseId = BASE_HOME;
-    match->playerInfo[index].bTPI.state = PLAYER_STATE_AT_BAT;
+    match->playerInfo[index].batting.presence.base_id = BASE_HOME;
+    match->playerInfo[index].batting.presence.state = PLAYER_STATE_AT_BAT;
 
     // Event-driven: Signal referee that a new batter has entered
     // This triggers strike/ball reset and safety initialization (referee.c)
@@ -102,8 +102,8 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
     match->playerRuntime[index].hasMadeRunOnThirdBase = 0;
     // if he is a (unused) joker player, mark him as used.
     // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
-    if (match->playerInfo[index].bTPI.joker == JOKER_AVAILABLE) {
-        match->playerInfo[index].bTPI.joker = JOKER_USED;
+    if (match->playerInfo[index].batting.joker == JOKER_AVAILABLE) {
+        match->playerInfo[index].batting.joker = JOKER_USED;
     }
     // move player to default batter ready position
     target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
@@ -483,7 +483,7 @@ void update_batting(
                         // ball location x  -1.0 ... 1.0
                         // power depends on player's power attribute.
                         if (batterIndex != -1) {
-                            powerFactor = match->playerInfo[batterIndex].bTPI.power;
+                            powerFactor = match->playerInfo[batterIndex].attributes.power;
 
                             velocity = calculate_batted_ball_velocity(
                                 verticalAngle, horizontalAngle, power, powerFactor, match->ballInfo.location.x

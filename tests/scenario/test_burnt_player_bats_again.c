@@ -34,7 +34,7 @@ int test_burnt_player_bats_again(void)
     rules->referee.battingPlayers[outPlayer].status = PLAYER_STATUS_OUT;
     simulate_frames(ctx, 2);
     ASSERT_EQ(
-        PLAYER_STATE_OUT, st->match->playerInfo[outPlayer].bTPI.state,
+        PLAYER_STATE_OUT, st->match->playerInfo[outPlayer].batting.presence.state,
         "setup: the burnt player should have been physically moved out"
     );
 
@@ -49,7 +49,7 @@ int test_burnt_player_bats_again(void)
         simulate_frames(ctx, 1);
     }
 
-    PlayerUnitState state = st->match->playerInfo[outPlayer].bTPI.state;
+    PlayerUnitState state = st->match->playerInfo[outPlayer].batting.presence.state;
     RefereePlayerStatus status = rules->referee.battingPlayers[outPlayer].status;
     cleanup_scenario(ctx);
 

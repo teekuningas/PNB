@@ -16,7 +16,7 @@ int test_get_base_controller(void)
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
         referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
-        game.playerInfo[i].bTPI.baseId = BASE_NONE;
+        game.playerInfo[i].batting.presence.base_id = BASE_NONE;
     }
 
     // Base conditions: no one controls anything
@@ -29,18 +29,18 @@ int test_get_base_controller(void)
 
     // Player 2 controls first base
     referee.battingPlayers[2].currentSafetyBase = BASE_FIRST;
-    game.playerInfo[2].bTPI.baseId = BASE_FIRST;
+    game.playerInfo[2].batting.presence.base_id = BASE_FIRST;
     referee.battingPlayers[2].baseAtPitchStart = BASE_HOME;
 
     ASSERT_EQ(2, get_base_controller(&game, &referee, BASE_FIRST), "Player 2 should control first base");
 
     // Multiple candidates for second base, prioritize higher baseAtPitchStart
     referee.battingPlayers[4].currentSafetyBase = BASE_SECOND;
-    game.playerInfo[4].bTPI.baseId = BASE_SECOND;
+    game.playerInfo[4].batting.presence.base_id = BASE_SECOND;
     referee.battingPlayers[4].baseAtPitchStart = BASE_FIRST; // Lower priority
 
     referee.battingPlayers[5].currentSafetyBase = BASE_SECOND;
-    game.playerInfo[5].bTPI.baseId = BASE_SECOND;
+    game.playerInfo[5].batting.presence.base_id = BASE_SECOND;
     referee.battingPlayers[5].baseAtPitchStart = BASE_SECOND; // Higher priority
 
     ASSERT_EQ(
@@ -50,7 +50,7 @@ int test_get_base_controller(void)
 
     // Player must have both safety and physically be there
     referee.battingPlayers[6].currentSafetyBase = BASE_THIRD; // Has safety
-    game.playerInfo[6].bTPI.baseId = BASE_SECOND; // But physically at second
+    game.playerInfo[6].batting.presence.base_id = BASE_SECOND; // But physically at second
 
     ASSERT_EQ(
         -1, get_base_controller(&game, &referee, BASE_THIRD), "No control if player is not physically at the base"

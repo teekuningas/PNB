@@ -134,12 +134,12 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     // Set logical state
     if (progressToNext < 0.1f) {
         // At the base
-        game->playerInfo[playerIndex].bTPI.baseId = base;
-        game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
+        game->playerInfo[playerIndex].batting.presence.base_id = base;
+        game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_ON_BASE;
     } else {
         // Between bases - running
-        game->playerInfo[playerIndex].bTPI.baseId = base; // Still logically at source base
-        game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_RUNNING;
+        game->playerInfo[playerIndex].batting.presence.base_id = base; // Still logically at source base
+        game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_RUNNING;
     }
 
     // Set runtime state
@@ -163,7 +163,7 @@ void exhaust_jokers(ScenarioContext* ctx)
 
     MatchSession* game = ctx->state->match;
     for (int i = 0; i < JOKER_COUNT; i++) {
-        game->playerInfo[scenario_joker(ctx, i)].bTPI.joker = JOKER_USED;
+        game->playerInfo[scenario_joker(ctx, i)].batting.joker = JOKER_USED;
     }
     ctx->state->rules->halfInningState.jokersLeft = 0;
 }
@@ -271,8 +271,8 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
     game->playerInfo[playerIndex].body.home_location = game->playerInfo[playerIndex].body.location;
 
     // Logical state: ready to bat/run
-    game->playerInfo[playerIndex].bTPI.baseId = BASE_HOME;
-    game->playerInfo[playerIndex].bTPI.state = PLAYER_STATE_AT_BAT;
+    game->playerInfo[playerIndex].batting.presence.base_id = BASE_HOME;
+    game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
 
     // Referee state is NOT set here - let initialize_referee_from_physical_state() handle it
 

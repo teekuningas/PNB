@@ -68,7 +68,7 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
             );
 
             // DEBUG for Wounded Players
-            if (match->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) {
+            if (match->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) {
                 // printf("[DEBUG] Player %d WOUNDED Moving. Pos: (%.2f, %.2f) Vel: (%.2f, %.2f) Target: (%.2f,
                 // %.2f)\n", i, match->playerInfo[i].body.location.x,
                 // match->playerInfo[i].body.location.z, match->playerInfo[i].body.velocity.x,
@@ -99,9 +99,9 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                         // and then back to a point in homebase, and then to own place on the circle.
                         // check for running because otherwise we players who were wounded before arriving a base
                         // would be stuck there standing.
-                        if ((match->playerInfo[i].bTPI.state == PLAYER_STATE_OUT) ||
-                            (match->playerInfo[i].bTPI.state == PLAYER_STATE_SCORED) ||
-                            (match->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED &&
+                        if ((match->playerInfo[i].batting.presence.state == PLAYER_STATE_OUT) ||
+                            (match->playerInfo[i].batting.presence.state == PLAYER_STATE_SCORED) ||
+                            (match->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED &&
                              match->playerInfo[i].motion.running == 0)) {
                             Vector3D target;
                             if (match->playerRuntime[i].passedPathPoint == 0) {
@@ -124,18 +124,19 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                         // if we are legally running bases
                         else {
                             // if we are at homebase, first base or second base and not leading
-                            if (base_can_advance(match->playerInfo[i].bTPI.baseId) &&
-                                match->playerInfo[i].bTPI.state != PLAYER_STATE_LEADING) {
+                            if (base_can_advance(match->playerInfo[i].batting.presence.base_id) &&
+                                match->playerInfo[i].batting.presence.state != PLAYER_STATE_LEADING) {
                                 // and moving forward
                                 if (match->playerRuntime[i].goingForward == 1) {
                                     // set going forward flag to 0 as we are stopped now
                                     match->playerRuntime[i].goingForward = 0;
                                     // set new base-value and isOnBase-vaule to 1.
-                                    match->playerInfo[i].bTPI.baseId = base_get_next(match->playerInfo[i].bTPI.baseId);
+                                    match->playerInfo[i].batting.presence.base_id =
+                                        base_get_next(match->playerInfo[i].batting.presence.base_id);
 
-                                    if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-                                        match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-                                        match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
+                                    if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED &&
+                                        match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT) {
+                                        match->playerInfo[i].batting.presence.state = PLAYER_STATE_ON_BASE;
                                     } else {
                                     }
                                     // also these are needed to do continued calculations only when needed.
@@ -143,15 +144,15 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                     match->playerRuntime[i].arrivedToBase = 1;
 
                                 } else {
-                                    if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-                                        match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT &&
-                                        match->playerInfo[i].bTPI.state != PLAYER_STATE_AT_BAT) {
-                                        match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
+                                    if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED &&
+                                        match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT &&
+                                        match->playerInfo[i].batting.presence.state != PLAYER_STATE_AT_BAT) {
+                                        match->playerInfo[i].batting.presence.state = PLAYER_STATE_ON_BASE;
                                     }
                                 }
                             }
                             // so if we are on base 3
-                            else if (match->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+                            else if (match->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
                                 if (match->playerRuntime[i].goingForward == 1) {
                                     // if we are moving forward and have not passed the flag yet, change the direction
                                     if (match->playerRuntime[i].passedPathPoint == 0) {
@@ -165,10 +166,10 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                         Vector3D target;
                                         match->playerRuntime[i].passedPathPoint = 2;
 
-                                        match->playerInfo[i].bTPI.baseId = BASE_HOME_SCORED;
-                                        if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-                                            match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-                                            match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
+                                        match->playerInfo[i].batting.presence.base_id = BASE_HOME_SCORED;
+                                        if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED &&
+                                            match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT) {
+                                            match->playerInfo[i].batting.presence.state = PLAYER_STATE_ON_BASE;
                                         }
                                         match->playerRuntime[i].goingForward = 0;
                                         match->gameEvents.playerArrivedAtBase = 1;
@@ -187,9 +188,9 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                                     } else {
                                         // otherwise we are at the third base
 
-                                        if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED &&
-                                            match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-                                            match->playerInfo[i].bTPI.state = PLAYER_STATE_ON_BASE;
+                                        if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED &&
+                                            match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT) {
+                                            match->playerInfo[i].batting.presence.state = PLAYER_STATE_ON_BASE;
                                         }
                                         stop_target_looking_player(&match->playerInfo[i].motion);
                                         needToStop = 0;
@@ -228,14 +229,15 @@ void base_runner_movements_on_base_arrivals(MatchSession* match, const RefereeSt
             int index = i;
             // check if this particular player was one who arrived. there can be many though so we cant break out after
             // this.
-            if (match->playerInfo[index].bTPI.baseId != BASE_NONE && match->playerRuntime[index].arrivedToBase == 1) {
+            if (match->playerInfo[index].batting.presence.base_id != BASE_NONE &&
+                match->playerRuntime[index].arrivedToBase == 1) {
 
                 // no need to check on this player anymore when next runner arrives and this one has stayed where he
                 // was.
                 match->playerRuntime[index].arrivedToBase = 0;
                 // if out has been made, player is removed immediately from the game so we wouldnt be here.
                 // if wound has been made, player still tries to get to next base, so we have to handle that here.
-                if (match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
+                if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT) {
                     int j;
                     // so after we have a valid player, we are going to check to which base he arrived
                     // and after that do the actions corresponding to base and direction.
@@ -243,19 +245,19 @@ void base_runner_movements_on_base_arrivals(MatchSession* match, const RefereeSt
                     // it didn't need much of a work, so its handled in target checking function.
                     // homeruns are checked here though, in that case base==4? so its out of this loop.
                     for (j = 1; j < BASE_COUNT; j++) {
-                        if (base_to_int_index(match->playerInfo[index].bTPI.baseId) == j) {
+                        if (base_to_int_index(match->playerInfo[index].batting.presence.base_id) == j) {
                             // arrived to base
                             // if we were taking a free walk, we stop it now, BUT only if we aren't wounded/out
-                            if (match->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY &&
-                                match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED &&
-                                match->playerInfo[index].bTPI.state != PLAYER_STATE_OUT) {
-                                match->playerInfo[index].bTPI.state =
+                            if (match->playerInfo[index].batting.presence.state == PLAYER_STATE_ADVANCING_FREELY &&
+                                match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
+                                match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT) {
+                                match->playerInfo[index].batting.presence.state =
                                     PLAYER_STATE_ON_BASE; // Transition out of ADVANCING_FREELY
                             }
                         }
                     }
                     // if the player arrived to a base and had it marked as 4, it means that it possibly a run.
-                    if (match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+                    if (match->playerInfo[index].batting.presence.base_id == BASE_HOME_SCORED) {
                         // if we were safe at base 3, we are not anymore.
                         if (get_base_controller(match, referee, BASE_THIRD) == index) {
                         }

@@ -793,7 +793,7 @@ static void checkBattingTeamRun(
                     clientInput->run_press_window[base] = 0;
                 } else {
                     // First press → arm (settled) or come back (off the base); open the double-press window.
-                    PlayerUnitState state = match->playerInfo[index].bTPI.state;
+                    PlayerUnitState state = match->playerInfo[index].batting.presence.state;
                     if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
                         command = RUN_FORWARD;
                     } else {

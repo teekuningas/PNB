@@ -68,11 +68,11 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 
                 // 1. Restore Player State and ID (Physical/Logical State)
                 if (restoreBase == BASE_HOME) {
-                    match->playerInfo[j].bTPI.state = PLAYER_STATE_AT_BAT;
+                    match->playerInfo[j].batting.presence.state = PLAYER_STATE_AT_BAT;
                 } else {
-                    match->playerInfo[j].bTPI.state = PLAYER_STATE_ON_BASE;
+                    match->playerInfo[j].batting.presence.state = PLAYER_STATE_ON_BASE;
                 }
-                match->playerInfo[j].bTPI.baseId = restoreBase;
+                match->playerInfo[j].batting.presence.base_id = restoreBase;
 
                 // 5. Handle the Batter - Physical State Only
                 if (restoreBase == BASE_HOME) {
@@ -81,13 +81,13 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
                 }
 
                 // 6. Restore Physical Locations for field runners
-                if (match->playerInfo[j].bTPI.baseId == BASE_FIRST) {
+                if (match->playerInfo[j].batting.presence.base_id == BASE_FIRST) {
                     match->playerInfo[j].body.location.x = field_positions->firstBaseRun.x;
                     match->playerInfo[j].body.location.z = field_positions->firstBaseRun.z;
-                } else if (match->playerInfo[j].bTPI.baseId == BASE_SECOND) {
+                } else if (match->playerInfo[j].batting.presence.base_id == BASE_SECOND) {
                     match->playerInfo[j].body.location.x = field_positions->secondBaseRun.x;
                     match->playerInfo[j].body.location.z = field_positions->secondBaseRun.z;
-                } else if (match->playerInfo[j].bTPI.baseId == BASE_THIRD) {
+                } else if (match->playerInfo[j].batting.presence.base_id == BASE_THIRD) {
                     match->playerInfo[j].body.location.x = field_positions->thirdBaseRun.x;
                     match->playerInfo[j].body.location.z = field_positions->thirdBaseRun.z;
                 }
@@ -95,14 +95,14 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
                 // Restore OUT/SCORED/WOUNDED so enforcement does not start their exit again.
                 // This is physical state sync
                 if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
-                    match->playerInfo[j].bTPI.state = PLAYER_STATE_OUT;
-                    match->playerInfo[j].bTPI.baseId = BASE_NONE;
+                    match->playerInfo[j].batting.presence.state = PLAYER_STATE_OUT;
+                    match->playerInfo[j].batting.presence.base_id = BASE_NONE;
                 } else if (rules->referee.battingPlayers[j].hasScored) {
-                    match->playerInfo[j].bTPI.state = PLAYER_STATE_SCORED;
-                    match->playerInfo[j].bTPI.baseId = BASE_NONE;
+                    match->playerInfo[j].batting.presence.state = PLAYER_STATE_SCORED;
+                    match->playerInfo[j].batting.presence.base_id = BASE_NONE;
                 } else if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_WOUNDED) {
-                    match->playerInfo[j].bTPI.state = PLAYER_STATE_WOUNDED;
-                    match->playerInfo[j].bTPI.baseId = BASE_NONE;
+                    match->playerInfo[j].batting.presence.state = PLAYER_STATE_WOUNDED;
+                    match->playerInfo[j].batting.presence.base_id = BASE_NONE;
                 }
             }
         }
@@ -249,19 +249,21 @@ static void initialize_inning_permanent_player_information(
     // initialize batting team numbers and jokerness
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         if (i < PLAYERS_IN_TEAM) {
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.number = i + 1;
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.joker = JOKER_REGULAR;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.number = i + 1;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.joker = JOKER_REGULAR;
         } else {
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.number = 0;
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].bTPI.joker = JOKER_AVAILABLE;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.number = 0;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.joker = JOKER_AVAILABLE;
         }
     }
     // initialize batting team
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         match->playerInfo[i].side = TEAM_BATTING;
 
-        match->playerInfo[i].bTPI.power = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
-        match->playerInfo[i].bTPI.speed = team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
+        match->playerInfo[i].attributes.power =
+            team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].power;
+        match->playerInfo[i].attributes.speed =
+            team_data[(scoreboard->teams[battingTeamIndex].value - 1)].players[i].speed;
     }
     // initialize fielders
     for (i = 12; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -321,8 +323,8 @@ static void initialize_non_critical_player_information(MatchSession* match)
             match->playerInfo[i].cTPI.replacingBase = BASE_NONE;
             match->playerInfo[i].cTPI.busyCatching = 0;
         } else {
-            match->playerInfo[i].bTPI.state = PLAYER_STATE_IDLE;
-            match->playerInfo[i].bTPI.baseId = BASE_NONE;
+            match->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
+            match->playerInfo[i].batting.presence.base_id = BASE_NONE;
         }
     }
 }
@@ -408,9 +410,9 @@ static void setup_homerun_physical_state(
         int batterIndex = scoreboard->teams[battingTeamIndex].batterRunnerIndices[0][hrcs->runnerBatterPairCounter];
         // batter
         if (batterIndex != -1) {
-            match->playerInfo[batterIndex].bTPI.baseId = BASE_HOME;
-            match->playerInfo[batterIndex].bTPI.state = PLAYER_STATE_AT_BAT;
-            match->playerInfo[batterIndex].bTPI.number = hrcs->runnerBatterPairCounter + 1;
+            match->playerInfo[batterIndex].batting.presence.base_id = BASE_HOME;
+            match->playerInfo[batterIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
+            match->playerInfo[batterIndex].batting.number = hrcs->runnerBatterPairCounter + 1;
             // move player to default batter ready position
             target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
@@ -426,8 +428,8 @@ static void setup_homerun_physical_state(
         }
         // runner
         if (runnerIndex != -1) {
-            match->playerInfo[runnerIndex].bTPI.baseId = BASE_THIRD;
-            match->playerInfo[runnerIndex].bTPI.state = PLAYER_STATE_ON_BASE;
+            match->playerInfo[runnerIndex].batting.presence.base_id = BASE_THIRD;
+            match->playerInfo[runnerIndex].batting.presence.state = PLAYER_STATE_ON_BASE;
 
             match->playerInfo[runnerIndex].body.location.x = field_positions->thirdBaseRun.x;
             match->playerInfo[runnerIndex].body.location.y = field_positions->thirdBaseRun.y;

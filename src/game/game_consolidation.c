@@ -102,33 +102,34 @@ static void enforce_legal_state(
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         // 1. React to OUT
         if (referee->battingPlayers[i].status == PLAYER_STATUS_OUT) {
-            if (match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-                match->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
-                match->playerInfo[i].bTPI.baseId = BASE_NONE;
+            if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_OUT) {
+                match->playerInfo[i].batting.presence.state = PLAYER_STATE_OUT;
+                match->playerInfo[i].batting.presence.base_id = BASE_NONE;
                 move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
             }
         }
 
         // 2. React to SCORE
-        if (referee->battingPlayers[i].hasScored && match->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
-            match->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
-            match->playerInfo[i].bTPI.baseId = BASE_NONE;
+        if (referee->battingPlayers[i].hasScored &&
+            match->playerInfo[i].batting.presence.state != PLAYER_STATE_SCORED) {
+            match->playerInfo[i].batting.presence.state = PLAYER_STATE_SCORED;
+            match->playerInfo[i].batting.presence.base_id = BASE_NONE;
             move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
         }
 
         // 3. React to WOUNDED
         if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
-            if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
-                match->playerInfo[i].bTPI.state = PLAYER_STATE_WOUNDED;
-                match->playerInfo[i].bTPI.baseId = BASE_NONE;
+            if (match->playerInfo[i].batting.presence.state != PLAYER_STATE_WOUNDED) {
+                match->playerInfo[i].batting.presence.state = PLAYER_STATE_WOUNDED;
+                match->playerInfo[i].batting.presence.base_id = BASE_NONE;
                 move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
             }
         }
 
         // 4. React to displacement (Panic Run)
-        if (match->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE ||
-            match->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
-            BaseID physBase = match->playerInfo[i].bTPI.baseId;
+        if (match->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE ||
+            match->playerInfo[i].batting.presence.state == PLAYER_STATE_LEADING) {
+            BaseID physBase = match->playerInfo[i].batting.presence.base_id;
             if (referee->battingPlayers[i].currentSafetyBase != physBase) {
                 int isWounded = (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
 
@@ -271,7 +272,7 @@ static void apply_batter_becomes_runner(
         // Only force run if player is still there and NOT already running.
         // This prevents re-triggering every frame while preserving the 3 strikes state
         // until the next batter resets it.
-        if (index != -1 && match->playerInfo[index].bTPI.state != PLAYER_STATE_RUNNING) {
+        if (index != -1 && match->playerInfo[index].batting.presence.state != PLAYER_STATE_RUNNING) {
             run_to_next_base(match, field_positions, index, BASE_HOME);
         }
     }
@@ -316,8 +317,8 @@ static void handle_free_walk_offers(MatchSession* match, const HalfInningState* 
             // validator asserts the pairing rather than this defending against it, because a guard
             // that cannot fire reads exactly like one that never has.
             const int offered = match->free_walk.runner;
-            if (match->playerInfo[offered].bTPI.state == PLAYER_STATE_WOUNDED ||
-                match->playerInfo[offered].bTPI.state == PLAYER_STATE_OUT) {
+            if (match->playerInfo[offered].batting.presence.state == PLAYER_STATE_WOUNDED ||
+                match->playerInfo[offered].batting.presence.state == PLAYER_STATE_OUT) {
                 match->offers.free_walk = 0;
             }
         }
@@ -412,9 +413,9 @@ static void calculate_free_walk(MatchSession* match, const RefereeState* referee
     // either.
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         int index = i;
-        if (match->playerInfo[index].bTPI.baseId != BASE_NONE &&
-            match->playerInfo[index].bTPI.state != PLAYER_STATE_WOUNDED) {
-            BaseID currentBaseId = match->playerInfo[index].bTPI.baseId;
+        if (match->playerInfo[index].batting.presence.base_id != BASE_NONE &&
+            match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED) {
+            BaseID currentBaseId = match->playerInfo[index].batting.presence.base_id;
 
             // SANITY CHECK: If player is at HOME base, they MUST be the active batter.
             int batterIndex = get_active_batter_index(match);
@@ -445,7 +446,7 @@ static void calculate_free_walk(MatchSession* match, const RefereeState* referee
     }
     match->free_walk.runner = maxIndex;
     if (maxIndex != -1)
-        match->free_walk.from = match->playerInfo[maxIndex].bTPI.baseId;
+        match->free_walk.from = match->playerInfo[maxIndex].batting.presence.base_id;
     else
         match->free_walk.from = BASE_NONE;
 }

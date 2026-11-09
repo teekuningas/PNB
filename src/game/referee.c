@@ -45,7 +45,7 @@ static void update_initialization_events(
     if (events->batterEntered) {
         int battingTeamIndex = get_batting_team_index(scoreboard);
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
 
                 // Taking the bat clears the previous at-bat's verdicts. Being burnt or wounded costs
@@ -71,7 +71,7 @@ static void update_initialization_events(
                 // designation sitting on a joker can never equal it and the clause becomes
                 // unfirable for the whole half-inning. Measured before the fix: a third of
                 // AI-vs-AI half-innings designated a joker.
-                const int isRegular = (game->playerInfo[i].bTPI.joker == JOKER_REGULAR);
+                const int isRegular = (game->playerInfo[i].batting.joker == JOKER_REGULAR);
                 if (halfInningState->lastBatter.designatedIndex == -1) {
                     if (isRegular) {
                         halfInningState->lastBatter.designatedIndex = i;
@@ -127,13 +127,13 @@ static void update_initialization_events(
         // 5. Snapshot Base Positions (The "Legal Baseline" for this pitch)
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             int index = i;
-            if (game->playerInfo[index].bTPI.baseId != BASE_NONE) {
-                BaseID baseId = game->playerInfo[index].bTPI.baseId;
+            if (game->playerInfo[index].batting.presence.base_id != BASE_NONE) {
+                BaseID baseId = game->playerInfo[index].batting.presence.base_id;
                 int base = base_to_int_index(baseId);
 
                 // Special case: Player is advancing freely.
                 // Their "pitch start" base is effectively the destination they are guaranteed to reach.
-                if (game->playerInfo[index].bTPI.state == PLAYER_STATE_ADVANCING_FREELY) {
+                if (game->playerInfo[index].batting.presence.state == PLAYER_STATE_ADVANCING_FREELY) {
                     BaseID destBase;
                     if (baseId == BASE_THIRD)
                         destBase = BASE_HOME_SCORED;
@@ -153,7 +153,7 @@ static void update_initialization_events(
                         }
                     }
                     // Special case: Batter at home is considered to have "safety" in terms of not being irti yet
-                    if (game->playerInfo[index].bTPI.state == PLAYER_STATE_AT_BAT) {
+                    if (game->playerInfo[index].batting.presence.state == PLAYER_STATE_AT_BAT) {
                         hasSafety = 1;
                     }
 
@@ -273,9 +273,9 @@ static void update_wounding_logic(
 
         // Mark vulnerable players at this moment
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-                PlayerUnitState phys_state = game->playerInfo[i].bTPI.state;
-                BaseID phys_base = game->playerInfo[i].bTPI.baseId;
+            if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
+                PlayerUnitState phys_state = game->playerInfo[i].batting.presence.state;
+                BaseID phys_base = game->playerInfo[i].batting.presence.base_id;
                 BaseID ref_baseAtStart = referee->battingPlayers[i].baseAtPitchStart;
 
                 bool is_safe = player_is_safe_from_fly(phys_state, phys_base, ref_baseAtStart);
@@ -318,8 +318,8 @@ static void update_wounding_logic(
 
             // Apply wounding to marked players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-                    PlayerUnitState state = game->playerInfo[i].bTPI.state;
+                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
+                    PlayerUnitState state = game->playerInfo[i].batting.presence.state;
 
                     // Normal wound: WOUND_MARKED -> WOUNDED (if at base) or WOUND_PENDING (if running)
                     if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) {
@@ -369,8 +369,8 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         const PlayerInfo* player = &game->playerInfo[i];
-        if (player->bTPI.baseId != BASE_NONE &&
-            (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT)) {
+        if (player->batting.presence.base_id != BASE_NONE && (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
+                                                              player->batting.presence.state == PLAYER_STATE_AT_BAT)) {
             sortedPlayers[playerCount++] = i;
         }
     }
@@ -394,7 +394,7 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
     for (int idx = 0; idx < playerCount; idx++) {
         int i = sortedPlayers[idx];
         const PlayerInfo* player = &game->playerInfo[i];
-        BaseID physicalBase = player->bTPI.baseId;
+        BaseID physicalBase = player->batting.presence.base_id;
 
         // Player is physically at a base (we already filtered for ON_BASE/AT_BAT)
         // But Referee doesn't recognize them as the controller yet
@@ -501,7 +501,7 @@ static void update_force_outs(
             const PlayerInfo* player = &game->playerInfo[i];
 
             // Only check active players
-            if (player->bTPI.baseId == BASE_NONE) continue;
+            if (player->batting.presence.base_id == BASE_NONE) continue;
 
             BaseID ballBaseId = (BaseID)ballAtBase;
             BaseID checkBaseId;
@@ -513,14 +513,17 @@ static void update_force_outs(
             }
 
             // A. Force Out / Burning (§33)
-            int has_safety_at_current = (referee->battingPlayers[i].currentSafetyBase == player->bTPI.baseId);
+            int has_safety_at_current =
+                (referee->battingPlayers[i].currentSafetyBase == player->batting.presence.base_id);
             int is_protected =
-                (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT);
+                (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
+                 player->batting.presence.state == PLAYER_STATE_AT_BAT);
             int is_safe_from_force_out = has_safety_at_current && is_protected;
 
             if (is_runner_forced_out(
-                    player->bTPI.baseId, is_safe_from_force_out, checkBaseId,
-                    player->bTPI.state == PLAYER_STATE_ADVANCING_FREELY, referee->foulState != FOUL_STATE_NONE
+                    player->batting.presence.base_id, is_safe_from_force_out, checkBaseId,
+                    player->batting.presence.state == PLAYER_STATE_ADVANCING_FREELY,
+                    referee->foulState != FOUL_STATE_NONE
                 )) {
 
                 referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
@@ -564,10 +567,11 @@ static void update_tuplahaava_logic(
 
             BaseID source = referee->battingPlayers[i].baseAtPitchStart;
             BaseID next = base_get_next(source);
-            BaseID currentBase = player->bTPI.baseId;
+            BaseID currentBase = player->batting.presence.base_id;
             // In-between: RUNNING or LEADING (actively between bases)
             int is_in_between =
-                (player->bTPI.state == PLAYER_STATE_RUNNING || player->bTPI.state == PLAYER_STATE_LEADING);
+                (player->batting.presence.state == PLAYER_STATE_RUNNING ||
+                 player->batting.presence.state == PLAYER_STATE_LEADING);
 
             if (is_in_between && ballAtBase != -1) {
                 // Exception 2: Ball at NEXT base -> OUT
@@ -581,7 +585,8 @@ static void update_tuplahaava_logic(
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                     referee->battingPlayers[i].status = PLAYER_STATUS_WOUNDED;
                 }
-            } else if (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT) {
+            } else if (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
+                       player->batting.presence.state == PLAYER_STATE_AT_BAT) {
                 // Player is ON_BASE or AT_BAT - check if at source or next base
                 if (currentBase == source || currentBase == next) {
                     // Tuplahaava player at source/next base should be wounded
@@ -596,11 +601,12 @@ static void update_tuplahaava_logic(
 
             BaseID source = referee->battingPlayers[i].baseAtPitchStart;
             BaseID next = base_get_next(source);
-            BaseID currentBase = player->bTPI.baseId;
+            BaseID currentBase = player->batting.presence.base_id;
             // In-between: RUNNING or LEADING (actively between bases)
             // Note: ADVANCING_FREELY is treated like ON_BASE (safe at next base)
             int is_in_between =
-                (player->bTPI.state == PLAYER_STATE_RUNNING || player->bTPI.state == PLAYER_STATE_LEADING);
+                (player->batting.presence.state == PLAYER_STATE_RUNNING ||
+                 player->batting.presence.state == PLAYER_STATE_LEADING);
 
             if (is_in_between && ballAtBase != -1) {
                 // Ball at NEXT base -> OUT
@@ -609,7 +615,8 @@ static void update_tuplahaava_logic(
                     record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
                 }
-            } else if (player->bTPI.state == PLAYER_STATE_ON_BASE || player->bTPI.state == PLAYER_STATE_AT_BAT) {
+            } else if (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
+                       player->batting.presence.state == PLAYER_STATE_AT_BAT) {
                 // Player arrived at base (ON_BASE or AT_BAT) -> finalize as WOUNDED
                 if (currentBase == source || currentBase == next) {
                     referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
@@ -680,16 +687,16 @@ static void update_runs(
         // Don't mark new pending runs if end-of-inning has been decided
         if ((isBallInAir || isCatchPending) && referee->endOfInningState == END_INNING_STATE_NONE) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-                    int isWounded = (game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) ||
+                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
+                    int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
                                     (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
                     // Check for potential run
-                    int regularRun = is_regular_run(game->playerInfo[i].bTPI.baseId, isWounded);
+                    int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
-                        referee->battingPlayers[i].runOfHonorScored
+                        game->playerInfo[i].batting.presence.base_id, referee->battingPlayers[i].baseAtPitchStart,
+                        isWounded, referee->battingPlayers[i].runOfHonorScored
                     );
 
                     if (regularRun) {
@@ -708,18 +715,18 @@ static void update_runs(
 
             // Check all players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].bTPI.baseId != BASE_NONE) {
+                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
                     // Player is wounded if EITHER physical state says so OR referee has already
                     // decided they're doomed (status may not be reflected physically yet due to
                     // pipeline ordering: referee decides before consolidation enforces)
-                    int isWounded = (game->playerInfo[i].bTPI.state == PLAYER_STATE_WOUNDED) ||
+                    int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
                                     (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
-                    int regularRun = is_regular_run(game->playerInfo[i].bTPI.baseId, isWounded);
+                    int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].bTPI.baseId, referee->battingPlayers[i].baseAtPitchStart, isWounded,
-                        referee->battingPlayers[i].runOfHonorScored
+                        game->playerInfo[i].batting.presence.base_id, referee->battingPlayers[i].baseAtPitchStart,
+                        isWounded, referee->battingPlayers[i].runOfHonorScored
                     );
 
                     if (regularRun) {
@@ -733,7 +740,7 @@ static void update_runs(
                         // Do NOT set hasScored=1, as that removes the player. Run of Honor players stay at 3rd.
 
                         // §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
-                        if (game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+                        if (game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
                             int someone_else_has_third_safety = 0;
                             for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
                                 if (j != i && referee->battingPlayers[j].currentSafetyBase == BASE_THIRD) {
@@ -1272,13 +1279,13 @@ void update_referee(
                 PlayerUnitState batterState = PLAYER_STATE_IDLE;
 
                 if (batterIndex != -1) {
-                    batterBaseId = game->playerInfo[batterIndex].bTPI.baseId;
-                    batterState = game->playerInfo[batterIndex].bTPI.state;
+                    batterBaseId = game->playerInfo[batterIndex].batting.presence.base_id;
+                    batterState = game->playerInfo[batterIndex].batting.presence.state;
                 }
 
                 BaseID runnerBaseId = BASE_NONE;
                 if (runnerIndex != -1) {
-                    runnerBaseId = game->playerInfo[runnerIndex].bTPI.baseId;
+                    runnerBaseId = game->playerInfo[runnerIndex].batting.presence.base_id;
                 }
 
                 int batterHasSafetyAtHome = 0;
@@ -1456,11 +1463,11 @@ void referee_finalize(const MatchSession* game, RefereeState* refereeState, Betw
         refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
                 refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
-            } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
                 refereeState->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
                 refereeState->battingPlayers[i].currentSafetyBase = BASE_THIRD;
             }
@@ -1473,11 +1480,11 @@ void referee_finalize(const MatchSession* game, RefereeState* refereeState, Betw
         refereeState->periodTransition = PERIOD_TRANSITION_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
-            } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].bTPI.baseId != BASE_NONE) {
-                refereeState->battingPlayers[i].currentSafetyBase = game->playerInfo[i].bTPI.baseId;
+            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
+                refereeState->battingPlayers[i].currentSafetyBase = game->playerInfo[i].batting.presence.base_id;
             }
         }
     }
@@ -1498,10 +1505,10 @@ void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, 
         // Initialize Legal State for Batter/Runner based on Physical World
         // baseAtPitchStart will be set on pitchReleased
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].bTPI.state == PLAYER_STATE_AT_BAT) {
+            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
-            } else if (game->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].bTPI.baseId == BASE_THIRD) {
+            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_THIRD;
             }
         }
@@ -1510,8 +1517,8 @@ void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, 
         // This handles both: (1) real game initialization, (2) test fixtures
         // baseAtPitchStart will be set on pitchReleased
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            PlayerUnitState state = game->playerInfo[i].bTPI.state;
-            BaseID base = game->playerInfo[i].bTPI.baseId;
+            PlayerUnitState state = game->playerInfo[i].batting.presence.state;
+            BaseID base = game->playerInfo[i].batting.presence.base_id;
 
             if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
                 referee->battingPlayers[i].currentSafetyBase = BASE_HOME;

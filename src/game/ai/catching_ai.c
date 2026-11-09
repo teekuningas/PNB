@@ -182,14 +182,14 @@ void update_catching_ai(
         int r3IsOnBase = 0;
         if (index3 != -1) {
             r3BaseAtPitchStart = rules->referee.battingPlayers[index3].baseAtPitchStart;
-            r3IsOnBase = (match->playerInfo[index3].bTPI.state == PLAYER_STATE_ON_BASE);
+            r3IsOnBase = (match->playerInfo[index3].batting.presence.state == PLAYER_STATE_ON_BASE);
         }
 
         BaseID r2BaseAtPitchStart = BASE_NONE;
         int r2IsOnBase = 0;
         if (index2 != -1) {
             r2BaseAtPitchStart = rules->referee.battingPlayers[index2].baseAtPitchStart;
-            r2IsOnBase = (match->playerInfo[index2].bTPI.state == PLAYER_STATE_ON_BASE);
+            r2IsOnBase = (match->playerInfo[index2].batting.presence.state == PLAYER_STATE_ON_BASE);
         }
 
         int catcherHomeIndex = match->fielding_posts.baseman[0];
@@ -217,8 +217,8 @@ void update_catching_ai(
             int i;
 
             for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                PlayerUnitState s = match->playerInfo[i].bTPI.state;
-                BaseID bid = match->playerInfo[i].bTPI.baseId;
+                PlayerUnitState s = match->playerInfo[i].batting.presence.state;
+                BaseID bid = match->playerInfo[i].batting.presence.base_id;
 
                 if (bid != BASE_NONE) {
                     runners[runnerCount].isOnBase = (s == PLAYER_STATE_ON_BASE || s == PLAYER_STATE_AT_BAT);

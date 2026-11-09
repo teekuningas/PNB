@@ -11,7 +11,7 @@
  *
  * This is the regression test for Bug #9 (wounded runner scores from 3rd).
  *
- * Root cause: update_runs Case B checked physical bTPI.state == WOUNDED,
+ * Root cause: update_runs Case B checked physical batting.presence.state == WOUNDED,
  * but consolidation (which sets physical state) runs AFTER the referee.
  * A WOUND_PENDING runner arriving at home had ON_BASE physical state
  * → is_regular_run returned true → illegitimate run scored.
@@ -31,8 +31,8 @@ int test_wounded_runner_cannot_score_run(void)
 
     // Place runner 0 at home_scored position physically (simulating arrival)
     // with referee status WOUND_PENDING (doomed but not yet physically wounded)
-    ctx->state->match->playerInfo[0].bTPI.state = PLAYER_STATE_ON_BASE;
-    ctx->state->match->playerInfo[0].bTPI.baseId = BASE_HOME_SCORED;
+    ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_ON_BASE;
+    ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_HOME_SCORED;
     ctx->state->match->playerInfo[0].body.location = ctx->state->fieldPositions->pitchPlate;
 
     // Place batter at home (inactive for this test)

@@ -34,8 +34,8 @@ int test_no_pending_runs_during_end_of_inning(void)
     // Set up a pending run ready to be cashed in
     ctx->state->rules->referee.battingPlayers[0].hasPendingRun = 1;
     ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
-    ctx->state->match->playerInfo[0].bTPI.baseId = BASE_HOME;
-    ctx->state->match->playerInfo[0].bTPI.state = PLAYER_STATE_ON_BASE;
+    ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_HOME;
+    ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_ON_BASE;
 
     // Ball has hit ground (trigger for resolve_pending_runs)
     ctx->state->rules->betweenPitchState.hasBallHitGround = 1;

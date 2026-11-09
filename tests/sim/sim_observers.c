@@ -19,7 +19,7 @@ int sim_runners_on_base(const SimGame* g)
     const MatchSession* m = g->state->match;
     int n = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        BaseID b = m->playerInfo[i].bTPI.baseId;
+        BaseID b = m->playerInfo[i].batting.presence.base_id;
         if (b == BASE_FIRST || b == BASE_SECOND || b == BASE_THIRD) n++;
     }
     return n;
@@ -234,8 +234,8 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
         FOLD(h, p->body.location.x);
         FOLD(h, p->body.location.y);
         FOLD(h, p->body.location.z);
-        FOLD_INTEGER(h, p->bTPI.baseId);
-        FOLD_INTEGER(h, p->bTPI.state);
+        FOLD_INTEGER(h, p->batting.presence.base_id);
+        FOLD_INTEGER(h, p->batting.presence.state);
     }
     FOLD(h, m->ballInfo.location.x);
     FOLD(h, m->ballInfo.location.y);
@@ -337,8 +337,8 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_period = sb->period;
         o->p_throwing = (m->catching_action.kind == CATCHING_ACTION_THROWING);
         for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
-            o->p_baseId[i] = (int)m->playerInfo[i].bTPI.baseId;
-            o->p_state[i] = (int)m->playerInfo[i].bTPI.state;
+            o->p_baseId[i] = (int)m->playerInfo[i].batting.presence.base_id;
+            o->p_state[i] = (int)m->playerInfo[i].batting.presence.state;
         }
         return;
     }
@@ -431,12 +431,12 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
 
     // Base running. We want to answer: when a runner reaches 3rd, do they try for home, and if
     // so do they score, get thrown out, get wounded — or just strand? A runner heading home keeps
-    // baseId==THIRD (the source) until they touch home (BASE_HOME_SCORED), so "running from third"
+    // base_id==THIRD (the source) until they touch home (BASE_HOME_SCORED), so "running from third"
     // = at base 3 in a RUNNING state.
     for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
-        int base = (int)m->playerInfo[i].bTPI.baseId;
+        int base = (int)m->playerInfo[i].batting.presence.base_id;
         int prev = o->p_baseId[i];
-        int state = (int)m->playerInfo[i].bTPI.state;
+        int state = (int)m->playerInfo[i].batting.presence.state;
         int pstate = o->p_state[i];
 
         if (base != prev) {
@@ -450,7 +450,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
                 pbp(o, g, r, "runner reached third");
             } else if (base == BASE_HOME_SCORED && prev == BASE_THIRD) {
                 // KNOWN OVERCOUNT (found 2026-08-17 — recorded, not fixed here).
-                // This is a PHYSICAL arrival at home, not a run: body_step.c sets baseId to
+                // This is a PHYSICAL arrival at home, not a run: body_step.c sets base_id to
                 // BASE_HOME_SCORED even for a runner already WOUNDED or OUT (it only preserves the
                 // state), while §41 / is_regular_run correctly denies the run to a wounded runner. So
                 // this counter — and the word "SCORED" below — can fire with no run awarded, which is
@@ -615,7 +615,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
         if (o->p_waiting == 1) {
             long frames = g->frame - o->prompt_frame;
             o->at_bats++;
-            if (m->playerInfo[batter].bTPI.joker != JOKER_REGULAR) o->joker_at_bats++;
+            if (m->playerInfo[batter].batting.joker != JOKER_REGULAR) o->joker_at_bats++;
             o->answer_frames_sum += frames;
             if (frames > o->answer_frames_max) o->answer_frames_max = frames;
         } else {
@@ -643,7 +643,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     // §12's opening designation, sampled the frame it is first made.
     if (designated != -1 && o->p_designated == -1) {
         o->designations++;
-        if (m->playerInfo[designated].bTPI.joker != JOKER_REGULAR) o->joker_designations++;
+        if (m->playerInfo[designated].batting.joker != JOKER_REGULAR) o->joker_designations++;
     }
 
     o->p_waiting = waiting;

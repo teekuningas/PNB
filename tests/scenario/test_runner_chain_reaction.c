@@ -44,8 +44,8 @@ int test_runner_chain_reaction_no_catch(void)
     for (int frame = 0; frame <= 400; frame++) {
         simulate_frames(ctx, 1);
 
-        int stateB = ctx->state->match->playerInfo[1].bTPI.state;
-        int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
+        int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
+        int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
         Vector3D posB = ctx->state->match->playerInfo[1].body.location;
 
         if (baseA == BASE_SECOND && arrivalFrame == -1) {

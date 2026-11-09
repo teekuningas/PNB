@@ -371,16 +371,16 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
             }
         }
         if (shouldContinue == 1) {
-            int speed = scene->match->playerInfo[index].bTPI.speed;
-            int power = scene->match->playerInfo[index].bTPI.power;
+            int speed = scene->match->playerInfo[index].attributes.speed;
+            int power = scene->match->playerInfo[index].attributes.power;
             char p_str[32];
             sprintf(p_str, "S%d P%d", speed, power);
             print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
-            if (scene->match->playerInfo[index].bTPI.joker != JOKER_REGULAR && scene->rules->scoreboard.period < 4) {
+            if (scene->match->playerInfo[index].batting.joker != JOKER_REGULAR && scene->rules->scoreboard.period < 4) {
                 str5[0] = 'J';
             } else {
-                str5[0] = (char)(((int)'0') + scene->match->playerInfo[index].bTPI.number);
+                str5[0] = (char)(((int)'0') + scene->match->playerInfo[index].batting.number);
             }
             // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
             print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
@@ -519,12 +519,12 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
     // Base Runners
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         int index = i;
-        if (scene->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
+        if (scene->match->playerInfo[index].batting.presence.base_id != BASE_NONE) {
             float phase = 0.0f;
             BaseID base = BASE_HOME;
             float distance;
             // Logic copied from original
-            if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
+            if (scene->match->playerInfo[index].batting.presence.base_id == BASE_HOME) {
                 if (scene->match->playerInfo[index].body.location.z - HOME_LINE_Z > 0) {
                     phase = 0.0f;
                 } else {
@@ -532,19 +532,19 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
                     phase = (scene->match->playerInfo[index].body.location.z - HOME_LINE_Z) / distance;
                 }
                 base = BASE_HOME;
-            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
+            } else if (scene->match->playerInfo[index].batting.presence.base_id == BASE_FIRST) {
                 distance = scene->field->secondBaseRun.x - scene->field->firstBaseRun.x;
                 phase = (scene->match->playerInfo[index].body.location.x - scene->field->firstBaseRun.x) / distance;
                 base = BASE_FIRST;
-            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
+            } else if (scene->match->playerInfo[index].batting.presence.base_id == BASE_SECOND) {
                 distance = scene->field->thirdBaseRun.x - scene->field->secondBaseRun.x;
                 phase = (scene->match->playerInfo[index].body.location.x - scene->field->secondBaseRun.x) / distance;
                 base = BASE_SECOND;
-            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
+            } else if (scene->match->playerInfo[index].batting.presence.base_id == BASE_THIRD) {
                 distance = HOME_LINE_Z - scene->field->thirdBaseRun.z;
                 phase = (scene->match->playerInfo[index].body.location.z - scene->field->thirdBase.z) / distance;
                 base = BASE_THIRD;
-            } else if (scene->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+            } else if (scene->match->playerInfo[index].batting.presence.base_id == BASE_HOME_SCORED) {
                 phase = 0.0f;
                 base = BASE_HOME_SCORED;
             }

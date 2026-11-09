@@ -40,8 +40,8 @@ static int field_status(const MatchSession* match, const RefereeState* referee)
 static BattingStrategy batting_strategy_now(const MatchSession* match, const GameRulesState* rules)
 {
     int batterIndex = get_active_batter_index(match);
-    int power = (batterIndex != -1) ? match->playerInfo[batterIndex].bTPI.power : 0;
-    int speed = (batterIndex != -1) ? match->playerInfo[batterIndex].bTPI.speed : 0;
+    int power = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.power : 0;
+    int speed = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.speed : 0;
     return calculate_batting_strategy(
         &rules->halfInningState, field_status(match, &rules->referee), power, speed, rules->scoreboard.period
     );
@@ -66,8 +66,8 @@ static void declare_batter_choice(const MatchSession* match, const GameRulesStat
     BatterCandidate scored[BATTER_CANDIDATE_MAX];
     for (int c = 0; c < count; c++) {
         scored[c].index = candidates[c];
-        scored[c].power = match->playerInfo[candidates[c]].bTPI.power;
-        scored[c].speed = match->playerInfo[candidates[c]].bTPI.speed;
+        scored[c].power = match->playerInfo[candidates[c]].attributes.power;
+        scored[c].speed = match->playerInfo[candidates[c]].attributes.speed;
     }
 
     const int choice = choose_batter(scored, count, field_status(match, &rules->referee));
@@ -89,7 +89,7 @@ static void arm_runners_for_the_pitch(const MatchSession* match, const GameRules
     if (strategy.runBaseRunners == 1) {
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
-            if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_ON_BASE &&
+            if (index != -1 && match->playerInfo[index].batting.presence.state == PLAYER_STATE_ON_BASE &&
                 match->runner_commitments.armed[i] == 0) {
                 declare_run(channel, (BaseID)i, RUN_FORWARD);
             }
@@ -104,7 +104,7 @@ static void recall_leading_runners(const MatchSession* match, const GameRulesSta
     if (batting_strategy_now(match, rules).runBaseRunners != 1) return;
     for (int i = 1; i < 3; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
-        if (index != -1 && match->playerInfo[index].bTPI.state == PLAYER_STATE_LEADING) {
+        if (index != -1 && match->playerInfo[index].batting.presence.state == PLAYER_STATE_LEADING) {
             declare_run(channel, (BaseID)i, RUN_BACK);
         }
     }
@@ -230,7 +230,7 @@ static void advance_runners_on_loose_hit(
         if (index == -1 || match->playerRuntime[index].goingForward == 1) continue;
         // don't send a runner into a base interval someone else already occupies.
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            BaseID bid = match->playerInfo[j].bTPI.baseId;
+            BaseID bid = match->playerInfo[j].batting.presence.base_id;
             if (bid != BASE_NONE && base_to_int_index(bid) == i && j != index) {
                 shouldRun = 0;
             }

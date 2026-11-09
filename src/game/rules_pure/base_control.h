@@ -10,7 +10,7 @@
  *
  * This is the SINGLE SOURCE OF TRUTH for base ownership.
  * A player controls a base if they BOTH have safety at the base (currentSafetyBase)
- * AND are physically at the base (baseId). This distinction matters for vapaataival
+ * AND are physically at the base (base_id). This distinction matters for vapaataival
  * (free walk) where safety is granted immediately but control comes upon arrival.
  *
  * @param game Pointer to MatchSession containing player physical state.

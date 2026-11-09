@@ -88,12 +88,12 @@ int test_run_arrival_before_ball_lands(void)
         if (ctx->state->match->gameEvents.playerArrivedAtBase) {
             printf(
                 "EVENT: playerArrivedAtBase at Frame %d (Base: %d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].bTPI.baseId
+                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id
             );
         }
 
         // Check Arrival
-        if (ctx->state->match->playerInfo[runnerIndex].bTPI.baseId == BASE_HOME_SCORED && !arrived) {
+        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
             arrived = 1;
             arrivalFrame = i;
             printf(
