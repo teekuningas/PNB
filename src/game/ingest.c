@@ -152,8 +152,8 @@ static Permission permit(
 
     case INTENT_PITCH_POWER:
         // The power is what begins a pitch, so this is the pitch's whole permission: the ball at the
-        // plate in the pitcher's hand, a batter ready, nothing else under way — and §18(1). Asked once,
-        // here, against the world at the top of the tick; the actualizer only acts.
+        // plate in the pitcher's hand, a batter ready, nothing else under way — and §18(1). Rechecked
+        // here for every producer, even if a human widget queried before arming; the actualizer only acts.
         return pitch_may_begin(match, rules->halfInningState.strikes);
 
     case INTENT_THROW_TARGET:

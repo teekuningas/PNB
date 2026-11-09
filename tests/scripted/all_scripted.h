@@ -8,6 +8,7 @@ int test_scripted_input_reaches_pipeline(void);
 int test_scripted_single_tap_does_not_run_batter(void);
 int test_scripted_double_tap_runs_batter(void);
 int test_scripted_pitch_two_pingpongs_strike(void);
+int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void);
 int test_scripted_pitch_dropped_aim_is_valesyotto(void);
 int test_scripted_human_pitch_ai_hit_flies(void);
 int test_scripted_catching_bar_follows_the_pitch_gesture(void);

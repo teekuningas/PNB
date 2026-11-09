@@ -6,6 +6,7 @@
 #include "world.h"
 #include "client_input.h"
 #include "action_invocations.h" // catching_widget_view — what the pitcher actually sees on the bar
+#include "rules_pure/player_utils.h"
 #include <math.h>
 
 /*
@@ -48,6 +49,49 @@ static int tick_until_widget_sweeping(ScriptedGame* g, int budget)
         scripted_tick(g);
     }
     return ci->pitchWidget.meter.dir != 0;
+}
+
+int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_PLAYER_2, HUMAN_PAD, 0x9117C405u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(scripted_tick_until_batter_decision(g, 1200), "the batting side never received its selection offer");
+    scripted_tap(g, CONTROL_PLAYER_2, KEY_2);
+
+    MatchSession* m = scripted_match(g);
+    const ClientInputState* ci = scripted_state(g)->clientInput;
+    int batter = get_active_batter_index(m);
+    int pitcher = m->fielding_posts.baseman[0];
+    ASSERT_NE(-1, batter, "the selected batter has taken the bat");
+    ASSERT_NE(-1, pitcher, "the formation has a pitcher");
+    ASSERT_EQ(pitcher, m->ballInfo.holder, "the pitcher already holds the ball");
+    ASSERT_EQ(pitcher, m->catchingState.controlled_fielder, "the pitching pad controls the pitcher");
+    ASSERT_EQ(1, m->playerInfo[pitcher].fielding.near_home, "only batter readiness prevents pitching");
+    ASSERT_EQ(1, m->playerInfo[batter].motion.moving, "the selected batter is still walking to the plate");
+    ASSERT(!batter_stands_ready(&m->at_bat), "selection alone does not make the batter ready");
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+        scripted_tap(g, HUMAN_PAD, KEY_2);
+        ASSERT(!batter_stands_ready(&m->at_bat), "the early presses occur during the real approach");
+        ASSERT_EQ(WIDGET_IDLE, ci->pitchWidget.meter.mode, "an early pitch press must not start a power sweep");
+        ASSERT_FLOAT_EQ(0.0f, catching_widget_view(ci), 1e-6f, "the catching bar stays at rest");
+        ASSERT_EQ(CATCHING_ACTION_NONE, m->catching_action.kind, "no pitch starts while the batter approaches");
+    }
+
+    scripted_hold(g, HUMAN_PAD, KEY_2);
+    ASSERT(tick_until_pitch_ready(g, 1200), "the batter never physically arrived ready to face a pitch");
+    ASSERT_EQ(WIDGET_IDLE, ci->pitchWidget.meter.mode, "holding an early press does not queue a sweep on arrival");
+    scripted_release(g, HUMAN_PAD, KEY_2);
+    ASSERT(scripted_tick(g), "the game must remain live after arrival");
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT_EQ(WIDGET_PING_PONG, ci->pitchWidget.meter.mode, "a fresh press after arrival starts the power sweep");
+    ASSERT(catching_widget_view(ci) > 0.0f, "the ready pitcher's meter really advances");
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT_EQ(CATCHING_ACTION_PITCHING, m->catching_action.kind, "the next press still starts the real windup");
+    ASSERT_EQ(WIDGET_DESCENT, ci->pitchWidget.meter.mode, "committing power still starts the aim descent");
+    ASSERT(!scripted_failed(g), scripted_fail_reason(g));
+    scripted_destroy(g);
+    return TEST_PASSED;
 }
 
 // 1. Press → power click → aim click (timed at the sweet-spot) → a real strike-zone pitch is released.
