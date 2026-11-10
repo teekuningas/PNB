@@ -125,7 +125,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // only because that is the order that held before this stage existed.
     //
     // Frame-top placement also makes one-frame transients structurally invisible: gameEvents is
-    // drained by the tick that produced it (stage 7), so a controller here can only ever read
+    // drained by the tick that produced it (stage 9), so a controller here can only ever read
     // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
     action_invocations(
         game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee,
