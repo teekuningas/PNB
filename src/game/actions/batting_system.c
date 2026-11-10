@@ -353,7 +353,7 @@ void update_batting(
             // and then set the orientation of batter. here we just first select the base direction to be
             // vector from pitchplate to batter and then fix it a bit to make it look more realistic.
             dx = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].body.location.x;
-            dz = fieldPositions->pitchPlate.x - match->playerInfo[batterIndex].body.location.z;
+            dz = fieldPositions->pitchPlate.z - match->playerInfo[batterIndex].body.location.z;
             dx2 = (float)(cos(BATTER_ANGLE_FIX) * dx - sin(BATTER_ANGLE_FIX) * dz);
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
             vec3_set_xz(&(match->playerInfo[batterIndex].body.orientation), dx2, dz2);
