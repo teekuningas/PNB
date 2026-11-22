@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
@@ -8,30 +9,30 @@
 /**
  * TEST 2: Batter forced out at first base
  */
-int test_full_batter_forced_out_at_first(void)
+int test_batter_forced_out_at_first(void)
 {
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);
 
-    Vector3D firstBase = ctx->state->fieldPositions->firstBase;
-    ctx->state->match->playerInfo[13].tPI.location = firstBase;
-    ctx->state->match->playerInfo[13].tPI.homeLocation = firstBase;
+    Vector3D firstBase = ctx->state->field_positions->first_base;
+    ctx->state->match->players[13].body.location = firstBase;
+    ctx->state->match->players[13].body.home_location = firstBase;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx);
 
     Vector3D throwFrom = {5.0f, 1.5f, -10.0f};
-    throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
+    scenario_throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
 
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
-    ctx->state->match->pRAI.batterCanAdvance = 1;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
+    ctx->state->match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME);
 
     int outs = 0;
     for (int frame = 0; frame <= 300; frame += 50) {
         if (frame > 0) simulate_frames(ctx, 50);
-        outs = ctx->state->rules->halfInningState.outs;
+        outs = ctx->state->rules->half_inning.outs;
         if (outs > 0) break;
     }
 

@@ -1,0 +1,38 @@
+#include "test_helpers.h"
+#include <stdio.h>
+#include "all_sims.h"
+
+int tests_run = 0;
+int tests_failed = 0;
+
+int main(void)
+{
+    printf("========================================\n");
+    printf("PNB Simulation Test Suite (headless AI vs AI)\n");
+    printf("========================================\n\n");
+
+    RUN_TEST(test_ai_vs_ai_half_inning);
+    RUN_TEST(test_half_inning_seed_sweep);
+    RUN_TEST(test_ai_vs_ai_homerun);
+    RUN_TEST(test_homerun_contest_seed_sweep);
+    RUN_TEST(test_a_period_end_opens_the_menu_its_transition_calls_for);
+    RUN_TEST(test_ai_vs_ai_determinism);
+    RUN_TEST(test_different_seeds_produce_different_games);
+    RUN_TEST(test_sim_hash_matches_recorded_baseline);
+    RUN_TEST(test_ai_offense_breakdown);
+    RUN_TEST(test_no_batter_lock_stall);
+    RUN_TEST(test_world_snapshot_retick_is_identical);
+    RUN_TEST(test_retick_diverges_when_engine_seed_is_not_restored);
+    RUN_TEST(test_ai_ignores_frame_events);
+    RUN_TEST(test_ai_swing_plan_lives_one_pitch);
+    RUN_TEST(test_announcements_do_not_depend_on_the_screen);
+    RUN_TEST(test_the_info_line_holds_its_message_while_paused);
+    RUN_TEST(test_the_screen_writes_nothing_into_the_world);
+
+    printf("\n========================================\n");
+    printf("Tests run: %d\n", tests_run);
+    printf("Tests failed: %d\n", tests_failed);
+    printf("========================================\n");
+
+    return tests_failed;
+}

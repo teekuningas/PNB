@@ -1,11 +1,13 @@
 #include <time.h>
 
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "display.h"
 #include "render.h"
 
 #include "stb_image.h"
 
-void drawMesh(MeshObject* mesh)
+static void drawMesh(MeshObject* mesh)
 {
     unsigned int i;
 
@@ -57,20 +59,6 @@ int try_loading_texture_gl(GLuint* texture, const char* filename, const char* na
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
-    return 0;
-}
-
-int try_preparing_mesh_gl(char* filename, char* objectname, MeshObject* mesh, GLuint* displayList)
-{
-    int result;
-    // load from obj file to mesh-struct
-    result = load_obj(filename, objectname, mesh);
-    if (result != 0) {
-        printf("\nError with load_obj. Error code: %d\n", result);
-        return -1;
-    }
-
-    prepare_mesh(mesh, displayList);
     return 0;
 }
 

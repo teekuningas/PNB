@@ -1,13 +1,20 @@
 #include "game_consolidation.h"
-#include "common_logic.h"
-#include "game_manipulation.h"
-#include "game_setup.h" // For setRunnerAndBatter and initialization helpers
+#include "tick_outputs.h"
+#include <stdio.h>
+#include "field.h"
+#include "team_data.h"
+#include "rules_state.h"
+#include "world.h"
+#include "player_motion.h"
+#include "runner_paths.h"
 #include "base_logic.h"
 #include "base_control.h"
 #include "rules_pure/player_utils.h"
-#include "action_implementation.h"
+#include "rules_pure/rules_strikes.h"
 #include "game_reset.h"
 #include "referee.h"
+
+static void calculate_free_walk(MatchSession* match, const RefereeState* referee);
 
 // ===============================================================================================
 // FORWARD DECLARATIONS
@@ -18,24 +25,21 @@ static void enforce_legal_state(
     const BetweenPitchState* bps
 );
 static int handle_foul_play_reset(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
 );
-static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo,
-    unsigned int* rng_seed
-);
+static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules);
 
-static void check_next_batter_decision(MatchSession* match, GameRulesState* rules);
-static void handle_strikes_and_balls(
+static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules);
+static void apply_batter_becomes_runner(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 );
+static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee);
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
-    ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 );
 static int check_next_pair(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
 );
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner);
 
@@ -43,50 +47,47 @@ static void populate_game_conclusion(GameConclusion* game_conclusion, const Scor
 // PUBLIC API
 // ===============================================================================================
 
-void consolidation_init(GameFlowState* gameFlowState)
-{
-    gameFlowState->closeToGround = 0;
-    gameFlowState->homeRunCameraCounter = -1;
-}
-
 void consolidation_update(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
-    ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
-    const BetweenPitchState* bps = &rules->betweenPitchState;
+    const BetweenPitchState* bps = &rules->between_pitch;
 
     // Initialize output
     output->request_screen_change = 0;
     output->target_screen = SCREEN_GAME;
+    output->period_transition = PERIOD_TRANSITION_NONE;
+    output->world_reset = 0;
+    output->enforcement_completed = 0;
 
     // 0. Check for Physical Resets FIRST (these reset the world)
     // If any reset happens, abort all further processing for this frame
 
     // Check for end-of-inning reset
-    if (check_end_of_inning(match, field_positions, team_data, game_conclusion, rules, menuInfo, rng_seed, output)) {
+    if (check_end_of_inning(match, field_positions, team_data, game_conclusion, rules, output)) {
         return;
     }
 
     // Check for next pair reset (homerun contest)
-    if (check_next_pair(match, field_positions, rules, rng_seed)) {
+    if (check_next_pair(match, field_positions, rules, output)) {
         return;
     }
 
     // Check for foul play (out of bounds) reset
-    if (handle_foul_play_reset(match, field_positions, rules, rng_seed)) {
+    if (handle_foul_play_reset(match, field_positions, rules, output)) {
         return;
     }
 
     // 1. Game Flow Analysis (The Game Master)
     // Decides if we need to pause for input, etc.
-    update_game_flow(match, field_positions, rules, menuInfo, rng_seed);
+    update_game_flow(match, field_positions, rules);
 
     // 2. State Enforcement (The Enforcer)
     // Ensures physical entities obey legal outcomes (Outs, Scores, Safety).
     enforce_legal_state(match, field_positions, referee, bps);
+    output->enforcement_completed = 1;
 }
 
 // ===============================================================================================
@@ -100,39 +101,47 @@ static void enforce_legal_state(
 {
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         // 1. React to OUT
-        if (referee->battingPlayers[i].status == PLAYER_STATUS_OUT) {
-            if (match->playerInfo[i].bTPI.state != PLAYER_STATE_OUT) {
-                match->playerInfo[i].bTPI.state = PLAYER_STATE_OUT;
-                match->playerInfo[i].bTPI.baseId = BASE_NONE;
-                move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+        if (referee->batting_players[i].status == PLAYER_STATUS_OUT) {
+            if (match->players[i].batting.presence.state != PLAYER_STATE_OUT) {
+                if (match->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+                    match->at_bat.cycle = BATTING_CYCLE_CLOSED;
+                }
+                match->players[i].batting.presence.state = PLAYER_STATE_OUT;
+                match->players[i].batting.presence.base_id = BASE_NONE;
+                move_player_out(match->players, field_positions, i);
             }
         }
 
         // 2. React to SCORE
-        if (referee->battingPlayers[i].hasScored && match->playerInfo[i].bTPI.state != PLAYER_STATE_SCORED) {
-            match->playerInfo[i].bTPI.state = PLAYER_STATE_SCORED;
-            match->playerInfo[i].bTPI.baseId = BASE_NONE;
-            move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+        if (referee->batting_players[i].has_scored && match->players[i].batting.presence.state != PLAYER_STATE_SCORED) {
+            match->players[i].batting.presence.state = PLAYER_STATE_SCORED;
+            match->players[i].batting.presence.base_id = BASE_NONE;
+            move_player_out(match->players, field_positions, i);
         }
 
         // 3. React to WOUNDED
-        if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
-            if (match->playerInfo[i].bTPI.state != PLAYER_STATE_WOUNDED) {
-                match->playerInfo[i].bTPI.state = PLAYER_STATE_WOUNDED;
-                match->playerInfo[i].bTPI.baseId = BASE_NONE;
-                move_player_out(match->playerInfo, match->playerRuntime, field_positions, i);
+        if (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED) {
+            if (match->players[i].batting.presence.state != PLAYER_STATE_WOUNDED) {
+                if (match->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+                    match->at_bat.cycle = BATTING_CYCLE_CLOSED;
+                }
+                match->players[i].batting.presence.state = PLAYER_STATE_WOUNDED;
+                match->players[i].batting.presence.base_id = BASE_NONE;
+                move_player_out(match->players, field_positions, i);
             }
         }
 
         // 4. React to displacement (Panic Run)
-        if (match->playerInfo[i].bTPI.state == PLAYER_STATE_ON_BASE ||
-            match->playerInfo[i].bTPI.state == PLAYER_STATE_LEADING) {
-            BaseID physBase = match->playerInfo[i].bTPI.baseId;
-            if (referee->battingPlayers[i].currentSafetyBase != physBase) {
-                int isWounded = (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED);
+        if (match->players[i].batting.presence.state == PLAYER_STATE_ON_BASE ||
+            match->players[i].batting.presence.state == PLAYER_STATE_LEADING ||
+            (match->players[i].batting.presence.state == PLAYER_STATE_RUNNING &&
+             match->players[i].batting.presence.base_id == BASE_HOME && match->players[i].path.going_forward == 0)) {
+            BaseID physBase = match->players[i].batting.presence.base_id;
+            if (referee->batting_players[i].current_safety_base != physBase) {
+                int isWounded = (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED);
 
                 if (!isWounded) {
-                    // Player is physically at base but legally has no safety there.
+                    // Player is physically at (or retreating to) a base where they legally have no safety.
                     // They must run forward.
                     run_to_next_base(match, field_positions, i, physBase);
                 }
@@ -141,13 +150,11 @@ static void enforce_legal_state(
     }
 
     // 5. React to Pitch Resolution
-    if (bps->pitchResult != PITCH_RESULT_NONE && match->pRAI.pitchState != PITCH_STAGE_NONE) {
-        match->pRAI.pitchState = PITCH_STAGE_NONE;
-        // On ball: reset free walk calculation so it is re-evaluated
-        if (bps->pitchResult == PITCH_RESULT_BALL) {
-            match->flowControl.freeWalkCalculationMade = 0;
-            match->flowControl.freeWalkIndex = -1;
-            match->flowControl.freeWalkBase = BASE_NONE;
+    if (bps->pitch_result != PITCH_RESULT_NONE && match->ball.pitch_in_flight) {
+        match->ball.pitch_in_flight = 0;
+        // A BALL asks §26's question afresh: the entitlement is worked out again from where everybody is now.
+        if (bps->pitch_result == PITCH_RESULT_BALL) {
+            match->free_walk = (FreeWalkEntitlement){.worked_out = 0, .runner = -1, .from = BASE_NONE};
         }
     }
 }
@@ -157,12 +164,13 @@ static void enforce_legal_state(
 // ===============================================================================================
 
 static int handle_foul_play_reset(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     // Check if Referee has triggered the reset state
-    if (rules->referee.foulState == FOUL_STATE_RESETTING) {
-        reset_for_foul_play(match, field_positions, rules, rng_seed);
+    if (rules->referee.foul_state == FOUL_STATE_RESETTING) {
+        reset_for_foul_play(match, field_positions, rules);
+        output->world_reset = 1;
 
         // Note: Referee will transition state to NONE in referee_finalize
         return 1; // Signal that we reset
@@ -177,87 +185,95 @@ static int handle_foul_play_reset(
 // INTERNAL: GAME FLOW (formerly game_analysis)
 // ===============================================================================================
 
-static void update_game_flow(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, MenuInfo* menuInfo,
-    unsigned int* rng_seed
-)
+static void update_game_flow(MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules)
 {
-    // when player from third base starts running, we change camera view. when the situation is over we
-    // wait 50 update frames, before moving to normal camera
-    if (match->gameFlowState.homeRunCameraCounter >= 0) {
-        match->gameFlowState.homeRunCameraCounter++;
-        if (match->gameFlowState.homeRunCameraCounter > 50) {
-            match->cameraState.homeRunCameraFlag = 0;
-            match->gameFlowState.homeRunCameraCounter = -1;
-        }
-    }
-
     check_next_batter_decision(match, rules);
-    handle_strikes_and_balls(match, field_positions, &rules->halfInningState, &rules->referee);
+
+    // §18(1) holds in every mode: a batter who has received his three correct pitches is permanently a
+    // runner, whatever else is being played. The homerun contest used to be exempt from this along with
+    // the free walks, and that exemption was bug #8 — nothing closed the batting turn, so the lukkari
+    // pitched a fourth time to a batter who had none left.
+    apply_batter_becomes_runner(match, field_positions, &rules->half_inning, &rules->referee);
+
+    // §26's free walks are normal play only. The contest answers wrong pitches its own way (§8: two wrong
+    // gives the runner the free-walk right, three wrong gives the team two runs) and neither is built yet,
+    // so offering the normal-play walk here would be the wrong rule rather than a missing one.
+    if (rules->scoreboard.period < 4) {
+        handle_free_walk_offers(match, &rules->half_inning, &rules->referee);
+    }
 }
 
-static void check_next_batter_decision(MatchSession* match, GameRulesState* rules)
+static void check_next_batter_decision(MatchSession* match, const GameRulesState* rules)
 {
     const RefereeState* referee = &rules->referee;
-    const BetweenPitchState* bps = &rules->betweenPitchState;
+    const BetweenPitchState* bps = &rules->between_pitch;
     const Scoreboard* scoreboard = &rules->scoreboard;
 
-    // Cancel pending batter request if inning is ending
-    if (referee->endOfInningState != END_INNING_STATE_NONE) {
-        match->flowControl.waitingForBatterDecision = 0;
+    // Cancel pending batter request if inning is ending or a batter is at the plate
+    // (e.g. a batter who ran off home and retreated safely back to BASE_HOME after
+    // offers.batter_seat had already opened).
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE || get_active_batter_index(match) != -1) {
+        match->offers.batter_seat = 0;
         return;
     }
 
     // so this function's idea is to make progress in selecting a new batter if old one's gone.
     // so this will be called only once when possible.
+    const HalfInningState* his = &rules->half_inning;
+
     if (scoreboard->period >= 4) {
 
-    } else if (get_active_batter_index(match) == -1 && match->flowControl.waitingForBatterDecision == 0 &&
-               referee->endOfInningState == END_INNING_STATE_NONE) {
-        // there have to be a player available
-        if (rules->playerCounters.nonJokerPlayersLeft + rules->playerCounters.jokersLeft > 0) {
+    } else if (get_active_batter_index(match) == -1 && match->offers.batter_seat == 0 &&
+               referee->end_of_inning_state == END_INNING_STATE_NONE) {
+        // §12: the batting order is a cycle, so there is always a next regular batter — until the
+        // order comes round to the designated last batter, after which only an unused joker can
+        // extend the turn. When neither is available there is nothing to ASK: the referee ends the
+        // half-inning as soon as the ball is in a home fielder's hands, which is the rule's own
+        // third conjunct.
+        //
+        // This raises the QUESTION and no longer carries an answer with it. There used to be an
+        // engine-side "offer" here — a cursor a producer nudged along and the engine had to keep
+        // legal, including withdrawing it when a run re-designated the last batter under a decision
+        // already on the table. It is gone: a producer names the player it wants and the INGEST gate
+        // asks §27/§12/§7 at the moment of seating, which is the moment the choice is actually made.
+        // An answer that cannot go stale needs nobody to withdraw it.
+        //
+        // It asks `regular_order_spent`, NOT `turn_exhausted`. The difference is the whole point: this
+        // prompt fires when nobody is standing at the plate, and the batter who just set off keeps
+        // safety at home for a while yet (measured: 54 frames). `turn_exhausted` includes that, so
+        // asked here it still reads 0 — which is why the question of WHO belongs at the seating and
+        // not here (bug #9).
+        // Asked of the candidate list itself, which is the same function the gate refuses with and
+        // the client offers from. It used to be `regular_order_spent == 0 || jokers_left > 0`, which is
+        // the same rule read a second way — and the two can disagree, because jokers_left and the
+        // per-player joker statuses are reset by different owners at different moments (see the
+        // period-boundary window the state validator tolerates). Reading the list makes a prompt
+        // nobody could answer unraisable rather than merely unlikely.
+        int candidates[BATTER_CANDIDATE_MAX];
+        if (list_batter_candidates(match, scoreboard, his, candidates) > 0) {
             // have to check that there is only three players in the field too and that it is not a out of bounds
             // situation.
-            if (count_active_batting_players(match->playerInfo) < BASE_COUNT && referee->foulState == FOUL_STATE_NONE) {
+            if (count_active_batting_players(match->players) < BASE_COUNT && referee->foul_state == FOUL_STATE_NONE) {
                 // also we cannot know yet if it will be out of position situation so we have to wait that the ball will
                 // land in some way.
-                if (bps->hasBallHitGround == 1 || bps->catchHasBeenMade == 1) {
+                if (bps->has_ball_hit_ground == 1 || bps->catch_has_been_made == 1) {
                     // if that happens we can now start.
-                    int battingTeamIndex = get_batting_team_index(scoreboard);
-                    // this will give work to action_invocatin.c and action_implementation.c
-                    match->flowControl.waitingForBatterDecision = 1;
-                    // we just select the batterSelectionIndex here. if there are nonJokerPlayerLeft, we
-                    // just select the next batter in order there. if not, we select the first joker we find that is
-                    // still unused. one of these must be true, as we checked there is joker or non-joker left before.
-                    if (rules->playerCounters.nonJokerPlayersLeft != 0) {
-                        match->pII.batterSelectionIndex =
-                            scoreboard->teams[battingTeamIndex]
-                                .batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
-                    } else {
-                        int i;
-                        for (i = 0; i < JOKER_COUNT; i++) {
-                            if (match->playerInfo[match->pII.jokerIndices[i]].bTPI.joker == JOKER_AVAILABLE) {
-                                match->pII.batterSelectionIndex = match->pII.jokerIndices[i];
-                                break;
-                            }
-                        }
-                    }
+                    // a controller may now name a batter, and the gate will let it through
+                    match->offers.batter_seat = 1;
                 }
             }
-        } else {
-            rules->playerCounters.noMorePlayers = 1;
         }
     }
 }
 
-// Here we handle strikes and balls related consequences. Batter can't have more than 3 strikes,
-// so something must be done, and if pitcher pitches balls, compensation is needed.
-static void handle_strikes_and_balls(
+// §18(1): the batter who has spent his three correct pitches has permanently become a runner. He is no
+// longer in the batting turn and no longer safe at home, so he sets off for first — where the outside
+// team may burn him at once, exactly as the rule's own note says.
+static void apply_batter_becomes_runner(
     MatchSession* match, const FieldPositions* field_positions, const HalfInningState* his, const RefereeState* referee
 )
 {
-    // if there are three strikes
-    if (his->strikes >= 3) {
+    if (batter_has_become_runner_permanently(his->strikes)) {
         // We restore automatic force running to resolve control ambiguity.
         // The batter is now "forced" to run by the rules.
         int index = get_base_controller(match, referee, BASE_HOME);
@@ -265,34 +281,54 @@ static void handle_strikes_and_balls(
         // Only force run if player is still there and NOT already running.
         // This prevents re-triggering every frame while preserving the 3 strikes state
         // until the next batter resets it.
-        if (index != -1 && match->playerInfo[index].bTPI.state != PLAYER_STATE_RUNNING) {
+        if (index != -1 && match->players[index].batting.presence.state != PLAYER_STATE_RUNNING) {
             run_to_next_base(match, field_positions, index, BASE_HOME);
         }
     }
+}
+
+static void handle_free_walk_offers(MatchSession* match, const HalfInningState* his, const RefereeState* referee)
+{
     // we calculate the player and the base he has right to go freely only once, and that is when
     // the ball happens. if player moves to next base and user after that decides to make the free walk
     // that wont have any effect.
-    if (match->flowControl.freeWalkCalculationMade == 0) {
-        if (count_active_batting_players(match->playerInfo) == 1) {
+    if (match->free_walk.worked_out == 0) {
+        // §26 gives the walk to a PLAYER — the lead runner — so the offer only exists if there is
+        // somebody to give it to. calculate_free_walk leaves free_walk.runner at -1 when it finds
+        // nobody, which happens when the whole inner side is off the field: the batter is burnt and
+        // no runner is left. Raising the question anyway put a prompt on screen that belonged to
+        // nobody, and one that nothing could withdraw, because the cancellation below asks about the
+        // player it names — players[-1]. Only a human answering it cleared it, and the lukkari
+        // may not pitch while an offer is open, so the game waited for an answer to a question about
+        // no one.
+        if (count_active_batting_players(match->players) == 1) {
             // if only one player on the field, thats the batter, and then free walks can be made after one pitch.
             if (his->balls >= 1) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = 1;
+                match->offers.free_walk = (match->free_walk.runner != -1);
             }
         } else {
             // otherwise there is some non-batter leadrunner and he can have free walks after two balls.
             if (his->balls >= 2) {
                 calculate_free_walk(match, referee);
-                match->flowControl.waitingForFreeWalkDecision = 1;
+                match->offers.free_walk = (match->free_walk.runner != -1);
             }
         }
-        match->flowControl.freeWalkCalculationMade = 1;
+        match->free_walk.worked_out = 1;
     } else {
         // so that if player just ran without taking his free walk, and got wounded or out, then stop asking
-        if (match->flowControl.waitingForFreeWalkDecision == 1) {
-            if (match->playerInfo[match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_WOUNDED ||
-                match->playerInfo[match->flowControl.freeWalkIndex].bTPI.state == PLAYER_STATE_OUT) {
-                match->flowControl.waitingForFreeWalkDecision = 0;
+        if (match->offers.free_walk == 1) {
+            // No -1 guard, and that is a claim rather than an oversight: an open offer always names a
+            // real player now, because the only site that raises one raises it from the calculation's
+            // own answer. The two ways free_walk.runner goes back to -1 both take the offer with them —
+            // the wrong-pitch reset clears free_walk.worked_out too, so the branch above runs
+            // instead of this one, and reset_flow_state clears the offer outright. The state
+            // validator asserts the pairing rather than this defending against it, because a guard
+            // that cannot fire reads exactly like one that never has.
+            const int offered = match->free_walk.runner;
+            if (match->players[offered].batting.presence.state == PLAYER_STATE_WOUNDED ||
+                match->players[offered].batting.presence.state == PLAYER_STATE_OUT) {
+                match->offers.free_walk = 0;
             }
         }
     }
@@ -300,8 +336,7 @@ static void handle_strikes_and_balls(
 
 static int check_end_of_inning(
     MatchSession* match, const FieldPositions* field_positions, const TeamData* team_data,
-    GameConclusion* game_conclusion, GameRulesState* rules, MenuInfo* menuInfo, unsigned int* rng_seed,
-    ConsolidationOutput* output
+    GameConclusion* game_conclusion, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     const RefereeState* referee = &rules->referee;
@@ -310,34 +345,22 @@ static int check_end_of_inning(
     // Scoreboard advancement and period logic handled by referee at DETECTED→RESETTING.
     // We only react when Referee signals RESETTING: perform physical reset + menu routing.
 
-    if (referee->endOfInningState != END_INNING_STATE_RESETTING) {
+    if (referee->end_of_inning_state != END_INNING_STATE_RESETTING) {
         return 0;
     }
 
-    PeriodTransitionType transition = referee->periodTransition;
+    PeriodTransitionType transition = referee->period_transition;
 
     if (transition == PERIOD_TRANSITION_NONE) {
         // Normal next-inning within same period — just reset physical world
-        reset_for_new_half_inning(match, field_positions, team_data, rules, rng_seed);
+        reset_for_new_half_inning(match, field_positions, team_data, rules);
+        output->world_reset = 1;
     } else {
-        // Period transition — route to appropriate menu
-        switch (transition) {
-        case PERIOD_TRANSITION_INTER_PERIOD:
-            menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
-            break;
-        case PERIOD_TRANSITION_SUPER_INNING:
-            menuInfo->mode = MENU_ENTRY_SUPER_INNING;
-            break;
-        case PERIOD_TRANSITION_HOMERUN_CONTEST:
-            menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
-            break;
-        case PERIOD_TRANSITION_GAME_OVER:
-            populate_game_conclusion(game_conclusion, scoreboard, referee->periodTransitionWinner);
-            menuInfo->mode = MENU_ENTRY_GAME_OVER;
-            break;
-        default:
-            break;
+        // Period transition — the session routes to the menu this transition calls for
+        if (transition == PERIOD_TRANSITION_GAME_OVER) {
+            populate_game_conclusion(game_conclusion, scoreboard, referee->period_transition_winner);
         }
+        output->period_transition = transition;
         output->request_screen_change = 1;
         output->target_screen = SCREEN_MAIN_MENU;
     }
@@ -346,7 +369,7 @@ static int check_end_of_inning(
 }
 
 static int check_next_pair(
-    MatchSession* match, const FieldPositions* field_positions, GameRulesState* rules, unsigned int* rng_seed
+    MatchSession* match, const FieldPositions* field_positions, const GameRulesState* rules, ConsolidationOutput* output
 )
 {
     const Scoreboard* scoreboard = &rules->scoreboard;
@@ -356,16 +379,15 @@ static int check_next_pair(
         // Milestone 17.5: Timer and logic moved to Referee (State Machine).
         // We only react when Referee signals RESETTING (State 2).
 
-        HomeRunPairState currentState = rules->referee.nextPairTransitionState;
+        HomeRunPairState currentState = rules->referee.next_pair_state;
 
         if (currentState == HR_PAIR_STATE_RESETTING) {
 
             // if equality holds, ending of inning will load the settings.
-            if (rules->homeRunContestState.runnerBatterPairCounter != scoreboard->pairCount) {
+            if (rules->homerun_contest.pair_index != scoreboard->pair_count) {
                 // Physical Reset for Next Pair
-                reset_for_next_pair(
-                    match, field_positions, scoreboard, &rules->homeRunContestState, &rules->playerCounters, rng_seed
-                );
+                reset_for_next_pair(match, field_positions, scoreboard, &rules->homerun_contest);
+                output->world_reset = 1;
             }
             return 1; // Signal that we reset
         }
@@ -376,13 +398,69 @@ static int check_next_pair(
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner)
 {
     game_conclusion->winner = winner;
-    game_conclusion->isCupGame = scoreboard->isCupGame;
-    game_conclusion->period0Runs[0] = scoreboard->teams[0].period0Runs;
-    game_conclusion->period0Runs[1] = scoreboard->teams[1].period0Runs;
-    game_conclusion->period1Runs[0] = scoreboard->teams[0].period1Runs;
-    game_conclusion->period1Runs[1] = scoreboard->teams[1].period1Runs;
-    game_conclusion->period2Runs[0] = scoreboard->teams[0].period2Runs;
-    game_conclusion->period2Runs[1] = scoreboard->teams[1].period2Runs;
-    game_conclusion->period3Runs[0] = scoreboard->teams[0].period3Runs;
-    game_conclusion->period3Runs[1] = scoreboard->teams[1].period3Runs;
+    game_conclusion->is_cup_game = scoreboard->is_cup_game;
+    game_conclusion->period0_runs[0] = scoreboard->teams[0].period0_runs;
+    game_conclusion->period0_runs[1] = scoreboard->teams[1].period0_runs;
+    game_conclusion->period1_runs[0] = scoreboard->teams[0].period1_runs;
+    game_conclusion->period1_runs[1] = scoreboard->teams[1].period1_runs;
+    game_conclusion->period2_runs[0] = scoreboard->teams[0].period2_runs;
+    game_conclusion->period2_runs[1] = scoreboard->teams[1].period2_runs;
+    game_conclusion->period3_runs[0] = scoreboard->teams[0].period3_runs;
+    game_conclusion->period3_runs[1] = scoreboard->teams[1].period3_runs;
 }
+
+static void calculate_free_walk(MatchSession* match, const RefereeState* referee)
+{
+    int i;
+    BaseID maxBaseAtPitchStart = BASE_NONE;
+    BaseID maxBaseId = BASE_NONE;
+    int maxIndex = -1;
+    // we go throush every (nonwounded) candidate and check who has the biggest base value
+    // if there are many of those who have same base value, we will pick the one who has
+    // the biggest base_at_pitch_start value. if both are same for some reason
+    // then the selection will be quite random but shouldn't happen often and shouldn't be a big deal
+    // either.
+    for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        int index = i;
+        if (match->players[index].batting.presence.base_id != BASE_NONE &&
+            match->players[index].batting.presence.state != PLAYER_STATE_WOUNDED) {
+            BaseID currentBaseId = match->players[index].batting.presence.base_id;
+
+            // SANITY CHECK: If player is at HOME base, they MUST be the active batter.
+            int batterIndex = get_active_batter_index(match);
+            if (currentBaseId == BASE_HOME && index != batterIndex) {
+                printf(
+                    "[CRITICAL LOGIC ERROR] Ghost Runner detected! Player %d is at BASE_HOME but batterIndex is %d. "
+                    "Ignoring.\n",
+                    index, batterIndex
+                );
+                continue;
+            }
+
+            // Use base_cmp to compare bases semantically (replaces >=)
+            if (base_cmp(currentBaseId, maxBaseId) >= 0) {
+                if (currentBaseId == maxBaseId) {
+                    if (base_cmp(referee->batting_players[index].base_at_pitch_start, maxBaseAtPitchStart) > 0) {
+                        maxBaseId = currentBaseId;
+                        maxBaseAtPitchStart = referee->batting_players[index].base_at_pitch_start;
+                        maxIndex = index;
+                    }
+                } else {
+                    maxBaseId = currentBaseId;
+                    maxBaseAtPitchStart = referee->batting_players[index].base_at_pitch_start;
+                    maxIndex = index;
+                }
+            }
+        }
+    }
+    match->free_walk.runner = maxIndex;
+    if (maxIndex != -1)
+        match->free_walk.from = match->players[maxIndex].batting.presence.base_id;
+    else
+        match->free_walk.from = BASE_NONE;
+}
+/*
+    Here we initialize all the locations and velocities so that players will be in their correct
+    positions and orientations on the field and ball looks like its thrown to pitcher. Models
+    are updated also. Before calling this the fielding team must have its position-attributes filled.
+*/

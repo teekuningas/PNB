@@ -1,6 +1,6 @@
-#include "globals.h"
+#include "display.h"
+#include "session.h"
 #include "render.h"
-#include "font.h"
 #include "menu_helpers.h"
 #include "menu_types.h"
 #include "resource_manager.h"

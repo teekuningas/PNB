@@ -8,7 +8,7 @@
  *
  * Verifies that a pitch thrown to the center of the plate results in a Strike.
  */
-int test_full_pitching_strike(void)
+int test_pitching_strike(void)
 {
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);
@@ -20,16 +20,16 @@ int test_full_pitching_strike(void)
     initialize_referee_from_physical_state(ctx);
 
     printf("[TEST] Pitching STRIKE (Target X=0.0)\n");
-    perform_pitch(ctx, 0.0f); // Center of plate (also emits pitchReleased event)
+    perform_pitch(ctx, 0.0f); // Center of plate (also emits pitch_released event)
 
     int strikeDetected = 0;
     for (int i = 0; i < 200; i++) {
         simulate_frames(ctx, 1);
-        if (ctx->state->rules->halfInningState.strikes == 1) {
+        if (ctx->state->rules->half_inning.strikes == 1) {
             strikeDetected = 1;
             printf(
-                "[TEST] Frame %d: Strike detected! Count: %d-%d\n", i, ctx->state->rules->halfInningState.balls,
-                ctx->state->rules->halfInningState.strikes
+                "[TEST] Frame %d: Strike detected! Count: %d-%d\n", i, ctx->state->rules->half_inning.balls,
+                ctx->state->rules->half_inning.strikes
             );
             break;
         }

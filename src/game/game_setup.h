@@ -1,25 +1,31 @@
 #ifndef GAME_SETUP_H
 #define GAME_SETUP_H
 
-#include "globals.h"
+#include "rules_state.h"
+#include "session.h"
 #include "cup.h"
 
 // Enum to represent the game mode, decoupling game logic from menu specifics.
 typedef GamePeriodMode GameMode;
 
-typedef enum { GAME_LAUNCH_NEW, GAME_LAUNCH_RETURN_INTER_PERIOD, GAME_LAUNCH_RETURN_HOMERUN_CONTEST } GameLaunchType;
+typedef enum {
+    GAME_LAUNCH_NEW,
+    GAME_LAUNCH_RETURN_INTER_PERIOD,
+    GAME_LAUNCH_RETURN_SUPER_INNING,
+    GAME_LAUNCH_RETURN_HOMERUN_CONTEST
+} GameLaunchType;
 
 // This struct holds all the parameters needed to initialize a a game.
 // It is populated from the menu and used to set up the game state.
 typedef struct GameSetup {
-    GameLaunchType launchType;
-    GameMode gameMode;
+    GameLaunchType launch_type;
+    GameMode game_mode;
     TeamID team1;
     TeamID team2;
     TeamControlMode team1_control;
     TeamControlMode team2_control;
-    int halfInningsInPeriod;
-    int playsFirst;
+    int half_innings_in_period;
+    int plays_first;
     int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
     int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
     int homerun_choices1[2][MAX_HOMERUN_PAIRS];
@@ -29,6 +35,6 @@ typedef struct GameSetup {
 
 void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed);
 // Loads stored settings (e.g. after a menu sequence)
-void return_to_game(StateInfo* stateInfo, unsigned int* rng_seed);
+void return_to_game(StateInfo* stateInfo);
 
 #endif

@@ -1,5 +1,5 @@
 #include "ball_physics.h"
-#include "globals.h"
+#include "field.h"
 
 void physics_apply_gravity(Vector3D* velocity, float dt)
 {

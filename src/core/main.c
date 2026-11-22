@@ -1,4 +1,17 @@
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "field.h"
+#include "render.h"
+#include "display.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
+#include "ai/ai_memory.h"
 #include "game_screen.h"
 #include "input.h"
 #include "sound.h"
@@ -6,11 +19,9 @@
 #include "fill_player_data.h"
 #include "main_menu.h"
 #include "loading_screen_menu.h"
-#include "menu_helpers.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "fixtures.h"
-#include "common_logic.h"
 #include "cup.h"
 #include "state_validator.h"
 
@@ -26,6 +37,11 @@ static void applyFixture(
 static MenuData menuData;
 static StateInfo stateInfo;
 static MatchSession match;
+static ClientInputState clientInput;
+static AIControllerState aiController;
+static HudState hud; // the game screen's own render memory — NOT synced (see HudState)
+static CameraView camera; // the game screen's camera — NOT synced (see CameraView)
+static PlayerView players;
 static GameRulesState rules;
 static GameConclusion gameConclusion;
 static MenuInfo menuInfo;
@@ -49,14 +65,22 @@ int main(int argc, char* argv[])
     unsigned int accumulator = 0;
     unsigned int updateInterval = UPDATE_INTERVAL;
 
-    // Initialize the random number generator seed
-    // This single seed is passed down through all functions that need randomness
+    // The app-level random stream: menus, hutunkeitto and cup simulation draw from it directly,
+    // and starting a match splits two independent children off it (initialize_game_from_menu) —
+    // one for the engine, which lives in MatchSession as World state, and one for the AI
+    // controller, which lives in AIControllerState. Everything routes through seeded_rand() in
+    // rng.c; there are no bare rand() consumers, so the global C RNG is intentionally left
+    // unseeded and the whole app stays reproducible from this one seed (see the sim test tier).
     unsigned int rng_seed = (unsigned int)time(NULL);
-    srand(rng_seed); // For legacy code that still uses rand()
 
     // Parse command-line arguments
     FixtureRequest fixtureRequest;
     fixture_parse_args(argc, argv, &fixtureRequest);
+
+    // State debugging is ON by default: one 5 KB memcpy per pitch and a 0.5 MB history ring. This
+    // default is app-level only — the test tiers set their own (the sim harness inits with no dump
+    // path), so they are unaffected either way.
+    const char* debugStatePath = "debug.log";
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--windowed") == 0) {
@@ -65,25 +89,31 @@ int main(int argc, char* argv[])
         if (strcmp(argv[i], "--no-sound") == 0) {
             soundEnabled = 0;
         }
+        if (strcmp(argv[i], "--no-debug-state") == 0) {
+            debugStatePath = NULL;
+        }
         if (strcmp(argv[i], "--debug-state") == 0 && i + 1 < argc) {
-            state_validator_init(argv[i + 1]);
-            printf("State Validation ENABLED. Output: %s\n", argv[i + 1]);
+            debugStatePath = argv[i + 1];
             i++;
         }
     }
+    state_validator_init(debugStatePath);
 
     printf("v. 1.5 beta\n");
 
     // Initialize stateInfo structure
     stateInfo.match = &match;
+    stateInfo.client_input = &clientInput;
+    stateInfo.ai_controller = &aiController;
     stateInfo.rules = &rules;
-    stateInfo.gameConclusion = &gameConclusion;
-    stateInfo.keyStates = &keyStates;
-    stateInfo.fieldPositions = &fieldPositions;
-    stateInfo.teamData = NULL;
-    stateInfo.playSoundEffect = 0;
-    stateInfo.stopSoundEffect = 0;
-    stateInfo.soundEnabled = soundEnabled;
+    stateInfo.game_conclusion = &gameConclusion;
+    stateInfo.key_states = &keyStates;
+    stateInfo.field_positions = &fieldPositions;
+    stateInfo.team_data = NULL;
+    stateInfo.play_sound_effect = 0;
+    stateInfo.announcement = EVENT_NONE;
+    stateInfo.stop_sound_effect = 0;
+    stateInfo.sound_enabled = soundEnabled;
     stateInfo.cup = NULL;
     stateInfo.currently_played_cup_match_index = -1;
 
@@ -134,14 +164,14 @@ int main(int argc, char* argv[])
     draw_loading_screen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
     draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
-    result = init_game_screen(&stateInfo, resourceManager);
+    result = init_game_screen(&stateInfo, &hud, &camera, &players, resourceManager);
     if (result != 0) {
         printf("Could not init game screen. Exiting.");
         return -1;
     }
 
     stateInfo.screen = SCREEN_MAIN_MENU;
-    stateInfo.changeScreen = 1;
+    stateInfo.change_screen = 1;
     stateInfo.updated = 0;
 
     // Apply fixture if requested (for visual testing)
@@ -191,7 +221,7 @@ static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, 
     update_sound(stateInfo);
     switch (stateInfo->screen) {
     case SCREEN_GAME:
-        update_game_screen(stateInfo, &menuInfo, rng_seed);
+        update_game_screen(stateInfo, &hud, &camera, &players, &menuInfo);
         break;
     case SCREEN_MAIN_MENU:
         update_main_menu(stateInfo, menuData, &menuInfo, &keyStates, rng_seed);
@@ -209,7 +239,18 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
     switch (stateInfo->screen) {
     case SCREEN_GAME:
         // Everything within draw_game_screen is currently drawn in 3d context
-        draw_game_screen(stateInfo, alpha, rm, rs);
+        {
+            const SceneView scene = {
+                .match = stateInfo->match,
+                .rules = stateInfo->rules,
+                .field = stateInfo->field_positions,
+                .teams = stateInfo->team_data,
+                .input = stateInfo->client_input,
+                .players = &players,
+                .paused = stateInfo->paused,
+            };
+            draw_game_screen(&scene, &hud, &camera, alpha, rm, rs);
+        }
         break;
     case SCREEN_MAIN_MENU:
         draw_main_menu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
@@ -357,20 +398,20 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (super inning = period 2)
-        stateInfo->rules->scoreboard.isCupGame = 0;
+        stateInfo->rules->scoreboard.is_cup_game = 0;
         stateInfo->rules->scoreboard.period = 2;
         // Inning counter: period 2 starts after period 0 and 1 complete
-        // Each period uses halfInningsInPeriod half-innings
-        // So period 2 starts at: 2 * halfInningsInPeriod
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2;
+        // Each period uses half_innings_in_period half-innings
+        // So period 2 starts at: 2 * half_innings_in_period
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2;
 
         // Set prior period scores (for realistic display in game over screen)
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 
@@ -382,22 +423,22 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (homerun = period 4)
-        stateInfo->rules->scoreboard.isCupGame = 0;
+        stateInfo->rules->scoreboard.is_cup_game = 0;
         stateInfo->rules->scoreboard.period = 4;
-        // Inning counter: when super-inning ends, inning is at halfInningsInPeriod*2 + 2
+        // Inning counter: when super-inning ends, inning is at half_innings_in_period*2 + 2
         // For 8 half-innings: inning = 10 (even)
         // This makes team 0 bat first: (10 + 0 + 4) % 2 = 0
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2 + 2;
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2 + 2;
 
         // Set prior period scores (for realistic display in game over screen)
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period3Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period3Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period3_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period3_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 
@@ -409,7 +450,7 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set up the tournament context with a full, plausible history using the new API
-        stateInfo->rules->scoreboard.isCupGame = 1;
+        stateInfo->rules->scoreboard.is_cup_game = 1;
 
         // Specific seeding for this test fixture: alternates top and bottom bracket
         // Creates matchups: (0v2), (4v6), (1v3), (5v7) in quarter-finals
@@ -438,29 +479,29 @@ static void applyFixture(
 
         // Set game state to a super-inning
         stateInfo->rules->scoreboard.period = 2;
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2;
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2;
 
         // Set prior period scores to 0 for a clean super-inning
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 
         // Jump directly to game screen
         stateInfo->screen = SCREEN_GAME;
-        stateInfo->changeScreen = 1;
+        stateInfo->change_screen = 1;
 
     } else {
         printf("Unknown fixture: %s\n", request->name);
-        printf("Available fixtures: super-inning, homerun-contest\n");
+        printf("Available fixtures: super-inning, homerun-contest, cup-final-super-inning\n");
         exit(-1);
     }
 
     // Jump directly to game screen
     stateInfo->screen = SCREEN_GAME;
-    stateInfo->changeScreen = 1;
+    stateInfo->change_screen = 1;
 }

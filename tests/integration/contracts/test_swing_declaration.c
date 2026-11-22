@@ -1,0 +1,281 @@
+#include "scenario_builder.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "test_helpers.h"
+#include "all_contracts.h"
+#include "intent_channel.h"
+#include "actions/batting_system.h"
+#include "actions_pure/swing_geometry.h"
+#include "actions_pure/pitching_physics.h"
+#include "player_view.h"
+#include "vector_math.h"
+#include <math.h>
+
+/**
+ * CONTRACT: the swing slice — a swing is two DECLARED VALUES the engine consumes at a frame it
+ * decides from the ball, and never a phase a producer drives forward.
+ *
+ * These knight the migration. Each one is written so that it fails if the claim in its name stops
+ * being true and for no other reason, and each was ablated against the code it defends.
+ */
+
+// Construct a live pitch: a batter standing ready, then a real ball on its way over the plate. The
+// contract tier's power is exactly this — a state a real producer would take many seconds to reach,
+// built in two frames so the claim under test is the only variable.
+static void stand_a_batter_ready(ScenarioContext* ctx)
+{
+    MatchSession* m = ctx->state->match;
+    setup_pitcher_ready(ctx);
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+
+    m->at_bat.cycle = BATTING_CYCLE_ARRIVED;
+    m->ball.pitch_in_flight = 0;
+    simulate_frames(ctx, 1); // a ready batter with no pitch in the air is what starts the at-bat
+}
+
+static void put_a_pitch_in_the_air(ScenarioContext* ctx)
+{
+    MatchSession* m = ctx->state->match;
+    Vector3D v = pitch_velocity_from_aim(0.5f, 0.0f); // a middling toss, dead over the plate
+
+    vec3_set_xyz(&m->ball.velocity, v.x, v.y, v.z);
+    // Released at the pitcher's hand height, not at ground level. The engine solves the contact
+    // frame for s = 0 deliberately — "the landing point is actually in the air" — so a ball started
+    // ON the ground reaches it three frames before the bat does and the play is over first.
+    vec3_set_xyz(&m->ball.location, 0.0f, 1.5f, 0.0f);
+    m->ball.visible = 1;
+    m->ball.moving = 1;
+    m->ball.on_ground = 0;
+    m->ball.flight_has_hit_ground = 0;
+    m->ball.holder = -1;
+    m->ball.pitch_in_flight = 1;
+    m->at_bat.may_leave_home = 1;
+    simulate_frames(ctx, 1); // the engine solves the contact frame from the ball on this tick
+}
+
+static int reach_a_live_pitch(ScenarioContext* ctx)
+{
+    stand_a_batter_ready(ctx);
+    put_a_pitch_in_the_air(ctx);
+    return swing_may_be_declared(ctx->state->match);
+}
+
+static void tick(ScenarioContext* ctx)
+{
+    simulate_frames(ctx, 1);
+}
+
+static void declare_swing(ScenarioContext* ctx, float power, float vertical)
+{
+    intent_push(
+        &ctx->state->channels.batting, (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = power}}
+    );
+    intent_push(
+        &ctx->state->channels.batting,
+        (IntentMessage){.kind = INTENT_SWING_VERTICAL, .as.swing_vertical = {.vertical = vertical}}
+    );
+}
+
+// Run past the contact frame, so whatever the swing was going to do has happened.
+static void run_to_contact(ScenarioContext* ctx)
+{
+    MatchSession* match = ctx->state->match;
+    for (int i = 0; i < 400; i++) {
+        if (match->at_bat.swing.contact_frame >= 0 &&
+            match->at_bat.flight_frame > match->at_bat.swing.contact_frame + 2) {
+            return;
+        }
+
+        tick(ctx);
+    }
+}
+
+int test_batting_motion_and_recovery_follow_physical_time(void)
+{
+    for (int changed_animation = 0; changed_animation < 2; changed_animation++) {
+        ScenarioContext* ctx = create_scenario();
+        ASSERT(reach_a_live_pitch(ctx), "a real pitch must open the swing");
+        MatchSession* m = ctx->state->match;
+        PlayerMotion* activity = &m->players[0].motion;
+        PlayerView view;
+        player_view_init(&view, m);
+        int contact = m->at_bat.swing.contact_frame;
+        ASSERT(contact > 60, "the pitch must leave enough time to observe the preparation boundary");
+        m->at_bat.swing.power_active = 1;
+        m->at_bat.swing.power = 0.8f;
+        m->at_bat.swing.vertical_active = 1;
+        m->at_bat.swing.vertical = SWING_VERTICAL_FOCAL;
+
+        while (m->at_bat.flight_frame <= contact + 42) {
+            int next_tick = m->at_bat.flight_frame + 1;
+            if (changed_animation) {
+                view.players[0] =
+                    (PlayerAnimation){.model = PLAYER_ANIM_STAND_BARE, .frame_count = 1, .ticks_per_frame = 1};
+                for (int draw = 0; draw < 5; draw++)
+                    player_view_after_tick(&view, &(TickFacts){0});
+            }
+            update_batting(
+                m, &ctx->state->rules->referee, ctx->state->field_positions, 0, 0.0f, 0, &ctx->state->play_sound_effect
+            );
+            ASSERT_EQ(next_tick, m->at_bat.flight_frame, "only the physical step advances the swing clock");
+            ASSERT_EQ(next_tick > contact - 60, m->at_bat.swing_started, "preparation starts strictly inside 60 ticks");
+            if (next_tick > contact - 60) {
+                ASSERT_FLOAT_EQ(0.7f / 60, m->at_bat.step_in_speed, 1e-7f, "physical preparation sets step-in speed");
+            }
+            ASSERT_EQ(next_tick > contact, m->events.ball_hit_by_bat, "contact keeps its strict physical boundary");
+            ASSERT_EQ(
+                next_tick <= contact + 42, batting_cycle_is_open(&m->at_bat),
+                "the physical cycle closes strictly after 42 recovery ticks"
+            );
+        }
+        ASSERT_EQ(1, activity->moving, "closing the physical cycle walks the batter back to readiness");
+        cleanup_scenario(ctx);
+    }
+    return TEST_PASSED;
+}
+
+// 1. The declared values ARE the swing: the launch elevation at contact is the pure function of the
+//    declared vertical, and a swing declared at the sweet spot meets the ball dead centre.
+int test_swing_declared_values_drive_the_contact(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    ASSERT(reach_a_live_pitch(ctx), "never reached a live pitch to swing at");
+    MatchSession* match = ctx->state->match;
+
+    declare_swing(ctx, 0.8f, SWING_VERTICAL_FOCAL);
+    tick(ctx);
+
+    ASSERT_EQ(1, match->at_bat.swing.power_active, "the gate must store a declared power");
+    ASSERT_EQ(1, match->at_bat.swing.vertical_active, "the gate must store a declared elevation");
+    ASSERT(fabsf(0.8f - match->at_bat.swing.power) < 0.0001f, "the stored power is the declared one");
+
+    // A vertical at the sweet spot is a level hit whatever the ball is doing.
+    float level = swing_vertical_angle(SWING_VERTICAL_FOCAL, match->ball.velocity.y);
+    ASSERT(fabsf(level) < 0.001f, "the sweet spot must produce a level swing at any ball speed");
+
+    run_to_contact(ctx);
+    ASSERT_EQ(
+        (int)BAT_OUTCOME_HIT, (int)ctx->state->rules->between_pitch.bat_outcome,
+        "a swing declared at the sweet spot must meet the ball"
+    );
+    cleanup_scenario(ctx);
+
+    // ...and the other end of the claim, which is the half that makes it a claim at all. A hit at
+    // the sweet spot alone is satisfied by an elevation law that returns zero no matter what it is
+    // told, so the pair is asserted: a vertical declared far from the sweet spot must MISS. Found by
+    // ablation — the first version of this test passed with the law stubbed out.
+    ctx = create_scenario();
+    ASSERT(reach_a_live_pitch(ctx), "never reached a live pitch to swing at");
+    match = ctx->state->match;
+
+    declare_swing(ctx, 0.8f, 0.0f); // the bottom of the sweep: swung well over the ball
+    tick(ctx);
+    run_to_contact(ctx);
+    ASSERT_EQ(
+        (int)BAT_OUTCOME_MISSED, (int)ctx->state->rules->between_pitch.bat_outcome,
+        "a swing declared far from the sweet spot must miss — the declared value is what decides"
+    );
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 2. Repeat-safety, the property the whole message shape is chosen for: three copies of the same
+//    declaration in one frame leave the world exactly where one copy would.
+int test_swing_declarations_are_repeat_safe(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    ASSERT(reach_a_live_pitch(ctx), "never reached a live pitch to swing at");
+    MatchSession* match = ctx->state->match;
+
+    declare_swing(ctx, 0.6f, 0.4f);
+    declare_swing(ctx, 0.6f, 0.4f);
+    declare_swing(ctx, 0.6f, 0.4f);
+    tick(ctx);
+    SwingActualization afterThree = match->at_bat.swing;
+
+    // And restating it on later frames changes nothing either.
+    for (int i = 0; i < 5; i++) {
+        declare_swing(ctx, 0.6f, 0.4f);
+        tick(ctx);
+    }
+    ASSERT(
+        fabsf(afterThree.power - match->at_bat.swing.power) < 0.0001f &&
+            fabsf(afterThree.vertical - match->at_bat.swing.vertical) < 0.0001f &&
+            afterThree.contact_frame == match->at_bat.swing.contact_frame,
+        "re-delivering a swing declaration must be a no-op — a value, never an increment"
+    );
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 3. Silence is a complete answer. A producer that declares nothing has not swung, so there is no
+//    miss to record — which is the difference between a ball and a strike.
+int test_a_swing_never_declared_is_not_a_miss(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    ASSERT(reach_a_live_pitch(ctx), "never reached a live pitch to swing at");
+    MatchSession* match = ctx->state->match;
+
+    run_to_contact(ctx); // declare nothing at all
+
+    ASSERT_EQ(
+        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->between_pitch.bat_outcome,
+        "declaring nothing must not register as a swing and a miss"
+    );
+    ASSERT_EQ(1, match->at_bat.swing_stopped, "the engine must conclude that no swing happened");
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 4. The withdrawal — the "väärä!" call. A power already committed, then taken back, and the bat
+//    does not come. Worth a ball where swinging and missing would be worth a strike.
+int test_a_withdrawn_swing_does_not_reach_the_ball(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    ASSERT(reach_a_live_pitch(ctx), "never reached a live pitch to swing at");
+    MatchSession* match = ctx->state->match;
+
+    declare_swing(ctx, 0.9f, SWING_VERTICAL_FOCAL); // a committed, well-timed swing
+    tick(ctx);
+    ASSERT_EQ(1, match->at_bat.swing.power_active, "the swing must be committed before it is withdrawn");
+
+    intent_push(&ctx->state->channels.batting, (IntentMessage){.kind = INTENT_SWING_PASS});
+    tick(ctx);
+    ASSERT_EQ(1, match->at_bat.swing_stopped, "a withdrawal must stop the swing on the tick it arrives");
+    // What the body DOES about it is no longer assertable here, and that is the point of the change
+    // it lost: the shape used to be cached in a `batting_mode` field that nothing read, and the one
+    // guard that did read it compared against a value stop_the_swing had already moved — so a
+    // withdrawal mid-motion never reached the animation at all. The shape is derived now and stored
+    // nowhere, so the only witness is the animation, and the honest place to watch a body move is a
+    // tier where a real gesture drives it: see the scripted tier's withdrawal tests, which pin it
+    // both before the motion begins and in the middle of it.
+
+    run_to_contact(ctx);
+    ASSERT_EQ(
+        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->between_pitch.bat_outcome,
+        "a withdrawn swing must not meet the ball — that is what makes it worth a ball and not a strike"
+    );
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+// 5. The gate refuses what has no pitch behind it — the whole of the ordering the deleted phase
+//    machine used to carry, and the reason a producer never has to read its declaration back.
+int test_a_swing_declared_with_no_pitch_is_refused(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    MatchSession* match = ctx->state->match;
+    stand_a_batter_ready(ctx); // ...but no pitch is put in the air
+
+    ASSERT_EQ(0, swing_may_be_declared(match), "with no pitch on its way there is nothing to swing at");
+
+    declare_swing(ctx, 0.9f, SWING_VERTICAL_FOCAL);
+    tick(ctx);
+
+    ASSERT_EQ(0, match->at_bat.swing.power_active, "a refused declaration must leave no trace in the world");
+    ASSERT_EQ(0, match->at_bat.swing.vertical_active, "a refused declaration must leave no trace in the world");
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}

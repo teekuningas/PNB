@@ -1,6 +1,8 @@
 #define MA_IMPLEMENTATION
 
-#include "globals.h"
+#include <stddef.h>
+#include "tick_outputs.h"
+#include "session.h"
 #include "sound.h"
 #include "miniaudio.h"
 
@@ -14,7 +16,7 @@ static ma_engine engine;
 
 int init_sound(StateInfo* stateInfo)
 {
-    if (stateInfo->soundEnabled == 0) {
+    if (stateInfo->sound_enabled == 0) {
         working = 0;
         return 0;
     }
@@ -50,22 +52,22 @@ int init_sound(StateInfo* stateInfo)
 
     ma_sound_set_looping(&menu, MA_TRUE);
 
-    stateInfo->playSoundEffect = 0;
+    stateInfo->play_sound_effect = 0;
     working = 1;
 
     return 0;
 }
 void update_sound(StateInfo* stateInfo)
 {
-    if (stateInfo->soundEnabled == 0) {
-        stateInfo->playSoundEffect = 0;
-        stateInfo->stopSoundEffect = 0;
+    if (stateInfo->sound_enabled == 0) {
+        stateInfo->play_sound_effect = 0;
+        stateInfo->stop_sound_effect = 0;
         return;
     }
 
-    if (stateInfo->playSoundEffect != 0) {
+    if (stateInfo->play_sound_effect != 0) {
         if (working == 1) {
-            switch (stateInfo->playSoundEffect) {
+            switch (stateInfo->play_sound_effect) {
             case SOUND_MENU:
                 ma_sound_seek_to_pcm_frame(&menu, 0);
                 result = ma_sound_start(&menu);
@@ -78,24 +80,24 @@ void update_sound(StateInfo* stateInfo)
                 break;
             }
         }
-        stateInfo->playSoundEffect = 0;
+        stateInfo->play_sound_effect = 0;
     }
 
-    if (stateInfo->stopSoundEffect != 0) {
+    if (stateInfo->stop_sound_effect != 0) {
         if (working == 1) {
-            switch (stateInfo->stopSoundEffect) {
+            switch (stateInfo->stop_sound_effect) {
             case SOUND_MENU:
                 ma_sound_stop(&menu);
                 break;
             }
         }
-        stateInfo->stopSoundEffect = 0;
+        stateInfo->stop_sound_effect = 0;
     }
 }
 
 int clean_sound(StateInfo* stateInfo)
 {
-    if (stateInfo->soundEnabled == 0) {
+    if (stateInfo->sound_enabled == 0) {
         return 0;
     }
     ma_engine_uninit(&engine);

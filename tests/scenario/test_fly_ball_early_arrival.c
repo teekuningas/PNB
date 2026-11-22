@@ -1,8 +1,9 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
+#include "world.h"
+#include "actions/batting_system.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
-#include "referee.h"
-#include "common_logic.h"
 #include "base_control.h"
 #include <stdio.h>
 #include <math.h>
@@ -35,29 +36,28 @@ int test_fly_ball_early_arrival(void)
 
     // 1. Setup PHYSICAL state: Only batter at Home, no other runners
     setup_batter_at_home(ctx, 0);
-    match->pII.batterSelectionIndex = 0;
 
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot baseAtPitchStart
+    // 3. Emit pitch_released to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders
     move_pitcher_away(ctx);
 
     int fielderIdx = 16; // Center fielder
-    Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    match->playerInfo[fielderIdx].tPI.location = fielderLoc;
-    match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+    Vector3D fielderLoc = ctx->state->field_positions->third_base;
+    match->players[fielderIdx].body.location = fielderLoc;
+    match->players[fielderIdx].body.home_location = fielderLoc;
 
     // 5. Trigger batter to run
-    match->pRAI.batterCanAdvance = 1;
+    match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME); // Batter: Home → 1st
 
     // 6. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
     // This gives the batter time to reach 1st before the catch
-    Vector3D pitchLocation = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchLocation = ctx->state->field_positions->pitch_plate;
     hit_fly_ball_to_location_with_time(ctx, pitchLocation, fielderLoc, 300.0f);
 
     printf(
@@ -68,19 +68,22 @@ int test_fly_ball_early_arrival(void)
 
     printf("Initial state:\n");
     printf(
-        "  Batter: baseId=%d, state=%d, position=(%.1f, %.1f)\n", match->playerInfo[0].bTPI.baseId,
-        match->playerInfo[0].bTPI.state, match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+        "  Batter: baseId=%d, state=%d, position=(%.1f, %.1f)\n", match->players[0].batting.presence.base_id,
+        match->players[0].batting.presence.state, match->players[0].body.location.x, match->players[0].body.location.z
     );
     printf(
-        "  Referee: baseAtPitchStart=%d, currentSafetyBase=%d\n", rules->referee.battingPlayers[0].baseAtPitchStart,
-        rules->referee.battingPlayers[0].currentSafetyBase
+        "  Referee: base_at_pitch_start=%d, current_safety_base=%d\n",
+        rules->referee.batting_players[0].base_at_pitch_start, rules->referee.batting_players[0].current_safety_base
     );
     printf(
-        "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
-        match->ballInfo.location.y, match->ballInfo.location.z
+        "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ball.moving, match->ball.location.x,
+        match->ball.location.y, match->ball.location.z
     );
-    printf("  PRAI: batterCanAdvance=%d, batterReady=%d\n", match->pRAI.batterCanAdvance, match->pRAI.batterReady);
-    printf("  BPS: batOutcome=%d\n", rules->betweenPitchState.batOutcome);
+    printf(
+        "  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home,
+        batter_stands_ready(&match->at_bat)
+    );
+    printf("  BPS: bat_outcome=%d\n", rules->between_pitch.bat_outcome);
 
     // 6. Simulate and track events
     int catchFrame = -1;
@@ -92,24 +95,22 @@ int test_fly_ball_early_arrival(void)
     for (int frame = 0; frame <= 800; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = match->pII.hasBallIndex;
-        int batterBase = match->playerInfo[0].bTPI.baseId;
-        batterState = match->playerInfo[0].bTPI.state;
-        batterSafety = rules->referee.battingPlayers[0].currentSafetyBase;
-        int batterBaseAtPitchStart = rules->referee.battingPlayers[0].baseAtPitchStart;
-        int batterStatus = rules->referee.battingPlayers[0].status;
+        int hasBall = match->ball.holder;
+        int batterBase = match->players[0].batting.presence.base_id;
+        batterState = match->players[0].batting.presence.state;
+        batterSafety = rules->referee.batting_players[0].current_safety_base;
+        int batterBaseAtPitchStart = rules->referee.batting_players[0].base_at_pitch_start;
+        int batterStatus = rules->referee.batting_players[0].status;
 
         // Track catch
         if (hasBall != -1 && catchFrame == -1) {
             catchFrame = frame;
             printf("Frame %d: CATCH made\n", frame);
             printf(
-                "  Batter: baseId=%d, state=%d, safety=%d, baseAtPitchStart=%d, status=%d\n", batterBase, batterState,
-                batterSafety, batterBaseAtPitchStart, batterStatus
+                "  Batter: baseId=%d, state=%d, safety=%d, base_at_pitch_start=%d, status=%d\n", batterBase,
+                batterState, batterSafety, batterBaseAtPitchStart, batterStatus
             );
-            printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
-            );
+            printf("  Position: (%.1f, %.1f)\n", match->players[0].body.location.x, match->players[0].body.location.z);
         }
 
         // Track batter arrival at 1st
@@ -117,12 +118,10 @@ int test_fly_ball_early_arrival(void)
             batterArrivalFrame = frame;
             printf("Frame %d: Batter arrived at 1st\n", frame);
             printf(
-                "  State=%d, safety=%d, baseAtPitchStart=%d, status=%d\n", batterState, batterSafety,
+                "  State=%d, safety=%d, base_at_pitch_start=%d, status=%d\n", batterState, batterSafety,
                 batterBaseAtPitchStart, batterStatus
             );
-            printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
-            );
+            printf("  Position: (%.1f, %.1f)\n", match->players[0].body.location.x, match->players[0].body.location.z);
         }
 
         // Track wounding
@@ -146,11 +145,11 @@ int test_fly_ball_early_arrival(void)
         // Debug logging every 50 frames or on key events
         if (frame % 50 == 0 || frame == catchFrame || frame == batterArrivalFrame || frame == woundFrame ||
             (batterArrivalFrame != -1 && frame >= batterArrivalFrame - 5 && frame <= batterArrivalFrame + 10)) {
-            int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->fieldPositions);
+            int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->field_positions);
             printf(
                 "  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d Status=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n", frame,
                 batterState, batterBase, batterSafety, batterBaseAtPitchStart, batterStatus, ballAtBase, hasBall,
-                match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z
+                match->players[0].body.location.x, match->players[0].body.location.z
             );
         }
 
@@ -163,7 +162,10 @@ int test_fly_ball_early_arrival(void)
     printf("Catch: %d\n", catchFrame);
     printf("Batter WOUNDED: %d\n", woundFrame);
     printf("\n=== FINAL STATE ===\n");
-    printf("Batter: state=%d, baseId=%d, safety=%d\n", batterState, match->playerInfo[0].bTPI.baseId, batterSafety);
+    printf(
+        "Batter: state=%d, baseId=%d, safety=%d\n", batterState, match->players[0].batting.presence.base_id,
+        batterSafety
+    );
     printf("=====================\n\n");
 
     cleanup_scenario(ctx);

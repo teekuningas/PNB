@@ -1,8 +1,9 @@
 #include "scenario_builder.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
-#include "referee.h"
-#include "common_logic.h"
 #include "base_control.h"
 #include <stdio.h>
 #include <math.h>
@@ -33,7 +34,7 @@
   The Bug: Batter is NOT wounded.
 */
 
-int test_full_fly_ball_out_and_wound(void)
+int test_fly_ball_out_and_wound(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* match = ctx->state->match;
@@ -42,20 +43,19 @@ int test_full_fly_ball_out_and_wound(void)
     printf("\n=== FLY BALL OUT AND WOUND TEST ===\n");
     printf("Field positions:\n");
     printf(
-        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->secondBase.x,
-        ctx->state->fieldPositions->secondBase.y, ctx->state->fieldPositions->secondBase.z
+        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->second_base.x,
+        ctx->state->field_positions->second_base.y, ctx->state->field_positions->second_base.z
     );
     printf("  Center Field target: (0.0, 0.0, 30.0)\n");
 
     // 1. Setup PHYSICAL state: Runner A at 1st, Batter B at Home
     place_runner_at_base(ctx, 0, BASE_FIRST, 0.0f); // Runner A
     setup_batter_at_home(ctx, 1); // Batter B
-    match->pII.batterSelectionIndex = 1;
 
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot baseAtPitchStart
+    // 3. Emit pitch_released to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders
@@ -63,21 +63,21 @@ int test_full_fly_ball_out_and_wound(void)
 
     int fielderIdx = 16; // Center fielder
     Vector3D centerField = {0.0f, 0.0f, 30.0f};
-    match->playerInfo[fielderIdx].tPI.location = centerField;
-    match->playerInfo[fielderIdx].tPI.homeLocation = centerField;
+    match->players[fielderIdx].body.location = centerField;
+    match->players[fielderIdx].body.home_location = centerField;
 
     int secondBasemanIdx = 18;
-    Vector3D secondBase = ctx->state->fieldPositions->secondBase;
-    match->playerInfo[secondBasemanIdx].tPI.location = secondBase;
-    match->playerInfo[secondBasemanIdx].tPI.homeLocation = secondBase;
+    Vector3D secondBase = ctx->state->field_positions->second_base;
+    match->players[secondBasemanIdx].body.location = secondBase;
+    match->players[secondBasemanIdx].body.home_location = secondBase;
 
     // 5. Trigger runners to advance
-    match->pRAI.batterCanAdvance = 1;
+    match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_FIRST); // Runner A: 1st → 2nd
     trigger_player_run_to_next_base(ctx, 1, BASE_HOME); // Batter B: Home → 1st
 
     // 6. Hit fly ball to center field
-    Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchPlate = ctx->state->field_positions->pitch_plate;
     hit_fly_ball_to_location(ctx, pitchPlate, centerField);
 
     printf("Setup complete: Runner A at 1st, Batter B at Home\n");
@@ -98,67 +98,67 @@ int test_full_fly_ball_out_and_wound(void)
         if (catchFrame != -1 && throwTriggered == 0) {
             throwTriggered = 1;
             throwStartFrame = frame;
-            throw_ball_to_base(ctx, match->playerInfo[fielderIdx].tPI.location, BASE_SECOND);
+            scenario_throw_ball_to_base(ctx, match->players[fielderIdx].body.location, BASE_SECOND);
             printf("Frame %d: Throw to 2nd base triggered\n", frame);
         }
 
         simulate_frames(ctx, 1);
 
         // --- Check Events ---
-        if (rules->betweenPitchState.catchHasBeenMade && catchFrame == -1) {
+        if (rules->between_pitch.catch_has_been_made && catchFrame == -1) {
             catchFrame = frame;
-            printf("Frame %d: CATCH by player %d\n", frame, match->pII.hasBallIndex);
+            printf("Frame %d: CATCH by player %d\n", frame, match->ball.holder);
         }
 
-        if (rules->halfInningState.event == EVENT_OUT && outFrame == -1) {
+        if (ctx->state->announcement == EVENT_OUT && outFrame == -1) {
             outFrame = frame;
             printf("Frame %d: OUT event (Runner A)\n", frame);
         }
 
-        if (rules->halfInningState.event == EVENT_WOUNDED) {
-            if (match->playerInfo[1].bTPI.state == PLAYER_STATE_WOUNDED && woundFrame == -1) {
+        if (ctx->state->announcement == EVENT_WOUNDED) {
+            if (match->players[1].batting.presence.state == PLAYER_STATE_WOUNDED && woundFrame == -1) {
                 woundFrame = frame;
                 printf("Frame %d: BATTER WOUNDED\n", frame);
             }
         }
 
         // Track arrivals
-        if (match->playerInfo[1].bTPI.baseId == BASE_FIRST && batterArrivalFrame == -1) {
+        if (match->players[1].batting.presence.base_id == BASE_FIRST && batterArrivalFrame == -1) {
             batterArrivalFrame = frame;
-            int safetyBase = rules->referee.battingPlayers[1].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[1].current_safety_base;
             printf(
-                "Frame %d: Batter arrived at 1st (state=%d, safety=%d)\n", frame, match->playerInfo[1].bTPI.state,
-                safetyBase
+                "Frame %d: Batter arrived at 1st (state=%d, safety=%d)\n", frame,
+                match->players[1].batting.presence.state, safetyBase
             );
         }
 
-        if (match->playerInfo[0].bTPI.baseId == BASE_SECOND && runnerArrivalFrame == -1) {
+        if (match->players[0].batting.presence.base_id == BASE_SECOND && runnerArrivalFrame == -1) {
             runnerArrivalFrame = frame;
-            printf("Frame %d: Runner A arrived at 2nd (state=%d)\n", frame, match->playerInfo[0].bTPI.state);
+            printf("Frame %d: Runner A arrived at 2nd (state=%d)\n", frame, match->players[0].batting.presence.state);
         }
 
         // Track when players lose their base (BASE_NONE)
         static int batterLostBase = 0;
         static int runnerLostBase = 0;
-        if (!batterLostBase && match->playerInfo[1].bTPI.baseId == BASE_NONE) {
+        if (!batterLostBase && match->players[1].batting.presence.base_id == BASE_NONE) {
             batterLostBase = 1;
-            int safetyBase = rules->referee.battingPlayers[1].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[1].current_safety_base;
             printf(
                 "Frame %d: Batter lost base (baseId=NONE, safety=%d, state=%d)\n", frame, safetyBase,
-                match->playerInfo[1].bTPI.state
+                match->players[1].batting.presence.state
             );
         }
-        if (!runnerLostBase && match->playerInfo[0].bTPI.baseId == BASE_NONE) {
+        if (!runnerLostBase && match->players[0].batting.presence.base_id == BASE_NONE) {
             runnerLostBase = 1;
-            int safetyBase = rules->referee.battingPlayers[0].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[0].current_safety_base;
             printf(
                 "Frame %d: Runner A lost base (baseId=NONE, safety=%d, state=%d)\n", frame, safetyBase,
-                match->playerInfo[0].bTPI.state
+                match->players[0].batting.presence.state
             );
         }
 
         // Track ball at 2nd base
-        int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->fieldPositions);
+        int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->field_positions);
         if (ballAtBase == BASE_SECOND && ballAtSecondFrame == -1) {
             ballAtSecondFrame = frame;
             printf("Frame %d: Ball at 2nd base\n", frame);
@@ -171,10 +171,10 @@ int test_full_fly_ball_out_and_wound(void)
             (outFrame != -1 && frame >= outFrame && frame < outFrame + 100 && frame % 10 == 0)) {
             printf(
                 "  F%3d: RunnerA[St=%d Bs=%d Pos=(%.1f,%.1f)] BatterB[St=%d Bs=%d Pos=(%.1f,%.1f)] Ball[AtBase=%d]\n",
-                frame, match->playerInfo[0].bTPI.state, match->playerInfo[0].bTPI.baseId,
-                match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.z,
-                match->playerInfo[1].bTPI.state, match->playerInfo[1].bTPI.baseId, match->playerInfo[1].tPI.location.x,
-                match->playerInfo[1].tPI.location.z, ballAtBase
+                frame, match->players[0].batting.presence.state, match->players[0].batting.presence.base_id,
+                match->players[0].body.location.x, match->players[0].body.location.z,
+                match->players[1].batting.presence.state, match->players[1].batting.presence.base_id,
+                match->players[1].body.location.x, match->players[1].body.location.z, ballAtBase
             );
         }
     }
@@ -189,32 +189,32 @@ int test_full_fly_ball_out_and_wound(void)
     printf("Batter WOUNDED: %d\n", woundFrame);
     printf("\n=== FINAL STATES ===\n");
     printf(
-        "Batter: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n", match->playerInfo[1].bTPI.state,
-        match->playerInfo[1].bTPI.baseId, rules->referee.battingPlayers[1].currentSafetyBase,
-        match->playerInfo[1].tPI.location.x, match->playerInfo[1].tPI.location.y, match->playerInfo[1].tPI.location.z
+        "Batter: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n",
+        match->players[1].batting.presence.state, match->players[1].batting.presence.base_id,
+        rules->referee.batting_players[1].current_safety_base, match->players[1].body.location.x,
+        match->players[1].body.location.y, match->players[1].body.location.z
     );
     printf(
-        "Runner A: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n", match->playerInfo[0].bTPI.state,
-        match->playerInfo[0].bTPI.baseId, rules->referee.battingPlayers[0].currentSafetyBase,
-        match->playerInfo[0].tPI.location.x, match->playerInfo[0].tPI.location.y, match->playerInfo[0].tPI.location.z
+        "Runner A: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n",
+        match->players[0].batting.presence.state, match->players[0].batting.presence.base_id,
+        rules->referee.batting_players[0].current_safety_base, match->players[0].body.location.x,
+        match->players[0].body.location.y, match->players[0].body.location.z
     );
     printf("\nFor reference:\n");
     printf(
-        "  Home: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->pitchPlate.x,
-        ctx->state->fieldPositions->pitchPlate.y, ctx->state->fieldPositions->pitchPlate.z
+        "  Home: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->pitch_plate.x,
+        ctx->state->field_positions->pitch_plate.y, ctx->state->field_positions->pitch_plate.z
     );
     printf(
-        "  1st Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->firstBase.x,
-        ctx->state->fieldPositions->firstBase.y, ctx->state->fieldPositions->firstBase.z
+        "  1st Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->first_base.x,
+        ctx->state->field_positions->first_base.y, ctx->state->field_positions->first_base.z
     );
     printf(
-        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->secondBase.x,
-        ctx->state->fieldPositions->secondBase.y, ctx->state->fieldPositions->secondBase.z
+        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->second_base.x,
+        ctx->state->field_positions->second_base.y, ctx->state->field_positions->second_base.z
     );
 
     printf("=====================\n\n");
-
-    cleanup_scenario(ctx);
 
     ASSERT_NE(-1, catchFrame, "Ball should have been caught");
     ASSERT_NE(-1, outFrame, "Runner A should have been forced OUT");
@@ -227,7 +227,8 @@ int test_full_fly_ball_out_and_wound(void)
     // CRITICAL BUG: Safety should be stripped when wounded on fly ball
     // Currently the batter retains safety=1 (BASE_FIRST) even after wounding
     // Expected: safety should be -1 (BASE_NONE) like Runner A who got OUT
-    int batterFinalSafety = rules->referee.battingPlayers[1].currentSafetyBase;
+    int batterFinalSafety = rules->referee.batting_players[1].current_safety_base;
+    cleanup_scenario(ctx); // after the last read of the scenario's state, which it frees
     ASSERT_EQ(BASE_NONE, batterFinalSafety, "Wounded batter should lose safety (bug: they keep it)");
 
     return TEST_PASSED;

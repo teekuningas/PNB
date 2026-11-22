@@ -1,22 +1,23 @@
 #include "scenario_builder.h"
+#include "tick_outputs.h"
+#include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 /**
  * CONTRACT: When the ball hits the ground out of bounds after a bat hit,
- * the referee transitions foulState to FOUL_STATE_DETECTED.
+ * the referee transitions foul_state to FOUL_STATE_DETECTED.
  *
  * This tests the Event → Decision chain:
- *   ballHitGround + batHit + out of bounds → foulState = DETECTED
+ *   ball_hit_ground + batHit + out of bounds → foul_state = DETECTED
  *
  * Preconditions:
  *   - batHit = 1 (ball came from bat)
  *   - Ball is at an out-of-bounds location
- *   - hasBallHitGround = 0 (first bounce)
- *   - foulState = NONE
- *   - catchHasBeenMade = 0
- *   - ballHitGround event fires
+ *   - has_ball_hit_ground = 0 (first bounce)
+ *   - foul_state = NONE
+ *   - catch_has_been_made = 0
+ *   - ball_hit_ground event fires
  *
  * This contract is directly relevant to Phase 3 (batHit migration):
  * the referee's foul detection reads batHit. After Phase 3 consolidates
@@ -34,36 +35,34 @@ int test_foul_detected_on_out_of_bounds_hit(void)
 
     // Place ball clearly behind home line (out of bounds)
     // HOME_LINE_Z = -0.65f, so z = 10.0f is far behind home plate
-    ctx->state->match->ballInfo.location.x = 0.0f;
-    ctx->state->match->ballInfo.location.y = 0.0f;
-    ctx->state->match->ballInfo.location.z = 10.0f;
-    ctx->state->match->ballInfo.onGround = 1;
-    ctx->state->match->ballInfo.moving = 0;
-    ctx->state->match->ballInfo.velocity.x = 0.0f;
-    ctx->state->match->ballInfo.velocity.y = 0.0f;
-    ctx->state->match->ballInfo.velocity.z = 0.0f;
+    ctx->state->match->ball.location.x = 0.0f;
+    ctx->state->match->ball.location.y = 0.0f;
+    ctx->state->match->ball.location.z = 10.0f;
+    ctx->state->match->ball.on_ground = 1;
+    ctx->state->match->ball.moving = 0;
+    ctx->state->match->ball.velocity.x = 0.0f;
+    ctx->state->match->ball.velocity.y = 0.0f;
+    ctx->state->match->ball.velocity.z = 0.0f;
 
     // Set contract preconditions
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
-    ctx->state->match->gameEvents.ballHitGround = 1;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
+    ctx->state->match->events.ball_hit_ground = 1;
 
     // Verify preconditions are clean
-    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foulState, "Precondition: foulState should be NONE");
-    ASSERT_EQ(0, ctx->state->rules->betweenPitchState.hasBallHitGround, "Precondition: hasBallHitGround should be 0");
+    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foul_state, "Precondition: foul_state should be NONE");
+    ASSERT_EQ(0, ctx->state->rules->between_pitch.has_ball_hit_ground, "Precondition: has_ball_hit_ground should be 0");
 
     // Run 1 frame
     simulate_frames(ctx, 1);
 
     // Assert: referee detected foul play
     ASSERT_EQ(
-        FOUL_STATE_DETECTED, ctx->state->rules->referee.foulState,
+        FOUL_STATE_DETECTED, ctx->state->rules->referee.foul_state,
         "Foul state should be DETECTED after out-of-bounds hit"
     );
 
-    // Assert: the event was recorded
-    ASSERT_EQ(
-        EVENT_OUT_OF_BOUNDS, ctx->state->rules->halfInningState.event, "Half-inning event should be OUT_OF_BOUNDS"
-    );
+    // Assert: the referee announced it, in the tick it decided it
+    ASSERT_EQ(EVENT_OUT_OF_BOUNDS, ctx->state->announcement, "the referee should announce OUT_OF_BOUNDS");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

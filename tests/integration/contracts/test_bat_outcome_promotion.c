@@ -1,16 +1,16 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
-#include "referee.h"
 
 /**
- * CONTRACT: The referee promotes ballHitByBat/ballMissedByBat events to
- * betweenPitchState.batOutcome, and clears batOutcome on pitchReleased.
+ * CONTRACT: The referee promotes ball_hit_by_bat/ball_missed_by_bat events to
+ * between_pitch.bat_outcome, and clears bat_outcome on pitch_released.
  *
  * This tests the Event → Decision promotion chain (Phase 3 pattern):
- *   ballHitByBat (GameEvents)   → batOutcome = BAT_OUTCOME_HIT
- *   ballMissedByBat (GameEvents) → batOutcome = BAT_OUTCOME_MISSED
- *   pitchReleased (GameEvents)   → batOutcome = BAT_OUTCOME_NONE (cleared)
+ *   ball_hit_by_bat (GameEvents)   → bat_outcome = BAT_OUTCOME_HIT
+ *   ball_missed_by_bat (GameEvents) → bat_outcome = BAT_OUTCOME_MISSED
+ *   pitch_released (GameEvents)   → bat_outcome = BAT_OUTCOME_NONE (cleared)
  *
  * Also includes a sizeof guard for BetweenPitchState to catch struct growth
  * (same pattern as test_clear_frame_events_completeness uses for GameEvents).
@@ -22,21 +22,21 @@ int test_bat_outcome_promotion(void)
         ScenarioContext* ctx = create_scenario();
         initialize_referee_from_physical_state(ctx);
 
-        // Precondition: batOutcome starts clean
+        // Precondition: bat_outcome starts clean
         ASSERT_EQ(
-            BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome, "Precondition: batOutcome should be NONE"
+            BAT_OUTCOME_NONE, ctx->state->rules->between_pitch.bat_outcome, "Precondition: bat_outcome should be NONE"
         );
 
-        // Fire ballHitByBat event
-        ctx->state->match->gameEvents.ballHitByBat = 1;
+        // Fire ball_hit_by_bat event
+        ctx->state->match->events.ball_hit_by_bat = 1;
 
         // Run 1 pipeline frame
         simulate_frames(ctx, 1);
 
         // Assert: referee promoted to HIT
         ASSERT_EQ(
-            BAT_OUTCOME_HIT, ctx->state->rules->betweenPitchState.batOutcome,
-            "ballHitByBat should promote to BAT_OUTCOME_HIT"
+            BAT_OUTCOME_HIT, ctx->state->rules->between_pitch.bat_outcome,
+            "ball_hit_by_bat should promote to BAT_OUTCOME_HIT"
         );
 
         cleanup_scenario(ctx);
@@ -47,47 +47,47 @@ int test_bat_outcome_promotion(void)
         ScenarioContext* ctx = create_scenario();
         initialize_referee_from_physical_state(ctx);
 
-        // Fire ballMissedByBat event
-        ctx->state->match->gameEvents.ballMissedByBat = 1;
+        // Fire ball_missed_by_bat event
+        ctx->state->match->events.ball_missed_by_bat = 1;
 
         // Run 1 pipeline frame
         simulate_frames(ctx, 1);
 
         // Assert: referee promoted to MISSED
         ASSERT_EQ(
-            BAT_OUTCOME_MISSED, ctx->state->rules->betweenPitchState.batOutcome,
-            "ballMissedByBat should promote to BAT_OUTCOME_MISSED"
+            BAT_OUTCOME_MISSED, ctx->state->rules->between_pitch.bat_outcome,
+            "ball_missed_by_bat should promote to BAT_OUTCOME_MISSED"
         );
 
         cleanup_scenario(ctx);
     }
 
-    // === Case 3: Reset on pitchReleased ===
+    // === Case 3: Reset on pitch_released ===
     {
         ScenarioContext* ctx = create_scenario();
         initialize_referee_from_physical_state(ctx);
 
-        // Dirty batOutcome to simulate residue from a previous pitch
-        ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+        // Dirty bat_outcome to simulate residue from a previous pitch
+        ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
-        // Fire pitchReleased (signals new pitch cycle)
-        ctx->state->match->gameEvents.pitchReleased = 1;
+        // Fire pitch_released (signals new pitch cycle)
+        ctx->state->match->events.pitch_released = 1;
 
         // Run 1 pipeline frame
         simulate_frames(ctx, 1);
 
-        // Assert: batOutcome was cleared
+        // Assert: bat_outcome was cleared
         ASSERT_EQ(
-            BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome,
-            "pitchReleased should reset batOutcome to NONE"
+            BAT_OUTCOME_NONE, ctx->state->rules->between_pitch.bat_outcome,
+            "pitch_released should reset bat_outcome to NONE"
         );
 
         cleanup_scenario(ctx);
     }
 
     // === Size guard: catch BetweenPitchState struct growth ===
-    // 4 fields: catchHasBeenMade (int), hasBallHitGround (int),
-    //           pitchResult (PitchResult enum), batOutcome (BatOutcome enum)
+    // 4 fields: catch_has_been_made (int), has_ball_hit_ground (int),
+    //           pitch_result (PitchResult enum), bat_outcome (BatOutcome enum)
     // Update clear_between_pitch_state(), the field checks above, AND this count
     // if BetweenPitchState gains new fields.
     ASSERT_EQ(

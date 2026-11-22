@@ -4,17 +4,26 @@
    immutable_world, but here we draw the skybox and some status information for user.
 */
 
-#include "globals.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "field.h"
+#include "display.h"
+#include "key_states.h"
+#include "tick_outputs.h"
+#include "world.h"
+#include "session.h"
+#include "client_input.h"
 #include "immutable_world.h"
 #include "game_frame.h"
 #include "render.h"
 #include "font.h"
 #include "game_screen.h"
-#include "common_logic.h"
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
 #include "game_reset.h"
+#include "action_invocations.h" // swing_widget_view — the batter's bar is a client widget, never engine state
 
 #define STATISTICS_TEXT_HEIGHT -1.34f
 #define OTHER_STATS_X -0.02f // Midpoint between original -0.12 and current 0.08
@@ -24,24 +33,35 @@
 #define BASES_X 0.50f
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
-static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm);
-static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs);
-static int init_lights(StateInfo* stateInfo);
-static void init_cam_settings(StateInfo* stateInfo);
-static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed);
+static void draw_skybox(ResourceManager* rm);
+static void
+draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
+static int init_lights(void);
+static void init_camera(CameraView* camera);
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera);
 
-int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
+// The view's fixed parts: which way is up, where the skybox is seen from, and the light — a point so far
+// away it is practically directional.
+static const Vector3D CAMERA_UP = {0.0f, 1.0f, 0.0f};
+static const Vector3D SKYBOX_EYE = {0.0f, 0.0f, 0.0f};
+static const float LIGHT_POSITION[4] = {
+    LIGHT_SOURCE_POSITION_X, LIGHT_SOURCE_POSITION_Y, LIGHT_SOURCE_POSITION_Z, 1.0f
+};
+
+int init_game_screen(StateInfo* stateInfo, HudState* hud, CameraView* camera, PlayerView* players, ResourceManager* rm)
 {
     int result;
 
     resource_manager_load_all_game_assets(rm);
 
-    init_cam_settings(stateInfo);
+    init_camera(camera);
 
-    stateInfo->match->uiState.lastMeterX = 0;
-    stateInfo->match->uiState.lastSwingMeterX = 0;
+    hud->last_meter_x = 0;
+    hud->last_swing_meter_x = -1.0f; // nothing drawn yet — see the marker block
+    hud->info_event = EVENT_NONE;
+    hud->info_event_timer = -1;
 
-    result = init_lights(stateInfo);
+    result = init_lights();
     if (result != 0) {
         printf("Could not init lights. Exiting.");
     }
@@ -58,97 +78,112 @@ int init_game_screen(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
+    player_view_init(players, stateInfo->match);
     return 0;
 }
 
-void update_game_screen(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+void update_game_screen(
+    StateInfo* stateInfo, HudState* hud, CameraView* camera, PlayerView* players, MenuInfo* menuInfo
+)
 {
-    BallInfo* ballInfo = &(stateInfo->match->ballInfo);
-    CameraState* cs = &(stateInfo->match->cameraState);
+    const BallInfo* ballInfo = &(stateInfo->match->ball);
     // if we just changed here, load basic settings.
-    if (stateInfo->changeScreen == 1) {
-        stateInfo->changeScreen = 0;
+    if (stateInfo->change_screen == 1) {
+        stateInfo->change_screen = 0;
         stateInfo->updated = 1;
-        load_game_screen_settings(stateInfo, rng_seed);
+        load_game_screen_settings(stateInfo, hud, camera);
+        player_view_init(players, stateInfo->match);
     }
     // with home-key, one can return to main menu.
-    if (((stateInfo->keyStates)->released[0][KEY_HOME] || (stateInfo->keyStates)->released[1][KEY_HOME])) {
-        if (stateInfo->match->flowControl.pause == 0) {
-            stateInfo->match->flowControl.pause = 1;
+    if (((stateInfo->key_states)->released[0][KEY_HOME] || (stateInfo->key_states)->released[1][KEY_HOME])) {
+        if (stateInfo->paused == 0) {
+            stateInfo->paused = 1;
             state_validator_dump(stateInfo, "Manual Pause");
-        } else if (stateInfo->match->flowControl.pause == 1) {
-            stateInfo->changeScreen = 1;
+        } else if (stateInfo->paused == 1) {
+            stateInfo->change_screen = 1;
             stateInfo->updated = 0;
             stateInfo->screen = SCREEN_MAIN_MENU;
             menuInfo->mode = MENU_ENTRY_NORMAL;
         }
     }
-    if (stateInfo->match->flowControl.pause == 1) {
-        if (((stateInfo->keyStates)->released[0][KEY_2] || (stateInfo->keyStates)->released[1][KEY_2])) {
-            stateInfo->match->flowControl.pause = 0;
+    if (stateInfo->paused == 1) {
+        if (((stateInfo->key_states)->released[0][KEY_2] || (stateInfo->key_states)->released[1][KEY_2])) {
+            stateInfo->paused = 0;
         }
     }
     // update camera
-    cs->lastCamTargetLocation.x = cs->camTargetLocation.x;
-    cs->lastCamTargetLocation.y = cs->camTargetLocation.y;
-    cs->lastCamTargetLocation.z = cs->camTargetLocation.z;
-
-    cs->lastCamLocation.y = cs->camLocation.y;
-    cs->lastCamLocation.z = cs->camLocation.z;
-    cs->lastCamLocation.x = cs->camLocation.x;
+    camera->last_target = camera->target;
+    camera->last_eye = camera->eye;
     // we follow the ball with our camera
-    cs->camTargetLocation.x = ballInfo->location.x;
-    cs->camTargetLocation.y = ballInfo->location.y * 0.5f;
-    cs->camTargetLocation.z = ballInfo->location.z;
+    camera->target.x = ballInfo->location.x;
+    camera->target.y = ballInfo->location.y * 0.5f;
+    camera->target.z = ballInfo->location.z;
 
     // and our camera also moves a bit with the ball.
 
-    cs->camLocation.x = 0.1f * cs->camTargetLocation.x;
+    camera->eye.x = 0.1f * camera->target.x;
     // if we are behind the homebase
-    if (stateInfo->match->ballInfo.location.z > HOME_RADIUS) {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f +
-                            (float)fabs(cs->camTargetLocation.x) / 3;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 15.0f +
-                            (float)fabs(cs->camTargetLocation.x) / 2;
+    if (ballInfo->location.z > HOME_RADIUS) {
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f + 5.0f + (float)fabs(camera->target.x) / 3;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 15.0f + (float)fabs(camera->target.x) / 2;
     }
-    // if runner coming from third base
-    else if (stateInfo->match->cameraState.homeRunCameraFlag == 0) {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f;
+    // the normal mode
+    else if (camera->home_run.active == 0) {
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f;
     }
-    // and the normal mode
+    // and a runner coming home from third base
     else {
-        cs->camLocation.y = cs->camTargetLocation.y - cs->camTargetLocation.z * 0.1f + 3.0f + 5.0f;
-        cs->camLocation.z = cs->camTargetLocation.z - 0.3f * cs->camTargetLocation.z + 12.0f + 8.0f;
+        camera->eye.y = camera->target.y - camera->target.z * 0.1f + 3.0f + 5.0f;
+        camera->eye.z = camera->target.z - 0.3f * camera->target.z + 12.0f + 8.0f;
     }
-    // cant update this at the drawing-function as that doesnt happen synchroniusly.
-    // so when info event happens, we set gameInfoEventTimer to 0 and this will start increasing it until
-    // we hit the threshold.
-    if (stateInfo->match->uiState.gameInfoEventTimer != -1) {
-        stateInfo->match->uiState.gameInfoEventTimer += 1;
-
-        if (stateInfo->match->uiState.gameInfoEventTimer > (int)EVENT_TIMER_THRESHOLD) {
-            stateInfo->match->uiState.gameInfoEventTimer = -1;
-        }
+    if (update_game_frame(stateInfo, menuInfo)) {
+        home_run_view_after_tick(&camera->home_run, &stateInfo->tick_facts);
+        player_view_after_tick(players, &stateInfo->tick_facts);
+        hud_after_tick(hud, &stateInfo->announcement);
     }
-
-    // and here will a lot of logic code.
-    update_game_frame(stateInfo, menuInfo, rng_seed);
 }
 
-void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+// Put what the referee pronounced this tick on the info line, and consume it. Called once per tick, after
+// it — never from the draw code, which runs at its own rate and used to clear the referee's copy.
+static void hud_take_announcement(HudState* hud, GameEventType* announcement)
+{
+    if (*announcement == EVENT_NONE) return;
+    hud->info_event = *announcement;
+    hud->info_event_timer = 0;
+    *announcement = EVENT_NONE;
+}
+
+// The screen's side of one tick that ran. The info line's clock counts TICKS — game time — so a message
+// stays up while the game is paused rather than running out underneath the pause; it is advanced here,
+// once per tick, and not in the draw code, which does not run in step with the tick. Then whatever the
+// referee announced this tick goes up on the line, starting the clock at 0, and is consumed.
+void hud_after_tick(HudState* hud, GameEventType* announcement)
+{
+    if (hud->info_event_timer != -1) {
+        hud->info_event_timer += 1;
+        if (hud->info_event_timer > (int)EVENT_TIMER_THRESHOLD) {
+            hud->info_event_timer = -1;
+        }
+    }
+    hud_take_announcement(hud, announcement);
+}
+
+void draw_game_screen(
+    const SceneView* scene, HudState* hud, const CameraView* camera, double alpha, ResourceManager* rm,
+    const RenderState* rs
+)
 {
     // Ensure the 3D rendering state is correctly set up before drawing the game screen.
     begin_3d_render(rs);
-    CameraState* cs = (CameraState*)&(stateInfo->match->cameraState);
     Vector3D look, cam, skyBoxLook;
 
-    look.x = (float)(alpha * cs->camTargetLocation.x + (1 - alpha) * cs->lastCamTargetLocation.x);
-    look.y = (float)(alpha * cs->camTargetLocation.y + (1 - alpha) * cs->lastCamTargetLocation.y);
-    look.z = (float)(alpha * cs->camTargetLocation.z + (1 - alpha) * cs->lastCamTargetLocation.z);
-    cam.y = (float)(alpha * cs->camLocation.y + (1 - alpha) * cs->lastCamLocation.y);
-    cam.z = (float)(alpha * cs->camLocation.z + (1 - alpha) * cs->lastCamLocation.z);
-    cam.x = (float)(alpha * cs->camLocation.x + (1 - alpha) * cs->lastCamLocation.x);
+    look.x = (float)(alpha * camera->target.x + (1 - alpha) * camera->last_target.x);
+    look.y = (float)(alpha * camera->target.y + (1 - alpha) * camera->last_target.y);
+    look.z = (float)(alpha * camera->target.z + (1 - alpha) * camera->last_target.z);
+    cam.y = (float)(alpha * camera->eye.y + (1 - alpha) * camera->last_eye.y);
+    cam.z = (float)(alpha * camera->eye.z + (1 - alpha) * camera->last_eye.z);
+    cam.x = (float)(alpha * camera->eye.x + (1 - alpha) * camera->last_eye.x);
     // with skybox we move to origin
     skyBoxLook.x = look.x - cam.x;
     skyBoxLook.y = look.y - cam.y;
@@ -158,30 +193,30 @@ void draw_game_screen(const StateInfo* stateInfo, double alpha, ResourceManager*
     glDepthMask(GL_FALSE);
     glLoadIdentity();
     gluLookAt(
-        cs->skyBoxCam.x, cs->skyBoxCam.y, cs->skyBoxCam.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, cs->up.x, cs->up.y,
-        cs->up.z
+        SKYBOX_EYE.x, SKYBOX_EYE.y, SKYBOX_EYE.z, skyBoxLook.x, skyBoxLook.y, skyBoxLook.z, CAMERA_UP.x, CAMERA_UP.y,
+        CAMERA_UP.z
     );
 
-    draw_skybox(stateInfo, rm);
+    draw_skybox(rm);
 
     // Re-enable depth writes for the rest of the scene.
     glDepthMask(GL_TRUE);
 
     glLoadIdentity();
-    gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, cs->up.x, cs->up.y, cs->up.z);
+    gluLookAt(cam.x, cam.y, cam.z, look.x, look.y, look.z, CAMERA_UP.x, CAMERA_UP.y, CAMERA_UP.z);
     glEnable(GL_LIGHTING);
-    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
+    glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
-    draw_immutable_world(stateInfo, alpha, rm);
-    draw_game_frame(stateInfo, alpha, rm);
+    draw_immutable_world(rm);
+    draw_game_frame(scene->match, &scene->rules->scoreboard, scene->players, scene->paused, alpha, rm);
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
-    draw_statistics_2d(stateInfo, alpha, rm, rs);
+    draw_statistics_2d(scene, hud, alpha, rm, rs);
 }
 
 // lights
-static int init_lights(StateInfo* stateInfo)
+static int init_lights(void)
 {
     // our lighting is a point light that is so far away that its practically a directional light.
     //
@@ -190,7 +225,6 @@ static int init_lights(StateInfo* stateInfo)
     float diffuse[] = {1.0f, 1.0f, 1.0f, 1.0f};
     float ambient[] = {0.8f, 0.8f, 0.8f, 1.0f};
     float specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    CameraState* cs = &(stateInfo->match->cameraState);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -198,16 +232,12 @@ static int init_lights(StateInfo* stateInfo)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    cs->lightPos[0] = LIGHT_SOURCE_POSITION_X;
-    cs->lightPos[1] = LIGHT_SOURCE_POSITION_Y;
-    cs->lightPos[2] = LIGHT_SOURCE_POSITION_Z;
-    cs->lightPos[3] = 1.0f;
-    glLightfv(GL_LIGHT0, GL_POSITION, cs->lightPos);
+    glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_POSITION);
 
     return 0;
 }
 
-static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
+static void draw_skybox(ResourceManager* rm)
 {
     glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/skybox.tga"));
     glPushMatrix();
@@ -216,13 +246,12 @@ static void draw_skybox(const StateInfo* stateInfo, ResourceManager* rm)
     glPopMatrix();
 }
 
-static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, ResourceManager* rm, const RenderState* rs)
+static void
+draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs)
 {
     char* str4;
     char str5[2] = "x";
-    float swingMeterX;
     float meterX;
-    UIState* us = &(stateInfo->match->uiState);
 
     // Layout Constants
     const float BASE_Y = VIRTUAL_HEIGHT - 80.0f;
@@ -248,8 +277,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // OUTS (Far Left)
     float outs_x = CENTER_X + OUTS_OFFSET_X;
-    if (stateInfo->rules->scoreboard.period < 4) {
-        switch (stateInfo->rules->halfInningState.outs) {
+    if (scene->rules->scoreboard.period < 4) {
+        switch (scene->rules->half_inning.outs) {
         case 3:
             print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
             break;
@@ -268,15 +297,9 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // INFO AREA (Left-Center)
     float info_x = CENTER_X + INFO_OFFSET_X;
 
-    if (stateInfo->rules->halfInningState.event != EVENT_NONE) {
-        us->gameInfoEventTimer = 0;
-        us->gameInfoEvent = (int)stateInfo->rules->halfInningState.event;
-        stateInfo->rules->halfInningState.event = EVENT_NONE;
-    }
-
-    if (us->gameInfoEventTimer != -1) {
+    if (hud->info_event_timer != -1) {
         const char* msg = "";
-        switch (us->gameInfoEvent) {
+        switch (hud->info_event) {
         case EVENT_OUT:
             msg = "OUT";
             break;
@@ -304,42 +327,67 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         case EVENT_TWO_RUNS_SCORED:
             msg = "TWO RUNS";
             break;
+        case EVENT_NONE:
+            break;
         }
         print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
-    } else if (stateInfo->match->flowControl.waitingForFreeWalkDecision == 1) {
+    } else if (scene->match->offers.free_walk == 1) {
         print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
     } else {
-        // Player selection info
+        // Who the panel is about: the candidate the human is looking at while a decision is open,
+        // and otherwise the player actually at the plate.
+        //
+        // It used to read pII.batterSelectionIndex for both, which worked by accident — the field
+        // was the engine's offer, and nothing cleared it after a seating, so between decisions it
+        // happened to name the batter. With the offer gone the two questions are asked separately,
+        // and the second is asked of the plate, which is the fact it was always really about.
         int index;
         int shouldContinue = 1;
-        if (stateInfo->rules->scoreboard.period < 4) {
-            if (stateInfo->match->pII.batterSelectionIndex == -1)
-                shouldContinue = 0;
-            else
-                index = stateInfo->match->pII.batterSelectionIndex;
+        if (scene->rules->scoreboard.period < 4) {
+            if (scene->match->offers.batter_seat == 1) {
+                int candidates[BATTER_CANDIDATE_MAX];
+                int count = list_batter_candidates(
+                    scene->match, &scene->rules->scoreboard, &scene->rules->half_inning, candidates
+                );
+                int cursor = scene->input->batter_widget.highlight;
+                if (count <= 0)
+                    shouldContinue = 0;
+                else
+                    index = candidates[(cursor >= 0 && cursor < count) ? cursor : 0];
+            } else {
+                index = get_active_batter_index(scene->match);
+                if (index == -1) shouldContinue = 0;
+            }
         } else {
-            int battingTeamIndex = get_batting_team_index(&stateInfo->rules->scoreboard);
-            index = stateInfo->rules->scoreboard.teams[battingTeamIndex]
-                        .batterRunnerIndices[0][stateInfo->rules->homeRunContestState.runnerBatterPairCounter];
-            if (index == -1) shouldContinue = 0;
+            int battingTeamIndex = get_batting_team_index(&scene->rules->scoreboard);
+            int pairIdx = scene->rules->homerun_contest.pair_index;
+            // pairIdx reaches pair_count at end-of-inning; clamp so we never read past the
+            // current pair row of batter_runner_indices.
+            if (pairIdx < 0 || pairIdx >= scene->rules->scoreboard.pair_count) {
+                shouldContinue = 0;
+            } else {
+                index = scene->rules->scoreboard.teams[battingTeamIndex].batter_runner_indices[0][pairIdx];
+                if (index == -1) shouldContinue = 0;
+            }
         }
         if (shouldContinue == 1) {
-            int speed = stateInfo->match->playerInfo[index].bTPI.speed;
-            int power = stateInfo->match->playerInfo[index].bTPI.power;
+            int speed = scene->match->players[index].attributes.speed;
+            int power = scene->match->players[index].attributes.power;
             char p_str[32];
             sprintf(p_str, "S%d P%d", speed, power);
             print_text_2d(p_str, (unsigned int)strlen(p_str), info_x, TEXT_Y, FONT_SIZE);
 
-            if (stateInfo->match->playerInfo[index].bTPI.joker != JOKER_REGULAR &&
-                stateInfo->rules->scoreboard.period < 4) {
+            if (scene->match->players[index].batting.joker != JOKER_REGULAR && scene->rules->scoreboard.period < 4) {
                 str5[0] = 'J';
             } else {
-                str5[0] = (char)(((int)'0') + stateInfo->match->playerInfo[index].bTPI.number);
+                str5[0] = (char)(((int)'0') + scene->match->players[index].batting.number);
             }
             // Number at +180 (gap 40 from S/P), Name at +250 (gap 42 from Number)
             print_text_2d(str5, 1, info_x + 180.0f, TEXT_Y, FONT_SIZE);
 
-            str4 = stateInfo->match->playerInfo[index].bTPI.name;
+            // The name is the roster's, looked up where it is shown: the World holds no pointers.
+            const int battingTeamIndex = get_batting_team_index(&scene->rules->scoreboard);
+            str4 = scene->teams[scene->rules->scoreboard.teams[battingTeamIndex].value - 1].players[index].name;
             print_text_2d(str4, (unsigned int)strlen(str4), info_x + 250.0f, TEXT_Y, FONT_SIZE);
         }
     }
@@ -349,8 +397,8 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // Inning
     char inn_str[16] = "I  ";
-    if (stateInfo->rules->scoreboard.period < 4) {
-        inn_str[2] = (char)(((int)'0') + stateInfo->rules->scoreboard.inning / 2 + 1);
+    if (scene->rules->scoreboard.period < 4) {
+        inn_str[2] = (char)(((int)'0') + scene->rules->scoreboard.inning / 2 + 1);
     } else {
         inn_str[2] = '0';
     }
@@ -358,23 +406,21 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
 
     // Balls
     char ball_str[16] = "B  ";
-    if (stateInfo->rules->halfInningState.balls < 10) {
-        ball_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.balls);
+    if (scene->rules->half_inning.balls < 10) {
+        ball_str[2] = (char)(((int)'0') + scene->rules->half_inning.balls);
     } else {
-        sprintf(ball_str, "B%d", stateInfo->rules->halfInningState.balls);
+        sprintf(ball_str, "B%d", scene->rules->half_inning.balls);
     }
     print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Strikes
     char strike_str[16] = "S  ";
-    strike_str[2] = (char)(((int)'0') + stateInfo->rules->halfInningState.strikes);
+    strike_str[2] = (char)(((int)'0') + scene->rules->half_inning.strikes);
     print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Runs
     char runs_str[32];
-    sprintf(
-        runs_str, "R %d - %d", stateInfo->rules->scoreboard.teams[0].runs, stateInfo->rules->scoreboard.teams[1].runs
-    );
+    sprintf(runs_str, "R %d - %d", scene->rules->scoreboard.teams[0].runs, scene->rules->scoreboard.teams[1].runs);
     print_text_2d(runs_str, (unsigned int)strlen(runs_str), stats_x + 220.0f, TEXT_Y, FONT_SIZE); // Moved Right
 
     // METER (Right-Center)
@@ -387,22 +433,78 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
         resource_manager_get_texture(rm, "data/textures/meter.tga"), meter_screen_x, meter_y, meter_w, meter_h
     );
 
-    // Meter Markers
-    meterX = 0.16f * stateInfo->match->pRAI.meterValue;
-    swingMeterX = 0.16f * stateInfo->match->pRAI.swingMeterValue;
+    // Meter Markers. The cursor value is in [0,1]; the marker travels the full bar so its edges sit flush
+    // with the bar's left/right ends (no gap) — its travel range is (meter_w − marker_w), not meter_w.
+    float marker_w = 5.0f;
+    float marker_travel = meter_w - marker_w;
+    meterX = 0.16f * catching_widget_view(scene->input);
 
-    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * us->lastMeterX) / 0.16f * meter_w;
-    float swing_marker_x = meter_screen_x + (alpha * swingMeterX + (1 - alpha) * us->lastSwingMeterX) / 0.16f * meter_w;
-
-    us->lastMeterX = meterX;
-    us->lastSwingMeterX = swingMeterX;
+    float field_marker_x = meter_screen_x + (alpha * meterX + (1 - alpha) * hud->last_meter_x) / 0.16f * marker_travel;
+    hud->last_meter_x = meterX;
 
     draw_texture_2d(
-        resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, 5.0f, 40.0f
+        resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), field_marker_x, meter_y, marker_w, 40.0f
     );
-    draw_texture_2d(
-        resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, 5.0f, 40.0f
-    );
+
+    // The batting side's bar, asked of the gesture itself — as the catching side's is above — rather
+    // than of a number the engine carries for it.
+    SwingMeterView swing = swing_widget_view(&scene->input->swing_widget);
+
+    // The MOVING marker exists only while something is actually sweeping. Drawing it unconditionally
+    // parked a marker at the bar's left edge whenever there was no cursor — including through the
+    // whole wait between committing a power and the ball being released, where it sat next to the
+    // committed mark meaning nothing.
+    if (swing.cursor_live) {
+        // No previous position means nothing to interpolate FROM: a marker that has just appeared
+        // would otherwise streak across the bar from wherever the last one died. -1 is the "not
+        // drawn last frame" sentinel, and it is why the marker can vanish and return cleanly.
+        float previous = (hud->last_swing_meter_x < 0.0f) ? swing.cursor : hud->last_swing_meter_x;
+        float swing_marker_x = meter_screen_x + (alpha * swing.cursor + (1 - alpha) * previous) * marker_travel;
+        hud->last_swing_meter_x = swing.cursor;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_marker_x, meter_y, marker_w,
+            40.0f
+        );
+    } else {
+        hud->last_swing_meter_x = -1.0f;
+    }
+
+    // Pitch dance — a SECOND catching-team marker. While the human aims (power already locked, the aim
+    // cursor descending = field_marker above), also show a STATIC marker at the locked power, in the same
+    // catching-team marker colour. This removes the old visual "jump" (the single cursor used to teleport
+    // to the far right on power-lock). Shown only during the human aim phase; the AI drives no widget, so
+    // an AI pitch never shows a marker. Render-only — reads the gesture's own copy of what it declared,
+    // which is correct even while the declaration is still on its way to the engine.
+    if (scene->input->pitch_widget.meter.mode == WIDGET_DESCENT) {
+        float locked_power = scene->input->pitch_widget.power;
+        float power_marker_x = meter_screen_x + locked_power * marker_travel;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall3.tga"), power_marker_x, meter_y, marker_w,
+            40.0f
+        );
+    }
+
+    // ...and the batting team's own, the same dance on the other side of it: a STATIC marker holding
+    // the power already committed, in the batting-team colour. Without it the single cursor appeared
+    // to teleport on commit, and the batter lost sight of the decision he had just made while making
+    // the next one.
+    //
+    // Keyed on the GESTURE having a committed power, not on its second meter running. Those are the
+    // same condition for the pitcher and are NOT for the batter: his elevation meter cannot arm until
+    // the ball is in the air, so a mark keyed on the meter went dark for the whole wait between the
+    // two beats — visible, then gone at the moment of the press, then back when the ball came up.
+    // That wait is the batter's own beat of the four, so it needs a state the pitcher's gesture never
+    // had, which is exactly what SwingBeat is for.
+    //
+    // Like the pitch's, it reads the CLIENT's own copy rather than the engine's: only that is still
+    // correct when the declaration takes a wire's delay to arrive.
+    if (swing.power_committed) {
+        float swing_power_marker_x = meter_screen_x + swing.power * marker_travel;
+        draw_texture_2d(
+            resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"), swing_power_marker_x, meter_y,
+            marker_w, 40.0f
+        );
+    }
 
     // BASES (Far Right)
     float bases_screen_x = CENTER_X + BASES_OFFSET_X;
@@ -417,37 +519,32 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     // Base Runners
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         int index = i;
-        if (stateInfo->match->playerInfo[index].bTPI.baseId != BASE_NONE) {
+        if (scene->match->players[index].batting.presence.base_id != BASE_NONE) {
             float phase = 0.0f;
             BaseID base = BASE_HOME;
             float distance;
             // Logic copied from original
-            if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME) {
-                if (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z > 0) {
+            if (scene->match->players[index].batting.presence.base_id == BASE_HOME) {
+                if (scene->match->players[index].body.location.z - HOME_LINE_Z > 0) {
                     phase = 0.0f;
                 } else {
-                    distance = stateInfo->fieldPositions->firstBaseRun.z - HOME_LINE_Z;
-                    phase = (stateInfo->match->playerInfo[index].tPI.location.z - HOME_LINE_Z) / distance;
+                    distance = scene->field->first_base_run.z - HOME_LINE_Z;
+                    phase = (scene->match->players[index].body.location.z - HOME_LINE_Z) / distance;
                 }
                 base = BASE_HOME;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_FIRST) {
-                distance = stateInfo->fieldPositions->secondBaseRun.x - stateInfo->fieldPositions->firstBaseRun.x;
-                phase =
-                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->firstBaseRun.x) /
-                    distance;
+            } else if (scene->match->players[index].batting.presence.base_id == BASE_FIRST) {
+                distance = scene->field->second_base_run.x - scene->field->first_base_run.x;
+                phase = (scene->match->players[index].body.location.x - scene->field->first_base_run.x) / distance;
                 base = BASE_FIRST;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_SECOND) {
-                distance = stateInfo->fieldPositions->thirdBaseRun.x - stateInfo->fieldPositions->secondBaseRun.x;
-                phase =
-                    (stateInfo->match->playerInfo[index].tPI.location.x - stateInfo->fieldPositions->secondBaseRun.x) /
-                    distance;
+            } else if (scene->match->players[index].batting.presence.base_id == BASE_SECOND) {
+                distance = scene->field->third_base_run.x - scene->field->second_base_run.x;
+                phase = (scene->match->players[index].body.location.x - scene->field->second_base_run.x) / distance;
                 base = BASE_SECOND;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_THIRD) {
-                distance = HOME_LINE_Z - stateInfo->fieldPositions->thirdBaseRun.z;
-                phase = (stateInfo->match->playerInfo[index].tPI.location.z - stateInfo->fieldPositions->thirdBase.z) /
-                        distance;
+            } else if (scene->match->players[index].batting.presence.base_id == BASE_THIRD) {
+                distance = HOME_LINE_Z - scene->field->third_base_run.z;
+                phase = (scene->match->players[index].body.location.z - scene->field->third_base.z) / distance;
                 base = BASE_THIRD;
-            } else if (stateInfo->match->playerInfo[index].bTPI.baseId == BASE_HOME_SCORED) {
+            } else if (scene->match->players[index].batting.presence.base_id == BASE_HOME_SCORED) {
                 phase = 0.0f;
                 base = BASE_HOME_SCORED;
             }
@@ -466,69 +563,29 @@ static void draw_statistics_2d(const StateInfo* stateInfo, double alpha, Resourc
     }
 }
 
-static void load_game_screen_settings(StateInfo* stateInfo, unsigned int* rng_seed)
+static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera)
 {
-    stateInfo->match->uiState.gameInfoEventTimer = -1;
+    stateInfo->paused = 0;
+    hud->info_event_timer = -1;
     // initialize cam
-    init_cam_settings(stateInfo);
+    init_camera(camera);
     // Physical world + flow + team setup
-    reset_for_new_half_inning(
-        stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules, rng_seed
-    );
+    reset_for_new_half_inning(stateInfo->match, stateInfo->field_positions, stateInfo->team_data, stateInfo->rules);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
     referee_reset_for_new_inning(
-        &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState
+        &stateInfo->rules->referee, &stateInfo->rules->half_inning, &stateInfo->rules->between_pitch
     );
     // Scan physical world to establish initial legal tracking
-    initialize_referee(stateInfo, &stateInfo->rules->referee);
+    initialize_referee(stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->referee);
 }
 
-static void init_cam_settings(StateInfo* stateInfo)
+static void init_camera(CameraView* camera)
 {
-    CameraState* cs = &(stateInfo->match->cameraState);
-
-    cs->lastCamTargetLocation.x = 0.0f;
-    cs->lastCamTargetLocation.y = 0.0f;
-    cs->lastCamTargetLocation.z = 0.0f;
-    cs->camTargetLocation.x = 0.0f;
-    cs->camTargetLocation.y = 0.0f;
-    cs->camTargetLocation.z = -1.0f;
-    cs->lastCamLocation.x = 0.0f;
-    cs->lastCamLocation.y = 0.0f;
-    cs->lastCamLocation.z = 0.0f;
-    cs->camLocation.x = 0.0f;
-    cs->camLocation.y = 0.0f;
-    cs->camLocation.z = 0.0f;
-
-    cs->cam.x = cs->camLocation.x;
-    cs->cam.y = 0.0f;
-    cs->cam.z = 0.0f;
-    cs->up.x = 0.0f;
-    cs->up.y = 1.0f;
-    cs->up.z = 0.0f;
-    cs->look.x = 0.0f;
-    cs->look.y = 0.0f;
-    cs->look.z = 0.0f;
-
-    cs->skyBoxCam.x = 0.0f;
-    cs->skyBoxCam.y = 0.0f;
-    cs->skyBoxCam.z = 0.0f;
-    cs->skyBoxLook.x = 0.0f;
-    cs->skyBoxLook.y = 0.0f;
-    cs->skyBoxLook.z = -1.0f;
-    // these values are kinda trial and error values to move the statistics window to right place. i think proper
-    // deriving is unnecessary as we use perspective projection at the same time.
-
-    // to move statistics to safe zone of tv
-    cs->statCam.x = 0.0f;
-    cs->statCam.y = 1.9f;
-    cs->statCam.z = -1.69f;
-    cs->statUp.x = 0.0f;
-    cs->statUp.y = 0.0f;
-    cs->statUp.z = -1.0f;
-    cs->statLook.x = 0.0f;
-    cs->statLook.y = 0.0f;
-    cs->statLook.z = -1.69f;
+    camera->home_run = (HomeRunView){.hold_ticks = -1};
+    camera->last_target = (Vector3D){0.0f, 0.0f, 0.0f};
+    camera->target = (Vector3D){0.0f, 0.0f, -1.0f};
+    camera->last_eye = (Vector3D){0.0f, 0.0f, 0.0f};
+    camera->eye = (Vector3D){0.0f, 0.0f, 0.0f};
 }
 
 int clean_game_screen(StateInfo* stateInfo)

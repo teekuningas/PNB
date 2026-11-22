@@ -1,10 +1,12 @@
 #include "hutunkeitto_menu.h"
 #include "render.h"
-#include "font.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
 #include "menu_types.h"
 #include "menu_helpers.h"
 #include "rng.h"
+#include "player_utils.h"
 
 #define BAT_DEFAULT_HEIGHT -1.0f
 #define LEFT_HAND_DEFAULT_HEIGHT 0.1f
@@ -71,7 +73,7 @@ MenuStage update_hutunkeitto_menu(
         state->state = 3;
 
     } else if (state->state == 3) {
-        if (team1_control != 2) {
+        if (!team_is_ai(team1_control)) {
             if (keyStates->down[team1_control][KEY_UP]) {
                 if (state->leftScaleCount < SCALE_LIMIT) {
                     state->leftScaleCount += 1;
@@ -87,7 +89,7 @@ MenuStage update_hutunkeitto_menu(
         } else {
             state->leftReady = 1;
         }
-        if (team2_control != 2) {
+        if (!team_is_ai(team2_control)) {
             if (keyStates->down[team2_control][KEY_UP]) {
                 if (state->rightScaleCount < SCALE_LIMIT) {
                     state->rightScaleCount += 1;
@@ -161,14 +163,14 @@ MenuStage update_hutunkeitto_menu(
             control = team1_control;
         } else
             control = team2_control;
-        if (control != 2) {
+        if (!team_is_ai(control)) {
             if (keyStates->released[control][KEY_2]) {
                 if (state->pointer == 0) {
                     state->playsFirst = 0;
                 } else {
                     state->playsFirst = 1;
                 }
-                gameSetup->playsFirst = state->playsFirst;
+                gameSetup->plays_first = state->playsFirst;
                 return MENU_STAGE_GO_TO_GAME;
             }
             if (keyStates->released[control][KEY_RIGHT]) {
@@ -185,7 +187,7 @@ MenuStage update_hutunkeitto_menu(
                 state->playsFirst = 1;
             else
                 state->playsFirst = 0;
-            gameSetup->playsFirst = state->playsFirst;
+            gameSetup->plays_first = state->playsFirst;
             return MENU_STAGE_GO_TO_GAME;
         }
     }

@@ -11,9 +11,8 @@ static int is_power_of_two(int n)
 }
 
 // Test the creation and initial state of a cup
-int test_cup_creation()
+int test_cup_creation(void)
 {
-    printf("Running test: %s\n", __func__);
     int initial_teams[] = {0, 1, 2, 3, 4, 5, 6, 7};
     int num_teams = 8;
     Cup* cup = cup_create(num_teams, 1, 0, 4, initial_teams);
@@ -42,9 +41,8 @@ int test_cup_creation()
 }
 
 // Test the progression of winners through the tournament tree
-int test_cup_progression()
+int test_cup_progression(void)
 {
-    printf("Running test: %s\n", __func__);
     int initial_teams[] = {0, 1, 2, 3, 4, 5, 6, 7};
     int num_teams = 8;
     Cup* cup = cup_create(num_teams, 1, 0, 4, initial_teams);
@@ -83,9 +81,8 @@ int test_cup_progression()
 }
 
 // Test "best of N" win condition
-int test_cup_best_of_three()
+int test_cup_best_of_three(void)
 {
-    printf("Running test: %s\n", __func__);
     int initial_teams[] = {0, 1, 2, 3};
     int num_teams = 4;
     // Best of 3 means 2 wins are needed
@@ -115,9 +112,8 @@ int test_cup_best_of_three()
 }
 
 // Test save and load functionality with round-trip verification
-int test_cup_save_load()
+int test_cup_save_load(void)
 {
-    printf("Running test: %s\n", __func__);
     const char* test_filename = "test_cup_save.xml";
 
     // Create a cup with some progress
@@ -202,9 +198,8 @@ int test_cup_save_load()
 }
 
 // Test day-based progression and AI simulation
-int test_cup_day_progression()
+int test_cup_day_progression(void)
 {
-    printf("Running test: %s\n", __func__);
 
     int initial_teams[] = {0, 1, 2, 3};
     int num_teams = 4;
@@ -270,9 +265,8 @@ int test_cup_day_progression()
 }
 
 // Test day progression with multi-game matches (best-of-3)
-int test_cup_day_progression_best_of_three()
+int test_cup_day_progression_best_of_three(void)
 {
-    printf("Running test: %s\n", __func__);
 
     int initial_teams[] = {0, 1, 2, 3};
     int num_teams = 4;

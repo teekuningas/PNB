@@ -3,6 +3,27 @@
 
 // Lifecycle contract tests
 int test_clear_frame_events_completeness(void);
+int test_home_run_view_preserves_phase_and_hold_boundaries(void);
+int test_homeward_run_facts_survive_clear_and_legal_enforcement(void);
+int test_camera_facts_distinguish_resets_from_flow_short_circuits(void);
+int test_player_view_preserves_phase_and_restart_boundaries(void);
+int test_player_activity_facts_survive_same_tick_arrival(void);
+int test_player_view_resets_before_batter_readiness(void);
+int test_player_facing_preserves_planar_displacement(void);
+int test_player_stops_preserve_distinct_facing_and_sync(void);
+int test_player_reset_recipes_rebuild_home_geometry(void);
+int test_idle_fielder_returns_to_its_home_geometry(void);
+int test_half_inning_replaces_batting_attributes_and_resources(void);
+int test_foul_restores_presence_without_replacing_batting_resources(void);
+int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void);
+int test_third_home_route_visits_flag_before_physical_arrival(void);
+int test_third_home_retreat_returns_via_flag_to_third(void);
+int test_terminal_players_complete_all_exit_legs(void);
+int test_simulate_raises_and_consumes_each_runner_arrival(void);
+int test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home(void);
+// SIMULATE asks the catch against the fielders where the previous tick left them
+int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void);
+int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void);
 
 // Referee reaction contract tests
 int test_referee_starts_wounding_on_catch(void);
@@ -18,8 +39,83 @@ int test_no_free_walk_runs_during_end_of_inning(void);
 // Phase 6.5
 int test_compound_foul_and_end_of_inning(void);
 int test_compound_hr_pair_and_uncatchable(void);
+int test_contest_side_change_starts_from_the_first_pair(void);
 
 // Event→Decision promotion contracts
 int test_bat_outcome_promotion(void);
+
+// Run-scoring guard contracts (a wounded runner must not be awarded a run)
+int test_wounded_runner_cannot_score_run(void);
+
+// Reset-recipe contracts (nothing a producer declared survives a reset)
+int test_reset_clears_declared_intent(void);
+
+// Catching-AI intent contracts (the drop migration)
+int test_ai_declares_and_executes_tactical_drop(void);
+
+// Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)
+int test_control_stage_precedes_execution(void);
+
+// Pitch contracts (a declared power and aim → the engine-owned windup)
+int test_pitch_aimed_releases_with_declared_velocity(void);
+int test_pitch_unaimed_is_valesyotto(void);
+int test_pitch_aim_declared_during_the_windup_is_the_aim_released(void);
+int test_no_pitch_after_three_correct_pitches(void);
+
+// The gate owns the pitch's and the throw's permissions
+int test_pitch_permission_names_each_rule(void);
+int test_a_refused_pitch_begins_nothing(void);
+int test_throw_permission_names_each_rule(void);
+int test_contributions_need_an_action_to_contribute_to(void);
+int test_one_catching_action_per_tick_whatever_the_order(void);
+int test_pitch_and_throw_values_are_repeat_safe(void);
+int test_a_late_beginning_changes_nothing(void);
+
+// A base-run command is for the runner holding the base at the top of the tick
+int test_a_base_run_needs_a_runner(void);
+int test_a_base_run_for_no_base_is_malformed(void);
+
+// Throw contracts (a declared target and power → the engine windup clock)
+int test_throw_windup_frames_scale_with_power(void);
+int test_throw_declared_whole_releases_sized_to_power(void);
+int test_throw_target_then_power_engine_times_release(void);
+int test_throw_recovery_preserves_the_movement_boundary(void);
+int test_throw_recovery_is_independent_of_animation(void);
+int test_ai_baseman_throws_to_idle_cover_on_own_base(void);
+
+// Fielder-movement contracts (the destination message and the engine mover)
+int test_move_target_sets_velocity_toward_the_point(void);
+int test_move_target_at_the_fielder_is_a_no_op(void);
+int test_move_target_stops_on_arrival(void);
+int test_restating_the_move_target_changes_nothing(void);
+int test_duplicate_messages_in_one_frame_equal_one(void);
+int test_move_target_refused_without_a_controlled_fielder(void);
+int test_reset_recipes_leave_no_fielding_state(void);
+
+// §12 batter-offer contract — only a joker may be seated once the order has come round
+// §27/§12/§7 — who may take the bat, refused at the INGEST gate (tests/.../test_batter_selection.c)
+int test_seat_refuses_regular_when_order_spent(void);
+int test_seat_refuses_a_spent_joker(void);
+int test_seat_refuses_a_regular_out_of_turn(void);
+int test_seat_waits_for_home_then_seats_the_named_joker(void);
+int test_repeated_seat_requests_seat_once(void);
+int test_seat_refuses_when_no_decision_is_open(void);
+int test_declared_aim_walks_the_batter_and_arrives_exactly(void);
+int test_aim_beyond_the_arc_stands_at_its_end(void);
+int test_restating_the_aim_changes_nothing(void);
+int test_silence_leaves_the_aim_alone(void);
+int test_seat_naming_a_non_player_is_malformed(void);
+
+// The swing slice — declared values, repeat-safety, silence, withdrawal, and the gate's refusal.
+int test_swing_declared_values_drive_the_contact(void);
+int test_swing_declarations_are_repeat_safe(void);
+int test_a_swing_never_declared_is_not_a_miss(void);
+int test_a_withdrawn_swing_does_not_reach_the_ball(void);
+int test_a_swing_declared_with_no_pitch_is_refused(void);
+int test_batting_motion_and_recovery_follow_physical_time(void);
+
+// A pitch is in progress for its whole windup, on every pitch of a half-inning, not only the first.
+int test_drop_refused_during_a_later_windup(void);
+int test_controlled_fielder_holds_during_a_later_windup(void);
 
 #endif // ALL_CONTRACTS_H

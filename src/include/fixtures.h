@@ -2,7 +2,6 @@
 #define FIXTURES_H
 
 #include "game_setup.h"
-#include "globals.h"
 
 // Fixture configuration for command-line parsing
 typedef struct {
@@ -24,12 +23,6 @@ void fixture_create_super_inning(GameSetup* setup, int team1, int team2, int tea
 void fixture_create_homerun_contest(GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control);
 void fixture_create_cup_final_super_inning(
     GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control
-);
-
-// Creates a game setup starting at period 2
-void fixture_create_period2_start(
-    GameSetup* setup, int team1, int team2, int team1_control, int team2_control, int period1_score_team1,
-    int period1_score_team2
 );
 
 // Helper to parse --fixture command line args for main.c

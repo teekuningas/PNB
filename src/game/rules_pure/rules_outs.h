@@ -1,7 +1,7 @@
 #ifndef RULES_OUTS_H
 #define RULES_OUTS_H
 
-#include "globals.h"
+#include "foundation.h"
 
 /**
  * @brief Checks if a runner is forced out according to §33 Pesäkilpa.

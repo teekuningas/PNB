@@ -1,5 +1,10 @@
 #include "player_renderer.h"
-#include "../core/render.h" // For GL-related functions and MeshObject
+#include <stdio.h>
+#include "display.h"
+#include "rules_state.h"
+#include "world.h"
+#include "actions/throwing_system.h" // THROW_WINDUP_MAX_FRAMES (throw gather arc)
+#include "actions_pure/pitching_physics.h" // the pitch windup's physical segments
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <stdlib.h> // For malloc
@@ -9,16 +14,20 @@
 #define SELECTION_BALL_SCALE 0.2f
 
 // Forward declarations for static helper functions
-static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type, ResourceManager* rm);
-static void modelSelection(const StateInfo* stateInfo, int index, ResourceManager* rm);
+static void textureSelection(const Scoreboard* scoreboard, int team, int joker, int type, ResourceManager* rm);
+static void modelSelection(const MatchSession* match, const PlayerAnimation* animation, ResourceManager* rm);
 
 int init_player_renderer(ResourceManager* rm)
 {
     return 0;
 }
 
-void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerInfo, double alpha, ResourceManager* rm)
+void draw_player_renderer(
+    const MatchSession* match, const Scoreboard* scoreboard, const PlayerView* players, double alpha,
+    ResourceManager* rm
+)
 {
+    const PlayerInfo* playerInfo = match->players;
     int i;
     int j = 0;
     double angle;
@@ -26,21 +35,21 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT + PLAYERS_IN_TEAM; i++) {
         j++;
         // calculate the angle in which player is facing
-        angle = atan2(-playerInfo[i].tPI.orientation.z, playerInfo[i].tPI.orientation.x) * 180.0f / PI;
+        angle = atan2(-playerInfo[i].body.orientation.z, playerInfo[i].body.orientation.x) * 180.0f / PI;
         // for every player we also move and rotate the players to right places
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x),
-            (float)playerInfo[i].tPI.location.y,
-            (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+            (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x),
+            (float)playerInfo[i].body.location.y,
+            (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
         );
         glScalef(PLAYER_SCALE, PLAYER_SCALE, PLAYER_SCALE);
         glRotatef((float)(angle + 90), 0.0f, 1.0f, 0.0f);
 
         // and we render. first texture is selected, as there are different teams and within teams there are jokers
         // and nonjokers. and then the model is selected and it also calls the display list.
-        textureSelection(stateInfo, playerInfo[i].cPI.team, playerInfo[i].bTPI.joker, 0, rm);
-        modelSelection(stateInfo, i, rm);
+        textureSelection(scoreboard, playerInfo[i].side, playerInfo[i].batting.joker, 0, rm);
+        modelSelection(match, &players->players[i], rm);
         // and then there is the shadow.
         // we add 0.001f*j to SHADOW_HEIGHT so that there will be no visual problems of meshes being exactly at the same
         // height.
@@ -49,9 +58,10 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
         glDisable(GL_LIGHTING);
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x - 0.2f),
+            (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x -
+                    0.2f),
             SHADOW_HEIGHT + 0.001f * j,
-            (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+            (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
         );
         glScalef(1.0f, 1.0f, 0.6f);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -60,13 +70,13 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
         glDisable(GL_BLEND);
         glEnable(GL_LIGHTING);
         // and then there is the marker at the top of player who is controlled
-        if (i == stateInfo->match->pII.controlIndex) {
-            textureSelection(stateInfo, playerInfo[i].cPI.team, 0, 1, rm);
+        if (i == match->catching.controlled_fielder) {
+            textureSelection(scoreboard, playerInfo[i].side, 0, 1, rm);
             glPushMatrix();
             glTranslatef(
-                (float)(alpha * playerInfo[i].tPI.location.x + (1 - alpha) * playerInfo[i].tPI.lastLocation.x),
-                (float)playerInfo[i].tPI.location.y + 2.0f,
-                (float)(alpha * playerInfo[i].tPI.location.z + (1 - alpha) * playerInfo[i].tPI.lastLocation.z)
+                (float)(alpha * playerInfo[i].body.location.x + (1 - alpha) * playerInfo[i].body.previous_location.x),
+                (float)playerInfo[i].body.location.y + 2.0f,
+                (float)(alpha * playerInfo[i].body.location.z + (1 - alpha) * playerInfo[i].body.previous_location.z)
             );
             glScalef(SELECTION_BALL_SCALE, SELECTION_BALL_SCALE, SELECTION_BALL_SCALE);
             glCallList(resource_manager_get_model(rm, "data/models/pallo.obj"));
@@ -75,19 +85,17 @@ void draw_player_renderer(const StateInfo* stateInfo, const PlayerInfo* playerIn
     }
 }
 
-static void textureSelection(const StateInfo* stateInfo, int team, int joker, int type, ResourceManager* rm)
+static void textureSelection(const Scoreboard* scoreboard, int team, int joker, int type, ResourceManager* rm)
 {
     // Calculate who is currently batting to map "team" (role) to actual team index
     // team 0 = batting team, team 1 = catching team
-    int battingTeamIndex = (stateInfo->rules->scoreboard.inning + stateInfo->rules->scoreboard.playsFirst +
-                            stateInfo->rules->scoreboard.period) %
-                           2;
+    int battingTeamIndex = (scoreboard->inning + scoreboard->plays_first + scoreboard->period) % 2;
     int actualTeamIndex = (team + battingTeamIndex) % 2;
 
     // theres two types of texture selections, texture selection for player and texture selection for marker.
     if (type == 0) {
         char path[128];
-        int team_val = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].value;
+        int team_val = scoreboard->teams[actualTeamIndex].value;
         if (joker == 0) {
             sprintf(path, "data/textures/team%d.tga", team_val);
         } else {
@@ -98,7 +106,7 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
     // and here, should we use green, blue or red ball on top of a player.
     // depends on who controls.
     else if (type == 1) {
-        int control = (&stateInfo->rules->scoreboard)->teams[actualTeamIndex].control;
+        int control = scoreboard->teams[actualTeamIndex].control;
         if (control == 0) {
             glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/selectionBall1.tga"));
         } else if (control == 1) {
@@ -109,15 +117,11 @@ static void textureSelection(const StateInfo* stateInfo, int team, int joker, in
     }
 }
 
-static void modelSelection(const StateInfo* stateInfo, int index, ResourceManager* rm)
+static void modelSelection(const MatchSession* match, const PlayerAnimation* animation, ResourceManager* rm)
 {
-    // and then we must select which mesh we use and call the corresponding display list.
-    // for animations we just use the animationStage, that is being updated in game_manipulation, as index
-    // in mesh arrays.
-    int animIndex = stateInfo->match->playerInfo[index].cPI.animationStage /
-                    stateInfo->match->playerInfo[index].cPI.animationFrequency;
+    int animIndex = animation->frame_tick / animation->ticks_per_frame;
     char path[128];
-    switch (stateInfo->match->playerInfo[index].cPI.model) {
+    switch (animation->model) {
     case PLAYER_ANIM_STAND_NO_BALL:
         glCallList(resource_manager_get_model(rm, "data/models/player_glove_without_ball_standing.obj"));
         break;
@@ -150,18 +154,46 @@ static void modelSelection(const StateInfo* stateInfo, int index, ResourceManage
         );
         glCallList(resource_manager_get_model(rm, path));
         break;
-    case PLAYER_ANIM_PITCH_WINDUP:
-        sprintf(path, "data/models/pitch/pitch_down_%06d.obj", animIndex + 1);
+    case PLAYER_ANIM_PITCH_WINDUP: {
+        // Windup arc driven by the engine windup CLOCK (timing dictates animation, never the reverse), in
+        // three segments matching pitch_windup_total_frames: a fixed crouch DOWN, a power-scaled crouch
+        // HOLD (a higher toss stays crouched longer), then a fixed rise UP that completes exactly as the
+        // ball leaves. The clip clock is ignored here — the timer is the master. Works identically for AI
+        // and human (the AI declares power directly; the windup + arc are the same engine path).
+        const CatchingAction* action = &match->catching_action;
+        int timer = action->timer;
+        int crouch = pitch_windup_crouch_frames(action->as.pitch.power);
+        if (timer < PITCH_WINDUP_DOWN_FRAMES) {
+            int f = timer * PITCH_DOWN_MAX / PITCH_WINDUP_DOWN_FRAMES; // crouch descent 0..DOWN_MAX-1
+            if (f >= PITCH_DOWN_MAX) f = PITCH_DOWN_MAX - 1;
+            sprintf(path, "data/models/pitch/pitch_down_%06d.obj", f + 1);
+        } else if (timer < crouch) {
+            sprintf(path, "data/models/pitch/pitch_down_%06d.obj", PITCH_DOWN_MAX); // hold the deepest crouch
+        } else {
+            int up = (timer - crouch) * PITCH_UP_MAX / PITCH_WINDUP_UP_FRAMES;
+            if (up >= PITCH_UP_MAX) up = PITCH_UP_MAX - 1;
+            sprintf(path, "data/models/pitch/pitch_up_%06d.obj", up + 1);
+        }
         glCallList(resource_manager_get_model(rm, path));
         break;
+    }
     case PLAYER_ANIM_PITCH_THROW:
         sprintf(path, "data/models/pitch/pitch_up_%06d.obj", animIndex + 1);
         glCallList(resource_manager_get_model(rm, path));
         break;
-    case PLAYER_ANIM_THROW_WINDUP:
-        sprintf(path, "data/models/throw/throw_load_%06d.obj", animIndex + 1);
+    case PLAYER_ANIM_THROW_WINDUP: {
+        // Gather arc driven by the engine windup CLOCK (timing dictates animation, never the reverse): the
+        // throw_load frames span the windup, so the gather deepens as the hold runs and completes at a full
+        // hold. Mapped to the full-power windup length; the clip clock is ignored (the timer is master).
+        // Works identically for AI and human — the same engine clock.
+        int timer = match->catching_action.timer;
+        int f = timer * THROW_LOAD_FRAMES / THROW_WINDUP_MAX_FRAMES;
+        if (f >= THROW_LOAD_FRAMES) f = THROW_LOAD_FRAMES - 1;
+        if (f < 0) f = 0;
+        sprintf(path, "data/models/throw/throw_load_%06d.obj", f + 1);
         glCallList(resource_manager_get_model(rm, path));
         break;
+    }
     case PLAYER_ANIM_THROW_RELEASE:
         sprintf(path, "data/models/throw/throw_release_%06d.obj", animIndex + 1);
         glCallList(resource_manager_get_model(rm, path));

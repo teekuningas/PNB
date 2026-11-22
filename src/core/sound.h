@@ -1,7 +1,7 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#include "globals.h"
+#include "session.h"
 
 int init_sound(StateInfo* stateInfo);
 void update_sound(StateInfo* stateInfo);

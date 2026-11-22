@@ -1,26 +1,17 @@
 #include "game_over_menu.h"
-#include "font.h"
+#include "render.h"
+#include "tick_outputs.h"
 #include "menu_helpers.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
+#include "input.h"
 
-void initGameOverMenu(void)
+MenuStage updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates)
 {
-    // This menu is stateless, so nothing to do here
-}
-
-MenuStage
-updateGameOverMenu(const GameConclusion* conclusion, const KeyStates* keyStates, int team1_control, int team2_control)
-{
-    int flag = 0;
-    if (team1_control != 2) {
-        if (keyStates->released[team1_control][KEY_2]) flag = 1;
-    }
-    if (team2_control != 2) {
-        if (keyStates->released[team2_control][KEY_2]) flag = 1;
-    }
-
-    if (flag == 1) {
-        if (conclusion->isCupGame) {
+    if (any_human_released(keyStates, KEY_2)) {
+        if (conclusion->is_cup_game) {
             return MENU_STAGE_CUP;
         }
         return MENU_STAGE_FRONT;
@@ -46,22 +37,22 @@ void draw_game_over_menu(
     sprintf(buffer, "Congratulations %s!", winner_name);
     draw_text_2d(buffer, center_x, 250, 50.0f, TEXT_ALIGN_CENTER, rs);
 
-    sprintf(buffer, "First period: %d - %d", conclusion->period0Runs[0], conclusion->period0Runs[1]);
+    sprintf(buffer, "First period: %d - %d", conclusion->period0_runs[0], conclusion->period0_runs[1]);
     draw_text_2d(buffer, center_x, 380, 40.0f, TEXT_ALIGN_CENTER, rs);
 
-    sprintf(buffer, "Second period: %d - %d", conclusion->period1Runs[0], conclusion->period1Runs[1]);
+    sprintf(buffer, "Second period: %d - %d", conclusion->period1_runs[0], conclusion->period1_runs[1]);
     draw_text_2d(buffer, center_x, 430, 40.0f, TEXT_ALIGN_CENTER, rs);
 
     // Super inning: show if anyone scored OR if homerun was played (implies super-inning happened)
-    if (conclusion->period2Runs[0] > 0 || conclusion->period2Runs[1] > 0 || conclusion->period3Runs[0] > 0 ||
-        conclusion->period3Runs[1] > 0) {
-        sprintf(buffer, "Super inning: %d - %d", conclusion->period2Runs[0], conclusion->period2Runs[1]);
+    if (conclusion->period2_runs[0] > 0 || conclusion->period2_runs[1] > 0 || conclusion->period3_runs[0] > 0 ||
+        conclusion->period3_runs[1] > 0) {
+        sprintf(buffer, "Super inning: %d - %d", conclusion->period2_runs[0], conclusion->period2_runs[1]);
         draw_text_2d(buffer, center_x, 480, 40.0f, TEXT_ALIGN_CENTER, rs);
     }
 
     // Homerun contest: show if anyone scored
-    if (conclusion->period3Runs[0] > 0 || conclusion->period3Runs[1] > 0) {
-        sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3Runs[0], conclusion->period3Runs[1]);
+    if (conclusion->period3_runs[0] > 0 || conclusion->period3_runs[1] > 0) {
+        sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3_runs[0], conclusion->period3_runs[1]);
         draw_text_2d(buffer, center_x, 530, 40.0f, TEXT_ALIGN_CENTER, rs);
     }
 }

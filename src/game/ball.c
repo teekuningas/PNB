@@ -1,4 +1,5 @@
-#include "globals.h"
+#include "field.h"
+#include "world.h"
 #include "ball.h"
 #ifndef NO_RENDER
 #include "../renderer/ball_renderer.h"

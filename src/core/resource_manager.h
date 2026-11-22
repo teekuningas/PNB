@@ -1,8 +1,7 @@
 #ifndef RESOURCE_MANAGER_H
 #define RESOURCE_MANAGER_H
 
-#include "globals.h"
-#include "loadobj.h"
+#include <GL/glew.h>
 
 // Using a simple fixed-size array for now. Can be improved later.
 #define MAX_RESOURCES 1024

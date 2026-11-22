@@ -1,33 +1,84 @@
 /*
-    game_frame.c — The per-frame game pipeline.
+    game_frame.c — the per-frame game pipeline, the tick.
 
-    Each frame executes 7 stages in strict order:
-      1. Input           (action_invocations)
-      2. Physics & Logic (action_implementation + game_manipulation)
-      3. Referee         (update_referee)         — WRITES: RefereeState, HalfInningState, BetweenPitchState,
-   PlayerCounters, Scoreboard
-      4. Consolidation   (consolidation_update)   — READS referee, scoreboard, bps, his (const),
-   WRITES: PlayerInfo, FlowControl, pRAI, GameFlowState
-      5. Referee Finalize(referee_finalize)        — WRITES: RefereeState (RESETTING→NONE only)
-      6. Snapshot        (debug)
-      7. Cleanup         (clear_frame_events)
+    Each frame runs its stages in strict order, each named for its role:
+      1. CONTROL      action_invocations + ai_update — every producer, reading the same settled world,
+                      writing nothing but value messages into its own team's intent channel
+      2. INGEST       ingest_intents — the gate: drains the channels, asks every permission, returns the
+                      tick's commands
+      3. ACTUALIZE    actualize — the engine's own actualization order over those commands
+      4. SIMULATE     simulate — the physical step: the ball, the catch, the fielders, the bodies; the
+                      ground, the catch and the arrivals are detected inside the steps that make them
+      5. ADJUDICATE   update_referee — WRITES the legal world: RefereeState, HalfInningState,
+                      BetweenPitchState, Scoreboard, HomeRunContestState
+      6. ENFORCE      consolidation_update — READS the legal world (const); WRITES the bodies, the offers
+                      to the batting side, the free-walk entitlement, the ball's flight and the at-bat;
+                      performs the reset recipes
+      7. SETTLE       referee_finalize — WRITES RefereeState (RESETTING→NONE only), after the resets
+      8. VALIDATE     the pitch-start snapshot and the state validator (debug)
+      9. CLEAR        clear_frame_events
 */
 
-#include "globals.h"
+#include <stdio.h>
+#include "rules_state.h"
+#include "world.h"
+#include "session.h"
 #include "ball.h"
 #include "player.h"
-#include "action_implementation.h"
+#include "ingest.h"
+#include "actualize.h"
 #include "action_invocations.h"
+#include "ai/ai_controller.h"
 #include "game_consolidation.h"
-#include "game_manipulation.h"
+#include "simulate.h"
+#include "frame_events.h"
 
 #include "game_frame.h"
-#include "common_logic.h"
-#include "game_setup.h"
 #include "../renderer/player_renderer.h" // Include player_renderer.h
 #include "state_validator.h"
 #include "referee.h"
 #include "rules_pure/player_utils.h"
+#include "base_control.h"
+
+static ThirdBaseControl observe_third_base_control(const MatchSession* match, const RefereeState* referee)
+{
+    int runner = get_base_controller(match, referee, BASE_THIRD);
+    if (runner == -1) return THIRD_NO_CONTROLLER;
+    return match->players[runner].batting.presence.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
+                                                                                 : THIRD_CONTROLLER_OFF_BASE;
+}
+
+static void collect_player_facts(MatchSession* match, PlayerTickFacts* facts)
+{
+    for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+        facts[i] = (PlayerTickFacts){.activity = match->players[i].events,
+                                     .holds_ball = match->ball.holder == i,
+                                     .throw_recovering = match->players[i].fielding.throw_recovery_ticks != 0};
+        match->players[i].events = (PlayerActivityEvents){0};
+    }
+}
+
+// The menu a period's end opens, from why it ended. The session's routing, not the engine's: ENFORCE only says
+// that the game screen is done and which transition finished it.
+static void route_menu(MenuInfo* menuInfo, PeriodTransitionType transition)
+{
+    switch (transition) {
+    case PERIOD_TRANSITION_INTER_PERIOD:
+        menuInfo->mode = MENU_ENTRY_INTER_PERIOD;
+        break;
+    case PERIOD_TRANSITION_SUPER_INNING:
+        menuInfo->mode = MENU_ENTRY_SUPER_INNING;
+        break;
+    case PERIOD_TRANSITION_HOMERUN_CONTEST:
+        menuInfo->mode = MENU_ENTRY_HOMERUN_CONTEST;
+        break;
+    case PERIOD_TRANSITION_GAME_OVER:
+        menuInfo->mode = MENU_ENTRY_GAME_OVER;
+        break;
+    default:
+        break;
+    }
+}
 
 int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 {
@@ -47,82 +98,123 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
         return -1;
     }
 
-    init_action_implementation(stateInfo);
-    init_action_invocations(stateInfo);
+    init_actualization(stateInfo->match);
+    init_client_input(stateInfo->client_input);
 
-    // Consolidated Init (Game Flow + Reset Logic)
-    consolidation_init(&(stateInfo->match->gameFlowState));
-
-    init_game_manipulation(&(stateInfo->match->gameFlowState));
+    stateInfo->tick_facts = (TickFacts){0};
 
     return 0;
 }
 
-void update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo, unsigned int* rng_seed)
+int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 {
-    if (stateInfo->match->flowControl.pause == 0) {
-        MatchSession* game = stateInfo->match;
-        GameRulesState* rules = stateInfo->rules;
+    if (stateInfo->paused) return 0;
+    MatchSession* game = stateInfo->match;
+    GameRulesState* rules = stateInfo->rules;
 
-        // 1. Inputs
-        action_invocations(game, stateInfo->keyStates, &rules->scoreboard);
+    // 1. CONTROL — every producer, one stage, one settled world.
+    // Both controllers run here at the frame top and read the SAME end-of-previous-tick world:
+    // the human's keys through action_invocations, the AI through ai_update. Their intents are
+    // then consumed by the SAME frame's execution, so neither producer is privileged and the AI
+    // has no 1-frame input buffer (that buffer was an accident of call placement, not a design).
+    // This is controller symmetry: the engine cannot tell the producers apart by when they ran.
+    //
+    // Order within the stage is free, and deliberately so: every check* in action_invocations
+    // returns early on CONTROL_AI and ai_update dispatches per team on team_is_ai(), so the two
+    // producers write disjoint per-team channels and cannot see each other's writes. Human first
+    // only because that is the order that held before this stage existed.
+    //
+    // Frame-top placement also makes one-frame transients structurally invisible: events is
+    // drained by the tick that produced it (stage 9), so a controller here can only ever read
+    // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
+    action_invocations(
+        game, stateInfo->client_input, stateInfo->key_states, &rules->scoreboard, &rules->referee, &rules->half_inning,
+        &stateInfo->channels
+    );
+    ai_update(game, rules, stateInfo->field_positions, stateInfo->ai_controller, &stateInfo->channels);
 
-        // 2. Physics & Logic
-        action_implementation(stateInfo, rng_seed);
-        game_manipulation(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
+    // StateInfo is destructured here (the assembly point): each stage receives exactly the
+    // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
+    // geometry, the tick's input (the channels) and outputs — a signature is its complete
+    // edge list. The client's input memory is not among them: only CONTROL ever names it.
 
-        // 3. Referee (Legal State Authority)
-        // Runs AFTER physics to ensure legal state matches physical events
-        update_referee(
-            stateInfo, &rules->referee, &rules->halfInningState, &rules->betweenPitchState, &rules->playerCounters,
-            &rules->scoreboard, &rules->homeRunContestState
-        );
+    // 2. INGEST — every controller's declarations, judged against the world as it stands now. After this
+    // line the channels are empty and no intent-shaped thing is left to read; what survives is a local
+    // of this tick, handed to the next stage and gone with the frame.
+    IngestedCommands commands = ingest_intents(game, rules, stateInfo->field_positions, &stateInfo->channels);
 
-        // 4. Consolidation (Reaction Phase)
-        // - Updates Game Flow (innings, user prompts)
-        // - Handles Physical Resets (Foul Play)
-        // - Enforces Legal State (Outs, Scoring)
-        // Referee-owned state passed via GameRulesState — consolidation reads but minimally writes.
-        ConsolidationOutput consolidation_output;
-        consolidation_update(
-            game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, menuInfo, rng_seed,
-            &consolidation_output
-        );
+    // 3. ACTUALIZE — the engine's own order, whatever order the messages came in.
+    actualize(game, rules, stateInfo->field_positions, &commands, &stateInfo->play_sound_effect);
 
-        // Handle screen transition requests from consolidation
-        if (consolidation_output.request_screen_change) {
-            stateInfo->screen = consolidation_output.target_screen;
-            stateInfo->changeScreen = 1;
-            stateInfo->updated = 0;
-        }
+    // 4. SIMULATE — the physical world takes its step.
+    simulate(game, stateInfo->field_positions, &rules->referee, &stateInfo->play_sound_effect);
 
-        // 5. Referee Finalize (Post-Consolidation)
-        // Handles RESETTING→NONE transitions after consolidation has performed
-        // physical resets. Scans the new physical world and establishes legal tracking.
-        referee_finalize(stateInfo, &rules->referee, &rules->betweenPitchState);
+    int homeward_runs = game->events.homeward_runs_started;
+    TickFacts facts = {
+        .pitch_released = game->events.pitch_released,
+        .homeward_run_started = homeward_runs != 0,
+        .ball_home = ball_is_home(game, stateInfo->field_positions),
+        .third_base_control = observe_third_base_control(game, &rules->referee)
+    };
+    collect_player_facts(game, facts.simulated_players);
 
-        // 6. Capture snapshot after all updates when pitch is released
-        if (stateInfo->match->gameEvents.pitchReleased) {
-            state_validator_capture_snapshot(stateInfo, "PITCH_START");
-        }
+    // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
+    // pronounces what it means.
+    update_referee(
+        stateInfo->match, stateInfo->field_positions, &rules->referee, &rules->half_inning, &rules->between_pitch,
+        &rules->scoreboard, &rules->homerun_contest, &stateInfo->announcement
+    );
 
-        // Validate state consistency (Debug only)
-        if (!state_validator_check(stateInfo)) {
-            state_validator_dump(stateInfo, "State Consistency Check Failed");
-            stateInfo->match->flowControl.pause = 1;
-        }
+    // 6. ENFORCE — the legal decisions made physical: the burnt and the scored leave the field, the
+    // batting side is asked its questions, and a reset the referee called for is performed. It reads
+    // the legal world const; only the referee writes it.
+    ConsolidationOutput consolidation_output;
+    consolidation_update(
+        game, stateInfo->field_positions, stateInfo->team_data, stateInfo->game_conclusion, rules, &consolidation_output
+    );
+    facts.world_reset = consolidation_output.world_reset;
+    facts.enforcement_completed = consolidation_output.enforcement_completed;
+    facts.homeward_run_started_in_enforcement = game->events.homeward_runs_started > homeward_runs;
+    collect_player_facts(game, facts.enforced_players);
+    stateInfo->tick_facts = facts;
 
-        // 7. Clear transient events for the next frame
-        clear_frame_events(&stateInfo->match->gameEvents);
+    // Handle screen transition requests from consolidation
+    if (consolidation_output.request_screen_change) {
+        route_menu(menuInfo, consolidation_output.period_transition);
+        stateInfo->screen = consolidation_output.target_screen;
+        stateInfo->change_screen = 1;
+        stateInfo->updated = 0;
     }
+
+    // 7. SETTLE — the referee closes the RESETTING→NONE handshake once the resets are done, and
+    // rescans the new physical world to establish its legal tracking.
+    referee_finalize(stateInfo->match, &rules->referee, &rules->between_pitch);
+
+    // 8. VALIDATE — capture a snapshot when a pitch is released, then check the state's invariants.
+    if (stateInfo->match->events.pitch_released) {
+        state_validator_capture_snapshot(stateInfo, "PITCH_START");
+    }
+
+    // Validate state consistency (Debug only)
+    if (!state_validator_check(stateInfo)) {
+        state_validator_dump(stateInfo, "State Consistency Check Failed");
+        stateInfo->paused = 1;
+    }
+
+    // 9. CLEAR — the frame's events end with the frame.
+    clear_frame_events(&stateInfo->match->events);
+    return 1;
 }
-void draw_game_frame(const StateInfo* stateInfo, double alpha, ResourceManager* rm)
+void draw_game_frame(
+    const MatchSession* match, const Scoreboard* scoreboard, const PlayerView* players, int paused, double alpha,
+    ResourceManager* rm
+)
 {
     // players and ball are the building blocks of all the action on the screen.
-    if (stateInfo->match->flowControl.pause == 0) {
+    if (!paused) {
 #ifndef NO_RENDER
-        draw_player_renderer(stateInfo, stateInfo->match->playerInfo, alpha, rm);
-        draw_ball(&(stateInfo->match->ballInfo), alpha, rm);
+        draw_player_renderer(match, scoreboard, players, alpha, rm);
+        draw_ball(&(match->ball), alpha, rm);
 #endif
     }
 }

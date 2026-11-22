@@ -2,6 +2,8 @@
 #define FRONT_MENU_H
 
 #include "menu_types.h"
+#include "key_states.h"
+#include "session.h"
 #include "resource_manager.h"
 #include "render.h"
 

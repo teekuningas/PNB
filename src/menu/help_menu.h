@@ -2,7 +2,8 @@
 #define HELP_MENU_H
 
 #include "menu_types.h"
-#include "input.h"
+#include "render.h"
+#include "key_states.h"
 #include "resource_manager.h"
 
 void init_help_menu(HelpMenuState* state);

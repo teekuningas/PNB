@@ -1,14 +1,16 @@
 #ifndef BASE_CONTROL_H
 #define BASE_CONTROL_H
 
-#include "globals.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 
 /**
  * @brief Determines which player currently "controls" (is safe at) a given base.
  *
  * This is the SINGLE SOURCE OF TRUTH for base ownership.
- * A player controls a base if they BOTH have safety at the base (currentSafetyBase)
- * AND are physically at the base (baseId). This distinction matters for vapaataival
+ * A player controls a base if they BOTH have safety at the base (current_safety_base)
+ * AND are physically at the base (base_id). This distinction matters for vapaataival
  * (free walk) where safety is granted immediately but control comes upon arrival.
  *
  * @param game Pointer to MatchSession containing player physical state.
@@ -26,5 +28,10 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
  * @return The BaseID (as int 0-3) or -1 if not at any base.
  */
 int get_ball_at_base_index(const MatchSession* match, const FieldPositions* field_positions);
+
+// Is the ball home — held by somebody inside the home area? Asked wherever it matters and never stored:
+// it used to be cached in the World once a frame, a second copy of this same question that the referee
+// and the batting controller read while the referee also asked the question itself.
+int ball_is_home(const MatchSession* match, const FieldPositions* field_positions);
 
 #endif // BASE_CONTROL_H

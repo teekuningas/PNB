@@ -1,7 +1,7 @@
 #ifndef COLLISION_H
 #define COLLISION_H
 
-#include "../core/vector_math.h" // For Vector3D
+#include "foundation.h"
 
 int physics_check_ground_collision(float y_pos, float ground_level);
 int physics_resolve_field_boundaries(

@@ -1,8 +1,8 @@
 #include "help_menu.h"
 #include "menu_types.h"
-#include "globals.h"
+#include "display.h"
+#include "key_states.h"
 #include "render.h"
-#include "font.h"
 #include "resource_manager.h"
 #include "menu_helpers.h"
 
@@ -83,16 +83,17 @@ void draw_help_menu(HelpMenuState* state, const RenderState* rs, ResourceManager
         switch (state->page) {
         case 1:
             title = "Batting";
-            content = "Batting is done by the action key. Movement of the batter starts "
-                      "automatically when pitch is in air. If you dont press the key "
-                      "before the marker reaches the end of the meter, batter will not bat. "
-                      "If you want to bat, select power by pressing the key down when marker "
-                      "reaches wanted height and then releasing it after marker has come down "
-                      "to the yellow area. Balls vertical takeoff direction depends on the actual spot of the "
-                      "marker in the yellow area. You can adjust the horizontal angle of "
-                      "balls takeoff direction by strafing with batter. If there is no "
-                      "batter you can browse through available batters by pressing the "
-                      "second action key and select one by pressing the action key.";
+            content = "Batting is done with the action key. The power meter sweeps once "
+                      "when the pitcher begins the windup. If you do not press the action "
+                      "key before the sweep ends, the batter will not swing. To bat, press "
+                      "the action key once at the wanted power (low power bunts, higher "
+                      "power swings). Once the pitch is in the air, the marker descends "
+                      "across the meter; press the action key again in the yellow area to "
+                      "set the vertical takeoff angle. If you committed power on a bad "
+                      "pitch, press the second action key before contact to withdraw the "
+                      "swing. Adjust the horizontal angle by strafing. When there is no "
+                      "batter, browse available batters with the second action key and "
+                      "select one with the action key.";
             break;
         case 2:
             title = "Running";
@@ -114,11 +115,14 @@ void draw_help_menu(HelpMenuState* state, const RenderState* rs, ResourceManager
             break;
         case 3:
             title = "Pitching";
-            content = "Pitching is also done with the action key. To pitch you first hold "
-                      "the action key down and the marker will rise. You select the power "
-                      "by releasing action key and after that you must click the action "
-                      "key when marker reaches the yellow area again. The final position "
-                      "of marker in yellow area will affect the takeoff direction of ball.";
+            content = "Pitching uses three presses of the action key. Press the action key "
+                      "once to start the power meter sweeping, and press it again at the "
+                      "wanted height to lock pitch power and begin the windup (letting the "
+                      "sweep run out cancels). During the windup the aim marker descends "
+                      "from the right; press the action key a third time in the yellow "
+                      "area to pitch onto the plate. Where the marker stops sets the "
+                      "horizontal direction of the pitch. If you do not press during the "
+                      "aim descent, the pitcher makes a fake pitch and keeps the ball.";
             break;
         case 4:
             title = "Fielding";

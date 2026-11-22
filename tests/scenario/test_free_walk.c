@@ -1,7 +1,12 @@
 #include "scenario_builder.h"
+#include "rules_state.h"
+#include "intents.h"
+#include "world.h"
+#include "session.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
+#include "intent_channel.h"
 
 /**
  * TEST: Free Walk Resolution
@@ -11,7 +16,7 @@
  * 2. Grants safety at the next base (Referee)
  * 3. Player physically runs and arrives at the next base
  */
-int test_full_free_walk_resolution(void)
+int test_free_walk_resolution(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* game = ctx->state->match;
@@ -25,43 +30,47 @@ int test_full_free_walk_resolution(void)
     initialize_referee_from_physical_state(ctx);
 
     printf(
-        "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx, game->playerInfo[runnerIdx].bTPI.baseId,
-        rules->referee.battingPlayers[runnerIdx].currentSafetyBase
+        "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx,
+        game->players[runnerIdx].batting.presence.base_id, rules->referee.batting_players[runnerIdx].current_safety_base
     );
 
     // 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
-    game->flowControl.freeWalkIndex = runnerIdx;
-    game->flowControl.freeWalkBase = BASE_FIRST;
-    game->flowControl.waitingForFreeWalkDecision = 1;
+    game->free_walk.runner = runnerIdx;
+    game->free_walk.from = BASE_FIRST;
+    game->offers.free_walk = 1;
 
     printf("[TEST] Offering Free Walk to Player %d from Base %d\n", runnerIdx, BASE_FIRST);
 
     // 3b. Wait a frame (simulate UI showing the offer before player responds)
     simulate_frames(ctx, 1);
 
-    // 4. Action: Accept Free Walk
-    game->aF.bTAF.takeFreeWalk = FREE_WALK_ACCEPT;
+    // 4. Action: Accept Free Walk — declared as a message on the batting team's channel, the same way
+    // a human's key or the AI's decision reaches the engine.
+    intent_push(
+        &ctx->state->channels.batting, (IntentMessage){.kind = INTENT_TAKE_FREE_WALK, .as.free_walk = {.accept = 1}}
+    );
 
     // 5. Process acceptance (1 frame to trigger event and start movement)
     simulate_frames(ctx, 1);
 
     printf(
         "[TEST] After acceptance: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
-        game->playerInfo[runnerIdx].bTPI.state, PLAYER_STATE_ADVANCING_FREELY,
-        rules->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND
+        game->players[runnerIdx].batting.presence.state, PLAYER_STATE_ADVANCING_FREELY,
+        rules->referee.batting_players[runnerIdx].current_safety_base, BASE_SECOND
     );
 
     // CHECK 1: Action system started movement
     ASSERT_EQ(
-        PLAYER_STATE_ADVANCING_FREELY, game->playerInfo[runnerIdx].bTPI.state, "Player state should be ADVANCING_FREELY"
+        PLAYER_STATE_ADVANCING_FREELY, game->players[runnerIdx].batting.presence.state,
+        "Player state should be ADVANCING_FREELY"
     );
 
     // CHECK 2: Referee granted safety at NEXT base (2nd) immediately
-    BaseID safetyBase = rules->referee.battingPlayers[runnerIdx].currentSafetyBase;
+    BaseID safetyBase = rules->referee.batting_players[runnerIdx].current_safety_base;
     ASSERT_EQ(BASE_SECOND, safetyBase, "Referee should grant safety at SECOND base immediately upon event");
 
     // CHECK 3: Base at pitch start updated (for future foul play resolution)
-    BaseID startBase = rules->referee.battingPlayers[runnerIdx].baseAtPitchStart;
+    BaseID startBase = rules->referee.batting_players[runnerIdx].base_at_pitch_start;
     ASSERT_EQ(BASE_SECOND, startBase, "BaseAtPitchStart should be updated to SECOND base");
 
     // 6. Wait for runner to physically arrive at second base
@@ -69,7 +78,7 @@ int test_full_free_walk_resolution(void)
     int arrivedAt2nd = 0;
     for (int frame = 0; frame < 500; frame++) {
         simulate_frames(ctx, 1);
-        if (game->playerInfo[runnerIdx].bTPI.baseId == BASE_SECOND) {
+        if (game->players[runnerIdx].batting.presence.base_id == BASE_SECOND) {
             arrivedAt2nd = 1;
             printf("[TEST] Runner arrived at 2nd base (frame %d)\n", frame);
             break;
@@ -78,8 +87,69 @@ int test_full_free_walk_resolution(void)
 
     // CHECK 4: Runner physically arrived at destination
     ASSERT_EQ(1, arrivedAt2nd, "Runner should physically arrive at 2nd base");
-    ASSERT_EQ(BASE_SECOND, game->playerInfo[runnerIdx].bTPI.baseId, "Runner baseId should be SECOND");
+    ASSERT_EQ(BASE_SECOND, game->players[runnerIdx].batting.presence.base_id, "Runner baseId should be SECOND");
 
     cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+/**
+ * §26 — a free walk is offered to a PLAYER, so when there is nobody to offer it to there is no offer.
+ *
+ * Found by the owner in play: get burnt while a walk is on the table and the prompt stays up, with
+ * the game refusing to continue until it is answered. The mechanism is that consolidation clears
+ * `free_walk.runner` on every wrong pitch so the walk is re-evaluated, and does NOT clear the offer
+ * along with it — so if the re-evaluation then finds nobody (the batter burnt, no runner left), the
+ * offer was raised again anyway. It named nobody, nothing could withdraw it because the withdrawal
+ * asks about the player it names, and the lukkari may not pitch while an offer is open. Only a human
+ * answering a question about no one got the game moving again.
+ *
+ * The fix has two halves — an offer is not RAISED when the walk belongs to nobody, and an offer
+ * already open is CLOSED when the player it belongs to is taken out from under it — and the test has
+ * to be able to tell them apart. Asserting the end state cannot: the cancellation alone makes the
+ * final reading correct while the invalid state was still entered. So this asserts on every frame,
+ * and each half of the fix has been ablated against it separately.
+ */
+int test_free_walk_is_not_offered_to_nobody(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    StateInfo* st = ctx->state;
+    MatchSession* m = st->match;
+    GameRulesState* r = st->rules;
+
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+    simulate_frames(ctx, 2);
+
+    // The whole inner side is off the field: the batter has been burnt and no runner is left.
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        m->players[i].batting.presence.base_id = BASE_NONE;
+        m->players[i].batting.presence.state = PLAYER_STATE_OUT;
+        r->referee.batting_players[i].current_safety_base = BASE_NONE;
+    }
+
+    // A wrong pitch lands, which is what re-runs the calculation.
+    r->half_inning.balls = 2;
+    m->free_walk.worked_out = 0;
+    m->free_walk.runner = -1;
+
+    // Stepped one frame at a time, and asserting on EVERY frame rather than at the end. Checking
+    // only the final state cannot tell the two halves of the fix apart: with the offer raised and
+    // then withdrawn a frame later, an end-state assertion is green while the invalid state was
+    // still reachable. Measured — that is exactly what this test did before it was written this way,
+    // and ablating the raise half left it passing.
+    int ever_offered = 0;
+    for (int f = 0; f < 10; f++) {
+        simulate_frames(ctx, 1);
+        if (m->offers.free_walk == 1) ever_offered = 1;
+    }
+
+    int waiting = m->offers.free_walk;
+    int index = m->free_walk.runner;
+    cleanup_scenario(ctx);
+
+    ASSERT_EQ(-1, index, "setup: this is the case where §26 has nobody to give the walk to");
+    ASSERT_EQ(0, ever_offered, "a free walk that belongs to nobody must never be offered, not even for a frame");
+    ASSERT_EQ(0, waiting, "and no offer may be left standing");
     return TEST_PASSED;
 }

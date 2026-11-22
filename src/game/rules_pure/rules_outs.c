@@ -1,4 +1,5 @@
 #include "rules_outs.h"
+#include "foundation.h"
 
 /**
  * @brief Checks if a runner is forced out according to §33 Pesäkilpa and §36 Koppilyönnillä eteneminen.

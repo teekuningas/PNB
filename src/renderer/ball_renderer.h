@@ -1,7 +1,7 @@
 #ifndef BALL_RENDERER_H
 #define BALL_RENDERER_H
 
-#include "../include/globals.h" // For BallInfo structure
+#include "world.h"
 #include "../core/resource_manager.h"
 
 // Function to initialize ball rendering resources (textures, models)

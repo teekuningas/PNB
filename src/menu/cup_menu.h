@@ -2,7 +2,9 @@
 #define CUP_MENU_H
 
 #include "menu_types.h"
-#include "input.h" // For KeyStates
+#include "render.h"
+#include "key_states.h"
+#include "session.h"
 #include "resource_manager.h"
 
 typedef struct {

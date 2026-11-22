@@ -1,7 +1,7 @@
 #ifndef SCENARIO_BUILDER_H
 #define SCENARIO_BUILDER_H
 
-#include "globals.h"
+#include "session.h"
 #include "menu_types.h"
 
 /**
@@ -35,11 +35,11 @@ ScenarioContext* create_scenario(void);
 void initialize_referee_from_physical_state(ScenarioContext* ctx);
 
 /**
- * @brief Emit pitchReleased event and let referee snapshot state
+ * @brief Emit pitch_released event and let referee snapshot state
  *
  * Should be called AFTER placing players and initializing referee,
  * but BEFORE the actual test actions (hitting ball, running, etc).
- * This sets baseAtPitchStart for all players based on their current positions.
+ * This sets base_at_pitch_start for all players based on their current positions.
  *
  * @param ctx The scenario context
  */
@@ -75,11 +75,10 @@ void move_pitcher_away(ScenarioContext* ctx);
  *
  * In pesäpallo, the pitcher stands at home plate. This helper ensures the
  * ball is physically held by the pitcher at their home location, so that
- * gameManipulation computes ballHome = 1.
+ * ball_is_home() answers yes.
  *
- * Use this when your test needs the ball to be "home" — setting
- * gameFlowState.ballHome directly won't survive a pipeline frame because
- * gameManipulation recomputes it from physics every frame.
+ * Use this when your test needs the ball to be "home" — it is a question asked
+ * of where the ball is and who holds it, so the ball has to be put there.
  *
  * Do NOT combine with move_pitcher_away in the same test.
  *
@@ -88,10 +87,24 @@ void move_pitcher_away(ScenarioContext* ctx);
 void give_ball_to_pitcher(ScenarioContext* ctx);
 
 /**
+ * @brief Construct a state in which a windup may legally begin (the pitch slice's preconditions).
+ *
+ * Composes give_ball_to_pitcher with the remaining can_begin_windup() conditions: the pitcher (idx 12) is
+ * the home baseman (fielding_posts.baseman[0]) and near home, and a batter is ready. After this, declaring a
+ * pitch power on the catching channel and ticking INGEST + ACTUALIZE runs the engine-owned windup. The canonical way to
+ * reach a pitch-ready state — reused by the pitch (and later swing) tests rather than re-set inline.
+ *
+ * Do NOT combine with move_pitcher_away in the same test.
+ *
+ * @param ctx The scenario context
+ */
+void setup_pitcher_ready(ScenarioContext* ctx);
+
+/**
  * @brief Place the ball in the air above a location so it drops naturally
  *
  * The ball will be placed 5m above the target location with downward velocity.
- * It will fall naturally and trigger hasBallHitGround when it lands.
+ * It will fall naturally and trigger has_ball_hit_ground when it lands.
  * Call this AFTER initialize_referee_from_physical_state() and snapshot_pitch_start_state().
  *
  * @param ctx The scenario context
@@ -102,7 +115,7 @@ void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation);
 /**
  * @brief Throw ball toward a base using game's calibrated throwing mechanics
  */
-void throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase);
+void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, BaseID targetBase);
 
 /**
  * @brief Hit a fly ball (high arc) to a specific location
@@ -162,13 +175,28 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex);
 /**
  * @brief Simulate a pitch thrown to a specific X coordinate relative to plate center
  *
- * Sets up all necessary state (pitchState, ball velocity, referee snapshots) to mimic
+ * Sets up all necessary state (the pitch in flight, ball velocity, referee snapshots) to mimic
  * a real pitch release.
  *
  * @param ctx The scenario context
  * @param targetX The target X coordinate (0.0 = center/strike, >0.75 = ball)
  */
 void perform_pitch(ScenarioContext* ctx, float targetX);
+
+// The k-th of the batting team's jokers, in roster order — derived from the batting order, as the
+// engine derives it.
+int scenario_joker(ScenarioContext* ctx, int k);
+
+/**
+ * @brief Spend all three of the batting team's jokers.
+ *
+ * §12(2)/(3) only permit a side change once no jokers remain available, so any test that asserts a
+ * side change has to spend them first. The counter this touches is referee-owned bookkeeping, so it
+ * lives here rather than in the tests: when the rules model moves the count, one helper moves.
+ *
+ * @param ctx The scenario context
+ */
+void exhaust_jokers(ScenarioContext* ctx);
 
 /**
  * @brief Cleanup scenario and free resources

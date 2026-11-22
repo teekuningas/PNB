@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "foundation.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
@@ -33,20 +34,20 @@ int test_run_arrival_before_ball_lands(void)
     place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
 
     // 2. Move runner between corner flag and home to ensure quick arrival
-    // runLeftPoint is at Z=-25, homeRunPoint is at Z=-0.65, home plate is around Z=0
-    // Place runner at Z=-10 (between flag and homeRunPoint)
-    Vector3D homeLoc = ctx->state->fieldPositions->pitchPlate;
+    // run_left_point is at Z=-25, home_run_point is at Z=-0.65, home plate is around Z=0
+    // Place runner at Z=-10 (between flag and home_run_point)
+    Vector3D homeLoc = ctx->state->field_positions->pitch_plate;
     Vector3D startLoc = homeLoc;
     startLoc.z = -10.0f; // Between corner flag (-25) and home (-0.65)
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
-    ctx->state->match->playerInfo[runnerIndex].tPI.location = startLoc;
-    ctx->state->match->playerInfo[runnerIndex].tPI.lastLocation = startLoc;
+    ctx->state->match->players[runnerIndex].body.location = startLoc;
+    ctx->state->match->players[runnerIndex].body.previous_location = startLoc;
 
-    // Set runtime state: passedPathPoint=1 means "past corner flag, run to homeRunPoint"
-    // Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)
-    ctx->state->match->playerRuntime[runnerIndex].passedPathPoint = 1;
+    // waypoint=1 means "past corner flag, run to home_run_point"
+    // Runner is at Z=-10, which is between corner flag (Z=-25) and home_run_point (Z=-0.65)
+    ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     printf(
         "Setup: Runner %d placed close to home at (%.1f, %.1f, %.1f)\n", runnerIndex, startLoc.x, startLoc.y, startLoc.z
@@ -64,11 +65,11 @@ int test_run_arrival_before_ball_lands(void)
 
     // 5. Hit a fly ball into the field (will stay in air for a while)
     // Use coordinates known to be in bounds from test_runner_scores_from_third
-    Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchPlate = ctx->state->field_positions->pitch_plate;
     Vector3D targetInField = {10.0f, 0.0f, -10.0f}; // Known in-bounds location
     hit_fly_ball_to_location(ctx, pitchPlate, targetInField);
 
-    int runsAtStart = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs at start: %d\n", runsAtStart);
 
     // 6. Simulate frames
@@ -81,28 +82,28 @@ int test_run_arrival_before_ball_lands(void)
         simulate_frames(ctx, 1);
 
         // Log transient events
-        if (ctx->state->match->gameEvents.ballHitGround) {
-            printf("EVENT: ballHitGround at Frame %d\n", i);
+        if (ctx->state->match->events.ball_hit_ground) {
+            printf("EVENT: ball_hit_ground at Frame %d\n", i);
         }
-        if (ctx->state->match->gameEvents.playerArrivedAtBase) {
+        if (ctx->state->match->events.player_arrived_at_base) {
             printf(
-                "EVENT: playerArrivedAtBase at Frame %d (Base: %d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].bTPI.baseId
+                "EVENT: player_arrived_at_base at Frame %d (Base: %d)\n", i,
+                ctx->state->match->players[runnerIndex].batting.presence.base_id
             );
         }
 
         // Check Arrival
-        if (ctx->state->match->playerInfo[runnerIndex].bTPI.baseId == BASE_HOME_SCORED && !arrived) {
+        if (ctx->state->match->players[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
             arrived = 1;
             arrivalFrame = i;
             printf(
                 "Frame %d: Runner arrived at HOME. (Ball Height: %.2f, Rules Live: %d)\n", i,
-                ctx->state->match->ballInfo.location.y, ctx->state->rules->betweenPitchState.hasBallHitGround
+                ctx->state->match->ball.location.y, ctx->state->rules->between_pitch.has_ball_hit_ground
             );
         }
 
         // Check Ball Landing (Rule State)
-        if (ctx->state->rules->betweenPitchState.hasBallHitGround && !ballLanded) {
+        if (ctx->state->rules->between_pitch.has_ball_hit_ground && !ballLanded) {
             ballLanded = 1;
             landingFrame = i;
             printf("Frame %d: Ball hit ground. Game is now LIVE.\n", i);
@@ -128,7 +129,7 @@ int test_run_arrival_before_ball_lands(void)
         printf("SUCCESS: Runner arrived %d frames BEFORE ball landed.\n", landingFrame - arrivalFrame);
     }
 
-    int runsAfter = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAfter = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs after: %d\n", runsAfter);
 
     cleanup_scenario(ctx);

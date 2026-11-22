@@ -1,5 +1,7 @@
 #include "ball_renderer.h"
-#include "../core/render.h" // For GL-related functions and MeshObject
+#include "field.h"
+#include "display.h"
+#include "world.h"
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <stdlib.h> // For malloc
@@ -20,9 +22,9 @@ void draw_ball_renderer(const BallInfo* ballInfo, double alpha, ResourceManager*
         glBindTexture(GL_TEXTURE_2D, resource_manager_get_texture(rm, "data/textures/pallo.tga"));
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * ballInfo->location.x + (1 - alpha) * ballInfo->lastLocation.x),
-            (float)(alpha * ballInfo->location.y + (1 - alpha) * ballInfo->lastLocation.y),
-            (float)(alpha * ballInfo->location.z + (1 - alpha) * ballInfo->lastLocation.z)
+            (float)(alpha * ballInfo->location.x + (1 - alpha) * ballInfo->previous_location.x),
+            (float)(alpha * ballInfo->location.y + (1 - alpha) * ballInfo->previous_location.y),
+            (float)(alpha * ballInfo->location.z + (1 - alpha) * ballInfo->previous_location.z)
         );
         glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
         glCallList(resource_manager_get_model(rm, "data/models/pallo.obj"));
@@ -32,9 +34,9 @@ void draw_ball_renderer(const BallInfo* ballInfo, double alpha, ResourceManager*
         glDisable(GL_LIGHTING);
         glPushMatrix();
         glTranslatef(
-            (float)(alpha * ballInfo->location.x + (1 - alpha) * ballInfo->lastLocation.x +
-                    -SHADOW_CONSTANT * (alpha * ballInfo->location.y + (1 - alpha) * ballInfo->lastLocation.y)),
-            SHADOW_HEIGHT, (float)(alpha * ballInfo->location.z + (1 - alpha) * ballInfo->lastLocation.z)
+            (float)(alpha * ballInfo->location.x + (1 - alpha) * ballInfo->previous_location.x +
+                    -SHADOW_CONSTANT * (alpha * ballInfo->location.y + (1 - alpha) * ballInfo->previous_location.y)),
+            SHADOW_HEIGHT, (float)(alpha * ballInfo->location.z + (1 - alpha) * ballInfo->previous_location.z)
         );
         glScalef(BALL_SCALE, BALL_SCALE, BALL_SCALE);
         glCallList(resource_manager_get_model(rm, "data/models/shadow.obj"));

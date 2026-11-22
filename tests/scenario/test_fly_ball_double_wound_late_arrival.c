@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
@@ -20,11 +21,11 @@ int test_fly_ball_double_wound_late_arrival(void)
     move_pitcher_away(ctx);
 
     int fielderIdx = 16;
-    Vector3D fielderLoc = ctx->state->fieldPositions->backLeftPoint;
+    Vector3D fielderLoc = ctx->state->field_positions->back_left_point;
     fielderLoc.x += 5.0f;
     fielderLoc.z += 5.0f;
-    ctx->state->match->playerInfo[fielderIdx].tPI.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].tPI.homeLocation = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);
@@ -32,7 +33,7 @@ int test_fly_ball_double_wound_late_arrival(void)
 
     trigger_player_run_to_next_base(ctx, 0, BASE_FIRST); // A runs to 2nd
 
-    hit_fly_ball_to_location(ctx, ctx->state->fieldPositions->pitchPlate, fielderLoc);
+    hit_fly_ball_to_location(ctx, ctx->state->field_positions->pitch_plate, fielderLoc);
 
     printf("  TUPLAHAAVA SHARED SAFETY TRACE START\n");
 
@@ -42,16 +43,16 @@ int test_fly_ball_double_wound_late_arrival(void)
     for (int frame = 0; frame <= 800; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = ctx->state->match->pII.hasBallIndex;
-        int stateA = ctx->state->match->playerInfo[0].bTPI.state;
-        int stateB = ctx->state->match->playerInfo[1].bTPI.state;
-        int baseA = ctx->state->match->playerInfo[0].bTPI.baseId;
-        int timer = ctx->state->rules->referee.woundingEvaluationTimer;
-        int baseB = ctx->state->match->playerInfo[1].bTPI.baseId;
-        int safeA = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
-        int safeB = ctx->state->rules->referee.battingPlayers[1].currentSafetyBase;
-        int statusA = ctx->state->rules->referee.battingPlayers[0].status;
-        int statusB = ctx->state->rules->referee.battingPlayers[1].status;
+        int hasBall = ctx->state->match->ball.holder;
+        int stateA = ctx->state->match->players[0].batting.presence.state;
+        int stateB = ctx->state->match->players[1].batting.presence.state;
+        int baseA = ctx->state->match->players[0].batting.presence.base_id;
+        int timer = ctx->state->rules->referee.wounding_evaluation_timer;
+        int baseB = ctx->state->match->players[1].batting.presence.base_id;
+        int safeA = ctx->state->rules->referee.batting_players[0].current_safety_base;
+        int safeB = ctx->state->rules->referee.batting_players[1].current_safety_base;
+        int statusA = ctx->state->rules->referee.batting_players[0].status;
+        int statusB = ctx->state->rules->referee.batting_players[1].status;
 
         // Verbose logging
         if (frame % 20 == 0 || stateA == PLAYER_STATE_WOUNDED || stateB == PLAYER_STATE_WOUNDED ||

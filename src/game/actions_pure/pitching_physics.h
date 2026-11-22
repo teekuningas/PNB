@@ -1,17 +1,50 @@
 #ifndef PITCHING_PHYSICS_H
 #define PITCHING_PHYSICS_H
 
-#define PITCH_BASE_SPEED 0.065f
-#define PITCH_POWER_CONSTANT 0.12f
-#define PITCH_ANGLE_CONSTANT 0.15f
-#define PITCH_DOWN_MAX 9
-#define PITCH_UP_MAX 13
-#define VERTICAL_ANGLE_LIMIT 5
+#include "foundation.h"
 
-float calculate_pitch_power(int meter_counter, int meter_counter_max);
-float calculate_pitch_angle(int meter_counter, int meter_counter_max);
-float calculate_pitch_dx(float pitch_angle);
-float calculate_pitch_dy(float pitch_power);
-float calculate_meter_value(int pitch_phase, int meter_counter, int meter_counter_max);
+#define PITCH_BASE_SPEED 0.065f // dy at power 0 (minimum toss height)
+#define PITCH_POWER_CONSTANT 0.12f // extra dy per unit power
+#define PITCH_ANGLE_CONSTANT 0.15f // dx per unit placement (direction)
+// How far off level a swing's launch elevation may be and still be a hit. It is the swing minigame's
+// real difficulty knob: the timing tolerance is LIMIT/(GAIN*ball_vy), so this scales every hit window
+// by the same factor and leaves the difficulty GRADIENT between low and high pitches untouched —
+// which is what the sweep length cannot do.
+//
+// Raised 5 -> 8 on 2026-09-02 after the first play session: the windows were 154ms at the hard end
+// and unhittable. What the extra room buys is not just forgiveness — a swing that used to whiff now
+// makes bad contact, a pop-up or a ball driven into the ground, which is what mistiming a pitch
+// actually does and gives the fielding side something to field.
+#define VERTICAL_ANGLE_LIMIT 8
+
+// The windup's three segments, in frames: a fixed crouch DOWN, a power-scaled HOLD, a fixed rise UP.
+// Engine-owned and deterministic; the animation follows the clock, never the reverse. A higher toss
+// holds the crouch longer (≈1.5s low to 2s high at the 50Hz update), which is what makes the
+// pitcher's power PHYSICALLY visible to the batter before the ball exists — the only channel the
+// fourth law allows the dance to use. Pure FEEL knobs, NOT derived from animation frame counts;
+// changing them re-times the AI, so re-baseline the sim determinism hash deliberately.
+//
+// NOTE (2026-06-30): retuned ~30% faster (was 50/50/50 ≈ 2s–3s). That did not CAUSE bugs — it only
+// reshuffles which AI-vs-AI games are played — but it exposed two latent ones the sim net then
+// caught: the batting-AI orphaned-lock deadlock and a referee outs>3 double-count (#6).
+#define PITCH_WINDUP_DOWN_FRAMES 40
+#define PITCH_WINDUP_UP_FRAMES 35
+#define PITCH_WINDUP_HOLD_MAX 25
+
+// The crouch for a declared toss power: DOWN plus the power-scaled HOLD — everything before the rise.
+// The human's aim meter runs exactly this long, so its cursor reaches the left as the rise begins, and
+// the renderer splits the windup at it.
+int pitch_windup_crouch_frames(float power);
+
+// Total windup frames for a declared toss power: the crouch, then the rise. Pure arithmetic over the
+// segments above, so the engine's clock, the client's aim meter and the geometry test all size
+// themselves from ONE definition rather than three copies of the same sum.
+int pitch_windup_total_frames(float power);
+
+// Convert a pitch's two declared values into the ball's launch velocity.
+// power [0,1] -> toss height (dy); direction [-1,1] -> placement (dx), 0 = straight up over the plate
+// (oikea / strike); dz is always 0. The result is a pure function of the DECLARED aim — never a live
+// meter — which is the whole point of the pitch slice. Inputs are clamped to their ranges.
+Vector3D pitch_velocity_from_aim(float power, float direction);
 
 #endif

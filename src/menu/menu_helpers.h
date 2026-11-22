@@ -2,6 +2,7 @@
 #define MENU_HELPERS_H
 
 #include "menu_types.h"
+#include "session.h"
 #include "game_setup.h"
 #include "resource_manager.h"
 #include "render.h"

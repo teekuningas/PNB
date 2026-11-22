@@ -1,8 +1,11 @@
 #include "homerun_contest_menu.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
 #include "render.h"
-#include "font.h"
 #include "menu_helpers.h"
+#include "player_utils.h"
 #include <string.h>
 
 void init_homerun_contest_state(HomerunContestState* state, int team_index, int player_control, int choiceCount)
@@ -22,10 +25,10 @@ void init_homerun_contest_state(HomerunContestState* state, int team_index, int 
     }
 }
 
-// NOTE: This menu does NOT modify batterOrder in gameSetup.
+// NOTE: This menu does NOT modify batter_order in gameSetup.
 // Players keep their jersey assignments (1-9 for regulars, 0 for jokers)
 // from the super inning. We only select which players bat/run using
-// batterRunnerIndices, not their jersey numbers.
+// batter_runner_indices, not their jersey numbers.
 MenuStage update_homerun_contest_menu(
     HomerunContestState* state, const KeyStates* keyStates, MenuStage currentStage, GameSetup* gameSetup,
     const TeamData* teamData
@@ -45,7 +48,7 @@ MenuStage update_homerun_contest_menu(
     }
 
     // AI auto-selection
-    if (state->player_control == 2) {
+    if (team_is_ai(state->player_control)) {
         // first select batters by descending power
         int counter = 0, currentIndex = 0;
         // clear slots

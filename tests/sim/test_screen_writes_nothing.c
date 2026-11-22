@@ -1,0 +1,82 @@
+#include "test_helpers.h"
+#include <stdio.h>
+#include "tick_outputs.h"
+#include "rules_state.h"
+#include "world.h"
+#include "sim_harness.h"
+#include "game_screen.h"
+#include "game_frame.h"
+#include <string.h>
+
+// The screen writes nothing into the World. The same seed is played twice, frame for frame: once through
+// the screen's own update — the camera following the ball, the HUD taking announcements, the pause key
+// read — and once ticked bare, the way the headless tiers and a future peer tick it. The World must be the
+// same bytes after every tick, the physical half and the legal half alike.
+//
+// It holds a second claim on the way. The two games load their rosters separately, so every name and
+// every TeamData lives at a different address in each; a pointer anywhere in the World would make the
+// bytes differ. That is the mechanism behind "MatchSession holds no pointers" — the blittability a
+// snapshot, a rollback and a peer all depend on — where there used to be only a sentence, and the sentence
+// was wrong: each batting player carried a pointer to his name.
+
+#define SCREEN_TEST_FRAMES 6000
+
+int test_the_screen_writes_nothing_into_the_world(void)
+{
+    GameSetup setup;
+    sim_make_normal_setup(&setup, 0, 1, CONTROL_AI, CONTROL_AI);
+    SimGame* screened = sim_create(&setup, 0x5C2EE1u);
+    SimGame* bare = sim_create(&setup, 0x5C2EE1u);
+    ASSERT_NOT_NULL(screened, "sim_create returned NULL");
+    ASSERT_NOT_NULL(bare, "sim_create returned NULL");
+    ASSERT(
+        screened->state->team_data != bare->state->team_data, "the two rosters must live apart for this to see pointers"
+    );
+
+    HudState hud = {.info_event = EVENT_NONE, .info_event_timer = -1};
+    CameraView camera = {.home_run = {.hold_ticks = -1}};
+    PlayerView players;
+    player_view_init(&players, screened->state->match);
+    PlayerView replayed_players = players;
+    PlayerView noisy_players = players;
+    static TickFacts facts[SCREEN_TEST_FRAMES];
+    static PlayerView player_views[SCREEN_TEST_FRAMES];
+    HomeRunView views[SCREEN_TEST_FRAMES];
+    for (int frame = 0; frame < SCREEN_TEST_FRAMES; frame++) {
+        update_game_screen(screened->state, &hud, &camera, &players, &screened->menu);
+        update_game_frame(bare->state, &bare->menu);
+        facts[frame] = bare->state->tick_facts;
+        views[frame] = camera.home_run;
+        player_views[frame] = players;
+        noisy_players.players[frame % (PLAYERS_IN_TEAM * 2 + JOKER_COUNT)] =
+            (PlayerAnimation){.model = PLAYER_ANIM_BAT_SWING_2, .frame_count = 1, .ticks_per_frame = 1};
+        for (int extra = 0; extra < frame % 5; extra++) {
+            player_view_after_tick(&noisy_players, &facts[frame]);
+        }
+        if (memcmp(screened->state->match, bare->state->match, sizeof(MatchSession)) != 0) {
+            printf("    MatchSession differs after frame %d\n", frame);
+            ASSERT(0, "the screen must not change the physical world");
+        }
+        if (memcmp(screened->state->rules, bare->state->rules, sizeof(GameRulesState)) != 0) {
+            printf("    GameRulesState differs after frame %d\n", frame);
+            ASSERT(0, "the screen must not change the legal world");
+        }
+    }
+    ASSERT(camera.target.x != 0.0f || camera.target.z != -1.0f, "and the screen really did run: its camera moved");
+
+    HomeRunView replayed = {.hold_ticks = -1};
+    for (int frame = 0; frame < SCREEN_TEST_FRAMES; frame++) {
+        home_run_view_after_tick(&replayed, &facts[frame]);
+        player_view_after_tick(&replayed_players, &facts[frame]);
+        ASSERT_EQ(views[frame].active, replayed.active, "delayed tick-fact replay reproduces the screen's framing");
+        ASSERT_EQ(views[frame].hold_ticks, replayed.hold_ticks, "replay needs no camera state in the World");
+        ASSERT(
+            memcmp(&player_views[frame], &replayed_players, sizeof(PlayerView)) == 0,
+            "delayed replay reproduces every player's clip and clock without a World"
+        );
+    }
+
+    sim_destroy(screened);
+    sim_destroy(bare);
+    return TEST_PASSED;
+}

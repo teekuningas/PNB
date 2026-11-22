@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
@@ -14,7 +15,7 @@
  * 4. Runner advances to each base sequentially
  * 5. Verify run of honor is scored at third base arrival
  */
-int test_full_run_of_honor(void)
+int test_run_of_honor(void)
 {
     printf("\n=== TEST: Run of Honor (Kunniajuoksu) ===\n");
     ScenarioContext* ctx = create_scenario();
@@ -30,7 +31,7 @@ int test_full_run_of_honor(void)
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot baseAtPitchStart
+    // 3. Emit pitch_released to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     printf("Setup: Batter %d at HOME\n", batterIndex);
@@ -40,11 +41,11 @@ int test_full_run_of_honor(void)
     place_ball_over_location(ctx, ballLocation);
 
     // Critical: Mark that batter can advance
-    ctx->state->match->pRAI.batterCanAdvance = 1;
+    ctx->state->match->at_bat.may_leave_home = 1;
 
     printf("Ball dropped towards (%.1f, %.1f, %.1f)\n", ballLocation.x, ballLocation.y, ballLocation.z);
 
-    int runsAtStart = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs at start: %d\n\n", runsAtStart);
 
     // === Run to FIRST ===
@@ -52,15 +53,16 @@ int test_full_run_of_honor(void)
     trigger_player_run_to_next_base(ctx, batterIndex, BASE_HOME);
 
     int framesFirst = 0;
-    while (ctx->state->match->playerInfo[batterIndex].bTPI.baseId != BASE_FIRST && framesFirst < 500) {
+    while (ctx->state->match->players[batterIndex].batting.presence.base_id != BASE_FIRST && framesFirst < 500) {
         simulate_frames(ctx, 1);
         framesFirst++;
     }
     printf(
-        "Arrived at FIRST (frame %d), baseId=%d\n", framesFirst, ctx->state->match->playerInfo[batterIndex].bTPI.baseId
+        "Arrived at FIRST (frame %d), baseId=%d\n", framesFirst,
+        ctx->state->match->players[batterIndex].batting.presence.base_id
     );
 
-    if (ctx->state->match->playerInfo[batterIndex].bTPI.baseId != BASE_FIRST) {
+    if (ctx->state->match->players[batterIndex].batting.presence.base_id != BASE_FIRST) {
         printf("ERROR: Did not reach first base!\n");
         cleanup_scenario(ctx);
         return TEST_FAILED;
@@ -68,20 +70,20 @@ int test_full_run_of_honor(void)
 
     // === Run to SECOND ===
     printf("\n--- Running FIRST → SECOND ---\n");
-    ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
+    ctx->state->match->players[batterIndex].path.going_forward = 1;
     trigger_player_run_to_next_base(ctx, batterIndex, BASE_FIRST);
 
     int framesSecond = 0;
-    while (ctx->state->match->playerInfo[batterIndex].bTPI.baseId != BASE_SECOND && framesSecond < 500) {
+    while (ctx->state->match->players[batterIndex].batting.presence.base_id != BASE_SECOND && framesSecond < 500) {
         simulate_frames(ctx, 1);
         framesSecond++;
     }
     printf(
         "Arrived at SECOND (frame %d), baseId=%d\n", framesSecond,
-        ctx->state->match->playerInfo[batterIndex].bTPI.baseId
+        ctx->state->match->players[batterIndex].batting.presence.base_id
     );
 
-    if (ctx->state->match->playerInfo[batterIndex].bTPI.baseId != BASE_SECOND) {
+    if (ctx->state->match->players[batterIndex].batting.presence.base_id != BASE_SECOND) {
         printf("ERROR: Did not reach second base!\n");
         cleanup_scenario(ctx);
         return TEST_FAILED;
@@ -89,13 +91,14 @@ int test_full_run_of_honor(void)
 
     // === Run to THIRD (RUN OF HONOR!) ===
     printf("\n--- Running SECOND → THIRD (Expecting Run of Honor!) ---\n");
-    int runsBefore = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsBefore = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs before: %d\n", runsBefore);
     printf(
-        "runOfHonorScored flag before: %d\n", ctx->state->rules->referee.battingPlayers[batterIndex].runOfHonorScored
+        "run_of_honor_scored flag before: %d\n",
+        ctx->state->rules->referee.batting_players[batterIndex].run_of_honor_scored
     );
 
-    ctx->state->match->playerRuntime[batterIndex].goingForward = 1;
+    ctx->state->match->players[batterIndex].path.going_forward = 1;
     trigger_player_run_to_next_base(ctx, batterIndex, BASE_SECOND);
 
     int framesThird = 0;
@@ -104,16 +107,19 @@ int test_full_run_of_honor(void)
         simulate_frames(ctx, 1);
         framesThird++;
 
-        if (ctx->state->match->playerInfo[batterIndex].bTPI.baseId == BASE_THIRD && !arrivedAtThird) {
+        if (ctx->state->match->players[batterIndex].batting.presence.base_id == BASE_THIRD && !arrivedAtThird) {
             arrivedAtThird = 1;
             printf("\n*** ARRIVED AT THIRD BASE (frame %d) ***\n", framesThird);
-            printf("  baseId: %d\n", ctx->state->match->playerInfo[batterIndex].bTPI.baseId);
+            printf("  baseId: %d\n", ctx->state->match->players[batterIndex].batting.presence.base_id);
             printf(
-                "  baseAtPitchStart: %d (HOME)\n",
-                ctx->state->rules->referee.battingPlayers[batterIndex].baseAtPitchStart
+                "  base_at_pitch_start: %d (HOME)\n",
+                ctx->state->rules->referee.batting_players[batterIndex].base_at_pitch_start
             );
-            printf("  goingForward: %d\n", ctx->state->match->playerRuntime[batterIndex].goingForward);
-            printf("  wounded: %d\n", ctx->state->match->playerInfo[batterIndex].bTPI.state == PLAYER_STATE_WOUNDED);
+            printf("  goingForward: %d\n", ctx->state->match->players[batterIndex].path.going_forward);
+            printf(
+                "  wounded: %d\n",
+                ctx->state->match->players[batterIndex].batting.presence.state == PLAYER_STATE_WOUNDED
+            );
 
             // Give referee a few frames to process
             simulate_frames(ctx, 20);
@@ -129,23 +135,23 @@ int test_full_run_of_honor(void)
 
     // === VERIFICATION ===
     printf("\n--- VERIFICATION ---\n");
-    int runsAfter = ctx->state->rules->halfInningState.runsInTheInning;
-    int runOfHonorFlag = ctx->state->rules->referee.battingPlayers[batterIndex].runOfHonorScored;
-    int playerStillAtThird = (ctx->state->match->playerInfo[batterIndex].bTPI.baseId == BASE_THIRD);
-    int hasScored = ctx->state->rules->referee.battingPlayers[batterIndex].hasScored;
+    int runsAfter = ctx->state->rules->half_inning.runs_in_inning;
+    int runOfHonorFlag = ctx->state->rules->referee.batting_players[batterIndex].run_of_honor_scored;
+    int playerStillAtThird = (ctx->state->match->players[batterIndex].batting.presence.base_id == BASE_THIRD);
+    int hasScored = ctx->state->rules->referee.batting_players[batterIndex].has_scored;
 
     printf("Runs after: %d (expected: %d)\n", runsAfter, runsBefore + 1);
-    printf("runOfHonorScored: %d (should be 1)\n", runOfHonorFlag);
+    printf("run_of_honor_scored: %d (should be 1)\n", runOfHonorFlag);
     printf("Still at third: %d (should be 1)\n", playerStillAtThird);
-    printf("hasScored: %d (should be 0)\n", hasScored);
+    printf("has_scored: %d (should be 0)\n", hasScored);
 
     cleanup_scenario(ctx);
 
     // Assertions
     ASSERT_EQ(runsBefore + 1, runsAfter, "Run of Honor should score 1 run");
-    ASSERT_EQ(1, runOfHonorFlag, "runOfHonorScored flag should be set");
+    ASSERT_EQ(1, runOfHonorFlag, "run_of_honor_scored flag should be set");
     ASSERT_EQ(1, playerStillAtThird, "Runner should stay at third base");
-    ASSERT_EQ(0, hasScored, "hasScored should be 0");
+    ASSERT_EQ(0, hasScored, "has_scored should be 0");
 
     printf("\n=== TEST PASSED ===\n");
     return TEST_PASSED;

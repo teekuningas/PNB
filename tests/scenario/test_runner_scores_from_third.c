@@ -1,4 +1,5 @@
 #include "scenario_builder.h"
+#include "foundation.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
 #include <stdio.h>
@@ -7,7 +8,7 @@
 /**
  * TEST 1: Runner scores from third base to home
  */
-int test_full_runner_scores_from_third(void)
+int test_runner_scores_from_third(void)
 {
     ScenarioContext* ctx = create_scenario();
 
@@ -23,18 +24,18 @@ int test_full_runner_scores_from_third(void)
     snapshot_pitch_start_state(ctx);
 
     // Set runtime state AFTER initialization to avoid it being reset
-    ctx->state->match->playerRuntime[0].passedPathPoint = 1;
+    ctx->state->match->players[0].path.waypoint = 1;
 
     // Drop ball in the outfield so it hits ground naturally
     Vector3D ballTarget = {30.0f, 0.0f, 40.0f}; // Far in outfield, away from any base
     place_ball_over_location(ctx, ballTarget);
 
-    // checkForRun removed - referee uses playerArrivedAtBase event now
+    // checkForRun removed - referee uses player_arrived_at_base event now
     trigger_player_run_to_next_base(ctx, 0, BASE_THIRD);
 
     simulate_frames(ctx, 450);
 
-    int runs = ctx->state->rules->halfInningState.runsInTheInning;
+    int runs = ctx->state->rules->half_inning.runs_in_inning;
     cleanup_scenario(ctx);
     ASSERT_EQ(1, runs, "Runner should have scored from third base");
     return TEST_PASSED;

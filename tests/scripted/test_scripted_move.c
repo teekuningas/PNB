@@ -1,0 +1,227 @@
+#include "test_helpers.h"
+#include "actions/batting_system.h"
+#include "scripted_harness.h"
+#include "actions/pitching_system.h"
+#include "field.h"
+#include "key_states.h"
+#include "world.h"
+#include "client_input.h"
+#include <math.h>
+
+/*
+ * Scripted-human MOVE test — the human input→intent path for fielder movement, driven entirely
+ * through the real action_invocations via scripted KeyStates.
+ *
+ * What the human sends is a DESTINATION, never a direction and never an edge: holding an arrow
+ * declares the far end of that heading, releasing everything declares the point the fielder is
+ * standing on (which is what "stop" means to an engine that only knows destinations), and the engine
+ * owns the walk. These tests are the proof that the gesture survived the change of shape — the same
+ * keys, the same speed, the same immediate stop — plus one thing the key stream could not do at all:
+ * a destination declared while the engine is refusing to move the fielder is HELD, and the fielder
+ * sets off by itself when the refusal ends.
+ */
+
+#define HUMAN_PAD CONTROL_PLAYER_1 /* the catching team is the human */
+#define MOVE_TEST_FRAMES 60
+
+// As above, but also waiting for a batter who is ready to receive — the engine will not begin a
+// windup without one, and the pitch is how this file reaches the engine's "not now" state.
+static int tick_until_pitch_ready(ScriptedGame* g, int budget)
+{
+    for (int i = 0; i < budget; i++) {
+        scripted_tick(g);
+        MatchSession* m = scripted_match(g);
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->ball.holder == p && m->catching.controlled_fielder == p && batter_stands_ready(&m->at_bat) &&
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ball.pitch_in_flight) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Tick until the human controls the pitcher holding the ball at home, with nothing in progress —
+// a settled state in which the engine will walk the controlled fielder wherever it is sent.
+static int tick_until_steerable(ScriptedGame* g, int budget)
+{
+    for (int i = 0; i < budget; i++) {
+        scripted_tick(g);
+        MatchSession* m = scripted_match(g);
+        int p = m->fielding_posts.baseman[0];
+        if (p != -1 && m->catching.controlled_fielder == p && m->ball.holder == p &&
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ball.pitch_in_flight) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// 1. Hold UP for N frames and the fielder has run N frames' worth of RUN_SPEED to the north, with no
+//    sideways drift. This is the speed and the heading in one: the destination the widget sends lies
+//    along the same vector the four key flags used to produce, so the velocity is identical.
+int test_scripted_move_held_key_runs_at_run_speed(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE01u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
+
+    MatchSession* m = scripted_match(g);
+    int fielder = m->catching.controlled_fielder;
+    Vector3D start = m->players[fielder].body.location;
+
+    scripted_hold(g, HUMAN_PAD, KEY_UP);
+    scripted_run(g, MOVE_TEST_FRAMES);
+
+    ASSERT_EQ(fielder, m->catching.controlled_fielder, "the same fielder was steered throughout");
+    float dz = m->players[fielder].body.location.z - start.z;
+    float dx = m->players[fielder].body.location.x - start.x;
+
+    // North is -z. One frame of slack at each end for the declare/ingest/actualize ordering.
+    float expected = MOVE_TEST_FRAMES * RUN_SPEED;
+    ASSERT(dz < 0.0f, "holding UP moves the fielder north");
+    ASSERT(
+        fabsf(-dz - expected) <= 2.0f * RUN_SPEED,
+        "and it covers a held key's worth of RUN_SPEED, not a walk and not a stutter"
+    );
+    ASSERT(fabsf(dx) < 0.01f, "with no sideways drift on a single-axis heading");
+
+    scripted_destroy(g);
+    return TEST_PASSED;
+}
+
+// 2. Release and the fielder is stopped on the very next frame. There is no "stop" message: the
+//    widget declares the point under the fielder's feet, and the engine reads a destination it has
+//    already reached as nothing to do.
+int test_scripted_move_release_stops_within_a_frame(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE02u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
+
+    MatchSession* m = scripted_match(g);
+    int fielder = m->catching.controlled_fielder;
+
+    scripted_hold(g, HUMAN_PAD, KEY_LEFT);
+    scripted_run(g, 30);
+    ASSERT_EQ(1, m->players[fielder].motion.moving, "the fielder is under way before the release");
+
+    scripted_release(g, HUMAN_PAD, KEY_LEFT);
+    scripted_tick(g);
+
+    ASSERT_EQ(0, m->players[fielder].motion.moving, "releasing every direction stops the fielder at once");
+    Vector3D settled = m->players[fielder].body.location;
+    scripted_run(g, 30);
+    float dx = m->players[fielder].body.location.x - settled.x;
+    float dz = m->players[fielder].body.location.z - settled.z;
+    ASSERT(sqrtf(dx * dx + dz * dz) < 1e-4f, "and it stays stopped — a released key does not coast");
+
+    scripted_destroy(g);
+    return TEST_PASSED;
+}
+
+// 3. The engine refuses to move a fielder while a pitch is in the air, and the destination declared
+//    during the refusal is HELD rather than thrown away: the fielder sets off the moment the pitch is
+//    over, with the key never released.
+//
+//    This is the behaviour the key stream could not have. There, a direction pressed during a pitch
+//    was discarded at the actualization site (fielder_move zeroed the flag), so the human had to let
+//    go and press again — the same missing-resume that the smooth_out_movement re-trigger hack existed
+//    to paper over after a catch.
+int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE03u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
+
+    MatchSession* m = scripted_match(g);
+    ClientInputState* ci = scripted_state(g)->client_input;
+
+    // Pitch: press to start the power meter, click during the sweep to lock power — which is what
+    // begins the engine windup.
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    for (int i = 0; i < 8 && ci->pitch_widget.meter.dir == 0; i++) {
+        scripted_tick(g);
+    }
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the power meter did not start sweeping");
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+
+    int reached = 0;
+    for (int i = 0; i < 400 && !reached; i++) {
+        scripted_tick(g);
+        reached = pitch_is_being_delivered(m);
+    }
+    ASSERT(reached, "the human pitch never started");
+
+    // Steer while the pitch is live. The fielder must not budge.
+    int fielder = m->catching.controlled_fielder;
+    ASSERT(fielder != -1, "somebody is still controlled during the pitch");
+    Vector3D held_still = m->players[fielder].body.location;
+
+    scripted_hold(g, HUMAN_PAD, KEY_UP);
+    for (int i = 0; i < 20 && pitch_is_being_delivered(m); i++) {
+        scripted_tick(g);
+        ASSERT_EQ(fielder, m->catching.controlled_fielder, "control did not change during the pitch window");
+        float dx = m->players[fielder].body.location.x - held_still.x;
+        float dz = m->players[fielder].body.location.z - held_still.z;
+        ASSERT(sqrtf(dx * dx + dz * dz) < 1e-4f, "a fielder does not move while a pitch is in progress");
+    }
+
+    // The destination was stored all along, so the walk begins by itself once the pitch resolves —
+    // no second press.
+    ASSERT_EQ(
+        1, m->catching.controlled_move_target_active,
+        "the destination declared during the pitch was kept, not discarded"
+    );
+
+    scripted_destroy(g);
+    return TEST_PASSED;
+}
+
+// 4. A held key survives the engine losing the destination it was told.
+//
+//    Every reset recipe empties the catching team's state — a destination from a play that no longer
+//    exists must not be acted on. But the human's finger is still on the key, and the widget speaks
+//    only when something changes, so from its point of view nothing has: same key, same heading, and
+//    if the reset happened to move the fielder ALONG that heading, the same far end of it. The blind
+//    heartbeat closes that, and closes it without the client ever asking the engine what it holds —
+//    an observation that would be stale under input delay and would make two peers correct
+//    themselves differently.
+//
+//    Only the destination is taken away here. A real recipe empties the whole of the catching team's
+//    state — control too, which the catch that follows a reset hands back to whoever takes the ball —
+//    and stops and repositions the fielder; all of that is the rest of the recipe's job, not this
+//    mechanism's, so it is deliberately left out: what is under test is that the engine ends up holding
+//    a destination again with no new input, and nothing else.
+int test_scripted_move_held_key_survives_a_reset(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x30FFEE04u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_steerable(g, 8000), "never reached a steerable state");
+
+    MatchSession* m = scripted_match(g);
+    int fielder = m->catching.controlled_fielder;
+
+    scripted_hold(g, HUMAN_PAD, KEY_UP);
+    scripted_run(g, 20);
+    ASSERT_EQ(1, m->players[fielder].motion.moving, "the fielder is under way");
+    ASSERT_EQ(1, m->catching.controlled_move_target_active, "and the engine is holding a destination");
+
+    // The engine forgets where it was sending him, as every reset recipe does.
+    m->catching.controlled_move_target_active = 0;
+    ASSERT_EQ(0, m->catching.controlled_move_target_active, "the destination really is gone");
+
+    // Nothing about the input changes — the key is still down and the widget has nothing new to
+    // say. The destination comes back anyway, because the heartbeat does not need anything to say.
+    int restored = 0;
+    for (int i = 0; i < MOVE_TEST_FRAMES && !restored; i++) {
+        scripted_tick(g);
+        restored = (m->catching.controlled_move_target_active == 1);
+    }
+    ASSERT(restored, "a still-held key puts the destination back without a second press");
+    ASSERT_EQ(
+        fielder, m->catching.controlled_move_target_for, "and it is bound to the fielder that is actually steered"
+    );
+
+    scripted_destroy(g);
+    return TEST_PASSED;
+}

@@ -1,11 +1,22 @@
 #include "team_selection_menu.h"
+#include "display.h"
+#include "key_states.h"
+#include "team_data.h"
 #include "render.h"
-#include "font.h"
 #include "menu_types.h"
 #include "menu_helpers.h"
 
 #define DEFAULT_CONTROLLED_1 0
 #define DEFAULT_CONTROLLED_2 2
+
+// Two teams may both be AI, but they cannot share the same human pad — one
+// keyboard/gamepad can't drive both sides at once. So a controller choice
+// conflicts only when it matches the other team's controller AND that
+// controller is a human pad. AI-vs-AI (CONTROL_AI on both) is allowed.
+static int control_conflicts(int candidate, int other_controller)
+{
+    return candidate == other_controller && candidate != CONTROL_AI;
+}
 
 void init_team_selection_state(TeamSelectionState* state, int numTeams)
 {
@@ -74,7 +85,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
             state->team2 = state->pointer;
             state->rem = 3;
             state->pointer = DEFAULT_CONTROLLED_2;
-            if (state->pointer == state->team1_controller) {
+            if (control_conflicts(state->pointer, state->team1_controller)) {
                 state->pointer++;
                 state->pointer = (state->pointer + state->rem) % state->rem;
             }
@@ -103,7 +114,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
         if (keyStates->released[0][KEY_DOWN]) {
             state->pointer += 1;
             state->pointer = (state->pointer + state->rem) % state->rem;
-            if (state->pointer == state->team1_controller) {
+            if (control_conflicts(state->pointer, state->team1_controller)) {
                 state->pointer++;
                 state->pointer = (state->pointer + state->rem) % state->rem;
             }
@@ -111,7 +122,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
         if (keyStates->released[0][KEY_UP]) {
             state->pointer -= 1;
             state->pointer = (state->pointer + state->rem) % state->rem;
-            if (state->pointer == state->team1_controller) {
+            if (control_conflicts(state->pointer, state->team1_controller)) {
                 state->pointer--;
                 state->pointer = (state->pointer + state->rem) % state->rem;
             }
@@ -122,7 +133,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
             state->state = TEAM_SELECTION_STAGE_CONTROL_2;
             state->rem = 3;
             state->pointer = state->team2_controller;
-            if (state->pointer == state->team1_controller) {
+            if (control_conflicts(state->pointer, state->team1_controller)) {
                 state->pointer++;
                 state->pointer = (state->pointer + state->rem) % state->rem;
             }
@@ -139,7 +150,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
             gameSetup->team2 = state->team2;
             gameSetup->team1_control = (TeamControlMode)state->team1_controller;
             gameSetup->team2_control = (TeamControlMode)state->team2_controller;
-            gameSetup->halfInningsInPeriod = state->innings;
+            gameSetup->half_innings_in_period = state->innings;
 
             return MENU_STAGE_BATTING_ORDER_1;
         }

@@ -1,0 +1,33 @@
+#ifndef ALL_SIMS_H
+#define ALL_SIMS_H
+
+// Headless AI-vs-AI simulation tests (the "sim" tier).
+int test_ai_vs_ai_half_inning(void);
+int test_half_inning_seed_sweep(void);
+int test_ai_vs_ai_homerun(void);
+int test_homerun_contest_seed_sweep(void);
+int test_a_period_end_opens_the_menu_its_transition_calls_for(void);
+int test_ai_vs_ai_determinism(void);
+int test_different_seeds_produce_different_games(void);
+int test_sim_hash_matches_recorded_baseline(void);
+int test_ai_offense_breakdown(void);
+int test_no_batter_lock_stall(void);
+
+// The tick equation made executable: World(T) = tick(World(T-1), messages).
+int test_world_snapshot_retick_is_identical(void);
+int test_retick_diverges_when_engine_seed_is_not_restored(void);
+
+// Controller symmetry, law 1 — controllers may not read (or write) frame events.
+int test_ai_ignores_frame_events(void);
+
+// Controller memory is the controller's to end: the batting plan lives exactly one pitch.
+int test_ai_swing_plan_lives_one_pitch(void);
+
+// The tick's announcement is an output: the same game whether or not a screen consumes it.
+int test_announcements_do_not_depend_on_the_screen(void);
+int test_the_info_line_holds_its_message_while_paused(void);
+
+// The screen writes nothing into the World, and the World holds no pointers: screened and bare, the same bytes.
+int test_the_screen_writes_nothing_into_the_world(void);
+
+#endif /* ALL_SIMS_H */

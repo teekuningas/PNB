@@ -1,5 +1,5 @@
 #include "test_helpers.h"
-#include "fixtures.h"
+#include <stdio.h>
 #include "contracts/all_contracts.h"
 
 #include <string.h>
@@ -13,6 +13,26 @@ static void run_contract_tests(void)
 
     // Lifecycle contracts
     RUN_TEST(test_clear_frame_events_completeness);
+    RUN_TEST(test_home_run_view_preserves_phase_and_hold_boundaries);
+    RUN_TEST(test_homeward_run_facts_survive_clear_and_legal_enforcement);
+    RUN_TEST(test_camera_facts_distinguish_resets_from_flow_short_circuits);
+    RUN_TEST(test_player_view_preserves_phase_and_restart_boundaries);
+    RUN_TEST(test_player_activity_facts_survive_same_tick_arrival);
+    RUN_TEST(test_player_view_resets_before_batter_readiness);
+    RUN_TEST(test_player_facing_preserves_planar_displacement);
+    RUN_TEST(test_player_stops_preserve_distinct_facing_and_sync);
+    RUN_TEST(test_player_reset_recipes_rebuild_home_geometry);
+    RUN_TEST(test_idle_fielder_returns_to_its_home_geometry);
+    RUN_TEST(test_half_inning_replaces_batting_attributes_and_resources);
+    RUN_TEST(test_foul_restores_presence_without_replacing_batting_resources);
+    RUN_TEST(test_contest_pair_numbers_and_presence_have_distinct_lifetimes);
+    RUN_TEST(test_third_home_route_visits_flag_before_physical_arrival);
+    RUN_TEST(test_third_home_retreat_returns_via_flag_to_third);
+    RUN_TEST(test_terminal_players_complete_all_exit_legs);
+    RUN_TEST(test_simulate_raises_and_consumes_each_runner_arrival);
+    RUN_TEST(test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home);
+    RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
+    RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 
     // Referee reaction contracts
     RUN_TEST(test_referee_starts_wounding_on_catch);
@@ -28,9 +48,77 @@ static void run_contract_tests(void)
     // Phase 6.5 Compound Resets
     RUN_TEST(test_compound_foul_and_end_of_inning);
     RUN_TEST(test_compound_hr_pair_and_uncatchable);
+    RUN_TEST(test_contest_side_change_starts_from_the_first_pair);
 
     // Event→Decision promotion contracts
     RUN_TEST(test_bat_outcome_promotion);
+
+    // Action state auto-clear contracts (Bug #8 regression)
+
+    // Run-scoring guard contracts (Bug #9 regression)
+    RUN_TEST(test_wounded_runner_cannot_score_run);
+
+    // Catching-AI intent contracts (the drop migration)
+    RUN_TEST(test_reset_clears_declared_intent);
+    RUN_TEST(test_ai_declares_and_executes_tactical_drop);
+
+    // Pipeline ordering contracts (the control-stage slice — CONTROL at the frame top)
+    RUN_TEST(test_control_stage_precedes_execution);
+
+    // Pitch contracts (a declared power and aim → the engine-owned windup)
+    RUN_TEST(test_pitch_aimed_releases_with_declared_velocity);
+    RUN_TEST(test_swing_declared_values_drive_the_contact);
+    RUN_TEST(test_swing_declarations_are_repeat_safe);
+    RUN_TEST(test_a_swing_never_declared_is_not_a_miss);
+    RUN_TEST(test_a_withdrawn_swing_does_not_reach_the_ball);
+    RUN_TEST(test_a_swing_declared_with_no_pitch_is_refused);
+    RUN_TEST(test_batting_motion_and_recovery_follow_physical_time);
+    RUN_TEST(test_drop_refused_during_a_later_windup);
+    RUN_TEST(test_controlled_fielder_holds_during_a_later_windup);
+    RUN_TEST(test_pitch_unaimed_is_valesyotto);
+    RUN_TEST(test_pitch_aim_declared_during_the_windup_is_the_aim_released);
+    RUN_TEST(test_no_pitch_after_three_correct_pitches);
+
+    // The gate owns the pitch's and the throw's permissions
+    RUN_TEST(test_pitch_permission_names_each_rule);
+    RUN_TEST(test_a_refused_pitch_begins_nothing);
+    RUN_TEST(test_throw_permission_names_each_rule);
+    RUN_TEST(test_contributions_need_an_action_to_contribute_to);
+    RUN_TEST(test_one_catching_action_per_tick_whatever_the_order);
+    RUN_TEST(test_pitch_and_throw_values_are_repeat_safe);
+    RUN_TEST(test_a_late_beginning_changes_nothing);
+
+    // A base-run command is for the runner holding the base at the top of the tick
+    RUN_TEST(test_a_base_run_needs_a_runner);
+    RUN_TEST(test_a_base_run_for_no_base_is_malformed);
+
+    // Throw contracts (a declared target and power → the engine windup clock)
+    RUN_TEST(test_throw_windup_frames_scale_with_power);
+    RUN_TEST(test_throw_declared_whole_releases_sized_to_power);
+    RUN_TEST(test_throw_target_then_power_engine_times_release);
+    RUN_TEST(test_throw_recovery_preserves_the_movement_boundary);
+    RUN_TEST(test_throw_recovery_is_independent_of_animation);
+    RUN_TEST(test_ai_baseman_throws_to_idle_cover_on_own_base);
+
+    printf("\n--- Fielder movement (the destination message and the engine mover) ---\n");
+    RUN_TEST(test_move_target_sets_velocity_toward_the_point);
+    RUN_TEST(test_move_target_at_the_fielder_is_a_no_op);
+    RUN_TEST(test_move_target_stops_on_arrival);
+    RUN_TEST(test_restating_the_move_target_changes_nothing);
+    RUN_TEST(test_duplicate_messages_in_one_frame_equal_one);
+    RUN_TEST(test_move_target_refused_without_a_controlled_fielder);
+    RUN_TEST(test_reset_recipes_leave_no_fielding_state);
+    RUN_TEST(test_seat_refuses_regular_when_order_spent);
+    RUN_TEST(test_seat_refuses_a_spent_joker);
+    RUN_TEST(test_seat_refuses_a_regular_out_of_turn);
+    RUN_TEST(test_seat_waits_for_home_then_seats_the_named_joker);
+    RUN_TEST(test_repeated_seat_requests_seat_once);
+    RUN_TEST(test_seat_refuses_when_no_decision_is_open);
+    RUN_TEST(test_declared_aim_walks_the_batter_and_arrives_exactly);
+    RUN_TEST(test_aim_beyond_the_arc_stands_at_its_end);
+    RUN_TEST(test_restating_the_aim_changes_nothing);
+    RUN_TEST(test_silence_leaves_the_aim_alone);
+    RUN_TEST(test_seat_naming_a_non_player_is_malformed);
 }
 
 int main(int argc, char* argv[])

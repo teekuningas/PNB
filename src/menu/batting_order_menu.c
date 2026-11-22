@@ -1,7 +1,9 @@
 #include "batting_order_menu.h"
 #include "render.h"
-#include "font.h"
-#include "globals.h"
+#include <stdio.h>
+#include "display.h"
+#include "key_states.h"
+#include "session.h"
 #include "menu_types.h"
 #include "menu_helpers.h"
 #include <string.h>
@@ -16,11 +18,11 @@ void init_batting_order_state(BattingOrderState* state, int team_index, int play
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         state->batting_order[i] = i;
         strncpy(
-            state->players[i].name, stateInfo->teamData[team_index].players[i].name, sizeof(state->players[i].name) - 1
+            state->players[i].name, stateInfo->team_data[team_index].players[i].name, sizeof(state->players[i].name) - 1
         );
         state->players[i].name[sizeof(state->players[i].name) - 1] = '\0';
-        state->players[i].speed = stateInfo->teamData[team_index].players[i].speed;
-        state->players[i].power = stateInfo->teamData[team_index].players[i].power;
+        state->players[i].speed = stateInfo->team_data[team_index].players[i].speed;
+        state->players[i].power = stateInfo->team_data[team_index].players[i].power;
     }
 }
 

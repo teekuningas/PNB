@@ -1,7 +1,8 @@
 #ifndef BASE_LOGIC_H
 #define BASE_LOGIC_H
 
-#include "globals.h"
+#include "field.h"
+#include "world.h"
 #include <stdbool.h>
 
 /**
@@ -35,7 +36,7 @@ bool base_is_safe_haven(BaseID id);
 
 /**
  * Checks if the ID is a valid base index (0-3).
- * Useful for array indexing (like baseRun[4]).
+ * Useful for array indexing (like base_run[4]).
  * Equivalent to: id >= BASE_HOME &&id <= BASE_THIRD
  */
 bool base_is_index(BaseID id);
@@ -68,11 +69,6 @@ int base_cmp(BaseID a, BaseID b);
 int base_to_int_index(BaseID id);
 
 /**
- * Checks if a player is in a protected state (safe on base, at bat, or walking freely).
- * This represents general immunity from being forced out while occupying a base.
- */
-
-/**
  * Checks if a player is safe from being wounded by a fly ball catch (koppi).
  * In Pesäpallo, a runner is safe if they have not left their original base,
  * or if they are taking a free walk.
@@ -81,6 +77,6 @@ bool player_is_safe_from_fly(PlayerUnitState state, BaseID current_base, BaseID 
 
 int count_active_batting_players(const PlayerInfo* players);
 
-int checkIfBallIsOutOfBounds(const BallInfo* ballInfo, const FieldPositions* fieldPositions);
+int is_ball_out_of_bounds(const BallInfo* ballInfo, const FieldPositions* fieldPositions);
 
 #endif // BASE_LOGIC_H

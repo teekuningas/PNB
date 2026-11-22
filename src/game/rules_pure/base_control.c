@@ -1,4 +1,7 @@
 #include "base_control.h"
+#include "field.h"
+#include "rules_state.h"
+#include "world.h"
 #include "vector_math.h"
 
 int get_base_controller(const MatchSession* game, const RefereeState* referee, BaseID base)
@@ -9,8 +12,9 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
     int highestBaseAtPitch = -2;
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (referee->battingPlayers[i].currentSafetyBase == base && game->playerInfo[i].bTPI.baseId == base) {
-            int baseAtPitch = (int)referee->battingPlayers[i].baseAtPitchStart;
+        if (referee->batting_players[i].current_safety_base == base &&
+            game->players[i].batting.presence.base_id == base) {
+            int baseAtPitch = (int)referee->batting_players[i].base_at_pitch_start;
             if (baseAtPitch > highestBaseAtPitch) {
                 highestBaseAtPitch = baseAtPitch;
                 bestCandidate = i;
@@ -22,17 +26,17 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
 
 int get_ball_at_base_index(const MatchSession* match, const FieldPositions* field_positions)
 {
-    if (match->pII.hasBallIndex == -1) {
+    if (match->ball.holder == -1) {
         return -1; // No one has ball
     }
 
     // Use catcher position directly or ball position?
-    // Legacy logic uses ballInfo.location, assuming ball is with player.
-    Vector3D ballLoc = match->ballInfo.location;
+    // Legacy logic uses ball.location, assuming ball is with player.
+    Vector3D ballLoc = match->ball.location;
 
     // Check Home Base (Index 0)
     // Special check: inside homeline-middlepoint centered disk and at homebase side
-    float dx = ballLoc.x - field_positions->pitchPlate.x;
+    float dx = ballLoc.x - field_positions->pitch_plate.x;
     float dz = ballLoc.z - HOME_LINE_Z;
     if (ballLoc.z > HOME_LINE_Z && vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS)) {
         return 0; // Home Base
@@ -42,11 +46,11 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
     for (int i = 1; i < BASE_COUNT; i++) {
         Vector3D baseLoc;
         if (i == 1)
-            baseLoc = field_positions->firstBase;
+            baseLoc = field_positions->first_base;
         else if (i == 2)
-            baseLoc = field_positions->secondBase;
+            baseLoc = field_positions->second_base;
         else if (i == 3)
-            baseLoc = field_positions->thirdBase;
+            baseLoc = field_positions->third_base;
         else
             continue;
 
@@ -59,4 +63,9 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
     }
 
     return -1;
+}
+
+int ball_is_home(const MatchSession* match, const FieldPositions* field_positions)
+{
+    return get_ball_at_base_index(match, field_positions) == 0;
 }

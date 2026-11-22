@@ -1,33 +1,32 @@
 #include "test_helpers.h"
+#include "foundation.h"
 #include "rules_runs.h"
 
 // Parameters for is_regular_run:
-// int is_regular_run(BaseID player_base, BaseID player_original_base, int player_is_wounded);
+// int is_regular_run(BaseID player_base, int player_is_wounded);
 
 // Parameters for is_run_of_honor:
 // int is_run_of_honor(BaseID player_base, BaseID player_original_base, int player_is_wounded, int
 // has_made_run_on_third_base);
 
-int test_is_regular_run()
+int test_is_regular_run(void)
 {
-    // Basic run: Player arrives at home base (BASE_HOME_SCORED), not wounded
-    ASSERT_EQ(1, is_regular_run(BASE_HOME_SCORED, BASE_FIRST, 0), "Should score run when arriving at home base");
-    ASSERT_EQ(
-        1, is_regular_run(BASE_HOME_SCORED, BASE_THIRD, 0), "Should score run when arriving at home base from 3rd"
-    );
+    // Basic run: Player arrives at home base (BASE_HOME_SCORED), not wounded.
+    // §41 is independent of where the runner started — that is why there is no original-base argument.
+    ASSERT_EQ(1, is_regular_run(BASE_HOME_SCORED, 0), "Should score run when arriving at home base");
 
     // Wounded player
-    ASSERT_EQ(0, is_regular_run(BASE_HOME_SCORED, BASE_THIRD, 1), "Wounded player should not score regular run");
+    ASSERT_EQ(0, is_regular_run(BASE_HOME_SCORED, 1), "Wounded player should not score regular run");
 
     // Not at scoring base
-    ASSERT_EQ(0, is_regular_run(BASE_THIRD, BASE_SECOND, 0), "Arriving at 3rd base is not a regular run");
+    ASSERT_EQ(0, is_regular_run(BASE_THIRD, 0), "Arriving at 3rd base is not a regular run");
 
     return TEST_PASSED;
 }
 
-int test_is_run_of_honor()
+int test_is_run_of_honor(void)
 {
-    // Run of Honor: Batter (baseAtPitchStart BASE_HOME) arrives at 3rd base (BASE_THIRD)
+    // Run of Honor: Batter (base_at_pitch_start BASE_HOME) arrives at 3rd base (BASE_THIRD)
     ASSERT_EQ(1, is_run_of_honor(BASE_THIRD, BASE_HOME, 0, 0), "Should score run of honor");
 
     // Wounded
