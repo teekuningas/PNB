@@ -99,9 +99,13 @@ static void advance_animation(PlayerAnimation* animation, bool throw_recovering)
     case PLAYER_ANIM_RUN_NO_BALL:
     case PLAYER_ANIM_RUN_WITH_BALL:
     case PLAYER_ANIM_WALK_BARE:
-    case PLAYER_ANIM_RUN_BARE:
-        animation->frame_tick = (animation->frame_tick + 1) % (animation->frame_count * animation->ticks_per_frame);
+    case PLAYER_ANIM_RUN_BARE: {
+        int cycle_ticks = animation->frame_count * animation->ticks_per_frame;
+        if (cycle_ticks > 0) {
+            animation->frame_tick = (animation->frame_tick + 1) % cycle_ticks;
+        }
         break;
+    }
     case PLAYER_ANIM_THROW_RELEASE:
         if (!throw_recovering) {
             animation->model = PLAYER_ANIM_STAND_NO_BALL;

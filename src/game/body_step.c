@@ -86,6 +86,16 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                 float dz = match->players[i].body.location.z - match->players[i].body.target_location.z;
                 if (vec3_is_small_enough_circle_xz(dx, dz, TARGET_ACHIEVED_THRESHOLD) == 1) {
                     int needToStop = 1;
+                    // A batter who set off toward 1st and retreated safely back to the ready spot arrives in
+                    // PLAYER_STATE_RUNNING (so activeBatterIndex was -1). Restore AT_BAT before prepare_batter so
+                    // get_active_batter_index finds them and re-opens the batting cycle instead of leaving a
+                    // settled PLAYER_STATE_ON_BASE on BASE_HOME.
+                    if (i < PLAYERS_IN_TEAM + JOKER_COUNT && match->players[i].path.going_forward == 0 &&
+                        match->players[i].batting.presence.base_id == BASE_HOME &&
+                        match->players[i].batting.presence.state == PLAYER_STATE_RUNNING && activeBatterIndex == -1) {
+                        match->players[i].batting.presence.state = PLAYER_STATE_AT_BAT;
+                        activeBatterIndex = i;
+                    }
                     if (i == activeBatterIndex && match->players[i].path.going_forward == 0) {
                         prepare_batter(match);
                     } else {

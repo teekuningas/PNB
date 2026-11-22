@@ -30,6 +30,8 @@ static void run_scenario_tests(void)
     RUN_TEST(test_last_batter_ends_half_inning);
     RUN_TEST(test_scoreless_lap_of_the_order_ends_half_inning);
     RUN_TEST(test_joker_opening_does_not_take_the_turn);
+    RUN_TEST(test_batter_retreats_to_home_on_koppi);
+    RUN_TEST(test_batter_retreat_closes_stale_seat_offer);
 }
 
 int main(int argc, char* argv[])

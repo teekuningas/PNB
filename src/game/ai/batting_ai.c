@@ -153,18 +153,6 @@ play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingP
             channel, (IntentMessage){.kind = INTENT_SWING_VERTICAL, .as.swing_vertical = {.vertical = plan->vertical}}
         );
     }
-
-    // AIM — declared as the angle itself, restated every frame the pitch is in the air.
-    //
-    // What was here held a key down until the body reached the decided angle and then released it: a
-    // controller reading the world back to decide whether to keep pressing, which meant it could only
-    // ever approach from the side it started on and always stopped a step past. The engine now walks the
-    // body to the declared angle and arrives on it exactly. The wounding swing's deliberately-unreachable
-    // angle still means "as far as this batter can go" — the arc's end is enforced by the walk, so an
-    // impossible aim is a bounded one.
-    if (plan->decided == 1) {
-        intent_push(channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = plan->angle}});
-    }
 }
 
 // COMMIT THE POWER while the pitcher is still crouching — the batter's beat of the dance, and the AI
@@ -199,10 +187,12 @@ static void commit_swing_power(
         plan->style = style;
         plan->power = decision.power;
         plan->vertical = decision.vertical;
-        plan->angle = calculate_ai_batting_angle(style, seeded_rand(&aiController->rng_seed, RAND_MAX));
+        plan->angle = calculate_ai_batting_angle(style, seeded_rand(&aiController->rng_seed, 1000));
         plan->decided = 1;
     }
     intent_push(channel, (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = plan->power}});
+    // Start walking to the chosen aim angle during the windup (just as a human strafes before release).
+    intent_push(channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = plan->angle}});
 }
 
 // Once a hit is safely loose in the field, send every eligible runner to the next base. "Safely loose":

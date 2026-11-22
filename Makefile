@@ -33,7 +33,8 @@ _OBJ_SCENARIOS = tests/scenario/test_runner_scores_from_third.o \
                  tests/scenario/test_fly_ball_out_and_wound.o \
                  tests/scenario/test_fly_ball_early_arrival.o \
                  tests/scenario/test_burnt_player_bats_again.o \
-                 tests/scenario/test_last_batter_ends_half_inning.o
+                 tests/scenario/test_last_batter_ends_half_inning.o \
+                 tests/scenario/test_batter_retreat_on_koppi.o
 
 # Contract test objects (1-frame pipeline tests, live in tests/integration/contracts/)
 _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \

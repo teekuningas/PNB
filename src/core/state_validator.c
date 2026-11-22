@@ -382,6 +382,15 @@ int state_validator_check(StateInfo* state)
                 return 0;
             }
         }
+        // A settled player at BASE_HOME must be AT_BAT, never ON_BASE: get_active_batter_index only
+        // finds AT_BAT, so ON_BASE at home leaves the plate occupied yet unpitchable and unseatable.
+        if (game->players[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+            game->players[i].batting.presence.base_id == BASE_HOME) {
+            printf(
+                "\n[STATE ERROR] FATAL: Player %d is ON_BASE at BASE_HOME (settled home presence must be AT_BAT)\n", i
+            );
+            return 0;
+        }
     }
 
     if (activeBatterCount > 1) {

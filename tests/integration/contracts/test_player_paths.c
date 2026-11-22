@@ -1,10 +1,13 @@
 #include "all_contracts.h"
+#include "actions/batting_system.h"
 #include "body_step.h"
 #include "frame_events.h"
 #include "player_motion.h"
+#include "rules_pure/player_utils.h"
 #include "runner_paths.h"
 #include "scenario_builder.h"
 #include "simulate.h"
+#include "state_validator.h"
 #include "test_helpers.h"
 #include "vector_math.h"
 
@@ -216,6 +219,52 @@ int test_simulate_raises_and_consumes_each_runner_arrival(void)
     ASSERT_EQ(1, m->events.player_arrived_at_base, "the aggregate event remains for ADJUDICATE");
     clear_frame_events(&m->events);
     ASSERT_EQ(0, m->events.player_arrived_at_base, "only CLEAR drains the aggregate event");
+    cleanup_scenario(ctx);
+    return TEST_PASSED;
+}
+
+int test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    MatchSession* m = ctx->state->match;
+    const FieldPositions* field = ctx->state->field_positions;
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+    m->at_bat.may_leave_home = 1;
+
+    // Batter sets off toward 1st (closing the batting cycle and leaving AT_BAT -> RUNNING),
+    // takes a few steps, then retreats back to BASE_HOME.
+    run_to_next_base(m, field, 0, BASE_HOME);
+    ASSERT_EQ(PLAYER_STATE_RUNNING, m->players[0].batting.presence.state, "leaving home puts batter in RUNNING");
+    ASSERT_EQ(BATTING_CYCLE_CLOSED, m->at_bat.cycle, "leaving home closes the batting cycle");
+    for (int tick = 0; tick < 15; tick++) {
+        player_location_orientation_and_targets(m, field);
+    }
+
+    run_to_previous_base(m, field, 0, BASE_HOME);
+    ASSERT_EQ(0, m->players[0].path.going_forward, "retreat runs backward toward home");
+    for (int tick = 0; tick < 500 && m->players[0].motion.moving; tick++) {
+        player_location_orientation_and_targets(m, field);
+    }
+
+    ASSERT_EQ(0, m->players[0].motion.moving, "retreating batter stops at the ready spot");
+    ASSERT_EQ(BASE_HOME, m->players[0].batting.presence.base_id, "base remains BASE_HOME");
+    ASSERT_EQ(
+        PLAYER_STATE_AT_BAT, m->players[0].batting.presence.state,
+        "returning to BASE_HOME restores AT_BAT, never ON_BASE"
+    );
+    ASSERT_EQ(0, get_active_batter_index(m), "get_active_batter_index finds the returned batter");
+    ASSERT_EQ(BATTING_CYCLE_ARRIVED, m->at_bat.cycle, "prepare_batter re-arms the batting cycle");
+    ASSERT_EQ(1, batter_stands_ready(&m->at_bat), "returned batter stands ready for the next pitch");
+
+    // Prove the state validator accepts the restored state and rejects the illegal ON_BASE@HOME state.
+    state_validator_set_active(1);
+    ASSERT_EQ(1, state_validator_check(ctx->state), "restored AT_BAT@HOME state is valid");
+
+    m->players[0].batting.presence.state = PLAYER_STATE_ON_BASE;
+    ASSERT_EQ(0, state_validator_check(ctx->state), "state validator must reject PLAYER_STATE_ON_BASE on BASE_HOME");
+    state_validator_set_active(0);
+
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }

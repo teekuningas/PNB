@@ -20,6 +20,7 @@ int test_third_home_route_visits_flag_before_physical_arrival(void);
 int test_third_home_retreat_returns_via_flag_to_third(void);
 int test_terminal_players_complete_all_exit_legs(void);
 int test_simulate_raises_and_consumes_each_runner_arrival(void);
+int test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home(void);
 // SIMULATE asks the catch against the fielders where the previous tick left them
 int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void);
 int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void);
@@ -80,6 +81,7 @@ int test_throw_declared_whole_releases_sized_to_power(void);
 int test_throw_target_then_power_engine_times_release(void);
 int test_throw_recovery_preserves_the_movement_boundary(void);
 int test_throw_recovery_is_independent_of_animation(void);
+int test_ai_baseman_throws_to_idle_cover_on_own_base(void);
 
 // Fielder-movement contracts (the destination message and the engine mover)
 int test_move_target_sets_velocity_toward_the_point(void);

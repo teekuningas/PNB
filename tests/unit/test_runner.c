@@ -143,6 +143,7 @@ int main(int argc, char* argv[])
     RUN_TEST(test_choose_batter_preference);
     RUN_TEST(test_is_wrong_pitch);
     RUN_TEST(test_calculate_ai_batting_angle);
+    RUN_TEST(test_decide_swing_profiles);
 
     // Catching AI Strategy tests
     RUN_TEST(test_chase_point_outside_the_dead_zone_is_the_prediction);
@@ -154,6 +155,7 @@ int main(int argc, char* argv[])
     RUN_TEST(test_move_declaration_heartbeat_restates_an_unchanged_destination);
     RUN_TEST(test_should_ai_throw_normal);
     RUN_TEST(test_should_ai_throw_replacer);
+    RUN_TEST(test_should_ai_throw_baseman_to_own_cover);
     RUN_TEST(test_should_ai_drop_ball_scenario);
 
     RUN_TEST(test_determine_lead_base_simple);

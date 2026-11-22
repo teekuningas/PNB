@@ -154,6 +154,30 @@ int test_should_ai_throw_replacer(void)
     return TEST_PASSED;
 }
 
+int test_should_ai_throw_baseman_to_own_cover(void)
+{
+    // Baseman (13) fielded the ball away from 1st base (catcherNearHome=0); cover (16) is idle on 1st.
+    ASSERT_EQ(1, should_ai_throw(13, 13, 0, 16, 1, 1, 0, 1), "Off-post baseman should throw to his idle cover");
+
+    // Baseman already on his own post must not throw to a cover.
+    ASSERT_EQ(0, should_ai_throw(13, 13, 1, 16, 1, 1, 0, 1), "On-post baseman should not throw to cover");
+
+    // Cover still moving to the base: wait instead of throwing.
+    ASSERT_EQ(0, should_ai_throw(13, 13, 0, 16, 1, 1, 1, 1), "Off-post baseman should not throw while cover is moving");
+
+    // Cover on a different base or inactive: do not throw.
+    ASSERT_EQ(0, should_ai_throw(13, 13, 0, 16, 1, 0, 0, 1), "Cover on another base is not a receiver");
+    ASSERT_EQ(0, should_ai_throw(13, 13, 0, 16, 0, 1, 0, 1), "Inactive cover is not a receiver");
+
+    // Cover holding the ball never throws to himself.
+    ASSERT_EQ(0, should_ai_throw(16, 13, 0, 16, 1, 1, 0, 1), "Cover holding the ball should not throw to himself");
+
+    // Missing cover slot (-1) cannot receive a throw.
+    ASSERT_EQ(0, should_ai_throw(13, 13, 0, -1, 1, 1, 0, 1), "Missing cover slot cannot receive a throw");
+
+    return TEST_PASSED;
+}
+
 int test_should_ai_drop_ball_scenario(void)
 {
     RefereeState ref = {0};

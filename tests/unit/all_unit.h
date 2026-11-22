@@ -68,6 +68,7 @@ int test_batter_seat_verdict_jokers(void);
 int test_choose_batter_preference(void);
 int test_is_wrong_pitch(void);
 int test_calculate_ai_batting_angle(void);
+int test_decide_swing_profiles(void);
 
 // Catching AI strategy (ai_pure/catching_ai_strategy.c)
 int test_chase_point_outside_the_dead_zone_is_the_prediction(void);
@@ -79,6 +80,7 @@ int test_move_declaration_speaks_first_time_and_on_a_real_drift(void);
 int test_move_declaration_heartbeat_restates_an_unchanged_destination(void);
 int test_should_ai_throw_normal(void);
 int test_should_ai_throw_replacer(void);
+int test_should_ai_throw_baseman_to_own_cover(void);
 int test_should_ai_drop_ball_scenario(void);
 int test_determine_lead_base_simple(void);
 int test_determine_lead_base_random(void);

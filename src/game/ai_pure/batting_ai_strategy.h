@@ -34,13 +34,10 @@ float calculate_ai_batting_angle(int battingStyle, int randomValue);
  * caller supplies, producing a COMPLETE intent at once. The controller has no meter to time and no
  * gesture to assemble, so there is nothing to sequence and no lock to hold.
  *
- *   power    : [0,1]. Which style is being played decides the band — a bunt is soft by definition, a
- *              normal swing varies across a competent mid-to-strong range so at-bats differ, and the
- *              wounding swing is firm.
- *   vertical : [0,1], scattered about SWING_VERTICAL_FOCAL. The scatter IS the difficulty: the AI
- *              used to inherit its timing error by accident, from releasing at a fixed meter level
- *              while the sweet spot moved with power. Making it deliberate is what turns "how good is
- *              the batter" into a number that can be tuned, and eventually a difficulty setting.
+ *   power    : [0,1]. Style selects a profile table entry: bunts stay below SWING_BUNT_MAX_POWER,
+ *              normal swings stay above it in a firm driving band, and wounding swings are firm.
+ *   vertical : [0,1]. Style biases relative to SWING_VERTICAL_FOCAL (downward bunts, low-liner
+ *              normal swings, lofted koppi) with deliberate scatter around the style's target.
  *
  * rand_power in [0, 19), rand_vertical in [0, 201). */
 typedef struct {

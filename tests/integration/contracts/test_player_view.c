@@ -47,6 +47,16 @@ int test_player_view_preserves_phase_and_restart_boundaries(void)
     player_view_after_tick(&view, &facts);
     ASSERT_EQ(PLAYER_ANIM_STAND_NO_BALL, view.players[12].model, "physical expiry ends the follow-through");
     ASSERT_EQ(41, view.players[12].frame_tick, "expiry changes the pose without taking an extra clip step");
+
+    // Replaying a tick whose simulated half carries a non-starting movement activity after a reset
+    // leaves frame_count == 0; advancing must not divide by zero.
+    view.players[12] = (PlayerAnimation){.model = PLAYER_ANIM_STAND_NO_BALL, .frame_count = 0, .ticks_per_frame = 1};
+    facts = (TickFacts){0};
+    facts.simulated_players[12].activity =
+        (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_CONTROLLED_RUNNING, .started = PLAYER_ACTIVITY_NONE};
+    player_view_after_tick(&view, &facts);
+    ASSERT_EQ(PLAYER_ANIM_RUN_NO_BALL, view.players[12].model, "movement pose still applies");
+    ASSERT_EQ(0, view.players[12].frame_tick, "zero-length clip does not divide by zero");
     return TEST_PASSED;
 }
 

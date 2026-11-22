@@ -103,6 +103,9 @@ static void enforce_legal_state(
         // 1. React to OUT
         if (referee->batting_players[i].status == PLAYER_STATUS_OUT) {
             if (match->players[i].batting.presence.state != PLAYER_STATE_OUT) {
+                if (match->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+                    match->at_bat.cycle = BATTING_CYCLE_CLOSED;
+                }
                 match->players[i].batting.presence.state = PLAYER_STATE_OUT;
                 match->players[i].batting.presence.base_id = BASE_NONE;
                 move_player_out(match->players, field_positions, i);
@@ -119,6 +122,9 @@ static void enforce_legal_state(
         // 3. React to WOUNDED
         if (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED) {
             if (match->players[i].batting.presence.state != PLAYER_STATE_WOUNDED) {
+                if (match->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+                    match->at_bat.cycle = BATTING_CYCLE_CLOSED;
+                }
                 match->players[i].batting.presence.state = PLAYER_STATE_WOUNDED;
                 match->players[i].batting.presence.base_id = BASE_NONE;
                 move_player_out(match->players, field_positions, i);
@@ -127,13 +133,15 @@ static void enforce_legal_state(
 
         // 4. React to displacement (Panic Run)
         if (match->players[i].batting.presence.state == PLAYER_STATE_ON_BASE ||
-            match->players[i].batting.presence.state == PLAYER_STATE_LEADING) {
+            match->players[i].batting.presence.state == PLAYER_STATE_LEADING ||
+            (match->players[i].batting.presence.state == PLAYER_STATE_RUNNING &&
+             match->players[i].batting.presence.base_id == BASE_HOME && match->players[i].path.going_forward == 0)) {
             BaseID physBase = match->players[i].batting.presence.base_id;
             if (referee->batting_players[i].current_safety_base != physBase) {
                 int isWounded = (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED);
 
                 if (!isWounded) {
-                    // Player is physically at base but legally has no safety there.
+                    // Player is physically at (or retreating to) a base where they legally have no safety.
                     // They must run forward.
                     run_to_next_base(match, field_positions, i, physBase);
                 }
@@ -201,8 +209,10 @@ static void check_next_batter_decision(MatchSession* match, const GameRulesState
     const BetweenPitchState* bps = &rules->between_pitch;
     const Scoreboard* scoreboard = &rules->scoreboard;
 
-    // Cancel pending batter request if inning is ending
-    if (referee->end_of_inning_state != END_INNING_STATE_NONE) {
+    // Cancel pending batter request if inning is ending or a batter is at the plate
+    // (e.g. a batter who ran off home and retreated safely back to BASE_HOME after
+    // offers.batter_seat had already opened).
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE || get_active_batter_index(match) != -1) {
         match->offers.batter_seat = 0;
         return;
     }

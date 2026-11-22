@@ -54,30 +54,29 @@ decide_move_declaration(const Vector3D* desired, int hasDeclared, const Vector3D
     return out;
 }
 
+// Matches ReplacementState.REPLACEMENT_ACTIVE in world.h (kept out of catching_ai_strategy's includes).
+#define AI_REPLACEMENT_ACTIVE 1
+
 int should_ai_throw(
     int holder, int baseman, int catcherNearHome, int replacerIndex, int replacerStage, int replacerBase,
     int replacerMoving, int targetBase
 )
 {
-    int shouldThrow = 0;
-    if (holder != -1 && baseman != -1) {
-        // Only consider throwing if I am NOT the baseman for this base
-        if (holder != baseman) {
-            // Check normal catcher
-            if (catcherNearHome == 1) {
-                shouldThrow = 1;
-            }
+    if (holder == -1) return 0;
 
-            // Check replacer
-            if (holder != replacerIndex) {
-                if (replacerStage == 1 && replacerBase == targetBase && replacerMoving == 0) {
-                    shouldThrow = 1;
-                }
-            }
-        }
+    // Throw to the regular baseman when someone else holds the ball and the baseman is on his post.
+    if (baseman != -1 && holder != baseman && catcherNearHome == 1) {
+        return 1;
     }
 
-    return shouldThrow;
+    // Throw to an idle cover standing on the target base — including when the baseman himself
+    // fielded the ball away from his post (catcherNearHome == 0).
+    if (replacerIndex != -1 && holder != replacerIndex && !(holder == baseman && catcherNearHome == 1) &&
+        replacerStage == AI_REPLACEMENT_ACTIVE && replacerBase == targetBase && replacerMoving == 0) {
+        return 1;
+    }
+
+    return 0;
 }
 
 int should_ai_drop_ball(

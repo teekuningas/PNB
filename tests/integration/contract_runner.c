@@ -30,6 +30,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_third_home_retreat_returns_via_flag_to_third);
     RUN_TEST(test_terminal_players_complete_all_exit_legs);
     RUN_TEST(test_simulate_raises_and_consumes_each_runner_arrival);
+    RUN_TEST(test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home);
     RUN_TEST(test_a_fielder_walking_out_of_reach_still_catches_this_tick);
     RUN_TEST(test_a_fielder_walking_into_reach_catches_on_the_next_tick);
 
@@ -97,6 +98,7 @@ static void run_contract_tests(void)
     RUN_TEST(test_throw_target_then_power_engine_times_release);
     RUN_TEST(test_throw_recovery_preserves_the_movement_boundary);
     RUN_TEST(test_throw_recovery_is_independent_of_animation);
+    RUN_TEST(test_ai_baseman_throws_to_idle_cover_on_own_base);
 
     printf("\n--- Fielder movement (the destination message and the engine mover) ---\n");
     RUN_TEST(test_move_target_sets_velocity_toward_the_point);

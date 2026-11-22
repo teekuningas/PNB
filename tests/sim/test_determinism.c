@@ -139,7 +139,18 @@ static unsigned long long run_once(unsigned int seed)
 //
 // HELD 2026-10-27 when the flag moved onto the ball as `pitch_in_flight`, a yes/no: the checksum folds
 // it as the code the enum used to have (2 in flight, 0 not), so a representation change is not a play.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x19f40d41e20f8075ULL
+//
+// Re-recorded 2026-11-22, deliberately, by the pre-merge playtest fixes:
+//   1. AI basemen who field away from their post now throw to an idle cover on their own base
+//      (catching_ai_strategy.c).
+//   2. Scoped batting-AI lift (batting_ai_strategy.c, batting_ai.c): style-specific power/elevation
+//      profiles (downward bunts, full-power line-drive normal swings, fair lofted koppi), gap-weighted
+//      angles, aiming during windup, runner-on-2nd/3rd strike-2 & batter-selection blind-spot fixes,
+//      and replacing the platform-dependent RAND_MAX draw with 1000.
+// Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): batters reaching first 109 -> 157,
+// runs 1 -> 4, power mean 21.0 -> 25.1, with all other bands holding and 120/120 half-inning and
+// 120/120 homerun-contest sweep seeds clean.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x913c1366ce25cc67ULL
 
 int test_ai_vs_ai_determinism(void)
 {

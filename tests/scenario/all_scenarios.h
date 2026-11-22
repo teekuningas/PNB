@@ -21,5 +21,7 @@ int test_burnt_player_bats_again(void); // A burnt player keeps their place in t
 int test_last_batter_ends_half_inning(void); // §12(3) — the side change keys on the viimeinen lyöjä
 int test_scoreless_lap_of_the_order_ends_half_inning(void); // §12(2) — one lap of the order, not a pool
 int test_joker_opening_does_not_take_the_turn(void); // §7/§12(2) — a joker opener is not the turn's opener
+int test_batter_retreats_to_home_on_koppi(void); // Safe home retreat on koppi restores AT_BAT and readiness
+int test_batter_retreat_closes_stale_seat_offer(void); // Safe home retreat closes an already-open seat offer
 
 #endif // ALL_SCENARIOS_H

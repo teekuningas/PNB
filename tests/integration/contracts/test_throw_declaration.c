@@ -1,6 +1,8 @@
 #include "scenario_builder.h"
 #include "test_helpers.h"
 #include "all_contracts.h"
+#include "ai/ai_controller.h"
+#include "ai/ai_memory.h"
 #include "intent_channel.h"
 #include "ingest.h"
 #include "actualize.h"
@@ -305,5 +307,72 @@ int test_throw_recovery_is_independent_of_animation(void)
     for (int profile = 1; profile <= 4; profile++) {
         if (check_throw_recovery(profile) != TEST_PASSED) return TEST_FAILED;
     }
+    return TEST_PASSED;
+}
+
+// An AI baseman who fielded the ball away from his own post must throw to his idle cover standing
+// on that base instead of carrying the ball back himself.
+int test_ai_baseman_throws_to_idle_cover_on_own_base(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    MatchSession* m = ctx->state->match;
+    const FieldPositions* field = ctx->state->field_positions;
+
+    // A batter is running from home to 1st, so the catching AI targets BASE_FIRST.
+    setup_batter_at_home(ctx, 0);
+    initialize_referee_from_physical_state(ctx);
+    snapshot_pitch_start_state(ctx);
+    m->at_bat.may_leave_home = 1;
+    trigger_player_run_to_next_base(ctx, 0, BASE_HOME);
+
+    // 1st baseman holds the ball 12m off 1st base; his cover is idle on 1st base.
+    int baseman = m->fielding_posts.baseman[BASE_FIRST];
+    int cover = m->fielding_posts.cover[BASE_FIRST];
+    ASSERT(baseman != -1 && cover != -1 && baseman != cover, "setup: 1st base has distinct baseman and cover");
+
+    m->players[baseman].body.location = (Vector3D){field->first_base.x + 12.0f, 0.0f, field->first_base.z + 4.0f};
+    m->players[baseman].body.previous_location = m->players[baseman].body.location;
+    m->players[baseman].fielding.near_home = 0;
+
+    m->players[cover].body.location = field->first_base;
+    m->players[cover].body.previous_location = field->first_base;
+    m->players[cover].fielding.replacement = REPLACEMENT_ACTIVE;
+    m->players[cover].fielding.replacement_base = BASE_FIRST;
+    m->players[cover].motion.moving = 0;
+
+    m->ball.holder = baseman;
+    m->ball.location = m->players[baseman].body.location;
+    m->ball.location.y = BALL_HEIGHT_WITH_PLAYER;
+    m->catching.controlled_fielder = baseman;
+
+    AIControllerState ai;
+    init_ai_controller(&ai, 0xC07E12u);
+    ai_update(m, ctx->state->rules, field, &ai, &ctx->state->channels);
+
+    int sawTargetFirst = 0;
+    int sawPower = 0;
+    for (int i = 0; i < ctx->state->channels.catching.count; i++) {
+        IntentMessage msg = ctx->state->channels.catching.message[i];
+        if (msg.kind == INTENT_THROW_TARGET && msg.as.throw_target.base == BASE_FIRST) sawTargetFirst = 1;
+        if (msg.kind == INTENT_THROW_POWER) sawPower = 1;
+    }
+    ASSERT_EQ(1, sawTargetFirst, "off-post baseman must declare INTENT_THROW_TARGET to his own base");
+    ASSERT_EQ(1, sawPower, "off-post baseman must declare INTENT_THROW_POWER to his waiting cover");
+
+    // Ingest, actualize, and simulate until the throw releases and the cover catches it on 1st.
+    tick(ctx);
+    ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "throw windup begins");
+
+    int caughtByCover = 0;
+    for (int f = 0; f < 250; f++) {
+        simulate_frames(ctx, 1);
+        if (m->ball.holder == cover) {
+            caughtByCover = 1;
+            break;
+        }
+    }
+    ASSERT_EQ(1, caughtByCover, "thrown ball must be caught by the waiting cover on 1st base");
+
+    cleanup_scenario(ctx);
     return TEST_PASSED;
 }

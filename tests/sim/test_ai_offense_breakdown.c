@@ -256,9 +256,10 @@ int test_ai_offense_breakdown(void)
     }
 
     // ---- the bands -------------------------------------------------------------------
-    // Every baseline below is the value this suite produced at sim hash a0d339d08a516f85, 24 seeds ×
-    // 3 half-innings, when the bands were last re-cut. A baseline is not a target: it is what the
-    // number WAS, so a drift is readable here rather than by digging up an old PR.
+    // Every baseline below is the value this suite produced at sim hash a0d339d08a516f85 (and at
+    // 913c1366ce25cc67 for the three offense bands re-cut by the pre-merge batting-AI lift), 24 seeds ×
+    // 3 half-innings. A baseline is not a target: it is what the number WAS, so a drift is readable
+    // here rather than by digging up an old PR.
     //
     // Two floors are looser than the quarter-either-side rule: `batters seated` and `joker at-bats`.
     // Both moved several points when the batter's power window was repaired — not because the
@@ -299,18 +300,16 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"batters reaching first", (double)T_reached_base, 90, 132, "109",
-               "contact that never turns into a runner. KNOW ITS RESOLUTION: this is an aggregate of "
-               "everything between the bat and the base, and a legitimate slice moved it 20% (137 -> 109) "
-               "in one go, so the band cannot be cut fine enough to see a drift of that size and stay "
-               "usable. It is a collapse detector. The instruments that DO see a weaker swing are the "
-               "direct ones — batted-ball power, out-of-bounds rate, mean chase distance — all three of "
-               "which breach on a 17% power cut that leaves this band green"}
+        (Band){"batters reaching first", (double)T_reached_base, 120, 195, "157",
+               "contact that never turns into a runner. Re-cut upward (109 -> 157) with the scoped batting-AI "
+               "lift: style-specific shot profiles, gap-weighted angles, aiming during windup, and fixing the "
+               "runner-on-3rd / strike-2 strategy blind spots"}
     );
     band_add(
         bands, &band_count,
-        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 18.5, 24, "21.0",
-               "the swing going soft — the meter starved, as bug #4 did it"}
+        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 21.5, 28.5, "25.1",
+               "the swing going soft — the meter starved, as bug #4 did it (re-cut 21.0 -> 25.1 once normal "
+               "swings stayed above SWING_BUNT_MAX_POWER)"}
     );
     band_add(
         bands, &band_count,
@@ -456,8 +455,10 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 135,
-               190, "156.7", "the batting side taking longer to answer, or retrying blindly"}
+        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 150,
+               235, "194.3",
+               "the batting side taking longer to answer, or retrying blindly (re-cut 156.7 -> 194.3 as harder "
+               "gap hits take longer to return home before the next batter is chosen)"}
     );
     // §7: "Jokeripelaaja ei vie kenenkään lyöntivuoroa", so §12(2)'s "vuoron aloittanut pelaaja"
     // is the regular whose turn it is, never the joker that happened to swing first. When the
