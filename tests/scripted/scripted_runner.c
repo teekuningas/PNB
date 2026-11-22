@@ -43,6 +43,8 @@ int main(void)
     RUN_TEST(test_scripted_h2h_both_pads_may_declare_on_one_frame);
     RUN_TEST(test_scripted_h2h_one_pads_key_never_moves_the_others_widget);
     RUN_TEST(test_scripted_h2h_the_dance_repeats_across_pitches);
+    RUN_TEST(test_scripted_homerun_contest_pair);
+    RUN_TEST(test_scripted_super_inning_walkoff);
 
     printf("\n========================================\n");
     printf("Tests run: %d\n", tests_run);

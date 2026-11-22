@@ -45,4 +45,8 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void);
 int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void);
 int test_scripted_h2h_the_dance_repeats_across_pitches(void);
 
+// Late-game modes through the real human input path: home-run contest and super inning.
+int test_scripted_homerun_contest_pair(void);
+int test_scripted_super_inning_walkoff(void);
+
 #endif /* ALL_SCRIPTED_H */
