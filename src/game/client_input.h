@@ -48,9 +48,9 @@ typedef enum { WIDGET_IDLE = 0, WIDGET_PING_PONG, WIDGET_DESCENT, WIDGET_CHARGE 
 
 typedef struct _MoveWidget {
     int held; // the held direction set as last declared (MOVE_HELD_* bits)
-    int controlIndex; // the fielder it was declared for; a different one needs telling afresh
+    int control_index; // the fielder it was declared for; a different one needs telling afresh
     int declared; // 0 until the first declaration
-    int framesSinceDeclared; // drives the blind heartbeat below
+    int frames_since_declared; // drives the blind heartbeat below
     Vector3D point; // the destination last sent
 } MoveWidget;
 
@@ -84,7 +84,7 @@ typedef struct _InputWidget {
 // back to scale the descent is exactly the read-back the fourth law forbids. The producer's unfinished
 // gesture lives in the producer.
 //
-// `flightFrames` is solved ONCE, on the frame the client saw the ball leave the hand, and from the
+// `flight_frames` is solved ONCE, on the frame the client saw the ball leave the hand, and from the
 // LAUNCH velocity. That is not an optimisation, it is the whole correctness of the descent: the
 // ball's vertical speed decays toward zero as it rises, so a flight time recomputed from the current
 // velocity shrinks as the pitch climbs, and a batter who commits late gets a sweep of a frame or two
@@ -110,7 +110,7 @@ typedef enum {
 
 typedef struct _SwingWidget {
     InputWidget meter;
-    int flightFrames; // -1 while no ball is in the air; solved once at release, from the launch
+    int flight_frames; // -1 while no ball is in the air; solved once at release, from the launch
     SwingBeat beat; // where this gesture has got to, remembered here and nowhere else
     float power; // the power this gesture declared; only meaningful once one has been
 } SwingWidget;
@@ -137,30 +137,30 @@ typedef struct _ClientInputState {
     int run_press_window[BASE_COUNT];
 
     // The pitch gesture the human runs across the dance (power ping-pong → aim descent). Human path only.
-    PitchWidget pitchWidget;
+    PitchWidget pitch_widget;
 
     // The throw charge meter — a CHARGE widget that rises while the human holds KEY_2 and is sampled on
     // release to declare the throw power as a VALUE (the engine↔client contract). Self-contained: it runs
     // its own timing and never reads the engine's windup clock (which drives only the render animation).
     // Human path only — the AI declares the target and the power together, using no widget.
-    InputWidget throwWidget;
+    InputWidget throw_widget;
 
     // The steering widget — held arrows in, a destination out. Human path only; the AI keeps the
     // same memory on its own side of the boundary, in AIControllerState.
-    MoveWidget moveWidget;
+    MoveWidget move_widget;
 
     // The batter cursor — a list to scroll and a choice to make. Human path only; the AI needs no
     // widget because it has no gesture, it just picks.
-    BatterSelectWidget batterWidget;
+    BatterSelectWidget batter_widget;
 
     // The swing gesture — power during the windup, elevation during the flight. Human path only; the
     // AI needs no widget because it has no gesture, it decides two numbers and says them.
-    SwingWidget swingWidget;
+    SwingWidget swing_widget;
 
     // The aim cursor: where on the batter's arc the held +/- keys have walked to. Human path only —
     // the AI decides an angle outright and declares it. Cleared whenever there is no batting going
     // on, so one at-bat's aim never leaks into the next.
-    float batterAim;
+    float batter_aim;
 } ClientInputState;
 
 #endif /* CLIENT_INPUT_H */

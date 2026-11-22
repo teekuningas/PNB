@@ -134,7 +134,7 @@ typedef struct {
 
 // State for the home-run contest stages (one per team)
 typedef struct {
-    int team_index; // index into StateInfo.teamData
+    int team_index; // index into StateInfo.team_data
     int player_control; // 0=Pad1,1=Pad2,2=AI
     int pointer; // current menu cursor (0=Continue, 1+ = player slots)
     int rem; // total cursor positions = players+1

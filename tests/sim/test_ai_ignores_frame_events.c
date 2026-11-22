@@ -85,10 +85,12 @@ static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents
     // declarations and nothing carried over from the previous one.
     g->state->channels = (IntentChannels){0};
 
-    ai_update(g->state->match, g->state->rules, g->state->fieldPositions, g->state->aiController, &g->state->channels);
+    ai_update(
+        g->state->match, g->state->rules, g->state->field_positions, g->state->ai_controller, &g->state->channels
+    );
 
     memcpy(&out->match, g->state->match, sizeof(MatchSession));
-    memcpy(&out->aiController, g->state->aiController, sizeof(AIControllerState));
+    memcpy(&out->aiController, g->state->ai_controller, sizeof(AIControllerState));
     out->channels = g->state->channels;
 
     out->wrote_an_event = memcmp(&out->match.events, &events, sizeof(GameEvents)) != 0;

@@ -30,16 +30,16 @@ int test_run_arrival_before_catch(void)
     place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
 
     // 2. Move runner between corner flag and home to ensure quick arrival
-    Vector3D homeLoc = ctx->state->fieldPositions->pitchPlate;
+    Vector3D homeLoc = ctx->state->field_positions->pitch_plate;
     Vector3D startLoc = homeLoc;
-    startLoc.z = -10.0f; // Between corner flag and homeRunPoint
+    startLoc.z = -10.0f; // Between corner flag and home_run_point
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
     ctx->state->match->players[runnerIndex].body.location = startLoc;
     ctx->state->match->players[runnerIndex].body.previous_location = startLoc;
 
-    // waypoint=1 means "past corner flag, run to homeRunPoint"
+    // waypoint=1 means "past corner flag, run to home_run_point"
     ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     printf("Setup: Runner %d placed close to home\n", runnerIndex);
@@ -49,7 +49,7 @@ int test_run_arrival_before_catch(void)
 
     // 3. Position a fielder at first base to catch the ball
     int fielderIdx = 14;
-    Vector3D fielderLoc = ctx->state->fieldPositions->firstBase;
+    Vector3D fielderLoc = ctx->state->field_positions->first_base;
     ctx->state->match->players[fielderIdx].body.location = fielderLoc;
     ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
@@ -61,7 +61,7 @@ int test_run_arrival_before_catch(void)
     trigger_player_run_to_next_base(ctx, runnerIndex, BASE_THIRD);
 
     // 6. Hit a fly ball to first base (will be caught)
-    Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchPlate = ctx->state->field_positions->pitch_plate;
     hit_fly_ball_to_location(ctx, pitchPlate, fielderLoc);
 
     int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;

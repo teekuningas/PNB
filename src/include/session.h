@@ -22,12 +22,12 @@ typedef struct _AIControllerState AIControllerState;
 typedef struct _StateInfo {
     // Main menu or game screen active
     ScreenState screen;
-    int changeScreen;
+    int change_screen;
     int updated;
-    int numTeams;
-    int playSoundEffect;
-    int stopSoundEffect;
-    int soundEnabled;
+    int num_teams;
+    int play_sound_effect;
+    int stop_sound_effect;
+    int sound_enabled;
     int currently_played_cup_match_index; // Used to pass match context to/from game screen
     // Whether the match is paused: SESSION control, which decides whether a tick runs at all, so it is not
     // game state and lives with whoever runs the session rather than in the World. The player pauses it
@@ -35,12 +35,12 @@ typedef struct _StateInfo {
     // clears it.
     int paused;
     // addresses to important information structures
-    KeyStates* keyStates;
-    TeamData* teamData;
-    FieldPositions* fieldPositions;
+    KeyStates* key_states;
+    TeamData* team_data;
+    FieldPositions* field_positions;
     MatchSession* match;
-    ClientInputState* clientInput; // client-local input memory — NOT synced (see ClientInputState)
-    AIControllerState* aiController; // controller-private AI memory — NOT synced (see AIControllerState)
+    ClientInputState* client_input; // client-local input memory — NOT synced (see ClientInputState)
+    AIControllerState* ai_controller; // controller-private AI memory — NOT synced (see AIControllerState)
     // The per-team intent channels — held BY VALUE, because they are neither a world nor a memory:
     // they are the tick's input, alive only between the CONTROL stage and the INGEST gate of the same
     // frame. Storing them here just gives that per-tick value a place to sit on this machine; the
@@ -54,7 +54,7 @@ typedef struct _StateInfo {
     TickFacts tick_facts; // complete tick observations, read-only to their client consumers
     GameRulesState* rules;
     Cup* cup; // New dynamic tournament state
-    GameConclusion* gameConclusion;
+    GameConclusion* game_conclusion;
 } StateInfo;
 
 #endif /* SESSION_H */

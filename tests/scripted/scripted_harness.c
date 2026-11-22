@@ -47,7 +47,7 @@ int scripted_tick(ScriptedGame* g)
     // "was down last frame, not down this frame" — exactly what input.c produces and
     // what action_invocations' `released[...]` reads. The CONTROL_AI phantom row (2)
     // is intentionally left zeroed.
-    KeyStates* ks = g->sim->state->keyStates;
+    KeyStates* ks = g->sim->state->key_states;
     for (int pad = 0; pad < HUMAN_PAD_COUNT; pad++) {
         for (int key = 0; key < KEY_COUNT; key++) {
             int down = g->held[pad][key];

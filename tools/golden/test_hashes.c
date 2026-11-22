@@ -24,7 +24,7 @@ int main(void)
     AIControllerState ai = {0};
     FieldPositions field = {0};
     StateInfo state = {
-        .rules = &rules, .match = &match, .clientInput = &client, .aiController = &ai, .fieldPositions = &field
+        .rules = &rules, .match = &match, .client_input = &client, .ai_controller = &ai, .field_positions = &field
     };
     SimGame game = {.state = &state};
     printf("width %zu layout %zu\n", sizeof(rules.referee.batting_players[0].has_scored), sizeof(rules));

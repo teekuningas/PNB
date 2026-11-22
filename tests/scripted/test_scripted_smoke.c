@@ -50,7 +50,7 @@ int test_scripted_key_edges(void)
     ScriptedGame* g = scripted_create(0, 1, HUMAN_PAD, CONTROL_AI, 0x5C217E02u);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
 
-    KeyStates* ks = scripted_state(g)->keyStates;
+    KeyStates* ks = scripted_state(g)->key_states;
 
     // Hold: down set, no release edge.
     scripted_hold(g, HUMAN_PAD, KEY_2);

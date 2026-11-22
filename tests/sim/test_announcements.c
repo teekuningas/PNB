@@ -71,7 +71,7 @@ int test_announcements_do_not_depend_on_the_screen(void)
     memset(&watched, 0, sizeof(watched));
     memset(&unwatched, 0, sizeof(unwatched));
     watched.consume = 1;
-    watched.hud.infoEventTimer = -1;
+    watched.hud.info_event_timer = -1;
 
     unsigned long long watchedHash, unwatchedHash;
     long watchedFrames, unwatchedFrames;
@@ -100,15 +100,15 @@ int test_announcements_do_not_depend_on_the_screen(void)
 
     // And the screen's side, held where it is cheap to hold: an announcement starts the info line and is
     // consumed, so the next tick starts with nothing standing.
-    HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
+    HudState hud = {.info_event = EVENT_NONE, .info_event_timer = -1};
     GameEventType announcement = EVENT_STRIKE;
     hud_after_tick(&hud, &announcement);
-    ASSERT_EQ(EVENT_STRIKE, (int)hud.infoEvent, "the info line shows what was announced");
-    ASSERT_EQ(0, hud.infoEventTimer, "and starts its clock");
+    ASSERT_EQ(EVENT_STRIKE, (int)hud.info_event, "the info line shows what was announced");
+    ASSERT_EQ(0, hud.info_event_timer, "and starts its clock");
     ASSERT_EQ(EVENT_NONE, (int)announcement, "and the announcement is consumed");
     hud_after_tick(&hud, &announcement);
-    ASSERT_EQ(EVENT_STRIKE, (int)hud.infoEvent, "an empty tick leaves the line as it was");
-    ASSERT_EQ(1, hud.infoEventTimer, "but one tick older");
+    ASSERT_EQ(EVENT_STRIKE, (int)hud.info_event, "an empty tick leaves the line as it was");
+    ASSERT_EQ(1, hud.info_event_timer, "but one tick older");
     return TEST_PASSED;
 }
 
@@ -120,7 +120,7 @@ static int an_announcement_is_on_the_line(HudState* hud, CameraView* camera, Pla
 {
     for (long i = 0; i < PERIOD_MAX_FRAMES; i++) {
         update_game_screen(g->state, hud, camera, players, &g->menu);
-        if (hud->infoEventTimer == 0) return 1;
+        if (hud->info_event_timer == 0) return 1;
     }
     return 0;
 }
@@ -131,12 +131,12 @@ int test_the_info_line_holds_its_message_while_paused(void)
     sim_make_normal_setup(&setup, 0, 1, CONTROL_AI, CONTROL_AI);
     SimGame* g = sim_create(&setup, 0x9A05Eu);
     ASSERT_NOT_NULL(g, "sim_create returned NULL");
-    HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
+    HudState hud = {.info_event = EVENT_NONE, .info_event_timer = -1};
     CameraView camera = {.home_run = {.hold_ticks = -1}};
     PlayerView players;
     player_view_init(&players, g->state->match);
     ASSERT(an_announcement_is_on_the_line(&hud, &camera, &players, g), "the referee never announced anything");
-    const GameEventType shown = hud.infoEvent;
+    const GameEventType shown = hud.info_event;
 
     g->state->paused = 1;
     camera.home_run = (HomeRunView){.active = 1, .hold_ticks = 7};
@@ -144,8 +144,8 @@ int test_the_info_line_holds_its_message_while_paused(void)
     for (int i = 0; i < 500; i++) {
         update_game_screen(g->state, &hud, &camera, &players, &g->menu);
     }
-    ASSERT_EQ((int)shown, (int)hud.infoEvent, "the paused screen still shows the message");
-    ASSERT_EQ(0, hud.infoEventTimer, "and its clock has not moved: 500 screen frames, no game time");
+    ASSERT_EQ((int)shown, (int)hud.info_event, "the paused screen still shows the message");
+    ASSERT_EQ(0, hud.info_event_timer, "and its clock has not moved: 500 screen frames, no game time");
     ASSERT_EQ(1, camera.home_run.active, "the paused screen holds its homeward framing");
     ASSERT_EQ(7, camera.home_run.hold_ticks, "screen updates without ticks cannot advance the camera hold");
     ASSERT(
@@ -156,7 +156,7 @@ int test_the_info_line_holds_its_message_while_paused(void)
     int cleared = 0;
     for (int i = 0; i < 500 && !cleared; i++) {
         update_game_screen(g->state, &hud, &camera, &players, &g->menu);
-        cleared = (hud.infoEventTimer == -1);
+        cleared = (hud.info_event_timer == -1);
     }
     ASSERT(cleared, "once play resumes the message runs out as usual");
     sim_destroy(g);

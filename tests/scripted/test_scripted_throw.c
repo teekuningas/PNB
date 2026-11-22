@@ -51,7 +51,7 @@ int test_scripted_throw_hold_release_to_base(void)
     ASSERT(thrower >= 0, "the human should hold the ball at home");
 
     // The client-local throw charge widget — the human's power comes from THIS, never the engine clock.
-    InputWidget* tw = &scripted_state(g)->clientInput->throwWidget;
+    InputWidget* tw = &scripted_state(g)->client_input->throw_widget;
 
     // Begin the gesture: hold KEY_2 + KEY_LEFT (a pickoff throw to first). One tick to register the hold.
     scripted_hold(g, HUMAN_PAD, KEY_2);

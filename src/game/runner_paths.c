@@ -53,28 +53,28 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         // first we select the target corresponding to base argument
         if (base == BASE_HOME) {
             if (match->at_bat.may_leave_home == 0) return;
-            target.x = field_positions->firstBaseRun.x;
-            target.z = field_positions->firstBaseRun.z;
+            target.x = field_positions->first_base_run.x;
+            target.z = field_positions->first_base_run.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.
             match->at_bat.cycle = BATTING_CYCLE_CLOSED;
         } else if (base == BASE_FIRST) {
-            target.x = field_positions->secondBaseRun.x;
-            target.z = field_positions->secondBaseRun.z;
+            target.x = field_positions->second_base_run.x;
+            target.z = field_positions->second_base_run.z;
         } else if (base == BASE_SECOND) {
-            target.x = field_positions->thirdBaseRun.x;
-            target.z = field_positions->thirdBaseRun.z;
+            target.x = field_positions->third_base_run.x;
+            target.z = field_positions->third_base_run.z;
         } else if (base == BASE_THIRD) {
             // if we are running home, there is the "flag" point, and we must change the direction there.
             // how it matters here is that if we have already passed the flag, we must run towards homebase,
             // if not, we must run towards flag.
             if (match->players[index].path.waypoint == 0) {
-                target.x = field_positions->runLeftPoint.x;
-                target.z = field_positions->runLeftPoint.z;
+                target.x = field_positions->run_left_point.x;
+                target.z = field_positions->run_left_point.z;
 
                 match->events.homeward_runs_started++;
             } else if (match->players[index].path.waypoint == 1) {
-                target.x = field_positions->homeRunPoint.x;
-                target.z = field_positions->homeRunPoint.z;
+                target.x = field_positions->home_run_point.x;
+                target.z = field_positions->home_run_point.z;
             } else {
                 return;
             }
@@ -107,22 +107,22 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         // the previous base
         if (base == BASE_HOME) {
             // so when batter returns, he will go to his ready position again.
-            target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.x = (float)(field_positions->pitch_plate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(field_positions->pitch_plate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
         } else if (base == BASE_FIRST) {
-            target.x = field_positions->firstBaseRun.x;
-            target.z = field_positions->firstBaseRun.z;
+            target.x = field_positions->first_base_run.x;
+            target.z = field_positions->first_base_run.z;
         } else if (base == BASE_SECOND) {
-            target.x = field_positions->secondBaseRun.x;
-            target.z = field_positions->secondBaseRun.z;
+            target.x = field_positions->second_base_run.x;
+            target.z = field_positions->second_base_run.z;
         } else if (base == BASE_THIRD) {
             // here we again select the target by our current location relative to flag
             if (match->players[index].path.waypoint == 0) {
-                target.x = field_positions->thirdBaseRun.x;
-                target.z = field_positions->thirdBaseRun.z;
+                target.x = field_positions->third_base_run.x;
+                target.z = field_positions->third_base_run.z;
             } else if (match->players[index].path.waypoint == 1) {
-                target.x = field_positions->runLeftPoint.x;
-                target.z = field_positions->runLeftPoint.z;
+                target.x = field_positions->run_left_point.x;
+                target.z = field_positions->run_left_point.z;
             } else {
                 return;
             }
@@ -155,26 +155,26 @@ void lead_from_base(PlayerInfo* playerInfo, const FieldPositions* field_position
         // third base nor in homebase.
         if (playerInfo[index].batting.presence.base_id == BASE_FIRST) {
             // the lead target is selected by adding a small step to current location to next bases' direction
-            // using firstBase  instead of location in the difference is because we want the step size to stay
+            // using first_base instead of location in the difference is because we want the step size to stay
             // same
             target.x = playerInfo[index].body.location.x +
-                       LEAD_STEP * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x);
+                       LEAD_STEP * (field_positions->second_base_run.x - field_positions->first_base_run.x);
             target.z = playerInfo[index].body.location.z +
-                       LEAD_STEP * (field_positions->secondBaseRun.z - field_positions->firstBaseRun.z);
+                       LEAD_STEP * (field_positions->second_base_run.z - field_positions->first_base_run.z);
             // if we go over half way, we disallow any leading, you should just run from there.
             if (playerInfo[index].body.location.x >
-                field_positions->firstBaseRun.x +
-                    0.5f * (field_positions->secondBaseRun.x - field_positions->firstBaseRun.x))
+                field_positions->first_base_run.x +
+                    0.5f * (field_positions->second_base_run.x - field_positions->first_base_run.x))
                 done = 1;
         } else if (playerInfo[index].batting.presence.base_id == BASE_SECOND) {
             // same as in previous but from second to third base
             target.x = playerInfo[index].body.location.x +
-                       LEAD_STEP * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x);
+                       LEAD_STEP * (field_positions->third_base_run.x - field_positions->second_base_run.x);
             target.z = playerInfo[index].body.location.z +
-                       LEAD_STEP * (field_positions->thirdBaseRun.z - field_positions->secondBaseRun.z);
+                       LEAD_STEP * (field_positions->third_base_run.z - field_positions->second_base_run.z);
             if (playerInfo[index].body.location.x <
-                field_positions->secondBaseRun.x +
-                    0.5f * (field_positions->thirdBaseRun.x - field_positions->secondBaseRun.x))
+                field_positions->second_base_run.x +
+                    0.5f * (field_positions->third_base_run.x - field_positions->second_base_run.x))
                 done = 1;
         } else {
             done = 1;

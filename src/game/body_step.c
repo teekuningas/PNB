@@ -105,8 +105,8 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
                             Vector3D target;
                             if (match->players[i].path.waypoint == 0) {
                                 match->players[i].path.waypoint = 1;
-                                target.x = field_positions->pitchPlate.x;
-                                target.z = field_positions->pitchPlate.z + HOME_RADIUS;
+                                target.x = field_positions->pitch_plate.x;
+                                target.z = field_positions->pitch_plate.z + HOME_RADIUS;
                             } else if (match->players[i].path.waypoint == 1) {
                                 match->players[i].path.waypoint = 2;
                                 target.x = match->players[i].body.home_location.x;

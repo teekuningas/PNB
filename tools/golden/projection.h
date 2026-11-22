@@ -179,7 +179,7 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
 
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
-    put(4, "gfs=%d,%d;", home_run->hold_ticks, ball_is_home(m, st->fieldPositions));
+    put(4, "gfs=%d,%d;", home_run->hold_ticks, ball_is_home(m, st->field_positions));
     put(4, "cam=%d;", home_run->active);
     V(4, m->catching.controlled_move_target);
     put(4, "%d,%d;", m->catching.controlled_move_target_active, m->catching.controlled_move_target_for);
@@ -202,28 +202,28 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
 
     put(8, "%016llx", rules_projection_hash(r));
 
-    const ClientInputState* c = st->clientInput;
+    const ClientInputState* c = st->client_input;
     for (int i = 0; i < BASE_COUNT; i++) put(9, "rp%d,", c->run_press_window[i]);
-    project_widget("pw", &c->pitchWidget.meter);
-    project_widget("tw", &c->throwWidget);
-    put(9, "mv=%d,%d,%d,%d;", c->moveWidget.held, c->moveWidget.controlIndex, c->moveWidget.declared,
-        c->moveWidget.framesSinceDeclared);
-    V(9, c->moveWidget.point);
-    put(9, "bs=%d,%d;", c->batterWidget.highlight, c->batterWidget.selected);
-    project_widget("sw", &c->swingWidget.meter);
-    put(9, "swf=%d,%d,%a;", c->swingWidget.flightFrames, (int)c->swingWidget.beat, (double)c->swingWidget.power);
-    put(9, "aim=%a;", (double)c->batterAim);
+    project_widget("pw", &c->pitch_widget.meter);
+    project_widget("tw", &c->throw_widget);
+    put(9, "mv=%d,%d,%d,%d;", c->move_widget.held, c->move_widget.control_index, c->move_widget.declared,
+        c->move_widget.frames_since_declared);
+    V(9, c->move_widget.point);
+    put(9, "bs=%d,%d;", c->batter_widget.highlight, c->batter_widget.selected);
+    project_widget("sw", &c->swing_widget.meter);
+    put(9, "swf=%d,%d,%a;", c->swing_widget.flight_frames, (int)c->swing_widget.beat, (double)c->swing_widget.power);
+    put(9, "aim=%a;", (double)c->batter_aim);
     put(9, "cview=%a;", (double)catching_widget_view(c));
-    SwingMeterView sv = swing_widget_view(&c->swingWidget);
-    put(9, "sview=%d,%a,%d,%a", sv.cursorLive, (double)sv.cursor, sv.powerCommitted, (double)sv.power);
+    SwingMeterView sv = swing_widget_view(&c->swing_widget);
+    put(9, "sview=%d,%a,%d,%a", sv.cursor_live, (double)sv.cursor, sv.power_committed, (double)sv.power);
 
-    const AIControllerState* ai = st->aiController;
-    put(10, "seed=%u brt=%d;", ai->rngSeed, ai->batterReadyTimer);
+    const AIControllerState* ai = st->ai_controller;
+    put(10, "seed=%u brt=%d;", ai->rng_seed, ai->batter_ready_timer);
     put(10, "sw=%d,%d,%a,%a,%a,%d;", ai->swing.decided, ai->swing.style, (double)ai->swing.power,
-        (double)ai->swing.vertical, (double)ai->swing.angle, ai->swing.wrongPitch);
-    V(10, ai->lastDeclaredMoveTarget);
-    put(10, "%d,%d,%d", ai->hasDeclaredMoveTarget, ai->framesSinceMoveDeclared, ai->lastSteeredFielder);
+        (double)ai->swing.vertical, (double)ai->swing.angle, ai->swing.wrong_pitch);
+    V(10, ai->last_declared_move_target);
+    put(10, "%d,%d,%d", ai->has_declared_move_target, ai->frames_since_move_declared, ai->last_steered_fielder);
 
-    put(11, "ann=%d snd=%d stop=%d rng=%u", (int)st->announcement, st->playSoundEffect, st->stopSoundEffect,
+    put(11, "ann=%d snd=%d stop=%d rng=%u", (int)st->announcement, st->play_sound_effect, st->stop_sound_effect,
         m->rng_seed);
 }

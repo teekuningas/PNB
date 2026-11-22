@@ -47,9 +47,9 @@ Permission throw_may_begin(const MatchSession* match, const FieldPositions* fiel
 // This tick's throw values, as the INGEST gate let them through — a per-tick command block, like the
 // pitch's. What a throw IS once it has begun lives in the CatchingAction.
 typedef struct _ThrowValues {
-    int targetDeclared;
+    int target_declared;
     BaseID target;
-    int powerDeclared;
+    int power_declared;
     float power;
 } ThrowValues;
 

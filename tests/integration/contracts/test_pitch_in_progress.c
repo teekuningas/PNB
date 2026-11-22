@@ -33,9 +33,9 @@ static void tick(ScenarioContext* ctx)
 {
     {
         IngestedCommands ingested =
-            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels);
         actualize(
-            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+            ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ingested, &ctx->state->play_sound_effect
         );
     }
 }

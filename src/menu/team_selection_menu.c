@@ -150,7 +150,7 @@ MenuStage update_team_selection_menu(TeamSelectionState* state, const KeyStates*
             gameSetup->team2 = state->team2;
             gameSetup->team1_control = (TeamControlMode)state->team1_controller;
             gameSetup->team2_control = (TeamControlMode)state->team2_controller;
-            gameSetup->halfInningsInPeriod = state->innings;
+            gameSetup->half_innings_in_period = state->innings;
 
             return MENU_STAGE_BATTING_ORDER_1;
         }

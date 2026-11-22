@@ -388,15 +388,15 @@ static int check_next_pair(
 static void populate_game_conclusion(GameConclusion* game_conclusion, const Scoreboard* scoreboard, int winner)
 {
     game_conclusion->winner = winner;
-    game_conclusion->isCupGame = scoreboard->is_cup_game;
-    game_conclusion->period0Runs[0] = scoreboard->teams[0].period0_runs;
-    game_conclusion->period0Runs[1] = scoreboard->teams[1].period0_runs;
-    game_conclusion->period1Runs[0] = scoreboard->teams[0].period1_runs;
-    game_conclusion->period1Runs[1] = scoreboard->teams[1].period1_runs;
-    game_conclusion->period2Runs[0] = scoreboard->teams[0].period2_runs;
-    game_conclusion->period2Runs[1] = scoreboard->teams[1].period2_runs;
-    game_conclusion->period3Runs[0] = scoreboard->teams[0].period3_runs;
-    game_conclusion->period3Runs[1] = scoreboard->teams[1].period3_runs;
+    game_conclusion->is_cup_game = scoreboard->is_cup_game;
+    game_conclusion->period0_runs[0] = scoreboard->teams[0].period0_runs;
+    game_conclusion->period0_runs[1] = scoreboard->teams[1].period0_runs;
+    game_conclusion->period1_runs[0] = scoreboard->teams[0].period1_runs;
+    game_conclusion->period1_runs[1] = scoreboard->teams[1].period1_runs;
+    game_conclusion->period2_runs[0] = scoreboard->teams[0].period2_runs;
+    game_conclusion->period2_runs[1] = scoreboard->teams[1].period2_runs;
+    game_conclusion->period3_runs[0] = scoreboard->teams[0].period3_runs;
+    game_conclusion->period3_runs[1] = scoreboard->teams[1].period3_runs;
 }
 
 static void calculate_free_walk(MatchSession* match, const RefereeState* referee)

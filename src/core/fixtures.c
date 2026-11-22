@@ -13,13 +13,13 @@ void fixture_create_super_inning(GameSetup* setup, int team1, int team2, int tea
 {
     memset(setup, 0, sizeof(GameSetup));
 
-    setup->gameMode = GAME_MODE_SUPER_INNING;
+    setup->game_mode = GAME_MODE_SUPER_INNING;
     setup->team1 = team1;
     setup->team2 = team2;
     setup->team1_control = team1_control;
     setup->team2_control = team2_control;
-    setup->halfInningsInPeriod = 4; // Standard
-    setup->playsFirst = 0; // Team 1 bats first
+    setup->half_innings_in_period = 4; // Standard
+    setup->plays_first = 0; // Team 1 bats first
 
     // Initialize batting orders (default sequential)
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -34,13 +34,13 @@ void fixture_create_homerun_contest(GameSetup* setup, int team1, int team2, int 
 {
     memset(setup, 0, sizeof(GameSetup));
 
-    setup->gameMode = GAME_MODE_HOMERUN_CONTEST;
+    setup->game_mode = GAME_MODE_HOMERUN_CONTEST;
     setup->team1 = team1;
     setup->team2 = team2;
     setup->team1_control = team1_control;
     setup->team2_control = team2_control;
-    setup->halfInningsInPeriod = 4;
-    setup->playsFirst = 0;
+    setup->half_innings_in_period = 4;
+    setup->plays_first = 0;
 
     // Initialize batting orders
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -97,14 +97,14 @@ void fixture_create_cup_final_super_inning(
     GameSetup* gameSetup, int team1, int team2, int team1_control, int team2_control
 )
 {
-    gameSetup->gameMode = GAME_MODE_SUPER_INNING;
-    gameSetup->launchType = GAME_LAUNCH_NEW;
+    gameSetup->game_mode = GAME_MODE_SUPER_INNING;
+    gameSetup->launch_type = GAME_LAUNCH_NEW;
     gameSetup->team1 = team1;
     gameSetup->team2 = team2;
     gameSetup->team1_control = team1_control;
     gameSetup->team2_control = team2_control;
-    gameSetup->playsFirst = 0;
-    gameSetup->halfInningsInPeriod = 4; // Standard innings for periods 0 and 1
+    gameSetup->plays_first = 0;
+    gameSetup->half_innings_in_period = 4; // Standard innings for periods 0 and 1
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         gameSetup->team1_batting_order[i] = i;

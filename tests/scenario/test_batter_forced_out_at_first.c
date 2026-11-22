@@ -14,7 +14,7 @@ int test_batter_forced_out_at_first(void)
     ScenarioContext* ctx = create_scenario();
     setup_batter_at_home(ctx, 0);
 
-    Vector3D firstBase = ctx->state->fieldPositions->firstBase;
+    Vector3D firstBase = ctx->state->field_positions->first_base;
     ctx->state->match->players[13].body.location = firstBase;
     ctx->state->match->players[13].body.home_location = firstBase;
 

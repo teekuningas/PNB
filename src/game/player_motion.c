@@ -88,11 +88,11 @@ void move_player_out(PlayerInfo* playerInfo, const FieldPositions* field_positio
     playerInfo[index].motion.running = 0;
     // left or right?
     if (playerInfo[index].body.location.x < 0) {
-        target.x = field_positions->leftPoint.x - 5.0f;
-        target.z = field_positions->leftPoint.z + 10.0f;
+        target.x = field_positions->left_point.x - 5.0f;
+        target.z = field_positions->left_point.z + 10.0f;
     } else {
-        target.x = field_positions->rightPoint.x + 5.0f;
-        target.z = field_positions->rightPoint.z + 10.0f;
+        target.x = field_positions->right_point.x + 5.0f;
+        target.z = field_positions->right_point.z + 10.0f;
     }
     // path point not passed yet.
     playerInfo[index].path.waypoint = 0;

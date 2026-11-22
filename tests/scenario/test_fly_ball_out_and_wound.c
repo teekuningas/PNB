@@ -43,8 +43,8 @@ int test_fly_ball_out_and_wound(void)
     printf("\n=== FLY BALL OUT AND WOUND TEST ===\n");
     printf("Field positions:\n");
     printf(
-        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->secondBase.x,
-        ctx->state->fieldPositions->secondBase.y, ctx->state->fieldPositions->secondBase.z
+        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->second_base.x,
+        ctx->state->field_positions->second_base.y, ctx->state->field_positions->second_base.z
     );
     printf("  Center Field target: (0.0, 0.0, 30.0)\n");
 
@@ -67,7 +67,7 @@ int test_fly_ball_out_and_wound(void)
     match->players[fielderIdx].body.home_location = centerField;
 
     int secondBasemanIdx = 18;
-    Vector3D secondBase = ctx->state->fieldPositions->secondBase;
+    Vector3D secondBase = ctx->state->field_positions->second_base;
     match->players[secondBasemanIdx].body.location = secondBase;
     match->players[secondBasemanIdx].body.home_location = secondBase;
 
@@ -77,7 +77,7 @@ int test_fly_ball_out_and_wound(void)
     trigger_player_run_to_next_base(ctx, 1, BASE_HOME); // Batter B: Home → 1st
 
     // 6. Hit fly ball to center field
-    Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchPlate = ctx->state->field_positions->pitch_plate;
     hit_fly_ball_to_location(ctx, pitchPlate, centerField);
 
     printf("Setup complete: Runner A at 1st, Batter B at Home\n");
@@ -158,7 +158,7 @@ int test_fly_ball_out_and_wound(void)
         }
 
         // Track ball at 2nd base
-        int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->fieldPositions);
+        int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->field_positions);
         if (ballAtBase == BASE_SECOND && ballAtSecondFrame == -1) {
             ballAtSecondFrame = frame;
             printf("Frame %d: Ball at 2nd base\n", frame);
@@ -202,16 +202,16 @@ int test_fly_ball_out_and_wound(void)
     );
     printf("\nFor reference:\n");
     printf(
-        "  Home: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->pitchPlate.x,
-        ctx->state->fieldPositions->pitchPlate.y, ctx->state->fieldPositions->pitchPlate.z
+        "  Home: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->pitch_plate.x,
+        ctx->state->field_positions->pitch_plate.y, ctx->state->field_positions->pitch_plate.z
     );
     printf(
-        "  1st Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->firstBase.x,
-        ctx->state->fieldPositions->firstBase.y, ctx->state->fieldPositions->firstBase.z
+        "  1st Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->first_base.x,
+        ctx->state->field_positions->first_base.y, ctx->state->field_positions->first_base.z
     );
     printf(
-        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->fieldPositions->secondBase.x,
-        ctx->state->fieldPositions->secondBase.y, ctx->state->fieldPositions->secondBase.z
+        "  2nd Base: (%.1f, %.1f, %.1f)\n", ctx->state->field_positions->second_base.x,
+        ctx->state->field_positions->second_base.y, ctx->state->field_positions->second_base.z
     );
 
     printf("=====================\n\n");

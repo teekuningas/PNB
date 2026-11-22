@@ -17,7 +17,7 @@
 // the moment the ball leaves the hand, runners leave their bases and the situation the strategy
 // reads changes under it. What the swing was decided AS is fixed when it is decided.
 //
-// `wrongPitch` is a judgement, not a predicate to recompute either: is_wrong_pitch reads the ball's
+// `wrong_pitch` is a judgement, not a predicate to recompute either: is_wrong_pitch reads the ball's
 // velocity as if it had just been launched, so it is only true about the pitch near the start of
 // the flight, and the decision to withdraw has to outlive that.
 typedef struct _AISwingPlan {
@@ -26,7 +26,7 @@ typedef struct _AISwingPlan {
     float power;
     float vertical;
     float angle;
-    int wrongPitch; // judged väärä from the ball in the air — the swing is withdrawn, the runners called back
+    int wrong_pitch; // judged väärä from the ball in the air — the swing is withdrawn, the runners called back
 } AISwingPlan;
 
 // Controller-private memory for the AI, the mirror of ClientInputState: it lives OUTSIDE
@@ -40,11 +40,11 @@ typedef struct _AISwingPlan {
 // would advance the engine's stream a different number of times, so the engines re-sequence and
 // diverge permanently — lockstep prevents divergence, it never heals it.
 typedef struct _AIControllerState {
-    unsigned int rngSeed;
+    unsigned int rng_seed;
 
     // Frames the batter has stood ready with the ball in the pitcher's hand, -1 while he is not —
     // the pause before the AI pitches, so a human batter can settle and the fielders get home.
-    int batterReadyTimer;
+    int batter_ready_timer;
 
     AISwingPlan swing;
 
@@ -53,10 +53,10 @@ typedef struct _AIControllerState {
     // log runs no controller at all, and a peer never runs ours. It is also the reason the
     // controller never has to read its declaration back — it remembers what it said instead of
     // asking the engine, which is the no-read-back law made practical rather than merely obeyed.
-    Vector3D lastDeclaredMoveTarget;
-    int hasDeclaredMoveTarget;
-    int framesSinceMoveDeclared;
-    int lastSteeredFielder; // controlIndex when it last spoke; a new fielder needs telling afresh
+    Vector3D last_declared_move_target;
+    int has_declared_move_target;
+    int frames_since_move_declared;
+    int last_steered_fielder; // controlled_fielder when it last spoke; a new fielder needs telling afresh
 } AIControllerState;
 
 #endif /* AI_MEMORY_H */

@@ -45,7 +45,7 @@ int test_out_of_bounds_reset(void)
 
     // 5. Hit ball far out of bounds
     // Target: (200, 0, 200) is likely out of bounds
-    Vector3D home = ctx->state->fieldPositions->pitchPlate;
+    Vector3D home = ctx->state->field_positions->pitch_plate;
     Vector3D foulTarget = {200.0f, 0.0f, 200.0f};
 
     // We use hit_fly_ball to put it in the air with a high arc (long flight time)

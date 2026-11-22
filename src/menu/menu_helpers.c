@@ -37,7 +37,7 @@ static void apply_batting_orders(StateInfo* stateInfo, const GameSetup* gameSetu
 
 void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
-    switch (gameSetup->launchType) {
+    switch (gameSetup->launch_type) {
     case GAME_LAUNCH_NEW:
         initialize_game_from_menu(stateInfo, gameSetup, rng_seed);
         break;
@@ -50,7 +50,7 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         // and run totals preserved). Only the new batting orders and the
         // leading-off team (decided fresh by hutunkeitto) are applied.
         apply_batting_orders(stateInfo, gameSetup);
-        stateInfo->rules->scoreboard.plays_first = gameSetup->playsFirst;
+        stateInfo->rules->scoreboard.plays_first = gameSetup->plays_first;
         return_to_game(stateInfo);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {

@@ -184,14 +184,14 @@ int test_determine_lead_base_simple(void)
     CatchingRunnerInfo runners[2];
     // Runner 1: Base 1, Not leading
     runners[0].base = BASE_FIRST;
-    runners[0].isOnBase = 0;
-    runners[0].takingFreeWalk = 0;
+    runners[0].is_on_base = 0;
+    runners[0].taking_free_walk = 0;
     runners[0].leading = 0;
 
     // Runner 2: Base 2, Not leading
     runners[1].base = BASE_SECOND;
-    runners[1].isOnBase = 0;
-    runners[1].takingFreeWalk = 0;
+    runners[1].is_on_base = 0;
+    runners[1].taking_free_walk = 0;
     runners[1].leading = 0;
 
     BaseID result = determine_lead_base(runners, 2, 123);
@@ -205,8 +205,8 @@ int test_determine_lead_base_random(void)
     CatchingRunnerInfo runners[1];
     // Runner: Base 2, Leading
     runners[0].base = BASE_SECOND;
-    runners[0].isOnBase = 0;
-    runners[0].takingFreeWalk = 0;
+    runners[0].is_on_base = 0;
+    runners[0].taking_free_walk = 0;
     runners[0].leading = 1;
 
     // Random = 0 -> base - 1 (BASE_FIRST)

@@ -21,7 +21,7 @@ int test_fly_ball_double_wound_late_arrival(void)
     move_pitcher_away(ctx);
 
     int fielderIdx = 16;
-    Vector3D fielderLoc = ctx->state->fieldPositions->backLeftPoint;
+    Vector3D fielderLoc = ctx->state->field_positions->back_left_point;
     fielderLoc.x += 5.0f;
     fielderLoc.z += 5.0f;
     ctx->state->match->players[fielderIdx].body.location = fielderLoc;
@@ -33,7 +33,7 @@ int test_fly_ball_double_wound_late_arrival(void)
 
     trigger_player_run_to_next_base(ctx, 0, BASE_FIRST); // A runs to 2nd
 
-    hit_fly_ball_to_location(ctx, ctx->state->fieldPositions->pitchPlate, fielderLoc);
+    hit_fly_ball_to_location(ctx, ctx->state->field_positions->pitch_plate, fielderLoc);
 
     printf("  TUPLAHAAVA SHARED SAFETY TRACE START\n");
 

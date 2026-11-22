@@ -10,7 +10,7 @@
 // The human half of the CONTROL stage: key states in, declared intent out.
 // Reads scoreboard (const) for team assignment, referee (const) for base ownership (to interpret a
 // base-run key as advance vs. come-back), halfInningState (const) for §12's spent-order clause (the
-// batter cursor offers only what the rules allow), and keyStates for input.
+// batter cursor offers only what the rules allow), and key_states for input.
 // Writes each team's intent channel and clientInput (the human's tap windows, charge and meter
 // memory) and NOTHING ELSE. The world arrives const, so the compiler holds that: every action a human
 // can take is a declared message, and there is nothing left in the world for this stage to set.
@@ -27,10 +27,10 @@
 // aim meter arms on the same frame his power locks, so for him "a marker is descending" and "a power
 // is committed" are the same condition, and a display keyed on the first happened to be right.
 typedef struct _SwingMeterView {
-    int cursorLive; // a marker is moving: the power sweep, or the elevation descent
-    float cursor; // [0,1] where it is — meaningless unless cursorLive
-    int powerCommitted; // a power has been declared and this gesture still holds it
-    float power; // [0,1] where it was committed — meaningless unless powerCommitted
+    int cursor_live; // a marker is moving: the power sweep, or the elevation descent
+    float cursor; // [0,1] where it is — meaningless unless cursor_live
+    int power_committed; // a power has been declared and this gesture still holds it
+    float power; // [0,1] where it was committed — meaningless unless power_committed
 } SwingMeterView;
 
 SwingMeterView swing_widget_view(const SwingWidget* w);

@@ -39,7 +39,7 @@ typedef struct {
 static void plan_lifecycle_hook(const SimGame* g, void* ctx)
 {
     PlanLifecycleObserver* o = (PlanLifecycleObserver*)ctx;
-    const AISwingPlan* plan = &g->state->aiController->swing;
+    const AISwingPlan* plan = &g->state->ai_controller->swing;
     const MatchSession* m = g->state->match;
 
     if (plan->decided && !o->prevDecided) {
@@ -53,7 +53,7 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
             o->swungReleases++;
             if (!o->planMadeSinceRelease) o->staleReleases++;
         }
-        if (plan->wrongPitch) o->carriedJudgements++;
+        if (plan->wrong_pitch) o->carriedJudgements++;
         o->planMadeSinceRelease = 0;
     }
 

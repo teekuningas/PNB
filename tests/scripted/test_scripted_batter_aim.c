@@ -106,7 +106,7 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
         int candidates[BATTER_CANDIDATE_MAX];
         int count = list_batter_candidates(m, &st->rules->scoreboard, &st->rules->half_inning, candidates);
         ASSERT(count > 0, "a decision is open, so somebody must be offerable");
-        int cursor = st->clientInput->batterWidget.highlight;
+        int cursor = st->client_input->batter_widget.highlight;
         ASSERT(cursor >= 0 && cursor < count, "the cursor must always sit inside the candidate list");
 
         int shown = candidates[cursor];

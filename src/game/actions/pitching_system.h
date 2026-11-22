@@ -27,9 +27,9 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
 // This tick's pitch values, as the INGEST gate let them through. A per-tick command block, never held:
 // what a pitch IS once it has begun lives in the CatchingAction, and these only contribute to it.
 typedef struct _PitchValues {
-    int powerDeclared;
+    int power_declared;
     float power;
-    int aimDeclared;
+    int aim_declared;
     float direction;
 } PitchValues;
 

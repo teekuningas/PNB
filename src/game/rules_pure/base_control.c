@@ -36,7 +36,7 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
 
     // Check Home Base (Index 0)
     // Special check: inside homeline-middlepoint centered disk and at homebase side
-    float dx = ballLoc.x - field_positions->pitchPlate.x;
+    float dx = ballLoc.x - field_positions->pitch_plate.x;
     float dz = ballLoc.z - HOME_LINE_Z;
     if (ballLoc.z > HOME_LINE_Z && vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS)) {
         return 0; // Home Base
@@ -46,11 +46,11 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
     for (int i = 1; i < BASE_COUNT; i++) {
         Vector3D baseLoc;
         if (i == 1)
-            baseLoc = field_positions->firstBase;
+            baseLoc = field_positions->first_base;
         else if (i == 2)
-            baseLoc = field_positions->secondBase;
+            baseLoc = field_positions->second_base;
         else if (i == 3)
-            baseLoc = field_positions->thirdBase;
+            baseLoc = field_positions->third_base;
         else
             continue;
 

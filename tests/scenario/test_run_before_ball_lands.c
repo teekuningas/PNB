@@ -34,9 +34,9 @@ int test_run_arrival_before_ball_lands(void)
     place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
 
     // 2. Move runner between corner flag and home to ensure quick arrival
-    // runLeftPoint is at Z=-25, homeRunPoint is at Z=-0.65, home plate is around Z=0
-    // Place runner at Z=-10 (between flag and homeRunPoint)
-    Vector3D homeLoc = ctx->state->fieldPositions->pitchPlate;
+    // run_left_point is at Z=-25, home_run_point is at Z=-0.65, home plate is around Z=0
+    // Place runner at Z=-10 (between flag and home_run_point)
+    Vector3D homeLoc = ctx->state->field_positions->pitch_plate;
     Vector3D startLoc = homeLoc;
     startLoc.z = -10.0f; // Between corner flag (-25) and home (-0.65)
     startLoc.x = -15.0f; // Left side (3rd base side)
@@ -45,8 +45,8 @@ int test_run_arrival_before_ball_lands(void)
     ctx->state->match->players[runnerIndex].body.location = startLoc;
     ctx->state->match->players[runnerIndex].body.previous_location = startLoc;
 
-    // waypoint=1 means "past corner flag, run to homeRunPoint"
-    // Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)
+    // waypoint=1 means "past corner flag, run to home_run_point"
+    // Runner is at Z=-10, which is between corner flag (Z=-25) and home_run_point (Z=-0.65)
     ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     printf(
@@ -65,7 +65,7 @@ int test_run_arrival_before_ball_lands(void)
 
     // 5. Hit a fly ball into the field (will stay in air for a while)
     // Use coordinates known to be in bounds from test_runner_scores_from_third
-    Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchPlate = ctx->state->field_positions->pitch_plate;
     Vector3D targetInField = {10.0f, 0.0f, -10.0f}; // Known in-bounds location
     hit_fly_ball_to_location(ctx, pitchPlate, targetInField);
 

@@ -16,7 +16,7 @@ typedef struct _PlayerData {
 typedef struct _TeamData {
     char* id;
     char* name;
-    int numPlayers;
+    int num_players;
     PlayerData* players;
 } TeamData;
 

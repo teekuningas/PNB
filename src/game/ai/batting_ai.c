@@ -83,10 +83,10 @@ static void declare_batter_choice(const MatchSession* match, const GameRulesStat
 static void arm_runners_for_the_pitch(const MatchSession* match, const GameRulesState* rules, IntentChannel* channel)
 {
     const BattingStrategy strategy = batting_strategy_now(match, rules);
-    if (strategy.runBatter == 1 && match->runner_commitments.armed[BASE_HOME] == 0) {
+    if (strategy.run_batter == 1 && match->runner_commitments.armed[BASE_HOME] == 0) {
         declare_run(channel, BASE_HOME, RUN_FORWARD);
     }
-    if (strategy.runBaseRunners == 1) {
+    if (strategy.run_base_runners == 1) {
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
             if (index != -1 && match->players[index].batting.presence.state == PLAYER_STATE_ON_BASE &&
@@ -101,7 +101,7 @@ static void arm_runners_for_the_pitch(const MatchSession* match, const GameRules
 // RUN_BACK on a leading runner makes it run back; once it is no longer LEADING the command stops.
 static void recall_leading_runners(const MatchSession* match, const GameRulesState* rules, IntentChannel* channel)
 {
-    if (batting_strategy_now(match, rules).runBaseRunners != 1) return;
+    if (batting_strategy_now(match, rules).run_base_runners != 1) return;
     for (int i = 1; i < 3; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
         if (index != -1 && match->players[index].batting.presence.state == PLAYER_STATE_LEADING) {
@@ -123,11 +123,12 @@ static void recall_leading_runners(const MatchSession* match, const GameRulesSta
 static void
 play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingPlan* plan, IntentChannel* channel)
 {
-    if (plan->wrongPitch == 0 && is_wrong_pitch(match->ball.velocity.x, match->ball.velocity.y, GRAVITY, PLATE_WIDTH)) {
-        plan->wrongPitch = 1;
+    if (plan->wrong_pitch == 0 &&
+        is_wrong_pitch(match->ball.velocity.x, match->ball.velocity.y, GRAVITY, PLATE_WIDTH)) {
+        plan->wrong_pitch = 1;
     }
 
-    if (plan->wrongPitch == 1) {
+    if (plan->wrong_pitch == 1) {
         // Väärä — and nobody can say so until the ball is in the air, which is exactly why the
         // withdrawal exists. Any runner who already broke for the next base is called back, since the
         // pitch is going to be a ball; RUN_BACK turns a forward run into a return, and once it is no
@@ -192,13 +193,13 @@ static void commit_swing_power(
         // Two draws, written as two statements because their ORDER is part of the stream. As arguments
         // to one call they had no order in C at all: gcc evaluated them right to left, so the recorded
         // determinism baseline quietly depended on that compiler. This is the order gcc chose.
-        const int randVertical = seeded_rand(&aiController->rngSeed, 201);
-        const int randPower = seeded_rand(&aiController->rngSeed, 19);
+        const int randVertical = seeded_rand(&aiController->rng_seed, 201);
+        const int randPower = seeded_rand(&aiController->rng_seed, 19);
         SwingDecision decision = decide_swing(style, randPower, randVertical);
         plan->style = style;
         plan->power = decision.power;
         plan->vertical = decision.vertical;
-        plan->angle = calculate_ai_batting_angle(style, seeded_rand(&aiController->rngSeed, RAND_MAX));
+        plan->angle = calculate_ai_batting_angle(style, seeded_rand(&aiController->rng_seed, RAND_MAX));
         plan->decided = 1;
     }
     intent_push(channel, (IntentMessage){.kind = INTENT_SWING_POWER, .as.swing_power = {.power = plan->power}});

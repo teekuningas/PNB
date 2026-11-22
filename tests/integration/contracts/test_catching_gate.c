@@ -34,9 +34,9 @@ static void tick(ScenarioContext* ctx)
 {
     {
         IngestedCommands ingested =
-            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels);
         actualize(
-            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+            ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ingested, &ctx->state->play_sound_effect
         );
     }
 }
@@ -176,7 +176,7 @@ int test_throw_permission_names_each_rule(void)
     ScenarioContext* ctx = create_scenario();
     fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
-    const FieldPositions* fp = ctx->state->fieldPositions;
+    const FieldPositions* fp = ctx->state->field_positions;
 
     ASSERT_EQ(1, throw_may_begin(m, fp, BASE_FIRST).allowed, "control: a fielder with the ball may throw to first");
 
@@ -188,7 +188,7 @@ int test_throw_permission_names_each_rule(void)
     ASSERT_EQ(RULE_THROW_NEEDS_BALL_IN_HAND, throw_may_begin(m, fp, BASE_FIRST).denied_by, "nothing to throw");
     m->ball.holder = FIELDER;
 
-    m->players[FIELDER].body.location = fp->firstBase;
+    m->players[FIELDER].body.location = fp->first_base;
     ASSERT_EQ(
         RULE_THROW_TARGET_TOO_CLOSE, throw_may_begin(m, fp, BASE_FIRST).denied_by,
         "a fielder standing on first does not throw to first"

@@ -8,9 +8,9 @@
 
 void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
 {
-    stateInfo->stopSoundEffect = SOUND_MENU;
+    stateInfo->stop_sound_effect = SOUND_MENU;
     stateInfo->screen = SCREEN_GAME;
-    stateInfo->changeScreen = 1;
+    stateInfo->change_screen = 1;
     stateInfo->updated = 0;
 
     // A match starts here, so this is where its random streams are born. The caller's seed is the
@@ -19,8 +19,8 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
     // private, never synced). Both stay reproducible from the caller's seed alone, and the controller's whole
     // memory is born here with its stream: it lives exactly as long as the match.
     stateInfo->match->rng_seed = rng_split(rng_seed);
-    if (stateInfo->aiController != NULL) {
-        init_ai_controller(stateInfo->aiController, rng_split(rng_seed));
+    if (stateInfo->ai_controller != NULL) {
+        init_ai_controller(stateInfo->ai_controller, rng_split(rng_seed));
     }
 
     // Set teams and controls for all game modes
@@ -28,12 +28,12 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
     stateInfo->rules->scoreboard.teams[1].value = gameSetup->team2 + 1;
     stateInfo->rules->scoreboard.teams[0].control = gameSetup->team1_control;
     stateInfo->rules->scoreboard.teams[1].control = gameSetup->team2_control;
-    stateInfo->rules->scoreboard.half_innings_in_period = gameSetup->halfInningsInPeriod;
+    stateInfo->rules->scoreboard.half_innings_in_period = gameSetup->half_innings_in_period;
 
-    if (gameSetup->gameMode == GAME_MODE_NORMAL) {
+    if (gameSetup->game_mode == GAME_MODE_NORMAL) {
         stateInfo->rules->scoreboard.inning = 0;
         stateInfo->rules->scoreboard.period = 0;
-        stateInfo->rules->scoreboard.plays_first = gameSetup->playsFirst;
+        stateInfo->rules->scoreboard.plays_first = gameSetup->plays_first;
         for (int i = 0; i < 2; i++) {
             stateInfo->rules->scoreboard.teams[i].runs = 0;
             stateInfo->rules->scoreboard.teams[i].period0_runs = 0;
@@ -43,8 +43,8 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
         }
     }
 
-    if (gameSetup->gameMode == GAME_MODE_NORMAL || gameSetup->gameMode == GAME_MODE_SUPER_INNING) {
-        stateInfo->rules->scoreboard.plays_first = gameSetup->playsFirst;
+    if (gameSetup->game_mode == GAME_MODE_NORMAL || gameSetup->game_mode == GAME_MODE_SUPER_INNING) {
+        stateInfo->rules->scoreboard.plays_first = gameSetup->plays_first;
     }
 
     // Initialize batter_order for ALL game modes.
@@ -70,7 +70,7 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
         sizeof(gameSetup->team2_batting_order)
     );
 
-    if (gameSetup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
+    if (gameSetup->game_mode == GAME_MODE_HOMERUN_CONTEST) {
         int half = gameSetup->homerun_choice_count;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < half; j++) {
@@ -89,14 +89,14 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
     }
 
     // reset_for_new_half_inning is called via update_game_screen -> loadGameScreenSettings
-    // because we set changeScreen = 1
+    // because we set change_screen = 1
 }
 
 void return_to_game(StateInfo* stateInfo)
 {
-    stateInfo->stopSoundEffect = SOUND_MENU;
+    stateInfo->stop_sound_effect = SOUND_MENU;
     stateInfo->screen = SCREEN_GAME;
-    stateInfo->changeScreen = 1;
+    stateInfo->change_screen = 1;
     stateInfo->updated = 0;
 
     // Initialization will be handled by update_game_screen() → loadGameScreenSettings()

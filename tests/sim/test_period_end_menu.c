@@ -44,7 +44,7 @@ static int ends_as_its_score_says(const SimGame* g, int (*runs)(const SimGame*, 
 {
     int a = runs(g, 0), b = runs(g, 1);
     if (a == b) return g->menu.mode == MENU_ENTRY_HOMERUN_CONTEST;
-    return g->menu.mode == MENU_ENTRY_GAME_OVER && g->state->gameConclusion->winner == (a > b ? 0 : 1);
+    return g->menu.mode == MENU_ENTRY_GAME_OVER && g->state->game_conclusion->winner == (a > b ? 0 : 1);
 }
 
 int test_a_period_end_opens_the_menu_its_transition_calls_for(void)

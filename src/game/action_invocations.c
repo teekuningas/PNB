@@ -106,7 +106,7 @@ void action_invocations(
     // Never what the engine stored from this controller: there is no declaration left to read.
     const CatchingActionKind catching = match->catching_action.kind;
     {
-        InputWidget* w = &clientInput->pitchWidget.meter;
+        InputWidget* w = &clientInput->pitch_widget.meter;
         // A power sweep abandoned to a throw. KEY_2 is shared, and sampling the pitch on the press
         // edge means a press followed by a direction key arms this meter one frame before the throw
         // claims the key — where waiting for the release used to hide the overlap, since the throw
@@ -130,7 +130,7 @@ void action_invocations(
     // rather than inside checkThrowGesture, which stops firing the moment the ball leaves the hand — the
     // same gap that caused bug #4 on the pitch widget. An AI throw arms none of this.
     {
-        InputWidget* w = &clientInput->throwWidget;
+        InputWidget* w = &clientInput->throw_widget;
         if (w->mode != WIDGET_IDLE && catching != CATCHING_ACTION_THROWING) {
             w->mode = WIDGET_IDLE;
             w->counter_max = 0;
@@ -172,8 +172,8 @@ void action_invocations(
     // behind it. The widget self-clears the way every other client-local gesture does, which is why
     // a physical-world reset never has to reach in here.
     if (match->offers.batter_seat != 1) {
-        clientInput->batterWidget.selected = 0;
-        clientInput->batterWidget.highlight = 0;
+        clientInput->batter_widget.selected = 0;
+        clientInput->batter_widget.highlight = 0;
     }
     checkBatterAngle(match, clientInput, key_states, KEY_PLUS, KEY_MINUS, battingControl, &channels->batting);
     checkSwing(match, clientInput, key_states, KEY_2, KEY_1, battingControl, &channels->batting);
@@ -219,7 +219,7 @@ static int checkThrowGesture(
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
     const CatchingActionKind catching = match->catching_action.kind;
-    InputWidget* w = &clientInput->throwWidget;
+    InputWidget* w = &clientInput->throw_widget;
 
     // A throw is gathering and our power is still owed: keep charging while held; a KEY_2 release samples
     // the widget and says the power. The gesture owns KEY_2 for the whole hold, so a lone arrow release
@@ -299,7 +299,7 @@ static void checkMove(
 {
     if (control == CONTROL_AI) return;
 
-    MoveWidget* w = &clientInput->moveWidget;
+    MoveWidget* w = &clientInput->move_widget;
 
     // KEY_2 held means the throw gesture owns the direction keys this frame, so nothing is being
     // steered — the same suppression the key path had, kept because it is an input-binding rule and
@@ -312,14 +312,14 @@ static void checkMove(
         if (key_states->down[control][KEY_LEFT]) held |= MOVE_HELD_LEFT;
     }
 
-    w->framesSinceDeclared++;
+    w->frames_since_declared++;
 
     int index = match->catching.controlled_fielder;
     if (index == -1) {
         // Nobody to steer: forget what was said, so whoever is handed control next is told afresh.
         w->declared = 0;
         w->held = held;
-        w->controlIndex = -1;
+        w->control_index = -1;
         return;
     }
 
@@ -335,17 +335,17 @@ static void checkMove(
     }
 
     int worth_saying =
-        !w->declared || w->held != held || w->controlIndex != index ||
-        w->framesSinceDeclared >= MOVE_HEARTBEAT_FRAMES ||
+        !w->declared || w->held != held || w->control_index != index ||
+        w->frames_since_declared >= MOVE_HEARTBEAT_FRAMES ||
         !vec3_is_small_enough_circle_xz(point.x - w->point.x, point.z - w->point.z, MOVE_REDECLARE_DRIFT);
     if (!worth_saying) return;
 
     intent_push(channel, (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target.point = point});
     w->declared = 1;
     w->held = held;
-    w->controlIndex = index;
+    w->control_index = index;
     w->point = point;
-    w->framesSinceDeclared = 0;
+    w->frames_since_declared = 0;
 }
 
 // Both of these declare a one-shot command on the same key edge. The producer's own check — that no
@@ -437,7 +437,7 @@ static void checkPitch(
         return; // AI declares the pitch directly in catching_ai.c
     }
 
-    PitchWidget* gesture = &clientInput->pitchWidget;
+    PitchWidget* gesture = &clientInput->pitch_widget;
     InputWidget* w = &gesture->meter;
     const CatchingActionKind catching = match->catching_action.kind;
 
@@ -505,7 +505,7 @@ static void checkBatterSelection(
 {
     if (control == CONTROL_AI) return; // the AI declares its choice in batting_ai.c
 
-    BatterSelectWidget* w = &clientInput->batterWidget;
+    BatterSelectWidget* w = &clientInput->batter_widget;
 
     int candidates[BATTER_CANDIDATE_MAX];
     const int count = list_batter_candidates(match, scoreboard, halfInningState, candidates);
@@ -569,20 +569,20 @@ static void checkBatterAngle(
     if (!batting_cycle_is_open(&match->at_bat)) {
         // Between cycles the engine puts the batter back at zero (when the next one opens), so the cursor goes
         // with it. Without this the next batter would start walking toward the last one's aim.
-        clientInput->batterAim = 0.0f;
+        clientInput->batter_aim = 0.0f;
         return;
     }
 
     if (key_states->down[control][increase] == 1) {
-        clientInput->batterAim += BATTER_ANGLE_SPEED_CONSTANT;
+        clientInput->batter_aim += BATTER_ANGLE_SPEED_CONSTANT;
     } else if (key_states->down[control][decrease] == 1) {
-        clientInput->batterAim -= BATTER_ANGLE_SPEED_CONSTANT;
+        clientInput->batter_aim -= BATTER_ANGLE_SPEED_CONSTANT;
     }
-    if (clientInput->batterAim > BATTER_ANGLE_LIMIT) clientInput->batterAim = BATTER_ANGLE_LIMIT;
-    if (clientInput->batterAim < -BATTER_ANGLE_LIMIT) clientInput->batterAim = -BATTER_ANGLE_LIMIT;
+    if (clientInput->batter_aim > BATTER_ANGLE_LIMIT) clientInput->batter_aim = BATTER_ANGLE_LIMIT;
+    if (clientInput->batter_aim < -BATTER_ANGLE_LIMIT) clientInput->batter_aim = -BATTER_ANGLE_LIMIT;
 
     intent_push(
-        channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = clientInput->batterAim}}
+        channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = clientInput->batter_aim}}
     );
 }
 
@@ -597,10 +597,10 @@ static void checkBatterAngle(
 SwingMeterView swing_widget_view(const SwingWidget* w)
 {
     SwingMeterView view = {0};
-    view.cursorLive = (w->meter.mode != WIDGET_IDLE && w->meter.counter_max > 0);
-    if (view.cursorLive) view.cursor = (float)w->meter.counter / (float)w->meter.counter_max;
-    view.powerCommitted = (w->beat == SWING_BEAT_LOADED || w->beat == SWING_BEAT_COMMITTED);
-    if (view.powerCommitted) view.power = w->power;
+    view.cursor_live = (w->meter.mode != WIDGET_IDLE && w->meter.counter_max > 0);
+    if (view.cursor_live) view.cursor = (float)w->meter.counter / (float)w->meter.counter_max;
+    view.power_committed = (w->beat == SWING_BEAT_LOADED || w->beat == SWING_BEAT_COMMITTED);
+    if (view.power_committed) view.power = w->power;
     return view;
 }
 
@@ -609,8 +609,8 @@ SwingMeterView swing_widget_view(const SwingWidget* w)
 // batter's bar is — the bar IS the gesture, and the engine has no business carrying a copy of it.
 float catching_widget_view(const ClientInputState* clientInput)
 {
-    const InputWidget* pitch = &clientInput->pitchWidget.meter;
-    const InputWidget* throwing = &clientInput->throwWidget;
+    const InputWidget* pitch = &clientInput->pitch_widget.meter;
+    const InputWidget* throwing = &clientInput->throw_widget;
     if (pitch->mode != WIDGET_IDLE && pitch->counter_max > 0) return (float)pitch->counter / pitch->counter_max;
     if (throwing->mode != WIDGET_IDLE && throwing->counter_max > 0)
         return (float)throwing->counter / throwing->counter_max;
@@ -624,30 +624,30 @@ void init_client_input(ClientInputState* clientInput)
     for (int i = 0; i < BASE_COUNT; i++) {
         clientInput->run_press_window[i] = 0;
     }
-    clientInput->pitchWidget.meter.counter = 0;
-    clientInput->pitchWidget.meter.counter_max = 0;
-    clientInput->pitchWidget.meter.dir = 0;
-    clientInput->pitchWidget.meter.mode = WIDGET_IDLE;
-    clientInput->pitchWidget.power = 0.0f;
-    clientInput->throwWidget.counter = 0;
-    clientInput->throwWidget.counter_max = 0;
-    clientInput->throwWidget.dir = 0;
-    clientInput->throwWidget.mode = WIDGET_IDLE;
-    clientInput->moveWidget.held = 0;
-    clientInput->moveWidget.controlIndex = -1;
-    clientInput->moveWidget.declared = 0;
-    clientInput->moveWidget.framesSinceDeclared = 0;
-    clientInput->moveWidget.point = (Vector3D){0};
-    clientInput->batterWidget.highlight = 0;
-    clientInput->batterWidget.selected = 0;
-    clientInput->batterAim = 0.0f;
-    clientInput->swingWidget.meter.counter = 0;
-    clientInput->swingWidget.meter.counter_max = 0;
-    clientInput->swingWidget.meter.dir = 0;
-    clientInput->swingWidget.meter.mode = WIDGET_IDLE;
-    clientInput->swingWidget.flightFrames = -1;
-    clientInput->swingWidget.beat = SWING_BEAT_POWER;
-    clientInput->swingWidget.power = 0.0f;
+    clientInput->pitch_widget.meter.counter = 0;
+    clientInput->pitch_widget.meter.counter_max = 0;
+    clientInput->pitch_widget.meter.dir = 0;
+    clientInput->pitch_widget.meter.mode = WIDGET_IDLE;
+    clientInput->pitch_widget.power = 0.0f;
+    clientInput->throw_widget.counter = 0;
+    clientInput->throw_widget.counter_max = 0;
+    clientInput->throw_widget.dir = 0;
+    clientInput->throw_widget.mode = WIDGET_IDLE;
+    clientInput->move_widget.held = 0;
+    clientInput->move_widget.control_index = -1;
+    clientInput->move_widget.declared = 0;
+    clientInput->move_widget.frames_since_declared = 0;
+    clientInput->move_widget.point = (Vector3D){0};
+    clientInput->batter_widget.highlight = 0;
+    clientInput->batter_widget.selected = 0;
+    clientInput->batter_aim = 0.0f;
+    clientInput->swing_widget.meter.counter = 0;
+    clientInput->swing_widget.meter.counter_max = 0;
+    clientInput->swing_widget.meter.dir = 0;
+    clientInput->swing_widget.meter.mode = WIDGET_IDLE;
+    clientInput->swing_widget.flight_frames = -1;
+    clientInput->swing_widget.beat = SWING_BEAT_POWER;
+    clientInput->swing_widget.power = 0.0f;
 }
 
 // The human's swing — a looping power ping-pong while the pitcher winds up, then a one-way descent
@@ -681,7 +681,7 @@ static void checkSwing(
 {
     if (control == CONTROL_AI) return; // the AI decides two numbers and says them; it has no gesture
 
-    SwingWidget* w = &clientInput->swingWidget;
+    SwingWidget* w = &clientInput->swing_widget;
     const int airborne = (match->ball.pitch_in_flight);
 
     // The gesture is over when there is no swing to declare into. Asked of the physical world, never
@@ -691,7 +691,7 @@ static void checkSwing(
         w->meter.mode = WIDGET_IDLE;
         w->meter.counter_max = 0;
         w->meter.dir = 0;
-        w->flightFrames = -1;
+        w->flight_frames = -1;
         w->beat = SWING_BEAT_POWER;
         w->power = 0.0f;
         return;
@@ -699,8 +699,9 @@ static void checkSwing(
 
     // Solve the flight ONCE, on the frame the ball leaves the hand, from the launch velocity — see
     // SwingWidget. Recomputing it later reads a vertical speed that has been decaying since release.
-    if (airborne && w->flightFrames < 0) {
-        w->flightFrames = calculate_pitch_frame_time(match->ball.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
+    if (airborne && w->flight_frames < 0) {
+        w->flight_frames =
+            calculate_pitch_frame_time(match->ball.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
     }
 
     // Move the cursor before anything reads it, and BEFORE the arm chain below — the same order
@@ -724,7 +725,7 @@ static void checkSwing(
         w->meter.mode = WIDGET_IDLE;
         w->meter.counter_max = 0;
     } else if (w->beat == SWING_BEAT_LOADED && airborne && w->meter.mode != WIDGET_DESCENT) {
-        int sweep = swing_vertical_sweep_frames(w->flightFrames);
+        int sweep = swing_vertical_sweep_frames(w->flight_frames);
         w->meter.mode = WIDGET_DESCENT;
         w->meter.counter = sweep; // starts at the marker's top and falls
         w->meter.counter_max = sweep;

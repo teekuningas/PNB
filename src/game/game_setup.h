@@ -18,14 +18,14 @@ typedef enum {
 // This struct holds all the parameters needed to initialize a a game.
 // It is populated from the menu and used to set up the game state.
 typedef struct GameSetup {
-    GameLaunchType launchType;
-    GameMode gameMode;
+    GameLaunchType launch_type;
+    GameMode game_mode;
     TeamID team1;
     TeamID team2;
     TeamControlMode team1_control;
     TeamControlMode team2_control;
-    int halfInningsInPeriod;
-    int playsFirst;
+    int half_innings_in_period;
+    int plays_first;
     int team1_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
     int team2_batting_order[PLAYERS_IN_TEAM + JOKER_COUNT];
     int homerun_choices1[2][MAX_HOMERUN_PAIRS];

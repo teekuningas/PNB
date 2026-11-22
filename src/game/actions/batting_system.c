@@ -105,8 +105,8 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
         match->players[index].batting.joker = JOKER_USED;
     }
     // move player to default batter ready position
-    target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-    target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+    target.x = (float)(fieldPositions->pitch_plate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+    target.z = (float)(fieldPositions->pitch_plate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
     // move to target can take care of the rest.
     move_to_target(match->players, index, &target);
 }
@@ -345,15 +345,15 @@ void update_batting(
             // angle is given by arc_angle and the default ZERO_BATTING_ANGLE
             vec3_set_xz(
                 &(match->players[batterIndex].body.location),
-                (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
-                                                           (BATTING_RADIUS * (1 - match->at_bat.step_in))),
-                (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
-                                                           (BATTING_RADIUS * (1 - match->at_bat.step_in)))
+                (float)(fieldPositions->pitch_plate.x + cos(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
+                                                            (BATTING_RADIUS * (1 - match->at_bat.step_in))),
+                (float)(fieldPositions->pitch_plate.z - sin(ZERO_BATTING_ANGLE + match->at_bat.arc_angle) *
+                                                            (BATTING_RADIUS * (1 - match->at_bat.step_in)))
             );
             // and then set the orientation of batter. here we just first select the base direction to be
             // vector from pitchplate to batter and then fix it a bit to make it look more realistic.
-            dx = fieldPositions->pitchPlate.x - match->players[batterIndex].body.location.x;
-            dz = fieldPositions->pitchPlate.z - match->players[batterIndex].body.location.z;
+            dx = fieldPositions->pitch_plate.x - match->players[batterIndex].body.location.x;
+            dz = fieldPositions->pitch_plate.z - match->players[batterIndex].body.location.z;
             dx2 = (float)(cos(BATTER_ANGLE_FIX) * dx - sin(BATTER_ANGLE_FIX) * dz);
             dz2 = (float)(sin(BATTER_ANGLE_FIX) * dx + cos(BATTER_ANGLE_FIX) * dz);
             vec3_set_xz(&(match->players[batterIndex].body.orientation), dx2, dz2);
@@ -422,8 +422,8 @@ void update_batting(
             Vector3D target;
             match->at_bat.cycle = BATTING_CYCLE_CLOSED;
 
-            target.x = (float)(fieldPositions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            target.z = (float)(fieldPositions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.x = (float)(fieldPositions->pitch_plate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(fieldPositions->pitch_plate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             if (batterIndex != -1) {
                 move_to_target(match->players, batterIndex, &target);
             }

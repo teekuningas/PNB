@@ -103,17 +103,17 @@ int main(int argc, char* argv[])
 
     // Initialize stateInfo structure
     stateInfo.match = &match;
-    stateInfo.clientInput = &clientInput;
-    stateInfo.aiController = &aiController;
+    stateInfo.client_input = &clientInput;
+    stateInfo.ai_controller = &aiController;
     stateInfo.rules = &rules;
-    stateInfo.gameConclusion = &gameConclusion;
-    stateInfo.keyStates = &keyStates;
-    stateInfo.fieldPositions = &fieldPositions;
-    stateInfo.teamData = NULL;
-    stateInfo.playSoundEffect = 0;
+    stateInfo.game_conclusion = &gameConclusion;
+    stateInfo.key_states = &keyStates;
+    stateInfo.field_positions = &fieldPositions;
+    stateInfo.team_data = NULL;
+    stateInfo.play_sound_effect = 0;
     stateInfo.announcement = EVENT_NONE;
-    stateInfo.stopSoundEffect = 0;
-    stateInfo.soundEnabled = soundEnabled;
+    stateInfo.stop_sound_effect = 0;
+    stateInfo.sound_enabled = soundEnabled;
     stateInfo.cup = NULL;
     stateInfo.currently_played_cup_match_index = -1;
 
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
     }
 
     stateInfo.screen = SCREEN_MAIN_MENU;
-    stateInfo.changeScreen = 1;
+    stateInfo.change_screen = 1;
     stateInfo.updated = 0;
 
     // Apply fixture if requested (for visual testing)
@@ -243,9 +243,9 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
             const SceneView scene = {
                 .match = stateInfo->match,
                 .rules = stateInfo->rules,
-                .field = stateInfo->fieldPositions,
-                .teams = stateInfo->teamData,
-                .input = stateInfo->clientInput,
+                .field = stateInfo->field_positions,
+                .teams = stateInfo->team_data,
+                .input = stateInfo->client_input,
                 .players = &players,
                 .paused = stateInfo->paused,
             };
@@ -493,7 +493,7 @@ static void applyFixture(
 
         // Jump directly to game screen
         stateInfo->screen = SCREEN_GAME;
-        stateInfo->changeScreen = 1;
+        stateInfo->change_screen = 1;
 
     } else {
         printf("Unknown fixture: %s\n", request->name);
@@ -503,5 +503,5 @@ static void applyFixture(
 
     // Jump directly to game screen
     stateInfo->screen = SCREEN_GAME;
-    stateInfo->changeScreen = 1;
+    stateInfo->change_screen = 1;
 }

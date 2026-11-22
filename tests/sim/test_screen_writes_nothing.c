@@ -30,10 +30,10 @@ int test_the_screen_writes_nothing_into_the_world(void)
     ASSERT_NOT_NULL(screened, "sim_create returned NULL");
     ASSERT_NOT_NULL(bare, "sim_create returned NULL");
     ASSERT(
-        screened->state->teamData != bare->state->teamData, "the two rosters must live apart for this to see pointers"
+        screened->state->team_data != bare->state->team_data, "the two rosters must live apart for this to see pointers"
     );
 
-    HudState hud = {.infoEvent = EVENT_NONE, .infoEventTimer = -1};
+    HudState hud = {.info_event = EVENT_NONE, .info_event_timer = -1};
     CameraView camera = {.home_run = {.hold_ticks = -1}};
     PlayerView players;
     player_view_init(&players, screened->state->match);

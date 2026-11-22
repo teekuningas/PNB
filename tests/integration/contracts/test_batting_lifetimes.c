@@ -38,8 +38,8 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
     Scoreboard* scoreboard = &ctx->state->rules->scoreboard;
     for (int team = 0; team < 2; team++) {
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            ctx->state->teamData[team].players[i].speed = 1 + (i + team * 2) % 5;
-            ctx->state->teamData[team].players[i].power = 1 + (i + team) % 5;
+            ctx->state->team_data[team].players[i].speed = 1 + (i + team * 2) % 5;
+            ctx->state->team_data[team].players[i].power = 1 + (i + team) % 5;
             scoreboard->teams[team].batter_order[i] = (i * 5 + team + 2) % (PLAYERS_IN_TEAM + JOKER_COUNT);
         }
     }
@@ -47,7 +47,7 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
         scoreboard->inning = turn;
         const int side = get_batting_team_index(scoreboard);
         const TeamInfo* team = &scoreboard->teams[side];
-        TeamData* roster = &ctx->state->teamData[team->value - 1];
+        TeamData* roster = &ctx->state->team_data[team->value - 1];
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             match->players[i].attributes.speed = -1;
             match->players[i].attributes.power = -1;
@@ -57,7 +57,7 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
             match->players[i].batting.presence.base_id = BASE_SECOND;
         }
 
-        reset_for_new_half_inning(match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
+        reset_for_new_half_inning(match, ctx->state->field_positions, ctx->state->team_data, ctx->state->rules);
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             PlayerInfo* p = &match->players[i];
@@ -111,7 +111,7 @@ int test_foul_restores_presence_without_replacing_batting_resources(void)
                                       PLAYER_STATE_SCORED};
     const BaseID bases[] = {BASE_HOME, BASE_FIRST, BASE_SECOND, BASE_THIRD, BASE_NONE, BASE_NONE, BASE_NONE};
 
-    reset_for_foul_play(match, ctx->state->fieldPositions, ctx->state->rules);
+    reset_for_foul_play(match, ctx->state->field_positions, ctx->state->rules);
 
     ASSERT(check_play_resources(match, expected) == TEST_PASSED, "a foul preserves half-inning resources");
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -125,11 +125,11 @@ int test_foul_restores_presence_without_replacing_batting_resources(void)
         );
     }
     ASSERT_FLOAT_EQ(
-        ctx->state->fieldPositions->firstBaseRun.x, match->players[1].body.location.x, 1e-6f,
+        ctx->state->field_positions->first_base_run.x, match->players[1].body.location.x, 1e-6f,
         "restored presence still puts the runner physically at first"
     );
     ASSERT_FLOAT_EQ(
-        ctx->state->fieldPositions->thirdBaseRun.z, match->players[3].body.location.z, 1e-6f,
+        ctx->state->field_positions->third_base_run.z, match->players[3].body.location.z, 1e-6f,
         "restored third-base progress is not merely a flag"
     );
     cleanup_scenario(ctx);
@@ -164,7 +164,7 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
             match->players[i].batting.presence.base_id = BASE_SECOND;
         }
         if (stage == 1) {
-            reset_for_foul_play(match, ctx->state->fieldPositions, ctx->state->rules);
+            reset_for_foul_play(match, ctx->state->field_positions, ctx->state->rules);
             ASSERT_FLOAT_EQ(
                 match->players[batter].body.target_location.x, match->players[batter].body.location.x, 1e-6f,
                 "a contest foul resumes the same batter at its target"
@@ -174,7 +174,7 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
                 "the returning batter need not walk in again"
             );
         } else {
-            reset_for_next_pair(match, ctx->state->fieldPositions, scoreboard, contest);
+            reset_for_next_pair(match, ctx->state->field_positions, scoreboard, contest);
         }
         ASSERT(
             check_play_resources(match, expected) == TEST_PASSED, "pair changes do not start a new resource lifetime"
@@ -192,7 +192,7 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
             );
         }
         ASSERT_FLOAT_EQ(
-            ctx->state->fieldPositions->thirdBaseRun.x, match->players[runner].body.location.x, 1e-6f,
+            ctx->state->field_positions->third_base_run.x, match->players[runner].body.location.x, 1e-6f,
             "the selected runner is physically at third"
         );
     }

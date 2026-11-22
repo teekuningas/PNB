@@ -27,10 +27,10 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     memset(g, 0, sizeof(SimGame));
     g->seed = seed;
 
-    // Allocate the world (match, rules, teamData, fieldPositions, keyStates, gameConclusion).
-    // keyStates and gameConclusion used to be allocated HERE, because setup_test_state left them
-    // NULL and the real pipeline dereferences both (action_invocations reads keyStates;
-    // consolidation writes gameConclusion at period/game end). The fixture owns them now, so this
+    // Allocate the world (match, rules, team_data, field_positions, key_states, game_conclusion).
+    // key_states and game_conclusion used to be allocated HERE, because setup_test_state left them
+    // NULL and the real pipeline dereferences both (action_invocations reads key_states;
+    // consolidation writes game_conclusion at period/game end). The fixture owns them now, so this
     // harness no longer allocates its own — one fact, one home. sim_destroy still frees them,
     // exactly as it frees every other setup_test_state allocation.
     g->state = setup_test_state();
@@ -43,12 +43,12 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     // allocated by setup_test_state), then load the real data over it.
     for (int t = 0; t < 2; t++) {
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            free(g->state->teamData[t].players[j].name);
+            free(g->state->team_data[t].players[j].name);
         }
-        free(g->state->teamData[t].players);
+        free(g->state->team_data[t].players);
     }
-    free(g->state->teamData);
-    g->state->teamData = NULL;
+    free(g->state->team_data);
+    g->state->team_data = NULL;
     if (fill_player_data(g->state, "data/teams.xml") != 0) {
         printf("[sim] FATAL: could not load data/teams.xml (run from the PNB dir)\n");
     }
@@ -66,24 +66,24 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     // half-inning reset below builds the right phase (super inning / homerun contest).
     {
         Scoreboard* sb = &g->state->rules->scoreboard;
-        if (setup->gameMode == GAME_MODE_SUPER_INNING) {
+        if (setup->game_mode == GAME_MODE_SUPER_INNING) {
             sb->period = 2;
             sb->inning = sb->half_innings_in_period * 2;
-        } else if (setup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
+        } else if (setup->game_mode == GAME_MODE_HOMERUN_CONTEST) {
             sb->period = 4;
             sb->inning = sb->half_innings_in_period * 2 + 2;
         }
     }
 
     // Perform the half-inning setup that load_game_screen_settings does on entering
-    // SCREEN_GAME (initialize_game_from_menu set changeScreen=1 to request it).
-    reset_for_new_half_inning(g->state->match, g->state->fieldPositions, g->state->teamData, g->state->rules);
+    // SCREEN_GAME (initialize_game_from_menu set change_screen=1 to request it).
+    reset_for_new_half_inning(g->state->match, g->state->field_positions, g->state->team_data, g->state->rules);
     referee_reset_for_new_inning(
         &g->state->rules->referee, &g->state->rules->half_inning, &g->state->rules->between_pitch
     );
     initialize_referee(g->state->match, &g->state->rules->scoreboard, &g->state->rules->referee);
 
-    g->state->changeScreen = 0; // consumed
+    g->state->change_screen = 0; // consumed
     g->state->updated = 1;
     g->state->screen = SCREEN_GAME;
 
@@ -102,14 +102,14 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
 void sim_make_normal_setup(GameSetup* setup, TeamID team1, TeamID team2, TeamControlMode c1, TeamControlMode c2)
 {
     memset(setup, 0, sizeof(*setup));
-    setup->launchType = GAME_LAUNCH_NEW;
-    setup->gameMode = GAME_MODE_NORMAL;
+    setup->launch_type = GAME_LAUNCH_NEW;
+    setup->game_mode = GAME_MODE_NORMAL;
     setup->team1 = team1;
     setup->team2 = team2;
     setup->team1_control = c1;
     setup->team2_control = c2;
-    setup->halfInningsInPeriod = 4;
-    setup->playsFirst = 0;
+    setup->half_innings_in_period = 4;
+    setup->plays_first = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         setup->team1_batting_order[i] = i;
         setup->team2_batting_order[i] = i;
@@ -169,17 +169,17 @@ void sim_destroy(SimGame* g)
 {
     if (!g) return;
     if (g->state) {
-        // teamData came from fill_player_data (not setup_test_state), so it must be freed
+        // team_data came from fill_player_data (not setup_test_state), so it must be freed
         // with clean_player_data — cleanup_test_state assumes the dummy layout. Free the
         // remaining setup_test_state allocations explicitly here.
-        free(g->state->keyStates);
-        free(g->state->gameConclusion);
-        clean_player_data(g->state); // frees real teamData
+        free(g->state->key_states);
+        free(g->state->game_conclusion);
+        clean_player_data(g->state); // frees real team_data
         free(g->state->rules);
-        free(g->state->clientInput);
-        free(g->state->aiController);
+        free(g->state->client_input);
+        free(g->state->ai_controller);
         free(g->state->match);
-        free(g->state->fieldPositions);
+        free(g->state->field_positions);
         free(g->state);
     }
     free(g);
@@ -189,8 +189,8 @@ void sim_capture_world(SimWorldCapture* cap, const SimGame* g)
 {
     memcpy(&cap->match, g->state->match, sizeof(MatchSession));
     memcpy(&cap->rules, g->state->rules, sizeof(GameRulesState));
-    memcpy(&cap->clientInput, g->state->clientInput, sizeof(ClientInputState));
-    memcpy(&cap->aiController, g->state->aiController, sizeof(AIControllerState));
+    memcpy(&cap->clientInput, g->state->client_input, sizeof(ClientInputState));
+    memcpy(&cap->aiController, g->state->ai_controller, sizeof(AIControllerState));
     cap->menu = g->menu;
     cap->frame = g->frame;
 }
@@ -199,8 +199,8 @@ void sim_restore_world(const SimWorldCapture* cap, SimGame* g)
 {
     memcpy(g->state->match, &cap->match, sizeof(MatchSession));
     memcpy(g->state->rules, &cap->rules, sizeof(GameRulesState));
-    memcpy(g->state->clientInput, &cap->clientInput, sizeof(ClientInputState));
-    memcpy(g->state->aiController, &cap->aiController, sizeof(AIControllerState));
+    memcpy(g->state->client_input, &cap->clientInput, sizeof(ClientInputState));
+    memcpy(g->state->ai_controller, &cap->aiController, sizeof(AIControllerState));
     g->menu = cap->menu;
     g->frame = cap->frame;
 }

@@ -31,7 +31,7 @@ static void update_ai_pitching(
     // engine owns the windup + release.
     if (match->ball.holder == pitcherIndex && match->players[pitcherIndex].fielding.near_home == 1 &&
         match->catching_action.kind == CATCHING_ACTION_NONE && !match->ball.pitch_in_flight &&
-        aiController->batterReadyTimer > AI_PITCH_DELAY) {
+        aiController->batter_ready_timer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
@@ -40,9 +40,9 @@ static void update_ai_pitching(
         }
 
         if (fielders_home) {
-            int rand_power = seeded_rand(&aiController->rngSeed, 5);
-            int rand_dir = seeded_rand(&aiController->rngSeed, 7);
-            int rand_choice = seeded_rand(&aiController->rngSeed, 10);
+            int rand_power = seeded_rand(&aiController->rng_seed, 5);
+            int rand_dir = seeded_rand(&aiController->rng_seed, 7);
+            int rand_choice = seeded_rand(&aiController->rng_seed, 10);
             PitchAim aim = decide_pitch_aim(
                 count_active_batting_players(match->players), halfInningState->strikes, halfInningState->balls,
                 rand_power, rand_dir, rand_choice
@@ -57,16 +57,16 @@ static void update_ai_pitching(
         }
     }
 
-    // batterReadyTimer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
+    // batter_ready_timer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
     // ready batter; reset whenever the batter is not ready).
     if (batter_stands_ready(&match->at_bat) && match->fielding_posts.baseman[0] == match->ball.holder &&
-        aiController->batterReadyTimer == -1) {
-        aiController->batterReadyTimer = 0;
+        aiController->batter_ready_timer == -1) {
+        aiController->batter_ready_timer = 0;
     } else if (!batter_stands_ready(&match->at_bat)) {
-        aiController->batterReadyTimer = -1;
+        aiController->batter_ready_timer = -1;
     }
-    if (aiController->batterReadyTimer != -1) {
-        aiController->batterReadyTimer++;
+    if (aiController->batter_ready_timer != -1) {
+        aiController->batter_ready_timer++;
     }
 }
 
@@ -84,24 +84,24 @@ static void steer_controlled_fielder(
     // A different fielder is a different conversation: whatever was said about the last one says
     // nothing about this one. The controlled fielder is durable world state, so noticing this is observation,
     // not read-back.
-    if (ai->lastSteeredFielder != index) {
-        ai->hasDeclaredMoveTarget = 0;
-        ai->lastSteeredFielder = index;
+    if (ai->last_steered_fielder != index) {
+        ai->has_declared_move_target = 0;
+        ai->last_steered_fielder = index;
     }
 
     MoveDeclaration decision = decide_move_declaration(
-        desired, ai->hasDeclaredMoveTarget, &ai->lastDeclaredMoveTarget, ai->framesSinceMoveDeclared
+        desired, ai->has_declared_move_target, &ai->last_declared_move_target, ai->frames_since_move_declared
     );
 
     if (!decision.declare) {
-        ai->framesSinceMoveDeclared++;
+        ai->frames_since_move_declared++;
         return;
     }
 
     intent_push(channel, (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target.point = decision.point});
-    ai->lastDeclaredMoveTarget = decision.point;
-    ai->hasDeclaredMoveTarget = 1;
-    ai->framesSinceMoveDeclared = 0;
+    ai->last_declared_move_target = decision.point;
+    ai->has_declared_move_target = 1;
+    ai->frames_since_move_declared = 0;
 }
 
 static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentChannel* channel)
@@ -221,15 +221,15 @@ void update_catching_ai(
                 BaseID bid = match->players[i].batting.presence.base_id;
 
                 if (bid != BASE_NONE) {
-                    runners[runnerCount].isOnBase = (s == PLAYER_STATE_ON_BASE || s == PLAYER_STATE_AT_BAT);
-                    runners[runnerCount].takingFreeWalk = (s == PLAYER_STATE_ADVANCING_FREELY);
+                    runners[runnerCount].is_on_base = (s == PLAYER_STATE_ON_BASE || s == PLAYER_STATE_AT_BAT);
+                    runners[runnerCount].taking_free_walk = (s == PLAYER_STATE_ADVANCING_FREELY);
                     runners[runnerCount].base = bid;
                     runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
                     runnerCount++;
                 }
             }
 
-            int randomVal = seeded_rand(&aiController->rngSeed, 500);
+            int randomVal = seeded_rand(&aiController->rng_seed, 500);
             leadBase = determine_lead_base(runners, runnerCount, randomVal);
 
             if (leadBase != BASE_NONE && base_cmp(leadBase, BASE_THIRD) < 0)

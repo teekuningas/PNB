@@ -42,12 +42,12 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
 // next click lands a value rather than no-op'ing. Returns 0 if the meter never starts.
 static int tick_until_widget_sweeping(ScriptedGame* g, int budget)
 {
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     for (int i = 0; i < budget; i++) {
-        if (ci->pitchWidget.meter.dir != 0) return 1;
+        if (ci->pitch_widget.meter.dir != 0) return 1;
         scripted_tick(g);
     }
-    return ci->pitchWidget.meter.dir != 0;
+    return ci->pitch_widget.meter.dir != 0;
 }
 
 int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void)
@@ -58,7 +58,7 @@ int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void)
     scripted_tap(g, CONTROL_PLAYER_2, KEY_2);
 
     MatchSession* m = scripted_match(g);
-    const ClientInputState* ci = scripted_state(g)->clientInput;
+    const ClientInputState* ci = scripted_state(g)->client_input;
     int batter = get_active_batter_index(m);
     int pitcher = m->fielding_posts.baseman[0];
     ASSERT_NE(-1, batter, "the selected batter has taken the bat");
@@ -72,22 +72,22 @@ int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void)
     for (int attempt = 0; attempt < 3; attempt++) {
         scripted_tap(g, HUMAN_PAD, KEY_2);
         ASSERT(!batter_stands_ready(&m->at_bat), "the early presses occur during the real approach");
-        ASSERT_EQ(WIDGET_IDLE, ci->pitchWidget.meter.mode, "an early pitch press must not start a power sweep");
+        ASSERT_EQ(WIDGET_IDLE, ci->pitch_widget.meter.mode, "an early pitch press must not start a power sweep");
         ASSERT_FLOAT_EQ(0.0f, catching_widget_view(ci), 1e-6f, "the catching bar stays at rest");
         ASSERT_EQ(CATCHING_ACTION_NONE, m->catching_action.kind, "no pitch starts while the batter approaches");
     }
 
     scripted_hold(g, HUMAN_PAD, KEY_2);
     ASSERT(tick_until_pitch_ready(g, 1200), "the batter never physically arrived ready to face a pitch");
-    ASSERT_EQ(WIDGET_IDLE, ci->pitchWidget.meter.mode, "holding an early press does not queue a sweep on arrival");
+    ASSERT_EQ(WIDGET_IDLE, ci->pitch_widget.meter.mode, "holding an early press does not queue a sweep on arrival");
     scripted_release(g, HUMAN_PAD, KEY_2);
     ASSERT(scripted_tick(g), "the game must remain live after arrival");
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    ASSERT_EQ(WIDGET_PING_PONG, ci->pitchWidget.meter.mode, "a fresh press after arrival starts the power sweep");
+    ASSERT_EQ(WIDGET_PING_PONG, ci->pitch_widget.meter.mode, "a fresh press after arrival starts the power sweep");
     ASSERT(catching_widget_view(ci) > 0.0f, "the ready pitcher's meter really advances");
     scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT_EQ(CATCHING_ACTION_PITCHING, m->catching_action.kind, "the next press still starts the real windup");
-    ASSERT_EQ(WIDGET_DESCENT, ci->pitchWidget.meter.mode, "committing power still starts the aim descent");
+    ASSERT_EQ(WIDGET_DESCENT, ci->pitch_widget.meter.mode, "committing power still starts the aim descent");
     ASSERT(!scripted_failed(g), scripted_fail_reason(g));
     scripted_destroy(g);
     return TEST_PASSED;
@@ -108,10 +108,10 @@ int test_scripted_pitch_two_pingpongs_strike(void)
 
     // The aim meter descends from the right; tick until the cursor falls near the strike sweet-spot (≈FOCAL
     // from the left), then click → a strike-zone aim.
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     int guard = 0;
-    while (ci->pitchWidget.meter.dir != 0 &&
-           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
+    while (ci->pitch_widget.meter.dir != 0 &&
+           ci->pitch_widget.meter.counter * 100 > ci->pitch_widget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // click during the aim descent: lock aim near the plate (strike)
@@ -182,7 +182,7 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x9117C403u);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
     ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     // Pitch a medium-power, centred strike (the band the AI hits well): start the power meter, click near
@@ -190,14 +190,14 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     scripted_tap(g, HUMAN_PAD, KEY_2);
     ASSERT(tick_until_widget_sweeping(g, 8), "power meter did not start sweeping");
     int guard = 0;
-    while (ci->pitchWidget.meter.dir == 1 &&
-           ci->pitchWidget.meter.counter * 100 < ci->pitchWidget.meter.counter_max * 50 && guard++ < 200) {
+    while (ci->pitch_widget.meter.dir == 1 &&
+           ci->pitch_widget.meter.counter * 100 < ci->pitch_widget.meter.counter_max * 50 && guard++ < 200) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock ~mid power → windup begins
     guard = 0;
-    while (ci->pitchWidget.meter.dir != 0 &&
-           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
+    while (ci->pitch_widget.meter.dir != 0 &&
+           ci->pitch_widget.meter.counter * 100 > ci->pitch_widget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock aim near the plate (strike)
@@ -244,7 +244,7 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x9117C404u);
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
     ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
-    const ClientInputState* ci = scripted_state(g)->clientInput;
+    const ClientInputState* ci = scripted_state(g)->client_input;
 
     ASSERT_FLOAT_EQ(0.0f, catching_widget_view(ci), 1e-6f, "before the gesture the bar rests at its left end");
 
@@ -255,20 +255,20 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     for (int i = 0; i < 6; i++) {
         scripted_tick(g);
         const float now = catching_widget_view(ci);
-        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget.meter), now, 1e-6f, "the bar shows the power sweep's own level");
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitch_widget.meter), now, 1e-6f, "the bar shows the power sweep's own level");
         if (now > previous) rose = 1;
         previous = now;
     }
     ASSERT(rose, "the power cursor moves while it sweeps");
 
     scripted_tap(g, HUMAN_PAD, KEY_2); // lock power: the windup begins and the aim descent arms
-    ASSERT_EQ(WIDGET_DESCENT, (int)ci->pitchWidget.meter.mode, "locking power arms the aim descent");
+    ASSERT_EQ(WIDGET_DESCENT, (int)ci->pitch_widget.meter.mode, "locking power arms the aim descent");
     previous = catching_widget_view(ci);
     int fell = 0;
     for (int i = 0; i < 6; i++) {
         scripted_tick(g);
         const float now = catching_widget_view(ci);
-        ASSERT_FLOAT_EQ(widget_level(&ci->pitchWidget.meter), now, 1e-6f, "the bar shows the aim descent's own level");
+        ASSERT_FLOAT_EQ(widget_level(&ci->pitch_widget.meter), now, 1e-6f, "the bar shows the aim descent's own level");
         if (now < previous) fell = 1;
         previous = now;
     }
@@ -279,7 +279,7 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     int rested = 0;
     for (int i = 0; i < 300 && !rested; i++) {
         scripted_tick(g);
-        rested = (ci->pitchWidget.meter.mode == WIDGET_IDLE && catching_widget_view(ci) == 0.0f);
+        rested = (ci->pitch_widget.meter.mode == WIDGET_IDLE && catching_widget_view(ci) == 0.0f);
     }
 
     int failed = scripted_failed(g);

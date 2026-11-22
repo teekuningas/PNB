@@ -29,11 +29,11 @@ void ai_update(
 
 void init_ai_controller(AIControllerState* aiController, unsigned int rngSeed)
 {
-    aiController->rngSeed = rngSeed;
-    aiController->batterReadyTimer = -1;
+    aiController->rng_seed = rngSeed;
+    aiController->batter_ready_timer = -1;
     aiController->swing = (AISwingPlan){0};
-    aiController->lastDeclaredMoveTarget = (Vector3D){0};
-    aiController->hasDeclaredMoveTarget = 0;
-    aiController->framesSinceMoveDeclared = 0;
-    aiController->lastSteeredFielder = -1; // nobody steered yet; 0 is a real player
+    aiController->last_declared_move_target = (Vector3D){0};
+    aiController->has_declared_move_target = 0;
+    aiController->frames_since_move_declared = 0;
+    aiController->last_steered_fielder = -1; // nobody steered yet; 0 is a real player
 }

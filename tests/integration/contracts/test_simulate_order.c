@@ -90,7 +90,9 @@ static int nobody_else_near(const MatchSession* m, Vector3D ball, int a, int b)
 
 static void simulate_one_tick(ScenarioContext* ctx)
 {
-    simulate(ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect);
+    simulate(
+        ctx->state->match, ctx->state->field_positions, &ctx->state->rules->referee, &ctx->state->play_sound_effect
+    );
 }
 
 int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void)

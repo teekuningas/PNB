@@ -17,7 +17,7 @@ int test_fly_ball_runner_wounded(void)
     move_pitcher_away(ctx);
 
     int fielderIdx = 15;
-    Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
+    Vector3D fielderLoc = ctx->state->field_positions->third_base;
     ctx->state->match->players[fielderIdx].body.location = fielderLoc;
     ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
@@ -26,7 +26,7 @@ int test_fly_ball_runner_wounded(void)
     snapshot_pitch_start_state(ctx);
 
     trigger_player_run_to_next_base(ctx, 0, BASE_FIRST);
-    hit_fly_ball_to_location(ctx, ctx->state->fieldPositions->pitchPlate, fielderLoc);
+    hit_fly_ball_to_location(ctx, ctx->state->field_positions->pitch_plate, fielderLoc);
 
     int woundDetected = 0;
     for (int frame = 0; frame <= 800; frame += 50) {

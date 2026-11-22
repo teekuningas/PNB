@@ -33,14 +33,14 @@ ScenarioContext* create_scenario(void)
     // Initialize game setup (scoreboard, teams, batting order)
     ctx->seed = 0;
     GameSetup setup = {0};
-    setup.launchType = GAME_LAUNCH_NEW;
-    setup.gameMode = GAME_MODE_NORMAL;
+    setup.launch_type = GAME_LAUNCH_NEW;
+    setup.game_mode = GAME_MODE_NORMAL;
     setup.team1 = 0;
     setup.team2 = 1;
     setup.team1_control = 0;
     setup.team2_control = 2;
-    setup.halfInningsInPeriod = 4;
-    setup.playsFirst = 0;
+    setup.half_innings_in_period = 4;
+    setup.plays_first = 0;
     // The batting order is not decoration: it is what gives players their jersey numbers and their
     // JOKER_REGULAR / JOKER_AVAILABLE status (game_setup.c → initialize_inning_permanent_player_information),
     // and §12's side change is defined on it. Left zeroed — as it was until 2026-08-23 — every slot named
@@ -54,10 +54,10 @@ ScenarioContext* create_scenario(void)
 
     initialize_game_from_menu(ctx->state, &setup, &ctx->seed);
 
-    // In tests, we don't have a game loop that responds to changeScreen=1,
+    // In tests, we don't have a game loop that responds to change_screen=1,
     // so manually call reset_for_new_half_inning to initialize physical+flow+team,
     // then referee_reset_for_new_inning to clear all referee state (from-menu init).
-    reset_for_new_half_inning(ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
+    reset_for_new_half_inning(ctx->state->match, ctx->state->field_positions, ctx->state->team_data, ctx->state->rules);
     referee_reset_for_new_inning(
         &ctx->state->rules->referee, &ctx->state->rules->half_inning, &ctx->state->rules->between_pitch
     );
@@ -92,28 +92,28 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     }
 
     MatchSession* game = ctx->state->match;
-    FieldPositions* field = ctx->state->fieldPositions;
+    FieldPositions* field = ctx->state->field_positions;
 
     // Determine physical start and end positions
     Vector3D startPos, endPos;
 
     switch (base) {
     case BASE_HOME:
-        startPos = field->pitchPlate;
+        startPos = field->pitch_plate;
         startPos.z = 1.0f; // Slightly in front of plate
-        endPos = field->firstBase;
+        endPos = field->first_base;
         break;
     case BASE_FIRST:
-        startPos = field->firstBase;
-        endPos = field->secondBase;
+        startPos = field->first_base;
+        endPos = field->second_base;
         break;
     case BASE_SECOND:
-        startPos = field->secondBase;
-        endPos = field->thirdBase;
+        startPos = field->second_base;
+        endPos = field->third_base;
         break;
     case BASE_THIRD:
-        startPos = field->thirdBase;
-        endPos = field->pitchPlate;
+        startPos = field->third_base;
+        endPos = field->pitch_plate;
         endPos.z = 1.0f; // Home scoring position
         break;
     default:
@@ -241,7 +241,7 @@ void trigger_player_run_to_next_base(ScenarioContext* ctx, int playerIndex, Base
     if (!ctx || !ctx->state) return;
 
     // Call the game's base-running machinery
-    run_to_next_base(ctx->state->match, ctx->state->fieldPositions, playerIndex, fromBase);
+    run_to_next_base(ctx->state->match, ctx->state->field_positions, playerIndex, fromBase);
 }
 
 void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, BaseID toBase)
@@ -252,10 +252,10 @@ void trigger_player_run_to_previous_base(ScenarioContext* ctx, int playerIndex, 
     // Note: run_to_previous_base treats 'toBase' as the base we are retreating TO (e.g. retreating TO Base 2 from Base
     // 3). But the game logic's `run_to_previous_base` actually takes `BaseID base` as the "current base" or "base we
     // are retreating FROM"? Let's check runner_paths.c: void run_to_previous_base(MatchSession* match, FieldPositions*
-    // fieldPositions, int index, BaseID base) if(base == BASE_HOME) ... target = ready pos if(base == BASE_FIRST) ...
-    // target = firstBaseRun So `base` is the destination base.
+    // field_positions, int index, BaseID base) if(base == BASE_HOME) ... target = ready pos if(base == BASE_FIRST) ...
+    // target = first_base_run So `base` is the destination base.
 
-    run_to_previous_base(ctx->state->match, ctx->state->fieldPositions, playerIndex, toBase);
+    run_to_previous_base(ctx->state->match, ctx->state->field_positions, playerIndex, toBase);
 }
 
 void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
@@ -265,7 +265,7 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
     MatchSession* game = ctx->state->match;
 
     // Physical state: at home plate
-    game->players[playerIndex].body.location = ctx->state->fieldPositions->pitchPlate;
+    game->players[playerIndex].body.location = ctx->state->field_positions->pitch_plate;
     game->players[playerIndex].body.location.z += 1.0f; // Slightly in front
     game->players[playerIndex].body.home_location = game->players[playerIndex].body.location;
 
@@ -295,32 +295,33 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         // It declares intent straight onto the channel (intent_push), and the INGEST gate
         // judges and drains it exactly as it would a human's or the AI's.
         {
-            IngestedCommands ingested =
-                ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            IngestedCommands ingested = ingest_intents(
+                ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels
+            );
             actualize(
-                ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested,
-                &ctx->state->playSoundEffect
+                ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ingested,
+                &ctx->state->play_sound_effect
             );
         }
         simulate(
-            ctx->state->match, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect
+            ctx->state->match, ctx->state->field_positions, &ctx->state->rules->referee, &ctx->state->play_sound_effect
         );
 
         // Milestone 14: Rules engine must run after physics to reconcile state
         GameRulesState* rules = ctx->state->rules;
         update_referee(
-            ctx->state->match, ctx->state->fieldPositions, &rules->referee, &rules->half_inning, &rules->between_pitch,
+            ctx->state->match, ctx->state->field_positions, &rules->referee, &rules->half_inning, &rules->between_pitch,
             &rules->scoreboard, &rules->homerun_contest, &ctx->state->announcement
         );
         ConsolidationOutput consolidation_output;
         consolidation_update(
-            ctx->state->match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->gameConclusion, rules,
+            ctx->state->match, ctx->state->field_positions, ctx->state->team_data, ctx->state->game_conclusion, rules,
             &consolidation_output
         );
         // Handle screen transition in test context
         if (consolidation_output.request_screen_change) {
             ctx->state->screen = consolidation_output.target_screen;
-            ctx->state->changeScreen = 1;
+            ctx->state->change_screen = 1;
             ctx->state->updated = 0;
         }
 
@@ -354,7 +355,7 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
     if (!ctx || !ctx->state) return;
 
     MatchSession* game = ctx->state->match;
-    FieldPositions* field = ctx->state->fieldPositions;
+    FieldPositions* field = ctx->state->field_positions;
 
     // Get target position based on base
     Vector3D targetPos;
@@ -363,13 +364,13 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
         targetPos = field->pitcher;
         break;
     case BASE_FIRST:
-        targetPos = field->firstBase;
+        targetPos = field->first_base;
         break;
     case BASE_SECOND:
-        targetPos = field->secondBase;
+        targetPos = field->second_base;
         break;
     case BASE_THIRD:
-        targetPos = field->thirdBase;
+        targetPos = field->third_base;
         break;
     default:
         return;
@@ -459,7 +460,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     if (!ctx || !ctx->state) return;
 
     MatchSession* game = ctx->state->match;
-    FieldPositions* field = ctx->state->fieldPositions;
+    FieldPositions* field = ctx->state->field_positions;
 
     // 1. Locate Pitcher
     Vector3D startPos = field->pitcher;
@@ -483,7 +484,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     float vx = (targetX - startPos.x) / frames;
 
     // v_z (keep at plate Z)
-    float vz = (field->pitchPlate.z - startPos.z) / frames;
+    float vz = (field->pitch_plate.z - startPos.z) / frames;
 
     // 3. Set Ball State
     game->ball.location = startPos;

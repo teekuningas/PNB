@@ -28,11 +28,11 @@ Vector3D throw_target_point(const FieldPositions* fieldPositions, BaseID base)
 {
     switch (base) {
     case BASE_FIRST:
-        return fieldPositions->firstBase;
+        return fieldPositions->first_base;
     case BASE_SECOND:
-        return fieldPositions->secondBase;
+        return fieldPositions->second_base;
     case BASE_THIRD:
-        return fieldPositions->thirdBase;
+        return fieldPositions->third_base;
     case BASE_HOME:
     default:
         return fieldPositions->pitcher;
@@ -150,14 +150,15 @@ void update_throw_actualization(MatchSession* match, const FieldPositions* field
 
     // The gate has settled what these may do: a target only when nothing else is in progress, a power
     // only while a throw is gathering or begins this tick.
-    if (declared->targetDeclared) {
+    if (declared->target_declared) {
         begin_throw_windup(match, fieldPositions, declared->target);
     }
-    if (declared->powerDeclared) {
+    if (declared->power_declared) {
         action->as.throw.powered = 1;
         action->as.throw.power = declared->power;
     }
-    if (declared->targetDeclared) return; // never begin and release in the same frame — the windup is at least one tick
+    if (declared->target_declared)
+        return; // never begin and release in the same frame — the windup is at least one tick
 
     if (action->kind == CATCHING_ACTION_THROWING) {
         action->timer++;

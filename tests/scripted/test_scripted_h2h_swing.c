@@ -34,7 +34,7 @@
  * tick. What a peer changes is where the messages come from, not what the engine does with them.
  */
 
-#define BAT_PAD CONTROL_PLAYER_1 /* team 0 bats first (GameSetup.playsFirst = 0) */
+#define BAT_PAD CONTROL_PLAYER_1 /* team 0 bats first (GameSetup.plays_first = 0) */
 #define PITCH_PAD CONTROL_PLAYER_2 /* team 1 is in the field */
 
 /* One press edge on one pad, without ticking a second frame: the caller decides when the release
@@ -125,16 +125,16 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     ASSERT(tick_until_batting(g, 1200), "the human batting side never took the bat");
     ASSERT(tick_until_pitch_ready(g, 1200), "the human pitching side never got the ball at the plate");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     /* BEAT 1 — the pitcher starts a power ping-pong, then commits a power. The commit is what starts
      * the engine windup, and the windup is what arms the batter. */
     press(g, PITCH_PAD, KEY_2); // start the pitcher's power meter (client-local; nothing declared)
     scripted_tick(g);
-    ASSERT(ci->pitchWidget.meter.dir != 0, "the pitcher's power meter must be sweeping");
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the pitcher's power meter must be sweeping");
     ASSERT_EQ(
-        (int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode,
+        (int)WIDGET_IDLE, (int)ci->swing_widget.meter.mode,
         "the batter's meter must NOT arm off the pitcher's own client-local sweep"
     );
     scripted_run(g, 8);
@@ -147,7 +147,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
 
     /* BEAT 2 — the batter's power meter arms itself off that windup, with no key pressed, and a
      * press samples it. The pitcher's aim is still outstanding while this happens. */
-    ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode, "the windup must arm the batter's power meter");
+    ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swing_widget.meter.mode, "the windup must arm the batter's power meter");
     scripted_run(g, 10);
     press(g, BAT_PAD, KEY_2);
     scripted_tick(g);
@@ -157,11 +157,11 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     /* BEAT 3 — the pitcher's aim meter has been descending throughout. Press it near the sweet spot
      * for a pitch over the plate. */
     int guard = 0;
-    while (ci->pitchWidget.meter.dir != 0 &&
-           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
+    while (ci->pitch_widget.meter.dir != 0 &&
+           ci->pitch_widget.meter.counter * 100 > ci->pitch_widget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
-    ASSERT(ci->pitchWidget.meter.dir != 0, "the pitcher's aim meter ran out before it could be aimed");
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the pitcher's aim meter ran out before it could be aimed");
     press(g, PITCH_PAD, KEY_2);
     scripted_tick(g);
     ASSERT(winding_aimed(m), "the aim click must complete the pitch");
@@ -178,12 +178,12 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     /* BEAT 4 — the batter's elevation meter sizes itself to the flight and is walked to the sweet
      * spot. Nothing here reads the engine's contact frame; the widget solved the same ball. */
     ASSERT_EQ(
-        (int)WIDGET_DESCENT, (int)ci->swingWidget.meter.mode, "the ball being up must arm the batter's elevation meter"
+        (int)WIDGET_DESCENT, (int)ci->swing_widget.meter.mode, "the ball being up must arm the batter's elevation meter"
     );
     guard = 0;
-    while (ci->swingWidget.meter.dir != 0 && guard++ < 400) {
+    while (ci->swing_widget.meter.dir != 0 && guard++ < 400) {
         // The marker's level IS the value it will declare — the bar maps straight to [0,1].
-        float here = (float)ci->swingWidget.meter.counter / (float)ci->swingWidget.meter.counter_max;
+        float here = (float)ci->swing_widget.meter.counter / (float)ci->swing_widget.meter.counter_max;
         if (here <= SWING_VERTICAL_FOCAL) break;
         scripted_tick(g);
     }
@@ -234,7 +234,7 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     ASSERT(tick_until_batting(g, 1200), "the human batting side never took the bat");
     ASSERT(tick_until_pitch_ready(g, 1200), "the human pitching side never got the ball at the plate");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     press(g, PITCH_PAD, KEY_2);
@@ -242,17 +242,17 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     press(g, PITCH_PAD, KEY_2); // power committed -> windup -> the batter's meter arms
     scripted_tick(g);
     ASSERT_EQ((int)CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "the windup must have begun");
-    ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode, "the batter's power meter must be armed");
+    ASSERT_EQ((int)WIDGET_PING_PONG, (int)ci->swing_widget.meter.mode, "the batter's power meter must be armed");
 
     // Let the pitcher's aim fall to the sweet spot; the batter's power sweep is still running,
     // which is the whole point — both gestures are live on the same frame.
     int guard = 0;
-    while (ci->pitchWidget.meter.dir != 0 &&
-           ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
+    while (ci->pitch_widget.meter.dir != 0 &&
+           ci->pitch_widget.meter.counter * 100 > ci->pitch_widget.meter.counter_max * 35 && guard++ < 400) {
         scripted_tick(g);
     }
-    ASSERT(ci->pitchWidget.meter.dir != 0, "the pitcher's aim meter ran out before the shared frame");
-    ASSERT(ci->swingWidget.meter.dir != 0, "the batter's power meter must still be live on the shared frame");
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the pitcher's aim meter ran out before the shared frame");
+    ASSERT(ci->swing_widget.meter.dir != 0, "the batter's power meter must still be live on the shared frame");
 
     // ONE FRAME, TWO PRESS EDGES.
     scripted_hold(g, BAT_PAD, KEY_2);
@@ -291,7 +291,7 @@ int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void)
     ASSERT(tick_until_batting(g, 1200), "the human batting side never took the bat");
     ASSERT(tick_until_pitch_ready(g, 1200), "the human pitching side never got the ball at the plate");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     // The BATTER hammers the action key with no pitch in progress. Nothing may be declared and no
@@ -300,10 +300,10 @@ int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void)
         press(g, BAT_PAD, KEY_2);
         scripted_tick(g);
     }
-    ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode, "with no pitch in progress the batter has no meter");
+    ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swing_widget.meter.mode, "with no pitch in progress the batter has no meter");
     ASSERT_EQ(0, m->at_bat.swing.power_active, "a batter cannot declare a power before a pitch exists");
     ASSERT_EQ(
-        (int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "the batting pad's key must never touch the pitching widget"
+        (int)WIDGET_IDLE, (int)ci->pitch_widget.meter.mode, "the batting pad's key must never touch the pitching widget"
     );
     ASSERT_EQ(
         (int)CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the batting pad's key must never declare a pitch"
@@ -313,9 +313,9 @@ int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void)
     // responds to the physical windup, never to the pitcher's key.
     press(g, PITCH_PAD, KEY_2);
     scripted_tick(g);
-    ASSERT(ci->pitchWidget.meter.dir != 0, "the pitching pad's key must start the pitching widget");
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the pitching pad's key must start the pitching widget");
     ASSERT_EQ(
-        (int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode,
+        (int)WIDGET_IDLE, (int)ci->swing_widget.meter.mode,
         "the pitcher's pre-windup sweep is client-local — it must be invisible to the batter"
     );
 
@@ -348,7 +348,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
     ASSERT(tick_until_batting(g, 1200), "the human batting side never took the bat");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     int pitches = 0;
@@ -358,9 +358,11 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         if (!batting_cycle_is_open(&scripted_match(g)->at_bat) && !tick_until_batting(g, 1200)) break;
 
         // Every pitch must find both widgets idle. A stale one is the whole point of this test.
-        ASSERT_EQ((int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "a new pitch must find the pitch widget retired");
-        ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode, "a new pitch must find the swing widget retired");
-        ASSERT_EQ((int)SWING_BEAT_POWER, (int)ci->swingWidget.beat, "a new pitch must find the gesture back at beat 1");
+        ASSERT_EQ((int)WIDGET_IDLE, (int)ci->pitch_widget.meter.mode, "a new pitch must find the pitch widget retired");
+        ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swing_widget.meter.mode, "a new pitch must find the swing widget retired");
+        ASSERT_EQ(
+            (int)SWING_BEAT_POWER, (int)ci->swing_widget.beat, "a new pitch must find the gesture back at beat 1"
+        );
         ASSERT_EQ(0, m->at_bat.swing.consumed, "a new pitch must find the previous swing's record cleared");
 
         press(g, PITCH_PAD, KEY_2);
@@ -374,8 +376,8 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         pitches++;
 
         int guard = 0;
-        while (ci->pitchWidget.meter.dir != 0 &&
-               ci->pitchWidget.meter.counter * 100 > ci->pitchWidget.meter.counter_max * 35 && guard++ < 400) {
+        while (ci->pitch_widget.meter.dir != 0 &&
+               ci->pitch_widget.meter.counter * 100 > ci->pitch_widget.meter.counter_max * 35 && guard++ < 400) {
             scripted_tick(g);
         }
         press(g, PITCH_PAD, KEY_2); // aim -> AIMED
@@ -386,7 +388,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
             scripted_run(g, 6);
             press(g, BAT_PAD, KEY_2);
             scripted_tick(g);
-            ASSERT_EQ((int)SWING_BEAT_LOADED, (int)ci->swingWidget.beat, "the press must load the gesture");
+            ASSERT_EQ((int)SWING_BEAT_LOADED, (int)ci->swing_widget.beat, "the press must load the gesture");
             scripted_run(g, 4);
             press(g, BAT_PAD, KEY_1); // withdraw
             scripted_tick(g);

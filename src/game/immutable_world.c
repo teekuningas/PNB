@@ -53,7 +53,7 @@ int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
         printf("Initialization of plate failed.");
         return result;
     }
-    field_init_positions(stateInfo->fieldPositions);
+    field_init_positions(stateInfo->field_positions);
 
     return 0;
 }

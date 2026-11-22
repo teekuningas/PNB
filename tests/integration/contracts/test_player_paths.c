@@ -13,7 +13,7 @@ static ScenarioContext* third_base_runner(void)
     ScenarioContext* ctx = create_scenario();
     PlayerInfo* p = &ctx->state->match->players[0];
     p->batting.presence = (BattingPresence){PLAYER_STATE_ON_BASE, BASE_THIRD};
-    p->body.location = ctx->state->fieldPositions->thirdBaseRun;
+    p->body.location = ctx->state->field_positions->third_base_run;
     p->body.previous_location = p->body.location;
     return ctx;
 }
@@ -22,12 +22,14 @@ int test_third_home_route_visits_flag_before_physical_arrival(void)
 {
     ScenarioContext* ctx = third_base_runner();
     MatchSession* m = ctx->state->match;
-    const FieldPositions* field = ctx->state->fieldPositions;
+    const FieldPositions* field = ctx->state->field_positions;
     PlayerInfo* p = &m->players[0];
     int passed_flag = 0, arrivals = 0;
     run_to_next_base(m, field, 0, BASE_THIRD);
-    ASSERT_FLOAT_EQ(field->runLeftPoint.x, p->body.target_location.x, 1e-6f, "the route starts toward the flag");
-    ASSERT_FLOAT_EQ(field->runLeftPoint.z, p->body.target_location.z, 1e-6f, "the first leg is not a direct run home");
+    ASSERT_FLOAT_EQ(field->run_left_point.x, p->body.target_location.x, 1e-6f, "the route starts toward the flag");
+    ASSERT_FLOAT_EQ(
+        field->run_left_point.z, p->body.target_location.z, 1e-6f, "the first leg is not a direct run home"
+    );
 
     // These are physical steps only; reaching home here does not adjudicate a legal run.
     for (int tick = 0; tick < 2000 && p->motion.moving; tick++) {
@@ -35,13 +37,13 @@ int test_third_home_route_visits_flag_before_physical_arrival(void)
         if (!passed_flag && m->players[0].path.waypoint == 1) {
             passed_flag = 1;
             ASSERT(
-                vec3_distance_xz(&p->body.location, &field->runLeftPoint) < TARGET_ACHIEVED_THRESHOLD,
+                vec3_distance_xz(&p->body.location, &field->run_left_point) < TARGET_ACHIEVED_THRESHOLD,
                 "the body actually reaches the flag before the route changes"
             );
             ASSERT_EQ(BASE_THIRD, p->batting.presence.base_id, "passing the flag is not arriving home");
             ASSERT_EQ(0, m->players[0].path.arrived_at_base, "the intermediate waypoint raises no arrival");
-            ASSERT_FLOAT_EQ(field->homeRunPoint.x, p->body.target_location.x, 1e-6f, "the second leg targets home");
-            ASSERT_FLOAT_EQ(field->homeRunPoint.z, p->body.target_location.z, 1e-6f, "home is the scoring approach");
+            ASSERT_FLOAT_EQ(field->home_run_point.x, p->body.target_location.x, 1e-6f, "the second leg targets home");
+            ASSERT_FLOAT_EQ(field->home_run_point.z, p->body.target_location.z, 1e-6f, "home is the scoring approach");
         }
         if (m->players[0].path.arrived_at_base) {
             arrivals++;
@@ -49,7 +51,7 @@ int test_third_home_route_visits_flag_before_physical_arrival(void)
             ASSERT_EQ(BASE_HOME_SCORED, p->batting.presence.base_id, "the arrival is a physical home marker");
             ASSERT_EQ(2, m->players[0].path.waypoint, "home completes the second leg");
             ASSERT(
-                vec3_distance_xz(&p->body.location, &field->homeRunPoint) < TARGET_ACHIEVED_THRESHOLD,
+                vec3_distance_xz(&p->body.location, &field->home_run_point) < TARGET_ACHIEVED_THRESHOLD,
                 "arrival requires the body to reach home"
             );
         }
@@ -73,7 +75,7 @@ int test_third_home_retreat_returns_via_flag_to_third(void)
 {
     ScenarioContext* ctx = third_base_runner();
     MatchSession* m = ctx->state->match;
-    const FieldPositions* field = ctx->state->fieldPositions;
+    const FieldPositions* field = ctx->state->field_positions;
     PlayerInfo* p = &m->players[0];
     run_to_next_base(m, field, 0, BASE_THIRD);
     for (int tick = 0; tick < 1000 && m->players[0].path.waypoint == 0; tick++)
@@ -82,26 +84,26 @@ int test_third_home_retreat_returns_via_flag_to_third(void)
     for (int tick = 0; tick < 10; tick++)
         player_location_orientation_and_targets(m, field);
     ASSERT(
-        vec3_distance_xz(&p->body.location, &field->runLeftPoint) > TARGET_ACHIEVED_THRESHOLD,
+        vec3_distance_xz(&p->body.location, &field->run_left_point) > TARGET_ACHIEVED_THRESHOLD,
         "the recall starts beyond the flag, not already on it"
     );
 
     run_to_previous_base(m, field, 0, BASE_THIRD);
     ASSERT_EQ(0, m->players[0].path.going_forward, "recall reverses the physical route");
-    ASSERT_FLOAT_EQ(field->runLeftPoint.x, p->body.target_location.x, 1e-6f, "retreat first returns to the flag");
-    ASSERT_FLOAT_EQ(field->runLeftPoint.z, p->body.target_location.z, 1e-6f, "retreat cannot cut directly to third");
+    ASSERT_FLOAT_EQ(field->run_left_point.x, p->body.target_location.x, 1e-6f, "retreat first returns to the flag");
+    ASSERT_FLOAT_EQ(field->run_left_point.z, p->body.target_location.z, 1e-6f, "retreat cannot cut directly to third");
     int returned_past_flag = 0;
     for (int tick = 0; tick < 2000 && p->motion.moving; tick++) {
         player_location_orientation_and_targets(m, field);
         if (!returned_past_flag && m->players[0].path.waypoint == 0) {
             returned_past_flag = 1;
             ASSERT(
-                vec3_distance_xz(&p->body.location, &field->runLeftPoint) < TARGET_ACHIEVED_THRESHOLD,
+                vec3_distance_xz(&p->body.location, &field->run_left_point) < TARGET_ACHIEVED_THRESHOLD,
                 "the reverse route changes leg at the flag"
             );
-            ASSERT_FLOAT_EQ(field->thirdBaseRun.x, p->body.target_location.x, 1e-6f, "the next leg returns to third");
+            ASSERT_FLOAT_EQ(field->third_base_run.x, p->body.target_location.x, 1e-6f, "the next leg returns to third");
             ASSERT_FLOAT_EQ(
-                field->thirdBaseRun.z, p->body.target_location.z, 1e-6f, "third is the retreat destination"
+                field->third_base_run.z, p->body.target_location.z, 1e-6f, "third is the retreat destination"
             );
         }
     }
@@ -111,7 +113,7 @@ int test_third_home_retreat_returns_via_flag_to_third(void)
     ASSERT_EQ(PLAYER_STATE_ON_BASE, p->batting.presence.state, "physical presence returns to on-base");
     ASSERT_EQ(BASE_THIRD, p->batting.presence.base_id, "the source base remains third throughout retreat");
     ASSERT(
-        vec3_distance_xz(&p->body.location, &field->thirdBaseRun) < TARGET_ACHIEVED_THRESHOLD,
+        vec3_distance_xz(&p->body.location, &field->third_base_run) < TARGET_ACHIEVED_THRESHOLD,
         "the runner physically returns to third"
     );
     ASSERT_EQ(0, m->events.player_arrived_at_base, "retreat is not a new forward base arrival");
@@ -126,14 +128,14 @@ int test_terminal_players_complete_all_exit_legs(void)
         for (int side = -1; side <= 1; side += 2) {
             ScenarioContext* ctx = create_scenario();
             MatchSession* m = ctx->state->match;
-            const FieldPositions* field = ctx->state->fieldPositions;
+            const FieldPositions* field = ctx->state->field_positions;
             PlayerInfo* p = &m->players[0];
             p->batting.presence = (BattingPresence){states[state], BASE_NONE};
             p->body.location = (Vector3D){side * 10.0f, 0.0f, -25.0f};
             p->motion.running = 1;
             m->players[0].path.waypoint = 2;
             move_player_out(m->players, field, 0);
-            Vector3D outside = side < 0 ? field->leftPoint : field->rightPoint;
+            Vector3D outside = side < 0 ? field->left_point : field->right_point;
             outside.x += side * 5.0f;
             outside.z += 10.0f;
             ASSERT_EQ(0, m->players[0].path.waypoint, "exit restarts the waypoint sequence");
@@ -149,9 +151,9 @@ int test_terminal_players_complete_all_exit_legs(void)
                         vec3_distance_xz(&p->body.location, &outside) < TARGET_ACHIEVED_THRESHOLD,
                         "the first transition happens outside the field"
                     );
-                    ASSERT_FLOAT_EQ(field->pitchPlate.x, p->body.target_location.x, 1e-6f, "then walk to the circle");
+                    ASSERT_FLOAT_EQ(field->pitch_plate.x, p->body.target_location.x, 1e-6f, "then walk to the circle");
                     ASSERT_FLOAT_EQ(
-                        field->pitchPlate.z + HOME_RADIUS, p->body.target_location.z, 1e-6f,
+                        field->pitch_plate.z + HOME_RADIUS, p->body.target_location.z, 1e-6f,
                         "the middle leg reaches the front of the home circle"
                     );
                 }
@@ -182,13 +184,13 @@ int test_simulate_raises_and_consumes_each_runner_arrival(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* m = ctx->state->match;
-    const FieldPositions* field = ctx->state->fieldPositions;
+    const FieldPositions* field = ctx->state->field_positions;
     give_ball_to_pitcher(ctx);
     m->at_bat.may_leave_home = 1;
     for (int i = 0; i < 2; i++) {
         PlayerInfo* p = &m->players[i];
         BaseID base = i == 0 ? BASE_HOME : BASE_FIRST;
-        Vector3D target = i == 0 ? field->firstBaseRun : field->secondBaseRun;
+        Vector3D target = i == 0 ? field->first_base_run : field->second_base_run;
         p->batting.presence = (BattingPresence){PLAYER_STATE_ON_BASE, base};
         p->body.location = target;
         p->body.location.x -= 0.05f;
@@ -206,7 +208,7 @@ int test_simulate_raises_and_consumes_each_runner_arrival(void)
         ASSERT_EQ(0, m->players[i].path.arrived_at_base, "the consumer drains every arriving runner");
 
     *m = before;
-    simulate(m, field, &ctx->state->rules->referee, &ctx->state->playSoundEffect);
+    simulate(m, field, &ctx->state->rules->referee, &ctx->state->play_sound_effect);
     ASSERT_EQ(BASE_FIRST, m->players[0].batting.presence.base_id, "the real SIMULATE advances the first runner");
     ASSERT_EQ(BASE_SECOND, m->players[1].batting.presence.base_id, "the real SIMULATE advances the other runner");
     for (int i = 0; i < 2; i++)

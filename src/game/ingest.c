@@ -213,10 +213,10 @@ permit_contribution(const MatchSession* match, const IntentMessage* message, con
 {
     const CatchingActionKind running = match->catching_action.kind;
     if (message->kind == INTENT_PITCH_AIM) {
-        if (running == CATCHING_ACTION_PITCHING || out->pitch.powerDeclared) return (Permission){1, RULE_NONE};
+        if (running == CATCHING_ACTION_PITCHING || out->pitch.power_declared) return (Permission){1, RULE_NONE};
         return (Permission){0, RULE_PITCH_AIM_NEEDS_A_WINDUP};
     }
-    if (running == CATCHING_ACTION_THROWING || out->throw.targetDeclared) return (Permission){1, RULE_NONE};
+    if (running == CATCHING_ACTION_THROWING || out->throw.target_declared) return (Permission){1, RULE_NONE};
     return (Permission){0, RULE_THROW_POWER_NEEDS_A_THROW};
 }
 
@@ -227,11 +227,11 @@ permit_contribution(const MatchSession* match, const IntentMessage* message, con
 // losers are refused: a drop by RULE_DROP_NOT_WHILE_THROWING, a pitch by RULE_ONE_CATCHING_ACTION_PER_TICK.
 static void settle_catching_claims(IngestedCommands* out)
 {
-    if (out->throw.targetDeclared) {
+    if (out->throw.target_declared) {
         out->drop_ball = 0;
-        out->pitch.powerDeclared = 0;
+        out->pitch.power_declared = 0;
     } else if (out->drop_ball) {
-        out->pitch.powerDeclared = 0;
+        out->pitch.power_declared = 0;
     }
 }
 
@@ -356,19 +356,19 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
         match->catching.controlled_move_target_for = match->catching.controlled_fielder;
         break;
     case INTENT_PITCH_POWER:
-        out->pitch.powerDeclared = 1;
+        out->pitch.power_declared = 1;
         out->pitch.power = message->as.pitch_power.power;
         break;
     case INTENT_PITCH_AIM:
-        out->pitch.aimDeclared = 1;
+        out->pitch.aim_declared = 1;
         out->pitch.direction = message->as.pitch_aim.direction;
         break;
     case INTENT_THROW_TARGET:
-        out->throw.targetDeclared = 1;
+        out->throw.target_declared = 1;
         out->throw.target = message->as.throw_target.base;
         break;
     case INTENT_THROW_POWER:
-        out->throw.powerDeclared = 1;
+        out->throw.power_declared = 1;
         out->throw.power = message->as.throw_power.power;
         break;
     case INTENT_NONE:

@@ -82,14 +82,14 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 
                 // 6. Restore Physical Locations for field runners
                 if (match->players[j].batting.presence.base_id == BASE_FIRST) {
-                    match->players[j].body.location.x = field_positions->firstBaseRun.x;
-                    match->players[j].body.location.z = field_positions->firstBaseRun.z;
+                    match->players[j].body.location.x = field_positions->first_base_run.x;
+                    match->players[j].body.location.z = field_positions->first_base_run.z;
                 } else if (match->players[j].batting.presence.base_id == BASE_SECOND) {
-                    match->players[j].body.location.x = field_positions->secondBaseRun.x;
-                    match->players[j].body.location.z = field_positions->secondBaseRun.z;
+                    match->players[j].body.location.x = field_positions->second_base_run.x;
+                    match->players[j].body.location.z = field_positions->second_base_run.z;
                 } else if (match->players[j].batting.presence.base_id == BASE_THIRD) {
-                    match->players[j].body.location.x = field_positions->thirdBaseRun.x;
-                    match->players[j].body.location.z = field_positions->thirdBaseRun.z;
+                    match->players[j].body.location.x = field_positions->third_base_run.x;
+                    match->players[j].body.location.z = field_positions->third_base_run.z;
                 }
             } else {
                 // Restore OUT/SCORED/WOUNDED so enforcement does not start their exit again.
@@ -157,12 +157,12 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
         float radiusFix = (float)(1.0f + fabs(5.5f - battingTeamPlacement[i]) / 20.0f);
 
         match->players[i].body.home_location.x =
-            (float)(field_positions->pitchPlate.x +
+            (float)(field_positions->pitch_plate.x +
                     (HOME_RADIUS)*radiusFix *
                         cos(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
         match->players[i].body.home_location.y = BALL_HEIGHT_WITH_PLAYER;
         match->players[i].body.home_location.z =
-            (float)(field_positions->pitchPlate.z +
+            (float)(field_positions->pitch_plate.z +
                     (HOME_RADIUS)*radiusFix *
                         sin(PI - (battingTeamPlacement[i] + 1) * PI / (PLAYERS_IN_TEAM + JOKER_COUNT + 1)));
         match->players[i].body.location.x = match->players[i].body.home_location.x;
@@ -183,31 +183,31 @@ static void initialize_spatial_player_information(MatchSession* match, const Fie
             fieldPosition = &(field_positions->pitcher);
             break;
         case 1:
-            fieldPosition = &(field_positions->firstBase);
+            fieldPosition = &(field_positions->first_base);
             break;
         case 2:
-            fieldPosition = &(field_positions->secondBase);
+            fieldPosition = &(field_positions->second_base);
             break;
         case 3:
-            fieldPosition = &(field_positions->thirdBase);
+            fieldPosition = &(field_positions->third_base);
             break;
         case 4:
-            fieldPosition = &(field_positions->bottomRightCatcher);
+            fieldPosition = &(field_positions->bottom_right_catcher);
             break;
         case 5:
-            fieldPosition = &(field_positions->middleLeftCatcher);
+            fieldPosition = &(field_positions->middle_left_catcher);
             break;
         case 6:
-            fieldPosition = &(field_positions->middleRightCatcher);
+            fieldPosition = &(field_positions->middle_right_catcher);
             break;
         case 7:
-            fieldPosition = &(field_positions->backLeftCatcher);
+            fieldPosition = &(field_positions->back_left_catcher);
             break;
         case 8:
-            fieldPosition = &(field_positions->backRightCatcher);
+            fieldPosition = &(field_positions->back_right_catcher);
             break;
         default:
-            fieldPosition = &(field_positions->pitchPlate);
+            fieldPosition = &(field_positions->pitch_plate);
             break;
         }
         match->players[i].body.home_location.x = fieldPosition->x;
@@ -386,7 +386,7 @@ static void reset_flow_state(MatchSession* match)
     // The catching action in progress belongs to initialize_action_info, and the ball's flight to
     // initialize_ball_info (both in reset_physical_world, which every recipe runs before this) — one
     // owner per field.
-    // NOTE: client-local input (run_press_window, pitchWidget — in ClientInputState) is deliberately
+    // NOTE: client-local input (run_press_window, pitch_widget — in ClientInputState) is deliberately
     // NOT reset here. A physical-world reset must not reach into the client-local input world, the same
     // separation as the reset-recipe rule: physical resets never touch referee state. Client input is initialized once
     // and self-clears during play (each gesture's own guards disengage when its preconditions fail), so a foul/inning
@@ -412,8 +412,8 @@ static void setup_homerun_physical_state(
             match->players[batterIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
             match->players[batterIndex].batting.number = hrcs->pair_index + 1;
             // move player to default batter ready position
-            target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
-            target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.x = (float)(field_positions->pitch_plate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
+            target.z = (float)(field_positions->pitch_plate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             // On a foul/out-of-bounds reset the same batter resumes, so start them already at
             // the plate — move_to_target then settles them straight into the ready stance
             // instead of walking them in from the reset position.
@@ -429,9 +429,9 @@ static void setup_homerun_physical_state(
             match->players[runnerIndex].batting.presence.base_id = BASE_THIRD;
             match->players[runnerIndex].batting.presence.state = PLAYER_STATE_ON_BASE;
 
-            match->players[runnerIndex].body.location.x = field_positions->thirdBaseRun.x;
-            match->players[runnerIndex].body.location.y = field_positions->thirdBaseRun.y;
-            match->players[runnerIndex].body.location.z = field_positions->thirdBaseRun.z;
+            match->players[runnerIndex].body.location.x = field_positions->third_base_run.x;
+            match->players[runnerIndex].body.location.y = field_positions->third_base_run.y;
+            match->players[runnerIndex].body.location.z = field_positions->third_base_run.z;
             match->players[runnerIndex].body.previous_location.x = match->players[runnerIndex].body.location.x;
             match->players[runnerIndex].body.previous_location.y = match->players[runnerIndex].body.location.y;
             match->players[runnerIndex].body.previous_location.z = match->players[runnerIndex].body.location.z;
@@ -445,9 +445,9 @@ static void setup_homerun_physical_state(
             int index = scoreboard->teams[battingTeamIndex].batter_runner_indices[1][i];
             if (index != -1) {
                 match->players[index].body.location.x =
-                    field_positions->thirdBaseRun.x - 2.0f - (i - (hrcs->pair_index + 1)) * 1.5f;
-                match->players[index].body.location.y = field_positions->thirdBaseRun.y;
-                match->players[index].body.location.z = field_positions->thirdBaseRun.z;
+                    field_positions->third_base_run.x - 2.0f - (i - (hrcs->pair_index + 1)) * 1.5f;
+                match->players[index].body.location.y = field_positions->third_base_run.y;
+                match->players[index].body.location.z = field_positions->third_base_run.z;
                 match->players[index].body.previous_location.x = match->players[index].body.location.x;
                 match->players[index].body.previous_location.y = match->players[index].body.location.y;
                 match->players[index].body.previous_location.z = match->players[index].body.location.z;

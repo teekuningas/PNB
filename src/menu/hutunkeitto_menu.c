@@ -170,7 +170,7 @@ MenuStage update_hutunkeitto_menu(
                 } else {
                     state->playsFirst = 1;
                 }
-                gameSetup->playsFirst = state->playsFirst;
+                gameSetup->plays_first = state->playsFirst;
                 return MENU_STAGE_GO_TO_GAME;
             }
             if (keyStates->released[control][KEY_RIGHT]) {
@@ -187,7 +187,7 @@ MenuStage update_hutunkeitto_menu(
                 state->playsFirst = 1;
             else
                 state->playsFirst = 0;
-            gameSetup->playsFirst = state->playsFirst;
+            gameSetup->plays_first = state->playsFirst;
             return MENU_STAGE_GO_TO_GAME;
         }
     }

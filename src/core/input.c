@@ -16,9 +16,9 @@ int init_input(StateInfo* stateInfo)
     int i, j;
     for (j = 0; j < 3; j++) {
         for (i = 0; i < KEY_COUNT; i++) {
-            stateInfo->keyStates->released[j][i] = 0;
-            stateInfo->keyStates->pressed[j][i] = 0;
-            stateInfo->keyStates->down[j][i] = 0;
+            stateInfo->key_states->released[j][i] = 0;
+            stateInfo->key_states->pressed[j][i] = 0;
+            stateInfo->key_states->down[j][i] = 0;
             buttonsJustReleased[j][i] = 0;
         }
     }
@@ -33,7 +33,7 @@ int init_input(StateInfo* stateInfo)
 // not a concept.
 static void keyCheck(StateInfo* stateInfo, GLFWwindow* window, int glfwKey, int keyCode, int index)
 {
-    KeyStates* keys = stateInfo->keyStates;
+    KeyStates* keys = stateInfo->key_states;
 
     if (glfwGetKey(window, glfwKey) == GLFW_PRESS) {
         // The press edge is the transition, so it is derived from `down` NOT yet being set — the
@@ -55,7 +55,7 @@ static void keyCheck(StateInfo* stateInfo, GLFWwindow* window, int glfwKey, int 
 
 void update_input(StateInfo* stateInfo, GLFWwindow* window)
 {
-    // here we just check them all and name the keys to associate with keycodes used in keyStates.
+    // here we just check them all and name the keys to associate with keycodes used in key_states.
     keyCheck(stateInfo, window, GLFW_KEY_RIGHT_CONTROL, KEY_PLUS, 0);
     keyCheck(stateInfo, window, GLFW_KEY_RIGHT_ALT, KEY_MINUS, 0);
     keyCheck(stateInfo, window, GLFW_KEY_RIGHT_SHIFT, KEY_1, 0);

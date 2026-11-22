@@ -64,9 +64,9 @@ static void ingest_and_actualize(ScenarioContext* ctx)
 {
     {
         IngestedCommands ingested =
-            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels);
         actualize(
-            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+            ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ingested, &ctx->state->play_sound_effect
         );
     }
 }
@@ -292,7 +292,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
     m->catching.ball_target_point.z = 31.0f;
     fielding->throw_recovery_ticks = 1;
 
-    reset_for_foul_play(m, ctx->state->fieldPositions, ctx->state->rules);
+    reset_for_foul_play(m, ctx->state->field_positions, ctx->state->rules);
 
     ASSERT_EQ(
         0, m->catching.controlled_move_target_active,
@@ -309,7 +309,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
     m->catching.controlled_move_target_active = 1;
     m->catching.ball_target_point.z = 12.0f;
     fielding->throw_recovery_ticks = 1;
-    reset_for_new_half_inning(m, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
+    reset_for_new_half_inning(m, ctx->state->field_positions, ctx->state->team_data, ctx->state->rules);
     ASSERT_EQ(0, m->catching.controlled_move_target_active, "a half-inning reset leaves no destination");
     ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.z, 1e-6f, "a half-inning reset leaves no prediction");
     ASSERT_EQ(0, fielding->throw_recovery_ticks, "a half-inning cancels physical throw recovery");
@@ -319,7 +319,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
     m->catching.ball_target_point.z = 12.0f;
     fielding->throw_recovery_ticks = 1;
     reset_for_next_pair(
-        m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homerun_contest
+        m, ctx->state->field_positions, &ctx->state->rules->scoreboard, &ctx->state->rules->homerun_contest
     );
     ASSERT_EQ(0, m->catching.controlled_move_target_active, "a contest-pair reset leaves no destination");
     ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.z, 1e-6f, "a contest-pair reset leaves no prediction");

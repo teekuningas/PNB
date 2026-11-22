@@ -76,7 +76,7 @@ int test_control_stage_precedes_execution(void)
     ASSERT_EQ(1, match->ball.moving, "the dropped ball must be in motion");
     // Guard against passing for the wrong reason: a PITCH release also sets released_by to the
     // pitcher (12), empties the hand and starts the ball moving. It cannot happen on this frame — the
-    // AI's pre-pitch pause needs batterReadyTimer > AI_PITCH_DELAY — but pin it anyway, so a future
+    // AI's pre-pitch pause needs batter_ready_timer > AI_PITCH_DELAY — but pin it anyway, so a future
     // change that lets a pitch fire here turns this red instead of quietly proving nothing.
     ASSERT_EQ(
         0, match->ball.pitch_in_flight,

@@ -15,12 +15,12 @@ int test_fixture_super_inning_setup(void)
     GameSetup setup;
     fixture_create_super_inning(&setup, 0, 1, 0, 1);
 
-    ASSERT_EQ(GAME_MODE_SUPER_INNING, setup.gameMode, "Should be super inning mode");
+    ASSERT_EQ(GAME_MODE_SUPER_INNING, setup.game_mode, "Should be super inning mode");
     ASSERT_EQ(0, setup.team1, "Team 1 should be 0");
     ASSERT_EQ(1, setup.team2, "Team 2 should be 1");
     ASSERT_EQ(0, setup.team1_control, "Team 1 should be player 1");
     ASSERT_EQ(1, setup.team2_control, "Team 2 should be player 2");
-    ASSERT_EQ(4, setup.halfInningsInPeriod, "Should have 4 half-innings per period (2 full innings)");
+    ASSERT_EQ(4, setup.half_innings_in_period, "Should have 4 half-innings per period (2 full innings)");
 
     return TEST_PASSED;
 }
@@ -30,7 +30,7 @@ int test_fixture_homerun_contest_setup(void)
     GameSetup setup;
     fixture_create_homerun_contest(&setup, 0, 1, 0, 1);
 
-    ASSERT_EQ(GAME_MODE_HOMERUN_CONTEST, setup.gameMode, "Should be homerun contest mode");
+    ASSERT_EQ(GAME_MODE_HOMERUN_CONTEST, setup.game_mode, "Should be homerun contest mode");
     ASSERT_EQ(5, setup.homerun_choice_count, "Should have 5 batter/runner pairs (first round)");
 
     // Check that batters and runners are set correctly
@@ -48,8 +48,8 @@ int test_fixture_cup_final_super_inning_setup(void)
     GameSetup setup;
     fixture_create_cup_final_super_inning(&setup, 0, 1, 0, 1);
 
-    ASSERT_EQ(GAME_MODE_SUPER_INNING, setup.gameMode, "Should be super inning mode");
-    ASSERT_EQ(4, setup.halfInningsInPeriod, "Should have 4 half-innings per period");
+    ASSERT_EQ(GAME_MODE_SUPER_INNING, setup.game_mode, "Should be super inning mode");
+    ASSERT_EQ(4, setup.half_innings_in_period, "Should have 4 half-innings per period");
 
     return TEST_PASSED;
 }

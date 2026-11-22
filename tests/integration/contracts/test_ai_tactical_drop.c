@@ -68,7 +68,7 @@ int test_ai_declares_and_executes_tactical_drop(void)
     // human-controlled here, so no batting AI runs.) This is the function the migration changed.
     AIControllerState ai;
     init_ai_controller(&ai, 0xD0D0D0u);
-    ai_update(match, ctx->state->rules, ctx->state->fieldPositions, &ai, &ctx->state->channels);
+    ai_update(match, ctx->state->rules, ctx->state->field_positions, &ai, &ctx->state->channels);
 
     ASSERT_EQ(
         1, ctx->state->channels.catching.count,
@@ -83,8 +83,8 @@ int test_ai_declares_and_executes_tactical_drop(void)
     // The gate permits it, the engine actualizes it, and the ball leaves the hand.
     {
         IngestedCommands ingested =
-            ingest_intents(match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
-        actualize(match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect);
+            ingest_intents(match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels);
+        actualize(match, ctx->state->rules, ctx->state->field_positions, &ingested, &ctx->state->play_sound_effect);
     }
 
     ASSERT_EQ(-1, match->ball.holder, "drop must release the ball (ball.holder → -1)");

@@ -70,7 +70,7 @@ int test_get_ball_at_base_index(void)
     memset(&fp, 0, sizeof(FieldPositions));
 
     state.match = &game;
-    state.fieldPositions = &fp;
+    state.field_positions = &fp;
 
     // No one has ball
     game.ball.holder = -1;
@@ -80,7 +80,7 @@ int test_get_ball_at_base_index(void)
     game.ball.holder = 14;
 
     // Set up pitch plate and home radius check
-    fp.pitchPlate = (Vector3D){0.0f, 0.0f, 0.0f};
+    fp.pitch_plate = (Vector3D){0.0f, 0.0f, 0.0f};
     game.ball.location = (Vector3D){0.0f, 0.0f, 1.0f}; // Inside home area
 
     // Home base uses HOME_LINE_Z check (usually 0 in game coordinates, assuming 0 here)
@@ -88,18 +88,18 @@ int test_get_ball_at_base_index(void)
     ASSERT_EQ(0, get_ball_at_base_index(&game, &fp), "Returns 0 for Home Base");
 
     // Test first base
-    fp.firstBase = (Vector3D){-20.0f, 0.0f, -20.0f};
-    game.ball.location = fp.firstBase;
+    fp.first_base = (Vector3D){-20.0f, 0.0f, -20.0f};
+    game.ball.location = fp.first_base;
     ASSERT_EQ(1, get_ball_at_base_index(&game, &fp), "Returns 1 for First Base");
 
     // Test second base
-    fp.secondBase = (Vector3D){20.0f, 0.0f, -40.0f};
-    game.ball.location = fp.secondBase;
+    fp.second_base = (Vector3D){20.0f, 0.0f, -40.0f};
+    game.ball.location = fp.second_base;
     ASSERT_EQ(2, get_ball_at_base_index(&game, &fp), "Returns 2 for Second Base");
 
     // Test third base
-    fp.thirdBase = (Vector3D){30.0f, 0.0f, -20.0f};
-    game.ball.location = fp.thirdBase;
+    fp.third_base = (Vector3D){30.0f, 0.0f, -20.0f};
+    game.ball.location = fp.third_base;
     ASSERT_EQ(3, get_ball_at_base_index(&game, &fp), "Returns 3 for Third Base");
 
     return TEST_PASSED;

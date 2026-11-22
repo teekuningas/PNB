@@ -117,7 +117,7 @@ int test_batting_motion_and_recovery_follow_physical_time(void)
                     player_view_after_tick(&view, &(TickFacts){0});
             }
             update_batting(
-                m, &ctx->state->rules->referee, ctx->state->fieldPositions, 0, 0.0f, 0, &ctx->state->playSoundEffect
+                m, &ctx->state->rules->referee, ctx->state->field_positions, 0, 0.0f, 0, &ctx->state->play_sound_effect
             );
             ASSERT_EQ(next_tick, m->at_bat.flight_frame, "only the physical step advances the swing clock");
             ASSERT_EQ(next_tick > contact - 60, m->at_bat.swing_started, "preparation starts strictly inside 60 ticks");

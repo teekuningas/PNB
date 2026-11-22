@@ -147,14 +147,14 @@ void update_pitch_actualization(
 
     // The gate has settled what these may do: a power only when nothing else is in progress, an aim only
     // while a pitch is winding up or begins this tick.
-    if (declared->powerDeclared) {
+    if (declared->power_declared) {
         begin_windup(match, declared->power);
     }
-    if (declared->aimDeclared) {
+    if (declared->aim_declared) {
         action->as.pitch.aimed = 1;
         action->as.pitch.direction = declared->direction;
     }
-    if (declared->powerDeclared) return; // never begin and resolve in the same frame — the windup is at least one tick
+    if (declared->power_declared) return; // never begin and resolve in the same frame — the windup is at least one tick
 
     if (action->kind == CATCHING_ACTION_PITCHING) {
         action->timer++;

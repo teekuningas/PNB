@@ -78,7 +78,7 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
             // New cup
             cupMenuState->screen = CUP_MENU_SCREEN_NEW_CUP;
             cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
-            cupMenuState->new_cup.rem = stateInfo->numTeams;
+            cupMenuState->new_cup.rem = stateInfo->num_teams;
             cupMenuState->new_cup.pointer = 0;
         } else if (cupMenuState->initial.pointer == (1 + menu_offset)) {
             // Load cup
@@ -216,7 +216,7 @@ static MenuStage updateScreen_NewCup(
         if (keyStates->released[0][KEY_1]) {
             cupMenuState->new_cup.new_cup_stage = NEW_CUP_STAGE_TEAM_SELECTION;
             cupMenuState->new_cup.pointer = 0;
-            cupMenuState->new_cup.rem = stateInfo->numTeams;
+            cupMenuState->new_cup.rem = stateInfo->num_teams;
         }
     } else if (cupMenuState->new_cup.new_cup_stage == NEW_CUP_STAGE_INNINGS) {
         if (keyStates->released[0][KEY_DOWN])
@@ -235,24 +235,24 @@ static MenuStage updateScreen_NewCup(
                 innings_per_period = 8;
 
             // Generate initial team IDs (0 to numTeams-1)
-            TeamID* initial_team_ids = (TeamID*)malloc(sizeof(TeamID) * stateInfo->numTeams);
+            TeamID* initial_team_ids = (TeamID*)malloc(sizeof(TeamID) * stateInfo->num_teams);
             if (initial_team_ids == NULL) {
                 perror("Failed to allocate initial_team_ids");
                 return MENU_STAGE_CUP;
             }
-            for (int i = 0; i < stateInfo->numTeams; ++i) {
+            for (int i = 0; i < stateInfo->num_teams; ++i) {
                 initial_team_ids[i] = i;
             }
 
             // Randomize tournament bracket with seed from parent
-            cup_shuffle_teams(initial_team_ids, stateInfo->numTeams, *rng_seed);
+            cup_shuffle_teams(initial_team_ids, stateInfo->num_teams, *rng_seed);
 
             // Create the new Cup with saved selections
             if (stateInfo->cup != NULL) {
                 cup_destroy(stateInfo->cup);
             }
             stateInfo->cup = cup_create(
-                stateInfo->numTeams, cupMenuState->new_cup.wins_to_advance, cupMenuState->new_cup.team_selection,
+                stateInfo->num_teams, cupMenuState->new_cup.wins_to_advance, cupMenuState->new_cup.team_selection,
                 innings_per_period, initial_team_ids
             );
 
@@ -401,7 +401,7 @@ static void drawScreen_Ongoing(
         draw_text_2d("Quit", center_x, menu_start_y + 2 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
 
         char buffer[100];
-        sprintf(buffer, "%s has won the cup", stateInfo->teamData[stateInfo->cup->matches[0].winner_id].name);
+        sprintf(buffer, "%s has won the cup", stateInfo->team_data[stateInfo->cup->matches[0].winner_id].name);
         draw_text_2d(buffer, center_x, menu_start_y + 4 * menu_spacing, menu_fontsize, TEXT_ALIGN_CENTER, rs);
     } else {
         // Cup is in progress, show normal menu
@@ -434,9 +434,9 @@ static void drawScreen_NewCup(
 
     if (newCupState->new_cup_stage == NEW_CUP_STAGE_TEAM_SELECTION) {
         draw_text_2d("Select team", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-        for (int i = 0; i < stateInfo->numTeams; i++) {
+        for (int i = 0; i < stateInfo->num_teams; i++) {
             draw_text_2d(
-                stateInfo->teamData[i].name, center_x, menu_start_y + i * menu_spacing, menu_fontsize,
+                stateInfo->team_data[i].name, center_x, menu_start_y + i * menu_spacing, menu_fontsize,
                 TEXT_ALIGN_CENTER, rs
             );
         }
@@ -520,7 +520,7 @@ static void drawScreen_ViewTree(
             float team_name_x = text_center_x - slot_width * 0.15f;
             float text_y = text_center_y - text_size / 2.0f;
             draw_text_2d(
-                stateInfo->teamData[match->team_a_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs
+                stateInfo->team_data[match->team_a_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs
             );
             char wins_str[8];
             sprintf(wins_str, "%d", match->wins_a);
@@ -533,7 +533,7 @@ static void drawScreen_ViewTree(
             float team_name_x = text_center_x - slot_width * 0.15f;
             float text_y = text_center_y - text_size / 2.0f;
             draw_text_2d(
-                stateInfo->teamData[match->team_b_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs
+                stateInfo->team_data[match->team_b_id].name, team_name_x, text_y, text_size, TEXT_ALIGN_CENTER, rs
             );
             char wins_str[8];
             sprintf(wins_str, "%d", match->wins_b);
@@ -572,12 +572,12 @@ static void drawScreen_ViewSchedule(
         if (match->team_a_id != -1 && match->team_b_id != -1) {
             float current_y = list_start_y + i * list_spacing;
             draw_text_2d(
-                stateInfo->teamData[match->team_a_id].name, center_x - team_name_offset, current_y, text_fontsize,
+                stateInfo->team_data[match->team_a_id].name, center_x - team_name_offset, current_y, text_fontsize,
                 TEXT_ALIGN_CENTER, rs
             );
             draw_text_2d("-", center_x, current_y, text_fontsize, TEXT_ALIGN_CENTER, rs);
             draw_text_2d(
-                stateInfo->teamData[match->team_b_id].name, center_x + team_name_offset, current_y, text_fontsize,
+                stateInfo->team_data[match->team_b_id].name, center_x + team_name_offset, current_y, text_fontsize,
                 TEXT_ALIGN_CENTER, rs
             );
         }
@@ -618,7 +618,7 @@ static void drawScreen_LoadOrSaveCup(
 
         if (slot_info->exists) {
             // Draw Team Name
-            char* team_name = stateInfo->teamData[slot_info->user_team_id].name;
+            char* team_name = stateInfo->team_data[slot_info->user_team_id].name;
             draw_text_2d(team_name, center_x, current_y, main_fontsize, TEXT_ALIGN_CENTER, rs);
 
             // --- Draw Details ---
@@ -628,7 +628,7 @@ static void drawScreen_LoadOrSaveCup(
             } else if (slot_info->opponent_team_id != -1) {
                 sprintf(
                     details, "Day %d - Next: %s", slot_info->current_day + 1,
-                    stateInfo->teamData[slot_info->opponent_team_id].name
+                    stateInfo->team_data[slot_info->opponent_team_id].name
                 );
             } else {
                 sprintf(details, "Day %d - In progress", slot_info->current_day + 1);

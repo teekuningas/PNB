@@ -21,33 +21,33 @@ StateInfo* setup_test_state()
     StateInfo* state = malloc(sizeof(StateInfo));
     memset(state, 0, sizeof(StateInfo));
 
-    state->teamData = malloc(sizeof(TeamData) * 2);
-    memset(state->teamData, 0, sizeof(TeamData) * 2);
+    state->team_data = malloc(sizeof(TeamData) * 2);
+    memset(state->team_data, 0, sizeof(TeamData) * 2);
 
     for (int i = 0; i < 2; ++i) {
         // Zeroed like everything else here: speed and power are read from the roster when a player is set
         // up, and a malloc'd roster holds whatever the allocator left — zero on a fresh page, garbage under
         // a sanitizer, where every runner came out too slow to move.
-        state->teamData[i].players = calloc(12, sizeof(PlayerData));
+        state->team_data[i].players = calloc(12, sizeof(PlayerData));
         for (int j = 0; j < 12; ++j) {
-            state->teamData[i].players[j].name = malloc(sizeof(char) * 10);
-            sprintf(state->teamData[i].players[j].name, "Player %d", j + 1);
+            state->team_data[i].players[j].name = malloc(sizeof(char) * 10);
+            sprintf(state->team_data[i].players[j].name, "Player %d", j + 1);
         }
     }
 
-    state->fieldPositions = malloc(sizeof(FieldPositions));
-    field_init_positions(state->fieldPositions);
+    state->field_positions = malloc(sizeof(FieldPositions));
+    field_init_positions(state->field_positions);
 
     state->match = malloc(sizeof(MatchSession));
     memset(state->match, 0, sizeof(MatchSession));
 
     // Client-local input memory — a sibling of match (NOT synced; see ClientInputState).
-    state->clientInput = malloc(sizeof(ClientInputState));
-    memset(state->clientInput, 0, sizeof(ClientInputState));
+    state->client_input = malloc(sizeof(ClientInputState));
+    memset(state->client_input, 0, sizeof(ClientInputState));
 
     // Controller-private AI memory — the mirror sibling (NOT synced; see AIControllerState).
-    state->aiController = malloc(sizeof(AIControllerState));
-    init_ai_controller(state->aiController, 0);
+    state->ai_controller = malloc(sizeof(AIControllerState));
+    init_ai_controller(state->ai_controller, 0);
 
     state->rules = malloc(sizeof(GameRulesState));
     memset(state->rules, 0, sizeof(GameRulesState));
@@ -60,15 +60,15 @@ StateInfo* setup_test_state()
     referee_reset_for_new_inning(&state->rules->referee, &state->rules->half_inning, &state->rules->between_pitch);
 
     // The two members the reduced pipeline never needed, and so never had: `simulate_frames` skips
-    // action_invocations entirely, and consolidation only reaches gameConclusion at a period end. A test
+    // action_invocations entirely, and consolidation only reaches game_conclusion at a period end. A test
     // that drives the REAL update_game_frame reaches both on frame one — a human-controlled team makes
-    // action_invocations read keyStates — so leaving them NULL made the production entry point
+    // action_invocations read key_states — so leaving them NULL made the production entry point
     // uncallable from this tier. Both are pointer-free structs; zeroed KeyStates means "no key touched".
-    state->keyStates = malloc(sizeof(KeyStates));
-    memset(state->keyStates, 0, sizeof(KeyStates));
+    state->key_states = malloc(sizeof(KeyStates));
+    memset(state->key_states, 0, sizeof(KeyStates));
 
-    state->gameConclusion = malloc(sizeof(GameConclusion));
-    memset(state->gameConclusion, 0, sizeof(GameConclusion));
+    state->game_conclusion = malloc(sizeof(GameConclusion));
+    memset(state->game_conclusion, 0, sizeof(GameConclusion));
 
     // Initialize indices to -1
     for (int i = 0; i < 4; i++) {
@@ -86,18 +86,18 @@ void cleanup_test_state(StateInfo* state)
 {
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 12; ++j) {
-            free(state->teamData[i].players[j].name);
+            free(state->team_data[i].players[j].name);
         }
-        free(state->teamData[i].players);
+        free(state->team_data[i].players);
     }
     free(state->rules);
-    free(state->keyStates);
-    free(state->gameConclusion);
-    free(state->clientInput);
-    free(state->aiController);
+    free(state->key_states);
+    free(state->game_conclusion);
+    free(state->client_input);
+    free(state->ai_controller);
     free(state->match);
-    free(state->fieldPositions);
-    free(state->teamData);
+    free(state->field_positions);
+    free(state->team_data);
     free(state);
 }
 

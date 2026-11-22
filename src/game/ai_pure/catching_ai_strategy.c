@@ -102,7 +102,7 @@ BaseID determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, i
     BaseID leadBase = BASE_NONE;
     int i;
     for (i = 0; i < runnerCount; i++) {
-        if (runners[i].isOnBase == 0 && runners[i].takingFreeWalk == 0) {
+        if (runners[i].is_on_base == 0 && runners[i].taking_free_walk == 0) {
             if (base_cmp(runners[i].base, leadBase) > 0) {
                 if (runners[i].leading == 0) {
                     leadBase = runners[i].base;

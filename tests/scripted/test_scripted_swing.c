@@ -76,17 +76,17 @@ int test_scripted_swing_power_meter_arms_on_the_windup(void)
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     scripted_tick(g);
     ASSERT_EQ(
-        (int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode,
+        (int)WIDGET_PING_PONG, (int)ci->swing_widget.meter.mode,
         "the power meter must arm itself on the windup, with no key pressed"
     );
-    ASSERT(ci->swingWidget.meter.dir != 0, "an armed power meter must be sweeping");
+    ASSERT(ci->swing_widget.meter.dir != 0, "an armed power meter must be sweeping");
 
     // Let it sweep somewhere off zero, then press: the level under the marker becomes the power.
     scripted_run(g, 9);
-    int level = ci->swingWidget.meter.counter;
+    int level = ci->swing_widget.meter.counter;
     ASSERT(level > 0, "the power meter must have travelled before it is sampled");
     scripted_tap(g, HUMAN_PAD, KEY_2);
 
@@ -98,7 +98,7 @@ int test_scripted_swing_power_meter_arms_on_the_windup(void)
     );
     // And the client keeps its own copy rather than reading the engine's back.
     ASSERT(
-        fabsf(ci->swingWidget.power - m->at_bat.swing.power) < 0.0001f,
+        fabsf(ci->swing_widget.power - m->at_bat.swing.power) < 0.0001f,
         "the widget must remember what it declared — it never asks the engine"
     );
     scripted_destroy(g);
@@ -125,10 +125,11 @@ int test_scripted_swing_elevation_meter_fits_inside_the_flight(void)
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
     scripted_tick(g);
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
     ASSERT_EQ(
-        (int)WIDGET_DESCENT, (int)ci->swingWidget.meter.mode, "the elevation meter must arm when the ball is in the air"
+        (int)WIDGET_DESCENT, (int)ci->swing_widget.meter.mode,
+        "the elevation meter must arm when the ball is in the air"
     );
     // What this tier can honestly claim: the sweep the client armed fits inside the flight the engine
     // is timing, so the two agree about the same ball without the client ever reading the engine's
@@ -136,15 +137,15 @@ int test_scripted_swing_elevation_meter_fits_inside_the_flight(void)
     // the AI pitcher never throws one, so an assertion about it could not be shown a state it would
     // reject. It is pinned in the unit tier instead, across every pitch height, where it does bind.
     ASSERT(
-        ci->swingWidget.meter.counter_max <= m->at_bat.swing.contact_frame,
+        ci->swing_widget.meter.counter_max <= m->at_bat.swing.contact_frame,
         "the client's elevation sweep must fit inside the flight the engine solved for the same ball"
     );
 
     // Walk the marker down to the sweet spot and press there.
     int guard = 0;
-    while (ci->swingWidget.meter.dir != 0 && guard++ < 400) {
+    while (ci->swing_widget.meter.dir != 0 && guard++ < 400) {
         // The marker's level IS the value it will declare — the bar maps straight to [0,1].
-        float here = (float)ci->swingWidget.meter.counter / (float)ci->swingWidget.meter.counter_max;
+        float here = (float)ci->swing_widget.meter.counter / (float)ci->swing_widget.meter.counter_max;
         if (here <= SWING_VERTICAL_FOCAL) break;
         scripted_tick(g);
     }
@@ -257,13 +258,13 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     scripted_run(g, 8);
     scripted_tap(g, HUMAN_PAD, KEY_2); // the human commits a power
     ASSERT_EQ(1, m->at_bat.swing.power_active, "the power must have been declared to begin with");
-    ASSERT_EQ((int)SWING_BEAT_LOADED, (int)ci->swingWidget.beat, "the gesture must know it has loaded");
+    ASSERT_EQ((int)SWING_BEAT_LOADED, (int)ci->swing_widget.beat, "the gesture must know it has loaded");
     float declared = m->at_bat.swing.power;
 
     // The wire, simulated: the engine has not seen it yet.
@@ -273,17 +274,17 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
     for (int i = 0; i < 20; i++) {
         scripted_tick(g);
         ASSERT(
-            ci->swingWidget.meter.mode != WIDGET_PING_PONG,
+            ci->swing_widget.meter.mode != WIDGET_PING_PONG,
             "a power sweep must not re-arm while the declaration is still in flight"
         );
         ASSERT_EQ(
-            (int)SWING_BEAT_LOADED, (int)ci->swingWidget.beat,
+            (int)SWING_BEAT_LOADED, (int)ci->swing_widget.beat,
             "the gesture's own account of itself must not depend on the engine having received it"
         );
         ASSERT_EQ(0, m->at_bat.swing.power_active, "the widget must not have declared a SECOND power on this ball");
     }
     // And its copy of the value is intact, so the descent it scales is still this batter's.
-    ASSERT(fabsf(ci->swingWidget.power - declared) < 0.0001f, "the widget must still hold the power it declared");
+    ASSERT(fabsf(ci->swing_widget.power - declared) < 0.0001f, "the widget must still hold the power it declared");
 
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
@@ -320,7 +321,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     ASSERT_NOT_NULL(g, "scripted_create returned NULL");
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     // Sit out the first pitch entirely — declare nothing, and let it resolve. That is what leaves a
@@ -346,7 +347,7 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
                 "the batter must be able to declare during a windup that follows a resolved pitch"
             );
             ASSERT_EQ(
-                (int)WIDGET_PING_PONG, (int)ci->swingWidget.meter.mode,
+                (int)WIDGET_PING_PONG, (int)ci->swing_widget.meter.mode,
                 "the power meter must arm on EVERY windup, not only the half-inning's first"
             );
             armed = 1;
@@ -392,7 +393,7 @@ int test_scripted_swing_elevation_marker_always_starts_at_the_extreme(void)
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     // Press almost immediately, while the sweep is still near the bottom: a deliberately weak swing.
@@ -403,27 +404,27 @@ int test_scripted_swing_elevation_marker_always_starts_at_the_extreme(void)
 
     ASSERT(tick_until_airborne(g, 900), "the pitch never left the pitcher's hand");
     scripted_tick(g);
-    ASSERT_EQ((int)WIDGET_DESCENT, (int)ci->swingWidget.meter.mode, "the elevation meter must arm");
+    ASSERT_EQ((int)WIDGET_DESCENT, (int)ci->swing_widget.meter.mode, "the elevation meter must arm");
 
     // The marker is at the top of the bar — not at the top of some power-dependent sub-range.
     ASSERT_EQ(
-        ci->swingWidget.meter.counter_max, ci->swingWidget.meter.counter,
+        ci->swing_widget.meter.counter_max, ci->swing_widget.meter.counter,
         "the descent must begin at the extreme, whatever power was declared"
     );
     ASSERT(
-        fabsf(swing_widget_view(&ci->swingWidget).cursor - 1.0f) < 0.0001f,
+        fabsf(swing_widget_view(&ci->swing_widget).cursor - 1.0f) < 0.0001f,
         "and it must READ as the extreme: the value shown is the value that will be declared"
     );
 
     // Walk it to the sweet spot. The fraction of the sweep this takes is 1 - FOCAL for every power,
     // which is the rhythm the change exists to make learnable.
     int steps = 0;
-    while (ci->swingWidget.meter.dir != 0 && steps < 400) {
-        if (swing_widget_view(&ci->swingWidget).cursor <= SWING_VERTICAL_FOCAL) break;
+    while (ci->swing_widget.meter.dir != 0 && steps < 400) {
+        if (swing_widget_view(&ci->swing_widget).cursor <= SWING_VERTICAL_FOCAL) break;
         scripted_tick(g);
         steps++;
     }
-    float fraction = (float)steps / (float)ci->swingWidget.meter.counter_max;
+    float fraction = (float)steps / (float)ci->swing_widget.meter.counter_max;
     ASSERT(
         fabsf(fraction - (1.0f - SWING_VERTICAL_FOCAL)) < 0.05f,
         "the sweet spot must arrive at the same fraction of the sweep as the pitcher's aim does"
@@ -515,7 +516,7 @@ int test_scripted_swing_a_batter_who_declares_nothing_does_not_swing(void)
  * lasts there is no moving cursor at all, and a bar that could only report a position had to claim
  * one — parking a meaningless marker at the far left, beside the committed mark.
  *
- * Ablate by keying the static mark on `swingWidget.meter.mode == WIDGET_DESCENT` again.
+ * Ablate by keying the static mark on `swing_widget.meter.mode == WIDGET_DESCENT` again.
  */
 int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(void)
 {
@@ -524,14 +525,14 @@ int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(vo
     ASSERT(reach_the_batting_phase(g, 900), "the human batting side never reached the batting phase");
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a windup");
 
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
     MatchSession* m = scripted_match(g);
 
     // While the power sweeps: a live cursor, and nothing committed yet.
     scripted_run(g, 6);
-    SwingMeterView sweeping = swing_widget_view(&ci->swingWidget);
-    ASSERT(sweeping.cursorLive, "the power sweep must be a live cursor");
-    ASSERT(!sweeping.powerCommitted, "nothing is committed before the press");
+    SwingMeterView sweeping = swing_widget_view(&ci->swing_widget);
+    ASSERT(sweeping.cursor_live, "the power sweep must be a live cursor");
+    ASSERT(!sweeping.power_committed, "nothing is committed before the press");
 
     scripted_tap(g, HUMAN_PAD, KEY_2);
     float declared = m->at_bat.swing.power;
@@ -542,10 +543,10 @@ int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(vo
     int waited = 0;
     for (int i = 0; i < 900; i++) {
         if (m->ball.pitch_in_flight) break;
-        SwingMeterView v = swing_widget_view(&ci->swingWidget);
-        ASSERT(v.powerCommitted, "the committed power must stay on the bar for the whole wait");
+        SwingMeterView v = swing_widget_view(&ci->swing_widget);
+        ASSERT(v.power_committed, "the committed power must stay on the bar for the whole wait");
         ASSERT(fabsf(v.power - declared) < 0.0001f, "...and it must stay at the value that was committed, not drift");
-        ASSERT(!v.cursorLive, "there is no moving cursor while the batter waits for the ball");
+        ASSERT(!v.cursor_live, "there is no moving cursor while the batter waits for the ball");
         waited++;
         scripted_tick(g);
     }
@@ -553,9 +554,9 @@ int test_scripted_swing_committed_power_stays_on_the_bar_until_the_ball_is_up(vo
 
     // And once the ball is up, BOTH marks: the committed one still, and the descent moving.
     scripted_tick(g);
-    SwingMeterView falling = swing_widget_view(&ci->swingWidget);
-    ASSERT(falling.powerCommitted, "the committed mark must survive into the second beat");
-    ASSERT(falling.cursorLive, "the elevation marker must be live once the ball is up");
+    SwingMeterView falling = swing_widget_view(&ci->swing_widget);
+    ASSERT(falling.power_committed, "the committed mark must survive into the second beat");
+    ASSERT(falling.cursor_live, "the elevation marker must be live once the ball is up");
     ASSERT(fabsf(falling.power - declared) < 0.0001f, "and still at the committed value");
 
     int failed = scripted_failed(g);

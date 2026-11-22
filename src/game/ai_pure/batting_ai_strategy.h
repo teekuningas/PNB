@@ -5,8 +5,8 @@
 
 typedef struct {
     int style; // 0=bunt, 1=normal, 2=wound
-    int runBaseRunners; // 0 or 1
-    int runBatter; // 0 or 1
+    int run_base_runners; // 0 or 1
+    int run_batter; // 0 or 1
 } BattingStrategy;
 
 BattingStrategy

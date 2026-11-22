@@ -56,8 +56,8 @@ typedef struct {
 } MoveDeclaration;
 
 typedef struct {
-    int isOnBase;
-    int takingFreeWalk;
+    int is_on_base;
+    int taking_free_walk;
     BaseID base;
     int leading;
 } CatchingRunnerInfo;

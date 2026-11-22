@@ -15,7 +15,7 @@
 
 typedef struct {
     char label[SNAPSHOT_LABEL_LEN];
-    int frameCount; // Assuming we can get this, or just sequence ID
+    int frame_count; // Assuming we can get this, or just sequence ID
     MatchSession snapshot;
 } GameSnapshot;
 
@@ -54,7 +54,7 @@ void state_validator_capture_snapshot(StateInfo* state, const char* label)
     // Copy current state to history buffer
     int idx = g_historyHead;
     snprintf(g_history[idx].label, SNAPSHOT_LABEL_LEN, "%s", label);
-    g_history[idx].frameCount = g_sequenceId++;
+    g_history[idx].frame_count = g_sequenceId++;
 
     // Deep copy the local game info
     // Note: Strings (names) are pointers, but they usually point to static data or managed resources.
@@ -304,7 +304,7 @@ void state_validator_dump(StateInfo* state, const char* reason)
 
     // Current State
     fprintf(f, "  \"currentState\": {\n");
-    print_game_json(f, game, rules, state->fieldPositions, 4);
+    print_game_json(f, game, rules, state->field_positions, 4);
     fprintf(f, "\n  },\n");
 
     // History
@@ -314,10 +314,10 @@ void state_validator_dump(StateInfo* state, const char* reason)
     for (int i = 0; i < g_historyCount; i++) {
         int idx = (startIdx + i) % HISTORY_SIZE;
         fprintf(f, "    {\n");
-        fprintf(f, "      \"seq\": %d,\n", g_history[idx].frameCount);
+        fprintf(f, "      \"seq\": %d,\n", g_history[idx].frame_count);
         fprintf(f, "      \"label\": \"%s\",\n", g_history[idx].label);
         fprintf(f, "      \"snapshot\": {\n");
-        print_game_json(f, &g_history[idx].snapshot, NULL, state->fieldPositions, 8); // No global info for snapshots
+        print_game_json(f, &g_history[idx].snapshot, NULL, state->field_positions, 8); // No global info for snapshots
         fprintf(f, "\n      }\n");
         fprintf(f, "    }%s\n", (i < g_historyCount - 1) ? "," : "");
     }

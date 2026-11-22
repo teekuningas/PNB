@@ -57,9 +57,9 @@ static void tick(ScenarioContext* ctx)
 {
     {
         IngestedCommands ingested =
-            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ctx->state->channels);
+            ingest_intents(ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ctx->state->channels);
         actualize(
-            ctx->state->match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect
+            ctx->state->match, ctx->state->rules, ctx->state->field_positions, &ingested, &ctx->state->play_sound_effect
         );
     }
 }
@@ -254,7 +254,7 @@ static int check_throw_recovery(int animation_profile)
     } else if (animation_profile == 4) {
         m->ball.location = body->location;
         m->ball.flight_has_hit_ground = 1;
-        check_if_ball_can_be_caught(m, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
+        check_if_ball_can_be_caught(m, ctx->state->field_positions, &ctx->state->play_sound_effect);
         ASSERT_EQ(15, m->ball.holder, "the recovering thrower can catch a ball after it has bounced");
         TickFacts facts = {0};
         facts.enforced_players[15].activity = m->players[15].events;
@@ -278,7 +278,7 @@ static int check_throw_recovery(int animation_profile)
         ASSERT_EQ(0, activity->moving, "ACTUALIZE cannot move the recovering thrower, even on the last tick");
         // Automatic home-return must also stay blocked through this tick's body step.
         m->catching.controlled_fielder = -1;
-        simulate(m, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect);
+        simulate(m, ctx->state->field_positions, &ctx->state->rules->referee, &ctx->state->play_sound_effect);
         ASSERT_EQ(tick_index < 41, fielding->throw_recovery_ticks != 0, "recovery lasts exactly 42 SIMULATE steps");
         ASSERT_FLOAT_EQ(release_position.x, body->location.x, 1e-6f, "recovery stays active through body movement");
         ASSERT_FLOAT_EQ(release_position.z, body->location.z, 1e-6f, "the last recovery tick cannot move the body");

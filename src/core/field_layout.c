@@ -8,81 +8,81 @@ void field_init_positions(FieldPositions* positions)
     // is used. some of the values are hard coded, which is fine. cannot expect to calculate all players' positions
     // relative to something.
 
-    positions->pitchPlate.x = 0.0f;
-    positions->pitchPlate.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->pitchPlate.z = 0.0f;
+    positions->pitch_plate.x = 0.0f;
+    positions->pitch_plate.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->pitch_plate.z = 0.0f;
 
     positions->pitcher.x = 1.5f;
     positions->pitcher.y = BALL_HEIGHT_WITH_PLAYER;
     positions->pitcher.z = 0.0f;
 
-    positions->firstBaseRun.x = -20.0f;
-    positions->firstBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->firstBaseRun.z = -23.5f;
+    positions->first_base_run.x = -20.0f;
+    positions->first_base_run.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->first_base_run.z = -23.5f;
 
-    positions->firstBase.x = positions->firstBaseRun.x;
-    positions->firstBase.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->firstBase.z = positions->firstBaseRun.z + 0.5f;
+    positions->first_base.x = positions->first_base_run.x;
+    positions->first_base.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->first_base.z = positions->first_base_run.z + 0.5f;
 
-    positions->secondBaseRun.x = +30.0f;
-    positions->secondBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->secondBaseRun.z = -43.8f;
+    positions->second_base_run.x = +30.0f;
+    positions->second_base_run.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->second_base_run.z = -43.8f;
 
-    positions->secondBase.x = positions->secondBaseRun.x;
-    positions->secondBase.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->secondBase.z = positions->secondBaseRun.z + 1.0f;
+    positions->second_base.x = positions->second_base_run.x;
+    positions->second_base.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->second_base.z = positions->second_base_run.z + 1.0f;
 
-    positions->thirdBaseRun.x = -30.0f;
-    positions->thirdBaseRun.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->thirdBaseRun.z = -43.8f;
+    positions->third_base_run.x = -30.0f;
+    positions->third_base_run.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->third_base_run.z = -43.8f;
 
-    positions->thirdBase.x = positions->thirdBaseRun.x;
-    positions->thirdBase.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->thirdBase.z = positions->thirdBaseRun.z + 1.0f;
+    positions->third_base.x = positions->third_base_run.x;
+    positions->third_base.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->third_base.z = positions->third_base_run.z + 1.0f;
 
-    positions->leftPoint.x = -31.2f;
-    positions->leftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->leftPoint.z = -33.0f;
+    positions->left_point.x = -31.2f;
+    positions->left_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->left_point.z = -33.0f;
 
-    positions->runLeftPoint.x = positions->leftPoint.x;
-    positions->runLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->runLeftPoint.z = -25.0f;
+    positions->run_left_point.x = positions->left_point.x;
+    positions->run_left_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->run_left_point.z = -25.0f;
 
-    positions->backLeftPoint.x = positions->leftPoint.x;
-    positions->backLeftPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->backLeftPoint.z = -83.8f;
+    positions->back_left_point.x = positions->left_point.x;
+    positions->back_left_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->back_left_point.z = -83.8f;
 
-    positions->rightPoint.x = 31.5f;
-    positions->rightPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->rightPoint.z = -32.0f;
+    positions->right_point.x = 31.5f;
+    positions->right_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->right_point.z = -32.0f;
 
-    positions->backRightPoint.x = positions->rightPoint.x;
-    positions->backRightPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->backRightPoint.z = positions->backLeftPoint.z;
+    positions->back_right_point.x = positions->right_point.x;
+    positions->back_right_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->back_right_point.z = positions->back_left_point.z;
 
-    positions->bottomRightCatcher.x = positions->secondBase.x - 21.0f;
-    positions->bottomRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->bottomRightCatcher.z = positions->secondBase.z + 22.0f;
+    positions->bottom_right_catcher.x = positions->second_base.x - 21.0f;
+    positions->bottom_right_catcher.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->bottom_right_catcher.z = positions->second_base.z + 22.0f;
 
-    positions->middleLeftCatcher.x = positions->thirdBase.x + 18.0f;
-    positions->middleLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->middleLeftCatcher.z = positions->thirdBase.z + 6.0f;
+    positions->middle_left_catcher.x = positions->third_base.x + 18.0f;
+    positions->middle_left_catcher.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->middle_left_catcher.z = positions->third_base.z + 6.0f;
 
-    positions->middleRightCatcher.x = -positions->middleLeftCatcher.x - 9.0f;
-    positions->middleRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->middleRightCatcher.z = positions->secondBase.z - 6.0f;
+    positions->middle_right_catcher.x = -positions->middle_left_catcher.x - 9.0f;
+    positions->middle_right_catcher.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->middle_right_catcher.z = positions->second_base.z - 6.0f;
 
-    positions->backLeftCatcher.x = positions->backLeftPoint.x + 20.0f;
-    positions->backLeftCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->backLeftCatcher.z = positions->backLeftPoint.z + 10.0f;
+    positions->back_left_catcher.x = positions->back_left_point.x + 20.0f;
+    positions->back_left_catcher.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->back_left_catcher.z = positions->back_left_point.z + 10.0f;
 
-    positions->backRightCatcher.x = -positions->backLeftCatcher.x;
-    positions->backRightCatcher.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->backRightCatcher.z = positions->backLeftCatcher.z;
+    positions->back_right_catcher.x = -positions->back_left_catcher.x;
+    positions->back_right_catcher.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->back_right_catcher.z = positions->back_left_catcher.z;
 
-    positions->homeRunPoint.x = positions->pitchPlate.x - HOME_RADIUS;
-    positions->homeRunPoint.y = BALL_HEIGHT_WITH_PLAYER;
-    positions->homeRunPoint.z = HOME_LINE_Z;
+    positions->home_run_point.x = positions->pitch_plate.x - HOME_RADIUS;
+    positions->home_run_point.y = BALL_HEIGHT_WITH_PLAYER;
+    positions->home_run_point.z = HOME_LINE_Z;
 }
 
 Vector3D field_boundary_point_along(const Vector3D* from, float dirX, float dirZ)

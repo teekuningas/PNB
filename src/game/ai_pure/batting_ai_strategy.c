@@ -30,61 +30,61 @@ calculate_batting_strategy(const HalfInningState* halfInningState, int fieldStat
     if (period < 4) {
         if (halfInningState->strikes == 0) {
             strategy.style = 1;
-            strategy.runBaseRunners = 0;
-            strategy.runBatter = 0;
+            strategy.run_base_runners = 0;
+            strategy.run_batter = 0;
         } else if (halfInningState->strikes == 1) {
             if (fieldStatus == 0) {
                 if (isFast == 0) {
                     strategy.style = 2;
-                    strategy.runBaseRunners = 0;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 0;
+                    strategy.run_batter = 1;
                 } else {
                     strategy.style = 0;
-                    strategy.runBaseRunners = 0;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 0;
+                    strategy.run_batter = 1;
                 }
             } else if (fieldStatus == 1) {
                 if (hasPower == 1) {
                     if (isFast == 0) {
                         strategy.style = 1;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 0;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 0;
                     } else {
                         strategy.style = 1;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 1;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 1;
                     }
                 } else {
                     if (isFast == 0) {
                         strategy.style = 2;
-                        strategy.runBaseRunners = 0;
-                        strategy.runBatter = 1;
+                        strategy.run_base_runners = 0;
+                        strategy.run_batter = 1;
                     } else {
                         strategy.style = 0;
-                        strategy.runBaseRunners = 0;
-                        strategy.runBatter = 1;
+                        strategy.run_base_runners = 0;
+                        strategy.run_batter = 1;
                     }
                 }
             } else if (fieldStatus == 2) {
                 if (hasPower == 1) {
                     if (isFast == 0) {
                         strategy.style = 1;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 0;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 0;
                     } else {
                         strategy.style = 1;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 1;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 1;
                     }
                 } else {
                     if (isFast == 0) {
                         strategy.style = 0;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 0;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 0;
                     } else {
                         strategy.style = 0;
-                        strategy.runBaseRunners = 1;
-                        strategy.runBatter = 1;
+                        strategy.run_base_runners = 1;
+                        strategy.run_batter = 1;
                     }
                 }
             }
@@ -92,43 +92,43 @@ calculate_batting_strategy(const HalfInningState* halfInningState, int fieldStat
             if (fieldStatus == 0) {
                 if (isFast == 0) {
                     strategy.style = 2;
-                    strategy.runBaseRunners = 0;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 0;
+                    strategy.run_batter = 1;
                 } else {
                     strategy.style = 0;
-                    strategy.runBaseRunners = 0;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 0;
+                    strategy.run_batter = 1;
                 }
             } else if (fieldStatus == 1) {
                 strategy.style = 2;
-                strategy.runBaseRunners = 0;
-                strategy.runBatter = 1;
+                strategy.run_base_runners = 0;
+                strategy.run_batter = 1;
             } else if (fieldStatus == 2) {
                 if (hasPower == 1) {
                     strategy.style = 1;
-                    strategy.runBaseRunners = 1;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 1;
+                    strategy.run_batter = 1;
                 } else {
                     strategy.style = 0;
-                    strategy.runBaseRunners = 1;
-                    strategy.runBatter = 1;
+                    strategy.run_base_runners = 1;
+                    strategy.run_batter = 1;
                 }
             }
         }
     } else {
         if (halfInningState->strikes == 0 || halfInningState->strikes == 1) {
             strategy.style = 1;
-            strategy.runBaseRunners = 0;
-            strategy.runBatter = 0;
+            strategy.run_base_runners = 0;
+            strategy.run_batter = 0;
         } else {
             if (hasPower == 1) {
                 strategy.style = 1;
-                strategy.runBaseRunners = 1;
-                strategy.runBatter = 1;
+                strategy.run_base_runners = 1;
+                strategy.run_batter = 1;
             } else {
                 strategy.style = 0;
-                strategy.runBaseRunners = 1;
-                strategy.runBatter = 0;
+                strategy.run_base_runners = 1;
+                strategy.run_batter = 0;
             }
         }
     }

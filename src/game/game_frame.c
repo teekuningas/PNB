@@ -99,7 +99,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
     }
 
     init_actualization(stateInfo->match);
-    init_client_input(stateInfo->clientInput);
+    init_client_input(stateInfo->client_input);
 
     stateInfo->tick_facts = (TickFacts){0};
 
@@ -128,10 +128,10 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // drained by the tick that produced it (stage 9), so a controller here can only ever read
     // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
     action_invocations(
-        game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee, &rules->half_inning,
+        game, stateInfo->client_input, stateInfo->key_states, &rules->scoreboard, &rules->referee, &rules->half_inning,
         &stateInfo->channels
     );
-    ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController, &stateInfo->channels);
+    ai_update(game, rules, stateInfo->field_positions, stateInfo->ai_controller, &stateInfo->channels);
 
     // StateInfo is destructured here (the assembly point): each stage receives exactly the
     // worlds it touches — mutable physical (MatchSession), read-only legal (GameRulesState),
@@ -141,19 +141,19 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 2. INGEST — every controller's declarations, judged against the world as it stands now. After this
     // line the channels are empty and no intent-shaped thing is left to read; what survives is a local
     // of this tick, handed to the next stage and gone with the frame.
-    IngestedCommands commands = ingest_intents(game, rules, stateInfo->fieldPositions, &stateInfo->channels);
+    IngestedCommands commands = ingest_intents(game, rules, stateInfo->field_positions, &stateInfo->channels);
 
     // 3. ACTUALIZE — the engine's own order, whatever order the messages came in.
-    actualize(game, rules, stateInfo->fieldPositions, &commands, &stateInfo->playSoundEffect);
+    actualize(game, rules, stateInfo->field_positions, &commands, &stateInfo->play_sound_effect);
 
     // 4. SIMULATE — the physical world takes its step.
-    simulate(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
+    simulate(game, stateInfo->field_positions, &rules->referee, &stateInfo->play_sound_effect);
 
     int homeward_runs = game->events.homeward_runs_started;
     TickFacts facts = {
         .pitch_released = game->events.pitch_released,
         .homeward_run_started = homeward_runs != 0,
-        .ball_home = ball_is_home(game, stateInfo->fieldPositions),
+        .ball_home = ball_is_home(game, stateInfo->field_positions),
         .third_base_control = observe_third_base_control(game, &rules->referee)
     };
     collect_player_facts(game, facts.simulated_players);
@@ -161,7 +161,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
     // pronounces what it means.
     update_referee(
-        stateInfo->match, stateInfo->fieldPositions, &rules->referee, &rules->half_inning, &rules->between_pitch,
+        stateInfo->match, stateInfo->field_positions, &rules->referee, &rules->half_inning, &rules->between_pitch,
         &rules->scoreboard, &rules->homerun_contest, &stateInfo->announcement
     );
 
@@ -170,7 +170,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // the legal world const; only the referee writes it.
     ConsolidationOutput consolidation_output;
     consolidation_update(
-        game, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->gameConclusion, rules, &consolidation_output
+        game, stateInfo->field_positions, stateInfo->team_data, stateInfo->game_conclusion, rules, &consolidation_output
     );
     facts.world_reset = consolidation_output.world_reset;
     facts.enforcement_completed = consolidation_output.enforcement_completed;
@@ -182,7 +182,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     if (consolidation_output.request_screen_change) {
         route_menu(menuInfo, consolidation_output.period_transition);
         stateInfo->screen = consolidation_output.target_screen;
-        stateInfo->changeScreen = 1;
+        stateInfo->change_screen = 1;
         stateInfo->updated = 0;
     }
 

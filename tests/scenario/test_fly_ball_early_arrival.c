@@ -47,7 +47,7 @@ int test_fly_ball_early_arrival(void)
     move_pitcher_away(ctx);
 
     int fielderIdx = 16; // Center fielder
-    Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
+    Vector3D fielderLoc = ctx->state->field_positions->third_base;
     match->players[fielderIdx].body.location = fielderLoc;
     match->players[fielderIdx].body.home_location = fielderLoc;
 
@@ -57,7 +57,7 @@ int test_fly_ball_early_arrival(void)
 
     // 6. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
     // This gives the batter time to reach 1st before the catch
-    Vector3D pitchLocation = ctx->state->fieldPositions->pitchPlate;
+    Vector3D pitchLocation = ctx->state->field_positions->pitch_plate;
     hit_fly_ball_to_location_with_time(ctx, pitchLocation, fielderLoc, 300.0f);
 
     printf(
@@ -145,7 +145,7 @@ int test_fly_ball_early_arrival(void)
         // Debug logging every 50 frames or on key events
         if (frame % 50 == 0 || frame == catchFrame || frame == batterArrivalFrame || frame == woundFrame ||
             (batterArrivalFrame != -1 && frame >= batterArrivalFrame - 5 && frame <= batterArrivalFrame + 10)) {
-            int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->fieldPositions);
+            int ballAtBase = get_ball_at_base_index(ctx->state->match, ctx->state->field_positions);
             printf(
                 "  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d Status=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n", frame,
                 batterState, batterBase, batterSafety, batterBaseAtPitchStart, batterStatus, ballAtBase, hasBall,

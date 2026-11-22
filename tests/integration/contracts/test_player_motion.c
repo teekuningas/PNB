@@ -46,7 +46,7 @@ int test_player_stops_preserve_distinct_facing_and_sync(void)
 
     stop_movement(m->players, 15);
     stop_target_looking_player(&m->players[16].motion);
-    player_location_orientation_and_targets(m, ctx->state->fieldPositions);
+    player_location_orientation_and_targets(m, ctx->state->field_positions);
 
     ASSERT_FLOAT_EQ(99.0f, m->players[15].body.orientation.x, 1e-6f, "a stopped runner keeps its facing lock");
     ASSERT_FLOAT_EQ(-97.0f, m->players[15].body.orientation.z, 1e-6f, "stopping movement does not stop running mode");
@@ -78,20 +78,20 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
     for (int recipe = 0; recipe < 3; recipe++) {
         ScenarioContext* ctx = create_scenario();
         MatchSession* m = ctx->state->match;
-        FieldPositions positions = *ctx->state->fieldPositions;
-        positions.pitchPlate.x += 13.0f;
-        positions.pitchPlate.z -= 17.0f;
-        positions.middleLeftCatcher = (Vector3D){21.0f, 2.0f, -31.0f};
+        FieldPositions positions = *ctx->state->field_positions;
+        positions.pitch_plate.x += 13.0f;
+        positions.pitch_plate.z -= 17.0f;
+        positions.middle_left_catcher = (Vector3D){21.0f, 2.0f, -31.0f};
         const Vector3D posts[] = {
             positions.pitcher,
-            positions.firstBase,
-            positions.secondBase,
-            positions.thirdBase,
-            positions.bottomRightCatcher,
-            positions.middleLeftCatcher,
-            positions.middleRightCatcher,
-            positions.backLeftCatcher,
-            positions.backRightCatcher
+            positions.first_base,
+            positions.second_base,
+            positions.third_base,
+            positions.bottom_right_catcher,
+            positions.middle_left_catcher,
+            positions.middle_right_catcher,
+            positions.back_left_catcher,
+            positions.back_right_catcher
         };
         for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             m->players[i].body.home_location = (Vector3D){1000.0f, 1000.0f, 1000.0f};
@@ -107,7 +107,7 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
             }
         }
         if (recipe == 0) {
-            reset_for_new_half_inning(m, &positions, ctx->state->teamData, ctx->state->rules);
+            reset_for_new_half_inning(m, &positions, ctx->state->team_data, ctx->state->rules);
         } else if (recipe == 1) {
             reset_for_foul_play(m, &positions, ctx->state->rules);
         } else {
@@ -136,8 +136,8 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
         }
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             const Vector3D* home = &m->players[i].body.home_location;
-            float dx = home->x - positions.pitchPlate.x;
-            float dz = home->z - positions.pitchPlate.z;
+            float dx = home->x - positions.pitch_plate.x;
+            float dz = home->z - positions.pitch_plate.z;
             float radius = sqrtf(dx * dx + dz * dz);
             ASSERT(
                 radius >= HOME_RADIUS - 1e-5f && radius <= HOME_RADIUS * 1.3f, "batters rest around the current plate"
@@ -180,7 +180,7 @@ int test_idle_fielder_returns_to_its_home_geometry(void)
     ASSERT_FLOAT_EQ(home.z, p->body.target_location.z, 1e-6f, "the return uses home geometry, not the stale target");
     ASSERT_FLOAT_EQ(WALK_SPEED * 3.0f / 5.0f, p->body.velocity.x, 1e-6f, "the homeward walk has the right direction");
     ASSERT_FLOAT_EQ(WALK_SPEED * 4.0f / 5.0f, p->body.velocity.z, 1e-6f, "the homeward walk has walking speed");
-    player_location_orientation_and_targets(m, ctx->state->fieldPositions);
+    player_location_orientation_and_targets(m, ctx->state->field_positions);
     ASSERT(p->body.location.x > home.x - 3.0f && p->body.location.z > home.z - 4.0f, "the next body step walks home");
     cleanup_scenario(ctx);
     return TEST_PASSED;

@@ -134,15 +134,15 @@ int test_scripted_move_declared_during_a_pitch_resumes_after_it(void)
     ASSERT(tick_until_pitch_ready(g, 8000), "never reached a human pitch-ready state");
 
     MatchSession* m = scripted_match(g);
-    ClientInputState* ci = scripted_state(g)->clientInput;
+    ClientInputState* ci = scripted_state(g)->client_input;
 
     // Pitch: press to start the power meter, click during the sweep to lock power — which is what
     // begins the engine windup.
     scripted_tap(g, HUMAN_PAD, KEY_2);
-    for (int i = 0; i < 8 && ci->pitchWidget.meter.dir == 0; i++) {
+    for (int i = 0; i < 8 && ci->pitch_widget.meter.dir == 0; i++) {
         scripted_tick(g);
     }
-    ASSERT(ci->pitchWidget.meter.dir != 0, "the power meter did not start sweeping");
+    ASSERT(ci->pitch_widget.meter.dir != 0, "the power meter did not start sweeping");
     scripted_tap(g, HUMAN_PAD, KEY_2);
 
     int reached = 0;

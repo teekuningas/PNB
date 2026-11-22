@@ -59,11 +59,11 @@ typedef enum { SCREEN_LOADING, SCREEN_MAIN_MENU, SCREEN_GAME } ScreenState;
 // How a match ended, written by ENFORCE when it ends and read by the game-over screen.
 typedef struct _GameConclusion {
     int winner;
-    int period0Runs[2];
-    int period1Runs[2];
-    int period2Runs[2];
-    int period3Runs[2];
-    int isCupGame;
+    int period0_runs[2];
+    int period1_runs[2];
+    int period2_runs[2];
+    int period3_runs[2];
+    int is_cup_game;
 } GameConclusion;
 
 #endif /* TICK_OUTPUTS_H */

@@ -178,16 +178,16 @@ void trace_observer_hook(const SimGame* g, void* ctx)
 
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
-    const AIControllerState* ai = g->state->aiController;
+    const AIControllerState* ai = g->state->ai_controller;
     fprintf(
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->half_inning.outs, r->half_inning.balls, r->half_inning.strikes,
         r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        ball_is_home(m, g->state->fieldPositions), m->ball.pitch_in_flight, (int)m->catching_action.kind,
+        ball_is_home(m, g->state->field_positions), m->ball.pitch_in_flight, (int)m->catching_action.kind,
         m->ball.holder, m->offers.batter_seat, m->offers.free_walk, batter_stands_ready(&m->at_bat), ai->swing.decided,
-        m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
+        m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batter_ready_timer,
         m->at_bat.swing.contact_frame, m->at_bat.swing.power_active, m->at_bat.swing.vertical_active,
-        ai->swing.wrongPitch, ai->swing.style, (int)r->between_pitch.bat_outcome, batting_cycle_is_open(&m->at_bat)
+        ai->swing.wrong_pitch, ai->swing.style, (int)r->between_pitch.bat_outcome, batting_cycle_is_open(&m->at_bat)
     );
 }
 
@@ -373,7 +373,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             // it here would fake a collapse to center. atan2(vx, -vz) is the true flight heading
             // (0 = straight to centre, + = one side) and is constant after launch (gravity only
             // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
-            if (g->state->aiController->swing.decided && g->state->aiController->swing.style == 1) {
+            if (g->state->ai_controller->swing.decided && g->state->ai_controller->swing.style == 1) {
                 float heading = atan2f(m->ball.velocity.x, -m->ball.velocity.z);
                 int bin = (int)((heading + 1.0f) * 2.5f); // [-1,1] rad -> [0,5)
                 if (bin < 0) bin = 0;

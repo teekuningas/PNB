@@ -53,25 +53,25 @@
           // approximations anyway
 // relevant field positions. hardcoded in the immutable_world.c
 typedef struct _FieldPositions {
-    Vector3D pitchPlate;
-    Vector3D homeRunPoint;
+    Vector3D pitch_plate;
+    Vector3D home_run_point;
     Vector3D pitcher;
-    Vector3D firstBase;
-    Vector3D secondBase;
-    Vector3D thirdBase;
-    Vector3D firstBaseRun;
-    Vector3D secondBaseRun;
-    Vector3D thirdBaseRun;
-    Vector3D leftPoint;
-    Vector3D runLeftPoint;
-    Vector3D backLeftPoint;
-    Vector3D backRightPoint;
-    Vector3D rightPoint;
-    Vector3D bottomRightCatcher;
-    Vector3D middleLeftCatcher;
-    Vector3D middleRightCatcher;
-    Vector3D backLeftCatcher;
-    Vector3D backRightCatcher;
+    Vector3D first_base;
+    Vector3D second_base;
+    Vector3D third_base;
+    Vector3D first_base_run;
+    Vector3D second_base_run;
+    Vector3D third_base_run;
+    Vector3D left_point;
+    Vector3D run_left_point;
+    Vector3D back_left_point;
+    Vector3D back_right_point;
+    Vector3D right_point;
+    Vector3D bottom_right_catcher;
+    Vector3D middle_left_catcher;
+    Vector3D middle_right_catcher;
+    Vector3D back_left_catcher;
+    Vector3D back_right_catcher;
 } FieldPositions;
 
 #endif /* FIELD_H */

@@ -109,19 +109,19 @@ int is_ball_out_of_bounds(const BallInfo* ballInfo, const FieldPositions* fieldP
     // first, is ball behind the line at the back, or too much at right or too much at left
     // or in front of the homeline
     // if not, continue
-    if (ballInfo->location.z > fieldPositions->backLeftPoint.z &&
-        ballInfo->location.x < fieldPositions->backRightPoint.x &&
-        ballInfo->location.x > fieldPositions->backLeftPoint.x && ballInfo->location.z < HOME_LINE_Z) {
+    if (ballInfo->location.z > fieldPositions->back_left_point.z &&
+        ballInfo->location.x < fieldPositions->back_right_point.x &&
+        ballInfo->location.x > fieldPositions->back_left_point.x && ballInfo->location.z < HOME_LINE_Z) {
         float z0 = 1.0f;
-        float x = fieldPositions->rightPoint.x;
-        float z = fieldPositions->rightPoint.z - z0;
+        float x = fieldPositions->right_point.x;
+        float z = fieldPositions->right_point.z - z0;
         float slope1 = z / x;
         float slope2;
-        x = -fieldPositions->leftPoint.x;
-        z = -(fieldPositions->leftPoint.z - z0);
+        x = -fieldPositions->left_point.x;
+        z = -(fieldPositions->left_point.z - z0);
         slope2 = z / x;
         // then here we just have basic line equations to check if the ball is
-        // out or inside the lines from pitchPlate to rightPoint and leftPoint.
+        // out or inside the lines from pitch_plate to right_point and left_point.
         if (ballInfo->location.z - slope1 * ballInfo->location.x - z0 < 0 &&
             ballInfo->location.z - slope2 * ballInfo->location.x - z0 < 0) {
             value = 0;
