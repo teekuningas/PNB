@@ -41,7 +41,7 @@ int test_control_stage_precedes_execution(void)
     give_ball_to_pitcher(ctx);
 
     initialize_referee_from_physical_state(ctx);
-    snapshot_pitch_start_state(ctx); // sets baseAtPitchStart from current positions
+    snapshot_pitch_start_state(ctx); // sets base_at_pitch_start from current positions
 
     ASSERT_EQ(12, match->ballInfo.holder, "home catcher (idx 12) should hold the ball before the frame");
 
@@ -53,7 +53,7 @@ int test_control_stage_precedes_execution(void)
     );
 
     // The caught-fly evaluation window the tactical drop lives in.
-    ctx->state->rules->referee.woundingEvaluationActive = 1;
+    ctx->state->rules->referee.wounding_evaluation_active = 1;
 
     // Nothing is declared yet — so the frame below cannot pass on a leftover intent.
     ASSERT_EQ(

@@ -14,8 +14,8 @@ int test_get_base_controller(void)
     memset(&referee, 0, sizeof(RefereeState));
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
-        referee.battingPlayers[i].baseAtPitchStart = BASE_NONE;
+        referee.batting_players[i].current_safety_base = BASE_NONE;
+        referee.batting_players[i].base_at_pitch_start = BASE_NONE;
         game.playerInfo[i].batting.presence.base_id = BASE_NONE;
     }
 
@@ -28,20 +28,20 @@ int test_get_base_controller(void)
     ASSERT_EQ(-1, get_base_controller(&game, &referee, BASE_NONE), "Invalid base should return -1");
 
     // Player 2 controls first base
-    referee.battingPlayers[2].currentSafetyBase = BASE_FIRST;
+    referee.batting_players[2].current_safety_base = BASE_FIRST;
     game.playerInfo[2].batting.presence.base_id = BASE_FIRST;
-    referee.battingPlayers[2].baseAtPitchStart = BASE_HOME;
+    referee.batting_players[2].base_at_pitch_start = BASE_HOME;
 
     ASSERT_EQ(2, get_base_controller(&game, &referee, BASE_FIRST), "Player 2 should control first base");
 
-    // Multiple candidates for second base, prioritize higher baseAtPitchStart
-    referee.battingPlayers[4].currentSafetyBase = BASE_SECOND;
+    // Multiple candidates for second base, prioritize higher base_at_pitch_start
+    referee.batting_players[4].current_safety_base = BASE_SECOND;
     game.playerInfo[4].batting.presence.base_id = BASE_SECOND;
-    referee.battingPlayers[4].baseAtPitchStart = BASE_FIRST; // Lower priority
+    referee.batting_players[4].base_at_pitch_start = BASE_FIRST; // Lower priority
 
-    referee.battingPlayers[5].currentSafetyBase = BASE_SECOND;
+    referee.batting_players[5].current_safety_base = BASE_SECOND;
     game.playerInfo[5].batting.presence.base_id = BASE_SECOND;
-    referee.battingPlayers[5].baseAtPitchStart = BASE_SECOND; // Higher priority
+    referee.batting_players[5].base_at_pitch_start = BASE_SECOND; // Higher priority
 
     ASSERT_EQ(
         5, get_base_controller(&game, &referee, BASE_SECOND),
@@ -49,7 +49,7 @@ int test_get_base_controller(void)
     );
 
     // Player must have both safety and physically be there
-    referee.battingPlayers[6].currentSafetyBase = BASE_THIRD; // Has safety
+    referee.batting_players[6].current_safety_base = BASE_THIRD; // Has safety
     game.playerInfo[6].batting.presence.base_id = BASE_SECOND; // But physically at second
 
     ASSERT_EQ(

@@ -278,7 +278,7 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
     // OUTS (Far Left)
     float outs_x = CENTER_X + OUTS_OFFSET_X;
     if (scene->rules->scoreboard.period < 4) {
-        switch (scene->rules->halfInningState.outs) {
+        switch (scene->rules->half_inning.outs) {
         case 3:
             print_text_2d("XXX", 3, outs_x, TEXT_Y, FONT_SIZE);
             break;
@@ -347,7 +347,7 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
             if (scene->match->offers.batter_seat == 1) {
                 int candidates[BATTER_CANDIDATE_MAX];
                 int count = list_batter_candidates(
-                    scene->match, &scene->rules->scoreboard, &scene->rules->halfInningState, candidates
+                    scene->match, &scene->rules->scoreboard, &scene->rules->half_inning, candidates
                 );
                 int cursor = scene->input->batterWidget.highlight;
                 if (count <= 0)
@@ -360,13 +360,13 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
             }
         } else {
             int battingTeamIndex = get_batting_team_index(&scene->rules->scoreboard);
-            int pairIdx = scene->rules->homeRunContestState.runnerBatterPairCounter;
-            // pairIdx reaches pairCount at end-of-inning; clamp so we never read past the
-            // current pair row of batterRunnerIndices.
-            if (pairIdx < 0 || pairIdx >= scene->rules->scoreboard.pairCount) {
+            int pairIdx = scene->rules->homerun_contest.pair_index;
+            // pairIdx reaches pair_count at end-of-inning; clamp so we never read past the
+            // current pair row of batter_runner_indices.
+            if (pairIdx < 0 || pairIdx >= scene->rules->scoreboard.pair_count) {
                 shouldContinue = 0;
             } else {
-                index = scene->rules->scoreboard.teams[battingTeamIndex].batterRunnerIndices[0][pairIdx];
+                index = scene->rules->scoreboard.teams[battingTeamIndex].batter_runner_indices[0][pairIdx];
                 if (index == -1) shouldContinue = 0;
             }
         }
@@ -406,16 +406,16 @@ draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, Resource
 
     // Balls
     char ball_str[16] = "B  ";
-    if (scene->rules->halfInningState.balls < 10) {
-        ball_str[2] = (char)(((int)'0') + scene->rules->halfInningState.balls);
+    if (scene->rules->half_inning.balls < 10) {
+        ball_str[2] = (char)(((int)'0') + scene->rules->half_inning.balls);
     } else {
-        sprintf(ball_str, "B%d", scene->rules->halfInningState.balls);
+        sprintf(ball_str, "B%d", scene->rules->half_inning.balls);
     }
     print_text_2d(ball_str, (unsigned int)strlen(ball_str), stats_x - 20.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Strikes
     char strike_str[16] = "S  ";
-    strike_str[2] = (char)(((int)'0') + scene->rules->halfInningState.strikes);
+    strike_str[2] = (char)(((int)'0') + scene->rules->half_inning.strikes);
     print_text_2d(strike_str, 3, stats_x + 100.0f, TEXT_Y, FONT_SIZE); // Evenly spaced
 
     // Runs
@@ -573,7 +573,7 @@ static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, Camer
     reset_for_new_half_inning(stateInfo->match, stateInfo->fieldPositions, stateInfo->teamData, stateInfo->rules);
     // Referee initialization (from-menu only — no state machine active, full clean slate)
     referee_reset_for_new_inning(
-        &stateInfo->rules->referee, &stateInfo->rules->halfInningState, &stateInfo->rules->betweenPitchState
+        &stateInfo->rules->referee, &stateInfo->rules->half_inning, &stateInfo->rules->between_pitch
     );
     // Scan physical world to establish initial legal tracking
     initialize_referee(stateInfo->match, &stateInfo->rules->scoreboard, &stateInfo->rules->referee);

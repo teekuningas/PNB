@@ -8,14 +8,14 @@ int should_period_end(
     if (sb->period < 4) {
         // Normal game / Super inning: check if this is the last half-inning of a period
         int isLastHalfInning =
-            (sb->inning + 1) % sb->halfInningsInPeriod == 0 || sb->inning + 1 == sb->halfInningsInPeriod * 2 + 2;
+            (sb->inning + 1) % sb->half_innings_in_period == 0 || sb->inning + 1 == sb->half_innings_in_period * 2 + 2;
 
         if (isLastHalfInning) {
             // Batting team has taken the lead — opponent won't bat again
             if (batting_runs > catching_runs) return 1;
 
             // Period 1 tiebreaker: overall score tied, but period 0 winner is ahead
-            if (sb->inning + 1 == sb->halfInningsInPeriod * 2 && batting_period0_runs > catching_period0_runs &&
+            if (sb->inning + 1 == sb->half_innings_in_period * 2 && batting_period0_runs > catching_period0_runs &&
                 catching_runs == batting_runs) {
                 return 1;
             }

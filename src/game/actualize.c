@@ -137,7 +137,7 @@ static void take_free_walk_decision(
                 match->playerInfo[index].batting.presence.state = PLAYER_STATE_ADVANCING_FREELY;
             }
             // 3rd base: no physical run needed — the referee scores the run directly and sets
-            // hasScored, which is what makes enforce_legal_state remove the player
+            // has_scored, which is what makes enforce_legal_state remove the player
         }
     }
     // no more decision to make.

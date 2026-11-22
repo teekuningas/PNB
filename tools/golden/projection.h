@@ -19,68 +19,68 @@ static unsigned long long rules_projection_hash(const GameRulesState* r)
     // without inheriting a future bool's width or a struct's padding.
 #define RULE_VALUE(v) do { const uint32_t word = (v); h = fnv(&word, sizeof(word), h); } while (0)
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const RefereePlayerState* p = &r->referee.battingPlayers[i];
+        const RefereePlayerState* p = &r->referee.batting_players[i];
         RULE_VALUE(p->status);
-        RULE_VALUE(p->baseAtPitchStart);
-        RULE_VALUE(p->currentSafetyBase);
-        RULE_VALUE(p->hasScored);
-        RULE_VALUE(p->runOfHonorScored);
-        RULE_VALUE(p->hasPendingRun);
-        RULE_VALUE(p->hasPendingRunOfHonor);
+        RULE_VALUE(p->base_at_pitch_start);
+        RULE_VALUE(p->current_safety_base);
+        RULE_VALUE(p->has_scored);
+        RULE_VALUE(p->run_of_honor_scored);
+        RULE_VALUE(p->has_pending_run);
+        RULE_VALUE(p->has_pending_run_of_honor);
     }
-    RULE_VALUE(r->referee.strikesAtPitchStart);
-    RULE_VALUE(r->referee.woundingEvaluationActive);
-    RULE_VALUE(r->referee.woundingEvaluationFinished);
-    RULE_VALUE(r->referee.woundingEvaluationTimer);
-    RULE_VALUE(r->referee.foulState);
-    RULE_VALUE(r->referee.foulTimer);
-    RULE_VALUE(r->referee.nextPairTransitionState);
-    RULE_VALUE(r->referee.nextPairTimer);
-    RULE_VALUE(r->referee.endOfInningState);
-    RULE_VALUE(r->referee.endInningTimer);
-    RULE_VALUE(r->referee.periodTransition);
-    RULE_VALUE(r->referee.periodTransitionWinner);
-    RULE_VALUE(r->referee.ballInThirdBaseSincePitch);
-    RULE_VALUE(r->referee.homerunPairHasPitch);
-    RULE_VALUE(r->halfInningState.outs);
-    RULE_VALUE(r->halfInningState.balls);
-    RULE_VALUE(r->halfInningState.strikes);
-    RULE_VALUE(r->halfInningState.runsInTheInning);
-    RULE_VALUE(r->halfInningState.endPeriod);
-    RULE_VALUE(r->halfInningState.jokersLeft);
-    RULE_VALUE(r->halfInningState.lastBatter.designatedIndex);
-    RULE_VALUE(r->halfInningState.lastBatter.lastRegularIndex);
-    RULE_VALUE(r->halfInningState.lastBatter.hasBattedAgain);
-    RULE_VALUE(r->halfInningState.lastBatter.regularOrderSpent);
-    RULE_VALUE(r->halfInningState.lastBatter.turnExhausted);
-    RULE_VALUE(r->betweenPitchState.catchHasBeenMade);
-    RULE_VALUE(r->betweenPitchState.hasBallHitGround);
-    RULE_VALUE(r->betweenPitchState.pitchResult);
-    RULE_VALUE(r->betweenPitchState.batOutcome);
-    RULE_VALUE(r->homeRunContestState.runnerBatterPairCounter);
+    RULE_VALUE(r->referee.strikes_at_pitch_start);
+    RULE_VALUE(r->referee.wounding_evaluation_active);
+    RULE_VALUE(r->referee.wounding_evaluation_finished);
+    RULE_VALUE(r->referee.wounding_evaluation_timer);
+    RULE_VALUE(r->referee.foul_state);
+    RULE_VALUE(r->referee.foul_timer);
+    RULE_VALUE(r->referee.next_pair_state);
+    RULE_VALUE(r->referee.next_pair_timer);
+    RULE_VALUE(r->referee.end_of_inning_state);
+    RULE_VALUE(r->referee.end_of_inning_timer);
+    RULE_VALUE(r->referee.period_transition);
+    RULE_VALUE(r->referee.period_transition_winner);
+    RULE_VALUE(r->referee.ball_in_third_base_since_pitch);
+    RULE_VALUE(r->referee.homerun_pair_has_pitch);
+    RULE_VALUE(r->half_inning.outs);
+    RULE_VALUE(r->half_inning.balls);
+    RULE_VALUE(r->half_inning.strikes);
+    RULE_VALUE(r->half_inning.runs_in_inning);
+    RULE_VALUE(r->half_inning.end_period);
+    RULE_VALUE(r->half_inning.jokers_left);
+    RULE_VALUE(r->half_inning.last_batter.designated_index);
+    RULE_VALUE(r->half_inning.last_batter.last_regular_index);
+    RULE_VALUE(r->half_inning.last_batter.has_batted_again);
+    RULE_VALUE(r->half_inning.last_batter.regular_order_spent);
+    RULE_VALUE(r->half_inning.last_batter.turn_exhausted);
+    RULE_VALUE(r->between_pitch.catch_has_been_made);
+    RULE_VALUE(r->between_pitch.has_ball_hit_ground);
+    RULE_VALUE(r->between_pitch.pitch_result);
+    RULE_VALUE(r->between_pitch.bat_outcome);
+    RULE_VALUE(r->homerun_contest.pair_index);
     for (int i = 0; i < 2; i++) {
         const TeamInfo* t = &r->scoreboard.teams[i];
         RULE_VALUE(t->value);
         RULE_VALUE(t->control);
         RULE_VALUE(t->runs);
-        RULE_VALUE(t->period0Runs);
-        RULE_VALUE(t->period1Runs);
-        RULE_VALUE(t->period2Runs);
-        RULE_VALUE(t->period3Runs);
-        for (size_t role = 0; role < sizeof(t->batterRunnerIndices) / sizeof(t->batterRunnerIndices[0]); role++)
-            for (size_t pair = 0; pair < sizeof(t->batterRunnerIndices[0]) / sizeof(t->batterRunnerIndices[0][0]); pair++)
-                RULE_VALUE(t->batterRunnerIndices[role][pair]);
-        for (size_t slot = 0; slot < sizeof(t->batterOrder) / sizeof(t->batterOrder[0]); slot++)
-            RULE_VALUE(t->batterOrder[slot]);
-        RULE_VALUE(t->batterOrderIndex);
+        RULE_VALUE(t->period0_runs);
+        RULE_VALUE(t->period1_runs);
+        RULE_VALUE(t->period2_runs);
+        RULE_VALUE(t->period3_runs);
+        for (size_t role = 0; role < sizeof(t->batter_runner_indices) / sizeof(t->batter_runner_indices[0]); role++)
+            for (size_t pair = 0; pair < sizeof(t->batter_runner_indices[0]) / sizeof(t->batter_runner_indices[0][0]); pair++)
+                RULE_VALUE(t->batter_runner_indices[role][pair]);
+        for (size_t slot = 0; slot < sizeof(t->batter_order) / sizeof(t->batter_order[0]); slot++)
+            RULE_VALUE(t->batter_order[slot]);
+        RULE_VALUE(t->batter_order_index);
     }
-    RULE_VALUE(r->scoreboard.halfInningsInPeriod);
+    RULE_VALUE(r->scoreboard.half_innings_in_period);
     RULE_VALUE(r->scoreboard.inning);
     RULE_VALUE(r->scoreboard.period);
     RULE_VALUE(r->scoreboard.mode);
-    RULE_VALUE(r->scoreboard.pairCount);
-    RULE_VALUE(r->scoreboard.playsFirst);
-    RULE_VALUE(r->scoreboard.isCupGame);
+    RULE_VALUE(r->scoreboard.pair_count);
+    RULE_VALUE(r->scoreboard.plays_first);
+    RULE_VALUE(r->scoreboard.is_cup_game);
 #undef RULE_VALUE
     return h;
 }

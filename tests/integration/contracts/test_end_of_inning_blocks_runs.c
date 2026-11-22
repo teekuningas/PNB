@@ -6,14 +6,14 @@
 
 /**
  * CONTRACT: Once the referee has decided the inning is ending
- * (endOfInningState != NONE), pending runs must NOT be cashed in.
+ * (end_of_inning_state != NONE), pending runs must NOT be cashed in.
  *
  * This prevents runs from being awarded during the ~200 frame
  * "END OF INNING" display timer.
  *
  * Preconditions:
- *   - endOfInningState = DETECTED (timer running)
- *   - A player has hasPendingRun = 1
+ *   - end_of_inning_state = DETECTED (timer running)
+ *   - A player has has_pending_run = 1
  *   - Ball has hit ground (trigger for resolve_pending_runs)
  *
  * Expected: Run is NOT awarded. Scoreboard unchanged.
@@ -28,18 +28,18 @@ int test_no_pending_runs_during_end_of_inning(void)
     snapshot_pitch_start_state(ctx);
 
     // Set up the end-of-inning state (already decided)
-    ctx->state->rules->referee.endOfInningState = END_INNING_STATE_DETECTED;
-    ctx->state->rules->referee.endInningTimer = 50;
+    ctx->state->rules->referee.end_of_inning_state = END_INNING_STATE_DETECTED;
+    ctx->state->rules->referee.end_of_inning_timer = 50;
 
     // Set up a pending run ready to be cashed in
-    ctx->state->rules->referee.battingPlayers[0].hasPendingRun = 1;
-    ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart = BASE_FIRST;
+    ctx->state->rules->referee.batting_players[0].has_pending_run = 1;
+    ctx->state->rules->referee.batting_players[0].base_at_pitch_start = BASE_FIRST;
     ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_HOME;
     ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_ON_BASE;
 
     // Ball has hit ground (trigger for resolve_pending_runs)
-    ctx->state->rules->betweenPitchState.hasBallHitGround = 1;
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->between_pitch.has_ball_hit_ground = 1;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
     int runsBefore = ctx->state->rules->scoreboard.teams[0].runs;
 
@@ -60,7 +60,7 @@ int test_no_pending_runs_during_end_of_inning(void)
  * free walk runs must NOT be awarded.
  *
  * Preconditions:
- *   - endOfInningState = DETECTED
+ *   - end_of_inning_state = DETECTED
  *   - freeWalkAccepted event fires
  *   - Free walk from 3rd base (would normally score a run)
  *
@@ -77,8 +77,8 @@ int test_no_free_walk_runs_during_end_of_inning(void)
     snapshot_pitch_start_state(ctx);
 
     // Set up the end-of-inning state (already decided)
-    ctx->state->rules->referee.endOfInningState = END_INNING_STATE_DETECTED;
-    ctx->state->rules->referee.endInningTimer = 50;
+    ctx->state->rules->referee.end_of_inning_state = END_INNING_STATE_DETECTED;
+    ctx->state->rules->referee.end_of_inning_timer = 50;
 
     // Set up free walk acceptance from 3rd base (would normally score)
     ctx->state->match->gameEvents.freeWalkAccepted = 1;

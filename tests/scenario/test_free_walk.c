@@ -31,7 +31,8 @@ int test_free_walk_resolution(void)
 
     printf(
         "[TEST] Initial state: Player %d at base %d, safety=%d\n", runnerIdx,
-        game->playerInfo[runnerIdx].batting.presence.base_id, rules->referee.battingPlayers[runnerIdx].currentSafetyBase
+        game->playerInfo[runnerIdx].batting.presence.base_id,
+        rules->referee.batting_players[runnerIdx].current_safety_base
     );
 
     // 3. Setup: Free Walk Offer (artificial - normally from game_consolidation.c)
@@ -56,7 +57,7 @@ int test_free_walk_resolution(void)
     printf(
         "[TEST] After acceptance: State=%d (Expected %d), SafetyBase=%d (Expected %d)\n",
         game->playerInfo[runnerIdx].batting.presence.state, PLAYER_STATE_ADVANCING_FREELY,
-        rules->referee.battingPlayers[runnerIdx].currentSafetyBase, BASE_SECOND
+        rules->referee.batting_players[runnerIdx].current_safety_base, BASE_SECOND
     );
 
     // CHECK 1: Action system started movement
@@ -66,11 +67,11 @@ int test_free_walk_resolution(void)
     );
 
     // CHECK 2: Referee granted safety at NEXT base (2nd) immediately
-    BaseID safetyBase = rules->referee.battingPlayers[runnerIdx].currentSafetyBase;
+    BaseID safetyBase = rules->referee.batting_players[runnerIdx].current_safety_base;
     ASSERT_EQ(BASE_SECOND, safetyBase, "Referee should grant safety at SECOND base immediately upon event");
 
     // CHECK 3: Base at pitch start updated (for future foul play resolution)
-    BaseID startBase = rules->referee.battingPlayers[runnerIdx].baseAtPitchStart;
+    BaseID startBase = rules->referee.batting_players[runnerIdx].base_at_pitch_start;
     ASSERT_EQ(BASE_SECOND, startBase, "BaseAtPitchStart should be updated to SECOND base");
 
     // 6. Wait for runner to physically arrive at second base
@@ -125,11 +126,11 @@ int test_free_walk_is_not_offered_to_nobody(void)
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         m->playerInfo[i].batting.presence.base_id = BASE_NONE;
         m->playerInfo[i].batting.presence.state = PLAYER_STATE_OUT;
-        r->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+        r->referee.batting_players[i].current_safety_base = BASE_NONE;
     }
 
     // A wrong pitch lands, which is what re-runs the calculation.
-    r->halfInningState.balls = 2;
+    r->half_inning.balls = 2;
     m->free_walk.worked_out = 0;
     m->free_walk.runner = -1;
 

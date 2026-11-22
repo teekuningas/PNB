@@ -97,7 +97,7 @@ void update_main_menu(
         if (nextStage == MENU_STAGE_CUP) {
             init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
         } else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
-            stateInfo->rules->scoreboard.isCupGame = 0;
+            stateInfo->rules->scoreboard.is_cup_game = 0;
             init_team_selection_state(&menuData->team_selection, stateInfo->numTeams);
         } else if (nextStage == MENU_STAGE_HELP) {
             init_help_menu(&menuData->help_menu);
@@ -276,13 +276,13 @@ void update_main_menu(
             menuData->pendingGameSetup.team1_control = cup_output.team1_control;
             menuData->pendingGameSetup.team2_control = cup_output.team2_control;
             menuData->pendingGameSetup.halfInningsInPeriod = cup_output.innings;
-            stateInfo->rules->scoreboard.isCupGame = 1;
+            stateInfo->rules->scoreboard.is_cup_game = 1;
             init_batting_order_state(
                 &menuData->batting_order, menuData->pendingGameSetup.team1, menuData->pendingGameSetup.team1_control,
                 stateInfo
             );
         } else if (nextStage == MENU_STAGE_FRONT) {
-            stateInfo->rules->scoreboard.isCupGame = 0;
+            stateInfo->rules->scoreboard.is_cup_game = 0;
             init_front_menu_state(&menuData->front_menu);
         }
         menuData->stage = nextStage;

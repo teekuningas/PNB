@@ -31,11 +31,11 @@ static int play_to_the_period_end(SimGame* g)
 // (the contest's rounds accumulate), so the score that decided the period is read from there.
 static int super_inning_runs(const SimGame* g, int t)
 {
-    return g->state->rules->scoreboard.teams[t].period2Runs;
+    return g->state->rules->scoreboard.teams[t].period2_runs;
 }
 static int contest_runs(const SimGame* g, int t)
 {
-    return g->state->rules->scoreboard.teams[t].period3Runs;
+    return g->state->rules->scoreboard.teams[t].period3_runs;
 }
 
 // Either the period was tied and the next menu continues the game, or it was not, and the game-over

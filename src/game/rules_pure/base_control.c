@@ -12,9 +12,9 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
     int highestBaseAtPitch = -2;
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (referee->battingPlayers[i].currentSafetyBase == base &&
+        if (referee->batting_players[i].current_safety_base == base &&
             game->playerInfo[i].batting.presence.base_id == base) {
-            int baseAtPitch = (int)referee->battingPlayers[i].baseAtPitchStart;
+            int baseAtPitch = (int)referee->batting_players[i].base_at_pitch_start;
             if (baseAtPitch > highestBaseAtPitch) {
                 highestBaseAtPitch = baseAtPitch;
                 bestCandidate = i;

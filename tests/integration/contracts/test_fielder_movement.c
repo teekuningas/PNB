@@ -321,7 +321,7 @@ int test_reset_recipes_leave_no_fielding_state(void)
     m->catchingState.ballTargetPoint.z = 12.0f;
     fielding->throw_recovery_ticks = 1;
     reset_for_next_pair(
-        m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homeRunContestState
+        m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homerun_contest
     );
     ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a contest-pair reset leaves no destination");
     ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a contest-pair reset leaves no prediction");

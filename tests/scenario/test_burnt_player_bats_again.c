@@ -27,11 +27,11 @@ int test_burnt_player_bats_again(void)
     GameRulesState* rules = st->rules;
     int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
 
-    int orderIndex = rules->scoreboard.teams[battingTeamIndex].batterOrderIndex;
-    int outPlayer = rules->scoreboard.teams[battingTeamIndex].batterOrder[orderIndex];
+    int orderIndex = rules->scoreboard.teams[battingTeamIndex].batter_order_index;
+    int outPlayer = rules->scoreboard.teams[battingTeamIndex].batter_order[orderIndex];
 
     // Burnt earlier in this half-inning; let consolidation actualize it.
-    rules->referee.battingPlayers[outPlayer].status = PLAYER_STATUS_OUT;
+    rules->referee.batting_players[outPlayer].status = PLAYER_STATUS_OUT;
     simulate_frames(ctx, 2);
     ASSERT_EQ(
         PLAYER_STATE_OUT, st->match->playerInfo[outPlayer].batting.presence.state,
@@ -50,7 +50,7 @@ int test_burnt_player_bats_again(void)
     }
 
     PlayerUnitState state = st->match->playerInfo[outPlayer].batting.presence.state;
-    RefereePlayerStatus status = rules->referee.battingPlayers[outPlayer].status;
+    RefereePlayerStatus status = rules->referee.batting_players[outPlayer].status;
     cleanup_scenario(ctx);
 
     ASSERT_NE(PLAYER_STATE_OUT, state, "a burnt player handed the bat must not be forced back out");

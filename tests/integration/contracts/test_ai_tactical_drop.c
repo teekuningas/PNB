@@ -25,9 +25,9 @@
  * rarely drives to; we build the exact §30 state and drive the real AI + real execution against it.
  *
  * Preconditions (the §30 tactical drop):
- *   - Runners settled ON_BASE at 2nd and 3rd, baseAtPitchStart = 2nd / 3rd (snapshotted).
+ *   - Runners settled ON_BASE at 2nd and 3rd, base_at_pitch_start = 2nd / 3rd (snapshotted).
  *   - The home catcher (fielding_posts.baseman[0] = idx 12) holds the ball at home.
- *   - woundingEvaluationActive = 1 (a caught fly is being evaluated).
+ *   - wounding_evaluation_active = 1 (a caught fly is being evaluated).
  *
  * Expected: the AI puts one INTENT_DROP_BALL message on the catching channel; the gate and actualizer then
  * drops the ball (ballInfo.holder → -1, ball moving) and leaves the channel empty.
@@ -45,13 +45,13 @@ int test_ai_declares_and_executes_tactical_drop(void)
     give_ball_to_pitcher(ctx);
 
     initialize_referee_from_physical_state(ctx);
-    snapshot_pitch_start_state(ctx); // sets baseAtPitchStart from current positions
+    snapshot_pitch_start_state(ctx); // sets base_at_pitch_start from current positions
 
     // Sanity: the home catcher still holds the ball after the snapshot frame.
     ASSERT_EQ(12, match->ballInfo.holder, "home catcher (idx 12) should still hold the ball");
 
     // The catching team must actually be AI-controlled — that is what makes ai_update dispatch to the
-    // catching AI below. create_scenario sets team2 (the fielding team here, playsFirst=0) to CONTROL_AI.
+    // catching AI below. create_scenario sets team2 (the fielding team here, plays_first=0) to CONTROL_AI.
     int battingTeamIndex = get_batting_team_index(&ctx->state->rules->scoreboard);
     int catchingTeamIndex = (battingTeamIndex + 1) % 2;
     ASSERT_EQ(
@@ -60,7 +60,7 @@ int test_ai_declares_and_executes_tactical_drop(void)
     );
 
     // Simulate the caught-fly evaluation window the tactical drop lives in.
-    ctx->state->rules->referee.woundingEvaluationActive = 1;
+    ctx->state->rules->referee.wounding_evaluation_active = 1;
 
     // Drive the REAL production AI dispatch (the CONTROL stage, stage 1). Because the catching team is AI, ai_update
     // calls

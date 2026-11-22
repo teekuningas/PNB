@@ -225,7 +225,7 @@ int test_scripted_swing_silence_is_not_a_miss(void)
 
     ASSERT_EQ(0, m->at_bat.swing.powerActive, "pressing nothing must declare nothing");
     ASSERT(
-        scripted_state(g)->rules->betweenPitchState.batOutcome != BAT_OUTCOME_MISSED,
+        scripted_state(g)->rules->between_pitch.bat_outcome != BAT_OUTCOME_MISSED,
         "a batter who never swung must not be recorded as having swung and missed"
     );
     ASSERT_EQ(1, m->at_bat.swing_stopped, "the engine must conclude that no swing happened");
@@ -298,7 +298,7 @@ int test_scripted_swing_gesture_survives_a_declaration_still_in_flight(void)
  *
  * Every other test in this file drives the FIRST pitch of a half-inning, and that blind spot hid a
  * live defect for the whole of the swing slice: the batter's window was asked of `pitch_state ==
- * WINDUP`, which consolidation stamps back to NONE on every frame a resolved pitch's `pitchResult`
+ * WINDUP`, which consolidation stamps back to NONE on every frame a resolved pitch's `pitch_result`
  * is still set — and that flag is only cleared when the NEXT pitch is released. So from pitch two
  * onward the crouch simply was not a beat: the batter could declare in 0 of the windup's 87 frames,
  * the power meter never armed, and the four-beat dance the slice was designed around collapsed to
@@ -324,14 +324,14 @@ int test_scripted_swing_power_beat_survives_into_later_pitches(void)
     MatchSession* m = scripted_match(g);
 
     // Sit out the first pitch entirely — declare nothing, and let it resolve. That is what leaves a
-    // pitchResult standing, which is the state the next windup has to survive.
+    // pitch_result standing, which is the state the next windup has to survive.
     ASSERT(tick_until_windup(g, 900), "the AI pitcher never began a first windup");
     for (int i = 0; i < 900; i++) {
         scripted_tick(g);
-        if (scripted_state(g)->rules->betweenPitchState.pitchResult != PITCH_RESULT_NONE) break;
+        if (scripted_state(g)->rules->between_pitch.pitch_result != PITCH_RESULT_NONE) break;
     }
     ASSERT(
-        scripted_state(g)->rules->betweenPitchState.pitchResult != PITCH_RESULT_NONE,
+        scripted_state(g)->rules->between_pitch.pitch_result != PITCH_RESULT_NONE,
         "the first pitch must resolve, leaving the stale flag this test is about"
     );
 

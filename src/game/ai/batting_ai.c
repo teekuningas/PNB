@@ -43,7 +43,7 @@ static BattingStrategy batting_strategy_now(const MatchSession* match, const Gam
     int power = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.power : 0;
     int speed = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.speed : 0;
     return calculate_batting_strategy(
-        &rules->halfInningState, field_status(match, &rules->referee), power, speed, rules->scoreboard.period
+        &rules->half_inning, field_status(match, &rules->referee), power, speed, rules->scoreboard.period
     );
 }
 
@@ -60,7 +60,7 @@ static BattingStrategy batting_strategy_now(const MatchSession* match, const Gam
 static void declare_batter_choice(const MatchSession* match, const GameRulesState* rules, IntentChannel* channel)
 {
     int candidates[BATTER_CANDIDATE_MAX];
-    const int count = list_batter_candidates(match, &rules->scoreboard, &rules->halfInningState, candidates);
+    const int count = list_batter_candidates(match, &rules->scoreboard, &rules->half_inning, candidates);
     if (count == 0) return;
 
     BatterCandidate scored[BATTER_CANDIDATE_MAX];
@@ -217,10 +217,11 @@ static void advance_runners_on_loose_hit(
     const MatchSession* match, const GameRulesState* rules, const FieldPositions* fieldPositions, IntentChannel* channel
 )
 {
-    const BetweenPitchState* bps = &rules->betweenPitchState;
-    if (!(bps->batOutcome == BAT_OUTCOME_HIT && bps->catchHasBeenMade == 0 && match->ballInfo.thrown_to == BASE_NONE &&
-          match->ballInfo.holder == -1 && match->ballInfo.moving == 1 && bps->hasBallHitGround == 1 &&
-          match->ballInfo.location.z < -10.0f && is_ball_out_of_bounds(&match->ballInfo, fieldPositions))) {
+    const BetweenPitchState* bps = &rules->between_pitch;
+    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 &&
+          match->ballInfo.thrown_to == BASE_NONE && match->ballInfo.holder == -1 && match->ballInfo.moving == 1 &&
+          bps->has_ball_hit_ground == 1 && match->ballInfo.location.z < -10.0f &&
+          is_ball_out_of_bounds(&match->ballInfo, fieldPositions))) {
         return;
     }
     for (int i = 0; i < BASE_COUNT; i++) {

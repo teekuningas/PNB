@@ -128,8 +128,8 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // drained by the tick that produced it (stage 9), so a controller here can only ever read
     // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
     action_invocations(
-        game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee,
-        &rules->halfInningState, &stateInfo->channels
+        game, stateInfo->clientInput, stateInfo->keyStates, &rules->scoreboard, &rules->referee, &rules->half_inning,
+        &stateInfo->channels
     );
     ai_update(game, rules, stateInfo->fieldPositions, stateInfo->aiController, &stateInfo->channels);
 
@@ -161,8 +161,8 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 5. ADJUDICATE — the referee, the sole legal authority, reads the physical world const and
     // pronounces what it means.
     update_referee(
-        stateInfo->match, stateInfo->fieldPositions, &rules->referee, &rules->halfInningState,
-        &rules->betweenPitchState, &rules->scoreboard, &rules->homeRunContestState, &stateInfo->announcement
+        stateInfo->match, stateInfo->fieldPositions, &rules->referee, &rules->half_inning, &rules->between_pitch,
+        &rules->scoreboard, &rules->homerun_contest, &stateInfo->announcement
     );
 
     // 6. ENFORCE — the legal decisions made physical: the burnt and the scored leave the field, the
@@ -188,7 +188,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
 
     // 7. SETTLE — the referee closes the RESETTING→NONE handshake once the resets are done, and
     // rescans the new physical world to establish its legal tracking.
-    referee_finalize(stateInfo->match, &rules->referee, &rules->betweenPitchState);
+    referee_finalize(stateInfo->match, &rules->referee, &rules->between_pitch);
 
     // 8. VALIDATE — capture a snapshot when a pitch is released, then check the state's invariants.
     if (stateInfo->match->gameEvents.pitchReleased) {

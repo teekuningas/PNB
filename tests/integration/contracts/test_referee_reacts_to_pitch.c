@@ -8,9 +8,9 @@
  * state as the legal baseline for this pitch.
  *
  * This tests the Event → Snapshot chain:
- *   pitchReleased (GameEvents) → baseAtPitchStart captured
- *                               → strikesAtPitchStart captured
- *                               → betweenPitchState cleared
+ *   pitchReleased (GameEvents) → base_at_pitch_start captured
+ *                               → strikes_at_pitch_start captured
+ *                               → between_pitch cleared
  *                               → pending run flags cleared
  *
  * This snapshot is critical: it defines the "legal baseline" for the pitch.
@@ -28,13 +28,13 @@ int test_referee_snapshots_on_pitch_released(void)
     initialize_referee_from_physical_state(ctx);
 
     // Set up a non-zero strike count (simulating mid at-bat)
-    ctx->state->rules->halfInningState.strikes = 1;
+    ctx->state->rules->half_inning.strikes = 1;
 
-    // Dirty the betweenPitchState (simulating residue from previous pitch)
-    ctx->state->rules->betweenPitchState.catchHasBeenMade = 1;
-    ctx->state->rules->betweenPitchState.hasBallHitGround = 1;
-    ctx->state->rules->betweenPitchState.pitchResult = PITCH_RESULT_BALL;
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    // Dirty the between_pitch (simulating residue from previous pitch)
+    ctx->state->rules->between_pitch.catch_has_been_made = 1;
+    ctx->state->rules->between_pitch.has_ball_hit_ground = 1;
+    ctx->state->rules->between_pitch.pitch_result = PITCH_RESULT_BALL;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
     // Fire pitchReleased
     ctx->state->match->gameEvents.pitchReleased = 1;
@@ -42,34 +42,33 @@ int test_referee_snapshots_on_pitch_released(void)
     // Run 1 frame — referee should snapshot everything
     simulate_frames(ctx, 1);
 
-    // Assert: baseAtPitchStart captured for the runner at second
+    // Assert: base_at_pitch_start captured for the runner at second
     ASSERT_EQ(
-        BASE_SECOND, ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart,
+        BASE_SECOND, ctx->state->rules->referee.batting_players[0].base_at_pitch_start,
         "Runner's pitch-start base should be captured"
     );
 
     // Assert: batter's pitch-start base is home
     ASSERT_EQ(
-        BASE_HOME, ctx->state->rules->referee.battingPlayers[1].baseAtPitchStart,
+        BASE_HOME, ctx->state->rules->referee.batting_players[1].base_at_pitch_start,
         "Batter's pitch-start base should be HOME"
     );
 
-    // Assert: strikesAtPitchStart captured
-    ASSERT_EQ(1, ctx->state->rules->referee.strikesAtPitchStart, "Strike count at pitch start should be captured");
+    // Assert: strikes_at_pitch_start captured
+    ASSERT_EQ(1, ctx->state->rules->referee.strikes_at_pitch_start, "Strike count at pitch start should be captured");
 
-    // Assert: betweenPitchState was cleared (fresh for this pitch)
+    // Assert: between_pitch was cleared (fresh for this pitch)
     ASSERT_EQ(
-        0, ctx->state->rules->betweenPitchState.catchHasBeenMade, "catchHasBeenMade should be cleared on new pitch"
+        0, ctx->state->rules->between_pitch.catch_has_been_made, "catch_has_been_made should be cleared on new pitch"
     );
     ASSERT_EQ(
-        0, ctx->state->rules->betweenPitchState.hasBallHitGround, "hasBallHitGround should be cleared on new pitch"
+        0, ctx->state->rules->between_pitch.has_ball_hit_ground, "has_ball_hit_ground should be cleared on new pitch"
     );
     ASSERT_EQ(
-        PITCH_RESULT_NONE, ctx->state->rules->betweenPitchState.pitchResult,
-        "pitchResult should be cleared on new pitch"
+        PITCH_RESULT_NONE, ctx->state->rules->between_pitch.pitch_result, "pitch_result should be cleared on new pitch"
     );
     ASSERT_EQ(
-        BAT_OUTCOME_NONE, ctx->state->rules->betweenPitchState.batOutcome, "batOutcome should be cleared on new pitch"
+        BAT_OUTCOME_NONE, ctx->state->rules->between_pitch.bat_outcome, "bat_outcome should be cleared on new pitch"
     );
 
     cleanup_scenario(ctx);

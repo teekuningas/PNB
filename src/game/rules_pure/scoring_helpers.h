@@ -14,10 +14,10 @@
  *   - Super inning (period 2-3): End at last half-inning (only 2 half-innings).
  *   - Homerun contest (period 4+): End at even-numbered half-inning if batting leads.
  *
- * Special case: At the end of period 1, if period 0 winner is ahead on period0Runs
+ * Special case: At the end of period 1, if period 0 winner is ahead on period0_runs
  * and the overall score is tied, the period ends (opponent can't overtake).
  *
- * @param sb The scoreboard (inning, period, halfInningsInPeriod).
+ * @param sb The scoreboard (inning, period, half_innings_in_period).
  * @param batting_runs Total runs for the batting team this period.
  * @param catching_runs Total runs for the catching team this period.
  * @param batting_period0_runs Batting team's period 0 runs (for tiebreaker).

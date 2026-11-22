@@ -100,7 +100,7 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
     match->playerInfo[index].path.going_forward = 0;
     match->playerInfo[index].path.waypoint = 0;
     // if he is a (unused) joker player, mark him as used.
-    // The referee spends the joker (halfInningState.jokersLeft) on the batterEntered event.
+    // The referee spends the joker (half_inning.jokers_left) on the batterEntered event.
     if (match->playerInfo[index].batting.joker == JOKER_AVAILABLE) {
         match->playerInfo[index].batting.joker = JOKER_USED;
     }
@@ -128,7 +128,7 @@ int swing_may_be_declared(const MatchSession* match)
     if (!pitch_is_being_delivered(match)) return 0;
     if (match->at_bat.swing_stopped == 1) return 0; // withdrawn, or never begun
     // Spent: the bat has already met the ball. Asked of THIS swing's own record of it and not of the
-    // referee's batOutcome, which is the correction the sim caught. batOutcome is sticky and
+    // referee's bat_outcome, which is the correction the sim caught. bat_outcome is sticky and
     // survives into the next pitch's windup, so a gate consulting it refused every power a batter
     // tried to commit during a crouch — and let the elevation through once the flight had cleared
     // it. Eleven pitches in twelve went unswung at, and the eleven looked like a batting problem
@@ -442,7 +442,7 @@ void update_batting(
             // The re-entry guard is the swing's own `consumed`, set on the way in: the condition that
             // brought us here (the animation is past the contact frame) stays true for many frames
             // afterwards, so something has to say "already done". It used to be the referee's sticky
-            // batOutcome — legal state read by a physical stage, and legal state that outlives the
+            // bat_outcome — legal state read by a physical stage, and legal state that outlives the
             // pitch it describes. Now it is a fact about the swing, with the swing's own lifetime,
             // and it is the same field the INGEST gate refuses on.
             if (match->at_bat.swing_stopped == 0 && match->at_bat.swing.consumed == 0) {

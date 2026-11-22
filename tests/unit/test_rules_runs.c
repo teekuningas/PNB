@@ -26,7 +26,7 @@ int test_is_regular_run(void)
 
 int test_is_run_of_honor(void)
 {
-    // Run of Honor: Batter (baseAtPitchStart BASE_HOME) arrives at 3rd base (BASE_THIRD)
+    // Run of Honor: Batter (base_at_pitch_start BASE_HOME) arrives at 3rd base (BASE_THIRD)
     ASSERT_EQ(1, is_run_of_honor(BASE_THIRD, BASE_HOME, 0, 0), "Should score run of honor");
 
     // Wounded

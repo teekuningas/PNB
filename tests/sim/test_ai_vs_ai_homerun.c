@@ -79,7 +79,7 @@ int test_ai_vs_ai_homerun(void)
 //
 // What each seed asserts is the invariant observer's whole bounds set, most of it contest-relevant:
 // strikes in [0,3] (§18(1) — three correct pitches end the batting turn, so a fourth pitch cannot
-// be counted), the pair counter in [0, pairCount], no stall, and the turn actually completing.
+// be counted), the pair counter in [0, pair_count], no stall, and the turn actually completing.
 //
 // Measured 2026-08-27 on the fix that closed bug #8: 0 breaches in 400 seeds, where the code before
 // it broke 21. SEED_COUNT is the runtime/confidence trade: at bug #8's ~5% rate, 120 seeds miss it

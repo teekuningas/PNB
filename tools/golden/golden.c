@@ -96,7 +96,7 @@ static void observe(const SimGame* g, void* ctx)
     const MatchSession* m = g->state->match;
     int cca = catching_action_code(m);
     int airborne = m->ballInfo.pitch_in_flight;
-    int hit = g->state->rules->betweenPitchState.batOutcome == BAT_OUTCOME_HIT;
+    int hit = g->state->rules->between_pitch.bat_outcome == BAT_OUTCOME_HIT;
     if (cca == 2 && cov.lastCca != 2) cov.windups++;
     if (cca == 1 && cov.lastCca != 1) cov.throws++;
     if (cov.lastCca == 2 && cca != 2) {
@@ -116,9 +116,9 @@ static void observe(const SimGame* g, void* ctx)
 
     const GameRulesState* r = g->state->rules;
     int runs = r->scoreboard.teams[0].runs + r->scoreboard.teams[1].runs, honors = 0;
-    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) honors += r->referee.battingPlayers[i].runOfHonorScored != 0;
-    int foul = r->referee.foulState == FOUL_STATE_DETECTED;
-    int pair = r->referee.nextPairTransitionState == HR_PAIR_STATE_DETECTED;
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) honors += r->referee.batting_players[i].run_of_honor_scored != 0;
+    int foul = r->referee.foul_state == FOUL_STATE_DETECTED;
+    int pair = r->referee.next_pair_state == HR_PAIR_STATE_DETECTED;
     if (cov.started) {
         if (r->scoreboard.inning != cov.lastInning) cov.halfInnings++;
         if (runs > cov.lastRuns) cov.runs += runs - cov.lastRuns;

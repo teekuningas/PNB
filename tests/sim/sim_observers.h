@@ -90,9 +90,9 @@ typedef struct {
     // pitch NONE, throw 0) is indistinguishable from a half-inning / HR-pair RESET that clears a
     // fielder's ball — so any state-based drop count aliases resets (verified via PBP). The drop is
     // knighted by construction instead: tests/integration/contracts/test_ai_tactical_drop.c.
-    long contacts; // bat made contact (batOutcome → HIT)
-    long whiffs; // swing and a miss (batOutcome → MISSED)
-    long fouls; // hits called foul / out of bounds (foulState NONE→DETECTED rising edge)
+    long contacts; // bat made contact (bat_outcome → HIT)
+    long whiffs; // swing and a miss (bat_outcome → MISSED)
+    long fouls; // hits called foul / out of bounds (foul_state NONE→DETECTED rising edge)
     long strikes_called; // strike-count increments
     long balls_called; // ball-count increments
     long outs_made; // out-count increments
@@ -264,7 +264,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx);
  *                    that has already been late once.
  *   passes           at-bats where the batter carried no swing through at all.
  *
- * Everything is sampled on the batOutcome rising edge, using the PREVIOUS frame's
+ * Everything is sampled on the bat_outcome rising edge, using the PREVIOUS frame's
  * ball state: observers run after the whole frame, by which time a contact has
  * already replaced the ball's velocity with the batted one. */
 typedef struct {

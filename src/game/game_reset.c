@@ -47,7 +47,7 @@ void reset_for_new_half_inning(
     if (rules->scoreboard.period >= 4) {
         // The referee has already set the contest's pair counter for this half-inning (at the side change),
         // or the menu has (starting a contest).
-        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions, 0);
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homerun_contest, field_positions, 0);
     }
 }
 
@@ -59,12 +59,12 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
 
     if (rules->scoreboard.period >= 4) {
         // Homerun Contest: same batter resumes after a foul/out-of-bounds, so keep them at the plate.
-        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homeRunContestState, field_positions, 1);
+        setup_homerun_physical_state(match, &rules->scoreboard, &rules->homerun_contest, field_positions, 1);
     } else {
         // restorePlayersToRefereePositions: Restore players to their bases at the start of the pitch
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            if (rules->referee.battingPlayers[j].baseAtPitchStart != BASE_NONE) {
-                BaseID restoreBase = rules->referee.battingPlayers[j].baseAtPitchStart;
+            if (rules->referee.batting_players[j].base_at_pitch_start != BASE_NONE) {
+                BaseID restoreBase = rules->referee.batting_players[j].base_at_pitch_start;
 
                 // 1. Restore Player State and ID (Physical/Logical State)
                 if (restoreBase == BASE_HOME) {
@@ -94,13 +94,13 @@ void reset_for_foul_play(MatchSession* match, const FieldPositions* field_positi
             } else {
                 // Restore OUT/SCORED/WOUNDED so enforcement does not start their exit again.
                 // This is physical state sync
-                if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_OUT) {
+                if (rules->referee.batting_players[j].status == PLAYER_STATUS_OUT) {
                     match->playerInfo[j].batting.presence.state = PLAYER_STATE_OUT;
                     match->playerInfo[j].batting.presence.base_id = BASE_NONE;
-                } else if (rules->referee.battingPlayers[j].hasScored) {
+                } else if (rules->referee.batting_players[j].has_scored) {
                     match->playerInfo[j].batting.presence.state = PLAYER_STATE_SCORED;
                     match->playerInfo[j].batting.presence.base_id = BASE_NONE;
-                } else if (rules->referee.battingPlayers[j].status == PLAYER_STATUS_WOUNDED) {
+                } else if (rules->referee.batting_players[j].status == PLAYER_STATUS_WOUNDED) {
                     match->playerInfo[j].batting.presence.state = PLAYER_STATE_WOUNDED;
                     match->playerInfo[j].batting.presence.base_id = BASE_NONE;
                 }
@@ -249,11 +249,11 @@ static void initialize_inning_permanent_player_information(
     // initialize batting team numbers and jokerness
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         if (i < PLAYERS_IN_TEAM) {
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.number = i + 1;
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.joker = JOKER_REGULAR;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batter_order[i]].batting.number = i + 1;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batter_order[i]].batting.joker = JOKER_REGULAR;
         } else {
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.number = 0;
-            match->playerInfo[scoreboard->teams[battingTeamIndex].batterOrder[i]].batting.joker = JOKER_AVAILABLE;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batter_order[i]].batting.number = 0;
+            match->playerInfo[scoreboard->teams[battingTeamIndex].batter_order[i]].batting.joker = JOKER_AVAILABLE;
         }
     }
     // initialize batting team
@@ -403,14 +403,14 @@ static void setup_homerun_physical_state(
     int battingTeamIndex = get_batting_team_index(scoreboard);
     Vector3D target;
     int i;
-    if (hrcs->runnerBatterPairCounter < scoreboard->pairCount) {
-        int runnerIndex = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][hrcs->runnerBatterPairCounter];
-        int batterIndex = scoreboard->teams[battingTeamIndex].batterRunnerIndices[0][hrcs->runnerBatterPairCounter];
+    if (hrcs->pair_index < scoreboard->pair_count) {
+        int runnerIndex = scoreboard->teams[battingTeamIndex].batter_runner_indices[1][hrcs->pair_index];
+        int batterIndex = scoreboard->teams[battingTeamIndex].batter_runner_indices[0][hrcs->pair_index];
         // batter
         if (batterIndex != -1) {
             match->playerInfo[batterIndex].batting.presence.base_id = BASE_HOME;
             match->playerInfo[batterIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
-            match->playerInfo[batterIndex].batting.number = hrcs->runnerBatterPairCounter + 1;
+            match->playerInfo[batterIndex].batting.number = hrcs->pair_index + 1;
             // move player to default batter ready position
             target.x = (float)(field_positions->pitchPlate.x + cos(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
             target.z = (float)(field_positions->pitchPlate.z - sin(ZERO_BATTING_ANGLE) * BATTING_RADIUS);
@@ -441,11 +441,11 @@ static void setup_homerun_physical_state(
         }
 
         // set other runners next to the third base.
-        for (i = hrcs->runnerBatterPairCounter + 1; i < scoreboard->pairCount; i++) {
-            int index = scoreboard->teams[battingTeamIndex].batterRunnerIndices[1][i];
+        for (i = hrcs->pair_index + 1; i < scoreboard->pair_count; i++) {
+            int index = scoreboard->teams[battingTeamIndex].batter_runner_indices[1][i];
             if (index != -1) {
                 match->playerInfo[index].body.location.x =
-                    field_positions->thirdBaseRun.x - 2.0f - (i - (hrcs->runnerBatterPairCounter + 1)) * 1.5f;
+                    field_positions->thirdBaseRun.x - 2.0f - (i - (hrcs->pair_index + 1)) * 1.5f;
                 match->playerInfo[index].body.location.y = field_positions->thirdBaseRun.y;
                 match->playerInfo[index].body.location.z = field_positions->thirdBaseRun.z;
                 match->playerInfo[index].body.previous_location.x = match->playerInfo[index].body.location.x;

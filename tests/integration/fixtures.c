@@ -57,9 +57,7 @@ StateInfo* setup_test_state()
     // Rather than re-list those defaults here (two copies of one recipe drift), hand the job to the
     // owner: the referee's own new-inning reset. create_scenario already ran it; the contract tier
     // now starts from the same legal ground instead of raw zeroes.
-    referee_reset_for_new_inning(
-        &state->rules->referee, &state->rules->halfInningState, &state->rules->betweenPitchState
-    );
+    referee_reset_for_new_inning(&state->rules->referee, &state->rules->half_inning, &state->rules->between_pitch);
 
     // The two members the reduced pipeline never needed, and so never had: `simulate_frames` skips
     // action_invocations entirely, and consolidation only reaches gameConclusion at a period end. A test

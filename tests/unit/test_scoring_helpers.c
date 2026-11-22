@@ -7,7 +7,7 @@
  * Test should_period_end() — the pure function that determines
  * if a pesäpallo period should end after a run is scored.
  *
- * halfInningsInPeriod = 4 means 2 full innings (4 half-innings) per period.
+ * half_innings_in_period = 4 means 2 full innings (4 half-innings) per period.
  * Inning numbering is 0-based half-innings:
  *   Period 0: innings 0,1,2,3
  *   Period 1: innings 4,5,6,7
@@ -19,7 +19,7 @@ int test_should_period_end_last_half_inning_lead(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // Last half-inning of period 0 (inning 3), batting leads 5-4
     sb.inning = 3;
@@ -33,7 +33,7 @@ int test_should_period_end_last_half_inning_no_lead(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // Last half-inning of period 0 (inning 3), tied 4-4
     sb.inning = 3;
@@ -50,7 +50,7 @@ int test_should_period_end_mid_period(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // Mid-period (inning 1), batting leads — should NOT trigger
     sb.inning = 1;
@@ -68,7 +68,7 @@ int test_should_period_end_period1_last(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // Last half-inning of period 1 (inning 7), batting leads
     sb.inning = 7;
@@ -82,10 +82,10 @@ int test_should_period_end_period0_tiebreaker(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // End of period 1 (inning 7), overall tied 4-4,
-    // but batting team won period 0 (period0Runs: 3 > 2)
+    // but batting team won period 0 (period0_runs: 3 > 2)
     sb.inning = 7;
     sb.period = 1;
     ASSERT_EQ(1, should_period_end(&sb, 4, 4, 3, 2), "Period ends when tied but batting team won period 0");
@@ -93,7 +93,7 @@ int test_should_period_end_period0_tiebreaker(void)
     // Same but catching team won period 0 — should NOT end
     ASSERT_EQ(0, should_period_end(&sb, 4, 4, 2, 3), "Period does NOT end when tied and catching team won period 0");
 
-    // Period0 tiebreaker only applies at inning 7 (halfInningsInPeriod * 2 - 1)
+    // Period0 tiebreaker only applies at inning 7 (half_innings_in_period * 2 - 1)
     // NOT at inning 3 (end of period 0 itself)
     sb.inning = 3;
     sb.period = 0;
@@ -106,11 +106,11 @@ int test_should_period_end_super_inning(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
-    // Super inning: period 2, inning = halfInningsInPeriod * 2 = 8 (1st half)
+    // Super inning: period 2, inning = half_innings_in_period * 2 = 8 (1st half)
     // Last half-inning of super inning: inning 9
-    // Check: inning+1 == halfInningsInPeriod*2+2 → 10 == 10
+    // Check: inning+1 == half_innings_in_period*2+2 → 10 == 10
     sb.inning = 9;
     sb.period = 2;
     ASSERT_EQ(1, should_period_end(&sb, 2, 1, 0, 0), "Super inning ends when batting leads in final half-inning");
@@ -126,7 +126,7 @@ int test_should_period_end_homerun_contest(void)
 {
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
-    sb.halfInningsInPeriod = 4;
+    sb.half_innings_in_period = 4;
 
     // HR contest: period 4, check after even half-inning (inning 1)
     sb.period = 4;

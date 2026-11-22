@@ -398,20 +398,20 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (super inning = period 2)
-        stateInfo->rules->scoreboard.isCupGame = 0;
+        stateInfo->rules->scoreboard.is_cup_game = 0;
         stateInfo->rules->scoreboard.period = 2;
         // Inning counter: period 2 starts after period 0 and 1 complete
-        // Each period uses halfInningsInPeriod half-innings
-        // So period 2 starts at: 2 * halfInningsInPeriod
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2;
+        // Each period uses half_innings_in_period half-innings
+        // So period 2 starts at: 2 * half_innings_in_period
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2;
 
         // Set prior period scores (for realistic display in game over screen)
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 
@@ -423,22 +423,22 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set period state (homerun = period 4)
-        stateInfo->rules->scoreboard.isCupGame = 0;
+        stateInfo->rules->scoreboard.is_cup_game = 0;
         stateInfo->rules->scoreboard.period = 4;
-        // Inning counter: when super-inning ends, inning is at halfInningsInPeriod*2 + 2
+        // Inning counter: when super-inning ends, inning is at half_innings_in_period*2 + 2
         // For 8 half-innings: inning = 10 (even)
         // This makes team 0 bat first: (10 + 0 + 4) % 2 = 0
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2 + 2;
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2 + 2;
 
         // Set prior period scores (for realistic display in game over screen)
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period3Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period3Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period3_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period3_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 
@@ -450,7 +450,7 @@ static void applyFixture(
         initialize_game_from_menu(stateInfo, &gameSetup, rng_seed);
 
         // Set up the tournament context with a full, plausible history using the new API
-        stateInfo->rules->scoreboard.isCupGame = 1;
+        stateInfo->rules->scoreboard.is_cup_game = 1;
 
         // Specific seeding for this test fixture: alternates top and bottom bracket
         // Creates matchups: (0v2), (4v6), (1v3), (5v7) in quarter-finals
@@ -479,15 +479,15 @@ static void applyFixture(
 
         // Set game state to a super-inning
         stateInfo->rules->scoreboard.period = 2;
-        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.halfInningsInPeriod * 2;
+        stateInfo->rules->scoreboard.inning = stateInfo->rules->scoreboard.half_innings_in_period * 2;
 
         // Set prior period scores to 0 for a clean super-inning
-        stateInfo->rules->scoreboard.teams[0].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period0Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period1Runs = 0;
-        stateInfo->rules->scoreboard.teams[0].period2Runs = 0;
-        stateInfo->rules->scoreboard.teams[1].period2Runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period0_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period1_runs = 0;
+        stateInfo->rules->scoreboard.teams[0].period2_runs = 0;
+        stateInfo->rules->scoreboard.teams[1].period2_runs = 0;
         stateInfo->rules->scoreboard.teams[0].runs = 0;
         stateInfo->rules->scoreboard.teams[1].runs = 0;
 

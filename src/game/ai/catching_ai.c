@@ -152,7 +152,7 @@ void update_catching_ai(
 )
 {
     // Update AI pitching
-    update_ai_pitching(match, &rules->halfInningState, aiController, channel);
+    update_ai_pitching(match, &rules->half_inning, aiController, channel);
 
     // (The throw no longer needs an AI-side "finish throwing" step: the engine owns the windup and
     // releases the ball when it completes. throwStage / AI_THROW_LOCK / the meter-watch / the
@@ -181,14 +181,14 @@ void update_catching_ai(
         BaseID r3BaseAtPitchStart = BASE_NONE;
         int r3IsOnBase = 0;
         if (index3 != -1) {
-            r3BaseAtPitchStart = rules->referee.battingPlayers[index3].baseAtPitchStart;
+            r3BaseAtPitchStart = rules->referee.batting_players[index3].base_at_pitch_start;
             r3IsOnBase = (match->playerInfo[index3].batting.presence.state == PLAYER_STATE_ON_BASE);
         }
 
         BaseID r2BaseAtPitchStart = BASE_NONE;
         int r2IsOnBase = 0;
         if (index2 != -1) {
-            r2BaseAtPitchStart = rules->referee.battingPlayers[index2].baseAtPitchStart;
+            r2BaseAtPitchStart = rules->referee.batting_players[index2].base_at_pitch_start;
             r2IsOnBase = (match->playerInfo[index2].batting.presence.state == PLAYER_STATE_ON_BASE);
         }
 
@@ -196,7 +196,7 @@ void update_catching_ai(
         int holder = match->ballInfo.holder;
 
         if (should_ai_drop_ball(
-                &(rules->referee), &(rules->betweenPitchState), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
+                &(rules->referee), &(rules->between_pitch), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
                 r2IsOnBase, catcherHomeIndex, holder
             )) {
             // Declare the drop and stop there. Whether it is allowed — this catcher still holding

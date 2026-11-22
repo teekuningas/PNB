@@ -270,7 +270,7 @@ typedef struct _SwingActualization {
     // The bat has already met this ball — set the moment the swing resolves, hit or miss. It is the
     // one fact behind two questions that used to be asked of two different things: the INGEST gate's
     // "is this swing still open?" and the actualizer's "have I already fired?". The actualizer used
-    // to ask the referee's sticky batOutcome, which is legal state with a longer life than the play
+    // to ask the referee's sticky bat_outcome, which is legal state with a longer life than the play
     // it describes — the same reading that, tried at the gate, refused every power committed during
     // a windup. Here it lives with the swing and dies with it.
     int consumed;

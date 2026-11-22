@@ -69,7 +69,7 @@ int test_run_arrival_before_ball_lands(void)
     Vector3D targetInField = {10.0f, 0.0f, -10.0f}; // Known in-bounds location
     hit_fly_ball_to_location(ctx, pitchPlate, targetInField);
 
-    int runsAtStart = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs at start: %d\n", runsAtStart);
 
     // 6. Simulate frames
@@ -98,12 +98,12 @@ int test_run_arrival_before_ball_lands(void)
             arrivalFrame = i;
             printf(
                 "Frame %d: Runner arrived at HOME. (Ball Height: %.2f, Rules Live: %d)\n", i,
-                ctx->state->match->ballInfo.location.y, ctx->state->rules->betweenPitchState.hasBallHitGround
+                ctx->state->match->ballInfo.location.y, ctx->state->rules->between_pitch.has_ball_hit_ground
             );
         }
 
         // Check Ball Landing (Rule State)
-        if (ctx->state->rules->betweenPitchState.hasBallHitGround && !ballLanded) {
+        if (ctx->state->rules->between_pitch.has_ball_hit_ground && !ballLanded) {
             ballLanded = 1;
             landingFrame = i;
             printf("Frame %d: Ball hit ground. Game is now LIVE.\n", i);
@@ -129,7 +129,7 @@ int test_run_arrival_before_ball_lands(void)
         printf("SUCCESS: Runner arrived %d frames BEFORE ball landed.\n", landingFrame - arrivalFrame);
     }
 
-    int runsAfter = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAfter = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs after: %d\n", runsAfter);
 
     cleanup_scenario(ctx);

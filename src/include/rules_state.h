@@ -57,60 +57,60 @@ typedef struct _RefereePlayerState {
     RefereePlayerStatus status; // Mutually exclusive player status (wounding/out lifecycle)
 
     // === PITCH START SNAPSHOT (for foul play) ===
-    BaseID baseAtPitchStart; // Where was player when pitch started
+    BaseID base_at_pitch_start; // Where was player when pitch started
 
     // === CURRENT SAFETY STATUS ===
-    BaseID currentSafetyBase; // Which base has their safety (-1 if none)
-    int hasScored; // Logical scored status (decided by Referee)
-    int runOfHonorScored; // Logical run of honor scored status (decided by Referee)
+    BaseID current_safety_base; // Which base has their safety (-1 if none)
+    int has_scored; // Logical scored status (decided by Referee)
+    int run_of_honor_scored; // Logical run of honor scored status (decided by Referee)
 
     // === PENDING RUNS (Milestone 17) ===
-    int hasPendingRun; // Arrived at home while ball in air
-    int hasPendingRunOfHonor; // Arrived at 3rd (homerun) while ball in air
+    int has_pending_run; // Arrived at home while ball in air
+    int has_pending_run_of_honor; // Arrived at 3rd (homerun) while ball in air
 
 } RefereePlayerState;
 
 typedef struct _RefereeState {
     // Per-player tracking
-    RefereePlayerState battingPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
+    RefereePlayerState batting_players[PLAYERS_IN_TEAM + JOKER_COUNT];
 
     // Global events
-    int strikesAtPitchStart; // Snapshot of strikes when pitch started
+    int strikes_at_pitch_start; // Snapshot of strikes when pitch started
 
     // Wounding evaluation state (Referee monitors and decides)
-    int woundingEvaluationActive; // Referee is evaluating a potential wounding catch
-    int woundingEvaluationFinished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
-    int woundingEvaluationTimer; // Timer counting up during evaluation period
+    int wounding_evaluation_active; // Referee is evaluating a potential wounding catch
+    int wounding_evaluation_finished; // Milestone 17: Flag set when evaluation completes (catch confirmed)
+    int wounding_evaluation_timer; // Timer counting up during evaluation period
 
     // Flow Control State Machines (Milestone 17 consolidation)
-    FoulPlayState foulState; // Out-of-bounds transition state
-    int foulTimer; // Timer for foul play grace period
+    FoulPlayState foul_state; // Out-of-bounds transition state
+    int foul_timer; // Timer for foul play grace period
 
-    HomeRunPairState nextPairTransitionState; // Next-pair transition state
-    int nextPairTimer; // Timer for next-pair transition
+    HomeRunPairState next_pair_state; // Next-pair transition state
+    int next_pair_timer; // Timer for next-pair transition
 
-    EndOfInningTransitionState endOfInningState; // End-of-inning transition state
-    int endInningTimer; // Timer for end-of-inning transition
-    PeriodTransitionType periodTransition; // Result of period logic (set at DETECTED→RESETTING)
-    int periodTransitionWinner; // Winner index (valid when periodTransition == GAME_OVER)
+    EndOfInningTransitionState end_of_inning_state; // End-of-inning transition state
+    int end_of_inning_timer; // Timer for end-of-inning transition
+    PeriodTransitionType period_transition; // Result of period logic (set at DETECTED→RESETTING)
+    int period_transition_winner; // Winner index (valid when period_transition == GAME_OVER)
 
     // Run of Honor tracking (Homerun Contest)
-    int ballInThirdBaseSincePitch; // Has ball been held at 3rd base by catching team since pitch started
+    int ball_in_third_base_since_pitch; // Has ball been held at 3rd base by catching team since pitch started
 
-    int homerunPairHasPitch; // Has at least one pitch been released for current pair
+    int homerun_pair_has_pitch; // Has at least one pitch been released for current pair
 } RefereeState;
 
 typedef struct _TeamInfo {
     int value; // which team, like 1 for ankkurit, 2 for vimpeli etc.
     TeamControlMode control; // who controls, 0 player 1, 1, player 2, 2 AI
     int runs; // how many runs has this team
-    int period0Runs;
-    int period1Runs;
-    int period2Runs;
-    int period3Runs;
-    int batterRunnerIndices[2][5];
-    int batterOrder[12]; // this teams' batting order, used in many innings
-    int batterOrderIndex; // what player is next
+    int period0_runs;
+    int period1_runs;
+    int period2_runs;
+    int period3_runs;
+    int batter_runner_indices[2][5];
+    int batter_order[12]; // this teams' batting order, used in many innings
+    int batter_order_index; // what player is next
 } TeamInfo;
 
 // §12 Vuoronvaihto — the designation that decides when a batting turn is spent.
@@ -118,27 +118,27 @@ typedef struct _TeamInfo {
 // every even-numbered run and dies with the inning. Referee-owned; the decisions themselves are the
 // pure predicates in rules_pure/rules_side_change.h.
 typedef struct _LastBatterState {
-    int designatedIndex; // the viimeinen lyöjä; -1 until the half-inning's first batter takes the bat
-    int lastRegularIndex; // most recent REGULAR player to take the bat; -1 if none yet (jokers don't count)
-    int hasBattedAgain; // the designated player has taken the bat since being designated
+    int designated_index; // the viimeinen lyöjä; -1 until the half-inning's first batter takes the bat
+    int last_regular_index; // most recent REGULAR player to take the bat; -1 if none yet (jokers don't count)
+    int has_batted_again; // the designated player has taken the bat since being designated
 
     // Two different questions, and conflating them was a real §12 defect. Both are §12(2)/(3), but
     // they are answered at different moments and by different amounts of the rule.
     //
-    // WHO MAY BAT NEXT. `regularOrderSpent` is the batting-order clause on its own: the order has
+    // WHO MAY BAT NEXT. `regular_order_spent` is the batting-order clause on its own: the order has
     // come round to the designated last batter, so no further REGULAR may be seated and only a
     // joker can extend the turn (§27: "paloa ei tuomita, mikäli jokeripelaaja otetaan lyömään").
     // It settles the instant the previous batter enters and never wobbles afterwards, which is what
     // makes it safe to ask at the moment a new batter is chosen.
     //
-    // DOES THE HALF-INNING END. `turnExhausted` adds the rule's other trigger — that the batter has
+    // DOES THE HALF-INNING END. `turn_exhausted` adds the rule's other trigger — that the batter has
     // "muuttunut lopullisesti etenijäksi", read here as having lost safety at home. That one is
     // genuinely transient: a batter stops standing at the plate the moment he sets off but keeps
     // home until he is established elsewhere, and during a foul he is restored to the plate and
     // takes home back. It belongs to the verdict (with the ball home and no jokers left), never to
     // the choice of batter.
-    int regularOrderSpent;
-    int turnExhausted;
+    int regular_order_spent;
+    int turn_exhausted;
 } LastBatterState;
 
 // MILESTONE 7.5 - Focused Structs
@@ -146,12 +146,12 @@ typedef struct _HalfInningState {
     int outs;
     int balls;
     int strikes;
-    int runsInTheInning;
-    int endPeriod; // Rule state: period should end
+    int runs_in_inning;
+    int end_period; // Rule state: period should end
     // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."
     // A genuinely consumable resource, and per half-inning — so it lives with the half-inning.
-    int jokersLeft;
-    LastBatterState lastBatter;
+    int jokers_left;
+    LastBatterState last_batter;
 } HalfInningState;
 
 // Batting outcome for the current pitch (promoted from GameEvents by referee)
@@ -164,34 +164,34 @@ typedef enum {
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
-    int catchHasBeenMade; // Fly ball was caught (promoted from catchMade)
-    int hasBallHitGround; // Ball has touched ground (promoted from ballHitGround)
-    PitchResult pitchResult; // Referee's pitch adjudication (NONE until resolved)
-    BatOutcome batOutcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
+    int catch_has_been_made; // Fly ball was caught (promoted from catchMade)
+    int has_ball_hit_ground; // Ball has touched ground (promoted from ballHitGround)
+    PitchResult pitch_result; // Referee's pitch adjudication (NONE until resolved)
+    BatOutcome bat_outcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
 } BetweenPitchState;
 
 typedef struct _HomeRunContestState {
-    int runnerBatterPairCounter;
+    int pair_index;
 } HomeRunContestState;
 
 typedef struct _Scoreboard {
     TeamInfo teams[2];
-    int halfInningsInPeriod;
+    int half_innings_in_period;
     int inning;
     int period;
     GamePeriodMode mode; // NEW field for Milestone 7
-    int pairCount;
-    int playsFirst;
-    int isCupGame;
+    int pair_count;
+    int plays_first;
+    int is_cup_game;
 } Scoreboard;
 
 // GameRulesState — Referee-owned state, structurally separated from physical/action state.
 // Only the referee writes these at runtime. Other stages receive const pointers.
 typedef struct _GameRulesState {
     RefereeState referee;
-    HalfInningState halfInningState;
-    BetweenPitchState betweenPitchState;
-    HomeRunContestState homeRunContestState;
+    HalfInningState half_inning;
+    BetweenPitchState between_pitch;
+    HomeRunContestState homerun_contest;
     Scoreboard scoreboard;
 } GameRulesState;
 

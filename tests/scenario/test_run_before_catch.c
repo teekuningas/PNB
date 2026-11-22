@@ -64,7 +64,7 @@ int test_run_arrival_before_catch(void)
     Vector3D pitchPlate = ctx->state->fieldPositions->pitchPlate;
     hit_fly_ball_to_location(ctx, pitchPlate, fielderLoc);
 
-    int runsAtStart = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs at start: %d\n", runsAtStart);
 
     // 5. Simulate frames until both arrival and catch
@@ -85,28 +85,28 @@ int test_run_arrival_before_catch(void)
 
     for (int i = 0; i < 600; i++) {
         // Check pending run state BEFORE simulation
-        int hadPendingRun = ctx->state->rules->referee.battingPlayers[runnerIndex].hasPendingRun;
+        int hadPendingRun = ctx->state->rules->referee.batting_players[runnerIndex].has_pending_run;
         int hadPendingWound =
-            ctx->state->rules->referee.battingPlayers[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED;
+            ctx->state->rules->referee.batting_players[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED;
 
         simulate_frames(ctx, 1);
 
         // Check pending run state AFTER simulation
-        int hasPendingRunNow = ctx->state->rules->referee.battingPlayers[runnerIndex].hasPendingRun;
+        int hasPendingRunNow = ctx->state->rules->referee.batting_players[runnerIndex].has_pending_run;
         int hasPendingWoundNow =
-            ctx->state->rules->referee.battingPlayers[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED;
+            ctx->state->rules->referee.batting_players[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED;
 
         // Detect pending run transitions
         if (!hadPendingRun && hasPendingRunNow && !pendingRunSet) {
             pendingRunSet = 1;
             pendingRunSetFrame = i;
-            printf("Frame %d: hasPendingRun: 0 -> 1 (PENDING RUN SET)\n", i);
+            printf("Frame %d: has_pending_run: 0 -> 1 (PENDING RUN SET)\n", i);
         }
 
         if (hadPendingRun && !hasPendingRunNow && !pendingRunCleared) {
             pendingRunCleared = 1;
             pendingRunClearedFrame = i;
-            printf("Frame %d: hasPendingRun: 1 -> 0 (PENDING RUN CLEARED)\n", i);
+            printf("Frame %d: has_pending_run: 1 -> 0 (PENDING RUN CLEARED)\n", i);
         }
 
         // Detect pending wound transitions
@@ -132,34 +132,35 @@ int test_run_arrival_before_catch(void)
         }
 
         // Check wounding evaluation started
-        if (ctx->state->rules->referee.woundingEvaluationActive && !woundingStarted) {
+        if (ctx->state->rules->referee.wounding_evaluation_active && !woundingStarted) {
             woundingStarted = 1;
             woundingStartFrame = i;
             printf(
                 "Frame %d: Wounding evaluation STARTED (timer=%d, active=%d)\n", i,
-                ctx->state->rules->referee.woundingEvaluationTimer, ctx->state->rules->referee.woundingEvaluationActive
+                ctx->state->rules->referee.wounding_evaluation_timer,
+                ctx->state->rules->referee.wounding_evaluation_active
             );
         }
 
         // Check wounding evaluation finished
-        if (ctx->state->rules->referee.woundingEvaluationFinished && !woundingFinished) {
+        if (ctx->state->rules->referee.wounding_evaluation_finished && !woundingFinished) {
             woundingFinished = 1;
             woundingFinishFrame = i;
             printf(
                 "Frame %d: Wounding evaluation FINISHED (finished=%d)\n", i,
-                ctx->state->rules->referee.woundingEvaluationFinished
+                ctx->state->rules->referee.wounding_evaluation_finished
             );
             printf(
-                "  Runner state=%d, hasPendingWound=%d, hasPendingRun=%d\n",
+                "  Runner state=%d, hasPendingWound=%d, has_pending_run=%d\n",
                 ctx->state->match->playerInfo[runnerIndex].batting.presence.state,
-                ctx->state->rules->referee.battingPlayers[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED,
-                ctx->state->rules->referee.battingPlayers[runnerIndex].hasPendingRun
+                ctx->state->rules->referee.batting_players[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED,
+                ctx->state->rules->referee.batting_players[runnerIndex].has_pending_run
             );
             printf(
-                "  Runner baseId=%d, baseAtPitchStart=%d, status=%d\n",
+                "  Runner baseId=%d, base_at_pitch_start=%d, status=%d\n",
                 ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id,
-                ctx->state->rules->referee.battingPlayers[runnerIndex].baseAtPitchStart,
-                ctx->state->rules->referee.battingPlayers[runnerIndex].status
+                ctx->state->rules->referee.batting_players[runnerIndex].base_at_pitch_start,
+                ctx->state->rules->referee.batting_players[runnerIndex].status
             );
         }
 
@@ -244,7 +245,7 @@ int test_run_arrival_before_catch(void)
     }
     printf("======================\n\n");
 
-    int runsAfter = ctx->state->rules->halfInningState.runsInTheInning;
+    int runsAfter = ctx->state->rules->half_inning.runs_in_inning;
     printf("Runs after: %d (expected: 0)\n", runsAfter);
 
     // Check final runner state

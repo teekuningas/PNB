@@ -65,8 +65,8 @@ static void bring_the_order_round_to(ScenarioContext* ctx, int playerIndex)
     Scoreboard* sb = &ctx->state->rules->scoreboard;
     TeamInfo* team = &sb->teams[get_batting_team_index(sb)];
     for (int i = 0; i < PLAYERS_IN_TEAM; i++) {
-        if (team->batterOrder[i] == playerIndex) {
-            team->batterOrderIndex = i;
+        if (team->batter_order[i] == playerIndex) {
+            team->batter_order_index = i;
             return;
         }
     }
@@ -83,7 +83,7 @@ static int run_to_first(ScenarioContext* ctx, int playerIndex)
 
     for (int i = 0; i < 400; i++) {
         simulate_frames(ctx, 1);
-        if (ctx->state->rules->referee.battingPlayers[playerIndex].currentSafetyBase == BASE_FIRST) return 1;
+        if (ctx->state->rules->referee.batting_players[playerIndex].current_safety_base == BASE_FIRST) return 1;
     }
     return 0;
 }
@@ -110,7 +110,7 @@ static void return_the_ball_home(ScenarioContext* ctx)
 // uses, and it deliberately leaves `outs` alone so these tests can never end by §12(1) instead.
 static void wound_the_runner(ScenarioContext* ctx, int playerIndex)
 {
-    ctx->state->rules->referee.battingPlayers[playerIndex].status = PLAYER_STATUS_WOUNDED;
+    ctx->state->rules->referee.batting_players[playerIndex].status = PLAYER_STATUS_WOUNDED;
     simulate_frames(ctx, 3);
 }
 
@@ -146,8 +146,8 @@ int test_last_batter_ends_half_inning(void)
     GameRulesState* rules = st->rules;
 
     int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
-    int orderIndex = rules->scoreboard.teams[battingTeamIndex].batterOrderIndex;
-    int designated = rules->scoreboard.teams[battingTeamIndex].batterOrder[orderIndex];
+    int orderIndex = rules->scoreboard.teams[battingTeamIndex].batter_order_index;
+    int designated = rules->scoreboard.teams[battingTeamIndex].batter_order[orderIndex];
 
     initialize_referee_from_physical_state(ctx);
     ASSERT(take_the_bat(ctx, designated), "setup: the first batter should take the plate");
@@ -155,11 +155,11 @@ int test_last_batter_ends_half_inning(void)
     // Two runners score while they are at the plate. The SECOND run is the even-numbered one, and the
     // designation names whoever held the right to advance from home when it happened — them.
     score_a_run_from_third(ctx, 1);
-    ASSERT_EQ(1, rules->halfInningState.runsInTheInning, "setup: the first runner should have scored");
+    ASSERT_EQ(1, rules->half_inning.runs_in_inning, "setup: the first runner should have scored");
     score_a_run_from_third(ctx, 2);
-    ASSERT_EQ(2, rules->halfInningState.runsInTheInning, "setup: the second runner should have scored");
+    ASSERT_EQ(2, rules->half_inning.runs_in_inning, "setup: the second runner should have scored");
     ASSERT_EQ(
-        designated, rules->halfInningState.lastBatter.designatedIndex,
+        designated, rules->half_inning.last_batter.designated_index,
         "the batter of the even-numbered run becomes the viimeinen lyöjä"
     );
 
@@ -170,7 +170,7 @@ int test_last_batter_ends_half_inning(void)
     ASSERT(reach_first_base(ctx, designated), "setup: the designated batter should reach first base");
     return_the_ball_home(ctx);
     ASSERT_EQ(
-        END_INNING_STATE_NONE, rules->referee.endOfInningState,
+        END_INNING_STATE_NONE, rules->referee.end_of_inning_state,
         "the at-bat the last batter was designated during is not the at-bat that ends the half-inning"
     );
 
@@ -181,7 +181,7 @@ int test_last_batter_ends_half_inning(void)
     ASSERT(take_the_bat(ctx, designated), "setup: the last batter should be back at the plate");
     return_the_ball_home(ctx);
     ASSERT_EQ(
-        END_INNING_STATE_NONE, rules->referee.endOfInningState,
+        END_INNING_STATE_NONE, rules->referee.end_of_inning_state,
         "a turn being taken is not a turn that is spent — no side change while the last batter bats"
     );
 
@@ -189,8 +189,8 @@ int test_last_batter_ends_half_inning(void)
     ASSERT(reach_first_base(ctx, designated), "setup: the last batter should reach first base again");
     return_the_ball_home(ctx);
 
-    EndOfInningTransitionState endState = rules->referee.endOfInningState;
-    int outs = rules->halfInningState.outs;
+    EndOfInningTransitionState endState = rules->referee.end_of_inning_state;
+    int outs = rules->half_inning.outs;
     cleanup_scenario(ctx);
 
     ASSERT(outs < 3, "the side change under test must be §12(3)'s, not three burns");
@@ -221,11 +221,11 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void)
     exhaust_jokers(ctx);
 
     int opener = rules->scoreboard.teams[battingTeamIndex]
-                     .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                     .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
 
     for (int atBat = 0; atBat < PLAYERS_IN_TEAM; atBat++) {
         int next = rules->scoreboard.teams[battingTeamIndex]
-                       .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                       .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
         ASSERT(take_the_bat(ctx, next), "each player in the order should take the plate in turn");
         ASSERT_EQ(next, get_active_batter_index(st->match), "the order should offer each player in turn");
 
@@ -234,7 +234,7 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void)
 
         if (atBat < PLAYERS_IN_TEAM - 1) {
             ASSERT_EQ(
-                END_INNING_STATE_NONE, rules->referee.endOfInningState,
+                END_INNING_STATE_NONE, rules->referee.end_of_inning_state,
                 "the order has not come round yet — the half-inning must continue"
             );
             wound_the_runner(ctx, next);
@@ -242,10 +242,10 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void)
     }
 
     int nextUp = rules->scoreboard.teams[battingTeamIndex]
-                     .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
-    EndOfInningTransitionState endState = rules->referee.endOfInningState;
-    int runs = rules->halfInningState.runsInTheInning;
-    int outs = rules->halfInningState.outs;
+                     .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
+    EndOfInningTransitionState endState = rules->referee.end_of_inning_state;
+    int runs = rules->half_inning.runs_in_inning;
+    int outs = rules->half_inning.outs;
     cleanup_scenario(ctx);
 
     ASSERT_EQ(0, runs, "setup: this clause is about a half-inning with fewer than two runs");
@@ -268,7 +268,7 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void)
  * the regular whose turn it was — the joker batted beside the order, not inside it.
  *
  * Why this is a defect and not a nicety: §12(2) is decided by comparing the designation against
- * `batterOrderIndex`, which only ever names one of the nine regular slots. A designation sitting on
+ * `batter_order_index`, which only ever names one of the nine regular slots. A designation sitting on
  * a joker can therefore never be equal to it, so the clause is not merely wrong for one at-bat —
  * it is unfirable for the whole half-inning, which can then only end on three burns. The sim tier
  * reaches this state in a third of its half-innings and cannot see the consequence, because no
@@ -288,7 +288,7 @@ int test_joker_opening_does_not_take_the_turn(void)
 
     // The regular whose turn it is. Nothing below may take this away from them.
     int opener = rules->scoreboard.teams[battingTeamIndex]
-                     .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                     .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
 
     // A joker opens the half-inning, which is legal and which the batting AI does routinely.
     int joker = scenario_joker(ctx, 0);
@@ -296,11 +296,11 @@ int test_joker_opening_does_not_take_the_turn(void)
     ASSERT_EQ(
         opener,
         rules->scoreboard.teams[battingTeamIndex]
-            .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex],
+            .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index],
         "§7: a joker taking the bat must not advance the batting order"
     );
     ASSERT_NE(
-        joker, rules->halfInningState.lastBatter.designatedIndex,
+        joker, rules->half_inning.last_batter.designated_index,
         "§7/§12(2): a joker takes nobody's batting turn, so it cannot be the vuoron aloittanut pelaaja"
     );
 
@@ -314,24 +314,24 @@ int test_joker_opening_does_not_take_the_turn(void)
 
     for (int atBat = 0; atBat < PLAYERS_IN_TEAM; atBat++) {
         int next = rules->scoreboard.teams[battingTeamIndex]
-                       .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                       .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
         ASSERT(take_the_bat(ctx, next), "each player in the order should take the plate in turn");
         ASSERT(reach_first_base(ctx, next), "each batter should reach first base");
         return_the_ball_home(ctx);
 
         if (atBat < PLAYERS_IN_TEAM - 1) {
             ASSERT_EQ(
-                END_INNING_STATE_NONE, rules->referee.endOfInningState,
+                END_INNING_STATE_NONE, rules->referee.end_of_inning_state,
                 "the order has not come round yet — the half-inning must continue"
             );
             wound_the_runner(ctx, next);
         }
     }
 
-    int designated = rules->halfInningState.lastBatter.designatedIndex;
-    EndOfInningTransitionState endState = rules->referee.endOfInningState;
-    int runs = rules->halfInningState.runsInTheInning;
-    int outs = rules->halfInningState.outs;
+    int designated = rules->half_inning.last_batter.designated_index;
+    EndOfInningTransitionState endState = rules->referee.end_of_inning_state;
+    int runs = rules->half_inning.runs_in_inning;
+    int outs = rules->half_inning.outs;
     cleanup_scenario(ctx);
 
     ASSERT_EQ(0, runs, "setup: this clause is about a half-inning with fewer than two runs");

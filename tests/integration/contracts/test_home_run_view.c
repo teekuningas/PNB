@@ -64,7 +64,7 @@ int test_homeward_run_facts_survive_clear_and_legal_enforcement(void)
     place_runner_at_base(ctx, 1, BASE_THIRD, 0.0f);
     initialize_referee_from_physical_state(ctx);
     // The pending legal outcome is enforced later in this tick, after the physical observation.
-    ctx->state->rules->referee.battingPlayers[1].status = PLAYER_STATUS_OUT;
+    ctx->state->rules->referee.batting_players[1].status = PLAYER_STATUS_OUT;
     intent_push(
         &ctx->state->channels.batting,
         (IntentMessage){.kind = INTENT_BASE_RUN, .as.base_run = {.base = BASE_THIRD, .command = RUN_COMMIT}}
@@ -95,17 +95,17 @@ int test_camera_facts_distinguish_resets_from_flow_short_circuits(void)
         ScenarioContext* ctx = camera_scenario();
         GameRulesState* rules = ctx->state->rules;
         if (recipe == 0) {
-            rules->referee.foulState = FOUL_STATE_RESETTING;
+            rules->referee.foul_state = FOUL_STATE_RESETTING;
         } else if (recipe == 1) {
-            rules->referee.endOfInningState = END_INNING_STATE_RESETTING;
+            rules->referee.end_of_inning_state = END_INNING_STATE_RESETTING;
         } else if (recipe == 2) {
             rules->scoreboard.period = 4;
-            rules->scoreboard.pairCount = 5;
-            rules->homeRunContestState.runnerBatterPairCounter = 1;
-            rules->referee.nextPairTransitionState = HR_PAIR_STATE_RESETTING;
+            rules->scoreboard.pair_count = 5;
+            rules->homerun_contest.pair_index = 1;
+            rules->referee.next_pair_state = HR_PAIR_STATE_RESETTING;
         } else {
-            rules->referee.endOfInningState = END_INNING_STATE_RESETTING;
-            rules->referee.periodTransition = PERIOD_TRANSITION_INTER_PERIOD;
+            rules->referee.end_of_inning_state = END_INNING_STATE_RESETTING;
+            rules->referee.period_transition = PERIOD_TRANSITION_INTER_PERIOD;
         }
         ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "the reset/transition tick must run");
         const TickFacts* facts = &ctx->state->tick_facts;

@@ -40,7 +40,7 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             ctx->state->teamData[team].players[i].speed = 1 + (i + team * 2) % 5;
             ctx->state->teamData[team].players[i].power = 1 + (i + team) % 5;
-            scoreboard->teams[team].batterOrder[i] = (i * 5 + team + 2) % (PLAYERS_IN_TEAM + JOKER_COUNT);
+            scoreboard->teams[team].batter_order[i] = (i * 5 + team + 2) % (PLAYERS_IN_TEAM + JOKER_COUNT);
         }
     }
     for (int turn = 0; turn < 2; turn++) {
@@ -75,7 +75,7 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
             ASSERT_EQ(BASE_NONE, p->batting.presence.base_id, "no previous base progress survives the half-inning");
         }
         for (int order = 0; order < PLAYERS_IN_TEAM + JOKER_COUNT; order++) {
-            const PlayerInfo* p = &match->playerInfo[team->batterOrder[order]];
+            const PlayerInfo* p = &match->playerInfo[team->batter_order[order]];
             ASSERT_EQ(
                 order < PLAYERS_IN_TEAM ? order + 1 : 0, p->batting.number, "display numbers follow the batting order"
             );
@@ -96,16 +96,16 @@ int test_foul_restores_presence_without_replacing_batting_resources(void)
     PlayerInfo expected[PLAYERS_IN_TEAM + JOKER_COUNT];
     seed_play_resources(match, expected);
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        referee->battingPlayers[i] =
-            (RefereePlayerState){.baseAtPitchStart = BASE_NONE, .currentSafetyBase = BASE_NONE};
+        referee->batting_players[i] =
+            (RefereePlayerState){.base_at_pitch_start = BASE_NONE, .current_safety_base = BASE_NONE};
     }
-    referee->battingPlayers[0].baseAtPitchStart = BASE_HOME;
-    referee->battingPlayers[1].baseAtPitchStart = BASE_FIRST;
-    referee->battingPlayers[2].baseAtPitchStart = BASE_SECOND;
-    referee->battingPlayers[3].baseAtPitchStart = BASE_THIRD;
-    referee->battingPlayers[4].status = PLAYER_STATUS_OUT;
-    referee->battingPlayers[5].status = PLAYER_STATUS_WOUNDED;
-    referee->battingPlayers[6].hasScored = 1;
+    referee->batting_players[0].base_at_pitch_start = BASE_HOME;
+    referee->batting_players[1].base_at_pitch_start = BASE_FIRST;
+    referee->batting_players[2].base_at_pitch_start = BASE_SECOND;
+    referee->batting_players[3].base_at_pitch_start = BASE_THIRD;
+    referee->batting_players[4].status = PLAYER_STATUS_OUT;
+    referee->batting_players[5].status = PLAYER_STATUS_WOUNDED;
+    referee->batting_players[6].has_scored = 1;
     const PlayerUnitState states[] = {PLAYER_STATE_AT_BAT,  PLAYER_STATE_ON_BASE, PLAYER_STATE_ON_BASE,
                                       PLAYER_STATE_ON_BASE, PLAYER_STATE_OUT,     PLAYER_STATE_WOUNDED,
                                       PLAYER_STATE_SCORED};
@@ -141,15 +141,15 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
     ScenarioContext* ctx = create_scenario();
     MatchSession* match = ctx->state->match;
     Scoreboard* scoreboard = &ctx->state->rules->scoreboard;
-    HomeRunContestState* contest = &ctx->state->rules->homeRunContestState;
+    HomeRunContestState* contest = &ctx->state->rules->homerun_contest;
     scoreboard->period = 4;
-    scoreboard->pairCount = 3;
+    scoreboard->pair_count = 3;
     TeamInfo* team = &scoreboard->teams[get_batting_team_index(scoreboard)];
     const int batters[] = {5, 7, 1};
     const int runners[] = {8, 3, 11};
     for (int pair = 0; pair < 3; pair++) {
-        team->batterRunnerIndices[0][pair] = batters[pair];
-        team->batterRunnerIndices[1][pair] = runners[pair];
+        team->batter_runner_indices[0][pair] = batters[pair];
+        team->batter_runner_indices[1][pair] = runners[pair];
     }
     PlayerInfo expected[PLAYERS_IN_TEAM + JOKER_COUNT];
     seed_play_resources(match, expected);
@@ -157,7 +157,7 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
         const int pair = stage == 2 ? 2 : 1;
         const int batter = batters[pair];
         const int runner = runners[pair];
-        contest->runnerBatterPairCounter = pair;
+        contest->pair_index = pair;
         expected[batter].batting.number = pair + 1;
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             match->playerInfo[i].batting.presence.state = PLAYER_STATE_RUNNING;

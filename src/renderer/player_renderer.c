@@ -89,7 +89,7 @@ static void textureSelection(const Scoreboard* scoreboard, int team, int joker, 
 {
     // Calculate who is currently batting to map "team" (role) to actual team index
     // team 0 = batting team, team 1 = catching team
-    int battingTeamIndex = (scoreboard->inning + scoreboard->playsFirst + scoreboard->period) % 2;
+    int battingTeamIndex = (scoreboard->inning + scoreboard->plays_first + scoreboard->period) % 2;
     int actualTeamIndex = (team + battingTeamIndex) % 2;
 
     // theres two types of texture selections, texture selection for player and texture selection for marker.

@@ -39,7 +39,7 @@ void initialize_referee_from_physical_state(ScenarioContext* ctx);
  *
  * Should be called AFTER placing players and initializing referee,
  * but BEFORE the actual test actions (hitting ball, running, etc).
- * This sets baseAtPitchStart for all players based on their current positions.
+ * This sets base_at_pitch_start for all players based on their current positions.
  *
  * @param ctx The scenario context
  */
@@ -104,7 +104,7 @@ void setup_pitcher_ready(ScenarioContext* ctx);
  * @brief Place the ball in the air above a location so it drops naturally
  *
  * The ball will be placed 5m above the target location with downward velocity.
- * It will fall naturally and trigger hasBallHitGround when it lands.
+ * It will fall naturally and trigger has_ball_hit_ground when it lands.
  * Call this AFTER initialize_referee_from_physical_state() and snapshot_pitch_start_state().
  *
  * @param ctx The scenario context

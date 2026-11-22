@@ -9,7 +9,7 @@
  * @brief Determines which player currently "controls" (is safe at) a given base.
  *
  * This is the SINGLE SOURCE OF TRUTH for base ownership.
- * A player controls a base if they BOTH have safety at the base (currentSafetyBase)
+ * A player controls a base if they BOTH have safety at the base (current_safety_base)
  * AND are physically at the base (base_id). This distinction matters for vapaataival
  * (free walk) where safety is granted immediately but control comes upon arrival.
  *

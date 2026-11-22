@@ -41,7 +41,7 @@
 #define STALL_LIMIT 20000L
 #define BAND_MAX 28
 
-// Stay strictly inside the first period: it ends at inning == halfInningsInPeriod (4), and the
+// Stay strictly inside the first period: it ends at inning == half_innings_in_period (4), and the
 // period boundary hands off to a menu the single-phase sim harness does not yet autopilot
 // (a documented deferred gap). Three half-innings of offense per seed, no boundary crossing.
 static int three_half_innings_done(const SimGame* g)

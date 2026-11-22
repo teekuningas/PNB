@@ -32,7 +32,7 @@ int test_out_of_bounds_reset(void)
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot baseAtPitchStart
+    // 3. Emit pitchReleased to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders away
@@ -41,7 +41,7 @@ int test_out_of_bounds_reset(void)
     printf(
         "[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
         ctx->state->match->playerInfo[0].batting.presence.base_id,
-        ctx->state->rules->referee.battingPlayers[0].currentSafetyBase
+        ctx->state->rules->referee.batting_players[0].current_safety_base
     );
 
     // 5. Hit ball far out of bounds
@@ -70,7 +70,7 @@ int test_out_of_bounds_reset(void)
 
         // Check if runner reached 2nd base
         if (!reachedSecond && runner->batting.presence.base_id == BASE_SECOND) {
-            int currentSafety = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
+            int currentSafety = ctx->state->rules->referee.batting_players[0].current_safety_base;
             if (currentSafety == BASE_SECOND) {
                 reachedSecond = 1;
                 printf(
@@ -91,16 +91,16 @@ int test_out_of_bounds_reset(void)
         }
 
         // Check for Out of Bounds Event
-        if (!outOfBoundsDetected && ctx->state->rules->referee.foulState != FOUL_STATE_NONE) {
+        if (!outOfBoundsDetected && ctx->state->rules->referee.foul_state != FOUL_STATE_NONE) {
             outOfBoundsDetected = 1;
             printf("[TEST] Frame %d: Out of Bounds declared! Ball has landed.\n", frame);
         }
 
         // Check for Reset (Runner returned to 1st base)
         // Reset happens when outOfBounds flag is cleared? Or just players moved?
-        // "Foul Play" usually resets players to baseAtPitchStart.
+        // "Foul Play" usually resets players to base_at_pitch_start.
         if (outOfBoundsDetected && runner->batting.presence.base_id == BASE_FIRST) {
-            int currentSafety = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
+            int currentSafety = ctx->state->rules->referee.batting_players[0].current_safety_base;
             // Ensure it's not just a glitch, but he is SAFE there
             if (currentSafety == BASE_FIRST) {
                 resetDetected = 1;

@@ -115,12 +115,12 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
         } else {
             Scoreboard* scoreboard = &ctx->state->rules->scoreboard;
             scoreboard->period = 4;
-            scoreboard->pairCount = 1;
+            scoreboard->pair_count = 1;
             int side = get_batting_team_index(scoreboard);
-            scoreboard->teams[side].batterRunnerIndices[0][0] = 0;
-            scoreboard->teams[side].batterRunnerIndices[1][0] = 1;
-            ctx->state->rules->homeRunContestState.runnerBatterPairCounter = 0;
-            reset_for_next_pair(m, &positions, scoreboard, &ctx->state->rules->homeRunContestState);
+            scoreboard->teams[side].batter_runner_indices[0][0] = 0;
+            scoreboard->teams[side].batter_runner_indices[1][0] = 1;
+            ctx->state->rules->homerun_contest.pair_index = 0;
+            reset_for_next_pair(m, &positions, scoreboard, &ctx->state->rules->homerun_contest);
         }
 
         for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {

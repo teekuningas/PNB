@@ -25,10 +25,10 @@ void init_homerun_contest_state(HomerunContestState* state, int team_index, int 
     }
 }
 
-// NOTE: This menu does NOT modify batterOrder in gameSetup.
+// NOTE: This menu does NOT modify batter_order in gameSetup.
 // Players keep their jersey assignments (1-9 for regulars, 0 for jokers)
 // from the super inning. We only select which players bat/run using
-// batterRunnerIndices, not their jersey numbers.
+// batter_runner_indices, not their jersey numbers.
 MenuStage update_homerun_contest_menu(
     HomerunContestState* state, const KeyStates* keyStates, MenuStage currentStage, GameSetup* gameSetup,
     const TeamData* teamData

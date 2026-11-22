@@ -9,8 +9,8 @@ int test_compound_hr_pair_and_uncatchable(void)
 
     // Set up Homerun Contest (period 4)
     ctx->state->rules->scoreboard.period = 4;
-    ctx->state->rules->scoreboard.pairCount = 5;
-    ctx->state->rules->homeRunContestState.runnerBatterPairCounter = 0;
+    ctx->state->rules->scoreboard.pair_count = 5;
+    ctx->state->rules->homerun_contest.pair_index = 0;
 
     // Set up uncatchable score: Inning 1 (bottom of 1st), Catching team (0) has 10, Batting team (1) has 0
     ctx->state->rules->scoreboard.inning = 1;
@@ -31,7 +31,7 @@ int test_compound_hr_pair_and_uncatchable(void)
 
     // Clear all batting players' safety so pair-end conditions trigger
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        ctx->state->rules->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+        ctx->state->rules->referee.batting_players[i].current_safety_base = BASE_NONE;
         ctx->state->match->playerInfo[i].batting.presence.base_id = BASE_NONE;
     }
 
@@ -39,10 +39,10 @@ int test_compound_hr_pair_and_uncatchable(void)
     simulate_frames(ctx, 1);
 
     ASSERT_EQ(
-        END_INNING_STATE_DETECTED, ctx->state->rules->referee.endOfInningState,
+        END_INNING_STATE_DETECTED, ctx->state->rules->referee.end_of_inning_state,
         "Did not skip to END_INNING_STATE_DETECTED"
     );
-    ASSERT_EQ(HR_PAIR_STATE_NONE, ctx->state->rules->referee.nextPairTransitionState, "Pair state machine was active");
+    ASSERT_EQ(HR_PAIR_STATE_NONE, ctx->state->rules->referee.next_pair_state, "Pair state machine was active");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

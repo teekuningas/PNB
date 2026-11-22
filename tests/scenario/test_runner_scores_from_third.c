@@ -35,7 +35,7 @@ int test_runner_scores_from_third(void)
 
     simulate_frames(ctx, 450);
 
-    int runs = ctx->state->rules->halfInningState.runsInTheInning;
+    int runs = ctx->state->rules->half_inning.runs_in_inning;
     cleanup_scenario(ctx);
     ASSERT_EQ(1, runs, "Runner should have scored from third base");
     return TEST_PASSED;

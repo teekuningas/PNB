@@ -55,7 +55,7 @@ int test_fly_ball_out_and_wound(void)
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot baseAtPitchStart
+    // 3. Emit pitchReleased to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders
@@ -105,7 +105,7 @@ int test_fly_ball_out_and_wound(void)
         simulate_frames(ctx, 1);
 
         // --- Check Events ---
-        if (rules->betweenPitchState.catchHasBeenMade && catchFrame == -1) {
+        if (rules->between_pitch.catch_has_been_made && catchFrame == -1) {
             catchFrame = frame;
             printf("Frame %d: CATCH by player %d\n", frame, match->ballInfo.holder);
         }
@@ -125,7 +125,7 @@ int test_fly_ball_out_and_wound(void)
         // Track arrivals
         if (match->playerInfo[1].batting.presence.base_id == BASE_FIRST && batterArrivalFrame == -1) {
             batterArrivalFrame = frame;
-            int safetyBase = rules->referee.battingPlayers[1].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[1].current_safety_base;
             printf(
                 "Frame %d: Batter arrived at 1st (state=%d, safety=%d)\n", frame,
                 match->playerInfo[1].batting.presence.state, safetyBase
@@ -144,7 +144,7 @@ int test_fly_ball_out_and_wound(void)
         static int runnerLostBase = 0;
         if (!batterLostBase && match->playerInfo[1].batting.presence.base_id == BASE_NONE) {
             batterLostBase = 1;
-            int safetyBase = rules->referee.battingPlayers[1].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[1].current_safety_base;
             printf(
                 "Frame %d: Batter lost base (baseId=NONE, safety=%d, state=%d)\n", frame, safetyBase,
                 match->playerInfo[1].batting.presence.state
@@ -152,7 +152,7 @@ int test_fly_ball_out_and_wound(void)
         }
         if (!runnerLostBase && match->playerInfo[0].batting.presence.base_id == BASE_NONE) {
             runnerLostBase = 1;
-            int safetyBase = rules->referee.battingPlayers[0].currentSafetyBase;
+            int safetyBase = rules->referee.batting_players[0].current_safety_base;
             printf(
                 "Frame %d: Runner A lost base (baseId=NONE, safety=%d, state=%d)\n", frame, safetyBase,
                 match->playerInfo[0].batting.presence.state
@@ -193,13 +193,13 @@ int test_fly_ball_out_and_wound(void)
     printf(
         "Batter: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n",
         match->playerInfo[1].batting.presence.state, match->playerInfo[1].batting.presence.base_id,
-        rules->referee.battingPlayers[1].currentSafetyBase, match->playerInfo[1].body.location.x,
+        rules->referee.batting_players[1].current_safety_base, match->playerInfo[1].body.location.x,
         match->playerInfo[1].body.location.y, match->playerInfo[1].body.location.z
     );
     printf(
         "Runner A: state=%d, baseId=%d, safety=%d, position=(%.1f, %.1f, %.1f)\n",
         match->playerInfo[0].batting.presence.state, match->playerInfo[0].batting.presence.base_id,
-        rules->referee.battingPlayers[0].currentSafetyBase, match->playerInfo[0].body.location.x,
+        rules->referee.batting_players[0].current_safety_base, match->playerInfo[0].body.location.x,
         match->playerInfo[0].body.location.y, match->playerInfo[0].body.location.z
     );
     printf("\nFor reference:\n");
@@ -229,7 +229,7 @@ int test_fly_ball_out_and_wound(void)
     // CRITICAL BUG: Safety should be stripped when wounded on fly ball
     // Currently the batter retains safety=1 (BASE_FIRST) even after wounding
     // Expected: safety should be -1 (BASE_NONE) like Runner A who got OUT
-    int batterFinalSafety = rules->referee.battingPlayers[1].currentSafetyBase;
+    int batterFinalSafety = rules->referee.batting_players[1].current_safety_base;
     cleanup_scenario(ctx); // after the last read of the scenario's state, which it frees
     ASSERT_EQ(BASE_NONE, batterFinalSafety, "Wounded batter should lose safety (bug: they keep it)");
 

@@ -88,8 +88,8 @@ int test_player_view_resets_before_batter_readiness(void)
     player_view_init(&view, ctx->state->match);
     ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "initial setup settles before the reset fixture");
     player_view_after_tick(&view, &ctx->state->tick_facts);
-    ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart = BASE_HOME;
-    ctx->state->rules->referee.foulState = FOUL_STATE_RESETTING;
+    ctx->state->rules->referee.batting_players[0].base_at_pitch_start = BASE_HOME;
+    ctx->state->rules->referee.foul_state = FOUL_STATE_RESETTING;
     view.players[0] =
         (PlayerAnimation){.model = PLAYER_ANIM_BAT_SWING_1, .frame_tick = 37, .frame_count = 34, .ticks_per_frame = 3};
     ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "the foul reset runs through the pipeline");

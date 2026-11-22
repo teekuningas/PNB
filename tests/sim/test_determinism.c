@@ -110,7 +110,7 @@ static unsigned long long run_once(unsigned int seed)
 //      on the same terms a human does.
 //
 // Two stale reads were found on the way and are fixed here, both of which had been suppressing the
-// offense: the gate consulted the referee's sticky batOutcome, which survives into the next pitch's
+// offense: the gate consulted the referee's sticky bat_outcome, which survives into the next pitch's
 // windup and refused every power committed during a crouch; and the client sized its elevation sweep
 // from the ball's CURRENT vertical speed, which decays as the pitch rises, so a late commitment got a
 // sweep of one or two frames. Contact went 88% -> 92%, and the AI-vs-AI net scores 3 runs where it

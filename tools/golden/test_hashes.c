@@ -27,7 +27,7 @@ int main(void)
         .rules = &rules, .match = &match, .clientInput = &client, .aiController = &ai, .fieldPositions = &field
     };
     SimGame game = {.state = &state};
-    printf("width %zu layout %zu\n", sizeof(rules.referee.battingPlayers[0].hasScored), sizeof(rules));
+    printf("width %zu layout %zu\n", sizeof(rules.referee.batting_players[0].has_scored), sizeof(rules));
 
 #ifdef WIDE_FLAGS
     // On the original all-integer layout, every bit and every array slot must still
@@ -59,23 +59,23 @@ int main(void)
     print_semantic_hashes(&game);
     match.at_bat.swing.verticalActive = 1;
     print_semantic_hashes(&game);
-    rules.halfInningState.lastBatter.hasBattedAgain = 1;
+    rules.half_inning.last_batter.has_batted_again = 1;
     print_semantic_hashes(&game);
-    rules.halfInningState.lastBatter.turnExhausted = 1;
+    rules.half_inning.last_batter.turn_exhausted = 1;
     print_semantic_hashes(&game);
-    rules.referee.battingPlayers[0].hasScored = 1;
-    rules.referee.battingPlayers[0].runOfHonorScored = 1;
-    rules.referee.battingPlayers[0].hasPendingRun = 1;
-    rules.referee.battingPlayers[0].hasPendingRunOfHonor = 1;
-    rules.referee.woundingEvaluationActive = 1;
-    rules.referee.woundingEvaluationFinished = 1;
-    rules.referee.ballInThirdBaseSincePitch = 1;
-    rules.referee.homerunPairHasPitch = 1;
-    rules.halfInningState.endPeriod = 1;
-    rules.halfInningState.lastBatter.regularOrderSpent = 1;
-    rules.betweenPitchState.catchHasBeenMade = 1;
-    rules.betweenPitchState.hasBallHitGround = 1;
-    rules.scoreboard.isCupGame = 1;
+    rules.referee.batting_players[0].has_scored = 1;
+    rules.referee.batting_players[0].run_of_honor_scored = 1;
+    rules.referee.batting_players[0].has_pending_run = 1;
+    rules.referee.batting_players[0].has_pending_run_of_honor = 1;
+    rules.referee.wounding_evaluation_active = 1;
+    rules.referee.wounding_evaluation_finished = 1;
+    rules.referee.ball_in_third_base_since_pitch = 1;
+    rules.referee.homerun_pair_has_pitch = 1;
+    rules.half_inning.end_period = 1;
+    rules.half_inning.last_batter.regular_order_spent = 1;
+    rules.between_pitch.catch_has_been_made = 1;
+    rules.between_pitch.has_ball_hit_ground = 1;
+    rules.scoreboard.is_cup_game = 1;
     print_semantic_hashes(&game);
     rules.scoreboard.teams[0].runs = 3;
     print_semantic_hashes(&game);

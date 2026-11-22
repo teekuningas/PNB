@@ -90,7 +90,7 @@ static Permission permit(
         // §27, §12, §7 — who may take the bat. The rule itself is batter_seat_verdict, and a client
         // asks the same function to build the list it offers a human; this is the side that does not
         // trust the answer. The gate can hold all of it because every input is settled at the top of
-        // the tick: the batting order index and regularOrderSpent are referee-written (a later stage
+        // the tick: the batting order index and regular_order_spent are referee-written (a later stage
         // entirely), and a joker's status changes only when one is seated, which is this rule's own
         // consequence.
         //
@@ -105,9 +105,9 @@ static Permission permit(
         const int index = message->as.select_batter.index;
         const int battingTeamIndex = get_batting_team_index(&rules->scoreboard);
         const int inTurn = rules->scoreboard.teams[battingTeamIndex]
-                               .batterOrder[rules->scoreboard.teams[battingTeamIndex].batterOrderIndex];
+                               .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
         switch (batter_seat_verdict(
-            index, inTurn, rules->halfInningState.lastBatter.regularOrderSpent,
+            index, inTurn, rules->half_inning.last_batter.regular_order_spent,
             (int)match->playerInfo[index].batting.joker
         )) {
         case SEAT_NOT_IN_BATTING_TURN:
@@ -154,7 +154,7 @@ static Permission permit(
         // The power is what begins a pitch, so this is the pitch's whole permission: the ball at the
         // plate in the pitcher's hand, a batter ready, nothing else under way — and §18(1). Rechecked
         // here for every producer, even if a human widget queried before arming; the actualizer only acts.
-        return pitch_may_begin(match, rules->halfInningState.strikes);
+        return pitch_may_begin(match, rules->half_inning.strikes);
 
     case INTENT_THROW_TARGET:
         // Likewise the target is what begins a throw.

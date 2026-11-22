@@ -48,13 +48,13 @@ int test_fly_ball_double_wound(void)
         int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
         int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
         int baseB = ctx->state->match->playerInfo[1].batting.presence.base_id;
-        int safeA = ctx->state->rules->referee.battingPlayers[0].currentSafetyBase;
-        int safeB = ctx->state->rules->referee.battingPlayers[1].currentSafetyBase;
+        int safeA = ctx->state->rules->referee.batting_players[0].current_safety_base;
+        int safeB = ctx->state->rules->referee.batting_players[1].current_safety_base;
         Vector3D posB = ctx->state->match->playerInfo[1].body.location;
-        int statusA = ctx->state->rules->referee.battingPlayers[0].status;
-        int statusB = ctx->state->rules->referee.battingPlayers[1].status;
+        int statusA = ctx->state->rules->referee.batting_players[0].status;
+        int statusB = ctx->state->rules->referee.batting_players[1].status;
         int goingFwdA = ctx->state->match->playerInfo[0].path.going_forward;
-        int timer = ctx->state->rules->referee.woundingEvaluationTimer;
+        int timer = ctx->state->rules->referee.wounding_evaluation_timer;
 
         // Verbose logging for transition frames
         if (frame % 10 == 0 || (hasBall != -1 && catchFrame == -1) || baseA == BASE_SECOND ||

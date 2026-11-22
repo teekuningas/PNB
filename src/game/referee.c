@@ -25,10 +25,10 @@ static void initialize_referee_state(RefereeState* referee);
 
 static void clear_between_pitch_state(BetweenPitchState* bps)
 {
-    bps->catchHasBeenMade = 0;
-    bps->hasBallHitGround = 0;
-    bps->pitchResult = PITCH_RESULT_NONE;
-    bps->batOutcome = BAT_OUTCOME_NONE;
+    bps->catch_has_been_made = 0;
+    bps->has_ball_hit_ground = 0;
+    bps->pitch_result = PITCH_RESULT_NONE;
+    bps->bat_outcome = BAT_OUTCOME_NONE;
 }
 
 // ============================================================================
@@ -46,16 +46,16 @@ static void update_initialization_events(
         int battingTeamIndex = get_batting_team_index(scoreboard);
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
-                referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                referee->batting_players[i].current_safety_base = BASE_HOME;
 
                 // Taking the bat clears the previous at-bat's verdicts. Being burnt or wounded costs
                 // the team an out or a runner, never a place in the batting order (§12), so these
                 // are field state with a per-play lifetime. Without it, enforce_legal_state in the
                 // next stage shoves the new batter straight back off the field — the batter-
                 // reselection deadlock.
-                referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
-                referee->battingPlayers[i].hasScored = 0;
-                referee->battingPlayers[i].runOfHonorScored = 0;
+                referee->batting_players[i].status = PLAYER_STATUS_ACTIVE;
+                referee->batting_players[i].has_scored = 0;
+                referee->batting_players[i].run_of_honor_scored = 0;
 
                 // §12 bookkeeping. The half-inning's first REGULAR batter is its opening
                 // designation — they are §12(2)'s "vuoron aloittanut pelaaja" — and every later
@@ -67,30 +67,30 @@ static void update_initialization_events(
                 // lyöntivuoroa" means it batted beside the order, not inside it, and the regular
                 // whose turn it was still has that turn. Designating the joker is not merely the
                 // wrong name — §12(2) is decided by comparing the designation against
-                // batterOrderIndex, which only ever names one of the nine regular slots, so a
+                // batter_order_index, which only ever names one of the nine regular slots, so a
                 // designation sitting on a joker can never equal it and the clause becomes
                 // unfirable for the whole half-inning. Measured before the fix: a third of
                 // AI-vs-AI half-innings designated a joker.
                 const int isRegular = (game->playerInfo[i].batting.joker == JOKER_REGULAR);
-                if (halfInningState->lastBatter.designatedIndex == -1) {
+                if (halfInningState->last_batter.designated_index == -1) {
                     if (isRegular) {
-                        halfInningState->lastBatter.designatedIndex = i;
-                        halfInningState->lastBatter.hasBattedAgain = 0;
+                        halfInningState->last_batter.designated_index = i;
+                        halfInningState->last_batter.has_batted_again = 0;
                     }
-                } else if (i == halfInningState->lastBatter.designatedIndex) {
-                    halfInningState->lastBatter.hasBattedAgain = 1;
+                } else if (i == halfInningState->last_batter.designated_index) {
+                    halfInningState->last_batter.has_batted_again = 1;
                 }
 
                 if (isRegular) {
                     // Regular batter: the order advances and wraps. §27: it is a cycle, and it is
                     // followed for the whole match — nothing is consumed by batting.
-                    scoreboard->teams[battingTeamIndex].batterOrderIndex =
-                        (scoreboard->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
-                    halfInningState->lastBatter.lastRegularIndex = i;
+                    scoreboard->teams[battingTeamIndex].batter_order_index =
+                        (scoreboard->teams[battingTeamIndex].batter_order_index + 1) % PLAYERS_IN_TEAM;
+                    halfInningState->last_batter.last_regular_index = i;
                 } else {
                     // §7: a joker is spent, and takes nobody's batting turn ("Jokeripelaaja ei vie
                     // kenenkään lyöntivuoroa") — so the order index deliberately does not move.
-                    halfInningState->jokersLeft--;
+                    halfInningState->jokers_left--;
                 }
             }
         }
@@ -103,25 +103,25 @@ static void update_initialization_events(
     if (events->pitchReleased) {
         // 1. Reset Sticky Flags
         clear_between_pitch_state(betweenPitchState);
-        referee->woundingEvaluationFinished = 0;
-        referee->woundingEvaluationActive = 0;
-        referee->woundingEvaluationTimer = -1;
-        referee->foulTimer = -1;
-        referee->foulState = FOUL_STATE_NONE;
-        referee->ballInThirdBaseSincePitch = 0;
+        referee->wounding_evaluation_finished = 0;
+        referee->wounding_evaluation_active = 0;
+        referee->wounding_evaluation_timer = -1;
+        referee->foul_timer = -1;
+        referee->foul_state = FOUL_STATE_NONE;
+        referee->ball_in_third_base_since_pitch = 0;
 
         // 2. Mark that a pitch has been released (for homerun contest pair tracking)
         if (scoreboard->period >= 4) {
-            referee->homerunPairHasPitch = 1;
+            referee->homerun_pair_has_pitch = 1;
         }
 
         // 3. Snapshot Strike Count
-        referee->strikesAtPitchStart = halfInningState->strikes;
+        referee->strikes_at_pitch_start = halfInningState->strikes;
 
         // 4. Reset pending run flags
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            referee->battingPlayers[i].hasPendingRun = 0;
-            referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+            referee->batting_players[i].has_pending_run = 0;
+            referee->batting_players[i].has_pending_run_of_honor = 0;
         }
 
         // 5. Snapshot Base Positions (The "Legal Baseline" for this pitch)
@@ -140,10 +140,10 @@ static void update_initialization_events(
                     else
                         destBase = base_get_next(baseId);
 
-                    referee->battingPlayers[index].baseAtPitchStart = destBase;
-                    referee->battingPlayers[index].currentSafetyBase = destBase;
+                    referee->batting_players[index].base_at_pitch_start = destBase;
+                    referee->batting_players[index].current_safety_base = destBase;
                 } else {
-                    referee->battingPlayers[index].baseAtPitchStart = baseId;
+                    referee->batting_players[index].base_at_pitch_start = baseId;
 
                     // Determine safety status for snapshot
                     int hasSafety = 0;
@@ -159,17 +159,17 @@ static void update_initialization_events(
 
                     // Initialize current safety tracking
                     if (hasSafety) {
-                        referee->battingPlayers[index].currentSafetyBase = baseId;
+                        referee->batting_players[index].current_safety_base = baseId;
                     } else {
-                        referee->battingPlayers[index].currentSafetyBase = BASE_NONE;
+                        referee->batting_players[index].current_safety_base = BASE_NONE;
                     }
                 }
 
                 // Clear temporary rule states
-                referee->battingPlayers[index].status = PLAYER_STATUS_ACTIVE;
+                referee->batting_players[index].status = PLAYER_STATUS_ACTIVE;
             } else {
-                // Clear baseAtPitchStart for inactive players
-                referee->battingPlayers[index].baseAtPitchStart = BASE_NONE;
+                // Clear base_at_pitch_start for inactive players
+                referee->batting_players[index].base_at_pitch_start = BASE_NONE;
             }
         }
     }
@@ -184,33 +184,33 @@ static void update_foul_play_logic(
 
     // RESETTING is handled by referee_finalize (post-consolidation stage).
     // Skip all foul logic this frame — consolidation is doing the physical reset.
-    if (referee->foulState == FOUL_STATE_RESETTING) {
+    if (referee->foul_state == FOUL_STATE_RESETTING) {
         return;
     }
 
     // Transition 2: DETECTED -> RESETTING (Grace period expired)
-    if (referee->foulState == FOUL_STATE_DETECTED) {
-        referee->foulTimer++;
-        if (referee->foulTimer > (int)OUT_OF_BOUNDS_THRESHOLD) {
+    if (referee->foul_state == FOUL_STATE_DETECTED) {
+        referee->foul_timer++;
+        if (referee->foul_timer > (int)OUT_OF_BOUNDS_THRESHOLD) {
             // Trigger Reset
-            referee->foulState = FOUL_STATE_RESETTING;
-            referee->foulTimer = -1;
+            referee->foul_state = FOUL_STATE_RESETTING;
+            referee->foul_timer = -1;
 
             // RESTORE LEGAL STATE
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                BaseID restore = referee->battingPlayers[i].baseAtPitchStart;
+                BaseID restore = referee->batting_players[i].base_at_pitch_start;
                 if (restore != BASE_NONE) {
-                    referee->battingPlayers[i].currentSafetyBase = restore;
+                    referee->batting_players[i].current_safety_base = restore;
                 } else {
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
                 }
 
                 if (restore != BASE_NONE) {
-                    referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+                    referee->batting_players[i].status = PLAYER_STATUS_ACTIVE;
                 }
 
-                referee->battingPlayers[i].hasPendingRun = 0;
-                referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+                referee->batting_players[i].has_pending_run = 0;
+                referee->batting_players[i].has_pending_run_of_honor = 0;
             }
         }
         return;
@@ -218,20 +218,21 @@ static void update_foul_play_logic(
 
     // Transition 1: NONE -> DETECTED (Detection)
     // Out of Bounds Logic: Check ONLY on first bounce
-    if (events->ballHitGround && betweenPitchState->hasBallHitGround == 0 && referee->foulState == FOUL_STATE_NONE) {
-        if (betweenPitchState->batOutcome == BAT_OUTCOME_HIT && betweenPitchState->catchHasBeenMade == 0) {
+    if (events->ballHitGround && betweenPitchState->has_ball_hit_ground == 0 &&
+        referee->foul_state == FOUL_STATE_NONE) {
+        if (betweenPitchState->bat_outcome == BAT_OUTCOME_HIT && betweenPitchState->catch_has_been_made == 0) {
             if (is_ball_out_of_bounds(&game->ballInfo, fieldPositions)) {
 
                 // 1. Immediately apply the consequence of the foul (Strike/Out)
-                if (referee->strikesAtPitchStart == 2) {
+                if (referee->strikes_at_pitch_start == 2) {
                     halfInningState->outs += 1;
 
                     // Mark batter as OUT immediately
                     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                        if (referee->battingPlayers[i].baseAtPitchStart == BASE_HOME) {
-                            referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
-                            referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-                            referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
+                        if (referee->batting_players[i].base_at_pitch_start == BASE_HOME) {
+                            referee->batting_players[i].status = PLAYER_STATUS_OUT;
+                            referee->batting_players[i].current_safety_base = BASE_NONE;
+                            referee->batting_players[i].base_at_pitch_start = BASE_NONE;
                             break;
                         }
                     }
@@ -240,12 +241,12 @@ static void update_foul_play_logic(
                 // 2. Always transition to DETECTED.
                 // If this foul caused the inning to end, the Decide phase later in
                 // update_referee will instantly upgrade this and abort the foul timer.
-                referee->foulState = FOUL_STATE_DETECTED;
-                referee->foulTimer = 0;
+                referee->foul_state = FOUL_STATE_DETECTED;
+                referee->foul_timer = 0;
 
                 // Trigger global OUT_OF_BOUNDS event (or OUT if we struck out)
                 if (*announcement == EVENT_NONE) {
-                    if (referee->strikesAtPitchStart == 2) {
+                    if (referee->strikes_at_pitch_start == 2) {
                         *announcement = EVENT_OUT;
                     } else {
                         *announcement = EVENT_OUT_OF_BOUNDS;
@@ -264,34 +265,34 @@ static void update_wounding_logic(
 
     // A. Start Wounding Evaluation (on catch event)
     // Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
-    if (events->catchMade && betweenPitchState->batOutcome == BAT_OUTCOME_HIT &&
-        betweenPitchState->hasBallHitGround == 0 && betweenPitchState->catchHasBeenMade == 0) {
+    if (events->catchMade && betweenPitchState->bat_outcome == BAT_OUTCOME_HIT &&
+        betweenPitchState->has_ball_hit_ground == 0 && betweenPitchState->catch_has_been_made == 0) {
 
         // Start evaluation period
-        referee->woundingEvaluationActive = 1;
-        referee->woundingEvaluationTimer = 0;
+        referee->wounding_evaluation_active = 1;
+        referee->wounding_evaluation_timer = 0;
 
         // Mark vulnerable players at this moment
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
                 PlayerUnitState phys_state = game->playerInfo[i].batting.presence.state;
                 BaseID phys_base = game->playerInfo[i].batting.presence.base_id;
-                BaseID ref_baseAtStart = referee->battingPlayers[i].baseAtPitchStart;
+                BaseID ref_baseAtStart = referee->batting_players[i].base_at_pitch_start;
 
                 bool is_safe = player_is_safe_from_fly(phys_state, phys_base, ref_baseAtStart);
 
                 // Check if player is vulnerable (not safe from fly ball)
                 if (!is_safe) {
                     // Mark this player as vulnerable (WOUND_MARKED)
-                    referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_MARKED;
+                    referee->batting_players[i].status = PLAYER_STATUS_WOUND_MARKED;
                 }
             }
         }
     }
 
     // B. Monitor Wounding Evaluation Period
-    if (referee->woundingEvaluationActive) {
-        referee->woundingEvaluationTimer++;
+    if (referee->wounding_evaluation_active) {
+        referee->wounding_evaluation_timer++;
 
         // Calculate threshold (extend if ball was thrown)
         int threshold;
@@ -304,17 +305,17 @@ static void update_wounding_logic(
         // Check for UN-WOUNDING: Ball hit ground before timer expired
         if (game->ballInfo.hitsGroundToUnWound == 1) {
             // Clear evaluation - players are safe!
-            referee->woundingEvaluationActive = 0;
-            referee->woundingEvaluationTimer = -1;
+            referee->wounding_evaluation_active = 0;
+            referee->wounding_evaluation_timer = -1;
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED ||
-                    referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
-                    referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
+                if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED ||
+                    referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
+                    referee->batting_players[i].status = PLAYER_STATUS_ACTIVE;
                 }
             }
         }
         // Timer expired - CONFIRM WOUNDING
-        else if (referee->woundingEvaluationTimer > threshold) {
+        else if (referee->wounding_evaluation_timer > threshold) {
 
             // Apply wounding to marked players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -322,35 +323,35 @@ static void update_wounding_logic(
                     PlayerUnitState state = game->playerInfo[i].batting.presence.state;
 
                     // Normal wound: WOUND_MARKED -> WOUNDED (if at base) or WOUND_PENDING (if running)
-                    if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) {
+                    if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED) {
                         // Trigger global event
                         *announcement = EVENT_WOUNDED;
-                        referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                        referee->batting_players[i].current_safety_base = BASE_NONE;
 
                         // Check if player is at a base or running
                         if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
                             // Player at base: Apply WOUNDED immediately
-                            referee->battingPlayers[i].status = PLAYER_STATUS_WOUNDED;
+                            referee->batting_players[i].status = PLAYER_STATUS_WOUNDED;
                         } else {
                             // Player running: Mark as WOUND_PENDING (finalized on arrival or when ball arrives)
-                            referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_PENDING;
+                            referee->batting_players[i].status = PLAYER_STATUS_WOUND_PENDING;
                         }
                     }
                     // Tuplahaava wound: WOUND_MARKED_DOUBLE -> WOUND_PENDING_DOUBLE (keep safety for now)
-                    else if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
+                    else if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE) {
                         // Trigger global event
                         *announcement = EVENT_WOUNDED;
 
                         // Tuplahaava: Keep safety, set to PENDING_DOUBLE (resolved later)
-                        referee->battingPlayers[i].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
+                        referee->batting_players[i].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
                     }
                 }
             }
 
             // End evaluation period
-            referee->woundingEvaluationActive = 0;
-            referee->woundingEvaluationFinished = 1;
-            referee->woundingEvaluationTimer = -1;
+            referee->wounding_evaluation_active = 0;
+            referee->wounding_evaluation_finished = 1;
+            referee->wounding_evaluation_timer = -1;
         }
     }
 }
@@ -363,7 +364,7 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
     // Lead runners (higher bases at pitch start) are processed first and lose safety.
     // Rear runners (lower bases at pitch start) are processed last and win safety.
 
-    // Build sorted list of active players by their baseAtPitchStart
+    // Build sorted list of active players by their base_at_pitch_start
     int sortedPlayers[PLAYERS_IN_TEAM + JOKER_COUNT];
     int playerCount = 0;
 
@@ -375,12 +376,12 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
         }
     }
 
-    // Sort by baseAtPitchStart (HIGHER bases first: THIRD=3, SECOND=2, FIRST=1, HOME=0)
+    // Sort by base_at_pitch_start (HIGHER bases first: THIRD=3, SECOND=2, FIRST=1, HOME=0)
     // So lead runners (higher bases) processed first, rear runners processed last and win conflicts
     for (int i = 0; i < playerCount - 1; i++) {
         for (int j = i + 1; j < playerCount; j++) {
-            BaseID baseI = referee->battingPlayers[sortedPlayers[i]].baseAtPitchStart;
-            BaseID baseJ = referee->battingPlayers[sortedPlayers[j]].baseAtPitchStart;
+            BaseID baseI = referee->batting_players[sortedPlayers[i]].base_at_pitch_start;
+            BaseID baseJ = referee->batting_players[sortedPlayers[j]].base_at_pitch_start;
             if (baseI < baseJ) { // REVERSED: higher bases first
                 int temp = sortedPlayers[i];
                 sortedPlayers[i] = sortedPlayers[j];
@@ -398,61 +399,61 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
 
         // Player is physically at a base (we already filtered for ON_BASE/AT_BAT)
         // But Referee doesn't recognize them as the controller yet
-        if (referee->battingPlayers[i].currentSafetyBase != physicalBase) {
+        if (referee->batting_players[i].current_safety_base != physicalBase) {
 
             // BUG FIX: Don't grant safety if wound status is WOUNDED or WOUND_PENDING
             // These statuses mean safety was already stripped and should not be restored
             int isWounded =
-                (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED ||
-                 referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING ||
-                 referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE);
+                (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED ||
+                 referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING ||
+                 referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE);
 
             if (!isWounded) {
                 // Grant Safety (unless wounded/pending)
-                referee->battingPlayers[i].currentSafetyBase = physicalBase;
+                referee->batting_players[i].current_safety_base = physicalBase;
             }
 
             // Check if this arriving player is marked for a wound
-            int isWoundPending = (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING) ||
-                                 (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE) ||
-                                 (referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED) ||
-                                 (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) ||
-                                 (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE);
+            int isWoundPending = (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING) ||
+                                 (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE) ||
+                                 (referee->batting_players[i].status == PLAYER_STATUS_WOUNDED) ||
+                                 (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED) ||
+                                 (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED_DOUBLE);
 
             if (isWoundPending) {
                 // TUPLAHAAVA LOGIC: Do not displace. Mark existing occupants for Tuplahaava.
                 for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
                     if (i == j) continue;
 
-                    if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
+                    if (referee->batting_players[j].current_safety_base == physicalBase) {
                         // Found an existing occupant. Mark them for Tuplahaava.
 
                         // Don't downgrade stricter wound states
                         // WOUND_MARKED is stricter than WOUND_MARKED_DOUBLE
                         // WOUND_PENDING is stricter than WOUND_PENDING_DOUBLE
-                        if (referee->battingPlayers[j].status == PLAYER_STATUS_WOUND_MARKED ||
-                            referee->battingPlayers[j].status == PLAYER_STATUS_WOUND_PENDING) {
+                        if (referee->batting_players[j].status == PLAYER_STATUS_WOUND_MARKED ||
+                            referee->batting_players[j].status == PLAYER_STATUS_WOUND_PENDING) {
                             // Keep existing stricter status, don't change
                             continue;
                         }
 
                         // If the timer has already expired (arriving player has pending wound),
                         // we must immediately set the occupant to pending as well.
-                        if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING ||
-                            referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE ||
-                            referee->battingPlayers[i].status == PLAYER_STATUS_WOUNDED) {
-                            referee->battingPlayers[j].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
+                        if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING ||
+                            referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE ||
+                            referee->batting_players[i].status == PLAYER_STATUS_WOUNDED) {
+                            referee->batting_players[j].status = PLAYER_STATUS_WOUND_PENDING_DOUBLE;
                         } else {
                             // Arriving player is still WOUND_MARKED (timer hasn't expired)
                             // Mark occupant as WOUND_MARKED_DOUBLE so timer knows to treat them as tuplahaava
-                            referee->battingPlayers[j].status = PLAYER_STATUS_WOUND_MARKED_DOUBLE;
+                            referee->batting_players[j].status = PLAYER_STATUS_WOUND_MARKED_DOUBLE;
                         }
 
                         // Crucial: They KEEP safety for now.
                     }
                 }
                 // Ensure arriving player is marked correctly (normal wound if not already double)
-                if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_MARKED) {
+                if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED) {
                     // This shouldn't happen, but keep logic simple
                 }
             } else {
@@ -460,8 +461,8 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
                 for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
                     if (i == j) continue;
 
-                    if (referee->battingPlayers[j].currentSafetyBase == physicalBase) {
-                        referee->battingPlayers[j].currentSafetyBase = BASE_NONE;
+                    if (referee->batting_players[j].current_safety_base == physicalBase) {
+                        referee->batting_players[j].current_safety_base = BASE_NONE;
                     }
                 }
             }
@@ -493,7 +494,7 @@ static void update_force_outs(
     // immediately and nothing happens after. Mirrors the run paths' guard (update_runs /
     // resolve_pending_runs). Without it, a ball arriving at a base during the end-of-inning grace
     // period records a spurious 4th out (outs > 3).
-    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
 
     // Check for Force Outs (§33) and Safety Removal (§36)
     if (ballAtBase != -1) {
@@ -514,7 +515,7 @@ static void update_force_outs(
 
             // A. Force Out / Burning (§33)
             int has_safety_at_current =
-                (referee->battingPlayers[i].currentSafetyBase == player->batting.presence.base_id);
+                (referee->batting_players[i].current_safety_base == player->batting.presence.base_id);
             int is_protected =
                 (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
                  player->batting.presence.state == PLAYER_STATE_AT_BAT);
@@ -523,25 +524,25 @@ static void update_force_outs(
             if (is_runner_forced_out(
                     player->batting.presence.base_id, is_safe_from_force_out, checkBaseId,
                     player->batting.presence.state == PLAYER_STATE_ADVANCING_FREELY,
-                    referee->foulState != FOUL_STATE_NONE
+                    referee->foul_state != FOUL_STATE_NONE
                 )) {
 
-                referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
+                referee->batting_players[i].status = PLAYER_STATUS_OUT;
                 record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
 
                 // Remove safety if they had it at this base
                 if (has_safety_at_current) {
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
                 }
             }
 
             // B. Safety Removal (§36 Koppilyönti logic)
-            BaseID player_safety_base = referee->battingPlayers[i].currentSafetyBase;
+            BaseID player_safety_base = referee->batting_players[i].current_safety_base;
 
             if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
                 if (!is_protected) {
                     // Player has safety here but is "irti" - lose safety and must run
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
                 }
             }
         }
@@ -555,7 +556,7 @@ static void update_tuplahaava_logic(
 {
 
     // No further outs once the half-inning is ending (see update_force_outs).
-    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
 
     // Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
     // These checks must run every frame, not just when ball is at a base
@@ -563,9 +564,9 @@ static void update_tuplahaava_logic(
         const PlayerInfo* player = &game->playerInfo[i];
 
         // Only check active players with Tuplahaava wounds
-        if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE) {
+        if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE) {
 
-            BaseID source = referee->battingPlayers[i].baseAtPitchStart;
+            BaseID source = referee->batting_players[i].base_at_pitch_start;
             BaseID next = base_get_next(source);
             BaseID currentBase = player->batting.presence.base_id;
             // In-between: RUNNING or LEADING (actively between bases)
@@ -576,30 +577,30 @@ static void update_tuplahaava_logic(
             if (is_in_between && ballAtBase != -1) {
                 // Exception 2: Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
-                    referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
+                    referee->batting_players[i].status = PLAYER_STATUS_OUT;
                     record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE; // Clear source safety
+                    referee->batting_players[i].current_safety_base = BASE_NONE; // Clear source safety
                 }
                 // Exception 1: Ball at SOURCE base -> Lose Safety, become WOUNDED
                 else if (base_to_int_index(source) == ballAtBase) {
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-                    referee->battingPlayers[i].status = PLAYER_STATUS_WOUNDED;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
+                    referee->batting_players[i].status = PLAYER_STATUS_WOUNDED;
                 }
             } else if (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
                        player->batting.presence.state == PLAYER_STATE_AT_BAT) {
                 // Player is ON_BASE or AT_BAT - check if at source or next base
                 if (currentBase == source || currentBase == next) {
                     // Tuplahaava player at source/next base should be wounded
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-                    referee->battingPlayers[i].status = PLAYER_STATUS_WOUNDED;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
+                    referee->batting_players[i].status = PLAYER_STATUS_WOUNDED;
                 }
             }
         }
 
         // Handle regular WOUND_PENDING (non-tuplahaava) players
-        if (referee->battingPlayers[i].status == PLAYER_STATUS_WOUND_PENDING) {
+        if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING) {
 
-            BaseID source = referee->battingPlayers[i].baseAtPitchStart;
+            BaseID source = referee->batting_players[i].base_at_pitch_start;
             BaseID next = base_get_next(source);
             BaseID currentBase = player->batting.presence.base_id;
             // In-between: RUNNING or LEADING (actively between bases)
@@ -611,16 +612,16 @@ static void update_tuplahaava_logic(
             if (is_in_between && ballAtBase != -1) {
                 // Ball at NEXT base -> OUT
                 if (base_to_int_index(next) == ballAtBase) {
-                    referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
+                    referee->batting_players[i].status = PLAYER_STATUS_OUT;
                     record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
                 }
             } else if (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
                        player->batting.presence.state == PLAYER_STATE_AT_BAT) {
                 // Player arrived at base (ON_BASE or AT_BAT) -> finalize as WOUNDED
                 if (currentBase == source || currentBase == next) {
-                    referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-                    referee->battingPlayers[i].status = PLAYER_STATUS_WOUNDED;
+                    referee->batting_players[i].current_safety_base = BASE_NONE;
+                    referee->batting_players[i].status = PLAYER_STATUS_WOUNDED;
                 }
             }
         }
@@ -629,14 +630,14 @@ static void update_tuplahaava_logic(
 
 // §41/§42: the batting team scores one run. Every scoring path ends in exactly these three writes, and
 // they are the ONLY thing those paths share. What the run then implies is specific to the rule that
-// awarded it and deliberately stays at the call site: which player flag it sets (`hasScored` removes the
-// player; `runOfHonorScored` leaves them on third), whether it refreshes the batting pool, and the §42
+// awarded it and deliberately stays at the call site: which player flag it sets (`has_scored` removes the
+// player; `run_of_honor_scored` leaves them on third), whether it refreshes the batting pool, and the §42
 // overtaking check. Folding those in would need a mode flag per rule — four rules wearing one name.
 static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState, GameEventType* announcement)
 {
     const int battingTeamIndex = get_batting_team_index(scoreboard);
     scoreboard->teams[battingTeamIndex].runs += 1;
-    halfInningState->runsInTheInning += 1;
+    halfInningState->runs_in_inning += 1;
     *announcement = EVENT_RUN_SCORED;
 
     // §12: "kahden saadun juoksun ja kunkin kahden lisäjuoksun jälkeen" — every EVEN-numbered run of
@@ -644,13 +645,13 @@ static void award_run(Scoreboard* scoreboard, HalfInningState* halfInningState, 
     // that ("aina sisävuoron parillisen juoksun lyöjä"). Runs of honour count, so this belongs here,
     // in the one place every run passes through, and not at the three call sites. The homerun
     // contest (period 4+) ends by its own pair counter, so §12 has nothing to say there.
-    if (scoreboard->period < 4 && halfInningState->runsInTheInning % 2 == 0) {
-        halfInningState->lastBatter.designatedIndex = designate_last_batter(
-            halfInningState->lastBatter.lastRegularIndex, halfInningState->lastBatter.designatedIndex
+    if (scoreboard->period < 4 && halfInningState->runs_in_inning % 2 == 0) {
+        halfInningState->last_batter.designated_index = designate_last_batter(
+            halfInningState->last_batter.last_regular_index, halfInningState->last_batter.designated_index
         );
-        halfInningState->lastBatter.hasBattedAgain = 0;
-        halfInningState->lastBatter.turnExhausted = 0;
-        halfInningState->lastBatter.regularOrderSpent = 0;
+        halfInningState->last_batter.has_batted_again = 0;
+        halfInningState->last_batter.turn_exhausted = 0;
+        halfInningState->last_batter.regular_order_spent = 0;
     }
 }
 
@@ -664,9 +665,9 @@ static void end_period_if_decided(HalfInningState* halfInningState, const Scoreb
 
     if (should_period_end(
             scoreboard, scoreboard->teams[battingTeamIndex].runs, scoreboard->teams[catchingTeamIndex].runs,
-            scoreboard->teams[battingTeamIndex].period0Runs, scoreboard->teams[catchingTeamIndex].period0Runs
+            scoreboard->teams[battingTeamIndex].period0_runs, scoreboard->teams[catchingTeamIndex].period0_runs
         )) {
-        halfInningState->endPeriod = 1;
+        halfInningState->end_period = 1;
     }
 }
 
@@ -680,38 +681,39 @@ static void update_runs(
     // We trigger this check if ANY player arrived at a base this frame.
     if (game->gameEvents.playerArrivedAtBase) {
 
-        int isBallInAir = (betweenPitchState->catchHasBeenMade == 0 && betweenPitchState->hasBallHitGround == 0);
-        int isCatchPending = (betweenPitchState->catchHasBeenMade == 1 && referee->woundingEvaluationFinished == 0);
+        int isBallInAir = (betweenPitchState->catch_has_been_made == 0 && betweenPitchState->has_ball_hit_ground == 0);
+        int isCatchPending =
+            (betweenPitchState->catch_has_been_made == 1 && referee->wounding_evaluation_finished == 0);
 
         // Case A: Pending Run (Ball in Air OR Catch Evaluation Active)
         // Don't mark new pending runs if end-of-inning has been decided
-        if ((isBallInAir || isCatchPending) && referee->endOfInningState == END_INNING_STATE_NONE) {
+        if ((isBallInAir || isCatchPending) && referee->end_of_inning_state == END_INNING_STATE_NONE) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
                     int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
-                                    (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
+                                    (referee->batting_players[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
                     // Check for potential run
                     int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].batting.presence.base_id, referee->battingPlayers[i].baseAtPitchStart,
-                        isWounded, referee->battingPlayers[i].runOfHonorScored
+                        game->playerInfo[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
+                        isWounded, referee->batting_players[i].run_of_honor_scored
                     );
 
                     if (regularRun) {
-                        referee->battingPlayers[i].hasPendingRun = 1;
+                        referee->batting_players[i].has_pending_run = 1;
                     }
                     if (runOfHonor) {
-                        referee->battingPlayers[i].hasPendingRunOfHonor = 1;
+                        referee->batting_players[i].has_pending_run_of_honor = 1;
                     }
                 }
             }
         }
         // Case B: Ball Grounded or Catch Confirmed (Immediate Run)
-        else if ((betweenPitchState->catchHasBeenMade == 1 || betweenPitchState->hasBallHitGround == 1) &&
-                 referee->woundingEvaluationActive == 0 && referee->endOfInningState == END_INNING_STATE_NONE &&
-                 referee->foulState == FOUL_STATE_NONE) {
+        else if ((betweenPitchState->catch_has_been_made == 1 || betweenPitchState->has_ball_hit_ground == 1) &&
+                 referee->wounding_evaluation_active == 0 && referee->end_of_inning_state == END_INNING_STATE_NONE &&
+                 referee->foul_state == FOUL_STATE_NONE) {
 
             // Check all players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -720,37 +722,37 @@ static void update_runs(
                     // decided they're doomed (status may not be reflected physically yet due to
                     // pipeline ordering: referee decides before consolidation enforces)
                     int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
-                                    (referee->battingPlayers[i].status >= PLAYER_STATUS_WOUND_MARKED);
+                                    (referee->batting_players[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
                     int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].batting.presence.base_id, referee->battingPlayers[i].baseAtPitchStart,
-                        isWounded, referee->battingPlayers[i].runOfHonorScored
+                        game->playerInfo[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
+                        isWounded, referee->batting_players[i].run_of_honor_scored
                     );
 
                     if (regularRun) {
                         award_run(scoreboard, halfInningState, announcement);
 
-                        referee->battingPlayers[i].hasScored = 1;
+                        referee->batting_players[i].has_scored = 1;
                     } else if (runOfHonor) {
                         award_run(scoreboard, halfInningState, announcement);
 
-                        referee->battingPlayers[i].runOfHonorScored = 1;
-                        // Do NOT set hasScored=1, as that removes the player. Run of Honor players stay at 3rd.
+                        referee->batting_players[i].run_of_honor_scored = 1;
+                        // Do NOT set has_scored=1, as that removes the player. Run of Honor players stay at 3rd.
 
                         // §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
                         if (game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
                             int someone_else_has_third_safety = 0;
                             for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-                                if (j != i && referee->battingPlayers[j].currentSafetyBase == BASE_THIRD) {
+                                if (j != i && referee->batting_players[j].current_safety_base == BASE_THIRD) {
                                     someone_else_has_third_safety = 1;
                                     break;
                                 }
                             }
 
                             if (someone_else_has_third_safety) {
-                                referee->battingPlayers[i].status = PLAYER_STATUS_OUT;
+                                referee->batting_players[i].status = PLAYER_STATUS_OUT;
                                 record_out_capped(halfInningState, scoreboard, announcement); // §28 cap
                             }
                         }
@@ -780,7 +782,7 @@ static void update_pitch_resolution(
     // Check if a pitch has physically concluded (hit ground) while still logically active
     if (events->ballHitGround && game->ballInfo.pitch_in_flight) {
 
-        if (betweenPitchState->batOutcome == BAT_OUTCOME_NONE) {
+        if (betweenPitchState->bat_outcome == BAT_OUTCOME_NONE) {
             // No swing: resolve by ball position (strike zone check)
             PitchResult result = determine_pitch_result(game->ballInfo.location.x, PLATE_WIDTH);
 
@@ -792,10 +794,10 @@ static void update_pitch_resolution(
                 *announcement = EVENT_BALL;
             }
 
-            betweenPitchState->pitchResult = result;
+            betweenPitchState->pitch_result = result;
         } else {
             // Swing happened: strike already counted by update_strikes, just signal resolution
-            betweenPitchState->pitchResult = PITCH_RESULT_STRIKE;
+            betweenPitchState->pitch_result = PITCH_RESULT_STRIKE;
         }
     }
 }
@@ -806,7 +808,7 @@ static void update_free_walk_resolution(
 )
 {
     // No free walk processing once end-of-inning has been decided
-    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
 
     // 6. Free Walk Resolution
     if (events->freeWalkAccepted && freeWalk->runner != -1) {
@@ -815,9 +817,9 @@ static void update_free_walk_resolution(
 
         if (scoreboard->period >= 4) {
             // Homerun Contest / Super Inning Logic
-            referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
-            referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
-            referee->battingPlayers[i].hasScored = 1;
+            referee->batting_players[i].base_at_pitch_start = BASE_HOME_SCORED;
+            referee->batting_players[i].current_safety_base = BASE_HOME_SCORED;
+            referee->batting_players[i].has_scored = 1;
 
             // Add run — a free walk on 3+ balls is worth two here
             award_run(scoreboard, halfInningState, announcement);
@@ -834,13 +836,13 @@ static void update_free_walk_resolution(
             if (sourceBase != BASE_THIRD) {
                 // Advance to next base
                 BaseID targetBase = base_get_next(sourceBase);
-                referee->battingPlayers[i].baseAtPitchStart = targetBase;
-                referee->battingPlayers[i].currentSafetyBase = targetBase;
+                referee->batting_players[i].base_at_pitch_start = targetBase;
+                referee->batting_players[i].current_safety_base = targetBase;
             } else {
                 // Score from 3rd base — no physical run, player is removed by enforceLegalState
-                referee->battingPlayers[i].baseAtPitchStart = BASE_HOME_SCORED;
-                referee->battingPlayers[i].currentSafetyBase = BASE_HOME_SCORED;
-                referee->battingPlayers[i].hasScored = 1;
+                referee->batting_players[i].base_at_pitch_start = BASE_HOME_SCORED;
+                referee->batting_players[i].current_safety_base = BASE_HOME_SCORED;
+                referee->batting_players[i].has_scored = 1;
 
                 // Add run
                 award_run(scoreboard, halfInningState, announcement);
@@ -860,32 +862,32 @@ static void resolve_pending_runs(
 )
 {
     // No run resolution once end-of-inning has been decided
-    if (referee->endOfInningState != END_INNING_STATE_NONE) return;
+    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
 
     // Trigger 1: Ball Hit Ground (Final Verdict)
-    if (betweenPitchState->hasBallHitGround) {
-        if (referee->foulState != FOUL_STATE_NONE) {
+    if (betweenPitchState->has_ball_hit_ground) {
+        if (referee->foul_state != FOUL_STATE_NONE) {
             // FOUL: Void all pending runs
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                referee->battingPlayers[i].hasPendingRun = 0;
-                referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+                referee->batting_players[i].has_pending_run = 0;
+                referee->batting_players[i].has_pending_run_of_honor = 0;
             }
         } else {
             // SAFE HIT: Cash In all pending runs
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (referee->battingPlayers[i].hasPendingRun) {
+                if (referee->batting_players[i].has_pending_run) {
                     // Award Regular Run
                     award_run(scoreboard, halfInningState, announcement);
 
-                    referee->battingPlayers[i].hasScored = 1;
-                    referee->battingPlayers[i].hasPendingRun = 0;
+                    referee->batting_players[i].has_scored = 1;
+                    referee->batting_players[i].has_pending_run = 0;
                 }
-                if (referee->battingPlayers[i].hasPendingRunOfHonor) {
+                if (referee->batting_players[i].has_pending_run_of_honor) {
                     // Award Run of Honor
                     award_run(scoreboard, halfInningState, announcement);
 
-                    referee->battingPlayers[i].runOfHonorScored = 1;
-                    referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+                    referee->batting_players[i].run_of_honor_scored = 1;
+                    referee->batting_players[i].has_pending_run_of_honor = 0;
                 }
             }
 
@@ -893,29 +895,29 @@ static void resolve_pending_runs(
         }
     }
     // Trigger 2: Catch Confirmed (Wounding Evaluation Finished)
-    else if (referee->woundingEvaluationFinished) {
+    else if (referee->wounding_evaluation_finished) {
         // CATCH:
         // 1. Regular Pending Runs are VALID IF NOT WOUNDED (Runner beat the catch)
         // 2. Pending HRs are VOID (Batter is burnt/wounded by the catch)
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (referee->battingPlayers[i].hasPendingRun) {
+            if (referee->batting_players[i].has_pending_run) {
                 // Only award run if player was NOT wounded by the catch
-                if (referee->battingPlayers[i].status < PLAYER_STATUS_WOUND_MARKED) {
+                if (referee->batting_players[i].status < PLAYER_STATUS_WOUND_MARKED) {
                     // Award Regular Run
                     award_run(scoreboard, halfInningState, announcement);
 
-                    referee->battingPlayers[i].hasScored = 1;
+                    referee->batting_players[i].has_scored = 1;
                 } else {
                     // Player was wounded despite arriving (e.g. didn't escape in time logically?)
                     // Run voided.
                 }
-                referee->battingPlayers[i].hasPendingRun = 0;
+                referee->batting_players[i].has_pending_run = 0;
             }
 
-            if (referee->battingPlayers[i].hasPendingRunOfHonor) {
+            if (referee->batting_players[i].has_pending_run_of_honor) {
                 // Void Run of Honor (Batter burnt)
-                referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+                referee->batting_players[i].has_pending_run_of_honor = 0;
             }
         }
 
@@ -950,19 +952,19 @@ static void update_side_change_readiness(
 
     const int battingTeamIndex = get_batting_team_index(scoreboard);
     const int nextInOrder =
-        scoreboard->teams[battingTeamIndex].batterOrder[scoreboard->teams[battingTeamIndex].batterOrderIndex];
+        scoreboard->teams[battingTeamIndex].batter_order[scoreboard->teams[battingTeamIndex].batter_order_index];
 
     // The batting-order clause on its own: who may still be seated. Settled, and asked wherever a
     // batter is chosen.
-    halfInningState->lastBatter.regularOrderSpent = is_last_batter_turn_reached(
-        halfInningState->lastBatter.designatedIndex, halfInningState->lastBatter.hasBattedAgain,
-        halfInningState->runsInTheInning, nextInOrder
+    halfInningState->last_batter.regular_order_spent = is_last_batter_turn_reached(
+        halfInningState->last_batter.designated_index, halfInningState->last_batter.has_batted_again,
+        halfInningState->runs_in_inning, nextInOrder
     );
 
     // The side-change readiness: the same clause plus §12(3)'s "muuttuu lopullisesti etenijäksi".
     // Transient by nature, and read only by the inning-end verdict, which ANDs the ball being home
     // and the jokers being gone.
-    halfInningState->lastBatter.turnExhausted = turn_concluded && halfInningState->lastBatter.regularOrderSpent;
+    halfInningState->last_batter.turn_exhausted = turn_concluded && halfInningState->last_batter.regular_order_spent;
 }
 
 static void update_game_state_flags(const GameEvents* events, BetweenPitchState* betweenPitchState)
@@ -972,22 +974,22 @@ static void update_game_state_flags(const GameEvents* events, BetweenPitchState*
     // Persistent Catch State Management
     // When a catch is made, we lock it in.
     if (events->catchMade) {
-        betweenPitchState->catchHasBeenMade = 1;
+        betweenPitchState->catch_has_been_made = 1;
     }
 
     // Batting Outcome Promotion
-    // Transient events → sticky flag, same pattern as catchMade → catchHasBeenMade
+    // Transient events → sticky flag, same pattern as catchMade → catch_has_been_made
     if (events->ballHitByBat) {
-        betweenPitchState->batOutcome = BAT_OUTCOME_HIT;
+        betweenPitchState->bat_outcome = BAT_OUTCOME_HIT;
     }
     if (events->ballMissedByBat) {
-        betweenPitchState->batOutcome = BAT_OUTCOME_MISSED;
+        betweenPitchState->bat_outcome = BAT_OUTCOME_MISSED;
     }
 }
 
 // Per-pair clear for homerun contest next-pair transition.
 // Called by the referee itself at DETECTED→RESETTING for next-pair.
-// Clears per-pitch and per-pair state. Preserves outs, runsInTheInning (inning-level state).
+// Clears per-pitch and per-pair state. Preserves outs, runs_in_inning (inning-level state).
 static void clear_referee_for_pair_end(
     RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState
 )
@@ -995,24 +997,24 @@ static void clear_referee_for_pair_end(
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     clear_between_pitch_state(betweenPitchState);
-    refereeState->foulState = FOUL_STATE_NONE;
-    refereeState->foulTimer = -1;
-    refereeState->homerunPairHasPitch = 0;
+    refereeState->foul_state = FOUL_STATE_NONE;
+    refereeState->foul_timer = -1;
+    refereeState->homerun_pair_has_pitch = 0;
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-        refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
-        refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
-        refereeState->battingPlayers[i].hasScored = 0;
-        refereeState->battingPlayers[i].runOfHonorScored = 0;
-        refereeState->battingPlayers[i].hasPendingRun = 0;
-        refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+        refereeState->batting_players[i].base_at_pitch_start = BASE_NONE;
+        refereeState->batting_players[i].current_safety_base = BASE_NONE;
+        refereeState->batting_players[i].status = PLAYER_STATUS_ACTIVE;
+        refereeState->batting_players[i].has_scored = 0;
+        refereeState->batting_players[i].run_of_honor_scored = 0;
+        refereeState->batting_players[i].has_pending_run = 0;
+        refereeState->batting_players[i].has_pending_run_of_honor = 0;
     }
 }
 
 // Full clear of ALL referee-owned state for a new inning.
 // Called by the referee itself at DETECTED→RESETTING for end-of-inning.
-// Clears everything EXCEPT endOfInningState/endInningTimer (the active handshake signal).
+// Clears everything EXCEPT end_of_inning_state/end_of_inning_timer (the active handshake signal).
 static void clear_referee_for_inning_end(
     RefereeState* refereeState, HalfInningState* halfInningState, BetweenPitchState* betweenPitchState
 )
@@ -1021,39 +1023,39 @@ static void clear_referee_for_inning_end(
     halfInningState->outs = 0;
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
-    halfInningState->runsInTheInning = 0;
-    halfInningState->endPeriod = 0;
-    halfInningState->jokersLeft = JOKER_COUNT;
-    halfInningState->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
+    halfInningState->runs_in_inning = 0;
+    halfInningState->end_period = 0;
+    halfInningState->jokers_left = JOKER_COUNT;
+    halfInningState->last_batter = (LastBatterState){.designated_index = -1, .last_regular_index = -1};
 
     // BetweenPitchState
     clear_between_pitch_state(betweenPitchState);
 
     // Player tracking
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        refereeState->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-        refereeState->battingPlayers[i].currentSafetyBase = BASE_NONE;
-        refereeState->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
-        refereeState->battingPlayers[i].hasScored = 0;
-        refereeState->battingPlayers[i].runOfHonorScored = 0;
-        refereeState->battingPlayers[i].hasPendingRun = 0;
-        refereeState->battingPlayers[i].hasPendingRunOfHonor = 0;
+        refereeState->batting_players[i].base_at_pitch_start = BASE_NONE;
+        refereeState->batting_players[i].current_safety_base = BASE_NONE;
+        refereeState->batting_players[i].status = PLAYER_STATUS_ACTIVE;
+        refereeState->batting_players[i].has_scored = 0;
+        refereeState->batting_players[i].run_of_honor_scored = 0;
+        refereeState->batting_players[i].has_pending_run = 0;
+        refereeState->batting_players[i].has_pending_run_of_honor = 0;
     }
 
     // Referee internal state
-    refereeState->strikesAtPitchStart = 0;
-    refereeState->woundingEvaluationActive = 0;
-    refereeState->woundingEvaluationFinished = 0;
-    refereeState->woundingEvaluationTimer = -1;
-    refereeState->ballInThirdBaseSincePitch = 0;
-    refereeState->homerunPairHasPitch = 0;
+    refereeState->strikes_at_pitch_start = 0;
+    refereeState->wounding_evaluation_active = 0;
+    refereeState->wounding_evaluation_finished = 0;
+    refereeState->wounding_evaluation_timer = -1;
+    refereeState->ball_in_third_base_since_pitch = 0;
+    refereeState->homerun_pair_has_pitch = 0;
 
     // Sub-state machines (foul + next-pair are done if inning is ending)
-    refereeState->foulState = FOUL_STATE_NONE;
-    refereeState->foulTimer = -1;
-    refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
-    refereeState->nextPairTimer = -1;
-    // NOTE: endOfInningState and endInningTimer are NOT cleared here.
+    refereeState->foul_state = FOUL_STATE_NONE;
+    refereeState->foul_timer = -1;
+    refereeState->next_pair_state = HR_PAIR_STATE_NONE;
+    refereeState->next_pair_timer = -1;
+    // NOTE: end_of_inning_state and end_of_inning_timer are NOT cleared here.
     // They remain RESETTING/-1 for the two-frame handshake with consolidation.
 }
 
@@ -1064,29 +1066,29 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     his->outs = 0;
     his->balls = 0;
     his->strikes = 0;
-    his->runsInTheInning = 0;
-    his->endPeriod = 0;
-    his->jokersLeft = JOKER_COUNT;
-    his->lastBatter = (LastBatterState){.designatedIndex = -1, .lastRegularIndex = -1};
+    his->runs_in_inning = 0;
+    his->end_period = 0;
+    his->jokers_left = JOKER_COUNT;
+    his->last_batter = (LastBatterState){.designated_index = -1, .last_regular_index = -1};
 
     clear_between_pitch_state(bps);
 }
 
 // A half-inning of the home-run contest starts from its first pair: the counter the last pair left at
-// pairCount goes back to 0 at the side change, by the referee that owns it. (It used to be zeroed inside the
+// pair_count goes back to 0 at the side change, by the referee that owns it. (It used to be zeroed inside the
 // physical reset recipe — the one write to the legal world outside the referee.) A counter still inside the
 // range is kept, exactly as before: only an early end reaches the side change with one, and that ends the game
 // through the menu, which starts the next contest from 0 itself.
 static void start_contest_half_inning_at_its_first_pair(HomeRunContestState* hrcs, const Scoreboard* scoreboard)
 {
     if (scoreboard->period < 4) return;
-    if (!(hrcs->runnerBatterPairCounter > 0 && hrcs->runnerBatterPairCounter < scoreboard->pairCount)) {
-        hrcs->runnerBatterPairCounter = 0;
+    if (!(hrcs->pair_index > 0 && hrcs->pair_index < scoreboard->pair_count)) {
+        hrcs->pair_index = 0;
     }
 }
 
 // Advance the scoreboard at end-of-inning and determine what period transition occurs.
-// Called by referee at DETECTED→RESETTING time. Consolidation reads periodTransition
+// Called by referee at DETECTED→RESETTING time. Consolidation reads period_transition
 // to know what menu/screen action to take.
 static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreboard* scoreboard)
 {
@@ -1096,46 +1098,46 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
     scoreboard->inning++;
 
     // First period ending
-    if (scoreboard->inning == scoreboard->halfInningsInPeriod ||
-        (scoreboard->inning == scoreboard->halfInningsInPeriod - 1 &&
+    if (scoreboard->inning == scoreboard->half_innings_in_period ||
+        (scoreboard->inning == scoreboard->half_innings_in_period - 1 &&
          scoreboard->teams[catchingTeamIndex].runs > scoreboard->teams[battingTeamIndex].runs)) {
         scoreboard->period = 1;
         for (int i = 0; i < 2; i++) {
-            scoreboard->teams[i].period0Runs = scoreboard->teams[i].runs;
+            scoreboard->teams[i].period0_runs = scoreboard->teams[i].runs;
             scoreboard->teams[i].runs = 0;
         }
-        if (scoreboard->inning == scoreboard->halfInningsInPeriod - 1) {
+        if (scoreboard->inning == scoreboard->half_innings_in_period - 1) {
             scoreboard->inning++; // skip the last half-inning
         }
-        refereeState->periodTransition = PERIOD_TRANSITION_INTER_PERIOD;
+        refereeState->period_transition = PERIOD_TRANSITION_INTER_PERIOD;
     }
     // Second period ending
-    else if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 ||
-             (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 - 1 &&
+    else if (scoreboard->inning == scoreboard->half_innings_in_period * 2 ||
+             (scoreboard->inning == scoreboard->half_innings_in_period * 2 - 1 &&
               (scoreboard->teams[catchingTeamIndex].runs > scoreboard->teams[battingTeamIndex].runs ||
-               (scoreboard->teams[catchingTeamIndex].period0Runs > scoreboard->teams[battingTeamIndex].period0Runs &&
+               (scoreboard->teams[catchingTeamIndex].period0_runs > scoreboard->teams[battingTeamIndex].period0_runs &&
                 scoreboard->teams[catchingTeamIndex].runs == scoreboard->teams[battingTeamIndex].runs)))) {
         for (int i = 0; i < 2; i++) {
-            scoreboard->teams[i].period1Runs = scoreboard->teams[i].runs;
+            scoreboard->teams[i].period1_runs = scoreboard->teams[i].runs;
         }
 
-        int t0p0 = scoreboard->teams[0].period0Runs;
-        int t0p1 = scoreboard->teams[0].period1Runs;
-        int t1p0 = scoreboard->teams[1].period0Runs;
-        int t1p1 = scoreboard->teams[1].period1Runs;
+        int t0p0 = scoreboard->teams[0].period0_runs;
+        int t0p1 = scoreboard->teams[0].period1_runs;
+        int t1p0 = scoreboard->teams[1].period0_runs;
+        int t1p1 = scoreboard->teams[1].period1_runs;
 
         if (t0p0 >= t1p0 && t0p1 >= t1p1 && (t0p0 != t1p0 || t0p1 != t1p1)) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 0;
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 0;
         } else if (t0p0 <= t1p0 && t0p1 <= t1p1 && (t0p0 != t1p0 || t0p1 != t1p1)) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 1;
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 1;
         } else {
             scoreboard->period = 2;
-            refereeState->periodTransition = PERIOD_TRANSITION_SUPER_INNING;
+            refereeState->period_transition = PERIOD_TRANSITION_SUPER_INNING;
         }
 
-        if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 - 1) {
+        if (scoreboard->inning == scoreboard->half_innings_in_period * 2 - 1) {
             scoreboard->inning++; // skip the last half-inning
         }
         for (int i = 0; i < 2; i++) {
@@ -1143,21 +1145,21 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
         }
     }
     // Super inning ending
-    else if (scoreboard->inning == scoreboard->halfInningsInPeriod * 2 + 2) {
+    else if (scoreboard->inning == scoreboard->half_innings_in_period * 2 + 2) {
         for (int i = 0; i < 2; i++) {
-            scoreboard->teams[i].period2Runs = scoreboard->teams[i].runs;
+            scoreboard->teams[i].period2_runs = scoreboard->teams[i].runs;
         }
 
         if (scoreboard->teams[0].runs > scoreboard->teams[1].runs) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 0;
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 0;
         } else if (scoreboard->teams[0].runs < scoreboard->teams[1].runs) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 1;
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 1;
         } else {
             // Super Inning → Homerun Contest
             scoreboard->period = 4;
-            refereeState->periodTransition = PERIOD_TRANSITION_HOMERUN_CONTEST;
+            refereeState->period_transition = PERIOD_TRANSITION_HOMERUN_CONTEST;
         }
 
         for (int i = 0; i < 2; i++) {
@@ -1167,19 +1169,19 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
     // Homerun contest round ending
     else if (scoreboard->period >= 4 && (scoreboard->inning) % 2 == 0) {
         for (int i = 0; i < 2; i++) {
-            scoreboard->teams[i].period3Runs += scoreboard->teams[i].runs;
+            scoreboard->teams[i].period3_runs += scoreboard->teams[i].runs;
         }
 
-        if (scoreboard->teams[0].period3Runs > scoreboard->teams[1].period3Runs) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 0;
-        } else if (scoreboard->teams[0].period3Runs < scoreboard->teams[1].period3Runs) {
-            refereeState->periodTransition = PERIOD_TRANSITION_GAME_OVER;
-            refereeState->periodTransitionWinner = 1;
+        if (scoreboard->teams[0].period3_runs > scoreboard->teams[1].period3_runs) {
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 0;
+        } else if (scoreboard->teams[0].period3_runs < scoreboard->teams[1].period3_runs) {
+            refereeState->period_transition = PERIOD_TRANSITION_GAME_OVER;
+            refereeState->period_transition_winner = 1;
         } else {
             // Next homerun contest round (period += 2 for battingTeamIndex calculation)
             scoreboard->period += 2;
-            refereeState->periodTransition = PERIOD_TRANSITION_HOMERUN_CONTEST;
+            refereeState->period_transition = PERIOD_TRANSITION_HOMERUN_CONTEST;
         }
 
         for (int i = 0; i < 2; i++) {
@@ -1188,7 +1190,7 @@ static void advance_scoreboard_for_inning_end(RefereeState* refereeState, Scoreb
     }
     // Normal next-inning (no period transition)
     else {
-        refereeState->periodTransition = PERIOD_TRANSITION_NONE;
+        refereeState->period_transition = PERIOD_TRANSITION_NONE;
     }
 }
 
@@ -1212,7 +1214,7 @@ void update_referee(
 
     // 2. Track if ball has been at 3rd base since pitch started (for run of honor logic)
     if (ballAtBase == 3) {
-        refereeState->ballInThirdBaseSincePitch = 1;
+        refereeState->ball_in_third_base_since_pitch = 1;
     }
 
     // 2.5 Foul Play & Wounding Logic (Milestone 17)
@@ -1222,10 +1224,10 @@ void update_referee(
 
     // If foul play reset is triggered, the physical world is out of sync with legal state.
     // We skip gameplay logic this frame, but we still run Flow Control (Gather-Decide-Act)
-    if (refereeState->foulState != FOUL_STATE_RESETTING) {
+    if (refereeState->foul_state != FOUL_STATE_RESETTING) {
         // Mark that ball hit ground (after foul play check, so it can detect first bounce)
         if (game->gameEvents.ballHitGround) {
-            betweenPitchState->hasBallHitGround = 1;
+            betweenPitchState->has_ball_hit_ground = 1;
         }
 
         update_wounding_logic(game, refereeState, &game->gameEvents, betweenPitchState, announcement);
@@ -1259,17 +1261,17 @@ void update_referee(
     int wants_pair_end = 0;
 
     if (scoreboard->period >= 4) {
-        if (refereeState->nextPairTransitionState == HR_PAIR_STATE_NONE) {
+        if (refereeState->next_pair_state == HR_PAIR_STATE_NONE) {
             // Only check pair-ending conditions after at least one pitch has been released
-            if (refereeState->homerunPairHasPitch) {
+            if (refereeState->homerun_pair_has_pitch) {
                 int batterIndex = -1;
                 int runnerIndex = -1;
 
                 for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                    if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_HOME) {
+                    if (refereeState->batting_players[i].base_at_pitch_start == BASE_HOME) {
                         batterIndex = i;
                     }
-                    if (refereeState->battingPlayers[i].baseAtPitchStart == BASE_THIRD) {
+                    if (refereeState->batting_players[i].base_at_pitch_start == BASE_THIRD) {
                         runnerIndex = i;
                     }
                 }
@@ -1289,7 +1291,7 @@ void update_referee(
                 }
 
                 int batterHasSafetyAtHome = 0;
-                if (batterIndex != -1 && refereeState->battingPlayers[batterIndex].currentSafetyBase == BASE_HOME) {
+                if (batterIndex != -1 && refereeState->batting_players[batterIndex].current_safety_base == BASE_HOME) {
                     batterHasSafetyAtHome = 1;
                 }
 
@@ -1309,7 +1311,7 @@ void update_referee(
                 if (ballHome) {
                     int anyoneHasSafety = 0;
                     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                        if (refereeState->battingPlayers[i].currentSafetyBase != BASE_NONE) {
+                        if (refereeState->batting_players[i].current_safety_base != BASE_NONE) {
                             anyoneHasSafety = 1;
                             break;
                         }
@@ -1321,18 +1323,18 @@ void update_referee(
     }
 
     int wants_inning_end = 0;
-    if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
+    if (refereeState->end_of_inning_state == END_INNING_STATE_NONE) {
         if (scoreboard->period >= 4) {
-            wants_inning_end = (halfInningState->endPeriod == 1) ||
-                               (homeRunContestState->runnerBatterPairCounter >= scoreboard->pairCount);
+            wants_inning_end =
+                (halfInningState->end_period == 1) || (homeRunContestState->pair_index >= scoreboard->pair_count);
         } else {
             // §12. (1) three burns. (2)/(3) the batting order has run its course AND the ball is in
             // a home fielder's hands AND no jokers remain — all three conjuncts, as written. The
             // engine used to collapse this into "the phantom pool and the jokers are both spent".
             wants_inning_end =
                 (halfInningState->outs >= 3) ||
-                (halfInningState->lastBatter.turnExhausted && halfInningState->jokersLeft == 0 && ballAtBase == 0) ||
-                (halfInningState->endPeriod == 1);
+                (halfInningState->last_batter.turn_exhausted && halfInningState->jokers_left == 0 && ballAtBase == 0) ||
+                (halfInningState->end_period == 1);
         }
     }
 
@@ -1344,10 +1346,10 @@ void update_referee(
     // Only while no inning-end handshake is already running. Once one is, this pair end has already
     // been decided and acted on; re-deciding it every frame of the handshake advanced the pair counter
     // every frame with it, so a five-pair contest ended with a counter reading in the hundreds — past
-    // the pairCount it is compared against in three other files.
-    if (wants_pair_end && refereeState->endOfInningState == END_INNING_STATE_NONE) {
-        int nextPairCounter = homeRunContestState->runnerBatterPairCounter + 1;
-        int pairsLeft = scoreboard->pairCount - nextPairCounter;
+    // the pair_count it is compared against in three other files.
+    if (wants_pair_end && refereeState->end_of_inning_state == END_INNING_STATE_NONE) {
+        int nextPairCounter = homeRunContestState->pair_index + 1;
+        int pairsLeft = scoreboard->pair_count - nextPairCounter;
 
         int battingTeamIndex = get_batting_team_index(scoreboard);
         int catchingTeamIndex = (battingTeamIndex + 1) % 2;
@@ -1355,27 +1357,27 @@ void update_referee(
         int catchingRuns = scoreboard->teams[catchingTeamIndex].runs;
 
         // If this is the last pair, or uncatchable, the inning ends directly
-        if (nextPairCounter >= scoreboard->pairCount ||
+        if (nextPairCounter >= scoreboard->pair_count ||
             ((scoreboard->inning + 1) % 2 == 0 && pairsLeft * 2 + battingRuns < catchingRuns)) {
             wants_inning_end = 1;
             wants_pair_end = 0; // Subsumed
             // Increment the counter since we bypassed the pair state machine
-            homeRunContestState->runnerBatterPairCounter = nextPairCounter;
+            homeRunContestState->pair_index = nextPairCounter;
         }
     }
 
     // Mutual Exclusivity: Inning End suppresses Pair Ends and active Foul timers
-    if (wants_inning_end || refereeState->endOfInningState != END_INNING_STATE_NONE) {
+    if (wants_inning_end || refereeState->end_of_inning_state != END_INNING_STATE_NONE) {
         wants_pair_end = 0;
 
-        if (refereeState->nextPairTransitionState != HR_PAIR_STATE_NONE) {
-            refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
-            refereeState->nextPairTimer = -1;
+        if (refereeState->next_pair_state != HR_PAIR_STATE_NONE) {
+            refereeState->next_pair_state = HR_PAIR_STATE_NONE;
+            refereeState->next_pair_timer = -1;
         }
 
-        if (refereeState->foulState != FOUL_STATE_NONE) {
-            refereeState->foulState = FOUL_STATE_NONE;
-            refereeState->foulTimer = -1;
+        if (refereeState->foul_state != FOUL_STATE_NONE) {
+            refereeState->foul_state = FOUL_STATE_NONE;
+            refereeState->foul_timer = -1;
         }
     }
 
@@ -1385,25 +1387,25 @@ void update_referee(
 
     // 6. Homerun Contest Pair State Machine
     if (scoreboard->period >= 4) {
-        HomeRunPairState currentState = refereeState->nextPairTransitionState;
+        HomeRunPairState currentState = refereeState->next_pair_state;
 
         if (currentState == HR_PAIR_STATE_NONE) {
             if (wants_pair_end) {
-                refereeState->nextPairTransitionState = HR_PAIR_STATE_DETECTED;
-                refereeState->nextPairTimer = 0;
+                refereeState->next_pair_state = HR_PAIR_STATE_DETECTED;
+                refereeState->next_pair_timer = 0;
 
                 // Milestone 18: Referee applies rule logic immediately at DETECTED
-                homeRunContestState->runnerBatterPairCounter++;
+                homeRunContestState->pair_index++;
 
-                if (refereeState->endOfInningState == END_INNING_STATE_NONE) {
+                if (refereeState->end_of_inning_state == END_INNING_STATE_NONE) {
                     *announcement = EVENT_NEXT_PAIR;
                 }
             }
         } else if (currentState == HR_PAIR_STATE_DETECTED) {
-            refereeState->nextPairTimer++;
-            if (refereeState->nextPairTimer > 200) {
-                refereeState->nextPairTransitionState = HR_PAIR_STATE_RESETTING;
-                refereeState->nextPairTimer = -1;
+            refereeState->next_pair_timer++;
+            if (refereeState->next_pair_timer > 200) {
+                refereeState->next_pair_state = HR_PAIR_STATE_RESETTING;
+                refereeState->next_pair_timer = -1;
 
                 // Per-pair legal state cleanup
                 clear_referee_for_pair_end(refereeState, halfInningState, betweenPitchState);
@@ -1415,19 +1417,19 @@ void update_referee(
     }
 
     // 7. End of Inning State Machine
-    EndOfInningTransitionState endState = refereeState->endOfInningState;
+    EndOfInningTransitionState endState = refereeState->end_of_inning_state;
 
     if (endState == END_INNING_STATE_NONE) {
         if (wants_inning_end) {
-            refereeState->endOfInningState = END_INNING_STATE_DETECTED;
-            refereeState->endInningTimer = 0;
+            refereeState->end_of_inning_state = END_INNING_STATE_DETECTED;
+            refereeState->end_of_inning_timer = 0;
             *announcement = EVENT_INNING_ENDING;
         }
     } else if (endState == END_INNING_STATE_DETECTED) {
-        refereeState->endInningTimer++;
-        if (refereeState->endInningTimer > 200) {
-            refereeState->endOfInningState = END_INNING_STATE_RESETTING;
-            refereeState->endInningTimer = -1;
+        refereeState->end_of_inning_timer++;
+        if (refereeState->end_of_inning_timer > 200) {
+            refereeState->end_of_inning_state = END_INNING_STATE_RESETTING;
+            refereeState->end_of_inning_timer = -1;
             clear_referee_for_inning_end(refereeState, halfInningState, betweenPitchState);
             advance_scoreboard_for_inning_end(refereeState, scoreboard);
             start_contest_half_inning_at_its_first_pair(homeRunContestState, scoreboard);
@@ -1453,38 +1455,38 @@ void referee_finalize(const MatchSession* game, RefereeState* refereeState, Betw
 {
 
     // Foul play: RESETTING → NONE
-    if (refereeState->foulState == FOUL_STATE_RESETTING) {
-        refereeState->foulState = FOUL_STATE_NONE;
+    if (refereeState->foul_state == FOUL_STATE_RESETTING) {
+        refereeState->foul_state = FOUL_STATE_NONE;
         clear_between_pitch_state(betweenPitchState);
     }
 
     // HR pair: RESETTING → NONE + scan physical world for new pair
-    if (refereeState->nextPairTransitionState == HR_PAIR_STATE_RESETTING) {
-        refereeState->nextPairTransitionState = HR_PAIR_STATE_NONE;
+    if (refereeState->next_pair_state == HR_PAIR_STATE_RESETTING) {
+        refereeState->next_pair_state = HR_PAIR_STATE_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
-                refereeState->battingPlayers[i].baseAtPitchStart = BASE_HOME;
-                refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                refereeState->batting_players[i].base_at_pitch_start = BASE_HOME;
+                refereeState->batting_players[i].current_safety_base = BASE_HOME;
             } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
                        game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
-                refereeState->battingPlayers[i].baseAtPitchStart = BASE_THIRD;
-                refereeState->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+                refereeState->batting_players[i].base_at_pitch_start = BASE_THIRD;
+                refereeState->batting_players[i].current_safety_base = BASE_THIRD;
             }
         }
     }
 
     // End of inning: RESETTING → NONE + scan physical world for new players
-    if (refereeState->endOfInningState == END_INNING_STATE_RESETTING) {
-        refereeState->endOfInningState = END_INNING_STATE_NONE;
-        refereeState->periodTransition = PERIOD_TRANSITION_NONE;
+    if (refereeState->end_of_inning_state == END_INNING_STATE_RESETTING) {
+        refereeState->end_of_inning_state = END_INNING_STATE_NONE;
+        refereeState->period_transition = PERIOD_TRANSITION_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
-                refereeState->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                refereeState->batting_players[i].current_safety_base = BASE_HOME;
             } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
                        game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
-                refereeState->battingPlayers[i].currentSafetyBase = game->playerInfo[i].batting.presence.base_id;
+                refereeState->batting_players[i].current_safety_base = game->playerInfo[i].batting.presence.base_id;
             }
         }
     }
@@ -1500,33 +1502,33 @@ void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, 
     if (scoreboard->period >= 4) {
         // Homerun Contest (period >= 4): scan for batter at HOME, runner at THIRD
         // Reset homerun pair pitch tracking
-        referee->homerunPairHasPitch = 0;
+        referee->homerun_pair_has_pitch = 0;
 
         // Initialize Legal State for Batter/Runner based on Physical World
-        // baseAtPitchStart will be set on pitchReleased
+        // base_at_pitch_start will be set on pitchReleased
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
-                referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                referee->batting_players[i].current_safety_base = BASE_HOME;
             } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
                        game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
-                referee->battingPlayers[i].currentSafetyBase = BASE_THIRD;
+                referee->batting_players[i].current_safety_base = BASE_THIRD;
             }
         }
     } else {
         // Normal games: scan for ANY players that are already positioned
         // This handles both: (1) real game initialization, (2) test fixtures
-        // baseAtPitchStart will be set on pitchReleased
+        // base_at_pitch_start will be set on pitchReleased
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             PlayerUnitState state = game->playerInfo[i].batting.presence.state;
             BaseID base = game->playerInfo[i].batting.presence.base_id;
 
             if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
-                referee->battingPlayers[i].currentSafetyBase = BASE_HOME;
+                referee->batting_players[i].current_safety_base = BASE_HOME;
             } else if (state == PLAYER_STATE_ON_BASE && base != BASE_NONE) {
-                referee->battingPlayers[i].currentSafetyBase = base;
+                referee->batting_players[i].current_safety_base = base;
             } else if (state == PLAYER_STATE_RUNNING && base != BASE_NONE) {
                 // Runner between bases - has left their starting base
-                referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
+                referee->batting_players[i].current_safety_base = BASE_NONE;
             }
         }
     }
@@ -1536,27 +1538,27 @@ static void initialize_referee_state(RefereeState* referee)
 {
     int i;
     for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        referee->battingPlayers[i].baseAtPitchStart = BASE_NONE;
-        referee->battingPlayers[i].currentSafetyBase = BASE_NONE;
-        referee->battingPlayers[i].status = PLAYER_STATUS_ACTIVE;
-        referee->battingPlayers[i].hasScored = 0;
-        referee->battingPlayers[i].runOfHonorScored = 0;
-        referee->battingPlayers[i].hasPendingRun = 0;
-        referee->battingPlayers[i].hasPendingRunOfHonor = 0;
+        referee->batting_players[i].base_at_pitch_start = BASE_NONE;
+        referee->batting_players[i].current_safety_base = BASE_NONE;
+        referee->batting_players[i].status = PLAYER_STATUS_ACTIVE;
+        referee->batting_players[i].has_scored = 0;
+        referee->batting_players[i].run_of_honor_scored = 0;
+        referee->batting_players[i].has_pending_run = 0;
+        referee->batting_players[i].has_pending_run_of_honor = 0;
     }
-    referee->strikesAtPitchStart = 0;
-    referee->woundingEvaluationActive = 0;
-    referee->woundingEvaluationFinished = 0;
-    referee->woundingEvaluationTimer = -1;
-    referee->ballInThirdBaseSincePitch = 0;
+    referee->strikes_at_pitch_start = 0;
+    referee->wounding_evaluation_active = 0;
+    referee->wounding_evaluation_finished = 0;
+    referee->wounding_evaluation_timer = -1;
+    referee->ball_in_third_base_since_pitch = 0;
 
-    referee->foulState = FOUL_STATE_NONE;
-    referee->foulTimer = -1;
-    referee->nextPairTransitionState = HR_PAIR_STATE_NONE;
-    referee->nextPairTimer = -1;
-    referee->endOfInningState = END_INNING_STATE_NONE;
-    referee->endInningTimer = -1;
-    referee->periodTransition = PERIOD_TRANSITION_NONE;
-    referee->periodTransitionWinner = -1;
-    referee->homerunPairHasPitch = 0;
+    referee->foul_state = FOUL_STATE_NONE;
+    referee->foul_timer = -1;
+    referee->next_pair_state = HR_PAIR_STATE_NONE;
+    referee->next_pair_timer = -1;
+    referee->end_of_inning_state = END_INNING_STATE_NONE;
+    referee->end_of_inning_timer = -1;
+    referee->period_transition = PERIOD_TRANSITION_NONE;
+    referee->period_transition_winner = -1;
+    referee->homerun_pair_has_pitch = 0;
 }

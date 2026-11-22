@@ -21,7 +21,7 @@
  * require it to be refused, and build the legal one and require it to be seated.
  *
  * Why here rather than in the state validator: seating a regular ADVANCES the batting order, which
- * clears `regularOrderSpent` in the same frame. An end-of-frame assertion would be looking at a state
+ * clears `regular_order_spent` in the same frame. An end-of-frame assertion would be looking at a state
  * that erases itself at the moment of the violation — which is exactly the trap bug #9's invariant
  * fell into. A refusal at the gate has no such window: it either happened or it did not.
  */
@@ -35,7 +35,7 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
     MatchSession* m = ctx->state->match;
     GameRulesState* r = ctx->state->rules;
     Scoreboard* sb = &r->scoreboard;
-    HalfInningState* his = &r->halfInningState;
+    HalfInningState* his = &r->half_inning;
 
     initialize_referee_from_physical_state(ctx);
 
@@ -43,20 +43,20 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         m->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
         m->playerInfo[i].batting.presence.base_id = BASE_NONE;
-        r->referee.battingPlayers[i].currentSafetyBase = BASE_NONE;
+        r->referee.batting_players[i].current_safety_base = BASE_NONE;
     }
     const int battingTeamIndex = get_batting_team_index(sb);
-    const int runner = sb->teams[battingTeamIndex].batterOrder[0];
+    const int runner = sb->teams[battingTeamIndex].batter_order[0];
     m->playerInfo[runner].batting.presence.base_id = BASE_HOME;
     m->playerInfo[runner].batting.presence.state = PLAYER_STATE_RUNNING;
-    r->referee.battingPlayers[runner].currentSafetyBase = BASE_HOME;
-    r->referee.battingPlayers[runner].baseAtPitchStart = BASE_HOME;
-    r->referee.battingPlayers[runner].status = PLAYER_STATUS_ACTIVE;
+    r->referee.batting_players[runner].current_safety_base = BASE_HOME;
+    r->referee.batting_players[runner].base_at_pitch_start = BASE_HOME;
+    r->referee.batting_players[runner].status = PLAYER_STATUS_ACTIVE;
 
-    *inTurnRegular = sb->teams[battingTeamIndex].batterOrder[sb->teams[battingTeamIndex].batterOrderIndex];
+    *inTurnRegular = sb->teams[battingTeamIndex].batter_order[sb->teams[battingTeamIndex].batter_order_index];
 
-    his->lastBatter.regularOrderSpent = 1;
-    his->jokersLeft = JOKER_COUNT;
+    his->last_batter.regular_order_spent = 1;
+    his->jokers_left = JOKER_COUNT;
     for (int i = 0; i < JOKER_COUNT; i++) {
         m->playerInfo[scenario_joker(ctx, i)].batting.joker = JOKER_AVAILABLE;
     }
@@ -99,8 +99,7 @@ int test_seat_refuses_regular_when_order_spent(void)
 
     // The client's view of the same rule: only jokers on offer.
     int candidates[BATTER_CANDIDATE_MAX];
-    int count =
-        list_batter_candidates(m, &ctx->state->rules->scoreboard, &ctx->state->rules->halfInningState, candidates);
+    int count = list_batter_candidates(m, &ctx->state->rules->scoreboard, &ctx->state->rules->half_inning, candidates);
     ASSERT(count > 0, "jokers remain, so somebody may still bat");
     for (int i = 0; i < count; i++) {
         ASSERT_NE(
@@ -125,7 +124,7 @@ int test_seat_refuses_regular_when_order_spent(void)
  *
  * "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin." Seating a
  * spent joker would also desynchronise the two places that hold this resource: the per-player status
- * has nothing left to change, but the referee decrements jokersLeft on every entry that is not a
+ * has nothing left to change, but the referee decrements jokers_left on every entry that is not a
  * regular. The state validator holds that pair; this holds the door it comes through.
  */
 int test_seat_refuses_a_spent_joker(void)
@@ -137,7 +136,7 @@ int test_seat_refuses_a_spent_joker(void)
 
     const int spentJoker = scenario_joker(ctx, 0);
     m->playerInfo[spentJoker].batting.joker = JOKER_USED;
-    ctx->state->rules->halfInningState.jokersLeft = JOKER_COUNT - 1;
+    ctx->state->rules->half_inning.jokers_left = JOKER_COUNT - 1;
 
     declare_seat(ctx, spentJoker);
     tick_ingest(ctx);
@@ -168,11 +167,11 @@ int test_seat_refuses_a_regular_out_of_turn(void)
     MatchSession* m = ctx->state->match;
     Scoreboard* sb = &ctx->state->rules->scoreboard;
 
-    ctx->state->rules->halfInningState.lastBatter.regularOrderSpent = 0; // the order is live
+    ctx->state->rules->half_inning.last_batter.regular_order_spent = 0; // the order is live
 
     const int battingTeamIndex = get_batting_team_index(sb);
-    const int nextIndex = (sb->teams[battingTeamIndex].batterOrderIndex + 1) % PLAYERS_IN_TEAM;
-    const int outOfTurn = sb->teams[battingTeamIndex].batterOrder[nextIndex];
+    const int nextIndex = (sb->teams[battingTeamIndex].batter_order_index + 1) % PLAYERS_IN_TEAM;
+    const int outOfTurn = sb->teams[battingTeamIndex].batter_order[nextIndex];
     ASSERT_NE(inTurnRegular, outOfTurn, "setup: the two players must actually differ");
 
     declare_seat(ctx, outOfTurn);
@@ -212,8 +211,8 @@ int test_seat_waits_for_home_then_seats_the_named_joker(void)
 
     // The previous batter is finally established elsewhere; the seat is free.
     const int battingTeamIndex = get_batting_team_index(&r->scoreboard);
-    const int runner = r->scoreboard.teams[battingTeamIndex].batterOrder[0];
-    r->referee.battingPlayers[runner].currentSafetyBase = BASE_FIRST;
+    const int runner = r->scoreboard.teams[battingTeamIndex].batter_order[0];
+    r->referee.batting_players[runner].current_safety_base = BASE_FIRST;
     m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
 
     declare_seat(ctx, joker); // the producer is still saying the same thing
@@ -247,8 +246,8 @@ int test_repeated_seat_requests_seat_once(void)
 
     // Free the seat first: this test is about duplicate messages, not about waiting.
     const int battingTeamIndex = get_batting_team_index(&r->scoreboard);
-    const int runner = r->scoreboard.teams[battingTeamIndex].batterOrder[0];
-    r->referee.battingPlayers[runner].currentSafetyBase = BASE_FIRST;
+    const int runner = r->scoreboard.teams[battingTeamIndex].batter_order[0];
+    r->referee.batting_players[runner].current_safety_base = BASE_FIRST;
     m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
 
     const int joker = scenario_joker(ctx, 0);

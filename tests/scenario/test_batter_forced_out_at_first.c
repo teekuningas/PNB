@@ -25,14 +25,14 @@ int test_batter_forced_out_at_first(void)
     Vector3D throwFrom = {5.0f, 1.5f, -10.0f};
     scenario_throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
 
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
     ctx->state->match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME);
 
     int outs = 0;
     for (int frame = 0; frame <= 300; frame += 50) {
         if (frame > 0) simulate_frames(ctx, 50);
-        outs = ctx->state->rules->halfInningState.outs;
+        outs = ctx->state->rules->half_inning.outs;
         if (outs > 0) break;
     }
 

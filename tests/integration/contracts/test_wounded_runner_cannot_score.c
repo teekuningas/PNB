@@ -16,13 +16,13 @@
  * A WOUND_PENDING runner arriving at home had ON_BASE physical state
  * → is_regular_run returned true → illegitimate run scored.
  *
- * Fix: Also check referee->battingPlayers[i].status >= WOUND_MARKED.
+ * Fix: Also check referee->batting_players[i].status >= WOUND_MARKED.
  *
  * Scenario:
  *   1. Runner physically at HOME_SCORED with ON_BASE physical state
  *      (consolidation hasn't run yet to set WOUNDED)
  *   2. Referee status = WOUND_PENDING (doomed after catch)
- *   3. woundingEvaluationFinished = 1, catchHasBeenMade = 1
+ *   3. wounding_evaluation_finished = 1, catch_has_been_made = 1
  *   4. update_runs Case B fires → must NOT score a run
  */
 int test_wounded_runner_cannot_score_run(void)
@@ -44,19 +44,19 @@ int test_wounded_runner_cannot_score_run(void)
     snapshot_pitch_start_state(ctx);
 
     // Set runner's pitch-start base to HOME (so HOME_SCORED would be a valid "run" path)
-    ctx->state->rules->referee.battingPlayers[0].baseAtPitchStart = BASE_HOME;
+    ctx->state->rules->referee.batting_players[0].base_at_pitch_start = BASE_HOME;
 
     // Key state: referee already decided this runner is doomed
-    ctx->state->rules->referee.battingPlayers[0].status = PLAYER_STATUS_WOUND_PENDING;
+    ctx->state->rules->referee.batting_players[0].status = PLAYER_STATUS_WOUND_PENDING;
 
     // Wounding evaluation is finished (timer expired, all marked)
-    ctx->state->rules->referee.woundingEvaluationFinished = 1;
-    ctx->state->rules->referee.woundingEvaluationActive = 0;
+    ctx->state->rules->referee.wounding_evaluation_finished = 1;
+    ctx->state->rules->referee.wounding_evaluation_active = 0;
 
     // Ball was caught (this is WHY they're wounded)
-    ctx->state->rules->betweenPitchState.catchHasBeenMade = 1;
-    ctx->state->rules->betweenPitchState.hasBallHitGround = 0;
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->between_pitch.catch_has_been_made = 1;
+    ctx->state->rules->between_pitch.has_ball_hit_ground = 0;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
     // A fielder has the ball
     int fielderIdx = 15;
@@ -76,7 +76,7 @@ int test_wounded_runner_cannot_score_run(void)
 
     // Assert: runner was NOT marked as having scored
     ASSERT_EQ(
-        0, ctx->state->rules->referee.battingPlayers[0].hasScored, "Wounded runner should not have hasScored set"
+        0, ctx->state->rules->referee.batting_players[0].has_scored, "Wounded runner should not have has_scored set"
     );
 
     cleanup_scenario(ctx);

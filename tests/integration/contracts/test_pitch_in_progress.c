@@ -59,7 +59,7 @@ static ScenarioContext* later_windup(void)
     );
     tick(ctx); // the windup begins
 
-    ctx->state->rules->betweenPitchState.pitchResult = PITCH_RESULT_BALL; // the previous pitch, still standing
+    ctx->state->rules->between_pitch.pitch_result = PITCH_RESULT_BALL; // the previous pitch, still standing
     m->ballInfo.pitch_in_flight = 0; // ...and what consolidation does to the flight flag because of it
     return ctx;
 }

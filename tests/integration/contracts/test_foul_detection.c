@@ -6,17 +6,17 @@
 
 /**
  * CONTRACT: When the ball hits the ground out of bounds after a bat hit,
- * the referee transitions foulState to FOUL_STATE_DETECTED.
+ * the referee transitions foul_state to FOUL_STATE_DETECTED.
  *
  * This tests the Event → Decision chain:
- *   ballHitGround + batHit + out of bounds → foulState = DETECTED
+ *   ballHitGround + batHit + out of bounds → foul_state = DETECTED
  *
  * Preconditions:
  *   - batHit = 1 (ball came from bat)
  *   - Ball is at an out-of-bounds location
- *   - hasBallHitGround = 0 (first bounce)
- *   - foulState = NONE
- *   - catchHasBeenMade = 0
+ *   - has_ball_hit_ground = 0 (first bounce)
+ *   - foul_state = NONE
+ *   - catch_has_been_made = 0
  *   - ballHitGround event fires
  *
  * This contract is directly relevant to Phase 3 (batHit migration):
@@ -45,19 +45,19 @@ int test_foul_detected_on_out_of_bounds_hit(void)
     ctx->state->match->ballInfo.velocity.z = 0.0f;
 
     // Set contract preconditions
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
     ctx->state->match->gameEvents.ballHitGround = 1;
 
     // Verify preconditions are clean
-    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foulState, "Precondition: foulState should be NONE");
-    ASSERT_EQ(0, ctx->state->rules->betweenPitchState.hasBallHitGround, "Precondition: hasBallHitGround should be 0");
+    ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foul_state, "Precondition: foul_state should be NONE");
+    ASSERT_EQ(0, ctx->state->rules->between_pitch.has_ball_hit_ground, "Precondition: has_ball_hit_ground should be 0");
 
     // Run 1 frame
     simulate_frames(ctx, 1);
 
     // Assert: referee detected foul play
     ASSERT_EQ(
-        FOUL_STATE_DETECTED, ctx->state->rules->referee.foulState,
+        FOUL_STATE_DETECTED, ctx->state->rules->referee.foul_state,
         "Foul state should be DETECTED after out-of-bounds hit"
     );
 

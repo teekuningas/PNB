@@ -129,16 +129,16 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s\"global\": {\n", sp);
         fprintf(f, "%s  \"inning\": %d,\n", sp, scoreboard->inning);
         fprintf(f, "%s  \"period\": %d,\n", sp, scoreboard->period);
-        fprintf(f, "%s  \"pairCount\": %d,\n", sp, scoreboard->pairCount);
+        fprintf(f, "%s  \"pair_count\": %d,\n", sp, scoreboard->pair_count);
         fprintf(f, "%s  \"team0_runs\": %d,\n", sp, scoreboard->teams[0].runs);
         fprintf(f, "%s  \"team1_runs\": %d,\n", sp, scoreboard->teams[1].runs);
 
         // Detailed Team Info (Batter Orders)
         for (int t = 0; t < 2; t++) {
-            fprintf(f, "%s  \"team%d_batterOrderIndex\": %d,\n", sp, t, scoreboard->teams[t].batterOrderIndex);
-            fprintf(f, "%s  \"team%d_batterOrder\": [", sp, t);
+            fprintf(f, "%s  \"team%d_batter_order_index\": %d,\n", sp, t, scoreboard->teams[t].batter_order_index);
+            fprintf(f, "%s  \"team%d_batter_order\": [", sp, t);
             for (int bo = 0; bo < 12; bo++) {
-                fprintf(f, "%d%s", scoreboard->teams[t].batterOrder[bo], (bo < 11) ? ", " : "");
+                fprintf(f, "%d%s", scoreboard->teams[t].batter_order[bo], (bo < 11) ? ", " : "");
             }
             fprintf(f, "],\n");
         }
@@ -149,27 +149,27 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     }
 
     if (rules) {
-        fprintf(f, "%s\"halfInningState\": {\n", sp);
-        fprintf(f, "%s  \"outs\": %d,\n", sp, rules->halfInningState.outs);
-        fprintf(f, "%s  \"runsInTheInning\": %d,\n", sp, rules->halfInningState.runsInTheInning);
-        fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->halfInningState.strikes);
-        fprintf(f, "%s  \"balls\": %d\n", sp, rules->halfInningState.balls);
+        fprintf(f, "%s\"half_inning\": {\n", sp);
+        fprintf(f, "%s  \"outs\": %d,\n", sp, rules->half_inning.outs);
+        fprintf(f, "%s  \"runs_in_inning\": %d,\n", sp, rules->half_inning.runs_in_inning);
+        fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->half_inning.strikes);
+        fprintf(f, "%s  \"balls\": %d\n", sp, rules->half_inning.balls);
         fprintf(f, "%s},\n", sp);
 
-        fprintf(f, "%s\"lastBatter\": {\n", sp);
-        fprintf(f, "%s  \"jokersLeft\": %d,\n", sp, rules->halfInningState.jokersLeft);
-        fprintf(f, "%s  \"designatedIndex\": %d,\n", sp, rules->halfInningState.lastBatter.designatedIndex);
-        fprintf(f, "%s  \"lastRegularIndex\": %d,\n", sp, rules->halfInningState.lastBatter.lastRegularIndex);
-        fprintf(f, "%s  \"hasBattedAgain\": %d,\n", sp, rules->halfInningState.lastBatter.hasBattedAgain);
-        fprintf(f, "%s  \"turnExhausted\": %d\n", sp, rules->halfInningState.lastBatter.turnExhausted);
+        fprintf(f, "%s\"last_batter\": {\n", sp);
+        fprintf(f, "%s  \"jokers_left\": %d,\n", sp, rules->half_inning.jokers_left);
+        fprintf(f, "%s  \"designated_index\": %d,\n", sp, rules->half_inning.last_batter.designated_index);
+        fprintf(f, "%s  \"last_regular_index\": %d,\n", sp, rules->half_inning.last_batter.last_regular_index);
+        fprintf(f, "%s  \"has_batted_again\": %d,\n", sp, rules->half_inning.last_batter.has_batted_again);
+        fprintf(f, "%s  \"turn_exhausted\": %d\n", sp, rules->half_inning.last_batter.turn_exhausted);
         fprintf(f, "%s},\n", sp);
 
         fprintf(f, "%s\"gameControl\": {\n", sp);
         fprintf(f, "%s  \"batter_seat_offered\": %d,\n", sp, game->offers.batter_seat);
         fprintf(f, "%s  \"free_walk_offered\": %d,\n", sp, game->offers.free_walk);
-        fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
-        fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
-        fprintf(f, "%s  \"foulState\": %d\n", sp, (int)rules->referee.foulState);
+        fprintf(f, "%s  \"catch_has_been_made\": %d,\n", sp, rules->between_pitch.catch_has_been_made);
+        fprintf(f, "%s  \"has_ball_hit_ground\": %d,\n", sp, rules->between_pitch.has_ball_hit_ground);
+        fprintf(f, "%s  \"foul_state\": %d\n", sp, (int)rules->referee.foul_state);
         fprintf(f, "%s },\n", sp);
     }
 
@@ -185,7 +185,7 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(f, "%s\"flow\": {\n", sp);
     fprintf(f, "%s  \"ballHome\": %d", sp, ball_is_home(game, fieldPositions));
     if (rules) {
-        fprintf(f, ",\n%s  \"endOfInningState\": %d\n", sp, (int)rules->referee.endOfInningState);
+        fprintf(f, ",\n%s  \"end_of_inning_state\": %d\n", sp, (int)rules->referee.end_of_inning_state);
     } else {
         fprintf(f, "\n");
     }
@@ -225,11 +225,11 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(f, "%s},\n", sp);
 
     if (rules) {
-        fprintf(f, "%s\"betweenPitchState\": {\n", sp);
-        fprintf(f, "%s  \"catchHasBeenMade\": %d,\n", sp, rules->betweenPitchState.catchHasBeenMade);
-        fprintf(f, "%s  \"hasBallHitGround\": %d,\n", sp, rules->betweenPitchState.hasBallHitGround);
-        fprintf(f, "%s  \"pitchResult\": %d,\n", sp, rules->betweenPitchState.pitchResult);
-        fprintf(f, "%s  \"batOutcome\": %d\n", sp, rules->betweenPitchState.batOutcome);
+        fprintf(f, "%s\"between_pitch\": {\n", sp);
+        fprintf(f, "%s  \"catch_has_been_made\": %d,\n", sp, rules->between_pitch.catch_has_been_made);
+        fprintf(f, "%s  \"has_ball_hit_ground\": %d,\n", sp, rules->between_pitch.has_ball_hit_ground);
+        fprintf(f, "%s  \"pitch_result\": %d,\n", sp, rules->between_pitch.pitch_result);
+        fprintf(f, "%s  \"bat_outcome\": %d\n", sp, rules->between_pitch.bat_outcome);
         fprintf(f, "%s},\n", sp);
     }
 
@@ -267,13 +267,15 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         // Assuming 0-11 are ALWAYS the batting team in the current frame
         if (rules && i < PLAYERS_IN_TEAM + JOKER_COUNT) {
             fprintf(f, ",\n");
-            fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, rules->referee.battingPlayers[i].currentSafetyBase);
+            fprintf(f, "%s    \"ref_safetyBase\": %d,\n", sp, rules->referee.batting_players[i].current_safety_base);
             fprintf(
                 f, "%s    \"ref_safetyBaseStr\": \"%s\",\n", sp,
-                base_to_string(rules->referee.battingPlayers[i].currentSafetyBase)
+                base_to_string(rules->referee.batting_players[i].current_safety_base)
             );
-            fprintf(f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, rules->referee.battingPlayers[i].baseAtPitchStart);
-            fprintf(f, "%s    \"ref_status\": %d\n", sp, rules->referee.battingPlayers[i].status);
+            fprintf(
+                f, "%s    \"ref_baseAtPitchStart\": %d,\n", sp, rules->referee.batting_players[i].base_at_pitch_start
+            );
+            fprintf(f, "%s    \"ref_status\": %d\n", sp, rules->referee.batting_players[i].status);
         } else {
             fprintf(f, "\n");
         }
@@ -392,19 +394,19 @@ int state_validator_check(StateInfo* state)
     //
     // "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin" is held
     // in two places: each joker's own JOKER_USED, which the seating sets, and
-    // `halfInningState.jokersLeft`, which the referee decrements on the batterEntered event. Two
+    // `half_inning.jokers_left`, which the referee decrements on the batterEntered event. Two
     // writers, one rule, in two different stages of the frame.
     //
     // The direction is the load-bearing part. More AVAILABLE jokers than the count admits is the
     // failure that matters, and it is §12's third conjunct going wrong: the half-inning ends when
-    // `jokersLeft` hits zero, but the candidate list a producer chooses from is built from the
+    // `jokers_left` hits zero, but the candidate list a producer chooses from is built from the
     // per-player statuses — so a joker still marked available when the count has forgotten it means
     // a turn that ends with a batter the rules say the team may still use. Seating an already-spent
     // joker produces exactly that, because the status has nothing left to change while the referee
     // decrements regardless.
     //
     // The other direction is deliberately tolerated, because it is a real state and not a defect: at
-    // a PERIOD boundary the referee clears jokersLeft to JOKER_COUNT, but the physical reset that
+    // a PERIOD boundary the referee clears jokers_left to JOKER_COUNT, but the physical reset that
     // re-marks the players never runs — consolidation routes to a menu instead. So between periods
     // the count leads the statuses. Nothing reads either while that lasts. Recorded rather than
     // asserted away: it is the same two-representations hazard from the harmless side.
@@ -414,7 +416,7 @@ int state_validator_check(StateInfo* state)
     // gate refuses an illegal one (§27/§12/§7), which is a stronger place to hold the rule than an
     // end-of-frame assertion. Re-pointing that assertion at "no regular is SEATED while the order is
     // spent" was considered and rejected — it would repeat bug #9's mistake exactly, because seating
-    // a regular advances the batting order, which clears `regularOrderSpent` in the same frame. The
+    // a regular advances the batting order, which clears `regular_order_spent` in the same frame. The
     // assertion would be looking at a state that erases itself at the moment of the violation.
     // Ablated at the gate instead, in the contract tier, where the refusal actually happens.
     if (rules->scoreboard.period < 4) {
@@ -424,12 +426,12 @@ int state_validator_check(StateInfo* state)
         for (int i = 0; i < JOKER_COUNT; i++) {
             if (game->playerInfo[jokers[i]].batting.joker == JOKER_AVAILABLE) unusedJokers++;
         }
-        if (unusedJokers > rules->halfInningState.jokersLeft) {
+        if (unusedJokers > rules->half_inning.jokers_left) {
             printf(
                 "\n[STATE ERROR] FATAL: §7 — %d jokers are still marked available, but "
-                "halfInningState.jokersLeft says only %d remain: a half-inning could end with a joker "
+                "half_inning.jokers_left says only %d remain: a half-inning could end with a joker "
                 "the team may still use\n",
-                unusedJokers, rules->halfInningState.jokersLeft
+                unusedJokers, rules->half_inning.jokers_left
             );
             return 0;
         }

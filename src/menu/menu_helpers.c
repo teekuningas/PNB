@@ -24,15 +24,15 @@ void draw_menu_layout_2d(ResourceManager* rm, const RenderState* rs)
 static void apply_batting_orders(StateInfo* stateInfo, const GameSetup* gameSetup)
 {
     memcpy(
-        stateInfo->rules->scoreboard.teams[0].batterOrder, gameSetup->team1_batting_order,
+        stateInfo->rules->scoreboard.teams[0].batter_order, gameSetup->team1_batting_order,
         sizeof(gameSetup->team1_batting_order)
     );
     memcpy(
-        stateInfo->rules->scoreboard.teams[1].batterOrder, gameSetup->team2_batting_order,
+        stateInfo->rules->scoreboard.teams[1].batter_order, gameSetup->team2_batting_order,
         sizeof(gameSetup->team2_batting_order)
     );
-    stateInfo->rules->scoreboard.teams[0].batterOrderIndex = 0;
-    stateInfo->rules->scoreboard.teams[1].batterOrderIndex = 0;
+    stateInfo->rules->scoreboard.teams[0].batter_order_index = 0;
+    stateInfo->rules->scoreboard.teams[1].batter_order_index = 0;
 }
 
 void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, unsigned int* rng_seed)
@@ -50,19 +50,19 @@ void launch_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup, uns
         // and run totals preserved). Only the new batting orders and the
         // leading-off team (decided fresh by hutunkeitto) are applied.
         apply_batting_orders(stateInfo, gameSetup);
-        stateInfo->rules->scoreboard.playsFirst = gameSetup->playsFirst;
+        stateInfo->rules->scoreboard.plays_first = gameSetup->playsFirst;
         return_to_game(stateInfo);
         break;
     case GAME_LAUNCH_RETURN_HOMERUN_CONTEST: {
         int pairCount = gameSetup->homerun_choice_count;
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < pairCount; j++) {
-                stateInfo->rules->scoreboard.teams[0].batterRunnerIndices[i][j] = gameSetup->homerun_choices1[i][j];
-                stateInfo->rules->scoreboard.teams[1].batterRunnerIndices[i][j] = gameSetup->homerun_choices2[i][j];
+                stateInfo->rules->scoreboard.teams[0].batter_runner_indices[i][j] = gameSetup->homerun_choices1[i][j];
+                stateInfo->rules->scoreboard.teams[1].batter_runner_indices[i][j] = gameSetup->homerun_choices2[i][j];
             }
         }
-        stateInfo->rules->scoreboard.pairCount = pairCount;
-        stateInfo->rules->homeRunContestState.runnerBatterPairCounter = 0;
+        stateInfo->rules->scoreboard.pair_count = pairCount;
+        stateInfo->rules->homerun_contest.pair_index = 0;
         return_to_game(stateInfo);
     } break;
     }
@@ -77,7 +77,7 @@ void reset_menu_for_new_game(MenuData* menuData, StateInfo* stateInfo)
         menuData->pendingGameSetup.team2_batting_order[i] = i;
     }
 
-    if (stateInfo->rules->scoreboard.isCupGame != 1) {
+    if (stateInfo->rules->scoreboard.is_cup_game != 1) {
         init_front_menu_state(&menuData->front_menu);
         menuData->stage = MENU_STAGE_FRONT;
     } else {

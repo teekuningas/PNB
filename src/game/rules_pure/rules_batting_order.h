@@ -60,9 +60,9 @@ typedef enum {
  * §7 removes a joker from the set once it has batted this half-inning.
  *
  * @param index               The player being asked about.
- * @param in_turn_index       The *lyöntivuoroinen* player: batterOrder[batterOrderIndex].
- * @param regular_order_spent halfInningState.lastBatter.regularOrderSpent — §12's batting-order
- *                            clause on its own, never `turnExhausted` (bug #9).
+ * @param in_turn_index       The *lyöntivuoroinen* player: batter_order[batter_order_index].
+ * @param regular_order_spent half_inning.last_batter.regular_order_spent — §12's batting-order
+ *                            clause on its own, never `turn_exhausted` (bug #9).
  * @param joker_status        JOKER_STATUS_* for `index`.
  * @return SEAT_ALLOWED, or the rule that refuses.
  */

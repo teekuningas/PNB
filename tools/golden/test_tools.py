@@ -210,10 +210,10 @@ class GoldenToolsTest(unittest.TestCase):
     def test_hashes_ignore_flag_width_but_observe_changed_values(self):
         flags = {
             "rules_state.h": (
-                "hasScored", "runOfHonorScored", "hasPendingRun", "hasPendingRunOfHonor",
-                "woundingEvaluationActive", "woundingEvaluationFinished", "ballInThirdBaseSincePitch",
-                "homerunPairHasPitch", "hasBattedAgain", "regularOrderSpent", "turnExhausted",
-                "endPeriod", "catchHasBeenMade", "hasBallHitGround", "isCupGame",
+                "has_scored", "run_of_honor_scored", "has_pending_run", "has_pending_run_of_honor",
+                "wounding_evaluation_active", "wounding_evaluation_finished", "ball_in_third_base_since_pitch",
+                "homerun_pair_has_pitch", "has_batted_again", "regular_order_spent", "turn_exhausted",
+                "end_period", "catch_has_been_made", "has_ball_hit_ground", "is_cup_game",
             ),
             "world.h": ("moving", "onGround", "pitch_in_flight", "powerActive", "verticalActive"),
         }

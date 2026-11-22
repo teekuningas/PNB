@@ -164,7 +164,7 @@ int test_no_pitch_after_three_correct_pitches(void)
     // would still pass if the fixture were simply too broken to pitch at all.
     ScenarioContext* allowed = create_scenario();
     setup_pitcher_ready(allowed);
-    allowed->state->rules->halfInningState.strikes = 2;
+    allowed->state->rules->half_inning.strikes = 2;
     declare_power(allowed, 0.5f);
     declare_aim(allowed, 0.0f);
     tick(allowed);
@@ -178,7 +178,7 @@ int test_no_pitch_after_three_correct_pitches(void)
     ScenarioContext* ctx = create_scenario();
     setup_pitcher_ready(ctx);
     MatchSession* match = ctx->state->match;
-    ctx->state->rules->halfInningState.strikes = 3;
+    ctx->state->rules->half_inning.strikes = 3;
 
     declare_power(ctx, 0.5f);
     declare_aim(ctx, 0.0f);
@@ -192,7 +192,7 @@ int test_no_pitch_after_three_correct_pitches(void)
 
     // Nothing of the refused pitch is left pending to fire later: once the count would allow a pitch
     // again, a tick with nothing declared still begins nothing.
-    ctx->state->rules->halfInningState.strikes = 2;
+    ctx->state->rules->half_inning.strikes = 2;
     tick(ctx);
     ASSERT_EQ(
         CATCHING_ACTION_NONE, (int)match->catching_action.kind,

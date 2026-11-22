@@ -68,10 +68,10 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
         Scoreboard* sb = &g->state->rules->scoreboard;
         if (setup->gameMode == GAME_MODE_SUPER_INNING) {
             sb->period = 2;
-            sb->inning = sb->halfInningsInPeriod * 2;
+            sb->inning = sb->half_innings_in_period * 2;
         } else if (setup->gameMode == GAME_MODE_HOMERUN_CONTEST) {
             sb->period = 4;
-            sb->inning = sb->halfInningsInPeriod * 2 + 2;
+            sb->inning = sb->half_innings_in_period * 2 + 2;
         }
     }
 
@@ -79,7 +79,7 @@ SimGame* sim_create(const GameSetup* setup, unsigned int seed)
     // SCREEN_GAME (initialize_game_from_menu set changeScreen=1 to request it).
     reset_for_new_half_inning(g->state->match, g->state->fieldPositions, g->state->teamData, g->state->rules);
     referee_reset_for_new_inning(
-        &g->state->rules->referee, &g->state->rules->halfInningState, &g->state->rules->betweenPitchState
+        &g->state->rules->referee, &g->state->rules->half_inning, &g->state->rules->between_pitch
     );
     initialize_referee(g->state->match, &g->state->rules->scoreboard, &g->state->rules->referee);
 

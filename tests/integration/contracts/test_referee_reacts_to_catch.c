@@ -10,14 +10,14 @@
  * the vulnerable runner as WOUND_MARKED.
  *
  * This tests the Event → Decision chain:
- *   catchMade (GameEvents) → woundingEvaluationActive (RefereeState)
+ *   catchMade (GameEvents) → wounding_evaluation_active (RefereeState)
  *                          → WOUND_MARKED (per-player status)
  *
  * Preconditions:
- *   - Runner 0 at second base, but baseAtPitchStart was first (advanced)
+ *   - Runner 0 at second base, but base_at_pitch_start was first (advanced)
  *   - batHit = 1 (ball came from bat)
- *   - Ball not yet hit ground (hasBallHitGround = 0)
- *   - No prior catch this pitch (catchHasBeenMade = 0)
+ *   - Ball not yet hit ground (has_ball_hit_ground = 0)
+ *   - No prior catch this pitch (catch_has_been_made = 0)
  *   - catchMade event fires
  *
  * Expected: Referee starts evaluation, runner marked WOUND_MARKED.
@@ -39,7 +39,7 @@ int test_referee_starts_wounding_on_catch(void)
     // Initialize legal state and snapshot pitch-start positions
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx);
-    // After snapshot: runner 0 has baseAtPitchStart = BASE_FIRST
+    // After snapshot: runner 0 has base_at_pitch_start = BASE_FIRST
 
     // Advance runner physically past their pitch-start base (simulate they ran)
     ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_RUNNING;
@@ -48,24 +48,24 @@ int test_referee_starts_wounding_on_catch(void)
 
     // Set contract preconditions: fly ball caught
     ctx->state->match->gameEvents.catchMade = 1;
-    ctx->state->rules->betweenPitchState.batOutcome = BAT_OUTCOME_HIT;
+    ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
     ctx->state->match->ballInfo.holder = fielderIdx; // Fielder has ball (stabilizes physics)
 
     // Run exactly 1 pipeline frame
     simulate_frames(ctx, 1);
 
     // Assert: referee started wounding evaluation
-    ASSERT_EQ(1, ctx->state->rules->referee.woundingEvaluationActive, "Wounding evaluation should start on catch");
+    ASSERT_EQ(1, ctx->state->rules->referee.wounding_evaluation_active, "Wounding evaluation should start on catch");
 
     // Assert: runner 0 is marked as vulnerable
     ASSERT_EQ(
-        PLAYER_STATUS_WOUND_MARKED, ctx->state->rules->referee.battingPlayers[0].status,
+        PLAYER_STATUS_WOUND_MARKED, ctx->state->rules->referee.batting_players[0].status,
         "Advanced runner should be WOUND_MARKED"
     );
 
     // Assert: batter (at home = pitch-start base) should NOT be marked
     ASSERT_TRUE(
-        ctx->state->rules->referee.battingPlayers[1].status != PLAYER_STATUS_WOUND_MARKED,
+        ctx->state->rules->referee.batting_players[1].status != PLAYER_STATUS_WOUND_MARKED,
         "Batter at home (safe) should not be wound-marked"
     );
 

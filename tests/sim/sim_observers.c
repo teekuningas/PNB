@@ -37,7 +37,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
 {
     InvariantObserver* o = (InvariantObserver*)ctx;
     const GameRulesState* r = g->state->rules;
-    const HalfInningState* h = &r->halfInningState;
+    const HalfInningState* h = &r->half_inning;
     const Scoreboard* sb = &r->scoreboard;
 
     int outs = h->outs;
@@ -68,16 +68,15 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         sim_fail((SimGame*)g, "invariant: negative run total");
         return;
     }
-    if (sb->period < 4 && (h->jokersLeft < 0 || h->jokersLeft > JOKER_COUNT)) {
+    if (sb->period < 4 && (h->jokers_left < 0 || h->jokers_left > JOKER_COUNT)) {
         sim_fail((SimGame*)g, "invariant: jokers left out of [0, JOKER_COUNT]");
         return;
     }
     // The contest names its pairs up front, so the pair counter is an index into that list and may
-    // reach pairCount (the turn is over) but never pass it. It used to climb into the hundreds while
+    // reach pair_count (the turn is over) but never pass it. It used to climb into the hundreds while
     // the inning-end handshake ran.
-    if (sb->period >= 4 && (r->homeRunContestState.runnerBatterPairCounter < 0 ||
-                            r->homeRunContestState.runnerBatterPairCounter > sb->pairCount)) {
-        sim_fail((SimGame*)g, "invariant: homerun pair counter out of [0, pairCount]");
+    if (sb->period >= 4 && (r->homerun_contest.pair_index < 0 || r->homerun_contest.pair_index > sb->pair_count)) {
+        sim_fail((SimGame*)g, "invariant: homerun pair counter out of [0, pair_count]");
         return;
     }
 
@@ -182,13 +181,13 @@ void trace_observer_hook(const SimGame* g, void* ctx)
     const AIControllerState* ai = g->state->aiController;
     fprintf(
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
-        r->scoreboard.period, r->scoreboard.inning, r->halfInningState.outs, r->halfInningState.balls,
-        r->halfInningState.strikes, r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
+        r->scoreboard.period, r->scoreboard.inning, r->half_inning.outs, r->half_inning.balls, r->half_inning.strikes,
+        r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
         ball_is_home(m, g->state->fieldPositions), m->ballInfo.pitch_in_flight, (int)m->catching_action.kind,
         m->ballInfo.holder, m->offers.batter_seat, m->offers.free_walk, batter_stands_ready(&m->at_bat),
         ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
         m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
-        ai->swing.style, (int)r->betweenPitchState.batOutcome, batting_cycle_is_open(&m->at_bat)
+        ai->swing.style, (int)r->between_pitch.bat_outcome, batting_cycle_is_open(&m->at_bat)
     );
 }
 
@@ -266,25 +265,25 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     // controller's seed is deliberately NOT folded in — it lives outside the World by design.
     FOLD_INTEGER(h, m->rngSeed);
 
-    FOLD_INTEGER(h, r->halfInningState.outs);
-    FOLD_INTEGER(h, r->halfInningState.balls);
-    FOLD_INTEGER(h, r->halfInningState.strikes);
+    FOLD_INTEGER(h, r->half_inning.outs);
+    FOLD_INTEGER(h, r->half_inning.balls);
+    FOLD_INTEGER(h, r->half_inning.strikes);
     FOLD_INTEGER(h, r->scoreboard.inning);
     FOLD_INTEGER(h, r->scoreboard.period);
     FOLD_INTEGER(h, r->scoreboard.teams[0].runs);
     FOLD_INTEGER(h, r->scoreboard.teams[1].runs);
-    FOLD_INTEGER(h, r->scoreboard.teams[0].batterOrderIndex);
-    FOLD_INTEGER(h, r->scoreboard.teams[1].batterOrderIndex);
+    FOLD_INTEGER(h, r->scoreboard.teams[0].batter_order_index);
+    FOLD_INTEGER(h, r->scoreboard.teams[1].batter_order_index);
 
     // §12's own state. The batting order alone does not say when the turn ends: the designation, the
     // joker count and the pronounced verdict each determine a different future, so a checksum that
     // omitted them would call two genuinely different half-innings identical. (The counters this
     // replaced were never folded — the omission is being closed, not inherited.)
-    FOLD_INTEGER(h, r->halfInningState.jokersLeft);
-    FOLD_INTEGER(h, r->halfInningState.lastBatter.designatedIndex);
-    FOLD_INTEGER(h, r->halfInningState.lastBatter.lastRegularIndex);
-    FOLD_INTEGER(h, r->halfInningState.lastBatter.hasBattedAgain);
-    FOLD_INTEGER(h, r->halfInningState.lastBatter.turnExhausted);
+    FOLD_INTEGER(h, r->half_inning.jokers_left);
+    FOLD_INTEGER(h, r->half_inning.last_batter.designated_index);
+    FOLD_INTEGER(h, r->half_inning.last_batter.last_regular_index);
+    FOLD_INTEGER(h, r->half_inning.last_batter.has_batted_again);
+    FOLD_INTEGER(h, r->half_inning.last_batter.turn_exhausted);
 
     o->hash = h;
 }
@@ -307,7 +306,7 @@ static void pbp(const BoxScoreObserver* o, const SimGame* g, const GameRulesStat
     if (!o->log) return;
     fprintf(
         o->log, "  f%-6ld P%d I%d %d-%d %dout | %s\n", g->frame, r->scoreboard.period, r->scoreboard.inning,
-        r->halfInningState.balls, r->halfInningState.strikes, r->halfInningState.outs, msg
+        r->half_inning.balls, r->half_inning.strikes, r->half_inning.outs, msg
     );
 }
 
@@ -316,12 +315,12 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     BoxScoreObserver* o = (BoxScoreObserver*)ctx;
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
-    const HalfInningState* h = &r->halfInningState;
+    const HalfInningState* h = &r->half_inning;
     const Scoreboard* sb = &r->scoreboard;
 
     int pitch_in_flight = m->ballInfo.pitch_in_flight;
-    int batOutcome = (int)r->betweenPitchState.batOutcome;
-    int foulState = (int)r->referee.foulState;
+    int batOutcome = (int)r->between_pitch.bat_outcome;
+    int foulState = (int)r->referee.foul_state;
 
     if (!o->initialized) {
         o->initialized = 1;
@@ -356,7 +355,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         pbp(o, g, r, "pitch released");
     }
 
-    // Contact / whiff: batOutcome is sticky per pitch, so count the transition into it.
+    // Contact / whiff: bat_outcome is sticky per pitch, so count the transition into it.
     if (batOutcome != o->p_batOutcome) {
         if (batOutcome == BAT_OUTCOME_HIT) {
             o->contacts++;
@@ -520,7 +519,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
 
-    int batOutcome = (int)r->betweenPitchState.batOutcome;
+    int batOutcome = (int)r->between_pitch.bat_outcome;
     int control = m->catchingState.controlled_fielder;
 
     if (!o->initialized) {
@@ -589,7 +588,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
 
     const int waiting = m->offers.batter_seat;
     const int batter = get_active_batter_index(m);
-    const int designated = r->halfInningState.lastBatter.designatedIndex;
+    const int designated = r->half_inning.last_batter.designated_index;
     const int inning = r->scoreboard.inning;
 
     if (!o->initialized) {
@@ -628,7 +627,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     // landed — or it evaporated mid-play, which is the deadlock family. Only the second is a
     // finding, so they are never added together.
     if (waiting == 0 && o->p_waiting == 1 && batter == -1) {
-        if (r->referee.endOfInningState != END_INNING_STATE_NONE) {
+        if (r->referee.end_of_inning_state != END_INNING_STATE_NONE) {
             o->cancelled++;
         } else {
             o->abandoned++;
@@ -667,7 +666,7 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     const MatchSession* m = g->state->match;
     const GameRulesState* r = g->state->rules;
 
-    const int outcome = (int)r->betweenPitchState.batOutcome;
+    const int outcome = (int)r->between_pitch.bat_outcome;
     // "Every value this swing needs is now in" — the last declaration landing. Read off the declared
     // values now, where it used to be read off a phase a producer drove forward; the QUANTITY the
     // band is about, how many frames of margin the producer left, is unchanged by that.

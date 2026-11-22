@@ -157,7 +157,7 @@ int test_swing_declared_values_drive_the_contact(void)
 
     run_to_contact(ctx);
     ASSERT_EQ(
-        (int)BAT_OUTCOME_HIT, (int)ctx->state->rules->betweenPitchState.batOutcome,
+        (int)BAT_OUTCOME_HIT, (int)ctx->state->rules->between_pitch.bat_outcome,
         "a swing declared at the sweet spot must meet the ball"
     );
     cleanup_scenario(ctx);
@@ -174,7 +174,7 @@ int test_swing_declared_values_drive_the_contact(void)
     tick(ctx);
     run_to_contact(ctx);
     ASSERT_EQ(
-        (int)BAT_OUTCOME_MISSED, (int)ctx->state->rules->betweenPitchState.batOutcome,
+        (int)BAT_OUTCOME_MISSED, (int)ctx->state->rules->between_pitch.bat_outcome,
         "a swing declared far from the sweet spot must miss — the declared value is what decides"
     );
     cleanup_scenario(ctx);
@@ -221,7 +221,7 @@ int test_a_swing_never_declared_is_not_a_miss(void)
     run_to_contact(ctx); // declare nothing at all
 
     ASSERT_EQ(
-        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->betweenPitchState.batOutcome,
+        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->between_pitch.bat_outcome,
         "declaring nothing must not register as a swing and a miss"
     );
     ASSERT_EQ(1, match->at_bat.swing_stopped, "the engine must conclude that no swing happened");
@@ -254,7 +254,7 @@ int test_a_withdrawn_swing_does_not_reach_the_ball(void)
 
     run_to_contact(ctx);
     ASSERT_EQ(
-        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->betweenPitchState.batOutcome,
+        (int)BAT_OUTCOME_NONE, (int)ctx->state->rules->between_pitch.bat_outcome,
         "a withdrawn swing must not meet the ball — that is what makes it worth a ball and not a strike"
     );
     cleanup_scenario(ctx);

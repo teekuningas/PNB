@@ -20,8 +20,8 @@ int is_run_of_honor(
     // 2. Started at home (was the batter)
     // 3. Not wounded
     // 4. Haven't already scored run of honor
-    // Note: No need to check "going forward" - if same pitch, runOfHonorScored prevents double scoring.
-    //       If new pitch, baseAtPitchStart would no longer be HOME.
+    // Note: No need to check "going forward" - if same pitch, run_of_honor_scored prevents double scoring.
+    //       If new pitch, base_at_pitch_start would no longer be HOME.
     if (player_base == BASE_THIRD && player_original_base == BASE_HOME && !player_is_wounded &&
         !has_made_run_on_third_base) {
         return 1;

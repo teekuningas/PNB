@@ -33,11 +33,11 @@ int test_get_batting_team_index(void)
     Scoreboard sb;
     memset(&sb, 0, sizeof(Scoreboard));
 
-    // Period 0, inning 0, playsFirst 0 → (0+0+0) % 2 = 0
+    // Period 0, inning 0, plays_first 0 → (0+0+0) % 2 = 0
     sb.inning = 0;
     sb.period = 0;
-    sb.playsFirst = 0;
-    ASSERT_EQ(0, get_batting_team_index(&sb), "Period 0, inning 0, playsFirst 0 → team 0 bats");
+    sb.plays_first = 0;
+    ASSERT_EQ(0, get_batting_team_index(&sb), "Period 0, inning 0, plays_first 0 → team 0 bats");
 
     // Period 0, inning 1 → (1+0+0) % 2 = 1
     sb.inning = 1;
@@ -47,13 +47,13 @@ int test_get_batting_team_index(void)
     sb.inning = 2;
     ASSERT_EQ(0, get_batting_team_index(&sb), "Period 0, inning 2 → team 0 bats again");
 
-    // playsFirst flips the order: inning 0, playsFirst 1 → (0+1+0) % 2 = 1
+    // plays_first flips the order: inning 0, plays_first 1 → (0+1+0) % 2 = 1
     sb.inning = 0;
-    sb.playsFirst = 1;
-    ASSERT_EQ(1, get_batting_team_index(&sb), "playsFirst=1 flips team 0→1");
+    sb.plays_first = 1;
+    ASSERT_EQ(1, get_batting_team_index(&sb), "plays_first=1 flips team 0→1");
 
-    // Period 1 flips again: inning 0, playsFirst 0, period 1 → (0+0+1) % 2 = 1
-    sb.playsFirst = 0;
+    // Period 1 flips again: inning 0, plays_first 0, period 1 → (0+0+1) % 2 = 1
+    sb.plays_first = 0;
     sb.period = 1;
     ASSERT_EQ(1, get_batting_team_index(&sb), "Period 1 flips batting team");
 
@@ -81,8 +81,8 @@ int test_batting_team_jokers_are_the_order_after_the_regulars(void)
     memset(&sb, 0, sizeof(Scoreboard));
     const int order0[12] = {3, 0, 1, 2, 4, 5, 6, 7, 8, 11, 9, 10};
     const int order1[12] = {0, 1, 2, 3, 4, 5, 6, 10, 8, 7, 11, 9};
-    memcpy(sb.teams[0].batterOrder, order0, sizeof(order0));
-    memcpy(sb.teams[1].batterOrder, order1, sizeof(order1));
+    memcpy(sb.teams[0].batter_order, order0, sizeof(order0));
+    memcpy(sb.teams[1].batter_order, order1, sizeof(order1));
 
     int jokers[JOKER_COUNT];
     sb.inning = 0; // team 0 bats
