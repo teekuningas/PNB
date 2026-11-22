@@ -108,14 +108,14 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void)
     checksum_observer_init(&cs);
     int frames = 0;
     const int budget = 40000;
-    while (frames < budget && g->state->match->rngSeed == cap.match.rngSeed) {
+    while (frames < budget && g->state->match->rng_seed == cap.match.rng_seed) {
         update_game_frame(g->state, &g->menu);
         g->frame++;
         checksum_observer_hook(g, &cs);
         frames++;
     }
     ASSERT(
-        g->state->match->rngSeed != cap.match.rngSeed,
+        g->state->match->rng_seed != cap.match.rng_seed,
         "the engine never drew from its stream — no reset recipe ran, so this test proves nothing"
     );
 
@@ -127,10 +127,10 @@ int test_retick_diverges_when_engine_seed_is_not_restored(void)
         frames++;
     }
     unsigned long long first = cs.hash;
-    unsigned int seed_after_first = g->state->match->rngSeed;
+    unsigned int seed_after_first = g->state->match->rng_seed;
 
     sim_restore_world(&cap, g);
-    g->state->match->rngSeed = seed_after_first; // the one field deliberately NOT rewound
+    g->state->match->rng_seed = seed_after_first; // the one field deliberately NOT rewound
     unsigned long long second = tick_and_hash(g, frames);
 
     sim_destroy(g);

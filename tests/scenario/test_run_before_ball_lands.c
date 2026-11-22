@@ -42,12 +42,12 @@ int test_run_arrival_before_ball_lands(void)
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
-    ctx->state->match->playerInfo[runnerIndex].body.location = startLoc;
-    ctx->state->match->playerInfo[runnerIndex].body.previous_location = startLoc;
+    ctx->state->match->players[runnerIndex].body.location = startLoc;
+    ctx->state->match->players[runnerIndex].body.previous_location = startLoc;
 
     // waypoint=1 means "past corner flag, run to homeRunPoint"
     // Runner is at Z=-10, which is between corner flag (Z=-25) and homeRunPoint (Z=-0.65)
-    ctx->state->match->playerInfo[runnerIndex].path.waypoint = 1;
+    ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     printf(
         "Setup: Runner %d placed close to home at (%.1f, %.1f, %.1f)\n", runnerIndex, startLoc.x, startLoc.y, startLoc.z
@@ -82,23 +82,23 @@ int test_run_arrival_before_ball_lands(void)
         simulate_frames(ctx, 1);
 
         // Log transient events
-        if (ctx->state->match->gameEvents.ballHitGround) {
-            printf("EVENT: ballHitGround at Frame %d\n", i);
+        if (ctx->state->match->events.ball_hit_ground) {
+            printf("EVENT: ball_hit_ground at Frame %d\n", i);
         }
-        if (ctx->state->match->gameEvents.playerArrivedAtBase) {
+        if (ctx->state->match->events.player_arrived_at_base) {
             printf(
-                "EVENT: playerArrivedAtBase at Frame %d (Base: %d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id
+                "EVENT: player_arrived_at_base at Frame %d (Base: %d)\n", i,
+                ctx->state->match->players[runnerIndex].batting.presence.base_id
             );
         }
 
         // Check Arrival
-        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
+        if (ctx->state->match->players[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
             arrived = 1;
             arrivalFrame = i;
             printf(
                 "Frame %d: Runner arrived at HOME. (Ball Height: %.2f, Rules Live: %d)\n", i,
-                ctx->state->match->ballInfo.location.y, ctx->state->rules->between_pitch.has_ball_hit_ground
+                ctx->state->match->ball.location.y, ctx->state->rules->between_pitch.has_ball_hit_ground
             );
         }
 

@@ -49,15 +49,15 @@ int main(void)
 #endif
 
     print_semantic_hashes(&game);
-    match.ballInfo.moving = 1;
+    match.ball.moving = 1;
     print_semantic_hashes(&game);
-    match.ballInfo.onGround = 1;
+    match.ball.on_ground = 1;
     print_semantic_hashes(&game);
-    match.ballInfo.pitch_in_flight = 1;
+    match.ball.pitch_in_flight = 1;
     print_semantic_hashes(&game);
-    match.at_bat.swing.powerActive = 1;
+    match.at_bat.swing.power_active = 1;
     print_semantic_hashes(&game);
-    match.at_bat.swing.verticalActive = 1;
+    match.at_bat.swing.vertical_active = 1;
     print_semantic_hashes(&game);
     rules.half_inning.last_batter.has_batted_again = 1;
     print_semantic_hashes(&game);

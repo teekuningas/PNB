@@ -43,14 +43,14 @@
 static GameEvents all_events_set(void)
 {
     GameEvents e;
-    e.catchMade = 1;
-    e.playerArrivedAtBase = 1;
-    e.pitchReleased = 1;
-    e.ballHitByBat = 1;
-    e.ballMissedByBat = 1;
-    e.ballHitGround = 1;
-    e.freeWalkAccepted = 1;
-    e.batterEntered = 1;
+    e.catch_made = 1;
+    e.player_arrived_at_base = 1;
+    e.pitch_released = 1;
+    e.ball_hit_by_bat = 1;
+    e.ball_missed_by_bat = 1;
+    e.ball_hit_ground = 1;
+    e.free_walk_accepted = 1;
+    e.batter_entered = 1;
     e.homeward_runs_started = 1;
     return e;
 }
@@ -72,13 +72,13 @@ typedef struct {
 static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents events, ControllerOutput* out)
 {
     sim_restore_world(cap, g);
-    g->state->match->gameEvents = events;
-    PlayerActivityEvents activity = events.catchMade
+    g->state->match->events = events;
+    PlayerActivityEvents activity = events.catch_made
                                         ? (PlayerActivityEvents){.latest = PLAYER_ACTIVITY_RUNNING_ROUTE,
                                                                  .started = PLAYER_ACTIVITY_WALKING_TO_TARGET}
                                         : (PlayerActivityEvents){0};
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-        g->state->match->playerInfo[i].events = activity;
+        g->state->match->players[i].events = activity;
     }
 
     // Each probe starts from an empty channel, so what it holds afterwards is this probe's
@@ -91,14 +91,14 @@ static void probe_controllers(SimGame* g, const SimWorldCapture* cap, GameEvents
     memcpy(&out->aiController, g->state->aiController, sizeof(AIControllerState));
     out->channels = g->state->channels;
 
-    out->wrote_an_event = memcmp(&out->match.gameEvents, &events, sizeof(GameEvents)) != 0;
+    out->wrote_an_event = memcmp(&out->match.events, &events, sizeof(GameEvents)) != 0;
 
-    // gameEvents is the input we varied on purpose, so it cannot take part in the comparison.
+    // events is the input we varied on purpose, so it cannot take part in the comparison.
     // Everything else in MatchSession does.
-    memset(&out->match.gameEvents, 0, sizeof(GameEvents));
+    memset(&out->match.events, 0, sizeof(GameEvents));
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-        out->wrote_an_event |= memcmp(&out->match.playerInfo[i].events, &activity, sizeof(activity)) != 0;
-        out->match.playerInfo[i].events = (PlayerActivityEvents){0};
+        out->wrote_an_event |= memcmp(&out->match.players[i].events, &activity, sizeof(activity)) != 0;
+        out->match.players[i].events = (PlayerActivityEvents){0};
     }
 }
 

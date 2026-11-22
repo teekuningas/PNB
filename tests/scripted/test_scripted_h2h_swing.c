@@ -74,9 +74,8 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
     for (int i = 0; i < budget; i++) {
         MatchSession* m = scripted_match(g);
         int p = m->fielding_posts.baseman[0];
-        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
-            batter_stands_ready(&m->at_bat) && m->catching_action.kind == CATCHING_ACTION_NONE &&
-            !m->ballInfo.pitch_in_flight) {
+        if (p != -1 && m->ball.holder == p && m->catching.controlled_fielder == p && batter_stands_ready(&m->at_bat) &&
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ball.pitch_in_flight) {
             return 1;
         }
         if (!scripted_tick(g)) return 0;
@@ -94,7 +93,7 @@ static int throw_the_ball_home(ScriptedGame* g, int budget)
     MatchSession* m = scripted_match(g);
     int pitcher = m->fielding_posts.baseman[0];
     if (pitcher == -1) return 0;
-    if (m->ballInfo.holder == pitcher) return 1; // already there
+    if (m->ball.holder == pitcher) return 1; // already there
 
     scripted_hold(g, PITCH_PAD, KEY_2);
     scripted_hold(g, PITCH_PAD, KEY_DOWN);
@@ -106,7 +105,7 @@ static int throw_the_ball_home(ScriptedGame* g, int budget)
 
     for (int i = 0; i < budget; i++) {
         scripted_tick(g);
-        if (scripted_match(g)->ballInfo.holder == pitcher) return 1;
+        if (scripted_match(g)->ball.holder == pitcher) return 1;
     }
     return 0;
 }
@@ -152,7 +151,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     scripted_run(g, 10);
     press(g, BAT_PAD, KEY_2);
     scripted_tick(g);
-    ASSERT_EQ(1, m->at_bat.swing.powerActive, "the batter's press during the windup must declare a power");
+    ASSERT_EQ(1, m->at_bat.swing.power_active, "the batter's press during the windup must declare a power");
     ASSERT(winding_unaimed(m), "THE INTERLEAVE: the batter commits while the pitcher's gesture is still unfinished");
 
     /* BEAT 3 — the pitcher's aim meter has been descending throughout. Press it near the sweet spot
@@ -171,7 +170,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     int airborne = 0;
     for (int i = 0; i < 250 && !airborne; i++) {
         scripted_tick(g);
-        airborne = (m->ballInfo.pitch_in_flight);
+        airborne = (m->ball.pitch_in_flight);
     }
     ASSERT(airborne, "the two-click pitch must release");
     scripted_tick(g);
@@ -190,7 +189,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     }
     press(g, BAT_PAD, KEY_2);
     scripted_tick(g);
-    ASSERT_EQ(1, m->at_bat.swing.verticalActive, "the press during the descent must declare an elevation");
+    ASSERT_EQ(1, m->at_bat.swing.vertical_active, "the press during the descent must declare an elevation");
     ASSERT(
         fabsf(m->at_bat.swing.vertical - SWING_VERTICAL_FOCAL) < 0.05f,
         "a press at the sweet spot must declare a value at the sweet spot"
@@ -201,7 +200,7 @@ int test_scripted_h2h_four_beats_on_one_pitch(void)
     float max_horiz = 0.0f;
     for (int i = 0; i < 300; i++) {
         scripted_tick(g);
-        float vx = m->ballInfo.velocity.x, vz = m->ballInfo.velocity.z;
+        float vx = m->ball.velocity.x, vz = m->ball.velocity.z;
         float horiz = sqrtf(vx * vx + vz * vz);
         if (horiz > max_horiz) max_horiz = horiz;
     }
@@ -266,7 +265,7 @@ int test_scripted_h2h_both_pads_may_declare_on_one_frame(void)
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
-    int powerActive = m->at_bat.swing.powerActive;
+    int powerActive = m->at_bat.swing.power_active;
     int aimed = winding_aimed(m);
     scripted_destroy(g);
 
@@ -302,7 +301,7 @@ int test_scripted_h2h_one_pads_key_never_moves_the_others_widget(void)
         scripted_tick(g);
     }
     ASSERT_EQ((int)WIDGET_IDLE, (int)ci->swingWidget.meter.mode, "with no pitch in progress the batter has no meter");
-    ASSERT_EQ(0, m->at_bat.swing.powerActive, "a batter cannot declare a power before a pitch exists");
+    ASSERT_EQ(0, m->at_bat.swing.power_active, "a batter cannot declare a power before a pitch exists");
     ASSERT_EQ(
         (int)WIDGET_IDLE, (int)ci->pitchWidget.meter.mode, "the batting pad's key must never touch the pitching widget"
     );
@@ -398,7 +397,7 @@ int test_scripted_h2h_the_dance_repeats_across_pitches(void)
         // Let the pitch resolve and the batting cycle come back round.
         for (int i = 0; i < 400; i++) {
             scripted_tick(g);
-            if (!m->ballInfo.pitch_in_flight && !batting_cycle_is_open(&m->at_bat)) break;
+            if (!m->ball.pitch_in_flight && !batting_cycle_is_open(&m->at_bat)) break;
         }
         scripted_run(g, 5);
     }

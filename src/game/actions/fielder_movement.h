@@ -6,7 +6,7 @@
 // The controlled fielder's walk — an ENGINE BEHAVIOUR, not a controller and not "AI".
 //
 // A controller says WHERE (INTENT_MOVE_TARGET, which ingestion turns into
-// catchingState.controlledMoveTarget); this walks the fielder there, identically for every producer,
+// catching.controlled_move_target); this walks the fielder there, identically for every producer,
 // at zero wire cost. Runs once per tick from the engine's actualization order.
 //
 // It is idempotent by construction: the walk is a function of (position, destination), so a producer

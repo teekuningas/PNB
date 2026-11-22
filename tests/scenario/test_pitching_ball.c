@@ -20,7 +20,7 @@ int test_pitching_ball(void)
     initialize_referee_from_physical_state(ctx);
 
     printf("[TEST] Pitching BALL (Target X=1.0, PlateWidth=0.75)\n");
-    perform_pitch(ctx, 1.0f); // Wide right (also emits pitchReleased event)
+    perform_pitch(ctx, 1.0f); // Wide right (also emits pitch_released event)
 
     int ballDetected = 0;
     for (int i = 0; i < 200; i++) {

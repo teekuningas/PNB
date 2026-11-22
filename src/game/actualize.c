@@ -61,12 +61,11 @@ void actualize(
     // so this is the move itself and nothing else.
     if (commands->change_player) {
         // we go to next element in changePlayerArray.
-        match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
+        match->catching.ranking_cursor = (match->catching.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
         // and try to ensure that there is difference. we dont want to end up in a endless loop
         // though so we do it only once.
-        if (match->catchingState.controlled_fielder ==
-            match->catchingState.chase_ranking[match->catchingState.ranking_cursor]) {
-            match->catchingState.ranking_cursor = (match->catchingState.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
+        if (match->catching.controlled_fielder == match->catching.chase_ranking[match->catching.ranking_cursor]) {
+            match->catching.ranking_cursor = (match->catching.ranking_cursor + 1) % CHANGE_PLAYER_COUNT;
         }
         // and hand control to whoever the cursor now names
         change_player(match);
@@ -124,17 +123,17 @@ static void take_free_walk_decision(
         if (index != -1) {
             // The walk's legal consequence is the referee's: the event is all it is told. What is left
             // here is the body's part of it, and the home-run contest's walk has none.
-            match->gameEvents.freeWalkAccepted = 1;
+            match->events.free_walk_accepted = 1;
             // there can be a little gap between the decision and when the possibility to decide came
             // so player might have run already to the following base, and free walk actually
             // gave him the right to go to just that base.
             // so if he still has the same base as before we can go on
-            if (scoreboard->period < 4 && match->playerInfo[index].batting.presence.base_id == base &&
+            if (scoreboard->period < 4 && match->players[index].batting.presence.base_id == base &&
                 base != BASE_THIRD) {
                 // Start running to the next base
                 run_to_next_base(match, fieldPositions, index, base);
                 // Protected from wounds/tags while advancing freely
-                match->playerInfo[index].batting.presence.state = PLAYER_STATE_ADVANCING_FREELY;
+                match->players[index].batting.presence.state = PLAYER_STATE_ADVANCING_FREELY;
             }
             // 3rd base: no physical run needed — the referee scores the run directly and sets
             // has_scored, which is what makes enforce_legal_state remove the player
@@ -172,16 +171,16 @@ static void take_free_walk_decision(
 // is gone). A human's single/double press maps to RUN_FORWARD/RUN_COMMIT in action_invocations.
 static void base_run(MatchSession* match, const FieldPositions* fieldPositions, BaseID base, int index, RunIntent cmd)
 {
-    PlayerUnitState state = match->playerInfo[index].batting.presence.state;
+    PlayerUnitState state = match->players[index].batting.presence.state;
     int settled_on_base = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
 
     if (cmd == RUN_FORWARD) {
         if (settled_on_base) {
             // Arm only — never commit a settled runner here.
-            if (match->runner_commitments.armed[base] == 0 && match->playerInfo[index].motion.moving == 0) {
+            if (match->runner_commitments.armed[base] == 0 && match->players[index].motion.moving == 0) {
                 match->runner_commitments.armed[base] = 1;
                 if (base == BASE_FIRST || base == BASE_SECOND) {
-                    lead_from_base(match->playerInfo, fieldPositions, index);
+                    lead_from_base(match->players, fieldPositions, index);
                 }
             }
             // else: already armed, or still settling onto the base — wait.

@@ -173,13 +173,13 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s },\n", sp);
     }
 
-    fprintf(f, "%s\"gameEvents\": {\n", sp);
-    fprintf(f, "%s  \"catchMade\": %d,\n", sp, game->gameEvents.catchMade);
-    fprintf(f, "%s  \"playerArrivedAtBase\": %d,\n", sp, game->gameEvents.playerArrivedAtBase);
-    fprintf(f, "%s  \"ballHitGround\": %d,\n", sp, game->gameEvents.ballHitGround);
-    fprintf(f, "%s  \"ballHitByBat\": %d,\n", sp, game->gameEvents.ballHitByBat);
-    fprintf(f, "%s  \"pitchReleased\": %d,\n", sp, game->gameEvents.pitchReleased);
-    fprintf(f, "%s  \"batterEntered\": %d\n", sp, game->gameEvents.batterEntered);
+    fprintf(f, "%s\"events\": {\n", sp);
+    fprintf(f, "%s  \"catch_made\": %d,\n", sp, game->events.catch_made);
+    fprintf(f, "%s  \"player_arrived_at_base\": %d,\n", sp, game->events.player_arrived_at_base);
+    fprintf(f, "%s  \"ball_hit_ground\": %d,\n", sp, game->events.ball_hit_ground);
+    fprintf(f, "%s  \"ball_hit_by_bat\": %d,\n", sp, game->events.ball_hit_by_bat);
+    fprintf(f, "%s  \"pitch_released\": %d,\n", sp, game->events.pitch_released);
+    fprintf(f, "%s  \"batter_entered\": %d\n", sp, game->events.batter_entered);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"flow\": {\n", sp);
@@ -193,17 +193,17 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
 
     fprintf(f, "%s\"possession\": {\n", sp);
     fprintf(f, "%s  \"batterIndex\": %d,\n", sp, get_active_batter_index(game));
-    fprintf(f, "%s  \"holder\": %d,\n", sp, game->ballInfo.holder);
-    fprintf(f, "%s  \"controlled_fielder\": %d,\n", sp, game->catchingState.controlled_fielder);
+    fprintf(f, "%s  \"holder\": %d,\n", sp, game->ball.holder);
+    fprintf(f, "%s  \"controlled_fielder\": %d,\n", sp, game->catching.controlled_fielder);
     fprintf(f, "%s  \"home_baseman\": %d,\n", sp, game->fielding_posts.baseman[0]);
     fprintf(
-        f, "%s  \"isNearHome_pitcher\": %d\n", sp, game->playerInfo[game->fielding_posts.baseman[0]].fielding.near_home
+        f, "%s  \"isNearHome_pitcher\": %d\n", sp, game->players[game->fielding_posts.baseman[0]].fielding.near_home
     );
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"flight\": {\n", sp);
-    fprintf(f, "%s  \"pitch_in_flight\": %d,\n", sp, game->ballInfo.pitch_in_flight);
-    fprintf(f, "%s  \"thrown_to\": %d\n", sp, (int)game->ballInfo.thrown_to);
+    fprintf(f, "%s  \"pitch_in_flight\": %d,\n", sp, game->ball.pitch_in_flight);
+    fprintf(f, "%s  \"thrown_to\": %d\n", sp, (int)game->ball.thrown_to);
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"atBat\": {\n", sp);
@@ -219,9 +219,9 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     // nothing left of them to print — what a reader wants instead is the world they produced.
     // The swing, as the engine holds it: what has been declared and the frame it will be used on.
     // No phase and no meter — there is nothing here a producer drives forward.
-    fprintf(f, "%s  \"swing_contact_frame\": %d,\n", sp, game->at_bat.swing.contactFrame);
-    fprintf(f, "%s  \"swing_power\": %s,\n", sp, game->at_bat.swing.powerActive ? "true" : "false");
-    fprintf(f, "%s  \"swing_vertical\": %s\n", sp, game->at_bat.swing.verticalActive ? "true" : "false");
+    fprintf(f, "%s  \"swing_contact_frame\": %d,\n", sp, game->at_bat.swing.contact_frame);
+    fprintf(f, "%s  \"swing_power\": %s,\n", sp, game->at_bat.swing.power_active ? "true" : "false");
+    fprintf(f, "%s  \"swing_vertical\": %s\n", sp, game->at_bat.swing.vertical_active ? "true" : "false");
     fprintf(f, "%s},\n", sp);
 
     if (rules) {
@@ -233,22 +233,22 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s},\n", sp);
     }
 
-    fprintf(f, "%s\"ballInfo\": {\n", sp);
+    fprintf(f, "%s\"ball\": {\n", sp);
     fprintf(
-        f, "%s  \"location\": { \"x\": %.2f, \"y\": %.2f, \"z\": %.2f },\n", sp, game->ballInfo.location.x,
-        game->ballInfo.location.y, game->ballInfo.location.z
+        f, "%s  \"location\": { \"x\": %.2f, \"y\": %.2f, \"z\": %.2f },\n", sp, game->ball.location.x,
+        game->ball.location.y, game->ball.location.z
     );
-    fprintf(f, "%s  \"moving\": %d,\n", sp, game->ballInfo.moving);
-    fprintf(f, "%s  \"hasHitGround\": %d,\n", sp, game->ballInfo.currentFlightHasHitGround);
-    fprintf(f, "%s  \"onGround\": %d\n", sp, game->ballInfo.onGround);
+    fprintf(f, "%s  \"moving\": %d,\n", sp, game->ball.moving);
+    fprintf(f, "%s  \"flight_has_hit_ground\": %d,\n", sp, game->ball.flight_has_hit_ground);
+    fprintf(f, "%s  \"on_ground\": %d\n", sp, game->ball.on_ground);
     fprintf(f, "%s},\n", sp);
 
-    fprintf(f, "%s\"rngSeed\": %u,\n", sp, game->rngSeed);
+    fprintf(f, "%s\"rng_seed\": %u,\n", sp, game->rng_seed);
 
     fprintf(f, "%s\"players\": [\n", sp);
     int totalPlayers = 2 * PLAYERS_IN_TEAM + JOKER_COUNT; // 21
     for (int i = 0; i < totalPlayers; i++) {
-        PlayerInfo* p = &game->playerInfo[i];
+        PlayerInfo* p = &game->players[i];
 
         fprintf(f, "%s  {\n", sp);
         fprintf(f, "%s    \"id\": %d,\n", sp, i);
@@ -259,8 +259,8 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s    \"pos\": { \"x\": %.2f, \"z\": %.2f },\n", sp, p->body.location.x, p->body.location.z);
         // Runtime state
         fprintf(
-            f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp,
-            game->playerInfo[i].path.going_forward, game->playerInfo[i].path.arrived_at_base
+            f, "%s    \"runtime\": { \"goingForward\": %d, \"arrived\": %d }", sp, game->players[i].path.going_forward,
+            game->players[i].path.arrived_at_base
         );
 
         // Referee State - Only valid for batting team (indices 0-11)
@@ -344,23 +344,23 @@ int state_validator_check(StateInfo* state)
         int idx = get_base_controller(game, &rules->referee, b);
         if (idx != -1) {
             // Player at this index MUST be at this base (enforced by get_base_controller definition)
-            if (game->playerInfo[idx].batting.presence.base_id != (BaseID)b) {
+            if (game->players[idx].batting.presence.base_id != (BaseID)b) {
                 printf(
                     "\n[STATE ERROR] FATAL: Base %d controlled by %d, but player is at base %d\n", b, idx,
-                    game->playerInfo[idx].batting.presence.base_id
+                    game->players[idx].batting.presence.base_id
                 );
                 return 0; // Invalid
             }
 
             // Player MUST not be in invalid states for controlling a base
-            if (game->playerInfo[idx].batting.presence.state == PLAYER_STATE_OUT ||
-                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_WOUNDED ||
-                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_SCORED ||
-                game->playerInfo[idx].batting.presence.state == PLAYER_STATE_IDLE) {
+            if (game->players[idx].batting.presence.state == PLAYER_STATE_OUT ||
+                game->players[idx].batting.presence.state == PLAYER_STATE_WOUNDED ||
+                game->players[idx].batting.presence.state == PLAYER_STATE_SCORED ||
+                game->players[idx].batting.presence.state == PLAYER_STATE_IDLE) {
                 printf(
                     "\n[STATE ERROR] FATAL: Base %d controlled by %d, but player state is %s (Invalid for "
                     "controller)\n",
-                    b, idx, state_to_string(game->playerInfo[idx].batting.presence.state)
+                    b, idx, state_to_string(game->players[idx].batting.presence.state)
                 );
                 return 0; // Invalid
             }
@@ -370,14 +370,14 @@ int state_validator_check(StateInfo* state)
     // Invariant 2: Batter Consistency
     int activeBatterCount = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+        if (game->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
             activeBatterCount++;
 
             // Must be at home
-            if (game->playerInfo[i].batting.presence.base_id != BASE_HOME) {
+            if (game->players[i].batting.presence.base_id != BASE_HOME) {
                 printf(
                     "\n[STATE ERROR] FATAL: Player %d is AT_BAT but at base %d (Must be BASE_HOME)\n", i,
-                    game->playerInfo[i].batting.presence.base_id
+                    game->players[i].batting.presence.base_id
                 );
                 return 0;
             }
@@ -394,7 +394,7 @@ int state_validator_check(StateInfo* state)
     //
     // "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin" is held
     // in two places: each joker's own JOKER_USED, which the seating sets, and
-    // `half_inning.jokers_left`, which the referee decrements on the batterEntered event. Two
+    // `half_inning.jokers_left`, which the referee decrements on the batter_entered event. Two
     // writers, one rule, in two different stages of the frame.
     //
     // The direction is the load-bearing part. More AVAILABLE jokers than the count admits is the
@@ -424,7 +424,7 @@ int state_validator_check(StateInfo* state)
         int jokers[JOKER_COUNT];
         batting_team_jokers(&rules->scoreboard, jokers);
         for (int i = 0; i < JOKER_COUNT; i++) {
-            if (game->playerInfo[jokers[i]].batting.joker == JOKER_AVAILABLE) unusedJokers++;
+            if (game->players[jokers[i]].batting.joker == JOKER_AVAILABLE) unusedJokers++;
         }
         if (unusedJokers > rules->half_inning.jokers_left) {
             printf(
@@ -443,7 +443,7 @@ int state_validator_check(StateInfo* state)
     // and must be set together. They were not: the offer was raised whenever the ball count reached
     // the threshold, while calculate_free_walk leaves free_walk.runner at -1 when the whole inner side
     // is off the field. That put a prompt on screen belonging to nobody, made the withdrawal beside
-    // it read playerInfo[-1] every frame, and — because the lukkari may not pitch while an offer is
+    // it read players[-1] every frame, and — because the lukkari may not pitch while an offer is
     // open — left the game waiting for an answer to a question about no one. Found by the owner in
     // play, 2026-08-28.
     //

@@ -42,10 +42,10 @@ static void update_initialization_events(
 {
 
     // Batter Entered: Initialize safety for the new batter and reset count
-    if (events->batterEntered) {
+    if (events->batter_entered) {
         int battingTeamIndex = get_batting_team_index(scoreboard);
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+            if (game->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 referee->batting_players[i].current_safety_base = BASE_HOME;
 
                 // Taking the bat clears the previous at-bat's verdicts. Being burnt or wounded costs
@@ -71,7 +71,7 @@ static void update_initialization_events(
                 // designation sitting on a joker can never equal it and the clause becomes
                 // unfirable for the whole half-inning. Measured before the fix: a third of
                 // AI-vs-AI half-innings designated a joker.
-                const int isRegular = (game->playerInfo[i].batting.joker == JOKER_REGULAR);
+                const int isRegular = (game->players[i].batting.joker == JOKER_REGULAR);
                 if (halfInningState->last_batter.designated_index == -1) {
                     if (isRegular) {
                         halfInningState->last_batter.designated_index = i;
@@ -100,7 +100,7 @@ static void update_initialization_events(
     }
 
     // Pitch Released: Snapshot state for the new pitch
-    if (events->pitchReleased) {
+    if (events->pitch_released) {
         // 1. Reset Sticky Flags
         clear_between_pitch_state(betweenPitchState);
         referee->wounding_evaluation_finished = 0;
@@ -127,13 +127,13 @@ static void update_initialization_events(
         // 5. Snapshot Base Positions (The "Legal Baseline" for this pitch)
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             int index = i;
-            if (game->playerInfo[index].batting.presence.base_id != BASE_NONE) {
-                BaseID baseId = game->playerInfo[index].batting.presence.base_id;
+            if (game->players[index].batting.presence.base_id != BASE_NONE) {
+                BaseID baseId = game->players[index].batting.presence.base_id;
                 int base = base_to_int_index(baseId);
 
                 // Special case: Player is advancing freely.
                 // Their "pitch start" base is effectively the destination they are guaranteed to reach.
-                if (game->playerInfo[index].batting.presence.state == PLAYER_STATE_ADVANCING_FREELY) {
+                if (game->players[index].batting.presence.state == PLAYER_STATE_ADVANCING_FREELY) {
                     BaseID destBase;
                     if (baseId == BASE_THIRD)
                         destBase = BASE_HOME_SCORED;
@@ -153,7 +153,7 @@ static void update_initialization_events(
                         }
                     }
                     // Special case: Batter at home is considered to have "safety" in terms of not being irti yet
-                    if (game->playerInfo[index].batting.presence.state == PLAYER_STATE_AT_BAT) {
+                    if (game->players[index].batting.presence.state == PLAYER_STATE_AT_BAT) {
                         hasSafety = 1;
                     }
 
@@ -218,10 +218,10 @@ static void update_foul_play_logic(
 
     // Transition 1: NONE -> DETECTED (Detection)
     // Out of Bounds Logic: Check ONLY on first bounce
-    if (events->ballHitGround && betweenPitchState->has_ball_hit_ground == 0 &&
+    if (events->ball_hit_ground && betweenPitchState->has_ball_hit_ground == 0 &&
         referee->foul_state == FOUL_STATE_NONE) {
         if (betweenPitchState->bat_outcome == BAT_OUTCOME_HIT && betweenPitchState->catch_has_been_made == 0) {
-            if (is_ball_out_of_bounds(&game->ballInfo, fieldPositions)) {
+            if (is_ball_out_of_bounds(&game->ball, fieldPositions)) {
 
                 // 1. Immediately apply the consequence of the foul (Strike/Out)
                 if (referee->strikes_at_pitch_start == 2) {
@@ -264,8 +264,8 @@ static void update_wounding_logic(
 {
 
     // A. Start Wounding Evaluation (on catch event)
-    // Check: fly ball caught (events->catchMade), ball was hit, hasn't hit ground yet, no prior catch
-    if (events->catchMade && betweenPitchState->bat_outcome == BAT_OUTCOME_HIT &&
+    // Check: fly ball caught (events->catch_made), ball was hit, hasn't hit ground yet, no prior catch
+    if (events->catch_made && betweenPitchState->bat_outcome == BAT_OUTCOME_HIT &&
         betweenPitchState->has_ball_hit_ground == 0 && betweenPitchState->catch_has_been_made == 0) {
 
         // Start evaluation period
@@ -274,9 +274,9 @@ static void update_wounding_logic(
 
         // Mark vulnerable players at this moment
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
-                PlayerUnitState phys_state = game->playerInfo[i].batting.presence.state;
-                BaseID phys_base = game->playerInfo[i].batting.presence.base_id;
+            if (game->players[i].batting.presence.base_id != BASE_NONE) {
+                PlayerUnitState phys_state = game->players[i].batting.presence.state;
+                BaseID phys_base = game->players[i].batting.presence.base_id;
                 BaseID ref_baseAtStart = referee->batting_players[i].base_at_pitch_start;
 
                 bool is_safe = player_is_safe_from_fly(phys_state, phys_base, ref_baseAtStart);
@@ -296,14 +296,14 @@ static void update_wounding_logic(
 
         // Calculate threshold (extend if ball was thrown)
         int threshold;
-        if (game->ballInfo.holder == -1) {
+        if (game->ball.holder == -1) {
             threshold = (int)(2 * WOUNDING_CATCH_THRESHOLD);
         } else {
             threshold = (int)WOUNDING_CATCH_THRESHOLD;
         }
 
         // Check for UN-WOUNDING: Ball hit ground before timer expired
-        if (game->ballInfo.hitsGroundToUnWound == 1) {
+        if (game->ball.hit_ground_to_unwound == 1) {
             // Clear evaluation - players are safe!
             referee->wounding_evaluation_active = 0;
             referee->wounding_evaluation_timer = -1;
@@ -319,8 +319,8 @@ static void update_wounding_logic(
 
             // Apply wounding to marked players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
-                    PlayerUnitState state = game->playerInfo[i].batting.presence.state;
+                if (game->players[i].batting.presence.base_id != BASE_NONE) {
+                    PlayerUnitState state = game->players[i].batting.presence.state;
 
                     // Normal wound: WOUND_MARKED -> WOUNDED (if at base) or WOUND_PENDING (if running)
                     if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_MARKED) {
@@ -369,7 +369,7 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
     int playerCount = 0;
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const PlayerInfo* player = &game->playerInfo[i];
+        const PlayerInfo* player = &game->players[i];
         if (player->batting.presence.base_id != BASE_NONE && (player->batting.presence.state == PLAYER_STATE_ON_BASE ||
                                                               player->batting.presence.state == PLAYER_STATE_AT_BAT)) {
             sortedPlayers[playerCount++] = i;
@@ -394,7 +394,7 @@ static void update_safety_status(const MatchSession* game, RefereeState* referee
     // Process in field order (rear runners processed last, win safety conflicts)
     for (int idx = 0; idx < playerCount; idx++) {
         int i = sortedPlayers[idx];
-        const PlayerInfo* player = &game->playerInfo[i];
+        const PlayerInfo* player = &game->players[i];
         BaseID physicalBase = player->batting.presence.base_id;
 
         // Player is physically at a base (we already filtered for ON_BASE/AT_BAT)
@@ -499,7 +499,7 @@ static void update_force_outs(
     // Check for Force Outs (§33) and Safety Removal (§36)
     if (ballAtBase != -1) {
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            const PlayerInfo* player = &game->playerInfo[i];
+            const PlayerInfo* player = &game->players[i];
 
             // Only check active players
             if (player->batting.presence.base_id == BASE_NONE) continue;
@@ -561,7 +561,7 @@ static void update_tuplahaava_logic(
     // Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
     // These checks must run every frame, not just when ball is at a base
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const PlayerInfo* player = &game->playerInfo[i];
+        const PlayerInfo* player = &game->players[i];
 
         // Only check active players with Tuplahaava wounds
         if (referee->batting_players[i].status == PLAYER_STATUS_WOUND_PENDING_DOUBLE) {
@@ -679,7 +679,7 @@ static void update_runs(
 
     // 4. Check for Runs (§41/42)
     // We trigger this check if ANY player arrived at a base this frame.
-    if (game->gameEvents.playerArrivedAtBase) {
+    if (game->events.player_arrived_at_base) {
 
         int isBallInAir = (betweenPitchState->catch_has_been_made == 0 && betweenPitchState->has_ball_hit_ground == 0);
         int isCatchPending =
@@ -689,15 +689,15 @@ static void update_runs(
         // Don't mark new pending runs if end-of-inning has been decided
         if ((isBallInAir || isCatchPending) && referee->end_of_inning_state == END_INNING_STATE_NONE) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
-                    int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
+                if (game->players[i].batting.presence.base_id != BASE_NONE) {
+                    int isWounded = (game->players[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
                                     (referee->batting_players[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
                     // Check for potential run
-                    int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
+                    int regularRun = is_regular_run(game->players[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
+                        game->players[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
                         isWounded, referee->batting_players[i].run_of_honor_scored
                     );
 
@@ -717,17 +717,17 @@ static void update_runs(
 
             // Check all players
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-                if (game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
+                if (game->players[i].batting.presence.base_id != BASE_NONE) {
                     // Player is wounded if EITHER physical state says so OR referee has already
                     // decided they're doomed (status may not be reflected physically yet due to
                     // pipeline ordering: referee decides before consolidation enforces)
-                    int isWounded = (game->playerInfo[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
+                    int isWounded = (game->players[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
                                     (referee->batting_players[i].status >= PLAYER_STATUS_WOUND_MARKED);
 
-                    int regularRun = is_regular_run(game->playerInfo[i].batting.presence.base_id, isWounded);
+                    int regularRun = is_regular_run(game->players[i].batting.presence.base_id, isWounded);
 
                     int runOfHonor = is_run_of_honor(
-                        game->playerInfo[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
+                        game->players[i].batting.presence.base_id, referee->batting_players[i].base_at_pitch_start,
                         isWounded, referee->batting_players[i].run_of_honor_scored
                     );
 
@@ -742,7 +742,7 @@ static void update_runs(
                         // Do NOT set has_scored=1, as that removes the player. Run of Honor players stay at 3rd.
 
                         // §42 Overtaking Logic (Check if Kunniajuoksu overtakes someone)
-                        if (game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
+                        if (game->players[i].batting.presence.base_id == BASE_THIRD) {
                             int someone_else_has_third_safety = 0;
                             for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
                                 if (j != i && referee->batting_players[j].current_safety_base == BASE_THIRD) {
@@ -769,7 +769,7 @@ static void update_strikes(HalfInningState* halfInningState, const GameEvents* e
 {
     // 5. Strike Management
     // The referee is the sole authority on counting strikes based on physical events.
-    if (events->ballHitByBat || events->ballMissedByBat) {
+    if (events->ball_hit_by_bat || events->ball_missed_by_bat) {
         halfInningState->strikes += 1;
     }
 }
@@ -780,11 +780,11 @@ static void update_pitch_resolution(
 )
 {
     // Check if a pitch has physically concluded (hit ground) while still logically active
-    if (events->ballHitGround && game->ballInfo.pitch_in_flight) {
+    if (events->ball_hit_ground && game->ball.pitch_in_flight) {
 
         if (betweenPitchState->bat_outcome == BAT_OUTCOME_NONE) {
             // No swing: resolve by ball position (strike zone check)
-            PitchResult result = determine_pitch_result(game->ballInfo.location.x, PLATE_WIDTH);
+            PitchResult result = determine_pitch_result(game->ball.location.x, PLATE_WIDTH);
 
             if (result == PITCH_RESULT_STRIKE) {
                 halfInningState->strikes += 1;
@@ -811,7 +811,7 @@ static void update_free_walk_resolution(
     if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
 
     // 6. Free Walk Resolution
-    if (events->freeWalkAccepted && freeWalk->runner != -1) {
+    if (events->free_walk_accepted && freeWalk->runner != -1) {
         int i = freeWalk->runner;
         BaseID sourceBase = freeWalk->from;
 
@@ -973,16 +973,16 @@ static void update_game_state_flags(const GameEvents* events, BetweenPitchState*
 
     // Persistent Catch State Management
     // When a catch is made, we lock it in.
-    if (events->catchMade) {
+    if (events->catch_made) {
         betweenPitchState->catch_has_been_made = 1;
     }
 
     // Batting Outcome Promotion
-    // Transient events → sticky flag, same pattern as catchMade → catch_has_been_made
-    if (events->ballHitByBat) {
+    // Transient events → sticky flag, same pattern as catch_made → catch_has_been_made
+    if (events->ball_hit_by_bat) {
         betweenPitchState->bat_outcome = BAT_OUTCOME_HIT;
     }
-    if (events->ballMissedByBat) {
+    if (events->ball_missed_by_bat) {
         betweenPitchState->bat_outcome = BAT_OUTCOME_MISSED;
     }
 }
@@ -1207,7 +1207,7 @@ void update_referee(
     *announcement = EVENT_NONE;
 
     // 0. Initialization Events (Milestone 17)
-    update_initialization_events(game, refereeState, &game->gameEvents, betweenPitchState, halfInningState, scoreboard);
+    update_initialization_events(game, refereeState, &game->events, betweenPitchState, halfInningState, scoreboard);
 
     // 1. Where is the ball?
     int ballAtBase = get_ball_at_base_index(game, fieldPositions);
@@ -1219,18 +1219,18 @@ void update_referee(
 
     // 2.5 Foul Play & Wounding Logic (Milestone 17)
     update_foul_play_logic(
-        game, fieldPositions, refereeState, halfInningState, &game->gameEvents, betweenPitchState, announcement
+        game, fieldPositions, refereeState, halfInningState, &game->events, betweenPitchState, announcement
     );
 
     // If foul play reset is triggered, the physical world is out of sync with legal state.
     // We skip gameplay logic this frame, but we still run Flow Control (Gather-Decide-Act)
     if (refereeState->foul_state != FOUL_STATE_RESETTING) {
         // Mark that ball hit ground (after foul play check, so it can detect first bounce)
-        if (game->gameEvents.ballHitGround) {
+        if (game->events.ball_hit_ground) {
             betweenPitchState->has_ball_hit_ground = 1;
         }
 
-        update_wounding_logic(game, refereeState, &game->gameEvents, betweenPitchState, announcement);
+        update_wounding_logic(game, refereeState, &game->events, betweenPitchState, announcement);
 
         // 3. Safety Pipeline
         update_safety_status(game, refereeState);
@@ -1242,14 +1242,14 @@ void update_referee(
         resolve_pending_runs(refereeState, halfInningState, betweenPitchState, scoreboard, announcement);
 
         // 4. Strikes
-        update_strikes(halfInningState, &game->gameEvents);
-        update_pitch_resolution(game, halfInningState, betweenPitchState, &game->gameEvents, announcement);
+        update_strikes(halfInningState, &game->events);
+        update_pitch_resolution(game, halfInningState, betweenPitchState, &game->events, announcement);
         update_free_walk_resolution(
-            refereeState, halfInningState, scoreboard, &game->free_walk, &game->gameEvents, announcement
+            refereeState, halfInningState, scoreboard, &game->free_walk, &game->events, announcement
         );
 
         // 5. Game State Flags
-        update_game_state_flags(&game->gameEvents, betweenPitchState);
+        update_game_state_flags(&game->events, betweenPitchState);
 
         // 6. §12 — is the batting turn spent? Last, so it reads this frame's settled runs and outs.
         update_side_change_readiness(game, refereeState, halfInningState, scoreboard);
@@ -1281,13 +1281,13 @@ void update_referee(
                 PlayerUnitState batterState = PLAYER_STATE_IDLE;
 
                 if (batterIndex != -1) {
-                    batterBaseId = game->playerInfo[batterIndex].batting.presence.base_id;
-                    batterState = game->playerInfo[batterIndex].batting.presence.state;
+                    batterBaseId = game->players[batterIndex].batting.presence.base_id;
+                    batterState = game->players[batterIndex].batting.presence.state;
                 }
 
                 BaseID runnerBaseId = BASE_NONE;
                 if (runnerIndex != -1) {
-                    runnerBaseId = game->playerInfo[runnerIndex].batting.presence.base_id;
+                    runnerBaseId = game->players[runnerIndex].batting.presence.base_id;
                 }
 
                 int batterHasSafetyAtHome = 0;
@@ -1465,11 +1465,11 @@ void referee_finalize(const MatchSession* game, RefereeState* refereeState, Betw
         refereeState->next_pair_state = HR_PAIR_STATE_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+            if (game->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 refereeState->batting_players[i].base_at_pitch_start = BASE_HOME;
                 refereeState->batting_players[i].current_safety_base = BASE_HOME;
-            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
+            } else if (game->players[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->players[i].batting.presence.base_id == BASE_THIRD) {
                 refereeState->batting_players[i].base_at_pitch_start = BASE_THIRD;
                 refereeState->batting_players[i].current_safety_base = BASE_THIRD;
             }
@@ -1482,11 +1482,11 @@ void referee_finalize(const MatchSession* game, RefereeState* refereeState, Betw
         refereeState->period_transition = PERIOD_TRANSITION_NONE;
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+            if (game->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 refereeState->batting_players[i].current_safety_base = BASE_HOME;
-            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].batting.presence.base_id != BASE_NONE) {
-                refereeState->batting_players[i].current_safety_base = game->playerInfo[i].batting.presence.base_id;
+            } else if (game->players[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->players[i].batting.presence.base_id != BASE_NONE) {
+                refereeState->batting_players[i].current_safety_base = game->players[i].batting.presence.base_id;
             }
         }
     }
@@ -1505,22 +1505,22 @@ void initialize_referee(const MatchSession* game, const Scoreboard* scoreboard, 
         referee->homerun_pair_has_pitch = 0;
 
         // Initialize Legal State for Batter/Runner based on Physical World
-        // base_at_pitch_start will be set on pitchReleased
+        // base_at_pitch_start will be set on pitch_released
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
+            if (game->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) {
                 referee->batting_players[i].current_safety_base = BASE_HOME;
-            } else if (game->playerInfo[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
-                       game->playerInfo[i].batting.presence.base_id == BASE_THIRD) {
+            } else if (game->players[i].batting.presence.state == PLAYER_STATE_ON_BASE &&
+                       game->players[i].batting.presence.base_id == BASE_THIRD) {
                 referee->batting_players[i].current_safety_base = BASE_THIRD;
             }
         }
     } else {
         // Normal games: scan for ANY players that are already positioned
         // This handles both: (1) real game initialization, (2) test fixtures
-        // base_at_pitch_start will be set on pitchReleased
+        // base_at_pitch_start will be set on pitch_released
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            PlayerUnitState state = game->playerInfo[i].batting.presence.state;
-            BaseID base = game->playerInfo[i].batting.presence.base_id;
+            PlayerUnitState state = game->players[i].batting.presence.state;
+            BaseID base = game->players[i].batting.presence.base_id;
 
             if (state == PLAYER_STATE_AT_BAT && base == BASE_HOME) {
                 referee->batting_players[i].current_safety_base = BASE_HOME;

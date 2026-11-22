@@ -20,7 +20,7 @@ int test_pitching_strike(void)
     initialize_referee_from_physical_state(ctx);
 
     printf("[TEST] Pitching STRIKE (Target X=0.0)\n");
-    perform_pitch(ctx, 0.0f); // Center of plate (also emits pitchReleased event)
+    perform_pitch(ctx, 0.0f); // Center of plate (also emits pitch_released event)
 
     int strikeDetected = 0;
     for (int i = 0; i < 200; i++) {

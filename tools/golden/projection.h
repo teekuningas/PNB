@@ -120,7 +120,7 @@ static void project_throw(const MatchSession* m)
     }
     // Which base a loose ball was thrown toward. Printed only while the ball IS loose: every reader asks it
     // with nobody holding the ball, so what it says while a hand holds one is a leftover, not play.
-    if (m->ballInfo.holder == -1) put(6, " going=%d", m->ballInfo.thrown_to);
+    if (m->ball.holder == -1) put(6, " going=%d", m->ball.thrown_to);
 }
 
 static void project_widget(const char* name, const InputWidget* w)
@@ -134,7 +134,7 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     const GameRulesState* r = st->rules;
 
     for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const PlayerInfo* p = &m->playerInfo[i];
+        const PlayerInfo* p = &m->players[i];
         put(0, "[%d]", i);
         V(0, p->body.location);
         V(0, p->body.previous_location);
@@ -154,22 +154,22 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
         put(0, "r%d,%d,%d,%d;", path->arrived_at_base, path->waypoint, path->going_forward, 0);
     }
 
-    const BallInfo* b = &m->ballInfo;
+    const BallInfo* b = &m->ball;
     V(1, b->location);
-    V(1, b->lastLocation);
+    V(1, b->previous_location);
     V(1, b->velocity);
-    put(1, "%d,%d,%d,%d,%d,%d,%d", b->visible, b->moving, b->currentFlightHasHitGround, b->onGround,
-        b->hitsGroundToUnWound, b->needsMoveUpdate, b->lastLastLocationUpdate);
+    put(1, "%d,%d,%d,%d,%d,%d,%d", b->visible, b->moving, b->flight_has_hit_ground, b->on_ground,
+        b->hit_ground_to_unwound, b->needs_move_update, b->sync_previous_location);
 
     for (int i = 0; i < 4; i++) put(2, "%d,%d;", m->fielding_posts.baseman[i], m->fielding_posts.cover[i]);
-    for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", m->catchingState.chase_ranking[i]);
+    for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", m->catching.chase_ranking[i]);
     int jokers[JOKER_COUNT];
     batting_team_jokers(&r->scoreboard, jokers);
     for (int i = 0; i < JOKER_COUNT; i++) put(2, "j%d,", jokers[i]);
-    put(2, "has=%d last=%d ctl=%d chg=%d", m->ballInfo.holder, m->ballInfo.released_by,
-        m->catchingState.controlled_fielder, m->catchingState.ranking_cursor);
+    put(2, "has=%d last=%d ctl=%d chg=%d", m->ball.holder, m->ball.released_by,
+        m->catching.controlled_fielder, m->catching.ranking_cursor);
 
-    put(3, "air=%d ", m->ballInfo.pitch_in_flight);
+    put(3, "air=%d ", m->ball.pitch_in_flight);
     for (int i = 0; i < BASE_COUNT; i++) put(3, "w%d,", m->runner_commitments.armed[i]);
     const AtBat* ab = &m->at_bat;
     // The batting cycle, printed as the three flags it used to be: arrived (setup pending), standing ready, open.
@@ -181,16 +181,16 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
     put(4, "gfs=%d,%d;", home_run->hold_ticks, ball_is_home(m, st->fieldPositions));
     put(4, "cam=%d;", home_run->active);
-    V(4, m->catchingState.controlledMoveTarget);
-    put(4, "%d,%d;", m->catchingState.controlledMoveTargetActive, m->catchingState.controlledMoveTargetFor);
-    V(4, m->catchingState.ballTargetPoint);
+    V(4, m->catching.controlled_move_target);
+    put(4, "%d,%d;", m->catching.controlled_move_target_active, m->catching.controlled_move_target_for);
+    V(4, m->catching.ball_target_point);
     put(4, "cca=%d", catching_action_code(m));
 
     project_pitch(m);
     project_throw(m);
 
     const SwingActualization* s = &ab->swing;
-    put(7, "cf=%d pa=%d p=%a va=%d v=%a c=%d;", s->contactFrame, s->powerActive, (double)s->power, s->verticalActive,
+    put(7, "cf=%d pa=%d p=%a va=%d v=%a c=%d;", s->contact_frame, s->power_active, (double)s->power, s->vertical_active,
         (double)s->vertical, s->consumed);
     // The batter's body through a batting cycle. Printed only while a cycle is open: every field is set up
     // when one opens and read only inside it, so between cycles they are leftovers, not play.
@@ -225,5 +225,5 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     put(10, "%d,%d,%d", ai->hasDeclaredMoveTarget, ai->framesSinceMoveDeclared, ai->lastSteeredFielder);
 
     put(11, "ann=%d snd=%d stop=%d rng=%u", (int)st->announcement, st->playSoundEffect, st->stopSoundEffect,
-        m->rngSeed);
+        m->rng_seed);
 }

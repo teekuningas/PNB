@@ -128,7 +128,7 @@ void player_view_init(PlayerView* view, const MatchSession* match)
         bool batting = i < PLAYERS_IN_TEAM + JOKER_COUNT;
         view->players[i] = (PlayerAnimation){.model = batting ? PLAYER_ANIM_STAND_BARE : PLAYER_ANIM_STAND_NO_BALL,
                                              .ticks_per_frame = 1};
-        PlayerTickFacts facts = {.activity = match->playerInfo[i].events, .holds_ball = match->ballInfo.holder == i};
+        PlayerTickFacts facts = {.activity = match->players[i].events, .holds_ball = match->ball.holder == i};
         apply_activity(&view->players[i], &facts, batting);
     }
 }

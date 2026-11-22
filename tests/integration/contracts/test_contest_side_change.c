@@ -44,11 +44,11 @@ int test_contest_side_change_starts_from_the_first_pair(void)
     ASSERT_EQ(PERIOD_TRANSITION_NONE, (int)referee->period_transition, "setup: a side change within the round");
     ASSERT_EQ(0, ctx->state->rules->homerun_contest.pair_index, "the next half-inning starts at pair one");
     ASSERT_EQ(
-        PLAYER_STATE_AT_BAT, (int)ctx->state->match->playerInfo[3].batting.presence.state,
+        PLAYER_STATE_AT_BAT, (int)ctx->state->match->players[3].batting.presence.state,
         "and that pair's batter is at the plate"
     );
-    ASSERT_EQ(BASE_HOME, (int)ctx->state->match->playerInfo[3].batting.presence.base_id, "at home");
-    ASSERT_EQ(BASE_THIRD, (int)ctx->state->match->playerInfo[4].batting.presence.base_id, "and its runner is on third");
+    ASSERT_EQ(BASE_HOME, (int)ctx->state->match->players[3].batting.presence.base_id, "at home");
+    ASSERT_EQ(BASE_THIRD, (int)ctx->state->match->players[4].batting.presence.base_id, "and its runner is on third");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

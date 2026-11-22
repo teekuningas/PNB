@@ -32,15 +32,14 @@ int test_out_of_bounds_reset(void)
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot base_at_pitch_start
+    // 3. Emit pitch_released to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders away
     move_pitcher_away(ctx);
 
     printf(
-        "[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n",
-        ctx->state->match->playerInfo[0].batting.presence.base_id,
+        "[TEST] Runner 0 Start: baseId=%d, currentSafety=%d\n", ctx->state->match->players[0].batting.presence.base_id,
         ctx->state->rules->referee.batting_players[0].current_safety_base
     );
 
@@ -66,7 +65,7 @@ int test_out_of_bounds_reset(void)
     for (int frame = 0; frame < 1500; frame++) {
         simulate_frames(ctx, 1);
 
-        PlayerInfo* runner = &ctx->state->match->playerInfo[0];
+        PlayerInfo* runner = &ctx->state->match->players[0];
 
         // Check if runner reached 2nd base
         if (!reachedSecond && runner->batting.presence.base_id == BASE_SECOND) {

@@ -34,8 +34,8 @@ int test_no_pending_runs_during_end_of_inning(void)
     // Set up a pending run ready to be cashed in
     ctx->state->rules->referee.batting_players[0].has_pending_run = 1;
     ctx->state->rules->referee.batting_players[0].base_at_pitch_start = BASE_FIRST;
-    ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_HOME;
-    ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_ON_BASE;
+    ctx->state->match->players[0].batting.presence.base_id = BASE_HOME;
+    ctx->state->match->players[0].batting.presence.state = PLAYER_STATE_ON_BASE;
 
     // Ball has hit ground (trigger for resolve_pending_runs)
     ctx->state->rules->between_pitch.has_ball_hit_ground = 1;
@@ -61,7 +61,7 @@ int test_no_pending_runs_during_end_of_inning(void)
  *
  * Preconditions:
  *   - end_of_inning_state = DETECTED
- *   - freeWalkAccepted event fires
+ *   - free_walk_accepted event fires
  *   - Free walk from 3rd base (would normally score a run)
  *
  * Expected: Run is NOT awarded. Scoreboard unchanged.
@@ -81,7 +81,7 @@ int test_no_free_walk_runs_during_end_of_inning(void)
     ctx->state->rules->referee.end_of_inning_timer = 50;
 
     // Set up free walk acceptance from 3rd base (would normally score)
-    ctx->state->match->gameEvents.freeWalkAccepted = 1;
+    ctx->state->match->events.free_walk_accepted = 1;
     ctx->state->match->free_walk.runner = 0;
     ctx->state->match->free_walk.from = BASE_THIRD;
 

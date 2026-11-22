@@ -19,7 +19,7 @@ int sim_runners_on_base(const SimGame* g)
     const MatchSession* m = g->state->match;
     int n = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        BaseID b = m->playerInfo[i].batting.presence.base_id;
+        BaseID b = m->players[i].batting.presence.base_id;
         if (b == BASE_FIRST || b == BASE_SECOND || b == BASE_THIRD) n++;
     }
     return n;
@@ -46,8 +46,8 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
     int runs0 = sb->teams[0].runs;
     int runs1 = sb->teams[1].runs;
     int inning = sb->inning;
-    int hasBall = g->state->match->ballInfo.holder;
-    int pitch_in_flight = g->state->match->ballInfo.pitch_in_flight;
+    int hasBall = g->state->match->ball.holder;
+    int pitch_in_flight = g->state->match->ball.pitch_in_flight;
 
     // --- Bounds (be conservative: only flag clearly-illegal values) ---
     // The 3-out rule applies to normal/super innings (period < 4); the homerun
@@ -94,7 +94,7 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         return;
     }
 
-    // Count a pitch on the rising edge into AIRBORNE. (gameEvents.pitchReleased can't be
+    // Count a pitch on the rising edge into AIRBORNE. (events.pitch_released can't be
     // used here: update_game_frame clears frame events before observers run.)
     if (pitch_in_flight && !o->p_pitchInFlight) {
         o->pitches++;
@@ -172,7 +172,7 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->header_written = 1;
     }
 
-    if (o->every > 1 && (g->frame % o->every) != 0 && !g->state->match->gameEvents.pitchReleased) {
+    if (o->every > 1 && (g->frame % o->every) != 0 && !g->state->match->events.pitch_released) {
         return; // sample, but never drop a pitch-release frame
     }
 
@@ -183,11 +183,11 @@ void trace_observer_hook(const SimGame* g, void* ctx)
         o->f, "%ld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", g->frame,
         r->scoreboard.period, r->scoreboard.inning, r->half_inning.outs, r->half_inning.balls, r->half_inning.strikes,
         r->scoreboard.teams[0].runs, r->scoreboard.teams[1].runs, sim_runners_on_base(g),
-        ball_is_home(m, g->state->fieldPositions), m->ballInfo.pitch_in_flight, (int)m->catching_action.kind,
-        m->ballInfo.holder, m->offers.batter_seat, m->offers.free_walk, batter_stands_ready(&m->at_bat),
-        ai->swing.decided, m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
-        m->at_bat.swing.contactFrame, m->at_bat.swing.powerActive, m->at_bat.swing.verticalActive, ai->swing.wrongPitch,
-        ai->swing.style, (int)r->between_pitch.bat_outcome, batting_cycle_is_open(&m->at_bat)
+        ball_is_home(m, g->state->fieldPositions), m->ball.pitch_in_flight, (int)m->catching_action.kind,
+        m->ball.holder, m->offers.batter_seat, m->offers.free_walk, batter_stands_ready(&m->at_bat), ai->swing.decided,
+        m->catching_action.as.pitch.aimed, m->catching_action.timer, ai->batterReadyTimer,
+        m->at_bat.swing.contact_frame, m->at_bat.swing.power_active, m->at_bat.swing.vertical_active,
+        ai->swing.wrongPitch, ai->swing.style, (int)r->between_pitch.bat_outcome, batting_cycle_is_open(&m->at_bat)
     );
 }
 
@@ -229,41 +229,41 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     unsigned long long h = o->hash;
 
     for (int i = 0; i < 2 * PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const PlayerInfo* p = &m->playerInfo[i];
+        const PlayerInfo* p = &m->players[i];
         FOLD(h, p->body.location.x);
         FOLD(h, p->body.location.y);
         FOLD(h, p->body.location.z);
         FOLD_INTEGER(h, p->batting.presence.base_id);
         FOLD_INTEGER(h, p->batting.presence.state);
     }
-    FOLD(h, m->ballInfo.location.x);
-    FOLD(h, m->ballInfo.location.y);
-    FOLD(h, m->ballInfo.location.z);
-    FOLD(h, m->ballInfo.velocity.x);
-    FOLD(h, m->ballInfo.velocity.y);
-    FOLD(h, m->ballInfo.velocity.z);
-    FOLD_INTEGER(h, m->ballInfo.moving);
-    FOLD_INTEGER(h, m->ballInfo.onGround);
-    FOLD_INTEGER(h, m->ballInfo.holder);
-    FOLD_INTEGER(h, m->catchingState.controlled_fielder);
+    FOLD(h, m->ball.location.x);
+    FOLD(h, m->ball.location.y);
+    FOLD(h, m->ball.location.z);
+    FOLD(h, m->ball.velocity.x);
+    FOLD(h, m->ball.velocity.y);
+    FOLD(h, m->ball.velocity.z);
+    FOLD_INTEGER(h, m->ball.moving);
+    FOLD_INTEGER(h, m->ball.on_ground);
+    FOLD_INTEGER(h, m->ball.holder);
+    FOLD_INTEGER(h, m->catching.controlled_fielder);
     // Folded as the code it was folded as when it was an enum whose in-flight value was 2, so that moving
     // it onto the ball and making it a yes/no did not move the recorded baseline.
-    const int pitch_code = m->ballInfo.pitch_in_flight ? 2 : 0;
+    const int pitch_code = m->ball.pitch_in_flight ? 2 : 0;
     FOLD_INTEGER(h, pitch_code);
     FOLD_INTEGER(h, m->catching_action.kind);
     // The swing, as declared. This replaces the meter counter that used to be folded here — and the
     // replacement is a large part of why this slice re-baselines the hash deliberately: the fingerprint
     // now tracks the VALUES a producer declared rather than the level a shared meter had reached.
-    FOLD_INTEGER(h, m->at_bat.swing.contactFrame);
-    FOLD_INTEGER(h, m->at_bat.swing.powerActive);
+    FOLD_INTEGER(h, m->at_bat.swing.contact_frame);
+    FOLD_INTEGER(h, m->at_bat.swing.power_active);
     FOLD(h, m->at_bat.swing.power);
-    FOLD_INTEGER(h, m->at_bat.swing.verticalActive);
+    FOLD_INTEGER(h, m->at_bat.swing.vertical_active);
     FOLD(h, m->at_bat.swing.vertical);
 
     // The engine's random stream is World state: it determines every future engine draw, so two
     // worlds that agree on everything else but not on this do NOT have the same future. The AI
     // controller's seed is deliberately NOT folded in — it lives outside the World by design.
-    FOLD_INTEGER(h, m->rngSeed);
+    FOLD_INTEGER(h, m->rng_seed);
 
     FOLD_INTEGER(h, r->half_inning.outs);
     FOLD_INTEGER(h, r->half_inning.balls);
@@ -318,7 +318,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     const HalfInningState* h = &r->half_inning;
     const Scoreboard* sb = &r->scoreboard;
 
-    int pitch_in_flight = m->ballInfo.pitch_in_flight;
+    int pitch_in_flight = m->ball.pitch_in_flight;
     int batOutcome = (int)r->between_pitch.bat_outcome;
     int foulState = (int)r->referee.foul_state;
 
@@ -336,8 +336,8 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_period = sb->period;
         o->p_throwing = (m->catching_action.kind == CATCHING_ACTION_THROWING);
         for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
-            o->p_baseId[i] = (int)m->playerInfo[i].batting.presence.base_id;
-            o->p_state[i] = (int)m->playerInfo[i].batting.presence.state;
+            o->p_baseId[i] = (int)m->players[i].batting.presence.base_id;
+            o->p_state[i] = (int)m->players[i].batting.presence.state;
         }
         return;
     }
@@ -349,7 +349,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         pbp(o, g, r, buf);
     }
 
-    // Pitch released: rising edge into AIRBORNE (gameEvents.pitchReleased is already cleared).
+    // Pitch released: rising edge into AIRBORNE (events.pitch_released is already cleared).
     if (pitch_in_flight && !o->p_pitchInFlight) {
         o->pitches++;
         pbp(o, g, r, "pitch released");
@@ -374,7 +374,7 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             // (0 = straight to centre, + = one side) and is constant after launch (gravity only
             // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
             if (g->state->aiController->swing.decided && g->state->aiController->swing.style == 1) {
-                float heading = atan2f(m->ballInfo.velocity.x, -m->ballInfo.velocity.z);
+                float heading = atan2f(m->ball.velocity.x, -m->ball.velocity.z);
                 int bin = (int)((heading + 1.0f) * 2.5f); // [-1,1] rad -> [0,5)
                 if (bin < 0) bin = 0;
                 if (bin > 4) bin = 4;
@@ -433,9 +433,9 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     // base_id==THIRD (the source) until they touch home (BASE_HOME_SCORED), so "running from third"
     // = at base 3 in a RUNNING state.
     for (int i = 0; i < BOX_PLAYER_COUNT; i++) {
-        int base = (int)m->playerInfo[i].batting.presence.base_id;
+        int base = (int)m->players[i].batting.presence.base_id;
         int prev = o->p_baseId[i];
-        int state = (int)m->playerInfo[i].batting.presence.state;
+        int state = (int)m->players[i].batting.presence.state;
         int pstate = o->p_state[i];
 
         if (base != prev) {
@@ -520,21 +520,21 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
     const GameRulesState* r = g->state->rules;
 
     int batOutcome = (int)r->between_pitch.bat_outcome;
-    int control = m->catchingState.controlled_fielder;
+    int control = m->catching.controlled_fielder;
 
     if (!o->initialized) {
         o->initialized = 1;
         o->p_batOutcome = batOutcome;
         o->p_controlled = control;
-        if (control != -1) o->p_controlLocation = m->playerInfo[control].body.location;
+        if (control != -1) o->p_controlLocation = m->players[control].body.location;
         return;
     }
 
     // The speed probe. Only frames where the SAME player stayed controlled and was moving count —
     // a control change is a different player's position, not a step this one took.
-    if (control != -1 && control == o->p_controlled && m->playerInfo[control].motion.moving == 1) {
-        float dx = m->playerInfo[control].body.location.x - o->p_controlLocation.x;
-        float dz = m->playerInfo[control].body.location.z - o->p_controlLocation.z;
+    if (control != -1 && control == o->p_controlled && m->players[control].motion.moving == 1) {
+        float dx = m->players[control].body.location.x - o->p_controlLocation.x;
+        float dz = m->players[control].body.location.z - o->p_controlLocation.z;
         double step = sqrt((double)(dx * dx + dz * dz));
         if (step < FIELDING_MAX_HONEST_STEP) {
             o->step_frames++;
@@ -550,14 +550,14 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
 
     if (o->chasing) {
         if (control != -1) {
-            float dx = m->playerInfo[control].body.location.x - m->catchingState.ballTargetPoint.x;
-            float dz = m->playerInfo[control].body.location.z - m->catchingState.ballTargetPoint.z;
+            float dx = m->players[control].body.location.x - m->catching.ball_target_point.x;
+            float dz = m->players[control].body.location.z - m->catching.ball_target_point.z;
             o->chase_samples++;
             o->chase_dist_sum += sqrt((double)(dx * dx + dz * dz));
         }
 
         long elapsed = g->frame - o->chase_start_frame;
-        if (m->ballInfo.holder != -1) {
+        if (m->ball.holder != -1) {
             o->recoveries++;
             o->recovery_frames_sum += elapsed;
             if (elapsed > o->recovery_frames_max) o->recovery_frames_max = elapsed;
@@ -570,7 +570,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx)
 
     o->p_batOutcome = batOutcome;
     o->p_controlled = control;
-    if (control != -1) o->p_controlLocation = m->playerInfo[control].body.location;
+    if (control != -1) o->p_controlLocation = m->players[control].body.location;
 }
 
 void batting_selection_observer_init(BattingSelectionObserver* o)
@@ -603,7 +603,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     if (inning != o->p_inning) o->half_innings++;
 
     // A plate entry is the rising edge of somebody being at the plate. Reading it off the plate
-    // rather than off gameEvents.batterEntered is deliberate: frame events are cleared before
+    // rather than off events.batter_entered is deliberate: frame events are cleared before
     // observers run, and the plate is the durable fact the event was about.
     //
     // Only an entry that answered an open prompt is a SEATING. A foul reset puts the previous
@@ -614,7 +614,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
         if (o->p_waiting == 1) {
             long frames = g->frame - o->prompt_frame;
             o->at_bats++;
-            if (m->playerInfo[batter].batting.joker != JOKER_REGULAR) o->joker_at_bats++;
+            if (m->players[batter].batting.joker != JOKER_REGULAR) o->joker_at_bats++;
             o->answer_frames_sum += frames;
             if (frames > o->answer_frames_max) o->answer_frames_max = frames;
         } else {
@@ -642,7 +642,7 @@ void batting_selection_observer_hook(const SimGame* g, void* ctx)
     // §12's opening designation, sampled the frame it is first made.
     if (designated != -1 && o->p_designated == -1) {
         o->designations++;
-        if (m->playerInfo[designated].batting.joker != JOKER_REGULAR) o->joker_designations++;
+        if (m->players[designated].batting.joker != JOKER_REGULAR) o->joker_designations++;
     }
 
     o->p_waiting = waiting;
@@ -670,7 +670,7 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     // "Every value this swing needs is now in" — the last declaration landing. Read off the declared
     // values now, where it used to be read off a phase a producer drove forward; the QUANTITY the
     // band is about, how many frames of margin the producer left, is unchanged by that.
-    const int swing_done = (m->at_bat.swing.powerActive && m->at_bat.swing.verticalActive);
+    const int swing_done = (m->at_bat.swing.power_active && m->at_bat.swing.vertical_active);
     const int stands_ready = batter_stands_ready(&m->at_bat);
 
     if (!o->initialized) {
@@ -678,8 +678,8 @@ void swing_observer_hook(const SimGame* g, void* ctx)
         o->p_batOutcome = outcome;
         o->p_swing_done = swing_done;
         o->p_batterReady = stands_ready;
-        o->p_ball_vy = m->ballInfo.velocity.y;
-        o->p_ball_x = m->ballInfo.location.x;
+        o->p_ball_vy = m->ball.velocity.y;
+        o->p_ball_x = m->ball.location.x;
         o->p_stopped = m->at_bat.swing_stopped;
         return;
     }
@@ -715,7 +715,7 @@ void swing_observer_hook(const SimGame* g, void* ctx)
             // The elevation the swing actually produced, re-derived through the production law from
             // the values the engine used. Zero is dead centre.
             float v =
-                swing_vertical_angle(m->at_bat.swing.verticalActive ? m->at_bat.swing.vertical : 0.0f, o->p_ball_vy);
+                swing_vertical_angle(m->at_bat.swing.vertical_active ? m->at_bat.swing.vertical : 0.0f, o->p_ball_vy);
             float av = v < 0.0f ? -v : v;
             o->elev_abs_sum += av;
             o->elev_n++;
@@ -735,6 +735,6 @@ void swing_observer_hook(const SimGame* g, void* ctx)
     o->p_batOutcome = outcome;
     o->p_swing_done = swing_done;
     o->p_batterReady = stands_ready;
-    o->p_ball_vy = m->ballInfo.velocity.y;
-    o->p_ball_x = m->ballInfo.location.x;
+    o->p_ball_vy = m->ball.velocity.y;
+    o->p_ball_x = m->ball.location.x;
 }

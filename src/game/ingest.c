@@ -48,13 +48,13 @@ static Permission permit(
     switch (message->kind) {
     case INTENT_CHANGE_PLAYER:
         // Control follows the ball: while somebody holds it, it is theirs.
-        if (match->ballInfo.holder != -1) {
+        if (match->ball.holder != -1) {
             return (Permission){0, RULE_CHANGE_PLAYER_NEEDS_EMPTY_HANDS};
         }
         return (Permission){1, RULE_NONE};
 
     case INTENT_DROP_BALL:
-        if (match->ballInfo.holder == -1) {
+        if (match->ball.holder == -1) {
             return (Permission){0, RULE_DROP_NEEDS_BALL_IN_HAND};
         }
         // A gathered throw owns the ball until the engine releases it. (One declared in this same tick
@@ -74,7 +74,7 @@ static Permission permit(
         // throw's recoil still playing — is a physical claim on the fielder's feet that holds no
         // matter who declared what, so it lives with the walking (fielder_movement.c) and is asked
         // once, there. The point itself is never validated: values are trusted, state is checked.
-        if (match->catchingState.controlled_fielder == -1) {
+        if (match->catching.controlled_fielder == -1) {
             return (Permission){0, RULE_MOVE_NEEDS_A_CONTROLLED_FIELDER};
         }
         return (Permission){1, RULE_NONE};
@@ -107,8 +107,7 @@ static Permission permit(
         const int inTurn = rules->scoreboard.teams[battingTeamIndex]
                                .batter_order[rules->scoreboard.teams[battingTeamIndex].batter_order_index];
         switch (batter_seat_verdict(
-            index, inTurn, rules->half_inning.last_batter.regular_order_spent,
-            (int)match->playerInfo[index].batting.joker
+            index, inTurn, rules->half_inning.last_batter.regular_order_spent, (int)match->players[index].batting.joker
         )) {
         case SEAT_NOT_IN_BATTING_TURN:
             return (Permission){0, RULE_BATTER_NOT_IN_BATTING_TURN};
@@ -248,7 +247,7 @@ static int message_is_malformed(const IntentMessage* message, int is_batting_cha
     // rule can refuse a player, but it cannot refuse a number that is not a player. Flagged here
     // rather than quietly denied in permit() — the two look identical from the outside and mean
     // opposite things — and checked before permission so everything downstream, the gate's own
-    // §27 lookup included, can subscript playerInfo without asking twice.
+    // §27 lookup included, can subscript players without asking twice.
     if (message->kind == INTENT_SELECT_BATTER &&
         (message->as.select_batter.index < 0 || message->as.select_batter.index >= PLAYERS_IN_TEAM + JOKER_COUNT)) {
         return 1;
@@ -322,11 +321,11 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
         // clears it. That is what makes re-delivering it a no-op — the property rollback needs,
         // and the reason a producer never has to learn whether its last message landed.
         match->at_bat.swing.power = message->as.swing_power.power;
-        match->at_bat.swing.powerActive = 1;
+        match->at_bat.swing.power_active = 1;
         break;
     case INTENT_SWING_VERTICAL:
         match->at_bat.swing.vertical = message->as.swing_vertical.vertical;
-        match->at_bat.swing.verticalActive = 1;
+        match->at_bat.swing.vertical_active = 1;
         break;
     case INTENT_SWING_PASS:
         // A per-tick command and not held state: withdrawing is a thing that HAPPENS, and what it
@@ -352,9 +351,9 @@ ingest_message(MatchSession* match, const RefereeState* referee, const IntentMes
         // them it is never consumed: it is held until a producer replaces it. That is what lets
         // the fielder resume by itself after the engine interrupts its walk, and what makes
         // re-delivering the same message (a rollback repeating its last input) a no-op.
-        match->catchingState.controlledMoveTarget = message->as.move_target.point;
-        match->catchingState.controlledMoveTargetActive = 1;
-        match->catchingState.controlledMoveTargetFor = match->catchingState.controlled_fielder;
+        match->catching.controlled_move_target = message->as.move_target.point;
+        match->catching.controlled_move_target_active = 1;
+        match->catching.controlled_move_target_for = match->catching.controlled_fielder;
         break;
     case INTENT_PITCH_POWER:
         out->pitch.powerDeclared = 1;

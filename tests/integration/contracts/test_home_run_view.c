@@ -76,7 +76,7 @@ int test_homeward_run_facts_survive_clear_and_legal_enforcement(void)
     ASSERT_EQ(
         THIRD_CONTROLLER_OFF_BASE, facts->third_base_control, "SIMULATE still sees the third-base controller off base"
     );
-    ASSERT_EQ(0, ctx->state->match->gameEvents.homeward_runs_started, "CLEAR drains the physical event");
+    ASSERT_EQ(0, ctx->state->match->events.homeward_runs_started, "CLEAR drains the physical event");
     ASSERT_EQ(
         -1, get_base_controller(ctx->state->match, &ctx->state->rules->referee, BASE_THIRD),
         "the final snapshot has already lost the third-base controller"

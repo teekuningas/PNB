@@ -36,11 +36,11 @@ int test_run_arrival_before_catch(void)
     startLoc.x = -15.0f; // Left side (3rd base side)
 
     // Override physical state for precise positioning
-    ctx->state->match->playerInfo[runnerIndex].body.location = startLoc;
-    ctx->state->match->playerInfo[runnerIndex].body.previous_location = startLoc;
+    ctx->state->match->players[runnerIndex].body.location = startLoc;
+    ctx->state->match->players[runnerIndex].body.previous_location = startLoc;
 
     // waypoint=1 means "past corner flag, run to homeRunPoint"
-    ctx->state->match->playerInfo[runnerIndex].path.waypoint = 1;
+    ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     printf("Setup: Runner %d placed close to home\n", runnerIndex);
 
@@ -50,8 +50,8 @@ int test_run_arrival_before_catch(void)
     // 3. Position a fielder at first base to catch the ball
     int fielderIdx = 14;
     Vector3D fielderLoc = ctx->state->fieldPositions->firstBase;
-    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].body.home_location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
     // 4. Initialize referee from physical state (referee doesn't mind runner is off-base)
     initialize_referee_from_physical_state(ctx);
@@ -115,20 +115,20 @@ int test_run_arrival_before_catch(void)
         }
 
         // Check Arrival
-        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
+        if (ctx->state->match->players[runnerIndex].batting.presence.base_id == BASE_HOME_SCORED && !arrived) {
             arrived = 1;
             arrivalFrame = i;
             printf(
                 "Frame %d: Runner arrived at HOME (baseId=4, state=%d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.state
+                ctx->state->match->players[runnerIndex].batting.presence.state
             );
         }
 
         // Check Catch
-        if (ctx->state->match->ballInfo.holder != -1 && !ballCaught) {
+        if (ctx->state->match->ball.holder != -1 && !ballCaught) {
             ballCaught = 1;
             catchFrame = i;
-            printf("Frame %d: Ball caught by fielder %d\n", i, ctx->state->match->ballInfo.holder);
+            printf("Frame %d: Ball caught by fielder %d\n", i, ctx->state->match->ball.holder);
         }
 
         // Check wounding evaluation started
@@ -152,27 +152,26 @@ int test_run_arrival_before_catch(void)
             );
             printf(
                 "  Runner state=%d, hasPendingWound=%d, has_pending_run=%d\n",
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.state,
+                ctx->state->match->players[runnerIndex].batting.presence.state,
                 ctx->state->rules->referee.batting_players[runnerIndex].status >= PLAYER_STATUS_WOUND_MARKED,
                 ctx->state->rules->referee.batting_players[runnerIndex].has_pending_run
             );
             printf(
                 "  Runner baseId=%d, base_at_pitch_start=%d, status=%d\n",
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id,
+                ctx->state->match->players[runnerIndex].batting.presence.base_id,
                 ctx->state->rules->referee.batting_players[runnerIndex].base_at_pitch_start,
                 ctx->state->rules->referee.batting_players[runnerIndex].status
             );
         }
 
         // Check Runner wounded
-        if (ctx->state->match->playerInfo[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED &&
-            !runnerWounded) {
+        if (ctx->state->match->players[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED && !runnerWounded) {
             runnerWounded = 1;
             woundFrame = i;
             printf(
                 "Frame %d: Runner WOUNDED (state=%d, baseId=%d)\n", i,
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.state,
-                ctx->state->match->playerInfo[runnerIndex].batting.presence.base_id
+                ctx->state->match->players[runnerIndex].batting.presence.state,
+                ctx->state->match->players[runnerIndex].batting.presence.base_id
             );
         }
 
@@ -249,7 +248,7 @@ int test_run_arrival_before_catch(void)
     printf("Runs after: %d (expected: 0)\n", runsAfter);
 
     // Check final runner state
-    int finalWounded = (ctx->state->match->playerInfo[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED);
+    int finalWounded = (ctx->state->match->players[runnerIndex].batting.presence.state == PLAYER_STATE_WOUNDED);
     printf("Runner wounded (final): %d (expected: 1)\n", finalWounded);
     printf("Wounding evaluation finished: %d\n", woundingFinished);
 

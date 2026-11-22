@@ -18,7 +18,7 @@ void initialize_game_from_menu(StateInfo* stateInfo, const GameSetup* gameSetup,
     // one for the engine (World state, snapshotted) and one for the AI controller (controller-
     // private, never synced). Both stay reproducible from the caller's seed alone, and the controller's whole
     // memory is born here with its stream: it lives exactly as long as the match.
-    stateInfo->match->rngSeed = rng_split(rng_seed);
+    stateInfo->match->rng_seed = rng_split(rng_seed);
     if (stateInfo->aiController != NULL) {
         init_ai_controller(stateInfo->aiController, rng_split(rng_seed));
     }

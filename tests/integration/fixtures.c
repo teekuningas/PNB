@@ -75,9 +75,9 @@ StateInfo* setup_test_state()
         state->match->fielding_posts.baseman[i] = -1;
         state->match->fielding_posts.cover[i] = -1;
     }
-    state->match->ballInfo.holder = -1;
-    state->match->ballInfo.released_by = -1;
-    state->match->catchingState.controlled_fielder = -1;
+    state->match->ball.holder = -1;
+    state->match->ball.released_by = -1;
+    state->match->catching.controlled_fielder = -1;
 
     return state;
 }
@@ -103,7 +103,7 @@ void cleanup_test_state(StateInfo* state)
 
 void set_test_player_state(StateInfo* state, int playerIndex, PlayerUnitState newState)
 {
-    BattingPresence* presence = &state->match->playerInfo[playerIndex].batting.presence;
+    BattingPresence* presence = &state->match->players[playerIndex].batting.presence;
 
     // Simply set the new state enum - no legacy flags needed
     presence->state = newState;

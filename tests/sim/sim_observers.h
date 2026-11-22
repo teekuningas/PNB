@@ -29,7 +29,7 @@ typedef struct {
     int p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_hasBall, p_pitchInFlight;
 
     // observed totals (readable after the run for "game progressed" assertions)
-    long pitches; // pitchReleased events seen
+    long pitches; // pitch_released events seen
     long count_changes; // frames where outs/balls/strikes/runs/inning moved
 } InvariantObserver;
 
@@ -206,7 +206,7 @@ void fielding_observer_hook(const SimGame* g, void* ctx);
  *                  a band rather than an invariant so the number is readable on
  *                  both sides of the fix.
  *
- * Every count is taken on a rising edge (seatings from batterEntered's own effect,
+ * Every count is taken on a rising edge (seatings from batter_entered's own effect,
  * prompts from offers.batter_seat), so a frame held open never double-counts. */
 typedef struct {
     // internal edge-detection state (do not set)

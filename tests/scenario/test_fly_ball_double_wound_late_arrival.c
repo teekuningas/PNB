@@ -24,8 +24,8 @@ int test_fly_ball_double_wound_late_arrival(void)
     Vector3D fielderLoc = ctx->state->fieldPositions->backLeftPoint;
     fielderLoc.x += 5.0f;
     fielderLoc.z += 5.0f;
-    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].body.home_location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);
@@ -43,12 +43,12 @@ int test_fly_ball_double_wound_late_arrival(void)
     for (int frame = 0; frame <= 800; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = ctx->state->match->ballInfo.holder;
-        int stateA = ctx->state->match->playerInfo[0].batting.presence.state;
-        int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
-        int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
+        int hasBall = ctx->state->match->ball.holder;
+        int stateA = ctx->state->match->players[0].batting.presence.state;
+        int stateB = ctx->state->match->players[1].batting.presence.state;
+        int baseA = ctx->state->match->players[0].batting.presence.base_id;
         int timer = ctx->state->rules->referee.wounding_evaluation_timer;
-        int baseB = ctx->state->match->playerInfo[1].batting.presence.base_id;
+        int baseB = ctx->state->match->players[1].batting.presence.base_id;
         int safeA = ctx->state->rules->referee.batting_players[0].current_safety_base;
         int safeB = ctx->state->rules->referee.batting_players[1].current_safety_base;
         int statusA = ctx->state->rules->referee.batting_players[0].status;

@@ -27,7 +27,7 @@ void draw_player_renderer(
     ResourceManager* rm
 )
 {
-    const PlayerInfo* playerInfo = match->playerInfo;
+    const PlayerInfo* playerInfo = match->players;
     int i;
     int j = 0;
     double angle;
@@ -70,7 +70,7 @@ void draw_player_renderer(
         glDisable(GL_BLEND);
         glEnable(GL_LIGHTING);
         // and then there is the marker at the top of player who is controlled
-        if (i == match->catchingState.controlled_fielder) {
+        if (i == match->catching.controlled_fielder) {
             textureSelection(scoreboard, playerInfo[i].side, 0, 1, rm);
             glPushMatrix();
             glTranslatef(

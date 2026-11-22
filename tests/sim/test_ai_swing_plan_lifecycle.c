@@ -47,9 +47,9 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
         o->planMadeSinceRelease = 1;
     }
 
-    if (m->ballInfo.pitch_in_flight && !o->prevPitchInFlight) {
+    if (m->ball.pitch_in_flight && !o->prevPitchInFlight) {
         o->releases++;
-        if (m->at_bat.swing.powerActive) {
+        if (m->at_bat.swing.power_active) {
             o->swungReleases++;
             if (!o->planMadeSinceRelease) o->staleReleases++;
         }
@@ -58,7 +58,7 @@ static void plan_lifecycle_hook(const SimGame* g, void* ctx)
     }
 
     o->prevDecided = plan->decided;
-    o->prevPitchInFlight = m->ballInfo.pitch_in_flight;
+    o->prevPitchInFlight = m->ball.pitch_in_flight;
 }
 
 static int three_half_innings_done(const SimGame* g)

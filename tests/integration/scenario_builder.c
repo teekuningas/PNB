@@ -76,8 +76,8 @@ void initialize_referee_from_physical_state(ScenarioContext* ctx)
 
 void snapshot_pitch_start_state(ScenarioContext* ctx)
 {
-    // Emit the pitchReleased event
-    ctx->state->match->gameEvents.pitchReleased = 1;
+    // Emit the pitch_released event
+    ctx->state->match->events.pitch_released = 1;
 
     // Simulate ONE frame so referee snapshots base_at_pitch_start
     simulate_frames(ctx, 1);
@@ -127,24 +127,24 @@ void place_runner_at_base(ScenarioContext* ctx, int playerIndex, BaseID base, fl
     position.z = startPos.z + (endPos.z - startPos.z) * progressToNext;
 
     // ONLY set PHYSICAL state - let referee handle legal state
-    game->playerInfo[playerIndex].body.location = position;
-    game->playerInfo[playerIndex].body.previous_location = position;
-    game->playerInfo[playerIndex].body.home_location = startPos;
+    game->players[playerIndex].body.location = position;
+    game->players[playerIndex].body.previous_location = position;
+    game->players[playerIndex].body.home_location = startPos;
 
     // Set logical state
     if (progressToNext < 0.1f) {
         // At the base
-        game->playerInfo[playerIndex].batting.presence.base_id = base;
-        game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_ON_BASE;
+        game->players[playerIndex].batting.presence.base_id = base;
+        game->players[playerIndex].batting.presence.state = PLAYER_STATE_ON_BASE;
     } else {
         // Between bases - running
-        game->playerInfo[playerIndex].batting.presence.base_id = base; // Still logically at source base
-        game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_RUNNING;
+        game->players[playerIndex].batting.presence.base_id = base; // Still logically at source base
+        game->players[playerIndex].batting.presence.state = PLAYER_STATE_RUNNING;
     }
 
     // Set runtime state
-    game->playerInfo[playerIndex].path.arrived_at_base = (progressToNext < 0.1f) ? 1 : 0;
-    game->playerInfo[playerIndex].path.going_forward = 1;
+    game->players[playerIndex].path.arrived_at_base = (progressToNext < 0.1f) ? 1 : 0;
+    game->players[playerIndex].path.going_forward = 1;
 
     // DO NOT touch referee state - let referee infer it from events
 }
@@ -162,7 +162,7 @@ void exhaust_jokers(ScenarioContext* ctx)
 
     MatchSession* game = ctx->state->match;
     for (int i = 0; i < JOKER_COUNT; i++) {
-        game->playerInfo[scenario_joker(ctx, i)].batting.joker = JOKER_USED;
+        game->players[scenario_joker(ctx, i)].batting.joker = JOKER_USED;
     }
     ctx->state->rules->half_inning.jokers_left = 0;
 }
@@ -174,7 +174,7 @@ void move_pitcher_away(ScenarioContext* ctx)
     // Move pitcher (Lukkari, player index 12) far away from home plate
     // so they don't catch fly balls or interfere with runners
     Vector3D away = {100.0f, 0.0f, 100.0f};
-    ctx->state->match->playerInfo[12].body.location = away;
+    ctx->state->match->players[12].body.location = away;
 }
 
 void give_ball_to_pitcher(ScenarioContext* ctx)
@@ -185,15 +185,15 @@ void give_ball_to_pitcher(ScenarioContext* ctx)
     int pitcherIdx = 12; // Lukkari stands at home plate in pesäpallo
 
     // Ensure pitcher is at their home location (near home plate)
-    game->playerInfo[pitcherIdx].body.location = game->playerInfo[pitcherIdx].body.home_location;
+    game->players[pitcherIdx].body.location = game->players[pitcherIdx].body.home_location;
 
     // Give them the ball and snap ball position to match
-    game->ballInfo.holder = pitcherIdx;
-    game->ballInfo.location = game->playerInfo[pitcherIdx].body.location;
-    game->ballInfo.lastLocation = game->ballInfo.location;
-    game->ballInfo.moving = 0;
-    game->ballInfo.onGround = 1;
-    game->ballInfo.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
+    game->ball.holder = pitcherIdx;
+    game->ball.location = game->players[pitcherIdx].body.location;
+    game->ball.previous_location = game->ball.location;
+    game->ball.moving = 0;
+    game->ball.on_ground = 1;
+    game->ball.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
 }
 
 void setup_pitcher_ready(ScenarioContext* ctx)
@@ -205,7 +205,7 @@ void setup_pitcher_ready(ScenarioContext* ctx)
 
     give_ball_to_pitcher(ctx); // ball in hand at the plate
     game->fielding_posts.baseman[0] = pitcherIdx; // the pitcher is the home catcher
-    game->playerInfo[pitcherIdx].fielding.near_home = 1; // close enough to pitch
+    game->players[pitcherIdx].fielding.near_home = 1; // close enough to pitch
     game->at_bat.cycle = BATTING_CYCLE_AWAITING_PITCH; // a batter is in, standing ready
 }
 
@@ -220,19 +220,19 @@ void place_ball_over_location(ScenarioContext* ctx, Vector3D targetLocation)
     Vector3D startLocation = targetLocation;
     startLocation.y = 5.0f; // 5 meters above target
 
-    game->ballInfo.location = startLocation;
-    game->ballInfo.lastLocation = startLocation;
-    game->ballInfo.visible = 1;
-    game->ballInfo.moving = 1;
-    game->ballInfo.onGround = 0;
-    game->ballInfo.currentFlightHasHitGround = 0;
+    game->ball.location = startLocation;
+    game->ball.previous_location = startLocation;
+    game->ball.visible = 1;
+    game->ball.moving = 1;
+    game->ball.on_ground = 0;
+    game->ball.flight_has_hit_ground = 0;
 
     // Give it a small downward velocity to start falling
-    game->ballInfo.velocity.x = 0.0f;
-    game->ballInfo.velocity.y = -0.1f; // Small initial downward velocity
-    game->ballInfo.velocity.z = 0.0f;
+    game->ball.velocity.x = 0.0f;
+    game->ball.velocity.y = -0.1f; // Small initial downward velocity
+    game->ball.velocity.z = 0.0f;
 
-    game->ballInfo.holder = -1; // No one has it
+    game->ball.holder = -1; // No one has it
     // DO NOT set batHit here - that should be done via actual bat swing simulation
 }
 
@@ -265,19 +265,19 @@ void setup_batter_at_home(ScenarioContext* ctx, int playerIndex)
     MatchSession* game = ctx->state->match;
 
     // Physical state: at home plate
-    game->playerInfo[playerIndex].body.location = ctx->state->fieldPositions->pitchPlate;
-    game->playerInfo[playerIndex].body.location.z += 1.0f; // Slightly in front
-    game->playerInfo[playerIndex].body.home_location = game->playerInfo[playerIndex].body.location;
+    game->players[playerIndex].body.location = ctx->state->fieldPositions->pitchPlate;
+    game->players[playerIndex].body.location.z += 1.0f; // Slightly in front
+    game->players[playerIndex].body.home_location = game->players[playerIndex].body.location;
 
     // Logical state: ready to bat/run
-    game->playerInfo[playerIndex].batting.presence.base_id = BASE_HOME;
-    game->playerInfo[playerIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
+    game->players[playerIndex].batting.presence.base_id = BASE_HOME;
+    game->players[playerIndex].batting.presence.state = PLAYER_STATE_AT_BAT;
 
     // Referee state is NOT set here - let initialize_referee_from_physical_state() handle it
 
     // Runtime state
-    game->playerInfo[playerIndex].path.going_forward = 0;
-    game->playerInfo[playerIndex].path.waypoint = 0;
+    game->players[playerIndex].path.going_forward = 0;
+    game->players[playerIndex].path.waypoint = 0;
 }
 
 int simulate_frames(ScenarioContext* ctx, int maxFrames)
@@ -330,7 +330,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
         referee_finalize(ctx->state->match, &rules->referee, &rules->between_pitch);
 
         // Clear transient events for next frame (Critical for correct event loop)
-        clear_frame_events(&ctx->state->match->gameEvents);
+        clear_frame_events(&ctx->state->match->events);
 
         ctx->currentFrame++;
     }
@@ -394,18 +394,18 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
     float dy = 0.06f + distance * THROW_DISTANCE_CONSTANT;
 
     // Place ball at starting location
-    game->ballInfo.location = fromLocation;
-    game->ballInfo.lastLocation = fromLocation;
+    game->ball.location = fromLocation;
+    game->ball.previous_location = fromLocation;
 
     // CRITICAL: Set released_by to prevent self-catching
     // (Same as in throwing_system.c line 77)
-    game->ballInfo.released_by = game->ballInfo.holder;
-    game->ballInfo.holder = -1;
+    game->ball.released_by = game->ball.holder;
+    game->ball.holder = -1;
 
     // Use the game's actual sling function (sets velocity + flags)
     // Trigger fielder selection update (same as game does after throws)
     request_chase_replan(game, CHASE_REPLAN_AND_HAND_OVER);
-    generic_sling_ball(&game->ballInfo, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
+    generic_sling_ball(&game->ball, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
 }
 
 void hit_fly_ball_to_location_with_time(
@@ -437,15 +437,15 @@ void hit_fly_ball_to_location_with_time(
     float vz = dz / flightFrames;
 
     // Set starting location
-    game->ballInfo.location = fromLocation;
-    game->ballInfo.lastLocation = fromLocation;
-    game->ballInfo.holder = -1;
+    game->ball.location = fromLocation;
+    game->ball.previous_location = fromLocation;
+    game->ball.holder = -1;
 
     // Launch
-    generic_sling_ball(&game->ballInfo, vx, vy, vz);
+    generic_sling_ball(&game->ball, vx, vy, vz);
 
     // Ensure ball is in "fly ball" state so a catch triggers wounding
-    game->ballInfo.currentFlightHasHitGround = 0;
+    game->ball.flight_has_hit_ground = 0;
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT; // Crucial: signals this ball came from the bat
 }
 
@@ -486,18 +486,18 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     float vz = (field->pitchPlate.z - startPos.z) / frames;
 
     // 3. Set Ball State
-    game->ballInfo.location = startPos;
-    game->ballInfo.lastLocation = startPos;
-    game->ballInfo.holder = -1;
-    generic_sling_ball(&game->ballInfo, vx, vy, vz);
-    game->ballInfo.currentFlightHasHitGround = 0;
+    game->ball.location = startPos;
+    game->ball.previous_location = startPos;
+    game->ball.holder = -1;
+    generic_sling_ball(&game->ball, vx, vy, vz);
+    game->ball.flight_has_hit_ground = 0;
 
     // 4. Set Pitch State
-    game->ballInfo.pitch_in_flight = 1;
+    game->ball.pitch_in_flight = 1;
     game->at_bat.may_leave_home = 1;
-    game->gameEvents.pitchReleased = 1; // Signal event - referee will snapshot state automatically
+    game->events.pitch_released = 1; // Signal event - referee will snapshot state automatically
 
-    // Note: We emit pitchReleased event which triggers the referee to snapshot
+    // Note: We emit pitch_released event which triggers the referee to snapshot
     // base_at_pitch_start and strikes_at_pitch_start automatically in update_initialization_events().
     // No need to manually set referee state here - that would violate Referee Supremacy.
 }

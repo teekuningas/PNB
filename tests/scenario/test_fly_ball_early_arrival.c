@@ -40,7 +40,7 @@ int test_fly_ball_early_arrival(void)
     // 2. Initialize referee from physical state
     initialize_referee_from_physical_state(ctx);
 
-    // 3. Emit pitchReleased to snapshot base_at_pitch_start
+    // 3. Emit pitch_released to snapshot base_at_pitch_start
     snapshot_pitch_start_state(ctx);
 
     // 4. Position fielders
@@ -48,8 +48,8 @@ int test_fly_ball_early_arrival(void)
 
     int fielderIdx = 16; // Center fielder
     Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    match->playerInfo[fielderIdx].body.location = fielderLoc;
-    match->playerInfo[fielderIdx].body.home_location = fielderLoc;
+    match->players[fielderIdx].body.location = fielderLoc;
+    match->players[fielderIdx].body.home_location = fielderLoc;
 
     // 5. Trigger batter to run
     match->at_bat.may_leave_home = 1;
@@ -68,17 +68,16 @@ int test_fly_ball_early_arrival(void)
 
     printf("Initial state:\n");
     printf(
-        "  Batter: baseId=%d, state=%d, position=(%.1f, %.1f)\n", match->playerInfo[0].batting.presence.base_id,
-        match->playerInfo[0].batting.presence.state, match->playerInfo[0].body.location.x,
-        match->playerInfo[0].body.location.z
+        "  Batter: baseId=%d, state=%d, position=(%.1f, %.1f)\n", match->players[0].batting.presence.base_id,
+        match->players[0].batting.presence.state, match->players[0].body.location.x, match->players[0].body.location.z
     );
     printf(
         "  Referee: base_at_pitch_start=%d, current_safety_base=%d\n",
         rules->referee.batting_players[0].base_at_pitch_start, rules->referee.batting_players[0].current_safety_base
     );
     printf(
-        "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ballInfo.moving, match->ballInfo.location.x,
-        match->ballInfo.location.y, match->ballInfo.location.z
+        "  Ball: moving=%d, location=(%.1f, %.1f, %.1f)\n", match->ball.moving, match->ball.location.x,
+        match->ball.location.y, match->ball.location.z
     );
     printf(
         "  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home,
@@ -96,9 +95,9 @@ int test_fly_ball_early_arrival(void)
     for (int frame = 0; frame <= 800; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = match->ballInfo.holder;
-        int batterBase = match->playerInfo[0].batting.presence.base_id;
-        batterState = match->playerInfo[0].batting.presence.state;
+        int hasBall = match->ball.holder;
+        int batterBase = match->players[0].batting.presence.base_id;
+        batterState = match->players[0].batting.presence.state;
         batterSafety = rules->referee.batting_players[0].current_safety_base;
         int batterBaseAtPitchStart = rules->referee.batting_players[0].base_at_pitch_start;
         int batterStatus = rules->referee.batting_players[0].status;
@@ -111,9 +110,7 @@ int test_fly_ball_early_arrival(void)
                 "  Batter: baseId=%d, state=%d, safety=%d, base_at_pitch_start=%d, status=%d\n", batterBase,
                 batterState, batterSafety, batterBaseAtPitchStart, batterStatus
             );
-            printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
-            );
+            printf("  Position: (%.1f, %.1f)\n", match->players[0].body.location.x, match->players[0].body.location.z);
         }
 
         // Track batter arrival at 1st
@@ -124,9 +121,7 @@ int test_fly_ball_early_arrival(void)
                 "  State=%d, safety=%d, base_at_pitch_start=%d, status=%d\n", batterState, batterSafety,
                 batterBaseAtPitchStart, batterStatus
             );
-            printf(
-                "  Position: (%.1f, %.1f)\n", match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
-            );
+            printf("  Position: (%.1f, %.1f)\n", match->players[0].body.location.x, match->players[0].body.location.z);
         }
 
         // Track wounding
@@ -154,7 +149,7 @@ int test_fly_ball_early_arrival(void)
             printf(
                 "  F%3d: Batter[St=%d Bs=%d Sf=%d BsStart=%d Status=%d] Ball[At=%d Player=%d] Pos=(%.1f,%.1f)\n", frame,
                 batterState, batterBase, batterSafety, batterBaseAtPitchStart, batterStatus, ballAtBase, hasBall,
-                match->playerInfo[0].body.location.x, match->playerInfo[0].body.location.z
+                match->players[0].body.location.x, match->players[0].body.location.z
             );
         }
 
@@ -168,7 +163,7 @@ int test_fly_ball_early_arrival(void)
     printf("Batter WOUNDED: %d\n", woundFrame);
     printf("\n=== FINAL STATE ===\n");
     printf(
-        "Batter: state=%d, baseId=%d, safety=%d\n", batterState, match->playerInfo[0].batting.presence.base_id,
+        "Batter: state=%d, baseId=%d, safety=%d\n", batterState, match->players[0].batting.presence.base_id,
         batterSafety
     );
     printf("=====================\n\n");

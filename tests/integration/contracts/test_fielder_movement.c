@@ -41,10 +41,10 @@ static ScenarioContext* fielder_scenario(void)
     move_pitcher_away(ctx);
 
     MatchSession* m = ctx->state->match;
-    m->catchingState.controlled_fielder = FIELDER_INDEX;
-    m->ballInfo.holder = -1;
-    m->playerInfo[FIELDER_INDEX].body.location.x = 0.0f;
-    m->playerInfo[FIELDER_INDEX].body.location.z = 5.0f;
+    m->catching.controlled_fielder = FIELDER_INDEX;
+    m->ball.holder = -1;
+    m->players[FIELDER_INDEX].body.location.x = 0.0f;
+    m->players[FIELDER_INDEX].body.location.z = 5.0f;
 
     initialize_referee_from_physical_state(ctx);
     return ctx;
@@ -73,8 +73,8 @@ static void ingest_and_actualize(ScenarioContext* ctx)
 
 static float speed_xz(const MatchSession* m, int index)
 {
-    float vx = m->playerInfo[index].body.velocity.x;
-    float vz = m->playerInfo[index].body.velocity.z;
+    float vx = m->players[index].body.velocity.x;
+    float vz = m->players[index].body.velocity.z;
     return sqrtf(vx * vx + vz * vz);
 }
 
@@ -116,11 +116,11 @@ int test_move_target_sets_velocity_toward_the_point(void)
     declare_move_target(ctx, 0.0f, 25.0f); // straight ahead in +z
     ingest_and_actualize(ctx);
 
-    ASSERT_EQ(1, m->playerInfo[FIELDER_INDEX].motion.moving, "a declared destination starts the fielder moving");
+    ASSERT_EQ(1, m->players[FIELDER_INDEX].motion.moving, "a declared destination starts the fielder moving");
     ASSERT_FLOAT_EQ(RUN_SPEED, speed_xz(m, FIELDER_INDEX), 1e-5f, "the controlled fielder runs, it does not walk");
-    ASSERT(m->playerInfo[FIELDER_INDEX].body.velocity.z > 0.0f, "and it is heading toward the point, not away");
-    ASSERT_FLOAT_EQ(0.0f, m->playerInfo[FIELDER_INDEX].body.velocity.x, 1e-5f, "no sideways drift on a straight line");
-    ASSERT_EQ(1, m->ballInfo.needsMoveUpdate, "a change of the carrier's velocity has to be offered to a carried ball");
+    ASSERT(m->players[FIELDER_INDEX].body.velocity.z > 0.0f, "and it is heading toward the point, not away");
+    ASSERT_FLOAT_EQ(0.0f, m->players[FIELDER_INDEX].body.velocity.x, 1e-5f, "no sideways drift on a straight line");
+    ASSERT_EQ(1, m->ball.needs_move_update, "a change of the carrier's velocity has to be offered to a carried ball");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -132,12 +132,12 @@ int test_move_target_at_the_fielder_is_a_no_op(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    Vector3D where = m->playerInfo[FIELDER_INDEX].body.location;
+    Vector3D where = m->players[FIELDER_INDEX].body.location;
 
     for (int i = 0; i < 10; i++) {
         declare_move_target(ctx, where.x, where.z);
         ingest_and_actualize(ctx);
-        ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].motion.moving, "a fielder sent where it stands does not set off");
+        ASSERT_EQ(0, m->players[FIELDER_INDEX].motion.moving, "a fielder sent where it stands does not set off");
         ASSERT_FLOAT_EQ(0.0f, speed_xz(m, FIELDER_INDEX), 1e-6f, "and has no velocity to integrate");
     }
 
@@ -155,12 +155,12 @@ int test_move_target_stops_on_arrival(void)
     declare_move_target(ctx, 0.0f, 10.0f); // 5 units away: ~42 frames at RUN_SPEED
     simulate_frames(ctx, 200);
 
-    ASSERT_EQ(0, m->playerInfo[FIELDER_INDEX].motion.moving, "the fielder stops when it gets there");
-    float dz = m->playerInfo[FIELDER_INDEX].body.location.z - 10.0f;
-    float dx = m->playerInfo[FIELDER_INDEX].body.location.x;
+    ASSERT_EQ(0, m->players[FIELDER_INDEX].motion.moving, "the fielder stops when it gets there");
+    float dz = m->players[FIELDER_INDEX].body.location.z - 10.0f;
+    float dx = m->players[FIELDER_INDEX].body.location.x;
     ASSERT(sqrtf(dx * dx + dz * dz) <= TARGET_ACHIEVED_THRESHOLD, "and it stops AT the point it was sent to");
     ASSERT_EQ(
-        1, m->catchingState.controlledMoveTargetActive,
+        1, m->catching.controlled_move_target_active,
         "the destination is held, not consumed — arriving is not the same as being cancelled"
     );
 
@@ -168,16 +168,14 @@ int test_move_target_stops_on_arrival(void)
     // reached. This is what the non-idempotent spike did on every tick — arrive, stop, be sent to
     // the point it was standing on, start — and that oscillation alone was enough to push the
     // home-run contest out of a legal state. The fielder must not twitch, and must not drift.
-    Vector3D settled = m->playerInfo[FIELDER_INDEX].body.location;
+    Vector3D settled = m->players[FIELDER_INDEX].body.location;
     for (int i = 0; i < 200; i++) {
         declare_move_target(ctx, 0.0f, 10.0f);
         simulate_frames(ctx, 1);
-        ASSERT_EQ(
-            0, m->playerInfo[FIELDER_INDEX].motion.moving, "restating a reached destination never restarts a walk"
-        );
+        ASSERT_EQ(0, m->players[FIELDER_INDEX].motion.moving, "restating a reached destination never restarts a walk");
     }
-    float driftX = m->playerInfo[FIELDER_INDEX].body.location.x - settled.x;
-    float driftZ = m->playerInfo[FIELDER_INDEX].body.location.z - settled.z;
+    float driftX = m->players[FIELDER_INDEX].body.location.x - settled.x;
+    float driftZ = m->players[FIELDER_INDEX].body.location.z - settled.z;
     ASSERT_FLOAT_EQ(0.0f, sqrtf(driftX * driftX + driftZ * driftZ), 1e-6f, "and the fielder does not creep");
 
     cleanup_scenario(ctx);
@@ -251,13 +249,13 @@ int test_move_target_refused_without_a_controlled_fielder(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    m->catchingState.controlled_fielder = -1;
+    m->catching.controlled_fielder = -1;
 
     declare_move_target(ctx, 0.0f, 25.0f);
     ingest_and_actualize(ctx);
 
     ASSERT_EQ(
-        0, m->catchingState.controlledMoveTargetActive, "a refused message leaves no destination behind in the engine"
+        0, m->catching.controlled_move_target_active, "a refused message leaves no destination behind in the engine"
     );
     ASSERT_EQ(0, ctx->state->channels.catching.count, "and the gate still drained it — a refusal is not a leak");
 
@@ -284,47 +282,47 @@ int test_reset_recipes_leave_no_fielding_state(void)
 {
     ScenarioContext* ctx = fielder_scenario();
     MatchSession* m = ctx->state->match;
-    FieldingPlayerState* fielding = &m->playerInfo[FIELDER_INDEX].fielding;
+    FieldingPlayerState* fielding = &m->players[FIELDER_INDEX].fielding;
 
     // Everything a play can leave behind on the catching side.
-    m->catchingState.controlledMoveTarget.x = 17.0f;
-    m->catchingState.controlledMoveTarget.z = -23.0f;
-    m->catchingState.controlledMoveTargetActive = 1;
-    m->catchingState.ballTargetPoint.x = -9.0f;
-    m->catchingState.ballTargetPoint.z = 31.0f;
+    m->catching.controlled_move_target.x = 17.0f;
+    m->catching.controlled_move_target.z = -23.0f;
+    m->catching.controlled_move_target_active = 1;
+    m->catching.ball_target_point.x = -9.0f;
+    m->catching.ball_target_point.z = 31.0f;
     fielding->throw_recovery_ticks = 1;
 
     reset_for_foul_play(m, ctx->state->fieldPositions, ctx->state->rules);
 
     ASSERT_EQ(
-        0, m->catchingState.controlledMoveTargetActive,
+        0, m->catching.controlled_move_target_active,
         "a foul reset leaves the controlled fielder with nowhere it was told to go"
     );
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.controlledMoveTarget.x, 1e-6f, "and no coordinates of it either");
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.controlledMoveTarget.z, 1e-6f, "and no coordinates of it either");
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.x, 1e-6f, "nor a prediction about a ball that is gone");
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "nor a prediction about a ball that is gone");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.controlled_move_target.x, 1e-6f, "and no coordinates of it either");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.controlled_move_target.z, 1e-6f, "and no coordinates of it either");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.x, 1e-6f, "nor a prediction about a ball that is gone");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.z, 1e-6f, "nor a prediction about a ball that is gone");
     ASSERT_EQ(0, fielding->throw_recovery_ticks, "a foul cancels physical throw recovery");
 
     // The other two recipes, on the same claim.
-    m->catchingState.controlledMoveTarget.x = 5.0f;
-    m->catchingState.controlledMoveTargetActive = 1;
-    m->catchingState.ballTargetPoint.z = 12.0f;
+    m->catching.controlled_move_target.x = 5.0f;
+    m->catching.controlled_move_target_active = 1;
+    m->catching.ball_target_point.z = 12.0f;
     fielding->throw_recovery_ticks = 1;
     reset_for_new_half_inning(m, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
-    ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a half-inning reset leaves no destination");
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a half-inning reset leaves no prediction");
+    ASSERT_EQ(0, m->catching.controlled_move_target_active, "a half-inning reset leaves no destination");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.z, 1e-6f, "a half-inning reset leaves no prediction");
     ASSERT_EQ(0, fielding->throw_recovery_ticks, "a half-inning cancels physical throw recovery");
 
-    m->catchingState.controlledMoveTarget.x = 5.0f;
-    m->catchingState.controlledMoveTargetActive = 1;
-    m->catchingState.ballTargetPoint.z = 12.0f;
+    m->catching.controlled_move_target.x = 5.0f;
+    m->catching.controlled_move_target_active = 1;
+    m->catching.ball_target_point.z = 12.0f;
     fielding->throw_recovery_ticks = 1;
     reset_for_next_pair(
         m, ctx->state->fieldPositions, &ctx->state->rules->scoreboard, &ctx->state->rules->homerun_contest
     );
-    ASSERT_EQ(0, m->catchingState.controlledMoveTargetActive, "a contest-pair reset leaves no destination");
-    ASSERT_FLOAT_EQ(0.0f, m->catchingState.ballTargetPoint.z, 1e-6f, "a contest-pair reset leaves no prediction");
+    ASSERT_EQ(0, m->catching.controlled_move_target_active, "a contest-pair reset leaves no destination");
+    ASSERT_FLOAT_EQ(0.0f, m->catching.ball_target_point.z, 1e-6f, "a contest-pair reset leaves no prediction");
     ASSERT_EQ(0, fielding->throw_recovery_ticks, "a contest pair cancels physical throw recovery");
 
     cleanup_scenario(ctx);

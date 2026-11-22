@@ -23,7 +23,7 @@ int test_runner_chain_reaction_no_catch(void)
     // Move fielders away so they don't interfere
     move_pitcher_away(ctx);
     Vector3D away = {100.0f, 0.0f, 100.0f};
-    ctx->state->match->playerInfo[16].body.location = away;
+    ctx->state->match->players[16].body.location = away;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);
@@ -39,14 +39,14 @@ int test_runner_chain_reaction_no_catch(void)
 
     int arrivalFrame = -1;
     int leadStartedRunning = -1;
-    Vector3D startB = ctx->state->match->playerInfo[1].body.location;
+    Vector3D startB = ctx->state->match->players[1].body.location;
 
     for (int frame = 0; frame <= 400; frame++) {
         simulate_frames(ctx, 1);
 
-        int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
-        int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
-        Vector3D posB = ctx->state->match->playerInfo[1].body.location;
+        int stateB = ctx->state->match->players[1].batting.presence.state;
+        int baseA = ctx->state->match->players[0].batting.presence.base_id;
+        Vector3D posB = ctx->state->match->players[1].body.location;
 
         if (baseA == BASE_SECOND && arrivalFrame == -1) {
             arrivalFrame = frame;

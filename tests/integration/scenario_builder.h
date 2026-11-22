@@ -35,7 +35,7 @@ ScenarioContext* create_scenario(void);
 void initialize_referee_from_physical_state(ScenarioContext* ctx);
 
 /**
- * @brief Emit pitchReleased event and let referee snapshot state
+ * @brief Emit pitch_released event and let referee snapshot state
  *
  * Should be called AFTER placing players and initializing referee,
  * but BEFORE the actual test actions (hitting ball, running, etc).

@@ -25,19 +25,19 @@ typedef enum {
 typedef struct _BallInfo {
     Vector3D velocity;
     Vector3D location;
-    Vector3D lastLocation;
+    Vector3D previous_location;
     int visible; // is ball visible. ball is not visible when some player has it
     int moving; // is ball moving, only update player orientations and ball's position if ball is moving
-    int currentFlightHasHitGround; // has the ball hit ground
-    int onGround; // is ball rolling on ground
-    int hitsGroundToUnWound; // if ball hits ground after being catched as wounding catch, is set to 1. checked only
-                             // after wounding catch so, it is set to 0 when the catch is made.
-    int needsMoveUpdate; // when ball having players' velocity changes, ball's velocity must change too
-    int lastLastLocationUpdate; // when ball stops, we must sync lastLocation and location.
+    int flight_has_hit_ground; // has the ball hit ground
+    int on_ground; // is ball rolling on ground
+    int hit_ground_to_unwound; // if ball hits ground after being caught as wounding catch, is set to 1. checked only
+                               // after wounding catch so, it is set to 0 when the catch is made.
+    int needs_move_update; // when ball having players' velocity changes, ball's velocity must change too
+    int sync_previous_location; // when ball stops, we must sync previous_location and location.
 
     // What the loose ball's current flight IS, beside what it is doing. Both are set when the ball leaves
     // a hand and gone by the time a hand has it again, which is the same lifetime as
-    // currentFlightHasHitGround's — so they live with it, on the ball, rather than in a grab-bag of
+    // flight_has_hit_ground's — so they live with it, on the ball, rather than in a grab-bag of
     // "action info" beside it.
     //
     // A pitched ball in the air, not yet judged: set at the release, and over when the bat meets it or
@@ -58,14 +58,14 @@ typedef struct _BallInfo {
 // The catching team's own engine state — facts about fielding, owned by the engine, written by
 // ingestion and by the engine's own behaviours, read by both.
 //
-// `controlledMoveTarget` is what an INTENT_MOVE_TARGET becomes: nothing intent-shaped survives the
+// `controlled_move_target` is what an INTENT_MOVE_TARGET becomes: nothing intent-shaped survives the
 // gate, so the message is gone by the end of ingestion and only this destination remains. The
-// `Active` flag is load-bearing rather than tidiness — a zeroed Vector3D is a real point on the
+// `_active` flag is load-bearing rather than tidiness — a zeroed Vector3D is a real point on the
 // field (the middle of the home area), so "nobody has said where yet" has to be representable as
 // something other than the origin, or every reset would quietly send the fielder home.
 typedef struct _CatchingTeamState {
-    Vector3D controlledMoveTarget;
-    int controlledMoveTargetActive; // 0 = no destination declared (fresh match, or after a reset)
+    Vector3D controlled_move_target;
+    int controlled_move_target_active; // 0 = no destination declared (fresh match, or after a reset)
 
     // WHO the destination was given to. A message says "the fielder I am steering goes here", and
     // the gate binds that to whoever is controlled at the top of the tick — the interpretation step
@@ -76,7 +76,7 @@ typedef struct _CatchingTeamState {
     // One frame, and small — but a destination that belongs to nobody in particular is an invalid
     // state left representable, and the producer re-declares on the very next frame anyway, so the
     // cost of being exact is a single frame of standing still.
-    int controlledMoveTargetFor;
+    int controlled_move_target_for;
 
     // Where the engine reckons the ball can next be met: the prediction it ranks fielders against
     // and walks the auto-chasers to, and the point a catching controller aims its fielder at.
@@ -86,7 +86,7 @@ typedef struct _CatchingTeamState {
     // It lived in CameraState until the movement slice, which was simply the wrong drawer — a
     // fielding fact filed with the view vectors. Nothing about the camera ever read it; the comment
     // that said so was false, and the compiler had no way to notice.
-    Vector3D ballTargetPoint;
+    Vector3D ball_target_point;
 
     // CONTROL — which fielder the catching team's controller steers, and the fielders it can hand control
     // to. Control follows the ball: whoever catches it is controlled, a throw lets go of control, and the
@@ -173,15 +173,15 @@ typedef struct _FieldingPosts {
 // start runner routes. Read by the referee and the tick's output assembly, never by controllers.
 typedef struct _GameEvents {
     // Event flags (cleared each frame)
-    int catchMade; // Fly ball was caught
-    int playerArrivedAtBase; // Runner arrived at base
+    int catch_made; // Fly ball was caught
+    int player_arrived_at_base; // Runner arrived at base
 
-    int pitchReleased; // Ball left pitcher's hand
-    int ballHitByBat; // Bat made contact
-    int ballMissedByBat; // Bat swung and missed
-    int ballHitGround; // Ball touched the ground this frame
-    int freeWalkAccepted; // Player accepted free walk
-    int batterEntered; // New: Signal that new batter is ready
+    int pitch_released; // Ball left pitcher's hand
+    int ball_hit_by_bat; // Bat made contact
+    int ball_missed_by_bat; // Bat swung and missed
+    int ball_hit_ground; // Ball touched the ground this frame
+    int free_walk_accepted; // Player accepted free walk
+    int batter_entered; // New: Signal that new batter is ready
     int homeward_runs_started; // Number of third-to-home routes begun this tick, before CLEAR.
 } GameEvents;
 
@@ -251,7 +251,7 @@ typedef struct _CatchingAction {
 // them, in ONE struct because they are one fact: "is a swing being assembled, with what, and how long
 // until it is used". The catching side's CatchingAction is the same shape.
 //
-// The `Active` flags are load-bearing, not tidiness — the same argument `controlledMoveTargetActive`
+// The `_active` flags are load-bearing, not tidiness — the same argument `controlled_move_target_active`
 // carries on the fielding side. Zero is a real power (the softest bunt) and a real vertical (the
 // bottom of the sweep), so "nobody has declared one yet" cannot be represented by the value alone.
 // Reading a value nobody set is not hypothetical here: the count the old code read at contact was
@@ -262,10 +262,10 @@ typedef struct _CatchingAction {
 // tells the engine; and whether one may be declared at all is derived from durable world state at the
 // gate (swing_may_be_declared), so there is no second copy of it to keep true.
 typedef struct _SwingActualization {
-    int contactFrame; // the at-bat's flight_frame on which the bat meets the ball; from the ball, at release
-    int powerActive;
+    int contact_frame; // the at-bat's flight_frame on which the bat meets the ball; from the ball, at release
+    int power_active;
     float power;
-    int verticalActive;
+    int vertical_active;
     float vertical;
     // The bat has already met this ball — set the moment the swing resolves, hit or miss. It is the
     // one fact behind two questions that used to be asked of two different things: the INGEST gate's
@@ -306,7 +306,7 @@ typedef struct _AtBat {
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
 
     // The body through the cycle. Set up when the cycle opens; the engine walks it, never a producer.
-    int flight_frame; // frames of the pitch's flight the batter has watched; contactFrame is counted on it
+    int flight_frame; // frames of the pitch's flight the batter has watched; contact_frame is counted on it
     int flight_clock_running; // the release has been seen and flight_frame is counting
     float arc_angle; // where on the arc round the pitching plate he stands; walked toward the declared aim
     float step_in; // how far he has stepped in toward the plate, a fraction of the batting radius
@@ -340,17 +340,17 @@ typedef struct _RunnerCommitments {
 } RunnerCommitments;
 
 typedef struct _MatchSession {
-    PlayerInfo playerInfo[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
-    CatchingTeamState catchingState;
+    PlayerInfo players[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
+    CatchingTeamState catching;
     FieldingPosts fielding_posts;
-    GameEvents gameEvents; // MILESTONE 16 - Event notifications (Phase 1)
+    GameEvents events; // MILESTONE 16 - Event notifications (Phase 1)
     BattingOffers offers;
     FreeWalkEntitlement free_walk;
     CatchingAction catching_action; // the pitch or throw in progress, if any
     AtBat at_bat;
     ChaseReplan chase_replan; // one tick long: raised by a change of flight, answered by the ranking
     RunnerCommitments runner_commitments;
-    BallInfo ballInfo;
+    BallInfo ball;
 
     // The engine's random stream. This is World state, not an ambient service: under the tick
     // equation World(T) = tick(World(T-1), messages), a snapshot that omits the seed cannot
@@ -360,7 +360,7 @@ typedef struct _MatchSession {
     //
     // Set once at match start (initialize_game_from_menu) and then advanced only by engine draws.
     // No reset recipe clears it: it is one continuous stream for the whole match, not per-play state.
-    unsigned int rngSeed;
+    unsigned int rng_seed;
 } MatchSession;
 
 #endif /* WORLD_H */

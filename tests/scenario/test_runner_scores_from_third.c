@@ -24,13 +24,13 @@ int test_runner_scores_from_third(void)
     snapshot_pitch_start_state(ctx);
 
     // Set runtime state AFTER initialization to avoid it being reset
-    ctx->state->match->playerInfo[0].path.waypoint = 1;
+    ctx->state->match->players[0].path.waypoint = 1;
 
     // Drop ball in the outfield so it hits ground naturally
     Vector3D ballTarget = {30.0f, 0.0f, 40.0f}; // Far in outfield, away from any base
     place_ball_over_location(ctx, ballTarget);
 
-    // checkForRun removed - referee uses playerArrivedAtBase event now
+    // checkForRun removed - referee uses player_arrived_at_base event now
     trigger_player_run_to_next_base(ctx, 0, BASE_THIRD);
 
     simulate_frames(ctx, 450);

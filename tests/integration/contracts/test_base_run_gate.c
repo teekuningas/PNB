@@ -44,14 +44,14 @@ static int one_runner_on_first(ScenarioContext* ctx)
     RefereeState* referee = &ctx->state->rules->referee;
     initialize_referee_from_physical_state(ctx);
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        m->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
-        m->playerInfo[i].batting.presence.base_id = BASE_NONE;
+        m->players[i].batting.presence.state = PLAYER_STATE_IDLE;
+        m->players[i].batting.presence.base_id = BASE_NONE;
         referee->batting_players[i].current_safety_base = BASE_NONE;
     }
     const int runner = 3;
-    m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
-    m->playerInfo[runner].batting.presence.state = PLAYER_STATE_ON_BASE;
-    m->playerInfo[runner].motion.moving = 0;
+    m->players[runner].batting.presence.base_id = BASE_FIRST;
+    m->players[runner].batting.presence.state = PLAYER_STATE_ON_BASE;
+    m->players[runner].motion.moving = 0;
     referee->batting_players[runner].current_safety_base = BASE_FIRST;
     referee->batting_players[runner].base_at_pitch_start = BASE_FIRST;
     referee->batting_players[runner].status = PLAYER_STATUS_ACTIVE;

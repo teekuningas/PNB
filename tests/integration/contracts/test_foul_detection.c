@@ -9,7 +9,7 @@
  * the referee transitions foul_state to FOUL_STATE_DETECTED.
  *
  * This tests the Event → Decision chain:
- *   ballHitGround + batHit + out of bounds → foul_state = DETECTED
+ *   ball_hit_ground + batHit + out of bounds → foul_state = DETECTED
  *
  * Preconditions:
  *   - batHit = 1 (ball came from bat)
@@ -17,7 +17,7 @@
  *   - has_ball_hit_ground = 0 (first bounce)
  *   - foul_state = NONE
  *   - catch_has_been_made = 0
- *   - ballHitGround event fires
+ *   - ball_hit_ground event fires
  *
  * This contract is directly relevant to Phase 3 (batHit migration):
  * the referee's foul detection reads batHit. After Phase 3 consolidates
@@ -35,18 +35,18 @@ int test_foul_detected_on_out_of_bounds_hit(void)
 
     // Place ball clearly behind home line (out of bounds)
     // HOME_LINE_Z = -0.65f, so z = 10.0f is far behind home plate
-    ctx->state->match->ballInfo.location.x = 0.0f;
-    ctx->state->match->ballInfo.location.y = 0.0f;
-    ctx->state->match->ballInfo.location.z = 10.0f;
-    ctx->state->match->ballInfo.onGround = 1;
-    ctx->state->match->ballInfo.moving = 0;
-    ctx->state->match->ballInfo.velocity.x = 0.0f;
-    ctx->state->match->ballInfo.velocity.y = 0.0f;
-    ctx->state->match->ballInfo.velocity.z = 0.0f;
+    ctx->state->match->ball.location.x = 0.0f;
+    ctx->state->match->ball.location.y = 0.0f;
+    ctx->state->match->ball.location.z = 10.0f;
+    ctx->state->match->ball.on_ground = 1;
+    ctx->state->match->ball.moving = 0;
+    ctx->state->match->ball.velocity.x = 0.0f;
+    ctx->state->match->ball.velocity.y = 0.0f;
+    ctx->state->match->ball.velocity.z = 0.0f;
 
     // Set contract preconditions
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
-    ctx->state->match->gameEvents.ballHitGround = 1;
+    ctx->state->match->events.ball_hit_ground = 1;
 
     // Verify preconditions are clean
     ASSERT_EQ(FOUL_STATE_NONE, ctx->state->rules->referee.foul_state, "Precondition: foul_state should be NONE");

@@ -111,7 +111,7 @@ int test_scripted_batter_cursor_offers_only_legal_players(void)
 
         int shown = candidates[cursor];
         ASSERT_NE(
-            (int)JOKER_USED, (int)m->playerInfo[shown].batting.joker, "§7: a spent joker must never be on the cursor"
+            (int)JOKER_USED, (int)m->players[shown].batting.joker, "§7: a spent joker must never be on the cursor"
         );
         scripted_tap(g, HUMAN_PAD, KEY_1);
     }
@@ -162,8 +162,8 @@ int test_scripted_aim_leaves_no_interpolation_gap_when_it_stops(void)
 
     const int b = get_active_batter_index(m);
     ASSERT_NE(-1, b, "setup: somebody must be at the plate");
-    const float dx = m->playerInfo[b].body.location.x - m->playerInfo[b].body.previous_location.x;
-    const float dz = m->playerInfo[b].body.location.z - m->playerInfo[b].body.previous_location.z;
+    const float dx = m->players[b].body.location.x - m->players[b].body.previous_location.x;
+    const float dz = m->players[b].body.location.z - m->players[b].body.previous_location.z;
 
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];

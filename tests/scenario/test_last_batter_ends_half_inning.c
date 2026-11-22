@@ -15,13 +15,13 @@
  * These are scenario-tier tests, so everything below goes through a real mechanism: batters take the
  * bat by declaring the INTENT_SELECT_BATTER a human key or the AI controller declares, and they
  * leave it by running through the engine's own base-running machinery. Nothing sets `batting.presence.state` or
- * emits a `gameEvents` flag by hand — a test that manufactures the state it is checking knights
+ * emits a `events` flag by hand — a test that manufactures the state it is checking knights
  * nothing. The one thing these tests do set directly is referee-owned LEGAL state
  * (a burn), which is this tier's stated power and what `test_burnt_player_bats_again` already does.
  */
 
 // Offer the bat through the real selection path: the intent, the flow gate, and batting_system's
-// seating — which is what actually emits batterEntered.
+// seating — which is what actually emits batter_entered.
 //
 // Then WAIT for the player to physically arrive. `seat_batter` only sets a walk target, so the
 // legal seating is instant while the body is still crossing the field — and a test that starts the
@@ -121,7 +121,7 @@ static void score_a_run_from_third(ScenarioContext* ctx, int runnerIndex)
 {
     place_runner_at_base(ctx, runnerIndex, BASE_THIRD, 0.0f);
     snapshot_pitch_start_state(ctx);
-    ctx->state->match->playerInfo[runnerIndex].path.waypoint = 1;
+    ctx->state->match->players[runnerIndex].path.waypoint = 1;
 
     Vector3D outfield = {30.0f, 0.0f, 40.0f};
     place_ball_over_location(ctx, outfield);

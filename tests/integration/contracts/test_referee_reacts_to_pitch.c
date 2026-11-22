@@ -4,11 +4,11 @@
 #include "all_contracts.h"
 
 /**
- * CONTRACT: When pitchReleased fires, the referee snapshots the current
+ * CONTRACT: When pitch_released fires, the referee snapshots the current
  * state as the legal baseline for this pitch.
  *
  * This tests the Event → Snapshot chain:
- *   pitchReleased (GameEvents) → base_at_pitch_start captured
+ *   pitch_released (GameEvents) → base_at_pitch_start captured
  *                               → strikes_at_pitch_start captured
  *                               → between_pitch cleared
  *                               → pending run flags cleared
@@ -36,8 +36,8 @@ int test_referee_snapshots_on_pitch_released(void)
     ctx->state->rules->between_pitch.pitch_result = PITCH_RESULT_BALL;
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
-    // Fire pitchReleased
-    ctx->state->match->gameEvents.pitchReleased = 1;
+    // Fire pitch_released
+    ctx->state->match->events.pitch_released = 1;
 
     // Run 1 frame — referee should snapshot everything
     simulate_frames(ctx, 1);

@@ -164,10 +164,10 @@ typedef enum {
 // MILESTONE 17: Between-pitch state (reset at pitch start, written by referee)
 // Sticky flags that persist across frames but reset when new pitch starts
 typedef struct _BetweenPitchState {
-    int catch_has_been_made; // Fly ball was caught (promoted from catchMade)
-    int has_ball_hit_ground; // Ball has touched ground (promoted from ballHitGround)
+    int catch_has_been_made; // Fly ball was caught (promoted from catch_made)
+    int has_ball_hit_ground; // Ball has touched ground (promoted from ball_hit_ground)
     PitchResult pitch_result; // Referee's pitch adjudication (NONE until resolved)
-    BatOutcome bat_outcome; // Bat hit or missed (promoted from ballHitByBat/ballMissedByBat)
+    BatOutcome bat_outcome; // Bat hit or missed (promoted from ball_hit_by_bat/ball_missed_by_bat)
 } BetweenPitchState;
 
 typedef struct _HomeRunContestState {

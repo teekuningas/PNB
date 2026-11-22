@@ -30,9 +30,8 @@ static int tick_until_pitch_ready(ScriptedGame* g, int budget)
         scripted_tick(g);
         MatchSession* m = scripted_match(g);
         int p = m->fielding_posts.baseman[0];
-        if (p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
-            batter_stands_ready(&m->at_bat) && m->catching_action.kind == CATCHING_ACTION_NONE &&
-            !m->ballInfo.pitch_in_flight) {
+        if (p != -1 && m->ball.holder == p && m->catching.controlled_fielder == p && batter_stands_ready(&m->at_bat) &&
+            m->catching_action.kind == CATCHING_ACTION_NONE && !m->ball.pitch_in_flight) {
             return 1;
         }
     }
@@ -64,10 +63,10 @@ int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void)
     int pitcher = m->fielding_posts.baseman[0];
     ASSERT_NE(-1, batter, "the selected batter has taken the bat");
     ASSERT_NE(-1, pitcher, "the formation has a pitcher");
-    ASSERT_EQ(pitcher, m->ballInfo.holder, "the pitcher already holds the ball");
-    ASSERT_EQ(pitcher, m->catchingState.controlled_fielder, "the pitching pad controls the pitcher");
-    ASSERT_EQ(1, m->playerInfo[pitcher].fielding.near_home, "only batter readiness prevents pitching");
-    ASSERT_EQ(1, m->playerInfo[batter].motion.moving, "the selected batter is still walking to the plate");
+    ASSERT_EQ(pitcher, m->ball.holder, "the pitcher already holds the ball");
+    ASSERT_EQ(pitcher, m->catching.controlled_fielder, "the pitching pad controls the pitcher");
+    ASSERT_EQ(1, m->players[pitcher].fielding.near_home, "only batter readiness prevents pitching");
+    ASSERT_EQ(1, m->players[batter].motion.moving, "the selected batter is still walking to the plate");
     ASSERT(!batter_stands_ready(&m->at_bat), "selection alone does not make the batter ready");
 
     for (int attempt = 0; attempt < 3; attempt++) {
@@ -123,8 +122,8 @@ int test_scripted_pitch_two_pingpongs_strike(void)
     int released = 0;
     for (int i = 0; i < 200 && !released; i++) {
         scripted_tick(g);
-        if (m->ballInfo.pitch_in_flight) {
-            launch_vx = m->ballInfo.velocity.x;
+        if (m->ball.pitch_in_flight) {
+            launch_vx = m->ball.velocity.x;
             released = 1;
         }
     }
@@ -158,10 +157,10 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void)
     int wentAirborne = 0;
     for (int i = 0; i < 250; i++) {
         scripted_tick(g);
-        if (m->ballInfo.pitch_in_flight) wentAirborne = 1;
+        if (m->ball.pitch_in_flight) wentAirborne = 1;
     }
 
-    int keptBall = (m->ballInfo.holder == pitcher);
+    int keptBall = (m->ball.holder == pitcher);
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
@@ -210,9 +209,9 @@ int test_scripted_human_pitch_ai_hit_flies(void)
     float max_horiz_speed = 0.0f;
     for (int i = 0; i < 400; i++) {
         scripted_tick(g);
-        if (m->ballInfo.pitch_in_flight) airborne = 1;
+        if (m->ball.pitch_in_flight) airborne = 1;
         if (airborne) {
-            float vx = m->ballInfo.velocity.x, vz = m->ballInfo.velocity.z;
+            float vx = m->ball.velocity.x, vz = m->ball.velocity.z;
             float horiz = sqrtf(vx * vx + vz * vz);
             if (horiz > max_horiz_speed) max_horiz_speed = horiz;
         }

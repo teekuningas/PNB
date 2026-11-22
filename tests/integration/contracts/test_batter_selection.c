@@ -41,14 +41,14 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
 
     // Empty the plate but leave home owned: a batter who has set off and not arrived anywhere.
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        m->playerInfo[i].batting.presence.state = PLAYER_STATE_IDLE;
-        m->playerInfo[i].batting.presence.base_id = BASE_NONE;
+        m->players[i].batting.presence.state = PLAYER_STATE_IDLE;
+        m->players[i].batting.presence.base_id = BASE_NONE;
         r->referee.batting_players[i].current_safety_base = BASE_NONE;
     }
     const int battingTeamIndex = get_batting_team_index(sb);
     const int runner = sb->teams[battingTeamIndex].batter_order[0];
-    m->playerInfo[runner].batting.presence.base_id = BASE_HOME;
-    m->playerInfo[runner].batting.presence.state = PLAYER_STATE_RUNNING;
+    m->players[runner].batting.presence.base_id = BASE_HOME;
+    m->players[runner].batting.presence.state = PLAYER_STATE_RUNNING;
     r->referee.batting_players[runner].current_safety_base = BASE_HOME;
     r->referee.batting_players[runner].base_at_pitch_start = BASE_HOME;
     r->referee.batting_players[runner].status = PLAYER_STATUS_ACTIVE;
@@ -58,7 +58,7 @@ static void setup_order_spent_with_jokers(ScenarioContext* ctx, int* inTurnRegul
     his->last_batter.regular_order_spent = 1;
     his->jokers_left = JOKER_COUNT;
     for (int i = 0; i < JOKER_COUNT; i++) {
-        m->playerInfo[scenario_joker(ctx, i)].batting.joker = JOKER_AVAILABLE;
+        m->players[scenario_joker(ctx, i)].batting.joker = JOKER_AVAILABLE;
     }
     m->offers.batter_seat = 1;
 }
@@ -103,7 +103,7 @@ int test_seat_refuses_regular_when_order_spent(void)
     ASSERT(count > 0, "jokers remain, so somebody may still bat");
     for (int i = 0; i < count; i++) {
         ASSERT_NE(
-            (int)JOKER_REGULAR, (int)m->playerInfo[candidates[i]].batting.joker,
+            (int)JOKER_REGULAR, (int)m->players[candidates[i]].batting.joker,
             "with the order spent, no regular may appear in the candidate list"
         );
     }
@@ -135,7 +135,7 @@ int test_seat_refuses_a_spent_joker(void)
     MatchSession* m = ctx->state->match;
 
     const int spentJoker = scenario_joker(ctx, 0);
-    m->playerInfo[spentJoker].batting.joker = JOKER_USED;
+    m->players[spentJoker].batting.joker = JOKER_USED;
     ctx->state->rules->half_inning.jokers_left = JOKER_COUNT - 1;
 
     declare_seat(ctx, spentJoker);
@@ -143,7 +143,7 @@ int test_seat_refuses_a_spent_joker(void)
 
     ASSERT_EQ(-1, get_active_batter_index(m), "a joker may bat once per half-inning, and this one has");
     ASSERT_EQ(
-        (int)JOKER_USED, (int)m->playerInfo[spentJoker].batting.joker, "and his status must be left exactly as it was"
+        (int)JOKER_USED, (int)m->players[spentJoker].batting.joker, "and his status must be left exactly as it was"
     );
 
     cleanup_scenario(ctx);
@@ -213,14 +213,14 @@ int test_seat_waits_for_home_then_seats_the_named_joker(void)
     const int battingTeamIndex = get_batting_team_index(&r->scoreboard);
     const int runner = r->scoreboard.teams[battingTeamIndex].batter_order[0];
     r->referee.batting_players[runner].current_safety_base = BASE_FIRST;
-    m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
+    m->players[runner].batting.presence.base_id = BASE_FIRST;
 
     declare_seat(ctx, joker); // the producer is still saying the same thing
     tick_ingest(ctx);
 
     ASSERT_EQ(joker, get_active_batter_index(m), "the named joker takes the bat on the first frame the seat is free");
     ASSERT_EQ(0, m->offers.batter_seat, "and the decision is closed");
-    ASSERT_EQ((int)JOKER_USED, (int)m->playerInfo[joker].batting.joker, "§7: the joker is spent by taking the bat");
+    ASSERT_EQ((int)JOKER_USED, (int)m->players[joker].batting.joker, "§7: the joker is spent by taking the bat");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -248,7 +248,7 @@ int test_repeated_seat_requests_seat_once(void)
     const int battingTeamIndex = get_batting_team_index(&r->scoreboard);
     const int runner = r->scoreboard.teams[battingTeamIndex].batter_order[0];
     r->referee.batting_players[runner].current_safety_base = BASE_FIRST;
-    m->playerInfo[runner].batting.presence.base_id = BASE_FIRST;
+    m->players[runner].batting.presence.base_id = BASE_FIRST;
 
     const int joker = scenario_joker(ctx, 0);
     declare_seat(ctx, joker);
@@ -258,7 +258,7 @@ int test_repeated_seat_requests_seat_once(void)
 
     int atBat = 0;
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        if (m->playerInfo[i].batting.presence.state == PLAYER_STATE_AT_BAT) atBat++;
+        if (m->players[i].batting.presence.state == PLAYER_STATE_AT_BAT) atBat++;
     }
     ASSERT_EQ(1, atBat, "three copies of one request must seat exactly one batter");
     ASSERT_EQ(joker, get_active_batter_index(m), "and it must be the one named");
@@ -457,7 +457,7 @@ int test_silence_leaves_the_aim_alone(void)
  * the same as a kindless message or one on the other team's channel.
  *
  * It is checked in the drain rather than in permit() for a second reason as well: everything
- * downstream, the gate's own §27 lookup included, subscripts playerInfo with this index.
+ * downstream, the gate's own §27 lookup included, subscripts players with this index.
  */
 int test_seat_naming_a_non_player_is_malformed(void)
 {

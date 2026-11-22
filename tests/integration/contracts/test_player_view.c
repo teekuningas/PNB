@@ -58,7 +58,7 @@ int test_player_activity_facts_survive_same_tick_arrival(void)
     MatchSession* match = ctx->state->match;
     PlayerView view;
     player_view_init(&view, match);
-    move_to_target(match->playerInfo, 1, &match->playerInfo[1].body.location);
+    move_to_target(match->players, 1, &match->players[1].body.location);
     ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "the real pipeline runs");
     const TickFacts* facts = &ctx->state->tick_facts;
     ASSERT_EQ(PLAYER_ACTIVITY_WALKING_TO_TARGET, facts->simulated_players[1].activity.started, "the walk began");
@@ -66,8 +66,8 @@ int test_player_activity_facts_survive_same_tick_arrival(void)
     ASSERT_EQ(
         PLAYER_ACTIVITY_NONE, facts->enforced_players[1].activity.latest, "SIMULATE facts cannot leak into ENFORCE"
     );
-    ASSERT_EQ(PLAYER_ACTIVITY_NONE, match->playerInfo[1].events.latest, "CLEAR leaves no activity for controllers");
-    ASSERT_EQ(PLAYER_ACTIVITY_NONE, match->playerInfo[1].events.started, "CLEAR also drains the fresh-start fact");
+    ASSERT_EQ(PLAYER_ACTIVITY_NONE, match->players[1].events.latest, "CLEAR leaves no activity for controllers");
+    ASSERT_EQ(PLAYER_ACTIVITY_NONE, match->players[1].events.started, "CLEAR also drains the fresh-start fact");
     player_view_after_tick(&view, facts);
     ASSERT_EQ(PLAYER_ANIM_STAND_BARE, view.players[1].model, "the transient arrival selects the standing body");
     ASSERT_EQ(16, view.players[1].frame_count, "the transient fresh start still sets the original clip size");

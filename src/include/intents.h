@@ -85,7 +85,7 @@ typedef struct _FreeWalkIntent {
 // the engine's own timing invisible to the producer — the seat is not free until the previous batter
 // has lost home, and nobody has to know that to be answered correctly.
 typedef struct _SelectBatterIntent {
-    int index; // a playerInfo slot in the batting side's 0..PLAYERS_IN_TEAM+JOKER_COUNT range
+    int index; // a players slot in the batting side's 0..PLAYERS_IN_TEAM+JOKER_COUNT range
 } SelectBatterIntent;
 
 // Where on the arc around the pitching plate the batter aims from. The batting physics doubles this

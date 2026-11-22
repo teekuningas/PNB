@@ -144,9 +144,9 @@ void action_invocations(
     // hold or release never doubles as a drop/pitch on the same key edge.
     int throw_engaged = checkThrowGesture(match, clientInput, key_states, catchingControl, &channels->catching);
     if (!throw_engaged) {
-        if (match->ballInfo.holder == -1) {
+        if (match->ball.holder == -1) {
             checkChangePlayer(match, key_states, KEY_2, catchingControl, &channels->catching);
-        } else if (match->catchingState.controlled_fielder != match->fielding_posts.baseman[0]) {
+        } else if (match->catching.controlled_fielder != match->fielding_posts.baseman[0]) {
             checkDrop(match, key_states, KEY_2, catchingControl, &channels->catching);
         } else {
             checkPitch(
@@ -238,7 +238,7 @@ static int checkThrowGesture(
 
     // Not started yet — begin a throw only if the action key is held together with exactly one direction,
     // a ball-holder is controlled, and no catching action is already in progress.
-    if (catching == CATCHING_ACTION_NONE && key_states->down[control][KEY_2] && match->ballInfo.holder != -1) {
+    if (catching == CATCHING_ACTION_NONE && key_states->down[control][KEY_2] && match->ball.holder != -1) {
         int arrowsHeld = 0;
         BaseID heldBase = BASE_NONE;
         for (BaseID b = 0; b < BASE_COUNT; b++) {
@@ -314,7 +314,7 @@ static void checkMove(
 
     w->framesSinceDeclared++;
 
-    int index = match->catchingState.controlled_fielder;
+    int index = match->catching.controlled_fielder;
     if (index == -1) {
         // Nobody to steer: forget what was said, so whoever is handed control next is told afresh.
         w->declared = 0;
@@ -323,7 +323,7 @@ static void checkMove(
         return;
     }
 
-    Vector3D from = match->playerInfo[index].body.location;
+    Vector3D from = match->players[index].body.location;
     Vector3D point;
     if (held == 0) {
         point = from;
@@ -682,7 +682,7 @@ static void checkSwing(
     if (control == CONTROL_AI) return; // the AI decides two numbers and says them; it has no gesture
 
     SwingWidget* w = &clientInput->swingWidget;
-    const int airborne = (match->ballInfo.pitch_in_flight);
+    const int airborne = (match->ball.pitch_in_flight);
 
     // The gesture is over when there is no swing to declare into. Asked of the physical world, never
     // of what the engine has stored from us — so a swing cut short by a batter forced to run, a foul
@@ -700,8 +700,7 @@ static void checkSwing(
     // Solve the flight ONCE, on the frame the ball leaves the hand, from the launch velocity — see
     // SwingWidget. Recomputing it later reads a vertical speed that has been decaying since release.
     if (airborne && w->flightFrames < 0) {
-        w->flightFrames =
-            calculate_pitch_frame_time(match->ballInfo.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
+        w->flightFrames = calculate_pitch_frame_time(match->ball.velocity.y, GRAVITY, 0.0f, SWING_CONTACT_TWEAK_FRAMES);
     }
 
     // Move the cursor before anything reads it, and BEFORE the arm chain below — the same order
@@ -795,7 +794,7 @@ static void checkBattingTeamRun(
                     clientInput->run_press_window[base] = 0;
                 } else {
                     // First press → arm (settled) or come back (off the base); open the double-press window.
-                    PlayerUnitState state = match->playerInfo[index].batting.presence.state;
+                    PlayerUnitState state = match->players[index].batting.presence.state;
                     if (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT) {
                         command = RUN_FORWARD;
                     } else {

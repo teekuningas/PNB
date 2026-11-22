@@ -28,7 +28,7 @@
 static int free_fielder(const MatchSession* m, int not_this)
 {
     for (int i = FIRST_FIELDER; i < LAST_FIELDER; i++) {
-        int posted = (i == m->catchingState.controlled_fielder) || i == not_this;
+        int posted = (i == m->catching.controlled_fielder) || i == not_this;
         for (int b = 0; b < BASE_COUNT; b++) {
             if (m->fielding_posts.baseman[b] == i || m->fielding_posts.cover[b] == i) posted = 1;
         }
@@ -42,15 +42,15 @@ static int free_fielder(const MatchSession* m, int not_this)
 static Vector3D hang_ball_in_open_field(MatchSession* m)
 {
     Vector3D at = {.x = 0.0f, .y = 0.0f, .z = -60.0f};
-    m->ballInfo.location = at;
-    m->ballInfo.lastLocation = at;
-    m->ballInfo.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
-    m->ballInfo.moving = 0;
-    m->ballInfo.onGround = 0;
-    m->ballInfo.currentFlightHasHitGround = 0;
-    m->ballInfo.holder = -1;
-    m->ballInfo.released_by = -1;
-    m->ballInfo.pitch_in_flight = 0;
+    m->ball.location = at;
+    m->ball.previous_location = at;
+    m->ball.velocity = (Vector3D){0.0f, 0.0f, 0.0f};
+    m->ball.moving = 0;
+    m->ball.on_ground = 0;
+    m->ball.flight_has_hit_ground = 0;
+    m->ball.holder = -1;
+    m->ball.released_by = -1;
+    m->ball.pitch_in_flight = 0;
     m->chase_replan = CHASE_REPLAN_NONE;
     return at;
 }
@@ -59,7 +59,7 @@ static Vector3D hang_ball_in_open_field(MatchSession* m)
 // enough ahead that he cannot arrive this tick.
 static void walk_fielder(MatchSession* m, int i, Vector3D ball, float dz, float sign)
 {
-    PlayerInfo* p = &m->playerInfo[i];
+    PlayerInfo* p = &m->players[i];
     PlayerBody* body = &p->body;
     PlayerMotion* motion = &p->motion;
     body->location = (Vector3D){ball.x, 0.0f, ball.z + dz};
@@ -75,7 +75,7 @@ static void walk_fielder(MatchSession* m, int i, Vector3D ball, float dz, float 
 
 static float xz_distance(const MatchSession* m, int i, Vector3D ball)
 {
-    float dx = m->playerInfo[i].body.location.x - ball.x, dz = m->playerInfo[i].body.location.z - ball.z;
+    float dx = m->players[i].body.location.x - ball.x, dz = m->players[i].body.location.z - ball.z;
     return sqrtf(dx * dx + dz * dz);
 }
 
@@ -106,12 +106,12 @@ int test_a_fielder_walking_out_of_reach_still_catches_this_tick(void)
 
     simulate_one_tick(ctx);
 
-    ASSERT_EQ(f, m->ballInfo.holder, "he was in reach where the previous tick left him, so he caught it");
+    ASSERT_EQ(f, m->ball.holder, "he was in reach where the previous tick left him, so he caught it");
     ASSERT_TRUE(
         fabsf(xz_distance(m, f, ball) - (REACH_EDGE - 0.05f)) < 1e-4f,
         "and the catch stopped him there, before his step could take him out of reach"
     );
-    ASSERT_EQ(1, m->gameEvents.catchMade, "and the catch is this frame's event");
+    ASSERT_EQ(1, m->events.catch_made, "and the catch is this frame's event");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;
@@ -131,13 +131,13 @@ int test_a_fielder_walking_into_reach_catches_on_the_next_tick(void)
     simulate_one_tick(ctx);
 
     ASSERT_TRUE(xz_distance(m, g, ball) < REACH_EDGE, "precondition held: he is in reach after his step");
-    ASSERT_EQ(-1, m->ballInfo.holder, "but the catch was asked before the step, where he was out of reach");
-    ASSERT_EQ(0, m->gameEvents.catchMade, "so no catch this frame");
+    ASSERT_EQ(-1, m->ball.holder, "but the catch was asked before the step, where he was out of reach");
+    ASSERT_EQ(0, m->events.catch_made, "so no catch this frame");
 
-    m->gameEvents.catchMade = 0; // the frame's end, as CLEAR would leave it
+    m->events.catch_made = 0; // the frame's end, as CLEAR would leave it
     simulate_one_tick(ctx);
 
-    ASSERT_EQ(g, m->ballInfo.holder, "the next tick asks where this one left him: he catches it");
+    ASSERT_EQ(g, m->ball.holder, "the next tick asks where this one left him: he catches it");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

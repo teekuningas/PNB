@@ -24,8 +24,8 @@ int test_fly_ball_double_wound(void)
     Vector3D fielderLoc = ctx->state->fieldPositions->backLeftPoint;
     fielderLoc.x += 5.0f;
     fielderLoc.z += 5.0f;
-    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
-    ctx->state->match->playerInfo[fielderIdx].body.home_location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.home_location = fielderLoc;
 
     // Initialize referee state from physical setup
     initialize_referee_from_physical_state(ctx);
@@ -38,22 +38,22 @@ int test_fly_ball_double_wound(void)
 
     int catchFrame = -1, arrivalFrame = -1, woundFrame = -1, woundFrameB = -1;
     int leadRanAway = 0;
-    Vector3D startB = ctx->state->match->playerInfo[1].body.location;
+    Vector3D startB = ctx->state->match->players[1].body.location;
 
     for (int frame = 0; frame <= 400; frame++) {
         simulate_frames(ctx, 1);
 
-        int hasBall = ctx->state->match->ballInfo.holder;
-        int stateA = ctx->state->match->playerInfo[0].batting.presence.state;
-        int stateB = ctx->state->match->playerInfo[1].batting.presence.state;
-        int baseA = ctx->state->match->playerInfo[0].batting.presence.base_id;
-        int baseB = ctx->state->match->playerInfo[1].batting.presence.base_id;
+        int hasBall = ctx->state->match->ball.holder;
+        int stateA = ctx->state->match->players[0].batting.presence.state;
+        int stateB = ctx->state->match->players[1].batting.presence.state;
+        int baseA = ctx->state->match->players[0].batting.presence.base_id;
+        int baseB = ctx->state->match->players[1].batting.presence.base_id;
         int safeA = ctx->state->rules->referee.batting_players[0].current_safety_base;
         int safeB = ctx->state->rules->referee.batting_players[1].current_safety_base;
-        Vector3D posB = ctx->state->match->playerInfo[1].body.location;
+        Vector3D posB = ctx->state->match->players[1].body.location;
         int statusA = ctx->state->rules->referee.batting_players[0].status;
         int statusB = ctx->state->rules->referee.batting_players[1].status;
-        int goingFwdA = ctx->state->match->playerInfo[0].path.going_forward;
+        int goingFwdA = ctx->state->match->players[0].path.going_forward;
         int timer = ctx->state->rules->referee.wounding_evaluation_timer;
 
         // Verbose logging for transition frames

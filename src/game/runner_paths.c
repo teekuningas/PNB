@@ -67,12 +67,12 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
             // if we are running home, there is the "flag" point, and we must change the direction there.
             // how it matters here is that if we have already passed the flag, we must run towards homebase,
             // if not, we must run towards flag.
-            if (match->playerInfo[index].path.waypoint == 0) {
+            if (match->players[index].path.waypoint == 0) {
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
 
-                match->gameEvents.homeward_runs_started++;
-            } else if (match->playerInfo[index].path.waypoint == 1) {
+                match->events.homeward_runs_started++;
+            } else if (match->players[index].path.waypoint == 1) {
                 target.x = field_positions->homeRunPoint.x;
                 target.z = field_positions->homeRunPoint.z;
             } else {
@@ -86,15 +86,15 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         match->runner_commitments.armed[base] = 0;
         // set state to running, BUT only if we aren't already WOUNDED, OUT, or ADVANCING_FREELY
         // (which are terminal/override states that must not be downgraded)
-        if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
-            match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT &&
-            match->playerInfo[index].batting.presence.state != PLAYER_STATE_ADVANCING_FREELY) {
-            match->playerInfo[index].batting.presence.state = PLAYER_STATE_RUNNING;
+        if (match->players[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
+            match->players[index].batting.presence.state != PLAYER_STATE_OUT &&
+            match->players[index].batting.presence.state != PLAYER_STATE_ADVANCING_FREELY) {
+            match->players[index].batting.presence.state = PLAYER_STATE_RUNNING;
         }
         // and we are moving forward
-        match->playerInfo[index].path.going_forward = 1;
+        match->players[index].path.going_forward = 1;
         // and run_to_target can continue the job with index and the already set target.
-        run_to_target(match->playerInfo, index, &target);
+        run_to_target(match->players, index, &target);
     }
 }
 
@@ -117,10 +117,10 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
             target.z = field_positions->secondBaseRun.z;
         } else if (base == BASE_THIRD) {
             // here we again select the target by our current location relative to flag
-            if (match->playerInfo[index].path.waypoint == 0) {
+            if (match->players[index].path.waypoint == 0) {
                 target.x = field_positions->thirdBaseRun.x;
                 target.z = field_positions->thirdBaseRun.z;
-            } else if (match->playerInfo[index].path.waypoint == 1) {
+            } else if (match->players[index].path.waypoint == 1) {
                 target.x = field_positions->runLeftPoint.x;
                 target.z = field_positions->runLeftPoint.z;
             } else {
@@ -134,15 +134,15 @@ void run_to_previous_base(MatchSession* match, const FieldPositions* field_posit
         // and set it so that next player has to have a will of his own to run
         match->runner_commitments.armed[base] = 0;
         // we arent going forward
-        match->playerInfo[index].path.going_forward = 0;
+        match->players[index].path.going_forward = 0;
         // set state to running, BUT only if we aren't already WOUNDED or OUT
-        if (match->playerInfo[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
-            match->playerInfo[index].batting.presence.state != PLAYER_STATE_OUT) {
-            match->playerInfo[index].batting.presence.state = PLAYER_STATE_RUNNING;
+        if (match->players[index].batting.presence.state != PLAYER_STATE_WOUNDED &&
+            match->players[index].batting.presence.state != PLAYER_STATE_OUT) {
+            match->players[index].batting.presence.state = PLAYER_STATE_RUNNING;
         }
         // and run_to_target can handle the rest
 
-        run_to_target(match->playerInfo, index, &target);
+        run_to_target(match->players, index, &target);
     }
 }
 

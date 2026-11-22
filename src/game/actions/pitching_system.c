@@ -29,10 +29,10 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (batter_has_become_runner_permanently(correct_pitches_received)) {
         return (Permission){0, RULE_PITCH_BATTER_IS_A_RUNNER};
     }
-    if (pitcher == -1 || match->ballInfo.holder != pitcher) {
+    if (pitcher == -1 || match->ball.holder != pitcher) {
         return (Permission){0, RULE_PITCH_NEEDS_BALL_AT_HOME};
     }
-    if (match->ballInfo.pitch_in_flight) {
+    if (match->ball.pitch_in_flight) {
         return (Permission){0, RULE_PITCH_PREVIOUS_UNRESOLVED};
     }
     if (!batter_stands_ready(&match->at_bat)) {
@@ -41,7 +41,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     if (match->offers.free_walk != 0) {
         return (Permission){0, RULE_PITCH_NOT_DURING_FREE_WALK_OFFER};
     }
-    if (match->playerInfo[pitcher].fielding.near_home != 1) {
+    if (match->players[pitcher].fielding.near_home != 1) {
         return (Permission){0, RULE_PITCHER_OFF_THE_PLATE};
     }
     return (Permission){1, RULE_NONE};
@@ -49,7 +49,7 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
 
 int pitch_is_being_delivered(const MatchSession* match)
 {
-    return match->catching_action.kind == CATCHING_ACTION_PITCHING || match->ballInfo.pitch_in_flight;
+    return match->catching_action.kind == CATCHING_ACTION_PITCHING || match->ball.pitch_in_flight;
 }
 
 // Begin the engine-owned windup for a toss of `power`: set up the pitcher and the ball, start the
@@ -57,21 +57,21 @@ int pitch_is_being_delivered(const MatchSession* match)
 // renderer, but nothing here (or later) reads animation to drive timing.
 static void begin_windup(MatchSession* match, float power)
 {
-    int pitcher = match->ballInfo.holder;
+    int pitcher = match->ball.holder;
 
-    if (match->playerInfo[pitcher].motion.moving == 1) {
-        stop_movement(match->playerInfo, pitcher);
+    if (match->players[pitcher].motion.moving == 1) {
+        stop_movement(match->players, pitcher);
     }
-    record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_BEGUN, true);
+    record_player_activity(&match->players[pitcher].events, PLAYER_ACTIVITY_PITCH_BEGUN, true);
     // force the pitcher exactly onto the pitching spot (a windup may begin from slightly off)
-    match->playerInfo[pitcher].body.location.x = match->playerInfo[pitcher].body.home_location.x;
-    match->playerInfo[pitcher].body.location.z = match->playerInfo[pitcher].body.home_location.z;
-    match->playerInfo[pitcher].motion.sync_previous_location = 1;
+    match->players[pitcher].body.location.x = match->players[pitcher].body.home_location.x;
+    match->players[pitcher].body.location.z = match->players[pitcher].body.home_location.z;
+    match->players[pitcher].motion.sync_previous_location = 1;
     // face the plate
-    match->playerInfo[pitcher].body.orientation.x = -1.0f;
-    match->playerInfo[pitcher].body.orientation.z = 0.0f;
+    match->players[pitcher].body.orientation.x = -1.0f;
+    match->players[pitcher].body.orientation.z = 0.0f;
     // the ball rises from the centre of the plate
-    vec3_set_xz(&(match->ballInfo.location), 0.0f, 0.0f);
+    vec3_set_xz(&(match->ball.location), 0.0f, 0.0f);
 
     match->catching_action =
         (CatchingAction){.kind = CATCHING_ACTION_PITCHING, .timer = 0, .as.pitch = {.power = power}};
@@ -81,30 +81,30 @@ static void begin_windup(MatchSession* match, float power)
 // the ball leaves with velocity pitch_velocity_from_aim(power, direction).
 static void release_pitch(MatchSession* match, const RefereeState* referee, const FieldPositions* fieldPositions)
 {
-    int pitcher = match->ballInfo.holder;
+    int pitcher = match->ball.holder;
     const PitchWindup* pitch = &match->catching_action.as.pitch;
     Vector3D v = pitch_velocity_from_aim(pitch->power, pitch->direction);
     Vector3D target;
     int i;
 
-    match->ballInfo.visible = 1;
-    match->ballInfo.moving = 1;
-    match->ballInfo.currentFlightHasHitGround = 0;
-    match->ballInfo.onGround = 0;
-    match->ballInfo.hitsGroundToUnWound = 0;
-    vec3_set_xyz(&(match->ballInfo.velocity), v.x, v.y, v.z);
+    match->ball.visible = 1;
+    match->ball.moving = 1;
+    match->ball.flight_has_hit_ground = 0;
+    match->ball.on_ground = 0;
+    match->ball.hit_ground_to_unwound = 0;
+    vec3_set_xyz(&(match->ball.velocity), v.x, v.y, v.z);
 
     // nudge the pitcher aside as the ball leaves
-    target.x = match->playerInfo[pitcher].body.location.x + PITCHER_MOVE_AWAY_OFFSET;
-    target.z = match->playerInfo[pitcher].body.location.z;
-    move_to_target(match->playerInfo, pitcher, &target);
+    target.x = match->players[pitcher].body.location.x + PITCHER_MOVE_AWAY_OFFSET;
+    target.z = match->players[pitcher].body.location.z;
+    move_to_target(match->players, pitcher, &target);
 
-    match->ballInfo.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
-    match->ballInfo.holder = -1;
-    match->ballInfo.pitch_in_flight = 1;
+    match->ball.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
+    match->ball.holder = -1;
+    match->ball.pitch_in_flight = 1;
     match->at_bat.may_leave_home = 1;
-    match->gameEvents.pitchReleased = 1;
-    record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_RELEASED, true);
+    match->events.pitch_released = 1;
+    record_player_activity(&match->players[pitcher].events, PLAYER_ACTIVITY_PITCH_RELEASED, true);
 
     // commit any base runners that armed to break on the pitch
     for (i = 1; i < BASE_COUNT; i++) {
@@ -124,13 +124,13 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
 // ball, which returns to their position; no ball/strike is counted.
 static void fake_pitch(MatchSession* match)
 {
-    int pitcher = match->ballInfo.holder;
+    int pitcher = match->ball.holder;
 
-    match->ballInfo.pitch_in_flight = 0;
+    match->ball.pitch_in_flight = 0;
     if (pitcher != -1) {
-        match->ballInfo.location.x = match->playerInfo[pitcher].body.location.x;
-        match->ballInfo.location.z = match->playerInfo[pitcher].body.location.z;
-        record_player_activity(&match->playerInfo[pitcher].events, PLAYER_ACTIVITY_PITCH_FAKED, false);
+        match->ball.location.x = match->players[pitcher].body.location.x;
+        match->ball.location.z = match->players[pitcher].body.location.z;
+        record_player_activity(&match->players[pitcher].events, PLAYER_ACTIVITY_PITCH_FAKED, false);
     }
     match->catching_action = (CatchingAction){0};
 }

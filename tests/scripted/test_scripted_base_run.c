@@ -50,15 +50,15 @@ int test_scripted_single_tap_does_not_run_batter(void)
     int bi = setup_live_batter(g);
     ASSERT(bi >= 0, "could not get a live batter (selection / AI pitch never happened)");
     ASSERT_EQ(
-        PLAYER_STATE_AT_BAT, (int)scripted_match(g)->playerInfo[bi].batting.presence.state, "batter should be AT_BAT"
+        PLAYER_STATE_AT_BAT, (int)scripted_match(g)->players[bi].batting.presence.state, "batter should be AT_BAT"
     );
 
     scripted_tap(g, HUMAN_PAD, KEY_DOWN); // single tap on the home/first key
     scripted_run(g, 5);
 
     // Armed, not committed: the batter is still at bat and not going forward.
-    int going = scripted_match(g)->playerInfo[bi].path.going_forward;
-    int state = (int)scripted_match(g)->playerInfo[bi].batting.presence.state;
+    int going = scripted_match(g)->players[bi].path.going_forward;
+    int state = (int)scripted_match(g)->players[bi].batting.presence.state;
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];
     snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
@@ -85,7 +85,7 @@ int test_scripted_double_tap_runs_batter(void)
     scripted_run(g, 5);
 
     // Committed: run_to_next_base(BASE_HOME) set the batter going forward and stopped the at-bat.
-    int going = scripted_match(g)->playerInfo[bi].path.going_forward;
+    int going = scripted_match(g)->players[bi].path.going_forward;
     int cycle_open = batting_cycle_is_open(&scripted_match(g)->at_bat);
     int failed = scripted_failed(g);
     char reason[SIM_FAIL_REASON_LEN];

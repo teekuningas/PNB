@@ -5,12 +5,12 @@
 #include "all_contracts.h"
 
 /**
- * CONTRACT: When catchMade fires and a runner has advanced past their
+ * CONTRACT: When catch_made fires and a runner has advanced past their
  * pitch-start base, the referee starts wounding evaluation and marks
  * the vulnerable runner as WOUND_MARKED.
  *
  * This tests the Event → Decision chain:
- *   catchMade (GameEvents) → wounding_evaluation_active (RefereeState)
+ *   catch_made (GameEvents) → wounding_evaluation_active (RefereeState)
  *                          → WOUND_MARKED (per-player status)
  *
  * Preconditions:
@@ -18,7 +18,7 @@
  *   - batHit = 1 (ball came from bat)
  *   - Ball not yet hit ground (has_ball_hit_ground = 0)
  *   - No prior catch this pitch (catch_has_been_made = 0)
- *   - catchMade event fires
+ *   - catch_made event fires
  *
  * Expected: Referee starts evaluation, runner marked WOUND_MARKED.
  */
@@ -34,7 +34,7 @@ int test_referee_starts_wounding_on_catch(void)
     // Place a fielder near third to hold the ball after "catching" it
     int fielderIdx = 15;
     Vector3D fielderLoc = ctx->state->fieldPositions->thirdBase;
-    ctx->state->match->playerInfo[fielderIdx].body.location = fielderLoc;
+    ctx->state->match->players[fielderIdx].body.location = fielderLoc;
 
     // Initialize legal state and snapshot pitch-start positions
     initialize_referee_from_physical_state(ctx);
@@ -42,14 +42,14 @@ int test_referee_starts_wounding_on_catch(void)
     // After snapshot: runner 0 has base_at_pitch_start = BASE_FIRST
 
     // Advance runner physically past their pitch-start base (simulate they ran)
-    ctx->state->match->playerInfo[0].batting.presence.state = PLAYER_STATE_RUNNING;
-    ctx->state->match->playerInfo[0].batting.presence.base_id = BASE_SECOND;
-    ctx->state->match->playerInfo[0].body.location = ctx->state->fieldPositions->secondBase;
+    ctx->state->match->players[0].batting.presence.state = PLAYER_STATE_RUNNING;
+    ctx->state->match->players[0].batting.presence.base_id = BASE_SECOND;
+    ctx->state->match->players[0].body.location = ctx->state->fieldPositions->secondBase;
 
     // Set contract preconditions: fly ball caught
-    ctx->state->match->gameEvents.catchMade = 1;
+    ctx->state->match->events.catch_made = 1;
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
-    ctx->state->match->ballInfo.holder = fielderIdx; // Fielder has ball (stabilizes physics)
+    ctx->state->match->ball.holder = fielderIdx; // Fielder has ball (stabilizes physics)
 
     // Run exactly 1 pipeline frame
     simulate_frames(ctx, 1);

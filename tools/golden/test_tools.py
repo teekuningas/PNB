@@ -215,7 +215,7 @@ class GoldenToolsTest(unittest.TestCase):
                 "homerun_pair_has_pitch", "has_batted_again", "regular_order_spent", "turn_exhausted",
                 "end_period", "catch_has_been_made", "has_ball_hit_ground", "is_cup_game",
             ),
-            "world.h": ("moving", "onGround", "pitch_in_flight", "powerActive", "verticalActive"),
+            "world.h": ("moving", "on_ground", "pitch_in_flight", "power_active", "vertical_active"),
         }
         results = {}
         for profile, storage in (("wide", "int"), ("narrow", "bool")):

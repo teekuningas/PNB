@@ -44,17 +44,17 @@ static ThirdBaseControl observe_third_base_control(const MatchSession* match, co
 {
     int runner = get_base_controller(match, referee, BASE_THIRD);
     if (runner == -1) return THIRD_NO_CONTROLLER;
-    return match->playerInfo[runner].batting.presence.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
-                                                                                    : THIRD_CONTROLLER_OFF_BASE;
+    return match->players[runner].batting.presence.state == PLAYER_STATE_ON_BASE ? THIRD_CONTROLLER_ON_BASE
+                                                                                 : THIRD_CONTROLLER_OFF_BASE;
 }
 
 static void collect_player_facts(MatchSession* match, PlayerTickFacts* facts)
 {
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-        facts[i] = (PlayerTickFacts){.activity = match->playerInfo[i].events,
-                                     .holds_ball = match->ballInfo.holder == i,
-                                     .throw_recovering = match->playerInfo[i].fielding.throw_recovery_ticks != 0};
-        match->playerInfo[i].events = (PlayerActivityEvents){0};
+        facts[i] = (PlayerTickFacts){.activity = match->players[i].events,
+                                     .holds_ball = match->ball.holder == i,
+                                     .throw_recovering = match->players[i].fielding.throw_recovery_ticks != 0};
+        match->players[i].events = (PlayerActivityEvents){0};
     }
 }
 
@@ -124,7 +124,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // producers write disjoint per-team channels and cannot see each other's writes. Human first
     // only because that is the order that held before this stage existed.
     //
-    // Frame-top placement also makes one-frame transients structurally invisible: gameEvents is
+    // Frame-top placement also makes one-frame transients structurally invisible: events is
     // drained by the tick that produced it (stage 9), so a controller here can only ever read
     // DURABLE world state. tests/sim/test_ai_ignores_frame_events.c holds that mechanically.
     action_invocations(
@@ -149,9 +149,9 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     // 4. SIMULATE — the physical world takes its step.
     simulate(game, stateInfo->fieldPositions, &rules->referee, &stateInfo->playSoundEffect);
 
-    int homeward_runs = game->gameEvents.homeward_runs_started;
+    int homeward_runs = game->events.homeward_runs_started;
     TickFacts facts = {
-        .pitch_released = game->gameEvents.pitchReleased,
+        .pitch_released = game->events.pitch_released,
         .homeward_run_started = homeward_runs != 0,
         .ball_home = ball_is_home(game, stateInfo->fieldPositions),
         .third_base_control = observe_third_base_control(game, &rules->referee)
@@ -174,7 +174,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     );
     facts.world_reset = consolidation_output.world_reset;
     facts.enforcement_completed = consolidation_output.enforcement_completed;
-    facts.homeward_run_started_in_enforcement = game->gameEvents.homeward_runs_started > homeward_runs;
+    facts.homeward_run_started_in_enforcement = game->events.homeward_runs_started > homeward_runs;
     collect_player_facts(game, facts.enforced_players);
     stateInfo->tick_facts = facts;
 
@@ -191,7 +191,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     referee_finalize(stateInfo->match, &rules->referee, &rules->between_pitch);
 
     // 8. VALIDATE — capture a snapshot when a pitch is released, then check the state's invariants.
-    if (stateInfo->match->gameEvents.pitchReleased) {
+    if (stateInfo->match->events.pitch_released) {
         state_validator_capture_snapshot(stateInfo, "PITCH_START");
     }
 
@@ -202,7 +202,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     }
 
     // 9. CLEAR — the frame's events end with the frame.
-    clear_frame_events(&stateInfo->match->gameEvents);
+    clear_frame_events(&stateInfo->match->events);
     return 1;
 }
 void draw_game_frame(
@@ -214,7 +214,7 @@ void draw_game_frame(
     if (!paused) {
 #ifndef NO_RENDER
         draw_player_renderer(match, scoreboard, players, alpha, rm);
-        draw_ball(&(match->ballInfo), alpha, rm);
+        draw_ball(&(match->ball), alpha, rm);
 #endif
     }
 }

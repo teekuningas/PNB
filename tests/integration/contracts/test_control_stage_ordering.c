@@ -43,7 +43,7 @@ int test_control_stage_precedes_execution(void)
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx); // sets base_at_pitch_start from current positions
 
-    ASSERT_EQ(12, match->ballInfo.holder, "home catcher (idx 12) should hold the ball before the frame");
+    ASSERT_EQ(12, match->ball.holder, "home catcher (idx 12) should hold the ball before the frame");
 
     int battingTeamIndex = get_batting_team_index(&ctx->state->rules->scoreboard);
     int catchingTeamIndex = (battingTeamIndex + 1) % 2;
@@ -67,19 +67,19 @@ int test_control_stage_precedes_execution(void)
     // If CONTROL still ran after execution, the declaration would be sitting here unconsumed and the
     // ball would still be in the catcher's hand — the whole point of the assertion.
     ASSERT_EQ(
-        12, match->ballInfo.released_by,
+        12, match->ball.released_by,
         "the drop must have been ACTUALIZED this frame: released_by is the dropper's fingerprint, "
         "set only by drop_ball(). Still -1 means the CONTROL stage's intent was not consumed until the "
         "next frame — i.e. ai_update is running after the gate again"
     );
-    ASSERT_EQ(-1, match->ballInfo.holder, "the dropped ball must be loose (ballInfo.holder → -1)");
-    ASSERT_EQ(1, match->ballInfo.moving, "the dropped ball must be in motion");
+    ASSERT_EQ(-1, match->ball.holder, "the dropped ball must be loose (ball.holder → -1)");
+    ASSERT_EQ(1, match->ball.moving, "the dropped ball must be in motion");
     // Guard against passing for the wrong reason: a PITCH release also sets released_by to the
     // pitcher (12), empties the hand and starts the ball moving. It cannot happen on this frame — the
     // AI's pre-pitch pause needs batterReadyTimer > AI_PITCH_DELAY — but pin it anyway, so a future
     // change that lets a pitch fire here turns this red instead of quietly proving nothing.
     ASSERT_EQ(
-        0, match->ballInfo.pitch_in_flight,
+        0, match->ball.pitch_in_flight,
         "no pitch may have been released this frame — the ball must have left the hand via the DROP"
     );
     ASSERT_EQ(

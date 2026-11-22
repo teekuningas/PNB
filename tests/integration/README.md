@@ -5,8 +5,8 @@
 Contract tests prove that **pipeline stages cooperate correctly** at the frame level. Unlike scenario tests (which simulate full plays), contract tests set a precise precondition, run exactly 1 frame through the real pipeline, and verify the immediate reaction.
 
 They answer questions like:
-- "When `catchMade` fires, does the referee start wounding evaluation?"
-- "When `pitchReleased` fires, does the referee snapshot the legal baseline?"
+- "When `catch_made` fires, does the referee start wounding evaluation?"
+- "When `pitch_released` fires, does the referee snapshot the legal baseline?"
 - "When the ball lands out of bounds after a hit, does the referee detect foul play?"
 
 ### Why 1-Frame?
@@ -43,14 +43,14 @@ rather than copying a second example that can drift from the executable one:
 | Test | Contract Verified |
 |------|-------------------|
 | `test_clear_frame_events_completeness` | `clear_frame_events` clears ALL fields; size guard detects struct growth |
-| `test_referee_starts_wounding_on_catch` | `catchMade` + conditions → wounding evaluation + WOUND_MARKED |
-| `test_referee_snapshots_on_pitch_released` | `pitchReleased` → base_at_pitch_start, strikes_at_pitch_start, between_pitch cleared |
-| `test_foul_detected_on_out_of_bounds_hit` | `ballHitGround` + bat_outcome=HIT + OOB → foul_state = DETECTED |
+| `test_referee_starts_wounding_on_catch` | `catch_made` + conditions → wounding evaluation + WOUND_MARKED |
+| `test_referee_snapshots_on_pitch_released` | `pitch_released` → base_at_pitch_start, strikes_at_pitch_start, between_pitch cleared |
+| `test_foul_detected_on_out_of_bounds_hit` | `ball_hit_ground` + bat_outcome=HIT + OOB → foul_state = DETECTED |
 | `test_no_pending_runs_during_end_of_inning` | Pending runs blocked when end_of_inning_state != NONE |
 | `test_no_free_walk_runs_during_end_of_inning` | Free walk runs blocked when end_of_inning_state != NONE |
 | `test_compound_foul_and_end_of_inning` | Foul strike-3 → skip foul timer, go directly to END_INNING_STATE_DETECTED |
 | `test_compound_hr_pair_and_uncatchable` | HR pair end + uncatchable → skip pair SM, go directly to END_INNING_STATE_DETECTED |
-| `test_bat_outcome_promotion` | `ballHitByBat`/`ballMissedByBat` → bat_outcome promoted; `pitchReleased` → bat_outcome reset |
+| `test_bat_outcome_promotion` | `ball_hit_by_bat`/`ball_missed_by_bat` → bat_outcome promoted; `pitch_released` → bat_outcome reset |
 
 ## Running
 

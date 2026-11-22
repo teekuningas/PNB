@@ -29,11 +29,11 @@ int test_player_stops_preserve_distinct_facing_and_sync(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* m = ctx->state->match;
-    m->ballInfo.location = (Vector3D){5.0f, 17.0f, -1.0f};
-    m->ballInfo.moving = 1;
-    m->ballInfo.holder = -1;
+    m->ball.location = (Vector3D){5.0f, 17.0f, -1.0f};
+    m->ball.moving = 1;
+    m->ball.holder = -1;
     for (int i = 15; i <= 16; i++) {
-        PlayerInfo* p = &m->playerInfo[i];
+        PlayerInfo* p = &m->players[i];
         p->body.location = (Vector3D){2.0f, 4.0f, 3.0f};
         p->body.previous_location = (Vector3D){-30.0f, 37.0f, -40.0f};
         p->body.orientation = (Vector3D){99.0f, 42.0f, -97.0f};
@@ -44,18 +44,16 @@ int test_player_stops_preserve_distinct_facing_and_sync(void)
         p->motion.following_target = 1;
     }
 
-    stop_movement(m->playerInfo, 15);
-    stop_target_looking_player(&m->playerInfo[16].motion);
+    stop_movement(m->players, 15);
+    stop_target_looking_player(&m->players[16].motion);
     player_location_orientation_and_targets(m, ctx->state->fieldPositions);
 
-    ASSERT_FLOAT_EQ(99.0f, m->playerInfo[15].body.orientation.x, 1e-6f, "a stopped runner keeps its facing lock");
-    ASSERT_FLOAT_EQ(
-        -97.0f, m->playerInfo[15].body.orientation.z, 1e-6f, "stopping movement does not stop running mode"
-    );
-    ASSERT_FLOAT_EQ(3.0f, m->playerInfo[16].body.orientation.x, 1e-6f, "stopping a target walk releases facing");
-    ASSERT_FLOAT_EQ(-4.0f, m->playerInfo[16].body.orientation.z, 1e-6f, "the next body step can face the moving ball");
+    ASSERT_FLOAT_EQ(99.0f, m->players[15].body.orientation.x, 1e-6f, "a stopped runner keeps its facing lock");
+    ASSERT_FLOAT_EQ(-97.0f, m->players[15].body.orientation.z, 1e-6f, "stopping movement does not stop running mode");
+    ASSERT_FLOAT_EQ(3.0f, m->players[16].body.orientation.x, 1e-6f, "stopping a target walk releases facing");
+    ASSERT_FLOAT_EQ(-4.0f, m->players[16].body.orientation.z, 1e-6f, "the next body step can face the moving ball");
     for (int i = 15; i <= 16; i++) {
-        PlayerInfo* p = &m->playerInfo[i];
+        PlayerInfo* p = &m->players[i];
         ASSERT_FLOAT_EQ(2.0f, p->body.location.x, 1e-6f, "a stopped body does not integrate its retained velocity");
         ASSERT_FLOAT_EQ(3.0f, p->body.location.z, 1e-6f, "neither stop drifts toward the old target");
         ASSERT_FLOAT_EQ(0.2f, p->body.velocity.x, 1e-6f, "stopping gates integration rather than erasing velocity");
@@ -96,16 +94,16 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
             positions.backRightCatcher
         };
         for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-            m->playerInfo[i].body.home_location = (Vector3D){1000.0f, 1000.0f, 1000.0f};
-            m->playerInfo[i].path.arrived_at_base = 1;
-            m->playerInfo[i].path.waypoint = 2;
-            m->playerInfo[i].path.going_forward = 1;
-            m->playerInfo[i].fielding.throw_recovery_ticks = 17;
+            m->players[i].body.home_location = (Vector3D){1000.0f, 1000.0f, 1000.0f};
+            m->players[i].path.arrived_at_base = 1;
+            m->players[i].path.waypoint = 2;
+            m->players[i].path.going_forward = 1;
+            m->players[i].fielding.throw_recovery_ticks = 17;
             if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-                m->playerInfo[i].fielding.near_home = 0;
-                m->playerInfo[i].fielding.replacement = REPLACEMENT_ACTIVE;
-                m->playerInfo[i].fielding.replacement_base = BASE_THIRD;
-                m->playerInfo[i].fielding.busy_catching = 1;
+                m->players[i].fielding.near_home = 0;
+                m->players[i].fielding.replacement = REPLACEMENT_ACTIVE;
+                m->players[i].fielding.replacement_base = BASE_THIRD;
+                m->players[i].fielding.busy_catching = 1;
             }
         }
         if (recipe == 0) {
@@ -124,12 +122,12 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
         }
 
         for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-            ASSERT_EQ(0, m->playerInfo[i].path.arrived_at_base, "every reset drains every arrival latch");
-            ASSERT_EQ(0, m->playerInfo[i].path.waypoint, "every reset starts a fresh route");
-            ASSERT_EQ(0, m->playerInfo[i].path.going_forward, "every reset clears the old route direction");
-            ASSERT_EQ(0, m->playerInfo[i].fielding.throw_recovery_ticks, "every slot loses old throw recovery");
+            ASSERT_EQ(0, m->players[i].path.arrived_at_base, "every reset drains every arrival latch");
+            ASSERT_EQ(0, m->players[i].path.waypoint, "every reset starts a fresh route");
+            ASSERT_EQ(0, m->players[i].path.going_forward, "every reset clears the old route direction");
+            ASSERT_EQ(0, m->players[i].fielding.throw_recovery_ticks, "every slot loses old throw recovery");
             if (i >= PLAYERS_IN_TEAM + JOKER_COUNT) {
-                const FieldingPlayerState* fielding = &m->playerInfo[i].fielding;
+                const FieldingPlayerState* fielding = &m->players[i].fielding;
                 ASSERT_EQ(1, fielding->near_home, "reset fielders start at their formation posts");
                 ASSERT_EQ(REPLACEMENT_IDLE, fielding->replacement, "old replacement activity is cancelled");
                 ASSERT_EQ(BASE_NONE, fielding->replacement_base, "the old replacement base is forgotten");
@@ -137,7 +135,7 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
             }
         }
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            const Vector3D* home = &m->playerInfo[i].body.home_location;
+            const Vector3D* home = &m->players[i].body.home_location;
             float dx = home->x - positions.pitchPlate.x;
             float dz = home->z - positions.pitchPlate.z;
             float radius = sqrtf(dx * dx + dz * dz);
@@ -146,14 +144,14 @@ int test_player_reset_recipes_rebuild_home_geometry(void)
             );
             ASSERT_FLOAT_EQ(BALL_HEIGHT_WITH_PLAYER, home->y, 1e-6f, "batting homes retain their physical height");
             for (int j = 0; j < i; j++) {
-                const Vector3D* other = &m->playerInfo[j].body.home_location;
+                const Vector3D* other = &m->players[j].body.home_location;
                 ASSERT(
                     fabsf(home->x - other->x) + fabsf(home->z - other->z) > 0.1f, "batters have distinct home places"
                 );
             }
         }
         for (int i = 12; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
-            const Vector3D* home = &m->playerInfo[i].body.home_location;
+            const Vector3D* home = &m->players[i].body.home_location;
             ASSERT_FLOAT_EQ(posts[i - 12].x, home->x, 1e-6f, "each fielder's home is its current formation post");
             ASSERT_FLOAT_EQ(posts[i - 12].y, home->y, 1e-6f, "formation height is not discarded");
             ASSERT_FLOAT_EQ(posts[i - 12].z, home->z, 1e-6f, "all reset recipes rebuild every fielding home");
@@ -167,7 +165,7 @@ int test_idle_fielder_returns_to_its_home_geometry(void)
 {
     ScenarioContext* ctx = create_scenario();
     MatchSession* m = ctx->state->match;
-    PlayerInfo* p = &m->playerInfo[17];
+    PlayerInfo* p = &m->players[17];
     Vector3D home = p->body.home_location;
     p->body.location = (Vector3D){home.x - 3.0f, home.y, home.z - 4.0f};
     p->motion.moving = 0;
@@ -175,7 +173,7 @@ int test_idle_fielder_returns_to_its_home_geometry(void)
     p->fielding.replacement = REPLACEMENT_IDLE;
     p->fielding.busy_catching = 0;
     p->fielding.throw_recovery_ticks = 0;
-    m->catchingState.controlled_fielder = -1;
+    m->catching.controlled_fielder = -1;
 
     move_idling_players_to_home_location(m);
     ASSERT_FLOAT_EQ(home.x, p->body.target_location.x, 1e-6f, "an idle fielder returns to its own formation post");

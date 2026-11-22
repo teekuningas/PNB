@@ -7,7 +7,7 @@
 static void seed_play_resources(MatchSession* match, PlayerInfo expected[PLAYERS_IN_TEAM + JOKER_COUNT])
 {
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        PlayerInfo* p = &match->playerInfo[i];
+        PlayerInfo* p = &match->players[i];
         p->attributes.speed = 1 + i % 5;
         p->attributes.power = 5 - i % 5;
         p->batting.joker = i < PLAYERS_IN_TEAM ? JOKER_REGULAR : i == PLAYERS_IN_TEAM ? JOKER_USED : JOKER_AVAILABLE;
@@ -20,7 +20,7 @@ static void seed_play_resources(MatchSession* match, PlayerInfo expected[PLAYERS
 static int check_play_resources(const MatchSession* match, const PlayerInfo expected[PLAYERS_IN_TEAM + JOKER_COUNT])
 {
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-        const PlayerInfo* p = &match->playerInfo[i];
+        const PlayerInfo* p = &match->players[i];
         ASSERT_EQ(expected[i].attributes.speed, p->attributes.speed, "a play reset preserves copied speed");
         ASSERT_EQ(expected[i].attributes.power, p->attributes.power, "a play reset preserves copied power");
         ASSERT_EQ(
@@ -49,18 +49,18 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
         const TeamInfo* team = &scoreboard->teams[side];
         TeamData* roster = &ctx->state->teamData[team->value - 1];
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            match->playerInfo[i].attributes.speed = -1;
-            match->playerInfo[i].attributes.power = -1;
-            match->playerInfo[i].batting.number = -1;
-            match->playerInfo[i].batting.joker = JOKER_USED;
-            match->playerInfo[i].batting.presence.state = PLAYER_STATE_RUNNING;
-            match->playerInfo[i].batting.presence.base_id = BASE_SECOND;
+            match->players[i].attributes.speed = -1;
+            match->players[i].attributes.power = -1;
+            match->players[i].batting.number = -1;
+            match->players[i].batting.joker = JOKER_USED;
+            match->players[i].batting.presence.state = PLAYER_STATE_RUNNING;
+            match->players[i].batting.presence.base_id = BASE_SECOND;
         }
 
         reset_for_new_half_inning(match, ctx->state->fieldPositions, ctx->state->teamData, ctx->state->rules);
 
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            PlayerInfo* p = &match->playerInfo[i];
+            PlayerInfo* p = &match->players[i];
             const int speed = roster->players[i].speed;
             const int power = roster->players[i].power;
             ASSERT_EQ(
@@ -75,7 +75,7 @@ int test_half_inning_replaces_batting_attributes_and_resources(void)
             ASSERT_EQ(BASE_NONE, p->batting.presence.base_id, "no previous base progress survives the half-inning");
         }
         for (int order = 0; order < PLAYERS_IN_TEAM + JOKER_COUNT; order++) {
-            const PlayerInfo* p = &match->playerInfo[team->batter_order[order]];
+            const PlayerInfo* p = &match->players[team->batter_order[order]];
             ASSERT_EQ(
                 order < PLAYERS_IN_TEAM ? order + 1 : 0, p->batting.number, "display numbers follow the batting order"
             );
@@ -116,20 +116,20 @@ int test_foul_restores_presence_without_replacing_batting_resources(void)
     ASSERT(check_play_resources(match, expected) == TEST_PASSED, "a foul preserves half-inning resources");
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         ASSERT_EQ(
-            i < 7 ? states[i] : PLAYER_STATE_IDLE, match->playerInfo[i].batting.presence.state,
+            i < 7 ? states[i] : PLAYER_STATE_IDLE, match->players[i].batting.presence.state,
             "presence follows legal snapshots"
         );
         ASSERT_EQ(
-            i < 7 ? bases[i] : BASE_NONE, match->playerInfo[i].batting.presence.base_id,
+            i < 7 ? bases[i] : BASE_NONE, match->players[i].batting.presence.base_id,
             "base progress is restored or cleared"
         );
     }
     ASSERT_FLOAT_EQ(
-        ctx->state->fieldPositions->firstBaseRun.x, match->playerInfo[1].body.location.x, 1e-6f,
+        ctx->state->fieldPositions->firstBaseRun.x, match->players[1].body.location.x, 1e-6f,
         "restored presence still puts the runner physically at first"
     );
     ASSERT_FLOAT_EQ(
-        ctx->state->fieldPositions->thirdBaseRun.z, match->playerInfo[3].body.location.z, 1e-6f,
+        ctx->state->fieldPositions->thirdBaseRun.z, match->players[3].body.location.z, 1e-6f,
         "restored third-base progress is not merely a flag"
     );
     cleanup_scenario(ctx);
@@ -160,17 +160,17 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
         contest->pair_index = pair;
         expected[batter].batting.number = pair + 1;
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
-            match->playerInfo[i].batting.presence.state = PLAYER_STATE_RUNNING;
-            match->playerInfo[i].batting.presence.base_id = BASE_SECOND;
+            match->players[i].batting.presence.state = PLAYER_STATE_RUNNING;
+            match->players[i].batting.presence.base_id = BASE_SECOND;
         }
         if (stage == 1) {
             reset_for_foul_play(match, ctx->state->fieldPositions, ctx->state->rules);
             ASSERT_FLOAT_EQ(
-                match->playerInfo[batter].body.target_location.x, match->playerInfo[batter].body.location.x, 1e-6f,
+                match->players[batter].body.target_location.x, match->players[batter].body.location.x, 1e-6f,
                 "a contest foul resumes the same batter at its target"
             );
             ASSERT_FLOAT_EQ(
-                match->playerInfo[batter].body.target_location.z, match->playerInfo[batter].body.location.z, 1e-6f,
+                match->players[batter].body.target_location.z, match->players[batter].body.location.z, 1e-6f,
                 "the returning batter need not walk in again"
             );
         } else {
@@ -185,14 +185,14 @@ int test_contest_pair_numbers_and_presence_have_distinct_lifetimes(void)
                                                   : PLAYER_STATE_IDLE;
             BaseID base = i == batter ? BASE_HOME : i == runner ? BASE_THIRD : BASE_NONE;
             ASSERT_EQ(
-                state, match->playerInfo[i].batting.presence.state, "only the current pair has live physical presence"
+                state, match->players[i].batting.presence.state, "only the current pair has live physical presence"
             );
             ASSERT_EQ(
-                base, match->playerInfo[i].batting.presence.base_id, "other pair slots retain no active base progress"
+                base, match->players[i].batting.presence.base_id, "other pair slots retain no active base progress"
             );
         }
         ASSERT_FLOAT_EQ(
-            ctx->state->fieldPositions->thirdBaseRun.x, match->playerInfo[runner].body.location.x, 1e-6f,
+            ctx->state->fieldPositions->thirdBaseRun.x, match->players[runner].body.location.x, 1e-6f,
             "the selected runner is physically at third"
         );
     }

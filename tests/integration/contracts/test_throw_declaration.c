@@ -47,10 +47,10 @@ static void setup_fielder_with_ball(ScenarioContext* ctx)
 {
     MatchSession* m = ctx->state->match;
     int fielderIdx = 15;
-    m->ballInfo.holder = fielderIdx;
-    m->catchingState.controlled_fielder = fielderIdx;
-    m->playerInfo[fielderIdx].body.location.x = 5.0f;
-    m->playerInfo[fielderIdx].body.location.z = 5.0f;
+    m->ball.holder = fielderIdx;
+    m->catching.controlled_fielder = fielderIdx;
+    m->players[fielderIdx].body.location.x = 5.0f;
+    m->players[fielderIdx].body.location.z = 5.0f;
 }
 
 static void tick(ScenarioContext* ctx)
@@ -66,7 +66,7 @@ static void tick(ScenarioContext* ctx)
 
 static float horiz_speed(const MatchSession* m)
 {
-    float vx = m->ballInfo.velocity.x, vz = m->ballInfo.velocity.z;
+    float vx = m->ball.velocity.x, vz = m->ball.velocity.z;
     return sqrtf(vx * vx + vz * vz);
 }
 
@@ -78,7 +78,7 @@ static float run_until_release(ScenarioContext* ctx, int budget, int* frames)
     int i;
     for (i = 0; i < budget; i++) {
         tick(ctx);
-        if (m->ballInfo.holder == -1) {
+        if (m->ball.holder == -1) {
             if (frames) *frames = i + 1;
             return horiz_speed(m);
         }
@@ -130,13 +130,13 @@ int test_throw_declared_whole_releases_sized_to_power(void)
     ASSERT_EQ(
         CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "declaring a throw must begin the engine-owned windup"
     );
-    ASSERT_EQ(15, m->ballInfo.holder, "ball is still in hand during the windup");
+    ASSERT_EQ(15, m->ball.holder, "ball is still in hand during the windup");
 
     int windup = throw_windup_total_frames(lowPower);
     int frames = 0;
     float lowSpeed = run_until_release(ctx, windup + 6, &frames);
 
-    ASSERT_EQ(-1, m->ballInfo.holder, "the ball must leave the hand at the windup end");
+    ASSERT_EQ(-1, m->ball.holder, "the ball must leave the hand at the windup end");
     ASSERT(lowSpeed > 0.0f, "a released throw has a horizontal launch velocity");
     // frames counts from the SECOND frame onward (the first began the windup); release near the windup end.
     ASSERT(frames + 1 >= windup - 1, "release must wait for the engine windup, not fire instantly");
@@ -174,7 +174,7 @@ int test_throw_target_then_power_engine_times_release(void)
     for (int i = 0; i < THROW_WINDUP_MAX_FRAMES + 20; i++) {
         tick(ctx);
     }
-    ASSERT_EQ(15, m->ballInfo.holder, "a throw never releases while its power is owed");
+    ASSERT_EQ(15, m->ball.holder, "a throw never releases while its power is owed");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m->catching_action.kind, "still winding up while pending");
     ASSERT_EQ(
         THROW_WINDUP_MAX_FRAMES, m->catching_action.timer,
@@ -185,7 +185,7 @@ int test_throw_target_then_power_engine_times_release(void)
     // releases this very tick — the "power arrived late" case.
     declare_power(ctx, 0.3f);
     tick(ctx);
-    ASSERT_EQ(-1, m->ballInfo.holder, "a power declared after a full windup releases immediately");
+    ASSERT_EQ(-1, m->ball.holder, "a power declared after a full windup releases immediately");
     float longInitLowPowerSpeed = horiz_speed(m);
     ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "the throw is done at release");
     cleanup_scenario(ctx);
@@ -200,7 +200,7 @@ int test_throw_target_then_power_engine_times_release(void)
 
     declare_power(ctx2, 1.0f);
     tick(ctx2); // the power does NOT fire this frame — the windup is not done
-    ASSERT_EQ(15, m2->ballInfo.holder, "the engine owns the release: a powered throw waits out its windup");
+    ASSERT_EQ(15, m2->ball.holder, "the engine owns the release: a powered throw waits out its windup");
     ASSERT_EQ(CATCHING_ACTION_THROWING, (int)m2->catching_action.kind, "still winding after the power");
 
     int budget = THROW_WINDUP_MAX_FRAMES + 10, frames = 0;
@@ -225,7 +225,7 @@ static int check_throw_recovery(int animation_profile)
     ScenarioContext* ctx = create_scenario();
     setup_fielder_with_ball(ctx);
     MatchSession* m = ctx->state->match;
-    PlayerInfo* thrower = &m->playerInfo[15];
+    PlayerInfo* thrower = &m->players[15];
     PlayerMotion* activity = &thrower->motion;
     PlayerBody* body = &thrower->body;
     FieldingPlayerState* fielding = &thrower->fielding;
@@ -238,9 +238,9 @@ static int check_throw_recovery(int animation_profile)
     Vector3D release_position = body->location;
     body->home_location = (Vector3D){25.0f, 0.0f, 25.0f};
     fielding->near_home = 0;
-    m->ballInfo.location = (Vector3D){0.0f, 100.0f, 0.0f};
-    m->ballInfo.velocity = (Vector3D){0};
-    m->ballInfo.moving = 0;
+    m->ball.location = (Vector3D){0.0f, 100.0f, 0.0f};
+    m->ball.velocity = (Vector3D){0};
+    m->ball.moving = 0;
     m->chase_replan = CHASE_REPLAN_NONE;
 
     if (animation_profile == 1) {
@@ -252,12 +252,12 @@ static int check_throw_recovery(int animation_profile)
         animation->frame_count = 1000;
         animation->ticks_per_frame = 17;
     } else if (animation_profile == 4) {
-        m->ballInfo.location = body->location;
-        m->ballInfo.currentFlightHasHitGround = 1;
+        m->ball.location = body->location;
+        m->ball.flight_has_hit_ground = 1;
         check_if_ball_can_be_caught(m, ctx->state->fieldPositions, &ctx->state->playSoundEffect);
-        ASSERT_EQ(15, m->ballInfo.holder, "the recovering thrower can catch a ball after it has bounced");
+        ASSERT_EQ(15, m->ball.holder, "the recovering thrower can catch a ball after it has bounced");
         TickFacts facts = {0};
-        facts.enforced_players[15].activity = m->playerInfo[15].events;
+        facts.enforced_players[15].activity = m->players[15].events;
         facts.enforced_players[15].holds_ball = true;
         player_view_after_tick(&view, &facts);
         ASSERT_EQ(PLAYER_ANIM_STAND_WITH_BALL, animation->model, "the real catch replaces the release pose");
@@ -269,7 +269,7 @@ static int check_throw_recovery(int animation_profile)
                 player_view_after_tick(&view, &(TickFacts){0});
         }
         ASSERT(fielding->throw_recovery_ticks != 0, "presentation cannot finish physical recovery early");
-        m->catchingState.controlled_fielder = 15;
+        m->catching.controlled_fielder = 15;
         intent_push(
             &ctx->state->channels.catching,
             (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target = {.point = {25.0f, 0.0f, 25.0f}}}
@@ -277,14 +277,14 @@ static int check_throw_recovery(int animation_profile)
         tick(ctx);
         ASSERT_EQ(0, activity->moving, "ACTUALIZE cannot move the recovering thrower, even on the last tick");
         // Automatic home-return must also stay blocked through this tick's body step.
-        m->catchingState.controlled_fielder = -1;
+        m->catching.controlled_fielder = -1;
         simulate(m, ctx->state->fieldPositions, &ctx->state->rules->referee, &ctx->state->playSoundEffect);
         ASSERT_EQ(tick_index < 41, fielding->throw_recovery_ticks != 0, "recovery lasts exactly 42 SIMULATE steps");
         ASSERT_FLOAT_EQ(release_position.x, body->location.x, 1e-6f, "recovery stays active through body movement");
         ASSERT_FLOAT_EQ(release_position.z, body->location.z, 1e-6f, "the last recovery tick cannot move the body");
     }
 
-    m->catchingState.controlled_fielder = 15;
+    m->catching.controlled_fielder = 15;
     intent_push(
         &ctx->state->channels.catching,
         (IntentMessage){.kind = INTENT_MOVE_TARGET, .as.move_target = {.point = {25.0f, 0.0f, 25.0f}}}

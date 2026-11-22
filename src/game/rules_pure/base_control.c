@@ -13,7 +13,7 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
 
     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
         if (referee->batting_players[i].current_safety_base == base &&
-            game->playerInfo[i].batting.presence.base_id == base) {
+            game->players[i].batting.presence.base_id == base) {
             int baseAtPitch = (int)referee->batting_players[i].base_at_pitch_start;
             if (baseAtPitch > highestBaseAtPitch) {
                 highestBaseAtPitch = baseAtPitch;
@@ -26,13 +26,13 @@ int get_base_controller(const MatchSession* game, const RefereeState* referee, B
 
 int get_ball_at_base_index(const MatchSession* match, const FieldPositions* field_positions)
 {
-    if (match->ballInfo.holder == -1) {
+    if (match->ball.holder == -1) {
         return -1; // No one has ball
     }
 
     // Use catcher position directly or ball position?
-    // Legacy logic uses ballInfo.location, assuming ball is with player.
-    Vector3D ballLoc = match->ballInfo.location;
+    // Legacy logic uses ball.location, assuming ball is with player.
+    Vector3D ballLoc = match->ball.location;
 
     // Check Home Base (Index 0)
     // Special check: inside homeline-middlepoint centered disk and at homebase side

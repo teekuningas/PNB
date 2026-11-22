@@ -30,28 +30,28 @@
 // interpretation the rules work is trying to end.
 static int controlled_fielder_may_walk(const MatchSession* match)
 {
-    if (match->catchingState.controlled_fielder == -1) return 0;
+    if (match->catching.controlled_fielder == -1) return 0;
     // A gathered throw owns the thrower's feet until the ball leaves the hand.
     if (match->catching_action.kind == CATCHING_ACTION_THROWING) return 0;
     // Fielders hold their positions while a pitch is in progress — its windup included.
     if (pitch_is_being_delivered(match)) return 0;
-    if (match->playerInfo[match->catchingState.controlled_fielder].fielding.throw_recovery_ticks != 0) return 0;
+    if (match->players[match->catching.controlled_fielder].fielding.throw_recovery_ticks != 0) return 0;
     return 1;
 }
 
 void update_controlled_fielder_movement(MatchSession* match)
 {
-    if (match->catchingState.controlledMoveTargetActive == 0) return;
+    if (match->catching.controlled_move_target_active == 0) return;
     if (!controlled_fielder_may_walk(match)) return;
     // A destination belongs to the fielder it was given to. Control can pass mid-walk — a catch
     // hands it to whoever took the ball — and the newcomer has not been told anything yet.
-    if (match->catchingState.controlledMoveTargetFor != match->catchingState.controlled_fielder) return;
+    if (match->catching.controlled_move_target_for != match->catching.controlled_fielder) return;
 
-    int index = match->catchingState.controlled_fielder;
-    PlayerInfo* player = &match->playerInfo[index];
+    int index = match->catching.controlled_fielder;
+    PlayerInfo* player = &match->players[index];
 
-    float dx = match->catchingState.controlledMoveTarget.x - player->body.location.x;
-    float dz = match->catchingState.controlledMoveTarget.z - player->body.location.z;
+    float dx = match->catching.controlled_move_target.x - player->body.location.x;
+    float dz = match->catching.controlled_move_target.z - player->body.location.z;
 
     // Arrival is adjudicated here and nowhere else. following_target is the AUTO-movers' arrival
     // machinery in SIMULATE (runners on their paths, ranked fielders chasing a ball); a
@@ -68,7 +68,7 @@ void update_controlled_fielder_movement(MatchSession* match)
             player->motion.sync_previous_location = 1;
             record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_ARRIVAL, false);
             // A carried ball comes to rest with its carrier.
-            match->ballInfo.needsMoveUpdate = 1;
+            match->ball.needs_move_update = 1;
         }
         return;
     }
@@ -83,8 +83,8 @@ void update_controlled_fielder_movement(MatchSession* match)
     player->body.orientation.z = dz;
 
     vec3_set_xz(&player->body.velocity, dx * RUN_SPEED / norm, dz * RUN_SPEED / norm);
-    // Only a raised needsMoveUpdate hands the carrier's velocity to the ball it is holding.
-    match->ballInfo.needsMoveUpdate = 1;
+    // Only a raised needs_move_update hands the carrier's velocity to the ball it is holding.
+    match->ball.needs_move_update = 1;
 
     record_player_activity(&player->events, PLAYER_ACTIVITY_CONTROLLED_RUNNING, player->motion.moving == 0);
 

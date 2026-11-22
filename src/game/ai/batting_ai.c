@@ -40,8 +40,8 @@ static int field_status(const MatchSession* match, const RefereeState* referee)
 static BattingStrategy batting_strategy_now(const MatchSession* match, const GameRulesState* rules)
 {
     int batterIndex = get_active_batter_index(match);
-    int power = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.power : 0;
-    int speed = (batterIndex != -1) ? match->playerInfo[batterIndex].attributes.speed : 0;
+    int power = (batterIndex != -1) ? match->players[batterIndex].attributes.power : 0;
+    int speed = (batterIndex != -1) ? match->players[batterIndex].attributes.speed : 0;
     return calculate_batting_strategy(
         &rules->half_inning, field_status(match, &rules->referee), power, speed, rules->scoreboard.period
     );
@@ -66,8 +66,8 @@ static void declare_batter_choice(const MatchSession* match, const GameRulesStat
     BatterCandidate scored[BATTER_CANDIDATE_MAX];
     for (int c = 0; c < count; c++) {
         scored[c].index = candidates[c];
-        scored[c].power = match->playerInfo[candidates[c]].attributes.power;
-        scored[c].speed = match->playerInfo[candidates[c]].attributes.speed;
+        scored[c].power = match->players[candidates[c]].attributes.power;
+        scored[c].speed = match->players[candidates[c]].attributes.speed;
     }
 
     const int choice = choose_batter(scored, count, field_status(match, &rules->referee));
@@ -89,7 +89,7 @@ static void arm_runners_for_the_pitch(const MatchSession* match, const GameRules
     if (strategy.runBaseRunners == 1) {
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
-            if (index != -1 && match->playerInfo[index].batting.presence.state == PLAYER_STATE_ON_BASE &&
+            if (index != -1 && match->players[index].batting.presence.state == PLAYER_STATE_ON_BASE &&
                 match->runner_commitments.armed[i] == 0) {
                 declare_run(channel, (BaseID)i, RUN_FORWARD);
             }
@@ -104,7 +104,7 @@ static void recall_leading_runners(const MatchSession* match, const GameRulesSta
     if (batting_strategy_now(match, rules).runBaseRunners != 1) return;
     for (int i = 1; i < 3; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
-        if (index != -1 && match->playerInfo[index].batting.presence.state == PLAYER_STATE_LEADING) {
+        if (index != -1 && match->players[index].batting.presence.state == PLAYER_STATE_LEADING) {
             declare_run(channel, (BaseID)i, RUN_BACK);
         }
     }
@@ -123,8 +123,7 @@ static void recall_leading_runners(const MatchSession* match, const GameRulesSta
 static void
 play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingPlan* plan, IntentChannel* channel)
 {
-    if (plan->wrongPitch == 0 &&
-        is_wrong_pitch(match->ballInfo.velocity.x, match->ballInfo.velocity.y, GRAVITY, PLATE_WIDTH)) {
+    if (plan->wrongPitch == 0 && is_wrong_pitch(match->ball.velocity.x, match->ball.velocity.y, GRAVITY, PLATE_WIDTH)) {
         plan->wrongPitch = 1;
     }
 
@@ -135,7 +134,7 @@ play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingP
         // longer going forward the command stops.
         for (int i = 1; i < BASE_COUNT; i++) {
             int index = get_base_controller(match, &rules->referee, (BaseID)i);
-            if (index != -1 && match->playerInfo[index].path.going_forward == 1) {
+            if (index != -1 && match->players[index].path.going_forward == 1) {
                 declare_run(channel, (BaseID)i, RUN_BACK);
             }
         }
@@ -218,20 +217,19 @@ static void advance_runners_on_loose_hit(
 )
 {
     const BetweenPitchState* bps = &rules->between_pitch;
-    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 &&
-          match->ballInfo.thrown_to == BASE_NONE && match->ballInfo.holder == -1 && match->ballInfo.moving == 1 &&
-          bps->has_ball_hit_ground == 1 && match->ballInfo.location.z < -10.0f &&
-          is_ball_out_of_bounds(&match->ballInfo, fieldPositions))) {
+    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 && match->ball.thrown_to == BASE_NONE &&
+          match->ball.holder == -1 && match->ball.moving == 1 && bps->has_ball_hit_ground == 1 &&
+          match->ball.location.z < -10.0f && is_ball_out_of_bounds(&match->ball, fieldPositions))) {
         return;
     }
     for (int i = 0; i < BASE_COUNT; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
         int shouldRun = 1;
         if (i == 0 && match->at_bat.may_leave_home == 0) continue;
-        if (index == -1 || match->playerInfo[index].path.going_forward == 1) continue;
+        if (index == -1 || match->players[index].path.going_forward == 1) continue;
         // don't send a runner into a base interval someone else already occupies.
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {
-            BaseID bid = match->playerInfo[j].batting.presence.base_id;
+            BaseID bid = match->players[j].batting.presence.base_id;
             if (bid != BASE_NONE && base_to_int_index(bid) == i && j != index) {
                 shouldRun = 0;
             }
@@ -250,7 +248,7 @@ void update_batting_ai(
     AIControllerState* aiController, IntentChannel* channel
 )
 {
-    const int airborne = match->ballInfo.pitch_in_flight;
+    const int airborne = match->ball.pitch_in_flight;
 
     // Take the walk, restated for as long as it is offered: an answer that means the same thing every
     // time it arrives needs no edge and no memory.

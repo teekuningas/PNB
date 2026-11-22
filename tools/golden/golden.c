@@ -95,7 +95,7 @@ static void observe(const SimGame* g, void* ctx)
     }
     const MatchSession* m = g->state->match;
     int cca = catching_action_code(m);
-    int airborne = m->ballInfo.pitch_in_flight;
+    int airborne = m->ball.pitch_in_flight;
     int hit = g->state->rules->between_pitch.bat_outcome == BAT_OUTCOME_HIT;
     if (cca == 2 && cov.lastCca != 2) cov.windups++;
     if (cca == 1 && cov.lastCca != 1) cov.throws++;
@@ -166,15 +166,15 @@ static int situation(const StateInfo* st, int pad)
     int batting = get_batting_team_index(sb);
     int catching = (batting + 1) % 2;
     int p = m->fielding_posts.baseman[0];
-    if ((int)sb->teams[catching].control == pad && p != -1 && m->ballInfo.holder == p && m->catchingState.controlled_fielder == p &&
-        m->playerInfo[p].fielding.near_home)
+    if ((int)sb->teams[catching].control == pad && p != -1 && m->ball.holder == p && m->catching.controlled_fielder == p &&
+        m->players[p].fielding.near_home)
         return 1;
     if ((int)sb->teams[batting].control == pad && batter_stands_ready(&m->at_bat)) return 2;
-    if ((int)sb->teams[catching].control == pad && m->catchingState.controlled_fielder != -1) {
-        if (m->ballInfo.holder == m->catchingState.controlled_fielder) return 3; // holding it away from the plate
-        if (m->ballInfo.holder == -1) {
-            const Vector3D* at = &m->playerInfo[m->catchingState.controlled_fielder].body.location;
-            const Vector3D* to = &m->catchingState.ballTargetPoint;
+    if ((int)sb->teams[catching].control == pad && m->catching.controlled_fielder != -1) {
+        if (m->ball.holder == m->catching.controlled_fielder) return 3; // holding it away from the plate
+        if (m->ball.holder == -1) {
+            const Vector3D* at = &m->players[m->catching.controlled_fielder].body.location;
+            const Vector3D* to = &m->catching.ball_target_point;
             float dx = to->x - at->x, dz = to->z - at->z;
             int arrows = 0;
             if (dx > 0.3f) arrows |= 1 << KEY_RIGHT;

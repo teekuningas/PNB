@@ -30,7 +30,7 @@
  *   - wounding_evaluation_active = 1 (a caught fly is being evaluated).
  *
  * Expected: the AI puts one INTENT_DROP_BALL message on the catching channel; the gate and actualizer then
- * drops the ball (ballInfo.holder → -1, ball moving) and leaves the channel empty.
+ * drops the ball (ball.holder → -1, ball moving) and leaves the channel empty.
  */
 int test_ai_declares_and_executes_tactical_drop(void)
 {
@@ -48,7 +48,7 @@ int test_ai_declares_and_executes_tactical_drop(void)
     snapshot_pitch_start_state(ctx); // sets base_at_pitch_start from current positions
 
     // Sanity: the home catcher still holds the ball after the snapshot frame.
-    ASSERT_EQ(12, match->ballInfo.holder, "home catcher (idx 12) should still hold the ball");
+    ASSERT_EQ(12, match->ball.holder, "home catcher (idx 12) should still hold the ball");
 
     // The catching team must actually be AI-controlled — that is what makes ai_update dispatch to the
     // catching AI below. create_scenario sets team2 (the fielding team here, plays_first=0) to CONTROL_AI.
@@ -87,8 +87,8 @@ int test_ai_declares_and_executes_tactical_drop(void)
         actualize(match, ctx->state->rules, ctx->state->fieldPositions, &ingested, &ctx->state->playSoundEffect);
     }
 
-    ASSERT_EQ(-1, match->ballInfo.holder, "drop must release the ball (ballInfo.holder → -1)");
-    ASSERT_EQ(1, match->ballInfo.moving, "dropped ball should be in motion");
+    ASSERT_EQ(-1, match->ball.holder, "drop must release the ball (ball.holder → -1)");
+    ASSERT_EQ(1, match->ball.moving, "dropped ball should be in motion");
     ASSERT_EQ(
         0, ctx->state->channels.catching.count,
         "the tick that read the channel must leave it empty — intent is a parameter, not storage"

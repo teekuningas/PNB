@@ -13,16 +13,16 @@ int test_compound_foul_and_end_of_inning(void)
     ctx->state->rules->half_inning.outs = 2;
 
     initialize_referee_from_physical_state(ctx);
-    snapshot_pitch_start_state(ctx); // This calls update_referee with pitchReleased=1
+    snapshot_pitch_start_state(ctx); // This calls update_referee with pitch_released=1
 
     // Set up foul ball hit on this exact frame
-    ctx->state->match->gameEvents.ballHitByBat = 1;
-    ctx->state->match->gameEvents.ballHitGround = 1;
+    ctx->state->match->events.ball_hit_by_bat = 1;
+    ctx->state->match->events.ball_hit_ground = 1;
     ctx->state->rules->between_pitch.has_ball_hit_ground = 0;
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
 
     // Put ball out of bounds
-    ctx->state->match->ballInfo.location.x = 200.0f;
+    ctx->state->match->ball.location.x = 200.0f;
 
     // Run exactly 1 pipeline frame
     simulate_frames(ctx, 1);
