@@ -34,25 +34,25 @@ void draw_game_over_menu(
     draw_text_2d(buffer, center_x, 150, 60.0f, TEXT_ALIGN_CENTER, rs);
 
     const char* winner_name = teamData[conclusion->winner].name;
-    sprintf(buffer, "Congratulations %s!", winner_name);
+    sprintf(buffer, "Congratulations %s", winner_name);
     draw_text_2d(buffer, center_x, 250, 50.0f, TEXT_ALIGN_CENTER, rs);
 
-    sprintf(buffer, "First period: %d - %d", conclusion->period0_runs[0], conclusion->period0_runs[1]);
+    sprintf(buffer, "First period  %d - %d", conclusion->period0_runs[0], conclusion->period0_runs[1]);
     draw_text_2d(buffer, center_x, 380, 40.0f, TEXT_ALIGN_CENTER, rs);
 
-    sprintf(buffer, "Second period: %d - %d", conclusion->period1_runs[0], conclusion->period1_runs[1]);
+    sprintf(buffer, "Second period  %d - %d", conclusion->period1_runs[0], conclusion->period1_runs[1]);
     draw_text_2d(buffer, center_x, 430, 40.0f, TEXT_ALIGN_CENTER, rs);
 
     // Super inning: show if anyone scored OR if homerun was played (implies super-inning happened)
     if (conclusion->period2_runs[0] > 0 || conclusion->period2_runs[1] > 0 || conclusion->period3_runs[0] > 0 ||
         conclusion->period3_runs[1] > 0) {
-        sprintf(buffer, "Super inning: %d - %d", conclusion->period2_runs[0], conclusion->period2_runs[1]);
+        sprintf(buffer, "Super inning  %d - %d", conclusion->period2_runs[0], conclusion->period2_runs[1]);
         draw_text_2d(buffer, center_x, 480, 40.0f, TEXT_ALIGN_CENTER, rs);
     }
 
     // Homerun contest: show if anyone scored
     if (conclusion->period3_runs[0] > 0 || conclusion->period3_runs[1] > 0) {
-        sprintf(buffer, "Homerun contest: %d - %d", conclusion->period3_runs[0], conclusion->period3_runs[1]);
+        sprintf(buffer, "Homerun contest  %d - %d", conclusion->period3_runs[0], conclusion->period3_runs[1]);
         draw_text_2d(buffer, center_x, 530, 40.0f, TEXT_ALIGN_CENTER, rs);
     }
 }

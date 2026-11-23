@@ -85,62 +85,62 @@ void draw_help_menu(HelpMenuState* state, const RenderState* rs, ResourceManager
             title = "Batting";
             content = "Batting is done with the action key. The power meter sweeps once "
                       "when the pitcher begins the windup. If you do not press the action "
-                      "key before the sweep ends, the batter will not swing. To bat, press "
-                      "the action key once at the wanted power (low power bunts, higher "
-                      "power swings). Once the pitch is in the air, the marker descends "
-                      "across the meter; press the action key again in the yellow area to "
-                      "set the vertical takeoff angle. If you committed power on a bad "
-                      "pitch, press the second action key before contact to withdraw the "
-                      "swing. Adjust the horizontal angle by strafing. When there is no "
-                      "batter, browse available batters with the second action key and "
-                      "select one with the action key.";
+                      "key before the sweep ends, the batter will not swing.\n\n"
+                      "To bat, press the action key once at the wanted power. Low power "
+                      "bunts and higher power swings. Once the pitch is in the air, the "
+                      "marker descends across the meter. Press the action key again in "
+                      "the yellow area to set the vertical takeoff angle.\n\n"
+                      "If you committed power on a bad pitch, press the second action key "
+                      "before contact to withdraw the swing. Adjust the horizontal angle "
+                      "by strafing.\n\n"
+                      "When there is no batter, browse available batters with the second "
+                      "action key and select one with the action key.";
             break;
         case 2:
             title = "Running";
             content = "Running is controlled by the direction keys. Every direction key "
-                      "represents a base. Down is the home, left is the first base, right "
-                      "is the second base and up is the third base. If you just suddenly "
-                      "feel the urge to run, you can double click one of these keys to "
-                      "make runner at that base to run. Normally you probably should "
-                      "synchronize running with pitching and batting though. This is done "
-                      "by pressing the key once. That will make baserunners start running "
-                      "immediately after pitch leaves pitchers hand. Batter will start "
-                      "running after he has finished his swing or bunt. If you ended up "
-                      "running but arent sure why and would like to return to the previous "
-                      "base, you can press the corresponding direction key once and the "
-                      "runner will return if he still is safe on that base. "
-                      "If pitcher pitches enough invalid pitches you will be prompted if "
-                      "you want to take a free walk or not. Action key accepts and second "
-                      "action key rejects.";
+                      "represents a base. Down is home, left is first base, right is "
+                      "second base and up is third base.\n\n"
+                      "Press a direction key once to synchronize running with the pitch. "
+                      "Baserunners start running as soon as the pitch leaves the pitchers "
+                      "hand. The batter starts running after finishing the swing or bunt. "
+                      "Double click a direction key to send a runner immediately.\n\n"
+                      "If a runner started running and you want him to return to the "
+                      "previous base, press the same direction key once. He will return "
+                      "if he is still safe on that base.\n\n"
+                      "If the pitcher throws enough invalid pitches, you will be prompted "
+                      "to take a free walk. Action key accepts and second action key "
+                      "rejects.";
             break;
         case 3:
             title = "Pitching";
             content = "Pitching uses three presses of the action key. Press the action key "
                       "once to start the power meter sweeping, and press it again at the "
-                      "wanted height to lock pitch power and begin the windup (letting the "
-                      "sweep run out cancels). During the windup the aim marker descends "
-                      "from the right; press the action key a third time in the yellow "
-                      "area to pitch onto the plate. Where the marker stops sets the "
-                      "horizontal direction of the pitch. If you do not press during the "
-                      "aim descent, the pitcher makes a fake pitch and keeps the ball.";
+                      "wanted height to lock pitch power and begin the windup. Letting "
+                      "the sweep run out cancels the pitch.\n\n"
+                      "During the windup the aim marker descends from the right. Press "
+                      "the action key a third time in the yellow area to pitch onto the "
+                      "plate. Where the marker stops sets the horizontal direction of the "
+                      "pitch.\n\n"
+                      "If you do not press during the aim descent, the pitcher makes a "
+                      "fake pitch and keeps the ball.";
             break;
         case 4:
             title = "Fielding";
-            content = "You move with a fielder by pressing direction keys. If you dont "
-                      "have the ball, the action key will change the player. If you have "
-                      "the ball, pressing action key alone will make player drop the ball. "
-                      "If you hold one direction key when holding down the action key, "
-                      "the player will load some throwing power. Releasing the key will "
-                      "make player to throw the ball towards a base. The base corresponds "
-                      "to direction key that was pressed. That is, down will be the home "
-                      "base, left will be the first base, right will be the second base "
-                      "and up will be the third base.";
+            content = "Move the active fielder with the direction keys. When you do not "
+                      "have the ball, the action key switches to another fielder.\n\n"
+                      "When you have the ball, pressing the action key alone drops the "
+                      "ball. Hold a direction key together with the action key to load "
+                      "throwing power, then release the action key to throw toward that "
+                      "base.\n\n"
+                      "The direction keys match the bases. Down is home, left is first "
+                      "base, right is second base and up is third base.";
             break;
         }
 
         draw_text_2d(title, left_margin, current_y, title_size, TEXT_ALIGN_LEFT, rs);
         draw_text_block_2d(
-            content, left_margin, current_y + title_bottom_margin, block_width, text_size, line_spacing, rs
+            content, left_margin, current_y + title_size + title_bottom_margin, block_width, text_size, line_spacing, rs
         );
     }
 }

@@ -274,7 +274,7 @@ void draw_hutunkeitto_menu(
         const float team_size = 36.0f;
         const float arrow_size = 60.0f;
 
-        draw_text_2d("Who bats first?", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
+        draw_text_2d("Who bats first", center_x, title_y, title_size, TEXT_ALIGN_CENTER, rs);
         draw_text_2d("Team 1", team1_x, team_y, team_size, TEXT_ALIGN_CENTER, rs);
         draw_text_2d("Team 2", team2_x, team_y, team_size, TEXT_ALIGN_CENTER, rs);
 

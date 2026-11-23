@@ -627,7 +627,7 @@ static void drawScreen_LoadOrSaveCup(
                 sprintf(details, "Day %d - Cup finished", slot_info->current_day + 1);
             } else if (slot_info->opponent_team_id != -1) {
                 sprintf(
-                    details, "Day %d - Next: %s", slot_info->current_day + 1,
+                    details, "Day %d - Next %s", slot_info->current_day + 1,
                     stateInfo->team_data[slot_info->opponent_team_id].name
                 );
             } else {
@@ -647,6 +647,9 @@ static void drawScreen_LoadOrSaveCup(
     );
 }
 
+static const char CUP_CREDITS_TEXT[] = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, "
+                                       "VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, MIKKO SYRJANEN AND OTHERS..";
+
 static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const RenderState* rs, ResourceManager* rm)
 {
     const float center_x = VIRTUAL_WIDTH / 2.0f;
@@ -663,11 +666,10 @@ static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const Re
     );
 
     // --- Draw Text ---
-    draw_text_2d("WE HAVE A CHAMPION!", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
-
-    const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, VILLE "
-                               "VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, MIKKO SYRJÄNEN AND OTHERS..";
-    draw_text_2d(credits_text, creditsState->creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs);
+    draw_text_2d("WE HAVE A CHAMPION", center_x, title_y, title_fontsize, TEXT_ALIGN_CENTER, rs);
+    draw_text_2d(
+        CUP_CREDITS_TEXT, creditsState->creditsScrollX, VIRTUAL_HEIGHT * 0.8f, text_fontsize, TEXT_ALIGN_LEFT, rs
+    );
 }
 
 // =============================================================================
@@ -804,10 +806,8 @@ MenuStage update_cup_menu(
     case CUP_MENU_SCREEN_VIEW_TREE:
         return updateScreen_View(cupMenuState, keyStates);
     case CUP_MENU_SCREEN_END_CREDITS: {
-        const char* credits_text = "SPECIAL THANKS TO JUUSO HEINILA, PEKKA HEINILA, PETRI ANTTILA, MATTI PITKANEN, "
-                                   "VILLE VILJANMAA, PETRI MIKOLA, TUOMAS NURMELA, AND OTHERS..";
         const float text_fontsize = 30.0f;
-        float text_width = get_text_width_2d(credits_text, strlen(credits_text), text_fontsize);
+        float text_width = get_text_width_2d(CUP_CREDITS_TEXT, strlen(CUP_CREDITS_TEXT), text_fontsize);
         cupMenuState->credits_menu.creditsScrollX -= 1.0f;
         if (cupMenuState->credits_menu.creditsScrollX < -text_width) {
             cupMenuState->credits_menu.creditsScrollX = VIRTUAL_WIDTH;

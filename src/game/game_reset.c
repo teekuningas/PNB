@@ -437,7 +437,7 @@ static void setup_homerun_physical_state(
             match->players[runnerIndex].body.previous_location.z = match->players[runnerIndex].body.location.z;
             match->players[runnerIndex].body.orientation.x = -match->players[runnerIndex].body.location.x;
             match->players[runnerIndex].body.orientation.y = 0.0f;
-            match->players[runnerIndex].body.orientation.z = -match->players[runnerIndex].body.location.x;
+            match->players[runnerIndex].body.orientation.z = -match->players[runnerIndex].body.location.z;
         }
 
         // set other runners next to the third base.
@@ -453,7 +453,7 @@ static void setup_homerun_physical_state(
                 match->players[index].body.previous_location.z = match->players[index].body.location.z;
                 match->players[index].body.orientation.x = -match->players[index].body.location.x;
                 match->players[index].body.orientation.y = 0.0f;
-                match->players[index].body.orientation.z = -match->players[index].body.location.x;
+                match->players[index].body.orientation.z = -match->players[index].body.location.z;
             }
         }
     }

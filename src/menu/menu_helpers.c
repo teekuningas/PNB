@@ -109,62 +109,59 @@ void draw_text_block_2d(
 {
     if (!text) return;
 
-    const char* start = text;
-    const char* end = text + strlen(text);
+    const char* p = text;
     float current_y = y;
 
-    while (start < end) {
-        const char* line_end = start;
-        const char* last_space = NULL;
+    while (*p != '\0') {
+        // Explicit empty line (e.g., paragraph break "\n\n").
+        if (*p == '\n') {
+            current_y += lineSpacing;
+            p++;
+            continue;
+        }
 
-        // Find the longest possible line that fits within the width
-        while (line_end < end) {
-            const char* next_space = strchr(line_end + 1, ' ');
-            const char* word_end = next_space ? next_space : end;
+        const char* para_end = p;
+        while (*para_end != '\0' && *para_end != '\n') {
+            para_end++;
+        }
 
-            int line_len = (word_end - start);
-            if (get_text_width_2d(start, line_len, size) > width) {
-                break; // Word doesn't fit, break the line here
+        // Greedily pack whole words up to para_end that fit within width.
+        const char* line_end = p;
+        const char* scan = p;
+        while (scan < para_end) {
+            const char* word_end = scan;
+            while (word_end < para_end && *word_end == ' ') {
+                word_end++;
+            }
+            while (word_end < para_end && *word_end != ' ') {
+                word_end++;
             }
 
-            last_space = line_end;
+            if (get_text_width_2d(p, (unsigned int)(word_end - p), size) > width) {
+                break;
+            }
             line_end = word_end;
-
-            if (!next_space) {
-                break; // Reached end of string
-            }
+            scan = word_end;
         }
 
-        // If we couldn't fit even a single word, we must break it
-        if (line_end == start) {
-            // Find the exact character that overflows
-            int char_count = 0;
-            while (start + char_count < end) {
-                if (get_text_width_2d(start, char_count + 1, size) > width) {
-                    break;
-                }
-                char_count++;
+        // If a single word overflows width, break by character (at least one for progress).
+        if (line_end == p) {
+            const char* c = p;
+            while (c < para_end && get_text_width_2d(p, (unsigned int)(c - p + 1), size) <= width) {
+                c++;
             }
-            line_end = start + char_count;
-        } else if (last_space && line_end < end) {
-            // Prefer to break at the last space to keep words whole
-            line_end = last_space;
+            line_end = (c > p) ? c : p + 1;
         }
 
-        // Draw the line
-        int line_len = line_end - start;
-        char line_buffer[line_len + 1];
-        memcpy(line_buffer, start, line_len);
-        line_buffer[line_len] = '\0';
-
-        print_text_2d(line_buffer, line_len, x, current_y, size);
-
-        // Move to the next line
+        print_text_2d(p, (unsigned int)(line_end - p), x, current_y, size);
         current_y += lineSpacing;
-        start = line_end;
-        // Skip leading space on the next line
-        if (*start == ' ') {
-            start++;
+
+        p = line_end;
+        while (*p == ' ') {
+            p++;
+        }
+        if (*p == '\n') {
+            p++;
         }
     }
 }
