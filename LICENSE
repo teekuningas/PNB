@@ -1,9 +1,18 @@
 LICENSE
 
-For all sources and art this license applies:
+PNB ("Not Baseball") is a pesäpallo video game.
+Copyright (C) 2013-2026 Erkka Heinilä
 
-PNB is a video game of Finnish baseball
-Copyright (C) 2013 Erkka Heinilä
+Different parts of this repository are licensed separately as follows.
+
+------------------------------------------------------------------------
+1. Source Code (GPL-3.0-or-later)
+------------------------------------------------------------------------
+
+Applies to all original source code, tests, scripts, and build files
+(src/, tests/, tools/, Makefile*, objects.mk, flake.nix, .github/).
+
+SPDX-License-Identifier: GPL-3.0-or-later
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -16,5 +25,31 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+------------------------------------------------------------------------
+2. Game Assets and Data (CC-BY-NC-SA-4.0)
+------------------------------------------------------------------------
+
+Applies to all original art, 3D models, textures, audio, and game data
+under data/ (data/models/, data/textures/, data/sounds/, data/teams.xml).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
+These assets are licensed under the Creative Commons Attribution-
+NonCommercial-ShareAlike 4.0 International License. To view a copy of
+this license, visit <https://creativecommons.org/licenses/by-nc-sa/4.0/>.
+
+------------------------------------------------------------------------
+3. Third-Party Libraries (external/)
+------------------------------------------------------------------------
+
+Third-party headers vendored under external/ retain their own licenses:
+
+- external/miniaudio.h (v0.11.17, David Reid):
+  Dual-licensed under Public Domain (The Unlicense) or MIT No Attribution
+  (MIT-0). See the full license text at the end of external/miniaudio.h.
+
+- external/stb_image.h (v2.28, Sean Barrett):
+  Dual-licensed under Public Domain (The Unlicense) or the MIT License.
+  See the full license text at the end of external/stb_image.h.

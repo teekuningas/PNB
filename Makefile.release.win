@@ -1,12 +1,17 @@
 IDIR = -I./src/core -I./src/game -I./src/game/actions_pure -I./src/game/ai_pure -I./src/game/rules_pure -I./src/include -I./external -I./src/menu -I./src/cup -I./src/physics -I./src/renderer
+PREFIX ?= $(if $(MSYSTEM_PREFIX),$(MSYSTEM_PREFIX),/ucrt64)
 CC = gcc
-CFLAGS = $(IDIR) -I/mingw64/include -O2 -Wall
-LDFLAGS = -L/mingw64/lib -lglfw3 -lglew32 -lmxml -lopengl32 -lglu32
+CFLAGS = $(IDIR) -I$(PREFIX)/include -O2 -Wall
+LDFLAGS = -L$(PREFIX)/lib -lglfw3 -lglew32 -lmxml -lopengl32 -lglu32 -lm
 ODIR = obj
 
 include objects.mk
 _OBJ = core/main.o $(_OBJ_COMMON)
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+.PHONY: all clean
+
+all: PNB.exe
 
 $(ODIR)/%.o: src/%.c
 	mkdir -p $(@D)
@@ -14,3 +19,6 @@ $(ODIR)/%.o: src/%.c
 
 PNB.exe: $(OBJ)
 	$(CC) $^ -o $@ $(LDFLAGS)
+
+clean:
+	rm -rf $(ODIR) PNB.exe

@@ -5,6 +5,9 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows-installable:
     runs-on: windows-latest
@@ -12,60 +15,39 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-mxml
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-glew mingw-w64-ucrt-x86_64-glfw mingw-w64-ucrt-x86_64-mxml zip
 
       - name: Build project
         run: |
-          echo 'Running in MSYS2!'
           mingw32-make -f Makefile.release.win
 
-      - name: Install zip
+      - name: Package release archive
         run: |
-          pacman -Sy --noconfirm zip
-
-      - name: Package all necessary files
-        run: |
-          mkdir PNB
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p PNB
           cp ./PNB.exe PNB/
+          cp ./LICENSE PNB/
           cp -r ./data PNB/
-          cp /mingw64/bin/glfw3.dll PNB/
-          cp /mingw64/bin/glew32.dll PNB/
-          cp /mingw64/bin/libwinpthread-1.dll PNB/
-          zip -r PNB-${GITHUB_REF##*/}.zip PNB
+          ldd ./PNB.exe | awk -v prefix="${MSYSTEM_PREFIX}/bin/" 'index($3, prefix) == 1 {print $3}' | xargs -r cp -t PNB/
+          ls -la PNB/
+          zip -r "PNB-${TAG}.zip" PNB
 
-      - name: Set variables
-        id: vars
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.REF_NAME }}
-          release_name: Release ${{ env.REF_NAME }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./PNB-${{ env.REF_NAME }}.zip
-          asset_name: PNB-${{ env.REF_NAME }}.zip
-          asset_content_type: application/zip
-
+          $tag = $env:GITHUB_REF_NAME
+          $args = @("release", "create", $tag, "PNB-$tag.zip", "--title", "Release $tag", "--generate-notes")
+          if ($tag -match '[a-zA-Z]') {
+            $args += "--prerelease"
+          }
+          gh @args

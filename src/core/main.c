@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
     }
     state_validator_init(debugStatePath);
 
-    printf("v. 1.5 beta\n");
+    printf("PNB 1.5a3\n");
 
     // Initialize stateInfo structure
     stateInfo.match = &match;
