@@ -23,5 +23,9 @@ int test_scoreless_lap_of_the_order_ends_half_inning(void); // §12(2) — one l
 int test_joker_opening_does_not_take_the_turn(void); // §7/§12(2) — a joker opener is not the turn's opener
 int test_batter_retreats_to_home_on_koppi(void); // Safe home retreat on koppi restores AT_BAT and readiness
 int test_batter_retreat_closes_stale_seat_offer(void); // Safe home retreat closes an already-open seat offer
+int test_contest_first_strike_foul_resumes_same_pair(void); // 1st-strike foul in contest restores same pair
+int test_contest_third_strike_foul_advances_pair_cleanly(
+    void
+); // 3rd-strike foul advances pair without teleporting batter
 
 #endif // ALL_SCENARIOS_H

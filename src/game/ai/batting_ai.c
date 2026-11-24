@@ -195,10 +195,10 @@ static void commit_swing_power(
     intent_push(channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = plan->angle}});
 }
 
-// Once a hit is safely loose in the field, send every eligible runner to the next base. "Safely loose":
-// hit, not caught, nobody holds it, no throw in progress, already bounced, physically outside the field
-// and far enough from home that it is not still at the plate (an out-of-bounds ball still in the air is
-// a foul — a läpilyönti — not a loose ball).
+// Once a fair hit is safely loose outside the field (a breakthrough — läpilyönti), send every
+// eligible runner to the next base. "Safely loose": hit, not caught, not a foul (laiton), nobody
+// holds it, no throw in progress, already bounced, physically outside the field and far enough
+// from home that it is not still at the plate.
 //
 // This is a deliberate "run now", so it declares RUN_COMMIT (the AI's equivalent of a human
 // double-press), not RUN_FORWARD, which only arms. Once a runner is going_forward it is not re-issued, so
@@ -208,7 +208,8 @@ static void advance_runners_on_loose_hit(
 )
 {
     const BetweenPitchState* bps = &rules->between_pitch;
-    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 && match->ball.thrown_to == BASE_NONE &&
+    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 &&
+          rules->referee.foul_state == FOUL_STATE_NONE && match->ball.thrown_to == BASE_NONE &&
           match->ball.holder == -1 && match->ball.moving == 1 && bps->has_ball_hit_ground == 1 &&
           match->ball.location.z < -10.0f && is_ball_out_of_bounds(&match->ball, fieldPositions))) {
         return;

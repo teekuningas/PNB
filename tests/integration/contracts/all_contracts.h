@@ -4,6 +4,7 @@
 // Lifecycle contract tests
 int test_clear_frame_events_completeness(void);
 int test_home_run_view_preserves_phase_and_hold_boundaries(void);
+int test_home_run_view_ignores_aborted_break_and_drops_on_retreat(void);
 int test_homeward_run_facts_survive_clear_and_legal_enforcement(void);
 int test_camera_facts_distinguish_resets_from_flow_short_circuits(void);
 int test_player_view_preserves_phase_and_restart_boundaries(void);
@@ -40,6 +41,10 @@ int test_no_free_walk_runs_during_end_of_inning(void);
 int test_compound_foul_and_end_of_inning(void);
 int test_compound_hr_pair_and_uncatchable(void);
 int test_contest_side_change_starts_from_the_first_pair(void);
+int test_foul_blocks_safety_removal_and_contest_pair_end(void);
+int test_contest_third_strike_foul_subsumes_foul_into_pair_end(void);
+int test_contest_last_pair_third_strike_foul_upgrades_to_inning_end(void);
+int test_contest_pair_end_blocks_post_play_runs(void);
 
 // Event→Decision promotion contracts
 int test_bat_outcome_promotion(void);

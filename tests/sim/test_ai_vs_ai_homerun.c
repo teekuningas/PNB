@@ -1,5 +1,6 @@
 #include "test_helpers.h"
 #include "tick_outputs.h"
+#include "home_run_view.h"
 #include <stdio.h>
 #include "sim_harness.h"
 #include "sim_observers.h"
@@ -90,10 +91,31 @@ int test_ai_vs_ai_homerun(void)
 // contest — only that it stays inside the rules and finishes.
 #define HOMERUN_SEED_COUNT 120
 
+typedef struct {
+    HomeRunView view;
+    int prev_active;
+    long activations;
+} ContestViewObserver;
+
+static void contest_view_observer_hook(const SimGame* g, void* ctx)
+{
+    ContestViewObserver* o = (ContestViewObserver*)ctx;
+    const TickFacts* facts = &g->state->tick_facts;
+    home_run_view_after_tick(&o->view, facts);
+    if (o->view.active && !o->prev_active) {
+        o->activations++;
+    }
+    o->prev_active = o->view.active;
+    if (o->view.active && facts->enforcement_completed && facts->third_base_control == THIRD_CONTROLLER_ON_BASE) {
+        sim_fail((SimGame*)g, "invariant: HomeRunView active while third-base runner is standing on third");
+    }
+}
+
 int test_homerun_contest_seed_sweep(void)
 {
     int failures = 0, incomplete = 0;
     long total_frames = 0;
+    long total_view_activations = 0;
 
     for (int i = 0; i < HOMERUN_SEED_COUNT; i++) {
         // Golden-ratio stride from a fixed base: a spread, reproducible seed set.
@@ -108,6 +130,9 @@ int test_homerun_contest_seed_sweep(void)
         invariant_observer_init(&inv, STALL_LIMIT);
         sim_attach(g, invariant_observer_hook, &inv);
 
+        ContestViewObserver view_obs = {.view = {.hold_ticks = -1}};
+        sim_attach(g, contest_view_observer_hook, &view_obs);
+
         long frames = sim_run_until(g, homerun_turn_done, HOMERUN_MAX_FRAMES);
 
         if (g->failed) {
@@ -118,6 +143,7 @@ int test_homerun_contest_seed_sweep(void)
             incomplete++;
         } else {
             total_frames += frames;
+            total_view_activations += view_obs.activations;
         }
 
         sim_destroy(g);
@@ -125,9 +151,11 @@ int test_homerun_contest_seed_sweep(void)
 
     int ok = HOMERUN_SEED_COUNT - failures - incomplete;
     printf(
-        "\n  [homerun sweep] seeds=%d ok=%d invariant-failures=%d unfinished=%d mean frames/turn=%ld\n",
-        HOMERUN_SEED_COUNT, ok, failures, incomplete, ok > 0 ? total_frames / ok : 0
+        "\n  [homerun sweep] seeds=%d ok=%d invariant-failures=%d unfinished=%d mean frames/turn=%ld "
+        "home_run_view_activations=%ld\n",
+        HOMERUN_SEED_COUNT, ok, failures, incomplete, ok > 0 ? total_frames / ok : 0, total_view_activations
     );
 
+    ASSERT(total_view_activations > 0, "HomeRunView must still activate on genuine homeward runs in the sweep");
     return (failures == 0 && incomplete == 0) ? TEST_PASSED : TEST_FAILED;
 }

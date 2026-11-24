@@ -150,7 +150,14 @@ static unsigned long long run_once(unsigned int seed)
 // Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): batters reaching first 109 -> 157,
 // runs 1 -> 4, power mean 21.0 -> 25.1, with all other bands holding and 120/120 half-inning and
 // 120/120 homerun-contest sweep seeds clean.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x913c1366ce25cc67ULL
+//
+// Re-recorded 2026-11-24, deliberately, by Road-to-1.5 Slice 1: batting_ai.c::advance_runners_on_loose_hit
+// now checks `foul_state == FOUL_STATE_NONE`, so the batting AI no longer mistakes a bounced foul ball
+// (*laiton*) for a fair breakthrough (*läpilyönti*) and stops sprinting during the foul grace period.
+// Confirmed isolated to that single guard (without it, every referee/§21/HomeRunView change preserves
+// 0x913c1366ce25cc67ULL bit-for-bit; frame count on 0x1234ABCD stays 3977, and all 24 bands in
+// test_ai_offense_breakdown hold).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x01e1e9c35f42aee4ULL
 
 int test_ai_vs_ai_determinism(void)
 {

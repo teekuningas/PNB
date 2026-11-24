@@ -169,7 +169,7 @@ ratchet "files awaiting the function-quality audit" "$unaudited" 49 # the AI con
 # and the way to fall it is to convert a definition while fixing the rule that needs it.
 # ---------------------------------------------------------------------------
 vocab_pending=$(awk -F'\t' '!/^#/ && NF > 1 && $2 != "predicate"' "$VOCAB_LEDGER" 2>/dev/null | wc -l)
-ratchet "rule definitions not yet a predicate" "$vocab_pending" 11
+ratchet "rule definitions not yet a predicate" "$vocab_pending" 10
 
 # ---------------------------------------------------------------------------
 # The refactor's own frontier, and it is now AT ZERO. ActionFlags was the pre-intent

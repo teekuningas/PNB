@@ -80,6 +80,28 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         return;
     }
 
+    // Strict flow precedence (END_INNING > NEXT_PAIR > FOUL): no two reset state machines may be
+    // active on the same frame, and a burnt batter must never be seated AT_BAT.
+    if (r->referee.foul_state != FOUL_STATE_NONE && r->referee.next_pair_state != HR_PAIR_STATE_NONE) {
+        sim_fail((SimGame*)g, "invariant: foul_state and next_pair_state simultaneously active");
+        return;
+    }
+    if (r->referee.foul_state != FOUL_STATE_NONE && r->referee.end_of_inning_state != END_INNING_STATE_NONE) {
+        sim_fail((SimGame*)g, "invariant: foul_state and end_of_inning_state simultaneously active");
+        return;
+    }
+    if (r->referee.next_pair_state != HR_PAIR_STATE_NONE && r->referee.end_of_inning_state != END_INNING_STATE_NONE) {
+        sim_fail((SimGame*)g, "invariant: next_pair_state and end_of_inning_state simultaneously active");
+        return;
+    }
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        if (g->state->match->players[i].batting.presence.state == PLAYER_STATE_AT_BAT &&
+            r->referee.batting_players[i].status == PLAYER_STATUS_OUT) {
+            sim_fail((SimGame*)g, "invariant: player is AT_BAT while referee status is OUT");
+            return;
+        }
+    }
+
     if (!o->initialized) {
         o->initialized = 1;
         o->last_progress_frame = g->frame;

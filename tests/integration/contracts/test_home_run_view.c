@@ -19,18 +19,26 @@ static ScenarioContext* camera_scenario(void)
 int test_home_run_view_preserves_phase_and_hold_boundaries(void)
 {
     HomeRunView view = {.hold_ticks = -1};
+    // Tick 1: a homeward run starts on pitch release; arms pending without immediately lifting.
     TickFacts facts = {
         .pitch_released = 1,
         .homeward_run_started = 1,
-        .ball_home = 1,
-        .third_base_control = THIRD_CONTROLLER_ON_BASE,
+        .ball_home = 0,
+        .third_base_control = THIRD_CONTROLLER_OFF_BASE,
         .enforcement_completed = 1
     };
     home_run_view_after_tick(&view, &facts);
-    ASSERT_EQ(1, view.active, "a runner starting on pitch release reactivates the view");
+    ASSERT_EQ(0, view.active, "departure tick arms pending before lifting the camera");
+    ASSERT_EQ(1, view.pending, "homeward run start sets pending");
+
+    // Tick 2: runner has resolved off third and ball is home -> confirms active and starts the hold.
+    facts = (TickFacts){.ball_home = 1, .third_base_control = THIRD_NO_CONTROLLER, .enforcement_completed = 1};
+    home_run_view_after_tick(&view, &facts);
+    ASSERT_EQ(1, view.active, "runner remaining off third confirms elevated framing");
+    ASSERT_EQ(0, view.pending, "pending clears on confirmation");
     ASSERT_EQ(1, view.hold_ticks, "the settled-home tick also advances game flow");
 
-    facts = (TickFacts){.enforcement_completed = 1};
+    facts = (TickFacts){.third_base_control = THIRD_NO_CONTROLLER, .enforcement_completed = 1};
     for (int tick = 0; tick < 49; tick++)
         home_run_view_after_tick(&view, &facts);
     ASSERT_EQ(1, view.active, "the view still holds on tick 50");
@@ -38,14 +46,20 @@ int test_home_run_view_preserves_phase_and_hold_boundaries(void)
 
     facts.homeward_run_started_in_enforcement = 1;
     home_run_view_after_tick(&view, &facts);
-    ASSERT_EQ(1, view.active, "a late enforced run starts after the previous hold expires");
+    ASSERT_EQ(0, view.active, "previous hold expired on tick 51");
+    ASSERT_EQ(1, view.pending, "a late enforced run arms a new view after the previous hold expires");
     ASSERT_EQ(-1, view.hold_ticks, "a late run starts a new view, not an expired hold");
+
+    facts = (TickFacts){.third_base_control = THIRD_CONTROLLER_OFF_BASE, .enforcement_completed = 1};
+    home_run_view_after_tick(&view, &facts);
+    ASSERT_EQ(1, view.active, "late enforced run confirms on the next tick");
 
     facts = (TickFacts){.pitch_released = 1, .enforcement_completed = 1};
     home_run_view_after_tick(&view, &facts);
     ASSERT_EQ(0, view.active, "pitch release ends the homeward framing");
 
     view = (HomeRunView){.active = 1, .hold_ticks = 17};
+    facts = (TickFacts){.pitch_released = 1, .third_base_control = THIRD_NO_CONTROLLER, .enforcement_completed = 1};
     home_run_view_after_tick(&view, &facts);
     ASSERT_EQ(18, view.hold_ticks, "release does not silently reset the existing hold clock");
 
@@ -54,7 +68,44 @@ int test_home_run_view_preserves_phase_and_hold_boundaries(void)
     facts.world_reset = 1;
     home_run_view_after_tick(&view, &facts);
     ASSERT_EQ(0, view.active, "a world reset supersedes earlier route starts");
+    ASSERT_EQ(0, view.pending, "a world reset clears pending starts");
     ASSERT_EQ(-1, view.hold_ticks, "a world reset cancels the hold");
+    return TEST_PASSED;
+}
+
+int test_home_run_view_ignores_aborted_break_and_drops_on_retreat(void)
+{
+    HomeRunView view = {.hold_ticks = -1};
+
+    // Case 1: runner breaks on pitch release, then snaps back to third one tick later (väärä recall).
+    TickFacts release = {
+        .pitch_released = 1,
+        .homeward_run_started = 1,
+        .ball_home = 0,
+        .third_base_control = THIRD_CONTROLLER_OFF_BASE,
+        .enforcement_completed = 1
+    };
+    home_run_view_after_tick(&view, &release);
+    ASSERT_EQ(0, view.active, "aborted break must not lift on departure frame");
+    ASSERT_EQ(1, view.pending, "departure frame only arms pending");
+
+    TickFacts snapped_back = {
+        .ball_home = 0, .third_base_control = THIRD_CONTROLLER_ON_BASE, .enforcement_completed = 1
+    };
+    home_run_view_after_tick(&view, &snapped_back);
+    ASSERT_EQ(0, view.active, "1-tick recall back onto third cancels pending without lifting camera");
+    ASSERT_EQ(0, view.pending, "pending cleared after snap-back");
+    ASSERT_EQ(-1, view.hold_ticks, "no hold started for aborted break");
+
+    // Case 2: runner takes a real lead (stays off third), then retreats safely back onto third.
+    home_run_view_after_tick(&view, &release);
+    TickFacts running = {.ball_home = 0, .third_base_control = THIRD_CONTROLLER_OFF_BASE, .enforcement_completed = 1};
+    home_run_view_after_tick(&view, &running);
+    ASSERT_EQ(1, view.active, "sustained departure lifts the camera");
+
+    home_run_view_after_tick(&view, &snapped_back);
+    ASSERT_EQ(0, view.active, "safe return onto third drops elevated framing immediately");
+    ASSERT_EQ(-1, view.hold_ticks, "safe return onto third does not start a 50-tick hold");
     return TEST_PASSED;
 }
 
@@ -83,8 +134,14 @@ int test_homeward_run_facts_survive_clear_and_legal_enforcement(void)
     );
     HomeRunView view = {.hold_ticks = -1};
     home_run_view_after_tick(&view, facts);
-    ASSERT_EQ(1, view.active, "the fleeting route start still reaches its client");
+    ASSERT_EQ(1, view.pending, "the fleeting route start still reaches its client");
     ASSERT_EQ(-1, view.hold_ticks, "post-enforcement emptiness must not start the hold one tick early");
+
+    // On the next tick, the runner is resolved off third (THIRD_NO_CONTROLLER), confirming the view.
+    ASSERT_EQ(1, update_game_frame(ctx->state, &ctx->menu), "second tick must run");
+    home_run_view_after_tick(&view, &ctx->state->tick_facts);
+    ASSERT_EQ(1, view.active, "resolved runner confirms elevated framing on the next tick");
+    ASSERT_EQ(1, view.hold_ticks, "hold begins once runner is resolved and ball is home");
     cleanup_scenario(ctx);
     return TEST_PASSED;
 }

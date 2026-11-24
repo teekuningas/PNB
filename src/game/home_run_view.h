@@ -5,6 +5,7 @@
 
 typedef struct _HomeRunView {
     bool active;
+    bool pending; // homeward start seen last tick; confirms next tick if runner stays off third
     int hold_ticks; // -1 while not counting
 } HomeRunView;
 

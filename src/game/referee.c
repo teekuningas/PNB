@@ -12,11 +12,20 @@
 #include "scoring_helpers.h"
 #include "base_control.h"
 #include "rules_side_change.h"
+#include "rules_resolution.h"
 
 // Referee-specific timing thresholds (in frames)
 // BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from field.h
 #define WOUNDING_CATCH_THRESHOLD (1.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 #define OUT_OF_BOUNDS_THRESHOLD (2.0f * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
+
+// Has the current half-inning or home-run-contest pair already ended?
+// Once either transition state machine has fired, the remaining timer is a display/reset pause
+// and no further outs, runs, free walks, or fouls may be adjudicated.
+static int play_has_ended(const RefereeState* referee)
+{
+    return referee->end_of_inning_state != END_INNING_STATE_NONE || referee->next_pair_state != HR_PAIR_STATE_NONE;
+}
 
 // Clears every field of RefereeState. Used by the two entry points below —
 // initialize_referee (game setup) and referee_reset_for_new_inning — and by nothing
@@ -217,9 +226,9 @@ static void update_foul_play_logic(
     }
 
     // Transition 1: NONE -> DETECTED (Detection)
-    // Out of Bounds Logic: Check ONLY on first bounce
+    // Out of Bounds Logic: Check ONLY on first bounce, and never once the inning or contest pair has ended.
     if (events->ball_hit_ground && betweenPitchState->has_ball_hit_ground == 0 &&
-        referee->foul_state == FOUL_STATE_NONE) {
+        referee->foul_state == FOUL_STATE_NONE && !play_has_ended(referee)) {
         if (betweenPitchState->bat_outcome == BAT_OUTCOME_HIT && betweenPitchState->catch_has_been_made == 0) {
             if (is_ball_out_of_bounds(&game->ball, fieldPositions)) {
 
@@ -490,13 +499,11 @@ static void update_force_outs(
 )
 {
 
-    // Once the half-inning is ending, no further outs are recorded: 3 outs ends the half-inning
-    // immediately and nothing happens after. Mirrors the run paths' guard (update_runs /
-    // resolve_pending_runs). Without it, a ball arriving at a base during the end-of-inning grace
-    // period records a spurious 4th out (outs > 3).
-    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
+    // Once the half-inning or contest pair is ending, no further outs or safety removals are recorded.
+    // Mirrors the run paths' guard (update_runs / resolve_pending_runs).
+    if (play_has_ended(referee)) return;
 
-    // Check for Force Outs (§33) and Safety Removal (§36)
+    // Check for Force Outs (§33) and Safety Removal (§20(3))
     if (ballAtBase != -1) {
         for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
             const PlayerInfo* player = &game->players[i];
@@ -528,7 +535,7 @@ static void update_force_outs(
                 )) {
 
                 referee->batting_players[i].status = PLAYER_STATUS_OUT;
-                record_out_capped(halfInningState, scoreboard, announcement); // §28: never a spurious 4th
+                record_out_capped(halfInningState, scoreboard, announcement); // §12(1): never a spurious 4th
 
                 // Remove safety if they had it at this base
                 if (has_safety_at_current) {
@@ -536,13 +543,17 @@ static void update_force_outs(
                 }
             }
 
-            // B. Safety Removal (§36 Koppilyönti logic)
-            BaseID player_safety_base = referee->batting_players[i].current_safety_base;
+            // B. Safety Removal (§20(3): ball held at the player's safe base while they are off it).
+            // Disabled during a foul: §29 voids the hit's play and restores players to pitch-start bases,
+            // so returning the ball home during the foul grace period must not strip safety before reset.
+            if (referee->foul_state == FOUL_STATE_NONE) {
+                BaseID player_safety_base = referee->batting_players[i].current_safety_base;
 
-            if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
-                if (!is_protected) {
-                    // Player has safety here but is "irti" - lose safety and must run
-                    referee->batting_players[i].current_safety_base = BASE_NONE;
+                if (player_safety_base != BASE_NONE && player_safety_base == (BaseID)ballAtBase) {
+                    if (!is_protected) {
+                        // Player has safety here but is "irti" - lose safety and must run
+                        referee->batting_players[i].current_safety_base = BASE_NONE;
+                    }
                 }
             }
         }
@@ -555,8 +566,8 @@ static void update_tuplahaava_logic(
 )
 {
 
-    // No further outs once the half-inning is ending (see update_force_outs).
-    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
+    // No further outs once the half-inning or contest pair is ending (see update_force_outs).
+    if (play_has_ended(referee)) return;
 
     // Tuplahaava Exceptions (Explicit Logic from game_analysis.c)
     // These checks must run every frame, not just when ball is at a base
@@ -686,8 +697,8 @@ static void update_runs(
             (betweenPitchState->catch_has_been_made == 1 && referee->wounding_evaluation_finished == 0);
 
         // Case A: Pending Run (Ball in Air OR Catch Evaluation Active)
-        // Don't mark new pending runs if end-of-inning has been decided
-        if ((isBallInAir || isCatchPending) && referee->end_of_inning_state == END_INNING_STATE_NONE) {
+        // Don't mark new pending runs if end-of-inning or contest pair end has been decided
+        if ((isBallInAir || isCatchPending) && !play_has_ended(referee)) {
             for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 if (game->players[i].batting.presence.base_id != BASE_NONE) {
                     int isWounded = (game->players[i].batting.presence.state == PLAYER_STATE_WOUNDED) ||
@@ -712,7 +723,7 @@ static void update_runs(
         }
         // Case B: Ball Grounded or Catch Confirmed (Immediate Run)
         else if ((betweenPitchState->catch_has_been_made == 1 || betweenPitchState->has_ball_hit_ground == 1) &&
-                 referee->wounding_evaluation_active == 0 && referee->end_of_inning_state == END_INNING_STATE_NONE &&
+                 referee->wounding_evaluation_active == 0 && !play_has_ended(referee) &&
                  referee->foul_state == FOUL_STATE_NONE) {
 
             // Check all players
@@ -807,8 +818,8 @@ static void update_free_walk_resolution(
     const FreeWalkEntitlement* freeWalk, const GameEvents* events, GameEventType* announcement
 )
 {
-    // No free walk processing once end-of-inning has been decided
-    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
+    // No free walk processing once end-of-inning or contest pair end has been decided
+    if (play_has_ended(referee)) return;
 
     // 6. Free Walk Resolution
     if (events->free_walk_accepted && freeWalk->runner != -1) {
@@ -861,8 +872,8 @@ static void resolve_pending_runs(
     Scoreboard* scoreboard, GameEventType* announcement
 )
 {
-    // No run resolution once end-of-inning has been decided
-    if (referee->end_of_inning_state != END_INNING_STATE_NONE) return;
+    // No run resolution once end-of-inning or contest pair end has been decided
+    if (play_has_ended(referee)) return;
 
     // Trigger 1: Ball Hit Ground (Final Verdict)
     if (betweenPitchState->has_ball_hit_ground) {
@@ -997,6 +1008,11 @@ static void clear_referee_for_pair_end(
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     clear_between_pitch_state(betweenPitchState);
+    refereeState->strikes_at_pitch_start = 0;
+    refereeState->wounding_evaluation_active = 0;
+    refereeState->wounding_evaluation_finished = 0;
+    refereeState->wounding_evaluation_timer = -1;
+    refereeState->ball_in_third_base_since_pitch = 0;
     refereeState->foul_state = FOUL_STATE_NONE;
     refereeState->foul_timer = -1;
     refereeState->homerun_pair_has_pitch = 0;
@@ -1262,8 +1278,13 @@ void update_referee(
 
     if (scoreboard->period >= 4) {
         if (refereeState->next_pair_state == HR_PAIR_STATE_NONE) {
-            // Only check pair-ending conditions after at least one pitch has been released
-            if (refereeState->homerun_pair_has_pitch) {
+            if (refereeState->foul_state != FOUL_STATE_NONE) {
+                // §29: a 3rd-strike foul burns the batter and ends the contest pair immediately;
+                // a 1st- or 2nd-strike foul resets the same pair for its next strike, never ends it.
+                if (refereeState->foul_state == FOUL_STATE_DETECTED && refereeState->strikes_at_pitch_start == 2) {
+                    wants_pair_end = 1;
+                }
+            } else if (refereeState->homerun_pair_has_pitch) {
                 int batterIndex = -1;
                 int runnerIndex = -1;
 
@@ -1285,11 +1306,6 @@ void update_referee(
                     batterState = game->players[batterIndex].batting.presence.state;
                 }
 
-                BaseID runnerBaseId = BASE_NONE;
-                if (runnerIndex != -1) {
-                    runnerBaseId = game->players[runnerIndex].batting.presence.base_id;
-                }
-
                 int batterHasSafetyAtHome = 0;
                 if (batterIndex != -1 && refereeState->batting_players[batterIndex].current_safety_base == BASE_HOME) {
                     batterHasSafetyAtHome = 1;
@@ -1300,12 +1316,20 @@ void update_referee(
                     batterAdvancingToThird = 1;
                 }
 
-                if (runnerBaseId == BASE_THIRD && ballHome) {
-                    if (!batterHasSafetyAtHome && !batterAdvancingToThird) wants_pair_end = 1;
+                // §21: has the third-base runner reached a final resolution (scored, wounded, burnt,
+                // or advance voided because the batter's turn ended without a run-of-honour attempt)?
+                int runnerResolved = 1;
+                if (runnerIndex != -1) {
+                    const RefereePlayerState* runner = &refereeState->batting_players[runnerIndex];
+                    int runnerAdvanceVoided = (!batterHasSafetyAtHome && !batterAdvancingToThird);
+                    runnerResolved = player_has_reached_final_resolution(
+                        runner->has_scored, runner->status == PLAYER_STATUS_WOUNDED,
+                        runner->status == PLAYER_STATUS_OUT, runnerAdvanceVoided
+                    );
                 }
 
-                if (runnerBaseId != BASE_THIRD && ballHome) {
-                    if (!batterAdvancingToThird) wants_pair_end = 1;
+                if (ballHome && runnerResolved && !batterAdvancingToThird) {
+                    wants_pair_end = 1;
                 }
 
                 if (ballHome) {
@@ -1366,7 +1390,9 @@ void update_referee(
         }
     }
 
-    // Mutual Exclusivity: Inning End suppresses Pair Ends and active Foul timers
+    // Mutual Exclusivity: Inning End > Pair End > Foul.
+    // A higher-priority flow transition subsumes any lower-priority timer so two
+    // reset state machines are never active at the same time.
     if (wants_inning_end || refereeState->end_of_inning_state != END_INNING_STATE_NONE) {
         wants_pair_end = 0;
 
@@ -1375,6 +1401,11 @@ void update_referee(
             refereeState->next_pair_timer = -1;
         }
 
+        if (refereeState->foul_state != FOUL_STATE_NONE) {
+            refereeState->foul_state = FOUL_STATE_NONE;
+            refereeState->foul_timer = -1;
+        }
+    } else if (wants_pair_end || refereeState->next_pair_state != HR_PAIR_STATE_NONE) {
         if (refereeState->foul_state != FOUL_STATE_NONE) {
             refereeState->foul_state = FOUL_STATE_NONE;
             refereeState->foul_timer = -1;
