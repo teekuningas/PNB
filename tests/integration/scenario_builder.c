@@ -303,9 +303,7 @@ int simulate_frames(ScenarioContext* ctx, int maxFrames)
                 &ctx->state->play_sound_effect
             );
         }
-        simulate(
-            ctx->state->match, ctx->state->field_positions, &ctx->state->rules->referee, &ctx->state->play_sound_effect
-        );
+        simulate(ctx->state->match, ctx->state->field_positions, &ctx->state->play_sound_effect);
 
         // Milestone 14: Rules engine must run after physics to reconcile state
         GameRulesState* rules = ctx->state->rules;
@@ -495,8 +493,7 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
 
     // 4. Set Pitch State
     game->ball.pitch_in_flight = 1;
-    game->at_bat.may_leave_home = 1;
-    game->events.pitch_released = 1; // Signal event - referee will snapshot state automatically
+    game->events.pitch_released = 1; // Signal event - referee snapshots state and grants §32 right automatically
 
     // Note: We emit pitch_released event which triggers the referee to snapshot
     // base_at_pitch_start and strikes_at_pitch_start automatically in update_initialization_events().

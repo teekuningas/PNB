@@ -80,8 +80,8 @@ int should_ai_throw(
 }
 
 int should_ai_drop_ball(
-    const RefereeState* ref, const BetweenPitchState* betweenPitchState, BaseID runner3BaseAtPitchStart,
-    int runner3IsOnBase, BaseID runner2BaseAtPitchStart, int runner2IsOnBase, int catcherHomeIndex, int hasBallIndex
+    const RefereeState* ref, BaseID runner3BaseAtPitchStart, int runner3IsOnBase, BaseID runner2BaseAtPitchStart,
+    int runner2IsOnBase, int catcherHomeIndex, int hasBallIndex
 )
 {
     // Tactical drop for bases loaded (§30 taktinen pudotus):

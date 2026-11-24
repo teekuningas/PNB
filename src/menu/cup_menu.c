@@ -15,7 +15,7 @@
 
 static void saveCup(StateInfo* stateInfo, int slot);
 static void loadCup(StateInfo* stateInfo, int slot);
-static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo);
+static void scanSaveSlots(CupMenuState* cupMenuState);
 
 static void initCupViewTreeState(CupViewTreeState* viewTreeState)
 {
@@ -85,7 +85,7 @@ static MenuStage updateScreen_Initial(CupMenuState* cupMenuState, StateInfo* sta
             cupMenuState->screen = CUP_MENU_SCREEN_LOAD_CUP;
             cupMenuState->load_save.rem = 5;
             cupMenuState->load_save.pointer = 0;
-            scanSaveSlots(cupMenuState, stateInfo);
+            scanSaveSlots(cupMenuState);
         }
     }
     if (keyStates->released[0][KEY_1]) {
@@ -164,7 +164,7 @@ updateScreen_Ongoing(CupMenuState* cupMenuState, StateInfo* stateInfo, CupMenuOu
         cupMenuState->screen = CUP_MENU_SCREEN_SAVE_CUP;
         cupMenuState->load_save.pointer = 0;
         cupMenuState->load_save.rem = 5;
-        scanSaveSlots(cupMenuState, stateInfo);
+        scanSaveSlots(cupMenuState);
     } else if (cupMenuState->ongoing.pointer == 4) {
         // When quitting an in-progress cup without saving, ask for confirmation
         // For now, we keep the cup in memory so returning to cup menu resumes it
@@ -314,7 +314,7 @@ static MenuStage updateScreen_SaveCup(CupMenuState* cupMenuState, StateInfo* sta
     }
     if (keyStates->released[0][KEY_2]) {
         saveCup(stateInfo, cupMenuState->load_save.pointer);
-        scanSaveSlots(cupMenuState, stateInfo); // Refresh to show save succeeded
+        scanSaveSlots(cupMenuState); // Refresh to show save succeeded
     }
     return MENU_STAGE_CUP;
 }
@@ -543,9 +543,7 @@ static void drawScreen_ViewTree(
     }
 }
 
-static void drawScreen_ViewSchedule(
-    const CupMenuState* cupMenuState, const StateInfo* stateInfo, const RenderState* rs, ResourceManager* rm
-)
+static void drawScreen_ViewSchedule(const StateInfo* stateInfo, const RenderState* rs)
 {
     const float center_x = VIRTUAL_WIDTH / 2.0f;
     const float title_y = VIRTUAL_HEIGHT * 0.1f;
@@ -676,7 +674,7 @@ static void drawScreen_EndCredits(const CreditsMenuState* creditsState, const Re
 // Main Public Functions
 // =============================================================================
 
-static void scanSaveSlots(CupMenuState* cupMenuState, StateInfo* stateInfo)
+static void scanSaveSlots(CupMenuState* cupMenuState)
 {
     for (int i = 0; i < 5; i++) {
         cupMenuState->save_slots[i].exists = 0;
@@ -758,7 +756,7 @@ static void loadCup(StateInfo* stateInfo, int slot)
     }
 }
 
-void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed)
+void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo)
 {
     // Initialize all sub-states to a known default
     memset(&cupMenuState->initial, 0, sizeof(CupInitialState));
@@ -839,7 +837,7 @@ void draw_cup_menu(
         drawScreen_ViewTree(&cupMenuState->view_tree, stateInfo, rs, rm);
         break;
     case CUP_MENU_SCREEN_VIEW_SCHEDULE:
-        drawScreen_ViewSchedule(cupMenuState, stateInfo, rs, rm);
+        drawScreen_ViewSchedule(stateInfo, rs);
         break;
     case CUP_MENU_SCREEN_LOAD_CUP:
     case CUP_MENU_SCREEN_SAVE_CUP:

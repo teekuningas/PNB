@@ -1,5 +1,7 @@
 #include "scenario_builder.h"
 #include "rules_state.h"
+#include "intents.h"
+#include "intent_channel.h"
 #include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
@@ -93,12 +95,28 @@ int test_contest_first_strike_foul_resumes_same_pair(void)
     ASSERT_EQ(0, ctx->state->rules->homerun_contest.pair_index, "same pair resumes after 1st-strike foul");
     ASSERT_EQ(1, ctx->state->rules->half_inning.strikes, "strike count is 1 after 1st-strike foul");
     ASSERT_EQ(
+        1, ctx->state->rules->half_inning.batter_may_leave_home,
+        "§32 right persists across 1st-strike foul reset in contest"
+    );
+    ASSERT_EQ(
         PLAYER_STATE_AT_BAT, (int)ctx->state->match->players[1].batting.presence.state,
         "Pair 0 batter resumes at the plate"
     );
     ASSERT_EQ(
         BASE_THIRD, (int)ctx->state->match->players[0].batting.presence.base_id, "Pair 0 runner resumes on third base"
     );
+
+    // Continuing contest batter may commit to leave home before the next pitch is thrown.
+    intent_push(
+        &ctx->state->channels.batting,
+        (IntentMessage){.kind = INTENT_BASE_RUN, .as.base_run = {.base = BASE_HOME, .command = RUN_COMMIT}}
+    );
+    simulate_frames(ctx, 1);
+    ASSERT_EQ(
+        PLAYER_STATE_RUNNING, (int)ctx->state->match->players[1].batting.presence.state,
+        "contest batter may leave home after 1st-strike foul reset before next pitch"
+    );
+    ASSERT_EQ(1, ctx->state->match->players[1].path.going_forward, "contest batter runs forward toward 1st");
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

@@ -1,5 +1,7 @@
 #include "scenario_builder.h"
 #include "rules_state.h"
+#include "intents.h"
+#include "intent_channel.h"
 #include "world.h"
 #include "test_helpers.h"
 #include "all_scenarios.h"
@@ -118,5 +120,61 @@ int test_out_of_bounds_reset(void)
     ASSERT_EQ(1, outOfBoundsDetected, "Game should have declared Out of Bounds");
     ASSERT_EQ(1, resetDetected, "Runner should be returned to 1st Base after reset");
 
+    return TEST_PASSED;
+}
+
+/**
+ * §32 + foul reset: once the turn's first pitch has left the hand, a 1st-strike foul resets the
+ * same batter to home with their right to leave home intact — they may commit to run before pitch 2.
+ */
+int test_batter_may_leave_home_after_foul_reset(void)
+{
+    ScenarioContext* ctx = create_scenario();
+    MatchSession* m = ctx->state->match;
+    GameRulesState* r = ctx->state->rules;
+
+    setup_batter_at_home(ctx, 1);
+    initialize_referee_from_physical_state(ctx);
+    snapshot_pitch_start_state(ctx);
+    move_pitcher_away(ctx);
+
+    // Hit a 1st-strike foul ball far out of bounds.
+    Vector3D home = ctx->state->field_positions->pitch_plate;
+    Vector3D foulTarget = {200.0f, 0.0f, 200.0f};
+    hit_fly_ball_to_location(ctx, home, foulTarget);
+    m->events.ball_hit_by_bat = 1;
+
+    int sawFoul = 0;
+    int resetCompleted = 0;
+    for (int frame = 0; frame < 600; frame++) {
+        simulate_frames(ctx, 1);
+        if (r->referee.foul_state == FOUL_STATE_DETECTED) {
+            sawFoul = 1;
+        } else if (sawFoul && r->referee.foul_state == FOUL_STATE_NONE) {
+            resetCompleted = 1;
+            break;
+        }
+    }
+
+    ASSERT_EQ(1, sawFoul, "foul must be detected");
+    ASSERT_EQ(1, resetCompleted, "foul reset must complete");
+    ASSERT_EQ(1, r->half_inning.strikes, "strike count is 1 after 1st-strike foul");
+    ASSERT_EQ(1, r->half_inning.batter_may_leave_home, "§32 right persists across 1st-strike foul reset");
+    ASSERT_EQ(PLAYER_STATE_AT_BAT, (int)m->players[1].batting.presence.state, "batter resumes AT_BAT");
+
+    // Before any 2nd pitch is thrown, the continuing batter commits to run through the INGEST gate.
+    intent_push(
+        &ctx->state->channels.batting,
+        (IntentMessage){.kind = INTENT_BASE_RUN, .as.base_run = {.base = BASE_HOME, .command = RUN_COMMIT}}
+    );
+    simulate_frames(ctx, 1);
+
+    ASSERT_EQ(
+        PLAYER_STATE_RUNNING, (int)m->players[1].batting.presence.state,
+        "continuing batter may leave home after foul reset before pitch 2"
+    );
+    ASSERT_EQ(1, m->players[1].path.going_forward, "continuing batter runs forward toward 1st");
+
+    cleanup_scenario(ctx);
     return TEST_PASSED;
 }

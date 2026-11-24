@@ -16,7 +16,7 @@ typedef struct {
     int innings;
 } CupMenuOutput;
 
-void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo, unsigned int* rng_seed);
+void init_cup_menu(CupMenuState* cupMenuState, StateInfo* stateInfo);
 
 MenuStage update_cup_menu(
     CupMenuState* cupMenuState,

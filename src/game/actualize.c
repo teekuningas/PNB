@@ -4,8 +4,8 @@
     Run the engine's own fixed order of actualization — throw windup, fielder movement, control changes,
     drops, the pitch clock, batting, base running — reading the commands the INGEST gate left. The order
     here is the engine's, never the order messages happened to arrive in, so which producer spoke first
-    can never change the simulation. The gate has asked the permissions; what is left here is physics
-    (a seat still taken by a batter who has not yet lost home), and §32, which the runner's path asks.
+    can never change the simulation. The gate has asked every permission; what is left here is physics
+    (a seat still taken by a batter who has not yet lost home).
 */
 
 #include "actualize.h"
@@ -147,7 +147,7 @@ static void take_free_walk_decision(
 // action_invocations or by the AI in batting_ai; the actualizer does not care which).
 //
 // The producer declares ARM vs COMMIT explicitly (RunIntent in intents.h); the actualizer NEVER
-// infers it from live-ball state. Reading the batter's §32 right to leave home (`may_leave_home`, held for
+// infers it from live-ball state. Reading the batter's §32 right to leave home (`batter_may_leave_home`, held for
 // the whole at-bat) as if it meant "the ball is live" was the slice's offense regression — a pre-pitch
 // arm fired after a caught fly got mis-read as "ball live, run now",
 // sending the next batter into a caught-fly out. With the intent explicit, that is unrepresentable.
@@ -160,9 +160,9 @@ static void take_free_walk_decision(
 //     - leading / already running -> keep going to the next base.
 //   RUN_COMMIT (double press — "run now")
 //     - any state                 -> start for the next base immediately (a steal / chaining a hit).
-//                                    For the batter this is gated inside run_to_next_base(BASE_HOME),
-//                                    which refuses until the turn's first pitch has left the hand
-//                                    (§32), so a commit issued before then is harmlessly ignored.
+//                                    For the batter, §32 is already enforced at the INGEST gate
+//                                    (RULE_BASE_RUN_BATTER_NEEDS_FIRST_PITCH), so a commit issued
+//                                    before the turn's first pitch never reaches here.
 //   RUN_BACK
 //     - settled on base / at bat  -> disarm a pending lead.
 //     - otherwise                 -> run back to the previous base.
@@ -189,8 +189,7 @@ static void base_run(MatchSession* match, const FieldPositions* fieldPositions, 
             run_to_next_base(match, fieldPositions, index, base);
         }
     } else if (cmd == RUN_COMMIT) {
-        // Deliberate "go now". Safe for the batter even if mis-issued: run_to_next_base(BASE_HOME)
-        // self-gates on the batter's §32 right to leave home.
+        // Deliberate "go now". §32 for BASE_HOME was already checked at the INGEST gate.
         run_to_next_base(match, fieldPositions, index, base);
     } else { // RUN_BACK
         if (settled_on_base) {

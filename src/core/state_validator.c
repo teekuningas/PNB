@@ -153,7 +153,8 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s  \"outs\": %d,\n", sp, rules->half_inning.outs);
         fprintf(f, "%s  \"runs_in_inning\": %d,\n", sp, rules->half_inning.runs_in_inning);
         fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->half_inning.strikes);
-        fprintf(f, "%s  \"balls\": %d\n", sp, rules->half_inning.balls);
+        fprintf(f, "%s  \"balls\": %d,\n", sp, rules->half_inning.balls);
+        fprintf(f, "%s  \"batter_may_leave_home\": %d\n", sp, rules->half_inning.batter_may_leave_home);
         fprintf(f, "%s},\n", sp);
 
         fprintf(f, "%s\"last_batter\": {\n", sp);
@@ -207,7 +208,6 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(f, "%s},\n", sp);
 
     fprintf(f, "%s\"atBat\": {\n", sp);
-    fprintf(f, "%s  \"may_leave_home\": %d,\n", sp, game->at_bat.may_leave_home);
     fprintf(f, "%s  \"cycle\": %d\n", sp, (int)game->at_bat.cycle);
     fprintf(f, "%s},\n", sp);
 

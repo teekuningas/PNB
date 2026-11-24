@@ -96,6 +96,9 @@ static void run_contract_tests(void)
     // A base-run command is for the runner holding the base at the top of the tick
     RUN_TEST(test_a_base_run_needs_a_runner);
     RUN_TEST(test_a_base_run_for_no_base_is_malformed);
+    RUN_TEST(test_batter_cannot_commit_before_first_pitch_but_may_arm);
+    RUN_TEST(test_batter_commit_on_pitch_release_tick_is_refused_at_frame_top);
+    RUN_TEST(test_batter_leave_home_lifecycle_through_referee);
 
     // Throw contracts (a declared target and power → the engine windup clock)
     RUN_TEST(test_throw_windup_frames_scale_with_power);

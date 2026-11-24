@@ -102,7 +102,6 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     match->ball.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
     match->ball.holder = -1;
     match->ball.pitch_in_flight = 1;
-    match->at_bat.may_leave_home = 1;
     match->events.pitch_released = 1;
     record_player_activity(&match->players[pitcher].events, PLAYER_ACTIVITY_PITCH_RELEASED, true);
 

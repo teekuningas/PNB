@@ -23,7 +23,7 @@
 
 #define CAM_HEIGHT 2.3f
 
-int init_main_menu(StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, RenderState* rs)
+int init_main_menu(MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm)
 {
     menuInfo->mode = MENU_ENTRY_NORMAL;
 
@@ -93,9 +93,9 @@ void update_main_menu(
     }
     switch (menuData->stage) {
     case MENU_STAGE_FRONT: {
-        nextStage = update_front_menu(&menuData->front_menu, keyStates, stateInfo);
+        nextStage = update_front_menu(&menuData->front_menu, keyStates);
         if (nextStage == MENU_STAGE_CUP) {
-            init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
+            init_cup_menu(&menuData->cup_menu, stateInfo);
         } else if (nextStage == MENU_STAGE_TEAM_SELECTION) {
             stateInfo->rules->scoreboard.is_cup_game = 0;
             init_team_selection_state(&menuData->team_selection, stateInfo->num_teams);
@@ -217,7 +217,7 @@ void update_main_menu(
                 }
 
                 // Initialize the cup menu logic/coordinates before setting specific state
-                init_cup_menu(&menuData->cup_menu, stateInfo, rng_seed);
+                init_cup_menu(&menuData->cup_menu, stateInfo);
 
                 // 3. Set up the cup menu to show ongoing screen
                 menuData->cup_menu.screen = CUP_MENU_SCREEN_ONGOING;
@@ -307,10 +307,7 @@ void update_main_menu(
     clear_released_keys(keyStates);
 }
 
-void draw_main_menu(
-    const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, double alpha, ResourceManager* rm,
-    RenderState* rs
-)
+void draw_main_menu(const StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm, RenderState* rs)
 {
     switch (menuData->stage) {
     case MENU_STAGE_FRONT:
@@ -351,7 +348,7 @@ void draw_main_menu(
     }
 }
 
-int clean_main_menu(MenuData* menuData)
+int clean_main_menu(void)
 {
     // All resources are now cleaned up by the resource manager.
     return 0;

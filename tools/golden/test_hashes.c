@@ -72,6 +72,7 @@ int main(void)
     rules.referee.ball_in_third_base_since_pitch = 1;
     rules.referee.homerun_pair_has_pitch = 1;
     rules.half_inning.end_period = 1;
+    rules.half_inning.batter_may_leave_home = 1;
     rules.half_inning.last_batter.regular_order_spent = 1;
     rules.between_pitch.catch_has_been_made = 1;
     rules.between_pitch.has_ball_hit_ground = 1;

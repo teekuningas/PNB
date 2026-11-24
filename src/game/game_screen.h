@@ -66,6 +66,6 @@ void draw_game_screen(
 // The screen's side of one tick that ran: the info line's clock advances, then the referee's announcement
 // is shown and consumed.
 void hud_after_tick(HudState* hud, GameEventType* announcement);
-int clean_game_screen(StateInfo* stateInfo);
+int clean_game_screen(void);
 
 #endif /* GAME_SCREEN_H */

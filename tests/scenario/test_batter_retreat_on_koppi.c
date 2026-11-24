@@ -32,7 +32,6 @@ int test_batter_retreats_to_home_on_koppi(void)
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx);
     r->half_inning.strikes = 1;
-    m->at_bat.may_leave_home = 1;
 
     // Batter hits a high fly ball (150 frames in air) and sets off toward 1st.
     hit_fly_ball_to_location_with_time(ctx, ctx->state->field_positions->pitch_plate, fielderLoc, 150.0f);
@@ -101,7 +100,6 @@ int test_batter_retreat_closes_stale_seat_offer(void)
     initialize_referee_from_physical_state(ctx);
     snapshot_pitch_start_state(ctx);
     r->half_inning.strikes = 1;
-    m->at_bat.may_leave_home = 1;
 
     // Fair ball drops in the center field while the batter runs partway toward 1st.
     r->between_pitch.bat_outcome = BAT_OUTCOME_HIT;

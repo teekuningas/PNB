@@ -26,7 +26,6 @@ int test_batter_forced_out_at_first(void)
     scenario_throw_ball_to_base(ctx, throwFrom, BASE_FIRST);
 
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT;
-    ctx->state->match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME);
 
     int outs = 0;

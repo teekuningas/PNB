@@ -1,15 +1,10 @@
 #ifndef LOADING_SCREEN_MENU_H
 #define LOADING_SCREEN_MENU_H
 
-#include "session.h"
-#include "menu_types.h"
 #include "resource_manager.h"
 #include "render.h"
 
 // Draw the initial loading screen before main menu startup.
-// Takes explicit menuData pointer for state, plus resource and render state
-void draw_loading_screen(
-    const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, const RenderState* rs
-);
+void draw_loading_screen(ResourceManager* rm, const RenderState* rs);
 
 #endif // LOADING_SCREEN_MENU_H

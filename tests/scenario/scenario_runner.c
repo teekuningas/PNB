@@ -17,6 +17,7 @@ static void run_scenario_tests(void)
     RUN_TEST(test_fly_ball_double_wound);
     RUN_TEST(test_fly_ball_double_wound_late_arrival);
     RUN_TEST(test_out_of_bounds_reset);
+    RUN_TEST(test_batter_may_leave_home_after_foul_reset);
     RUN_TEST(test_pitching_strike);
     RUN_TEST(test_pitching_ball);
     RUN_TEST(test_free_walk_resolution);

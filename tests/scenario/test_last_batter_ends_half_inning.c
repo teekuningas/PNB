@@ -75,8 +75,9 @@ static void bring_the_order_round_to(ScenarioContext* ctx, int playerIndex)
 // End the at-bat the way §27 means it: the batter must become *lopullisesti* a runner, which means
 // actually REACHING first — a batter who merely set off and got nowhere is sent back to the plate
 // when the ball comes home and is still in batting turn. A pitch has to come first, because the
-// batter is only released to run once the ball has left the lukkari's hand (§32, `at_bat.may_leave_home`);
-// running on the first try rather than the third is the batter's own choice and equally legal.
+// batter is only released to run once the ball has left the lukkari's hand (§32,
+// `half_inning.batter_may_leave_home`); running on the first try rather than the third is the batter's own choice and
+// equally legal.
 static int run_to_first(ScenarioContext* ctx, int playerIndex)
 {
     trigger_player_run_to_next_base(ctx, playerIndex, BASE_HOME);

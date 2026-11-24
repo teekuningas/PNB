@@ -2,8 +2,8 @@
     runner_paths.c — a batting player runs the bases.
 
     Each base is a path point; a runner is sent toward the next or the previous one at his own running
-    speed, or leads off the base he holds. The batter's first step off home is gated here on his §32
-    right to leave it.
+    speed, or leads off the base he holds. Pure movement mechanics: the §32 permission to leave home is
+    judged at the INGEST gate (ingest.c).
 */
 
 #include "runner_paths.h"
@@ -52,7 +52,6 @@ void run_to_next_base(MatchSession* match, const FieldPositions* field_positions
         Vector3D target;
         // first we select the target corresponding to base argument
         if (base == BASE_HOME) {
-            if (match->at_bat.may_leave_home == 0) return;
             target.x = field_positions->first_base_run.x;
             target.z = field_positions->first_base_run.z;
             // here as it is the batter, we'll also stop any batting to be able to run freely.

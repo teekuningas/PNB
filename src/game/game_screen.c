@@ -34,8 +34,7 @@
 #define EVENT_TIMER_THRESHOLD (1.5 * (1 / (UPDATE_INTERVAL * 1.0f / 1000)))
 
 static void draw_skybox(ResourceManager* rm);
-static void
-draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs);
+static void draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm);
 static int init_lights(void);
 static void init_camera(CameraView* camera);
 static void load_game_screen_settings(StateInfo* stateInfo, HudState* hud, CameraView* camera);
@@ -212,7 +211,7 @@ void draw_game_screen(
 
     // statistics - Switch to 2D
     begin_2d_render(rs);
-    draw_statistics_2d(scene, hud, alpha, rm, rs);
+    draw_statistics_2d(scene, hud, alpha, rm);
 }
 
 // lights
@@ -246,8 +245,7 @@ static void draw_skybox(ResourceManager* rm)
     glPopMatrix();
 }
 
-static void
-draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm, const RenderState* rs)
+static void draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm)
 {
     char* str4;
     char str5[2] = "x";
@@ -588,17 +586,17 @@ static void init_camera(CameraView* camera)
     camera->eye = (Vector3D){0.0f, 0.0f, 0.0f};
 }
 
-int clean_game_screen(StateInfo* stateInfo)
+int clean_game_screen(void)
 {
     int result;
 
-    result = clean_immutable_world(stateInfo);
+    result = clean_immutable_world();
     if (result != 0) {
         printf("Could not clean immutable world properly.\n");
         return -1;
     }
 
-    result = clean_game_frame(stateInfo);
+    result = clean_game_frame();
     if (result != 0) {
         printf("Could not clean mutable world properly.\n");
         return -1;

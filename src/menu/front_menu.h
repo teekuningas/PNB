@@ -3,12 +3,11 @@
 
 #include "menu_types.h"
 #include "key_states.h"
-#include "session.h"
 #include "resource_manager.h"
 #include "render.h"
 
 void init_front_menu_state(FrontMenuState* state);
-MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates, StateInfo* stateInfo);
+MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates);
 
 // New orthographic-only front menu rendering (background, figures, arrow, text)
 void draw_front_menu(const FrontMenuState* state, const RenderState* rs, ResourceManager* rm);

@@ -342,7 +342,7 @@ static void initialize_ball_info(MatchSession* match)
     match->ball.released_by = -1;
 }
 // Empty everything a play can have left on the table that is not physics: the catching action in progress,
-// the at-bat (the batter's cycle, his swing and his §32 right), the runners' standing orders, a chase
+// the at-bat swing cycle, the runners' standing orders, a chase
 // re-plan not yet answered, and the catching team's own state — who is controlled and who chases, where
 // the controlled fielder was told to go, and the engine's prediction of where the ball can next be met. The last of
 // those is not producer-set, but it is just as stale after a reset and it is cleared here so that ONE recipe owns the

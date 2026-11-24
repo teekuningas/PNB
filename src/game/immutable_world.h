@@ -6,6 +6,6 @@
 
 int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm);
 void draw_immutable_world(ResourceManager* rm);
-int clean_immutable_world(StateInfo* stateInfo);
+int clean_immutable_world(void);
 
 #endif /* IMMUTABLE_WORLD_H */

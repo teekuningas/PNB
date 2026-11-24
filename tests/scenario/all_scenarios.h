@@ -8,6 +8,7 @@ int test_runner_chain_reaction_no_catch(void);
 int test_fly_ball_double_wound(void);
 int test_fly_ball_double_wound_late_arrival(void);
 int test_out_of_bounds_reset(void);
+int test_batter_may_leave_home_after_foul_reset(void);
 int test_pitching_strike(void);
 int test_pitching_ball(void);
 int test_free_walk_resolution(void);

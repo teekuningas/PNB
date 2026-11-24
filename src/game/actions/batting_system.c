@@ -89,12 +89,9 @@ void seat_batter(MatchSession* match, const RefereeState* referee, const FieldPo
     match->players[index].batting.presence.state = PLAYER_STATE_AT_BAT;
 
     // Event-driven: Signal referee that a new batter has entered
-    // This triggers strike/ball reset and safety initialization (referee.c)
+    // This triggers strike/ball/§32 reset and safety initialization (referee.c)
     match->events.batter_entered = 1;
 
-    // and they are safe on home base
-    // cant advance yet
-    match->at_bat.may_leave_home = 0;
     // just set default values so that the player can have a fresh start at
     // the field.
     match->players[index].path.going_forward = 0;

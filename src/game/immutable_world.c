@@ -28,10 +28,10 @@ static GroundUnit groundUnit[GROUND_UNIT_COUNT];
 static int initGround(ResourceManager* rm);
 static void drawGround(ResourceManager* rm);
 
-static int initFence(ResourceManager* rm);
+static int initFence(void);
 static void drawFence(ResourceManager* rm);
 
-static int initPlate(ResourceManager* rm);
+static int initPlate(void);
 static void drawPlate(ResourceManager* rm);
 
 int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
@@ -43,12 +43,12 @@ int init_immutable_world(StateInfo* stateInfo, ResourceManager* rm)
         printf("Initialization of ground failed.");
         return result;
     }
-    result = initFence(rm);
+    result = initFence();
     if (result != 0) {
         printf("Initialization of fence failed.");
         return result;
     }
-    result = initPlate(rm);
+    result = initPlate();
     if (result != 0) {
         printf("Initialization of plate failed.");
         return result;
@@ -165,17 +165,17 @@ static void drawGround(ResourceManager* rm)
     }
 }
 // cleaning is good for people.
-int clean_immutable_world(StateInfo* stateInfo)
+int clean_immutable_world(void)
 {
     return 0;
 }
 
-static int initFence(ResourceManager* rm)
+static int initFence(void)
 {
     return 0;
 }
 
-static int initPlate(ResourceManager* rm)
+static int initPlate(void)
 {
     return 0;
 }

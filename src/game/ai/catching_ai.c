@@ -196,8 +196,8 @@ void update_catching_ai(
         int holder = match->ball.holder;
 
         if (should_ai_drop_ball(
-                &(rules->referee), &(rules->between_pitch), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart,
-                r2IsOnBase, catcherHomeIndex, holder
+                &(rules->referee), r3BaseAtPitchStart, r3IsOnBase, r2BaseAtPitchStart, r2IsOnBase, catcherHomeIndex,
+                holder
             )) {
             // Declare the drop and stop there. Whether it is allowed — this catcher still holding
             // the ball, no throw or pitch with a claim on it — is the gate's decision, made once for

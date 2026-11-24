@@ -45,6 +45,7 @@ static unsigned long long rules_projection_hash(const GameRulesState* r)
     RULE_VALUE(r->half_inning.outs);
     RULE_VALUE(r->half_inning.balls);
     RULE_VALUE(r->half_inning.strikes);
+    RULE_VALUE(r->half_inning.batter_may_leave_home);
     RULE_VALUE(r->half_inning.runs_in_inning);
     RULE_VALUE(r->half_inning.end_period);
     RULE_VALUE(r->half_inning.jokers_left);
@@ -174,8 +175,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     const AtBat* ab = &m->at_bat;
     // The batting cycle, printed as the three flags it used to be: arrived (setup pending), standing ready, open.
     put(3, "ib=%d br=%d bgo=%d bca=%d rcc=%d ips=%d", ab->cycle == BATTING_CYCLE_ARRIVED, batter_stands_ready(ab),
-        batting_cycle_is_open(ab),
-        ab->may_leave_home, m->chase_replan != CHASE_REPLAN_NONE, m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
+        batting_cycle_is_open(ab), r->half_inning.batter_may_leave_home, m->chase_replan != CHASE_REPLAN_NONE,
+        m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
 
     put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
         m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);

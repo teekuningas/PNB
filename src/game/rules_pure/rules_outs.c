@@ -11,7 +11,7 @@
  * and must reach the next base before the ball to avoid being out.
  */
 int is_runner_forced_out(
-    BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk,
+    BaseID player_base, int player_is_on_base_flag, BaseID threatened_from_base, int taking_free_walk,
     int out_of_bounds_active
 )
 {
@@ -31,11 +31,9 @@ int is_runner_forced_out(
         return 0;
     }
 
-    // Force out condition:
-    // The third parameter (ball_at_base_index) represents the player's FROM base.
-    // We check if the player's current base matches the expected FROM base.
-    // Context: When ball is caught at base i, we check if player at base i-1 gets out.
-    if (player_base == ball_at_base_index) {
+    // §33 base-race burn: ball held at base i threatens off-base runners advancing from base i-1
+    // (passed in as threatened_from_base).
+    if (player_base == threatened_from_base) {
         return 1;
     }
 

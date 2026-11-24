@@ -1,15 +1,11 @@
 #include "display.h"
-#include "session.h"
 #include "render.h"
 #include "menu_helpers.h"
-#include "menu_types.h"
 #include "resource_manager.h"
 #include "loading_screen_menu.h"
 
-// Reset main-menu state and render loading screen using new 2D pipeline
-void draw_loading_screen(
-    const StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, ResourceManager* rm, const RenderState* rs
-)
+// Render loading screen using 2D pipeline
+void draw_loading_screen(ResourceManager* rm, const RenderState* rs)
 {
 
     // Begin 2D orthographic rendering

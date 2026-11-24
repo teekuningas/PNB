@@ -79,6 +79,9 @@ int test_a_late_beginning_changes_nothing(void);
 // A base-run command is for the runner holding the base at the top of the tick
 int test_a_base_run_needs_a_runner(void);
 int test_a_base_run_for_no_base_is_malformed(void);
+int test_batter_cannot_commit_before_first_pitch_but_may_arm(void);
+int test_batter_commit_on_pitch_release_tick_is_refused_at_frame_top(void);
+int test_batter_leave_home_lifecycle_through_referee(void);
 
 // Throw contracts (a declared target and power → the engine windup clock)
 int test_throw_windup_frames_scale_with_power(void);

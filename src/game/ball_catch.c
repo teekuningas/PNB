@@ -19,7 +19,7 @@
 
 // so the goal is check if ball is close enough to any of the players and if so, do all the work needed
 // to move game to post-catch state.
-void check_if_ball_can_be_caught(MatchSession* match, const FieldPositions* field_positions, int* play_sound_effect)
+void check_if_ball_can_be_caught(MatchSession* match, int* play_sound_effect)
 {
     int i;
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball

@@ -5,8 +5,7 @@
     the frame top — decide what each message is PERMITTED to do against the world as it stands at the
     top of this tick, and interpret the survivors into engine-shaped commands. Nothing intent-shaped
     survives ingestion: what comes out is a plain per-tick command block, and the channels are empty from
-    here to the end of the frame. Every permission in the game is asked here but one — the batter leaving
-    home before his §32 right to, still asked by his path (runner_paths.c) — and every refusal names the
+    here to the end of the frame. Every permission in the game is asked here, and every refusal names the
     rule that made it.
 */
 
@@ -164,7 +163,7 @@ static Permission permit(
         // Unreachable: contributions are asked by permit_contribution, in the drain's second pass.
         return (Permission){0, RULE_NONE};
 
-    case INTENT_BASE_RUN:
+    case INTENT_BASE_RUN: {
         // A command for "the runner on base B" means the runner the producer saw there — the one
         // holding the base at the top of the tick — and if nobody does, there is nobody to command.
         // The gate binds it to that player (ingest_message), the way a destination is bound to the
@@ -174,10 +173,23 @@ static Permission permit(
         // of INGEST and ACTUALIZE, and the only base_id written before base running is a newly seated
         // batter's, who holds no safety until the referee grants it. Measured as well, over 42 golden
         // runs: all 1,656 base-run commands found the same runner at the gate as at the actualizer.
-        if (get_base_controller(match, &rules->referee, message->as.base_run.base) == -1) {
+        const BaseID base = message->as.base_run.base;
+        const RunIntent command = message->as.base_run.command;
+        const int runner = get_base_controller(match, &rules->referee, base);
+        if (runner == -1) {
             return (Permission){0, RULE_BASE_RUN_NEEDS_A_RUNNER};
         }
+        // §32: the batter may not leave home until the turn's first pitch has left the lukkari's hand.
+        // Arming (RUN_FORWARD while settled at home) and disarming (RUN_BACK) remain legal beforehand.
+        if (base == BASE_HOME && !rules->half_inning.batter_may_leave_home) {
+            const PlayerUnitState state = match->players[runner].batting.presence.state;
+            const int settled = (state == PLAYER_STATE_ON_BASE || state == PLAYER_STATE_AT_BAT);
+            if (command == RUN_COMMIT || (command == RUN_FORWARD && !settled)) {
+                return (Permission){0, RULE_BASE_RUN_BATTER_NEEDS_FIRST_PITCH};
+            }
+        }
         return (Permission){1, RULE_NONE};
+    }
 
     case INTENT_NONE:
     default:

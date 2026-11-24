@@ -226,7 +226,8 @@ typedef enum {
     RULE_THROW_NEEDS_BALL_IN_HAND, // you cannot throw what you are not holding
     RULE_THROW_TARGET_TOO_CLOSE, // the thrower is already standing on that base
     RULE_THROW_POWER_NEEDS_A_THROW, // there is no throw gathering to give a power to
-    RULE_BASE_RUN_NEEDS_A_RUNNER // nobody holds that base to run from it
+    RULE_BASE_RUN_NEEDS_A_RUNNER, // nobody holds that base to run from it
+    RULE_BASE_RUN_BATTER_NEEDS_FIRST_PITCH // §32: batter may not leave home before the turn's first pitch
 } RuleId;
 
 typedef struct _Permission {

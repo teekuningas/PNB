@@ -217,7 +217,7 @@ static void advance_runners_on_loose_hit(
     for (int i = 0; i < BASE_COUNT; i++) {
         int index = get_base_controller(match, &rules->referee, (BaseID)i);
         int shouldRun = 1;
-        if (i == 0 && match->at_bat.may_leave_home == 0) continue;
+        if (i == 0 && rules->half_inning.batter_may_leave_home == 0) continue;
         if (index == -1 || match->players[index].path.going_forward == 1) continue;
         // don't send a runner into a base interval someone else already occupies.
         for (int j = 0; j < PLAYERS_IN_TEAM + JOKER_COUNT; j++) {

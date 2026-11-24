@@ -103,9 +103,10 @@ static void update_initialization_events(
                 }
             }
         }
-        // Reset strikes and balls for the new batter
+        // Reset strikes, balls, and §32 right to leave home for the new batter
         halfInningState->strikes = 0;
         halfInningState->balls = 0;
+        halfInningState->batter_may_leave_home = 0;
     }
 
     // Pitch Released: Snapshot state for the new pitch
@@ -118,6 +119,9 @@ static void update_initialization_events(
         referee->foul_timer = -1;
         referee->foul_state = FOUL_STATE_NONE;
         referee->ball_in_third_base_since_pitch = 0;
+
+        // §32: the in-turn batter may advance from home once the turn's first pitch leaves the hand.
+        halfInningState->batter_may_leave_home = 1;
 
         // 2. Mark that a pitch has been released (for homerun contest pair tracking)
         if (scoreboard->period >= 4) {
@@ -235,6 +239,7 @@ static void update_foul_play_logic(
                 // 1. Immediately apply the consequence of the foul (Strike/Out)
                 if (referee->strikes_at_pitch_start == 2) {
                     halfInningState->outs += 1;
+                    halfInningState->batter_may_leave_home = 0;
 
                     // Mark batter as OUT immediately
                     for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
@@ -1007,6 +1012,7 @@ static void clear_referee_for_pair_end(
 {
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
+    halfInningState->batter_may_leave_home = 0;
     clear_between_pitch_state(betweenPitchState);
     refereeState->strikes_at_pitch_start = 0;
     refereeState->wounding_evaluation_active = 0;
@@ -1039,6 +1045,7 @@ static void clear_referee_for_inning_end(
     halfInningState->outs = 0;
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
+    halfInningState->batter_may_leave_home = 0;
     halfInningState->runs_in_inning = 0;
     halfInningState->end_period = 0;
     halfInningState->jokers_left = JOKER_COUNT;
@@ -1082,6 +1089,7 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     his->outs = 0;
     his->balls = 0;
     his->strikes = 0;
+    his->batter_may_leave_home = 0;
     his->runs_in_inning = 0;
     his->end_period = 0;
     his->jokers_left = JOKER_COUNT;

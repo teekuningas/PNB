@@ -72,7 +72,6 @@ int test_fly_ball_out_and_wound(void)
     match->players[secondBasemanIdx].body.home_location = secondBase;
 
     // 5. Trigger runners to advance
-    match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_FIRST); // Runner A: 1st → 2nd
     trigger_player_run_to_next_base(ctx, 1, BASE_HOME); // Batter B: Home → 1st
 

@@ -86,7 +86,7 @@ int init_game_frame(StateInfo* stateInfo, ResourceManager* rm)
 
     // The init_player is now handled by init_player_renderer, which is called by init_player in player.c
     // No direct call to init_player_renderer here.
-    result = init_player(stateInfo, rm);
+    result = init_player(rm);
     if (result != 0) {
         printf("Could not init player. Exiting.");
         return -1;
@@ -147,7 +147,7 @@ int update_game_frame(StateInfo* stateInfo, MenuInfo* menuInfo)
     actualize(game, rules, stateInfo->field_positions, &commands, &stateInfo->play_sound_effect);
 
     // 4. SIMULATE — the physical world takes its step.
-    simulate(game, stateInfo->field_positions, &rules->referee, &stateInfo->play_sound_effect);
+    simulate(game, stateInfo->field_positions, &stateInfo->play_sound_effect);
 
     int homeward_runs = game->events.homeward_runs_started;
     TickFacts facts = {
@@ -218,7 +218,7 @@ void draw_game_frame(
 #endif
     }
 }
-int clean_game_frame(StateInfo* stateInfo)
+int clean_game_frame(void)
 {
     int result;
     result = clean_ball();

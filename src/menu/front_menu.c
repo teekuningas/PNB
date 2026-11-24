@@ -2,7 +2,6 @@
 #include "render.h"
 #include "display.h"
 #include "key_states.h"
-#include "session.h"
 #include "menu_types.h"
 #include "resource_manager.h"
 #include "menu_helpers.h"
@@ -13,7 +12,7 @@ void init_front_menu_state(FrontMenuState* state)
     state->rem = 4;
 }
 
-MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates, StateInfo* stateInfo)
+MenuStage update_front_menu(FrontMenuState* state, KeyStates* keyStates)
 {
     if (keyStates->released[0][KEY_DOWN]) {
         state->pointer += 1;

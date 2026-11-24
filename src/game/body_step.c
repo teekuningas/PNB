@@ -8,14 +8,12 @@
 
 #include "body_step.h"
 #include "field.h"
-#include "rules_state.h"
 #include "world.h"
 #include "player_motion.h"
 #include "runner_paths.h"
 #include "actions/batting_system.h"
 #include "vector_math.h"
 #include "base_logic.h"
-#include "base_control.h"
 #include "rules_pure/player_utils.h"
 
 void player_location_orientation_and_targets(MatchSession* match, const FieldPositions* field_positions)
@@ -228,7 +226,7 @@ void player_location_orientation_and_targets(MatchSession* match, const FieldPos
     }
 }
 
-void base_runner_movements_on_base_arrivals(MatchSession* match, const RefereeState* referee)
+void base_runner_movements_on_base_arrivals(MatchSession* match)
 {
     // so everything starts with some player arriving base, this flag is set on target checking function.
     if (match->events.player_arrived_at_base == 1) {
@@ -265,14 +263,7 @@ void base_runner_movements_on_base_arrivals(MatchSession* match, const RefereeSt
                             }
                         }
                     }
-                    // if the player arrived to a base and had it marked as 4, it means that it possibly a run.
-                    if (match->players[index].batting.presence.base_id == BASE_HOME_SCORED) {
-                        // if we were safe at base 3, we are not anymore.
-                        if (get_base_controller(match, referee, BASE_THIRD) == index) {
-                        }
-                        // We rely on Referee to adjudicate the run via is_regular_run.
-                        // No need for pre-checks or manual removal here; reconcile will handle it.
-                    }
+                    // BASE_HOME_SCORED is adjudicated by the referee via is_regular_run and enforced later.
                 }
             }
         }

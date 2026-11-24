@@ -4,17 +4,18 @@
 #include "foundation.h"
 
 /**
- * @brief Checks if a runner is forced out according to §33 Pesäkilpa.
+ * @brief Checks if a runner is burnt in a base race according to §33 Pesäkilpa.
  *
- * @param player_base The current base index of the player (the base they are running FROM, i.e., baseIndex = i-1).
- * @param player_is_on_base_flag Flag indicating if the player is currently on a base (1 for true, 0 for false).
- * @param ball_at_base_index The ID of the base where the ball is currently located/caught.
- * @param taking_free_walk Flag indicating if the player is taking a free walk (vapaataival).
- * @param out_of_bounds_active Flag indicating if a foul/out-of-bounds state is active.
- * @return 1 if the runner is forced out, 0 otherwise.
+ * @param player_base The base the runner is advancing FROM (their current base_id).
+ * @param player_is_on_base_flag 1 if the runner currently holds safety on their base, 0 if off-base (irti).
+ * @param threatened_from_base The FROM base threatened by the ball's location (e.g., ball at 1st threatens BASE_HOME,
+ *        ball at home threatens BASE_THIRD).
+ * @param taking_free_walk 1 if the runner is advancing on a free walk (vapaataival), 0 otherwise.
+ * @param out_of_bounds_active 1 if a foul/out-of-bounds state is active, 0 otherwise.
+ * @return 1 if the runner is burnt, 0 otherwise.
  */
 int is_runner_forced_out(
-    BaseID player_base, int player_is_on_base_flag, BaseID ball_at_base_index, int taking_free_walk,
+    BaseID player_base, int player_is_on_base_flag, BaseID threatened_from_base, int taking_free_walk,
     int out_of_bounds_active
 );
 

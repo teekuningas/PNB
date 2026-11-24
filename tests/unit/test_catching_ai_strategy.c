@@ -181,23 +181,21 @@ int test_should_ai_throw_baseman_to_own_cover(void)
 int test_should_ai_drop_ball_scenario(void)
 {
     RefereeState ref = {0};
-    BetweenPitchState bps;
-    bps.catch_has_been_made = 1;
     ref.wounding_evaluation_active = 1;
 
     // Scenario: Runners on 2nd and 3rd, catcher has ball at home base.
     // wounding_evaluation_active=1, r3=3, r3On=1, r2=2, r2On=1, home==hasBall
-    int result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
+    int result = should_ai_drop_ball(&ref, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
     ASSERT_EQ(1, result, "Should drop ball in ajolähtö tactical drop scenario");
 
     // Not wounding evaluation
     ref.wounding_evaluation_active = 0;
-    result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
+    result = should_ai_drop_ball(&ref, BASE_THIRD, 1, BASE_SECOND, 1, 1, 1);
     ASSERT_EQ(0, result, "Should not drop if not a fly ball (wounding evaluation)");
 
     // Catcher doesn't have the ball
     ref.wounding_evaluation_active = 1;
-    result = should_ai_drop_ball(&ref, &bps, BASE_THIRD, 1, BASE_SECOND, 1, 1, 0);
+    result = should_ai_drop_ball(&ref, BASE_THIRD, 1, BASE_SECOND, 1, 1, 0);
     ASSERT_EQ(0, result, "Should not drop if catcher doesn't have the ball at home");
 
     return TEST_PASSED;

@@ -40,9 +40,6 @@ int test_run_of_honor(void)
     Vector3D ballLocation = {30.0f, 0.0f, 40.0f};
     place_ball_over_location(ctx, ballLocation);
 
-    // Critical: Mark that batter can advance
-    ctx->state->match->at_bat.may_leave_home = 1;
-
     printf("Ball dropped towards (%.1f, %.1f, %.1f)\n", ballLocation.x, ballLocation.y, ballLocation.z);
 
     int runsAtStart = ctx->state->rules->half_inning.runs_in_inning;

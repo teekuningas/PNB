@@ -16,6 +16,6 @@ void draw_game_frame(
     const MatchSession* match, const Scoreboard* scoreboard, const PlayerView* players, int paused, double alpha,
     ResourceManager* rm
 );
-int clean_game_frame(StateInfo* stateInfo);
+int clean_game_frame(void);
 
 #endif /* GAME_FRAME_H */

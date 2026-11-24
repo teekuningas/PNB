@@ -52,7 +52,6 @@ int test_fly_ball_early_arrival(void)
     match->players[fielderIdx].body.home_location = fielderLoc;
 
     // 5. Trigger batter to run
-    match->at_bat.may_leave_home = 1;
     trigger_player_run_to_next_base(ctx, 0, BASE_HOME); // Batter: Home → 1st
 
     // 6. Hit a VERY HIGH fly ball to third base (long flight time = 300 frames)
@@ -80,7 +79,7 @@ int test_fly_ball_early_arrival(void)
         match->ball.location.y, match->ball.location.z
     );
     printf(
-        "  at-bat: may_leave_home=%d, stands_ready=%d\n", match->at_bat.may_leave_home,
+        "  at-bat: batter_may_leave_home=%d, stands_ready=%d\n", rules->half_inning.batter_may_leave_home,
         batter_stands_ready(&match->at_bat)
     );
     printf("  BPS: bat_outcome=%d\n", rules->between_pitch.bat_outcome);

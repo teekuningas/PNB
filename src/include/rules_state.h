@@ -146,6 +146,12 @@ typedef struct _HalfInningState {
     int outs;
     int balls;
     int strikes;
+    // §32: "Lyöntivuoroinen lyöjä saa edetä kotipesästä heti, kun pallo on irronnut lukkarin kädestä
+    // ensimmäiseen syöttöön, riippumatta syötön laadusta." Legal at-bat lifetime: granted when the
+    // turn's first pitch leaves the hand, preserved across 1st/2nd-strike foul resets for the same
+    // batter, cleared when a new batter enters, on a 3rd-strike foul burn, on contest pair end, or
+    // at half-inning reset.
+    int batter_may_leave_home;
     int runs_in_inning;
     int end_period; // Rule state: period should end
     // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."

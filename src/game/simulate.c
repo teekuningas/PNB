@@ -9,7 +9,6 @@
 
 #include "simulate.h"
 #include "field.h"
-#include "rules_state.h"
 #include "world.h"
 #include "ball_flight.h"
 #include "ball_catch.h"
@@ -17,18 +16,16 @@
 #include "body_step.h"
 #include "actions/throwing_system.h"
 
-void simulate(
-    MatchSession* match, const FieldPositions* field_positions, const RefereeState* referee, int* play_sound_effect
-)
+void simulate(MatchSession* match, const FieldPositions* field_positions, int* play_sound_effect)
 {
     update_ball_status(match); // the loose ball flies one step, meets the fence and the ground
-    check_if_ball_can_be_caught(match, field_positions, play_sound_effect); // a fielder meets the ball
+    check_if_ball_can_be_caught(match, play_sound_effect); // a fielder meets the ball
     check_if_near_home_location(match);
     basemen_replacements(match);
     move_idling_players_to_home_location(match);
     rank_players_and_move_them(match); // its ranked lists are also what control changes walk through
     player_location_orientation_and_targets(match, field_positions); // every body steps; arrivals happen
-    base_runner_movements_on_base_arrivals(match, referee); // answered the frame they happen
+    base_runner_movements_on_base_arrivals(match); // answered the frame they happen
     update_ball_to_player(match); // the held ball follows its holder's new step
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         advance_throw_recovery(&match->players[i].fielding);

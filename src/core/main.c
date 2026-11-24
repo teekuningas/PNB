@@ -26,13 +26,11 @@
 #include "state_validator.h"
 
 static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState);
-static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm);
+static int clean(StateInfo* stateInfo, ResourceManager* rm);
 static void
 draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha, ResourceManager* rm, RenderState* rs);
 static int update(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, unsigned int* rng_seed);
-static void applyFixture(
-    const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, unsigned int* rng_seed
-);
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, unsigned int* rng_seed);
 
 static MenuData menuData;
 static StateInfo stateInfo;
@@ -136,7 +134,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    result = init_main_menu(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
+    result = init_main_menu(&menuData, &menuInfo, resourceManager);
     if (result != 0) {
         printf("Could not init main menu. Exiting.");
         return -1;
@@ -161,7 +159,7 @@ int main(int argc, char* argv[])
     // draw loading screen before loading all the player meshes which will take time
     stateInfo.screen = SCREEN_LOADING;
     // we draw twice as at least my debian's graphics are drawn wrong sometimes at the first time.
-    draw_loading_screen(&stateInfo, &menuData, &menuInfo, resourceManager, &renderState);
+    draw_loading_screen(resourceManager, &renderState);
     draw(&stateInfo, &menuData, window, 1.0, resourceManager, &renderState);
 
     result = init_game_screen(&stateInfo, &hud, &camera, &players, resourceManager);
@@ -176,7 +174,7 @@ int main(int argc, char* argv[])
 
     // Apply fixture if requested (for visual testing)
     if (fixtureRequest.enabled) {
-        applyFixture(&fixtureRequest, &stateInfo, &menuData, &menuInfo, &rng_seed);
+        applyFixture(&fixtureRequest, &stateInfo, &rng_seed);
     }
 
     // to keep our fps steady. we are trying to draw as often as we can and update in fixed intervals.
@@ -206,7 +204,7 @@ int main(int argc, char* argv[])
         glfwPollEvents();
     }
     // and we will clean up when everything ends
-    result = clean(&stateInfo, &menuData, resourceManager);
+    result = clean(&stateInfo, resourceManager);
     if (result != 0) {
         printf("Cleaning up unsuccessful. Exiting anyway.");
         return -1;
@@ -253,7 +251,7 @@ draw(StateInfo* stateInfo, MenuData* menuData, GLFWwindow* window, double alpha,
         }
         break;
     case SCREEN_MAIN_MENU:
-        draw_main_menu(stateInfo, menuData, &menuInfo, alpha, rm, rs);
+        draw_main_menu(stateInfo, menuData, rm, rs);
         break;
     case SCREEN_LOADING:
         break;
@@ -346,7 +344,7 @@ static int initGL(GLFWwindow** window, int fullscreen, RenderState* renderState)
     return 0;
 }
 
-static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
+static int clean(StateInfo* stateInfo, ResourceManager* rm)
 {
     int result;
     int retvalue = 0;
@@ -355,13 +353,13 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
         printf("Could not clean player data completely\n");
         retvalue = -1;
     }
-    result = clean_game_screen(stateInfo);
+    result = clean_game_screen();
     if (result != 0) {
         printf("Could not clean game screen completely\n");
         retvalue = -1;
     }
 
-    result = clean_main_menu(menuData);
+    result = clean_main_menu();
     if (result != 0) {
         printf("Could not clean main menu completely\n");
         retvalue = -1;
@@ -383,9 +381,7 @@ static int clean(StateInfo* stateInfo, MenuData* menuData, ResourceManager* rm)
 
 // Apply a fixture for visual testing
 // This sets up a game at a specific period/state for rapid testing
-static void applyFixture(
-    const FixtureRequest* request, StateInfo* stateInfo, MenuData* menuData, MenuInfo* menuInfo, unsigned int* rng_seed
-)
+static void applyFixture(const FixtureRequest* request, StateInfo* stateInfo, unsigned int* rng_seed)
 {
     printf("Applying fixture: %s\n", request->name);
     GameSetup gameSetup;

@@ -58,7 +58,7 @@ int test_third_home_route_visits_flag_before_physical_arrival(void)
                 "arrival requires the body to reach home"
             );
         }
-        base_runner_movements_on_base_arrivals(m, &ctx->state->rules->referee);
+        base_runner_movements_on_base_arrivals(m);
         ASSERT_EQ(0, m->players[0].path.arrived_at_base, "each physical arrival is consumed immediately");
     }
     ASSERT_EQ(1, passed_flag, "the complete route crosses its intermediate waypoint");
@@ -189,7 +189,6 @@ int test_simulate_raises_and_consumes_each_runner_arrival(void)
     MatchSession* m = ctx->state->match;
     const FieldPositions* field = ctx->state->field_positions;
     give_ball_to_pitcher(ctx);
-    m->at_bat.may_leave_home = 1;
     for (int i = 0; i < 2; i++) {
         PlayerInfo* p = &m->players[i];
         BaseID base = i == 0 ? BASE_HOME : BASE_FIRST;
@@ -206,12 +205,12 @@ int test_simulate_raises_and_consumes_each_runner_arrival(void)
     ASSERT_EQ(1, m->events.player_arrived_at_base, "the body substage raises the aggregate event");
     for (int i = 0; i < 2; i++)
         ASSERT_EQ(1, m->players[i].path.arrived_at_base, "both per-player latches exist before consumption");
-    base_runner_movements_on_base_arrivals(m, &ctx->state->rules->referee);
+    base_runner_movements_on_base_arrivals(m);
     for (int i = 0; i < 2; i++)
         ASSERT_EQ(0, m->players[i].path.arrived_at_base, "the consumer drains every arriving runner");
 
     *m = before;
-    simulate(m, field, &ctx->state->rules->referee, &ctx->state->play_sound_effect);
+    simulate(m, field, &ctx->state->play_sound_effect);
     ASSERT_EQ(BASE_FIRST, m->players[0].batting.presence.base_id, "the real SIMULATE advances the first runner");
     ASSERT_EQ(BASE_SECOND, m->players[1].batting.presence.base_id, "the real SIMULATE advances the other runner");
     for (int i = 0; i < 2; i++)
@@ -230,7 +229,6 @@ int test_batter_retreat_restores_at_bat_and_validator_rejects_on_base_at_home(vo
     const FieldPositions* field = ctx->state->field_positions;
     setup_batter_at_home(ctx, 0);
     initialize_referee_from_physical_state(ctx);
-    m->at_bat.may_leave_home = 1;
 
     // Batter sets off toward 1st (closing the batting cycle and leaving AT_BAT -> RUNNING),
     // takes a few steps, then retreats back to BASE_HOME.

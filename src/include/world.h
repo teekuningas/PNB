@@ -287,20 +287,10 @@ typedef enum {
     BATTING_CYCLE_FACING_PITCH // the ball was released to him; open until the follow-through has played out
 } BattingCycle;
 
-// The batter at the plate, as the engine runs him: one struct because it is one lifetime, the at-bat, and
-// everything in it is about the one player standing on the arc. Inside the at-bat the batter goes round a
-// BATTING CYCLE once per pitch he faces — he arrives at the ready spot, the cycle opens once no pitch is in
-// the air, the ball is released to him, he swings or does not, and the cycle closes when the follow-through
-// has played out and he walks back to the ready spot to begin the next.
+// The batter at the plate, as the engine runs him: one struct because it is one physical lifetime
+// — the pitch/swing cycle at the plate, cleared whole on every reset. The batter's legal §32 right
+// to leave home lives with the at-bat counts in HalfInningState, owned by the referee.
 typedef struct _AtBat {
-    // §32: "Lyöntivuoroinen lyöjä saa edetä kotipesästä heti, kun pallo on irronnut lukkarin kädestä
-    // ensimmäiseen syöttöön, riippumatta syötön laadusta." Granted when the FIRST pitch of the turn leaves
-    // the hand. That it is then held for the rest of the turn is a READING, not the text: §32 names only
-    // when it begins, and §17 lets a batter leave home and come back to bat until he has become a runner
-    // for good. So no pitch clears it; seating the next batter starts it at 0, and so does a reset — a
-    // foul's included, which the reading would not (an open question for the rules audit).
-    int may_leave_home;
-
     BattingCycle cycle;
 
     SwingActualization swing; // the batter's declared values and the frame they are consumed on
