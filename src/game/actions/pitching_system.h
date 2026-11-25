@@ -7,7 +7,7 @@
 #include "world.h"
 
 // Where the pitcher stands while the pitch is delivered.
-#define PITCHER_MOVE_AWAY_OFFSET 0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD
+#define PITCHER_MOVE_AWAY_OFFSET (0.1f + DISTANCE_FROM_HOME_LOCATION_THRESHOLD + TARGET_ACHIEVED_THRESHOLD)
 
 // Is a pitch physically on its way — the pitcher winding up, or the ball in the air? Two halves with two
 // homes: the windup is the catching action's, the flight is the ball's (`pitch_in_flight`), and this is the

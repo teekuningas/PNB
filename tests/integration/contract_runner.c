@@ -127,6 +127,11 @@ static void run_contract_tests(void)
     RUN_TEST(test_restating_the_aim_changes_nothing);
     RUN_TEST(test_silence_leaves_the_aim_alone);
     RUN_TEST(test_seat_naming_a_non_player_is_malformed);
+
+    printf("\n--- Koppi catch guard & lukkari evasion (§30 / §25) ---\n");
+    RUN_TEST(test_batted_ball_clears_released_by_and_arms_catch_delay);
+    RUN_TEST(test_catch_delay_blocks_immediate_clip_then_allows_lukkari_and_close_infield_catch);
+    RUN_TEST(test_lukkari_stays_evaded_and_cover0_stays_put_during_pitch_in_flight);
 }
 
 int main(int argc, char* argv[])

@@ -9,6 +9,7 @@
 #include "fielder_behaviours.h"
 #include "vector_math.h"
 #include "ball_flight.h"
+#include "ball_catch.h"
 #include "actions/pitching_system.h"
 #include "actions_pure/batting_physics.h"
 #include "actions_pure/swing_geometry.h"
@@ -485,18 +486,14 @@ void update_batting(
                                 verticalAngle, horizontalAngle, power, powerFactor, match->ball.location.x
                             );
 
-                            // make the ball fly in the air with new velocity
-                            generic_sling_ball(&(match->ball), velocity.x, velocity.y, velocity.z);
+                            // launch the batted ball: clears pitcher's released_by and arms the reaction delay
+                            launch_batted_ball(&(match->ball), velocity, BATTED_BALL_CATCH_DELAY_TICKS);
                             // Trigger fielder selection update after ball is hit
                             request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
                             // and the sound
                             *playSoundEffect = SOUND_SWING;
                             // bat hits — event for referee to promote
                             match->events.ball_hit_by_bat = 1;
-                            // not a pitch anymore
-                            match->ball.pitch_in_flight = 0;
-                            // no throw going on now
-                            match->ball.thrown_to = BASE_NONE;
 
                             // move the batter if wanted
 

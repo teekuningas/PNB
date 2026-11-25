@@ -24,8 +24,9 @@ void check_if_ball_can_be_caught(MatchSession* match, int* play_sound_effect)
     int i;
     // so to go to do checking we should first confirm that it even is possible by checking that no one has ball
     // and pitch is not going on. also cant catch if it just happens to be frame of updating ranks
-    // as that could make some weird things happen. try on the next frame again.
-    if (match->ball.holder == -1 && !match->ball.pitch_in_flight && match->chase_replan == CHASE_REPLAN_NONE) {
+    // as that could make some weird things happen, or while the post-contact reaction delay is active.
+    if (match->ball.holder == -1 && !match->ball.pitch_in_flight && match->chase_replan == CHASE_REPLAN_NONE &&
+        match->ball.catch_delay_ticks == 0) {
         for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
             // so we confirm that this particular player is valid to catch, by checking the ball's released_by.
             // its purpose is to deny players catching balls right after throwing them.
@@ -95,6 +96,7 @@ void check_if_ball_can_be_caught(MatchSession* match, int* play_sound_effect)
                         // make sound
                         *play_sound_effect = SOUND_CATCH;
                         match->ball.thrown_to = BASE_NONE;
+                        match->ball.catch_delay_ticks = 0;
                         match->catching.controlled_fielder = i;
                         match->ball.holder = i;
 
@@ -114,4 +116,9 @@ void check_if_ball_can_be_caught(MatchSession* match, int* play_sound_effect)
             }
         }
     }
+}
+
+void advance_ball_catch_delay(BallInfo* ball)
+{
+    if (ball->catch_delay_ticks > 0) ball->catch_delay_ticks--;
 }

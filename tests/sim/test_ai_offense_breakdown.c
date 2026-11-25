@@ -279,7 +279,9 @@ int test_ai_offense_breakdown(void)
 
     band_add(
         bands, &band_count,
-        (Band){"pitches thrown", (double)T_pitches, 450, 800, "573", "the pitcher stops pitching, or at-bats never end"}
+        (Band){"pitches thrown", (double)T_pitches, 600, 1000, "804",
+               "the pitcher stops pitching, or at-bats never end (re-cut 573 -> 804 after Slice 1A stopped "
+               "cover[0] from cheating 5.2u toward home plate during every pitch, extending half-innings)"}
     );
     band_add(
         bands, &band_count,
@@ -300,10 +302,9 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"batters reaching first", (double)T_reached_base, 120, 195, "157",
-               "contact that never turns into a runner. Re-cut upward (109 -> 157) with the scoped batting-AI "
-               "lift: style-specific shot profiles, gap-weighted angles, aiming during windup, and fixing the "
-               "runner-on-3rd / strike-2 strategy blind spots"}
+        (Band){"batters reaching first", (double)T_reached_base, 175, 290, "233",
+               "contact that never turns into a runner. Re-cut upward (157 -> 233) after Slice 1A kept "
+               "bottom_right_catcher at his real post instead of pulling him 5.2u toward home on every pitch"}
     );
     band_add(
         bands, &band_count,
@@ -313,8 +314,9 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 7, "5.0",
-               "direction drifting foul, or every ball dumped safely into the field"}
+        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 3, 10, "7.42",
+               "direction drifting foul, or every ball dumped safely into the field (re-cut 5.0 -> 7.42 "
+               "after Slice 1A produced more runner-on-base normal swings; to be reviewed in Slice 1B)"}
     );
     band_add(
         bands, &band_count,
@@ -352,8 +354,10 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 7.5, 11.5, "9.62",
-               "the controlled fielder not going where the engine sent it"}
+        (Band){"mean chase distance", T_chase_samples ? T_chase_dist / (double)T_chase_samples : 0.0, 10.0, 16.0,
+               "13.07",
+               "the controlled fielder not going where the engine sent it (re-cut 9.62 -> 13.07 after Slice 1A "
+               "stopped cover[0] from pre-drifting 5.2u toward home plate during every pitch)"}
     );
     // The floor here is the load-bearing one: RUN_SPEED is 0.12 and WALK_SPEED is 0.06, so a
     // controlled fielder quietly moved onto the auto-fielders' walk — exactly what reusing
@@ -435,8 +439,9 @@ int test_ai_offense_breakdown(void)
     // determinism hash by design, so the hash cannot be the net for it.
     band_add(
         bands, &band_count,
-        (Band){"batters seated", (double)T_at_bats, 245, 315, "268",
-               "the selection path stalling, double-seating, or ending half-innings early"}
+        (Band){"batters seated", (double)T_at_bats, 270, 440, "356",
+               "the selection path stalling, double-seating, or ending half-innings early (re-cut 268 -> 356 "
+               "as Slice 1A raised batters reaching base per half-inning)"}
     );
     // The policy probe. Re-cut 31.3 -> 22.4 after §23 pitch floor + ENFORCE ordering raised batters
     // seated (268 -> 312) against the fixed 3-joker-per-half-inning cap.

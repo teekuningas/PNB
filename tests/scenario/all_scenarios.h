@@ -30,5 +30,7 @@ int test_contest_first_strike_foul_resumes_same_pair(void); // 1st-strike foul i
 int test_contest_third_strike_foul_advances_pair_cleanly(
     void
 ); // 3rd-strike foul advances pair without teleporting batter
+int test_kotipesakoppi_wounds_off_base_runner(void); // §30/§36 — lukkari catches home pop-up and wounds off-base runner
+int test_close_infield_koppi_within_15_units_of_lukkari(void); // §30/§36 — fielder <15u from lukkari catches fly ball
 
 #endif // ALL_SCENARIOS_H

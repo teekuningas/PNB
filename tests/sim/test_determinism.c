@@ -169,7 +169,18 @@ static unsigned long long run_once(unsigned int seed)
 // all 5 Ghost Runner hits across the 66 golden runs; change (1) raises every pitch flight by ~27 frames
 // (declaration lead mean 86.1 -> 112.5, all 24 bands in test_ai_offense_breakdown hold with 181 batters
 // reaching first, 8 runs, 216 outs, 120/120 half-inning and 120/120 homerun-contest sweep seeds clean).
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x4c07e89387e941e3ULL
+// Re-recorded 2026-11-25, deliberately, by Road-to-1.5 Slice 1A (koppi catch guard, lukkari evasion,
+// and typed ball launches):
+//   1. launch_batted_ball clears ball.released_by = -1 on bat contact (enabling kotipesäkoppi and
+//      close-infield fly catches within 15u of the lukkari) and arms BallInfo.catch_delay_ticks = 18
+//      (0.36 s reaction lock, preventing off-the-bat clips without shrinking CATCH_DISTANCE).
+//   2. fielder_behaviours.c holds the lukkari at their evaded spot during pitch_in_flight (§25(4)) and
+//      keeps basemen_replacements from pulling cover[0] (bottom_right_catcher) off his post while the
+//      lukkari is inside HOME_RADIUS (drift at contact 5.21u -> 0.21u).
+// Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): batters reaching first 181 -> 233,
+// reached third 27 -> 42, runs 8 -> 10, mean frames to recover 100.4 -> 102.7, 216 outs, 120/120
+// half-inning and 120/120 homerun-contest sweep seeds clean.
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x3c4b9ca0cb33fbe2ULL
 
 int test_ai_vs_ai_determinism(void)
 {

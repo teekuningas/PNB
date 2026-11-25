@@ -3,8 +3,9 @@
 
     A loose ball flies: velocity, the fence, gravity, and its contact with the ground, which is where the
     frame's ball_hit_ground event is born — detected inside the integration step that produces it, because
-    a bounce changes the velocity the next step reads. A held ball is carried by its holder. And an
-    actualizer that launches the ball (a pitch, a throw, a hit) does it through generic_sling_ball.
+    a bounce changes the velocity the next step reads. A held ball is carried by its holder. And every
+    actualizer that launches the ball (a pitch, a hit, a throw, a drop) does it through its typed launch
+    helper here, setting the complete flight state in one place.
 */
 
 #include "ball_flight.h"
@@ -124,12 +125,50 @@ void update_ball_to_player(MatchSession* match)
     }
 }
 
-void generic_sling_ball(BallInfo* ballInfo, float x, float y, float z)
+static void set_ball_in_motion(BallInfo* ball, Vector3D velocity)
 {
-    // Make ball visible and moving
-    ballInfo->visible = 1;
-    ballInfo->moving = 1;
+    ball->visible = 1;
+    ball->moving = 1;
+    ball->flight_has_hit_ground = 0;
+    ball->on_ground = 0;
+    ball->holder = -1;
+    vec3_set_xyz(&(ball->velocity), velocity.x, velocity.y, velocity.z);
+}
 
-    // Set the velocity
-    vec3_set_xyz(&(ballInfo->velocity), x, y, z);
+void launch_pitched_ball(BallInfo* ball, Vector3D velocity, int pitcher)
+{
+    set_ball_in_motion(ball, velocity);
+    ball->hit_ground_to_unwound = 0;
+    ball->pitch_in_flight = 1;
+    ball->thrown_to = BASE_NONE;
+    ball->released_by = pitcher;
+    ball->catch_delay_ticks = 0;
+}
+
+void launch_batted_ball(BallInfo* ball, Vector3D velocity, int catch_delay_ticks)
+{
+    set_ball_in_motion(ball, velocity);
+    ball->hit_ground_to_unwound = 0;
+    ball->pitch_in_flight = 0;
+    ball->thrown_to = BASE_NONE;
+    ball->released_by = -1;
+    ball->catch_delay_ticks = catch_delay_ticks;
+}
+
+void launch_thrown_ball(BallInfo* ball, Vector3D velocity, int thrower, BaseID target)
+{
+    set_ball_in_motion(ball, velocity);
+    ball->pitch_in_flight = 0;
+    ball->thrown_to = target;
+    ball->released_by = thrower;
+    ball->catch_delay_ticks = 0;
+}
+
+void launch_dropped_ball(BallInfo* ball, Vector3D velocity, int dropper)
+{
+    set_ball_in_motion(ball, velocity);
+    ball->pitch_in_flight = 0;
+    ball->thrown_to = BASE_NONE;
+    ball->released_by = dropper;
+    ball->catch_delay_ticks = 0;
 }

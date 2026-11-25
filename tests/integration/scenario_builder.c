@@ -396,15 +396,12 @@ void scenario_throw_ball_to_base(ScenarioContext* ctx, Vector3D fromLocation, Ba
     game->ball.location = fromLocation;
     game->ball.previous_location = fromLocation;
 
-    // CRITICAL: Set released_by to prevent self-catching
-    // (Same as in throwing_system.c line 77)
-    game->ball.released_by = game->ball.holder;
-    game->ball.holder = -1;
-
-    // Use the game's actual sling function (sets velocity + flags)
-    // Trigger fielder selection update (same as game does after throws)
+    // Trigger fielder selection update (same as game does after throws) and launch the throw
     request_chase_replan(game, CHASE_REPLAN_AND_HAND_OVER);
-    generic_sling_ball(&game->ball, dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT);
+    launch_thrown_ball(
+        &game->ball, (Vector3D){dx * power * THROW_POWER_CONSTANT, dy, dz * power * THROW_POWER_CONSTANT},
+        game->ball.holder, targetBase
+    );
 }
 
 void hit_fly_ball_to_location_with_time(
@@ -435,16 +432,10 @@ void hit_fly_ball_to_location_with_time(
     float vx = dx / flightFrames;
     float vz = dz / flightFrames;
 
-    // Set starting location
+    // Set starting location and launch batted fly ball
     game->ball.location = fromLocation;
     game->ball.previous_location = fromLocation;
-    game->ball.holder = -1;
-
-    // Launch
-    generic_sling_ball(&game->ball, vx, vy, vz);
-
-    // Ensure ball is in "fly ball" state so a catch triggers wounding
-    game->ball.flight_has_hit_ground = 0;
+    launch_batted_ball(&game->ball, (Vector3D){vx, vy, vz}, 0);
     ctx->state->rules->between_pitch.bat_outcome = BAT_OUTCOME_HIT; // Crucial: signals this ball came from the bat
 }
 
@@ -484,15 +475,10 @@ void perform_pitch(ScenarioContext* ctx, float targetX)
     // v_z (keep at plate Z)
     float vz = (field->pitch_plate.z - startPos.z) / frames;
 
-    // 3. Set Ball State
+    // 3. Set Ball State & Pitch State
     game->ball.location = startPos;
     game->ball.previous_location = startPos;
-    game->ball.holder = -1;
-    generic_sling_ball(&game->ball, vx, vy, vz);
-    game->ball.flight_has_hit_ground = 0;
-
-    // 4. Set Pitch State
-    game->ball.pitch_in_flight = 1;
+    launch_pitched_ball(&game->ball, (Vector3D){vx, vy, vz}, game->fielding_posts.baseman[0]);
     game->events.pitch_released = 1; // Signal event - referee snapshots state and grants §32 right automatically
 
     // Note: We emit pitch_released event which triggers the referee to snapshot

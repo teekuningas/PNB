@@ -126,4 +126,9 @@ int test_batting_motion_and_recovery_follow_physical_time(void);
 int test_drop_refused_during_a_later_windup(void);
 int test_controlled_fielder_holds_during_a_later_windup(void);
 
+// §30 / §25 koppi catch guard, catch_delay_ticks, and lukkari evasion
+int test_batted_ball_clears_released_by_and_arms_catch_delay(void);
+int test_catch_delay_blocks_immediate_clip_then_allows_lukkari_and_close_infield_catch(void);
+int test_lukkari_stays_evaded_and_cover0_stays_put_during_pitch_in_flight(void);
+
 #endif // ALL_CONTRACTS_H

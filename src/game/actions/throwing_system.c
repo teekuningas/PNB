@@ -113,24 +113,20 @@ static void throw_release(MatchSession* match)
     float dx = windup.direction.x / windup.distance;
     float dz = windup.direction.z / windup.distance;
     float dy = 0.06f;
-    generic_sling_ball(
-        &(match->ball), dx * power * THROW_POWER_CONSTANT, dy + windup.distance * THROW_DISTANCE_CONSTANT,
+    Vector3D velocity = {
+        dx * power * THROW_POWER_CONSTANT, dy + windup.distance * THROW_DISTANCE_CONSTANT,
         dz * power * THROW_POWER_CONSTANT
-    );
-    // The flight is a throw to that base, which keeps the baseman there from wandering out to meet it.
-    // Set at the release and not at the gather: it is a fact about the ball in the air, and every reader
-    // asks it with nobody holding the ball — while the thrower gathers, the target is the windup's own.
-    match->ball.thrown_to = windup.target;
+    };
+    // The flight is a throw to that base, which keeps the baseman there from wandering out to meet it,
+    // and released_by prevents the thrower from catching it right out of his own hand.
+    launch_thrown_ball(&(match->ball), velocity, match->ball.holder, windup.target);
     // Trigger fielder selection update after throw
     request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
-    // prevent this player from catching the ball right after throwing
-    match->ball.released_by = match->ball.holder;
-    match->ball.holder = -1;
     // set running flag to 0 so that orientation will change
     if (match->catching.controlled_fielder != -1) {
         match->players[match->catching.controlled_fielder].motion.running = 0;
     }
-    // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
+    // set control to -1 (the change key is the same as the throw key) — let chase replanning handle
     // player changing.
     match->catching.controlled_fielder = -1;
 }
@@ -201,12 +197,9 @@ void drop_ball(MatchSession* match)
     if (norm < EPSILON) norm = 1.0f;
     dx = dx / norm;
     dz = dz / norm;
-    // and use generic_sling_ball again to get the ball to the world.
-    generic_sling_ball(&(match->ball), dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT);
+    Vector3D velocity = {dx * DROP_BALL_CONSTANT, DROP_BALL_CONSTANT, dz * DROP_BALL_CONSTANT};
+    // launch the dropped ball with released_by set so the dropper cannot catch it before it hits ground
+    launch_dropped_ball(&(match->ball), velocity, match->ball.holder);
     // Trigger fielder selection update after drop
     request_chase_replan(match, CHASE_REPLAN_AND_HAND_OVER);
-    // and set released_by so that this player cannot catch it before it hits ground
-    match->ball.released_by = match->ball.holder;
-    // and no player has the ball anymore.
-    match->ball.holder = -1;
 }

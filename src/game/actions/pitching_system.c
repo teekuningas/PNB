@@ -8,6 +8,7 @@
 #include "rules_pure/rules_strikes.h"
 #include "player_motion.h"
 #include "runner_paths.h"
+#include "ball_flight.h"
 #include "vector_math.h"
 #include "base_control.h"
 
@@ -87,21 +88,13 @@ static void release_pitch(MatchSession* match, const RefereeState* referee, cons
     Vector3D target;
     int i;
 
-    match->ball.visible = 1;
-    match->ball.moving = 1;
-    match->ball.flight_has_hit_ground = 0;
-    match->ball.on_ground = 0;
-    match->ball.hit_ground_to_unwound = 0;
-    vec3_set_xyz(&(match->ball.velocity), v.x, v.y, v.z);
+    launch_pitched_ball(&(match->ball), v, pitcher);
 
     // nudge the pitcher aside as the ball leaves
     target.x = match->players[pitcher].body.location.x + PITCHER_MOVE_AWAY_OFFSET;
     target.z = match->players[pitcher].body.location.z;
     move_to_target(match->players, pitcher, &target);
 
-    match->ball.released_by = pitcher; // pitcher won't catch its own pitch before it grounds
-    match->ball.holder = -1;
-    match->ball.pitch_in_flight = 1;
     match->events.pitch_released = 1;
     record_player_activity(&match->players[pitcher].events, PLAYER_ACTIVITY_PITCH_RELEASED, true);
 

@@ -50,12 +50,27 @@ void check_if_near_home_location(MatchSession* match)
     }
 }
 
+static int baseman_needs_cover(const MatchSession* match, int base_idx)
+{
+    const PlayerInfo* baseman = &match->players[match->fielding_posts.baseman[base_idx]];
+    if (baseman->fielding.near_home != 0) return 0;
+    if (base_idx == BASE_HOME) {
+        // §25(4): during pitch_in_flight the lukkari is evading their own pitch, and stepping aside
+        // inside HOME_RADIUS is still at home base — do not pull home's cover fielder out of position.
+        if (match->ball.pitch_in_flight) return 0;
+        float dx = baseman->body.location.x - baseman->body.home_location.x;
+        float dz = baseman->body.location.z - baseman->body.home_location.z;
+        return !vec3_is_small_enough_circle_xz(dx, dz, HOME_RADIUS);
+    }
+    return 1;
+}
+
 void basemen_replacements(MatchSession* match)
 {
     int i;
     for (i = 0; i < BASE_COUNT; i++) {
-        // if player is not in his home base
-        if (match->players[match->fielding_posts.baseman[i]].fielding.near_home == 0) {
+        // if player is away from his home base
+        if (baseman_needs_cover(match, i)) {
             // start moving replacer there instead if he is not moving already or if player does not control him
             if (match->fielding_posts.cover[i] != match->catching.controlled_fielder) {
                 if (match->players[match->fielding_posts.cover[i]].fielding.replacement == REPLACEMENT_IDLE) {
@@ -96,6 +111,10 @@ void move_idling_players_to_home_location(MatchSession* match)
     int i;
     // if not catching ball or replacing or in home location, move to home location.
     for (i = PLAYERS_IN_TEAM + JOKER_COUNT; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
+        // §25(4): keep the lukkari at their evaded spot while the pitch is still in flight.
+        if (i == match->fielding_posts.baseman[BASE_HOME] && match->ball.pitch_in_flight) {
+            continue;
+        }
         if (match->players[i].motion.moving == 0) {
             if (i != match->catching.controlled_fielder) {
                 if (match->players[i].fielding.near_home == 0) {

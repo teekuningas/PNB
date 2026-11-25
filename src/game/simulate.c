@@ -30,4 +30,5 @@ void simulate(MatchSession* match, const FieldPositions* field_positions, int* p
     for (int i = 0; i < PLAYERS_IN_TEAM * 2 + JOKER_COUNT; i++) {
         advance_throw_recovery(&match->players[i].fielding);
     }
+    advance_ball_catch_delay(&match->ball);
 }

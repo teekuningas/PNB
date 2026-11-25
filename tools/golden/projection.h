@@ -159,8 +159,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     V(1, b->location);
     V(1, b->previous_location);
     V(1, b->velocity);
-    put(1, "%d,%d,%d,%d,%d,%d,%d", b->visible, b->moving, b->flight_has_hit_ground, b->on_ground,
-        b->hit_ground_to_unwound, b->needs_move_update, b->sync_previous_location);
+    put(1, "%d,%d,%d,%d,%d,%d,%d,%d", b->visible, b->moving, b->flight_has_hit_ground, b->on_ground,
+        b->hit_ground_to_unwound, b->needs_move_update, b->sync_previous_location, b->catch_delay_ticks);
 
     for (int i = 0; i < 4; i++) put(2, "%d,%d;", m->fielding_posts.baseman[i], m->fielding_posts.cover[i]);
     for (int i = 0; i < RANKED_FIELDERS_COUNT; i++) put(2, "%d,", m->catching.chase_ranking[i]);

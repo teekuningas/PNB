@@ -37,6 +37,8 @@ static void run_scenario_tests(void)
     RUN_TEST(test_batter_retreat_closes_stale_seat_offer);
     RUN_TEST(test_contest_first_strike_foul_resumes_same_pair);
     RUN_TEST(test_contest_third_strike_foul_advances_pair_cleanly);
+    RUN_TEST(test_kotipesakoppi_wounds_off_base_runner);
+    RUN_TEST(test_close_infield_koppi_within_15_units_of_lukkari);
 }
 
 int main(int argc, char* argv[])

@@ -30,8 +30,9 @@ typedef struct _BallInfo {
     int moving; // is ball moving, only update player orientations and ball's position if ball is moving
     int flight_has_hit_ground; // has the ball hit ground
     int on_ground; // is ball rolling on ground
-    int hit_ground_to_unwound; // if ball hits ground after being caught as wounding catch, is set to 1. checked only
-                               // after wounding catch so, it is set to 0 when the catch is made.
+    int hit_ground_to_unwound; // set to 1 on ground contact to cancel an active wounding evaluation (tactical drop);
+                               // cleared on pitch/bat launch and reset, never on catch (so a same-frame drop bounce
+                               // still cancels wounding in ADJUDICATE).
     int needs_move_update; // when ball having players' velocity changes, ball's velocity must change too
     int sync_previous_location; // when ball stops, we must sync previous_location and location.
 
@@ -49,11 +50,16 @@ typedef struct _BallInfo {
     BaseID thrown_to;
 
     // Who has the ball: the player holding it, -1 while it is loose. And who let go of it last — set by
-    // every release from a hand (a pitch, a throw, a drop) and asked only while the ball is loose, so
-    // that a fielder cannot catch what he has just thrown before it has touched the ground. A hit does
-    // not set it, so a batted ball still names the pitcher.
+    // every release from a fielder's hand (a pitch, a throw, a drop) so a fielder cannot catch what he
+    // has just released before it touches the ground; cleared to -1 on bat contact so a batted ball
+    // never inherits the pitcher's self-catch guard.
     int holder;
     int released_by;
+    // Physical reaction-time lock on a newly batted ball: set on bat contact, decremented at the end of
+    // SIMULATE, cleared on catch or any new launch. Keeps the lukkari's catch sphere from snatching hard
+    // hits 20–180 ms off the bat while letting any fielder (including the lukkari on a kotipesäkoppi)
+    // catch genuine pop-ups and fly balls.
+    int catch_delay_ticks;
 } BallInfo;
 // The catching team's own engine state — facts about fielding, owned by the engine, written by
 // ingestion and by the engine's own behaviours, read by both.

@@ -340,6 +340,7 @@ static void initialize_ball_info(MatchSession* match)
     match->ball.thrown_to = BASE_NONE;
     match->ball.holder = -1;
     match->ball.released_by = -1;
+    match->ball.catch_delay_ticks = 0;
 }
 // Empty everything a play can have left on the table that is not physics: the catching action in progress,
 // the at-bat swing cycle, the runners' standing orders, a chase
