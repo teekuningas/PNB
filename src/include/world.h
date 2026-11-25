@@ -195,10 +195,8 @@ typedef struct _BattingOffers {
 } BattingOffers;
 
 // §26: what the latest BALL entitles the batting side to — the lead runner, and the base he would walk
-// from — worked out once per BALL. Each new BALL asks the question afresh; a reset leaves nothing to work
-// out until the next one.
+// from — worked out on the tick the BALL resolves.
 typedef struct _FreeWalkEntitlement {
-    int worked_out; // this BALL's entitlement has been worked out (or there is nothing to work out)
     int runner; // the lead runner it entitles; -1 when nobody is
     BaseID from; // the base he would walk from; BASE_NONE when nobody is
 } FreeWalkEntitlement;

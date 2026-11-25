@@ -13,6 +13,8 @@ int test_pitching_strike(void);
 int test_pitching_ball(void);
 int test_free_walk_resolution(void);
 int test_free_walk_is_not_offered_to_nobody(void); // §26 — an offer names a player, or there is none
+int test_free_walk_offered_to_running_batter_from_home(void); // §26+§32 — running batter off home gets 1-ball walk
+int test_free_walk_skips_player_out_or_scored_on_ball_frame(void); // ENFORCE order — OUT/SCORED excluded on BALL tick
 int test_run_of_honor(void); // §42 Kunniajuoksu (Run of Honor)
 int test_run_arrival_before_ball_lands(void); // Regression test for "Lost Run" bug
 int test_run_arrival_before_catch(void); // Pending run voided by catch

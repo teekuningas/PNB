@@ -414,11 +414,12 @@ int test_ai_offense_breakdown(void)
                "a swing that stops connecting for timing reasons, or an AI made unrealistically perfect"}
     );
     // How much margin the producer leaves the engine before the value is consumed — and, on a
-    // wire one day, how much a late message could eat. The minimum seen today is 2 frames.
+    // wire one day, how much a late message could eat. Re-cut 86.1 -> 112.5 when PITCH_BASE_SPEED
+    // moved 0.065 -> 0.106 (§23 substrate floor), adding ~27 frames to every pitch flight.
     band_add(
         bands, &band_count,
-        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 70,
-               110, "86.1", "a producer drifting back toward declaring at the last possible moment"}
+        (Band){"declaration lead frames, mean", T_sw_lead_n ? (double)T_sw_lead_sum / (double)T_sw_lead_n : 0.0, 95,
+               135, "112.5", "a producer drifting back toward declaring at the last possible moment"}
     );
     band_add(
         bands, &band_count,
@@ -437,11 +438,11 @@ int test_ai_offense_breakdown(void)
         (Band){"batters seated", (double)T_at_bats, 245, 315, "268",
                "the selection path stalling, double-seating, or ending half-innings early"}
     );
-    // The policy probe. The batting controller walks the offer today and chooses outright
-    // afterwards; if the preference order survives that rewrite, this number does not move.
+    // The policy probe. Re-cut 31.3 -> 22.4 after §23 pitch floor + ENFORCE ordering raised batters
+    // seated (268 -> 312) against the fixed 3-joker-per-half-inning cap.
     band_add(
         bands, &band_count,
-        (Band){"joker at-bats %", percent(T_joker_at_bats, T_at_bats), 26, 44, "31.3",
+        (Band){"joker at-bats %", percent(T_joker_at_bats, T_at_bats), 18, 40, "22.4",
                "the batting controller's joker preference silently changing"}
     );
     // Not "prompts answered %": a prompt overtaken by the third burn is ordinary play and made

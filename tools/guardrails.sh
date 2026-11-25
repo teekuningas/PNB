@@ -158,7 +158,7 @@ fi
 
 audited=$(printf '%s\n' "$ledger_rows" | cut -f1 | grep -c '^audited$')
 unaudited=$(($(printf '%s\n' "$ledger_rows" | wc -l) - audited))
-ratchet "files awaiting the function-quality audit" "$unaudited" 48 # runner_paths.c audited once §32 moved to the INGEST gate
+ratchet "files awaiting the function-quality audit" "$unaudited" 41 # game_consolidation, pitching_physics, pitching_system, throwing_system, batting_physics, pitching_ai_strategy, ingest audited
 
 # ---------------------------------------------------------------------------
 # The rules-vocabulary ledger. A handful of rulebook sections define no consequence —

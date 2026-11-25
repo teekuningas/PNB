@@ -44,7 +44,7 @@
 19	partial	a runner arrives legally		PlayerPathState.waypoint covers the turning marker; pesärikko (§34) not modelled
 20	partial	base safety and its three losses	referee.batting_players[i].current_safety_base + update_safety_status; correct, but referee-internal rather than a quotable predicate
 21	predicate	a player has reached FINAL RESOLUTION	player_has_reached_final_resolution in rules_pure/rules_resolution.c — all four §21 clauses (scored, wounded, burnt, advance voided), called by the home-run contest pair-end rule
-23	partial	a pitch is correct / wrong / void	determine_pitch_result is pure but tests plate position only; mitätön (void) is not modelled at all
+23	partial	a pitch is correct / wrong / void	determine_pitch_result is pure and tests plate position; the ≥1 m height floor (matala) is 🔒 substrate-enforced by PITCH_BASE_SPEED = 0.106f; mitätön (void) is not modelled at all
 29	partial	a hit is legal or illegal		only the out-of-bounds subtype exists; §29's other five subtypes are absent
 30	partial	a catch, vs a deliberate tactical drop	both behaviours exist; the DEFINITION that separates them (immediacy of the drop) is implicit in timing
 41	predicate	a run					is_regular_run — the reference implementation for every row above

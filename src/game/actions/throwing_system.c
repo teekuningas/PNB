@@ -127,7 +127,9 @@ static void throw_release(MatchSession* match)
     match->ball.released_by = match->ball.holder;
     match->ball.holder = -1;
     // set running flag to 0 so that orientation will change
-    match->players[match->catching.controlled_fielder].motion.running = 0;
+    if (match->catching.controlled_fielder != -1) {
+        match->players[match->catching.controlled_fielder].motion.running = 0;
+    }
     // set control to -1 (the change key is the same as the throw key) — let generic_sling_ball handle
     // player changing.
     match->catching.controlled_fielder = -1;

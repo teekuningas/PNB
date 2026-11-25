@@ -450,10 +450,10 @@ int state_validator_check(StateInfo* state)
     //
     // §26 gives the walk to the lead runner, so the offer and the player it belongs to are one fact
     // and must be set together. They were not: the offer was raised whenever the ball count reached
-    // the threshold, while calculate_free_walk leaves free_walk.runner at -1 when the whole inner side
-    // is off the field. That put a prompt on screen belonging to nobody, made the withdrawal beside
-    // it read players[-1] every frame, and — because the lukkari may not pitch while an offer is
-    // open — left the game waiting for an answer to a question about no one. Found by the owner in
+    // the threshold, while determine_free_walk_entitlement leaves free_walk.runner at -1 when nobody
+    // is active on the field. That put a prompt on screen belonging to nobody, made the withdrawal
+    // beside it read players[-1] every frame, and — because the lukkari may not pitch while an offer
+    // is open — left the game waiting for an answer to a question about no one. Found by the owner in
     // play, 2026-08-28.
     //
     // Asserted here rather than defended at the read, because this is a resting state: it is true

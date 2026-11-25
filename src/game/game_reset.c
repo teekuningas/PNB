@@ -376,9 +376,9 @@ void initialize_action_info(MatchSession* match)
 // Does NOT touch referee-owned state (BPS, HIS, RefereeState).
 static void reset_flow_state(MatchSession* match)
 {
-    // No question is open after a reset, and there is no BALL whose free walk is still to be worked out.
+    // No question is open after a reset, and no free-walk entitlement stands.
     match->offers = (BattingOffers){0};
-    match->free_walk = (FreeWalkEntitlement){.worked_out = 1, .runner = -1, .from = BASE_NONE};
+    match->free_walk = (FreeWalkEntitlement){.runner = -1, .from = BASE_NONE};
 
     // Frame events (cleared every frame, but ensure clean start)
     clear_frame_events(&match->events);

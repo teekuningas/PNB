@@ -4,6 +4,7 @@
 #include "key_states.h"
 #include "world.h"
 #include "client_input.h"
+#include "action_invocations.h" // catching_widget_view — what the thrower sees on the bar
 #include "actions/throwing_system.h" // THROW_WINDUP_MAX_FRAMES (release-window budget)
 #include <math.h>
 
@@ -51,7 +52,7 @@ int test_scripted_throw_hold_release_to_base(void)
     ASSERT(thrower >= 0, "the human should hold the ball at home");
 
     // The client-local throw charge widget — the human's power comes from THIS, never the engine clock.
-    InputWidget* tw = &scripted_state(g)->client_input->throw_widget;
+    InputWidget* tw = &scripted_state(g)->client_input->throw_widget.meter;
 
     // Begin the gesture: hold KEY_2 + KEY_LEFT (a pickoff throw to first). One tick to register the hold.
     scripted_hold(g, HUMAN_PAD, KEY_2);
@@ -95,5 +96,65 @@ int test_scripted_throw_hold_release_to_base(void)
     ASSERT(released, "releasing KEY_2 must fire the throw (the ball leaves the hand)");
     ASSERT(horiz > 0.01f, "the thrown ball must have a real horizontal velocity");
     ASSERT(widget_retired, "the client charge widget is retired once its value is sampled into the declaration");
+    return TEST_PASSED;
+}
+
+// Releasing KEY_2 commits the throw power and keeps that level visible on the catching bar while the
+// throw finishes winding up and flying cleanly, then returns the bar to rest once caught or grounded.
+int test_scripted_throw_committed_power_stays_on_bar(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_AI, HUMAN_PAD, 0x2C0FFEE2u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(tick_until_ball_holder_ready(g, 8000), "never reached a human ball-holder ready state");
+
+    MatchSession* m = scripted_match(g);
+    const ClientInputState* ci = scripted_state(g)->client_input;
+
+    // Hold KEY_2 + KEY_LEFT to charge a throw to 1st base.
+    scripted_hold(g, HUMAN_PAD, KEY_2);
+    scripted_hold(g, HUMAN_PAD, KEY_LEFT);
+    scripted_run(g, 21); // 1 tick to arm + 20 ticks charging
+
+    float level_before_release = catching_widget_view(ci);
+    ASSERT(level_before_release > 0.3f, "bar must show the rising throw charge while held");
+
+    // Release KEY_2: the live charge meter retires, but the committed power stays visible on the bar.
+    scripted_release(g, HUMAN_PAD, KEY_2);
+    scripted_release(g, HUMAN_PAD, KEY_LEFT);
+    scripted_tick(g);
+
+    float committed_level = catching_widget_view(ci);
+    ASSERT_EQ(WIDGET_IDLE, (int)ci->throw_widget.meter.mode, "charge meter retires on KEY_2 release");
+    ASSERT_EQ(1, ci->throw_widget.power_committed, "committed throw power flag must arm on release");
+    ASSERT(committed_level >= level_before_release, "committed bar level must not drop back to 0 on release");
+
+    // Watch every frame through windup and clean airborne flight: the bar must hold the committed mark,
+    // and then return to 0 once the throw is caught or touches the ground.
+    int airborne_frames_held = 0;
+    int bar_dropped_early = 0;
+    int returned_to_rest = 0;
+    for (int f = 0; f < 300; f++) {
+        scripted_tick(g);
+        const int in_flight = (m->catching_action.kind == CATCHING_ACTION_THROWING) ||
+                              (m->ball.thrown_to != BASE_NONE && !m->ball.flight_has_hit_ground);
+        const float view = catching_widget_view(ci);
+        if (in_flight) {
+            if (m->ball.holder == -1) airborne_frames_held++;
+            if (fabsf(view - committed_level) > 1e-6f) bar_dropped_early = 1;
+        } else if (!ci->throw_widget.power_committed && fabsf(view) < 1e-6f) {
+            returned_to_rest = 1;
+            break;
+        }
+    }
+
+    int failed = scripted_failed(g);
+    char reason[SIM_FAIL_REASON_LEN];
+    snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
+    scripted_destroy(g);
+
+    ASSERT(!failed, reason);
+    ASSERT(airborne_frames_held > 0, "the thrown ball must fly in the air while the committed mark holds");
+    ASSERT(!bar_dropped_early, "committed throw power must stay steady on the bar until the throw finishes");
+    ASSERT(returned_to_rest, "once the throw is caught or grounded, the bar must return to rest");
     return TEST_PASSED;
 }

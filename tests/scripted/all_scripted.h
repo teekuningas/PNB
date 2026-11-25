@@ -14,6 +14,7 @@ int test_scripted_pitch_dropped_aim_is_valesyotto(void);
 int test_scripted_human_pitch_ai_hit_flies(void);
 int test_scripted_catching_bar_follows_the_pitch_gesture(void);
 int test_scripted_throw_hold_release_to_base(void);
+int test_scripted_throw_committed_power_stays_on_bar(void);
 
 // Movement: the human sends a destination, and the engine owns the walk.
 int test_scripted_move_held_key_runs_at_run_speed(void);

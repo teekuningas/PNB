@@ -178,8 +178,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
         batting_cycle_is_open(ab), r->half_inning.batter_may_leave_home, m->chase_replan != CHASE_REPLAN_NONE,
         m->chase_replan == CHASE_REPLAN_AND_HAND_OVER);
 
-    put(4, "pause=%d wbd=%d wfw=%d fwc=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
-        m->offers.free_walk, m->free_walk.worked_out, m->free_walk.runner, (int)m->free_walk.from);
+    put(4, "pause=%d wbd=%d wfw=%d fwi=%d fwb=%d;", st->paused, m->offers.batter_seat,
+        m->offers.free_walk, m->free_walk.runner, (int)m->free_walk.from);
     put(4, "gfs=%d,%d;", home_run->hold_ticks, ball_is_home(m, st->field_positions));
     put(4, "cam=%d;", home_run->active);
     V(4, m->catching.controlled_move_target);
@@ -206,7 +206,8 @@ static void project(const StateInfo* st, const HomeRunView* home_run, const Play
     const ClientInputState* c = st->client_input;
     for (int i = 0; i < BASE_COUNT; i++) put(9, "rp%d,", c->run_press_window[i]);
     project_widget("pw", &c->pitch_widget.meter);
-    project_widget("tw", &c->throw_widget);
+    project_widget("tw", &c->throw_widget.meter);
+    put(9, "twp=%d,%a;", c->throw_widget.power_committed, (double)c->throw_widget.power);
     put(9, "mv=%d,%d,%d,%d;", c->move_widget.held, c->move_widget.control_index, c->move_widget.declared,
         c->move_widget.frames_since_declared);
     V(9, c->move_widget.point);

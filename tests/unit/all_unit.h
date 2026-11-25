@@ -51,6 +51,7 @@ int test_batted_ball_velocity(void);
 
 // Pitching physics (actions_pure/pitching_physics.c)
 int test_pitch_velocity_from_aim(void);
+int test_pitch_minimum_height_meets_rule_23_floor(void);
 
 // Collision physics (physics/collision.c)
 int test_collision_resolve_boundaries_no_collision(void);

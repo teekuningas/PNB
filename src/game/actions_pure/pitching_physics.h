@@ -3,7 +3,12 @@
 
 #include "foundation.h"
 
-#define PITCH_BASE_SPEED 0.065f // dy at power 0 (minimum toss height)
+// §23 substrate floor: player head sits at BALL_HEIGHT_WITH_PLAYER + 2.7984 * 0.24 ≈ 2.122 units
+// (player height ≈ 2.128 units = 1.80 m → 1.182 units/m), so head + 1 m ≈ 3.304 units.
+// At dy = 0.106f, discrete ball integration peaks at 3.38 units (~1.06 m above the pitcher's head),
+// making sub-legal matala pitches physically unrepresentable; power 1.0 reaches 10.08 units (~6.73 m
+// above head, a full tolppa). Every pitch also clears SWING_PREPARATION_TICKS (60) cleanly before contact.
+#define PITCH_BASE_SPEED 0.106f // dy at power 0 (legal §23 minimum toss height)
 #define PITCH_POWER_CONSTANT 0.12f // extra dy per unit power
 #define PITCH_ANGLE_CONSTANT 0.15f // dx per unit placement (direction)
 // How far off level a swing's launch elevation may be and still be a hit. It is the swing minigame's

@@ -126,15 +126,21 @@ void action_invocations(
         }
     }
 
-    // Retire the throw charge widget whenever no throw is gathering, whatever ended it. Must run here
-    // rather than inside checkThrowGesture, which stops firing the moment the ball leaves the hand — the
-    // same gap that caused bug #4 on the pitch widget. An AI throw arms none of this.
+    // Retire the throw charge widget whenever no throw is gathering, whatever ended it. The committed
+    // bar mark stays visible across the remaining windup and airborne throw flight until the ball is
+    // caught, hits the ground, or a reset clears it. Must run here rather than inside checkThrowGesture,
+    // which stops firing once the ball leaves the hand. An AI throw arms none of this.
     {
-        InputWidget* w = &clientInput->throw_widget;
-        if (w->mode != WIDGET_IDLE && catching != CATCHING_ACTION_THROWING) {
-            w->mode = WIDGET_IDLE;
-            w->counter_max = 0;
-            w->dir = 0;
+        ThrowWidget* tw = &clientInput->throw_widget;
+        if (tw->meter.mode != WIDGET_IDLE && catching != CATCHING_ACTION_THROWING) {
+            tw->meter.mode = WIDGET_IDLE;
+            tw->meter.counter_max = 0;
+            tw->meter.dir = 0;
+        }
+        if (tw->power_committed && catching != CATCHING_ACTION_THROWING &&
+            (match->ball.thrown_to == BASE_NONE || match->ball.flight_has_hit_ground)) {
+            tw->power_committed = 0;
+            tw->power = 0.0f;
         }
     }
 
@@ -219,7 +225,8 @@ static int checkThrowGesture(
     // Direction key per target base (index by BaseID: HOME/FIRST/SECOND/THIRD).
     static const int throwKeyForBase[BASE_COUNT] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
     const CatchingActionKind catching = match->catching_action.kind;
-    InputWidget* w = &clientInput->throw_widget;
+    ThrowWidget* gesture = &clientInput->throw_widget;
+    InputWidget* w = &gesture->meter;
 
     // A throw is gathering and our power is still owed: keep charging while held; a KEY_2 release samples
     // the widget and says the power. The gesture owns KEY_2 for the whole hold, so a lone arrow release
@@ -227,9 +234,14 @@ static int checkThrowGesture(
     if (catching == CATCHING_ACTION_THROWING && w->mode == WIDGET_CHARGE) {
         advance_widget(w); // client-local charge; independent of the engine clock
         if (key_states->released[control][KEY_2]) {
+            float bar_level = (w->counter_max > 0) ? (float)w->counter / (float)w->counter_max : 0.0f;
+            if (bar_level < 0.0f) bar_level = 0.0f;
+            if (bar_level > 1.0f) bar_level = 1.0f;
             float power = charge_to_power(w->counter, w->counter_max);
             intent_push(channel, (IntentMessage){.kind = INTENT_THROW_POWER, .as.throw_power = {.power = power}});
-            w->mode = WIDGET_IDLE; // said — retire the widget
+            gesture->power_committed = 1; // keep the committed level visible on the bar until the throw finishes
+            gesture->power = bar_level;
+            w->mode = WIDGET_IDLE; // said — retire the live charge cursor
             w->counter_max = 0;
             w->dir = 0;
         }
@@ -250,6 +262,8 @@ static int checkThrowGesture(
         if (arrowsHeld == 1) {
             intent_push(channel, (IntentMessage){.kind = INTENT_THROW_TARGET, .as.throw_target = {.base = heldBase}});
             // Start the charge widget: rise from 0 and hold at max (sampled on release).
+            gesture->power_committed = 0;
+            gesture->power = 0.0f;
             w->mode = WIDGET_CHARGE;
             w->counter = 0;
             w->counter_max = THROW_CHARGE_FRAMES;
@@ -604,16 +618,18 @@ SwingMeterView swing_widget_view(const SwingWidget* w)
     return view;
 }
 
-// What the catching side's bar shows: the cursor of whichever of the pitcher's or the thrower's widgets
-// is live, and the bar's left end when neither is. Render-only, answered here for the same reason the
-// batter's bar is — the bar IS the gesture, and the engine has no business carrying a copy of it.
+// What the catching side's bar shows: the live cursor of whichever of the pitcher's or thrower's
+// widgets is sweeping, or a throw's committed power held until the throw finishes, or the bar's left
+// end at rest. Render-only, answered here for the same reason the batter's bar is — the bar IS the
+// gesture, and the engine has no business carrying a copy of it.
 float catching_widget_view(const ClientInputState* clientInput)
 {
     const InputWidget* pitch = &clientInput->pitch_widget.meter;
-    const InputWidget* throwing = &clientInput->throw_widget;
+    const ThrowWidget* throwing = &clientInput->throw_widget;
     if (pitch->mode != WIDGET_IDLE && pitch->counter_max > 0) return (float)pitch->counter / pitch->counter_max;
-    if (throwing->mode != WIDGET_IDLE && throwing->counter_max > 0)
-        return (float)throwing->counter / throwing->counter_max;
+    if (throwing->meter.mode != WIDGET_IDLE && throwing->meter.counter_max > 0)
+        return (float)throwing->meter.counter / throwing->meter.counter_max;
+    if (throwing->power_committed) return throwing->power;
     return 0.0f;
 }
 
@@ -629,10 +645,12 @@ void init_client_input(ClientInputState* clientInput)
     clientInput->pitch_widget.meter.dir = 0;
     clientInput->pitch_widget.meter.mode = WIDGET_IDLE;
     clientInput->pitch_widget.power = 0.0f;
-    clientInput->throw_widget.counter = 0;
-    clientInput->throw_widget.counter_max = 0;
-    clientInput->throw_widget.dir = 0;
-    clientInput->throw_widget.mode = WIDGET_IDLE;
+    clientInput->throw_widget.meter.counter = 0;
+    clientInput->throw_widget.meter.counter_max = 0;
+    clientInput->throw_widget.meter.dir = 0;
+    clientInput->throw_widget.meter.mode = WIDGET_IDLE;
+    clientInput->throw_widget.power_committed = 0;
+    clientInput->throw_widget.power = 0.0f;
     clientInput->move_widget.held = 0;
     clientInput->move_widget.control_index = -1;
     clientInput->move_widget.declared = 0;

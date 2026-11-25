@@ -200,21 +200,21 @@ void draw_homerun_contest_menu(
         draw_text_2d(name, col_name_x, current_y, text_size, TEXT_ALIGN_LEFT, rs);
 
         // Speed
-        char stat_str[2];
-        sprintf(stat_str, "%d", teams[state->team_index].players[i].speed);
+        char stat_str[16];
+        snprintf(stat_str, sizeof(stat_str), "%d", teams[state->team_index].players[i].speed);
         draw_text_2d(stat_str, col_speed_x, current_y, text_size, TEXT_ALIGN_LEFT, rs);
 
         // Power
-        sprintf(stat_str, "%d", teams[state->team_index].players[i].power);
+        snprintf(stat_str, sizeof(stat_str), "%d", teams[state->team_index].players[i].power);
         draw_text_2d(stat_str, col_power_x, current_y, text_size, TEXT_ALIGN_LEFT, rs);
 
         // Chosen Role (Batter/Runner)
         for (int r = 0; r < 2; r++) {
             for (int c = 0; c < state->choiceCount / 2; c++) {
                 if (state->choices[r][c] == i) {
-                    char role_str[16]; // Buffer for "X. Batter" or "X. Runner"
+                    char role_str[24]; // Buffer for "X. Batter" or "X. Runner"
                     const char* role_type = (r == 0) ? "Batter" : "Runner";
-                    sprintf(role_str, "%d. %s", c + 1, role_type);
+                    snprintf(role_str, sizeof(role_str), "%d. %s", c + 1, role_type);
                     draw_text_2d(role_str, col_choice_x, current_y, text_size, TEXT_ALIGN_LEFT, rs);
                 }
             }

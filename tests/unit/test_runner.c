@@ -126,6 +126,7 @@ int main(int argc, char* argv[])
 
     // Pitching Physics tests
     RUN_TEST(test_pitch_velocity_from_aim);
+    RUN_TEST(test_pitch_minimum_height_meets_rule_23_floor);
 
     // Collision Physics tests
     RUN_TEST(test_collision_resolve_boundaries_no_collision);

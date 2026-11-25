@@ -125,6 +125,16 @@ typedef struct _PitchWidget {
     float power;
 } PitchWidget;
 
+// The human's throw gesture: a CHARGE meter while KEY_2 is held, and the committed bar level held
+// visible until the throw finishes (caught, hits ground, or cancelled) — the pitch's committed mark,
+// on the throwing side. Self-contained and client-local: never reads the engine windup clock and
+// never enters the World.
+typedef struct _ThrowWidget {
+    InputWidget meter;
+    int power_committed; // 1 from KEY_2 release while the throw winds up or flies cleanly
+    float power; // [0,1] bar level where KEY_2 was released
+} ThrowWidget;
+
 typedef struct _BatterSelectWidget {
     int highlight; // cursor position within the current candidate list
     int selected; // 1 once the human has accepted the highlighted candidate
@@ -139,11 +149,9 @@ typedef struct _ClientInputState {
     // The pitch gesture the human runs across the dance (power ping-pong → aim descent). Human path only.
     PitchWidget pitch_widget;
 
-    // The throw charge meter — a CHARGE widget that rises while the human holds KEY_2 and is sampled on
-    // release to declare the throw power as a VALUE (the engine↔client contract). Self-contained: it runs
-    // its own timing and never reads the engine's windup clock (which drives only the render animation).
-    // Human path only — the AI declares the target and the power together, using no widget.
-    InputWidget throw_widget;
+    // The throw gesture — a CHARGE widget while KEY_2 is held, plus the committed bar level kept
+    // visible until the throw finishes. Human path only; the AI declares target and power together.
+    ThrowWidget throw_widget;
 
     // The steering widget — held arrows in, a destination out. Human path only; the AI keeps the
     // same memory on its own side of the boundary, in AIControllerState.

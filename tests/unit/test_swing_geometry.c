@@ -142,7 +142,8 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
 
     // The hard end was re-set on 2026-09-02 from the first play session, which is the only evidence
     // that can set it: the original 5 frames (100 ms) was a guess, and at 154 ms the hardest swing
-    // was reported unhittable. 12 frames is 240 ms; today's hardest is 16.6 (332 ms).
+    // was reported unhittable. 12 frames is 240 ms; under the §23 substrate floor (v0 in 0.106..0.226),
+    // today's hardest full tolppa is 13.6 frames (272 ms).
     ASSERT(hardest >= 12.0f, "the hardest swing must still be humanly timeable");
 
     // The easy end was tightened 55 -> 40 on 2026-09-03, and WHY is the interesting part. 55 frames
@@ -155,7 +156,7 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
     // The gradient has to EXIST (or the pitcher's toss means nothing to the batter) and stay bounded
     // (or the easy end is free and the hard end is hopeless). It runs 1.3-3.0 rather than the old
     // 1.5-4.0 because it now comes from ONE axis instead of two: the toss alone spreads the window
-    // 16.6 -> 25.9 frames, where the deleted power axis used to multiply the easy end by another 3.
+    // 13.6 -> 26.1 frames (ratio 1.92), where the deleted power axis used to multiply the easy end by 3.
     float ratio = easiest / hardest;
     ASSERT(ratio >= 1.3f, "a higher toss must be measurably harder to time than a low one");
     ASSERT(ratio <= 3.0f, "the difficulty spread must not run away between the easiest and hardest swing");
@@ -165,26 +166,26 @@ int test_swing_geometry_stays_inside_its_acceptance_bands(void)
 // 4. The one difficulty axis is real and points the right way — stated separately from the bands,
 //    because a band that merely holds does not say WHICH direction the game gets harder in.
 //
-//    There used to be a second assertion here, that a harder swing demands more exact timing than a
-//    bunt. It is gone because the axis is gone, and deliberately so: it came from a marker whose top
-//    rose with the declared power, which made the sweet spot arrive at a different moment for every
-//    power and put the difficulty lever in the hands of the player choosing the reward. The axis
-//    that remains is the physical one, and it belongs to the other player.
+//    With PITCH_BASE_SPEED raised to the §23 legal floor (1 m above the pitcher's head), even the
+//    lowest legal pitch clears the lead clamp cleanly, so difficulty rises monotonically across the
+//    entire legal height range: a low legal pitch is easier to time vertically, and a high tolppa
+//    demands tighter timing.
 int test_swing_difficulty_rises_with_the_toss(void)
 {
     ASSERT(
-        hit_window_frames(1.0f) < hit_window_frames(0.5f),
-        "a higher toss must demand more exact timing (the ball-speed axis)"
+        hit_window_frames(1.0f) < hit_window_frames(0.75f), "a full tolppa must demand tighter timing than a 3/4 toss"
     );
-    // And the curve is not monotonic, which is SWING_LEAD_FRAMES doing its job rather than an
-    // accident. Below about a quarter power the sweep is clamped to the flight, so it shrinks with
-    // the flight and cancels the ball speed straight back out; above it the sweep hits its cap and
-    // the ball speed starts to bite. The result is a peak in the middle and a lowest toss that is
-    // NOT the free hit it would otherwise be — the header claims exactly this, and until now nothing
-    // held it to the claim.
     ASSERT(
-        hit_window_frames(0.0f) < hit_window_frames(0.25f),
-        "the lowest toss must not be the easiest pitch in the game — that is what the lead clamp buys"
+        hit_window_frames(0.75f) < hit_window_frames(0.5f),
+        "a 3/4 toss must demand tighter timing than a half-power toss"
+    );
+    ASSERT(
+        hit_window_frames(0.5f) < hit_window_frames(0.25f),
+        "a half-power toss must demand tighter timing than a low-medium toss"
+    );
+    ASSERT(
+        hit_window_frames(0.25f) < hit_window_frames(0.0f),
+        "a low-medium toss must demand tighter timing than the minimum legal pitch"
     );
     return TEST_PASSED;
 }

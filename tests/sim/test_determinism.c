@@ -157,7 +157,19 @@ static unsigned long long run_once(unsigned int seed)
 // Confirmed isolated to that single guard (without it, every referee/§21/HomeRunView change preserves
 // 0x913c1366ce25cc67ULL bit-for-bit; frame count on 0x1234ABCD stays 3977, and all 24 bands in
 // test_ai_offense_breakdown hold).
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x01e1e9c35f42aee4ULL
+// Re-recorded 2026-11-25, deliberately, by Road-to-1.5 Step 1 (§23 substrate pitch floor + ENFORCE
+// free-walk cleanup):
+//   1. PITCH_BASE_SPEED raised 0.065 -> 0.106 (keeping PITCH_POWER_CONSTANT 0.12 -> v0 in [0.106, 0.226],
+//      apex 1.06 m..6.73 m above the pitcher's head), making sub-legal matala pitches physically
+//      unrepresentable (§23 🔒) and ensuring every pitch clears SWING_PREPARATION_TICKS (60).
+//   2. consolidation_update now runs enforce_legal_state before update_game_flow, evaluating §26
+//      free walks synchronously on the tick a BALL resolves (deleting FreeWalkEntitlement.worked_out
+//      and the legacy "Ghost Runner" exclusion that silently denied running batters at BASE_HOME).
+// Isolated: change (2) alone held 0x01e1e9c35f42aee4ULL bit-for-bit on seed 0x1234ABCD and cleared
+// all 5 Ghost Runner hits across the 66 golden runs; change (1) raises every pitch flight by ~27 frames
+// (declaration lead mean 86.1 -> 112.5, all 24 bands in test_ai_offense_breakdown hold with 181 batters
+// reaching first, 8 runs, 216 outs, 120/120 half-inning and 120/120 homerun-contest sweep seeds clean).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x4c07e89387e941e3ULL
 
 int test_ai_vs_ai_determinism(void)
 {
