@@ -23,14 +23,15 @@ static void declare_run(IntentChannel* channel, BaseID base, RunIntent command)
     intent_push(channel, (IntentMessage){.kind = INTENT_BASE_RUN, .as.base_run = {.base = base, .command = command}});
 }
 
-// How crowded the bases are, in the three grades the batting strategy distinguishes: 2 with a runner
-// on first, 1 with runners only further round, 0 with the bases empty.
-static int field_status(const MatchSession* match, const RefereeState* referee)
+// How crowded the bases are, in the three grades the batting strategy distinguishes.
+static AIFieldOccupancy field_status(const MatchSession* match, const RefereeState* referee)
 {
-    if (get_base_controller(match, referee, (BaseID)1) != -1) return 2;
-    if (get_base_controller(match, referee, (BaseID)2) != -1 || get_base_controller(match, referee, (BaseID)3) != -1)
-        return 1;
-    return 0;
+    if (get_base_controller(match, referee, BASE_FIRST) != -1) return AI_FIELD_FIRST_OCCUPIED;
+    if (get_base_controller(match, referee, BASE_SECOND) != -1 ||
+        get_base_controller(match, referee, BASE_THIRD) != -1) {
+        return AI_FIELD_SCORING;
+    }
+    return AI_FIELD_EMPTY;
 }
 
 // The batting strategy for the situation as it stands. It is a pure function of durable world state
@@ -123,8 +124,10 @@ static void recall_leading_runners(const MatchSession* match, const GameRulesSta
 static void
 play_the_flight(const MatchSession* match, const GameRulesState* rules, AISwingPlan* plan, IntentChannel* channel)
 {
-    if (plan->wrong_pitch == 0 &&
-        is_wrong_pitch(match->ball.velocity.x, match->ball.velocity.y, GRAVITY, PLATE_WIDTH)) {
+    if (plan->wrong_pitch == 0 && is_wrong_pitch(
+                                      match->ball.location.x, match->ball.location.y, match->ball.velocity.x,
+                                      match->ball.velocity.y, GRAVITY, PLATE_WIDTH
+                                  )) {
         plan->wrong_pitch = 1;
     }
 
@@ -177,14 +180,14 @@ static void commit_swing_power(
 {
     AISwingPlan* plan = &aiController->swing;
     if (plan->decided == 0) {
-        const int style = batting_strategy_now(match, rules).style;
+        const AIBattingStyle style = batting_strategy_now(match, rules).style;
         // Two draws, written as two statements because their ORDER is part of the stream. As arguments
         // to one call they had no order in C at all: gcc evaluated them right to left, so the recorded
         // determinism baseline quietly depended on that compiler. This is the order gcc chose.
         const int randVertical = seeded_rand(&aiController->rng_seed, 201);
         const int randPower = seeded_rand(&aiController->rng_seed, 19);
         SwingDecision decision = decide_swing(style, randPower, randVertical);
-        plan->style = style;
+        plan->style = (int)style;
         plan->power = decision.power;
         plan->vertical = decision.vertical;
         plan->angle = calculate_ai_batting_angle(style, seeded_rand(&aiController->rng_seed, 1000));
@@ -195,10 +198,9 @@ static void commit_swing_power(
     intent_push(channel, (IntentMessage){.kind = INTENT_SWING_ANGLE, .as.swing_angle = {.angle = plan->angle}});
 }
 
-// Once a fair hit is safely loose outside the field (a breakthrough — läpilyönti), send every
-// eligible runner to the next base. "Safely loose": hit, not caught, not a foul (laiton), nobody
-// holds it, no throw in progress, already bounced, physically outside the field and far enough
-// from home that it is not still at the plate.
+// Once a fair hit has bounced and is safely loose — either broken out of bounds (läpilyönti) or
+// pierced deep into the fair outfield (should_advance_on_loose_ball) — send every eligible runner
+// to the next base. Because this requires fair ground contact with no catch, it is koppi-safe.
 //
 // This is a deliberate "run now", so it declares RUN_COMMIT (the AI's equivalent of a human
 // double-press), not RUN_FORWARD, which only arms. Once a runner is going_forward it is not re-issued, so
@@ -208,10 +210,11 @@ static void advance_runners_on_loose_hit(
 )
 {
     const BetweenPitchState* bps = &rules->between_pitch;
-    if (!(bps->bat_outcome == BAT_OUTCOME_HIT && bps->catch_has_been_made == 0 &&
-          rules->referee.foul_state == FOUL_STATE_NONE && match->ball.thrown_to == BASE_NONE &&
-          match->ball.holder == -1 && match->ball.moving == 1 && bps->has_ball_hit_ground == 1 &&
-          match->ball.location.z < -10.0f && is_ball_out_of_bounds(&match->ball, fieldPositions))) {
+    if (!should_advance_on_loose_ball(
+            bps->bat_outcome, bps->catch_has_been_made, rules->referee.foul_state, match->ball.thrown_to,
+            match->ball.holder, match->ball.moving, bps->has_ball_hit_ground, match->ball.location.z,
+            is_ball_out_of_bounds(&match->ball, fieldPositions)
+        )) {
         return;
     }
     for (int i = 0; i < BASE_COUNT; i++) {
@@ -261,7 +264,7 @@ void update_batting_ai(
         play_the_flight(match, rules, &aiController->swing, channel);
     }
 
-    if (swing_may_be_declared(match)) {
+    if (!aiController->swing.wrong_pitch && swing_may_be_declared(match)) {
         commit_swing_power(match, rules, aiController, channel);
     }
 

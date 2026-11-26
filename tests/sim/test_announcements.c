@@ -67,36 +67,43 @@ static int play(unsigned int seed, AnnouncementLog* log, unsigned long long* has
 
 int test_announcements_do_not_depend_on_the_screen(void)
 {
-    static AnnouncementLog watched, unwatched;
-    memset(&watched, 0, sizeof(watched));
-    memset(&unwatched, 0, sizeof(unwatched));
-    watched.consume = 1;
-    watched.hud.info_event_timer = -1;
+    // Check across four fixed seeds so every run verifies watched == unwatched frame-for-frame and
+    // the combined sample reliably exercises both OUT and OUT_OF_BOUNDS announcements even at a
+    // ~4–5% foul rate.
+    int totalAnn = 0, outs = 0, fouls = 0;
+    long totalFrames = 0;
 
-    unsigned long long watchedHash, unwatchedHash;
-    long watchedFrames, unwatchedFrames;
-    ASSERT(play(0xA11CE5EDu, &watched, &watchedHash, &watchedFrames), "the watched run must stay healthy");
-    ASSERT(play(0xA11CE5EDu, &unwatched, &unwatchedHash, &unwatchedFrames), "the unwatched run must stay healthy");
+    for (unsigned int s = 0; s < 4; s++) {
+        static AnnouncementLog watched, unwatched;
+        memset(&watched, 0, sizeof(watched));
+        memset(&unwatched, 0, sizeof(unwatched));
+        watched.consume = 1;
+        watched.hud.info_event_timer = -1;
 
-    int outs = 0, fouls = 0;
-    for (int i = 0; i < watched.count; i++) {
-        if (watched.event[i] == EVENT_OUT) outs++;
-        if (watched.event[i] == EVENT_OUT_OF_BOUNDS) fouls++;
+        unsigned long long watchedHash, unwatchedHash;
+        long watchedFrames, unwatchedFrames;
+        const unsigned int seed = 0xA11CE5EDu + s;
+        ASSERT(play(seed, &watched, &watchedHash, &watchedFrames), "the watched run must stay healthy");
+        ASSERT(play(seed, &unwatched, &unwatchedHash, &unwatchedFrames), "the unwatched run must stay healthy");
+
+        ASSERT_EQ(watchedFrames, unwatchedFrames, "a screen consuming announcements must not change the game's length");
+        ASSERT(watchedHash == unwatchedHash, "a screen consuming announcements must not change the game");
+        ASSERT_EQ(watched.count, unwatched.count, "nobody watching must not change what the referee announces");
+        for (int i = 0; i < watched.count; i++) {
+            ASSERT_EQ(watched.frame[i], unwatched.frame[i], "each announcement must come on the same frame");
+            ASSERT_EQ((int)watched.event[i], (int)unwatched.event[i], "each announcement must say the same thing");
+            if (watched.event[i] == EVENT_OUT) outs++;
+            if (watched.event[i] == EVENT_OUT_OF_BOUNDS) fouls++;
+        }
+        totalAnn += watched.count;
+        totalFrames += watchedFrames;
     }
-    printf("    announcements=%d (outs=%d out-of-bounds=%d) frames=%ld\n", watched.count, outs, fouls, watchedFrames);
+    printf("    announcements=%d (outs=%d out-of-bounds=%d) frames=%ld\n", totalAnn, outs, fouls, totalFrames);
 
     // The claim is about announcements, so there have to be some — and among them the foul's, which is the
     // one that asks whether anything has been announced before it speaks, and so the one a consumer used
     // to be able to change. (A STRIKE is announced only when nobody swings, which the AI almost never does.)
     ASSERT(outs > 0 && fouls > 0, "the run must announce outs and an out-of-bounds to mean anything");
-
-    ASSERT_EQ(watchedFrames, unwatchedFrames, "a screen consuming announcements must not change the game's length");
-    ASSERT(watchedHash == unwatchedHash, "a screen consuming announcements must not change the game");
-    ASSERT_EQ(watched.count, unwatched.count, "nobody watching must not change what the referee announces");
-    for (int i = 0; i < watched.count; i++) {
-        ASSERT_EQ(watched.frame[i], unwatched.frame[i], "each announcement must come on the same frame");
-        ASSERT_EQ((int)watched.event[i], (int)unwatched.event[i], "each announcement must say the same thing");
-    }
 
     // And the screen's side, held where it is cheap to hold: an announcement starts the info line and is
     // consumed, so the next tick starts with nothing standing.

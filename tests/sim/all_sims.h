@@ -22,6 +22,7 @@ int test_ai_ignores_frame_events(void);
 
 // Controller memory is the controller's to end: the batting plan lives exactly one pitch.
 int test_ai_swing_plan_lives_one_pitch(void);
+int test_ai_recalls_third_base_runner_on_vaara(void);
 
 // The tick's announcement is an output: the same game whether or not a screen consumes it.
 int test_announcements_do_not_depend_on_the_screen(void);

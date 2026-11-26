@@ -96,22 +96,50 @@ int should_ai_drop_ball(
     }
     return 0;
 }
-BaseID determine_lead_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
+static int target_base_priority(BaseID target, int is_scoring_play)
 {
-    BaseID leadBase = BASE_NONE;
-    int i;
-    for (i = 0; i < runnerCount; i++) {
-        if (runners[i].is_on_base == 0 && runners[i].taking_free_walk == 0) {
-            if (base_cmp(runners[i].base, leadBase) > 0) {
-                if (runners[i].leading == 0) {
-                    leadBase = runners[i].base;
-                } else {
-                    if (randomValue == 0) {
-                        leadBase = base_get_prev(runners[i].base);
-                    }
-                }
+    if (is_scoring_play && target == BASE_HOME) return 4;
+    if (target == BASE_THIRD) return 3;
+    if (target == BASE_SECOND) return 2;
+    if (target == BASE_FIRST) return 1;
+    return 0;
+}
+
+BaseID determine_throw_target_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
+{
+    BaseID bestTarget = BASE_HOME;
+    int bestPriority = 0;
+
+    for (int i = 0; i < runnerCount; i++) {
+        if (runners[i].is_on_base != 0 || runners[i].taking_free_walk != 0) continue;
+
+        BaseID candidate = BASE_NONE;
+        int isScoringPlay = 0;
+
+        if (runners[i].leading != 0) {
+            if (randomValue == 0 && runners[i].base != BASE_HOME) {
+                candidate = runners[i].base;
+            }
+        } else if (runners[i].going_forward != 0) {
+            BaseID next = base_get_next(runners[i].base);
+            if (next == BASE_HOME_SCORED) {
+                candidate = BASE_HOME;
+                isScoringPlay = 1;
+            } else if (next != BASE_NONE) {
+                candidate = next;
+            }
+        } else if (runners[i].base != BASE_HOME) {
+            candidate = runners[i].base;
+        }
+
+        if (candidate != BASE_NONE) {
+            int priority = target_base_priority(candidate, isScoringPlay);
+            if (priority > bestPriority) {
+                bestPriority = priority;
+                bestTarget = candidate;
             }
         }
     }
-    return leadBase;
+
+    return bestTarget;
 }

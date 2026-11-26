@@ -180,7 +180,23 @@ static unsigned long long run_once(unsigned int seed)
 // Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): batters reaching first 181 -> 233,
 // reached third 27 -> 42, runs 8 -> 10, mean frames to recover 100.4 -> 102.7, 216 outs, 120/120
 // half-inning and 120/120 homerun-contest sweep seeds clean.
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x3c4b9ca0cb33fbe2ULL
+// Re-recorded 2026-11-26, deliberately, by Road-to-1.5 Slice 1B (explicit offense & defense AI
+// strategy, pitch height variety, and koppi-aware balance):
+//   1. batting_ai_strategy: named AIBattingStyle/AIFieldOccupancy enums; eliminated suicide bunts
+//      with runners on base and in the homerun contest; aimed empty-base bunts 85% down the open
+//      1st-base line (pulling 1B off the bag, 35% -> 50% safe); trimmed normal-swing angle to
+//      ±0.36 and vertical profile to -0.018 ± 0.042 (foul rate 7.42% -> 4.57%, koppi 10.8% with
+//      infield + outfield catches); extracted koppi-safe should_advance_on_loose_ball (breakthrough
+//      or fair deep outfield z < -58) and exact ground-impact is_wrong_pitch(x, y, vx, vy, g, w).
+//   2. pitching_ai_strategy: replaced flat medium-only tosses with explicit situational 5-band
+//      low / medium / high-tolppa height tables (including empty bases), keeping strikes inside
+//      ±PLATE_WIDTH/2 at all heights and ahead-in-count väärä at ±0.25.
+//   3. catching_ai_strategy: replaced indirect determine_lead_base with determine_throw_target_base
+//      so defense throws directly to a retreating runner's base and prioritizes stopping runs at home.
+// Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): 1st 233 -> 257, 3rd 42 -> 56,
+// runs 10 -> 20, fouls 7.42% -> 4.57%, koppi 10.8%, pitch height tiers 29%/31%/40%, 216 outs,
+// 120/120 half-inning and 120/120 homerun-contest sweep seeds clean (HR pair scoring 18% -> 42%).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0x2caf306cd3882ea4ULL
 
 int test_ai_vs_ai_determinism(void)
 {

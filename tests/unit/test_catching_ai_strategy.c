@@ -201,43 +201,59 @@ int test_should_ai_drop_ball_scenario(void)
     return TEST_PASSED;
 }
 
-int test_determine_lead_base_simple(void)
+int test_determine_throw_target_base_advancing(void)
 {
-    CatchingRunnerInfo runners[2];
-    // Runner 1: Base 1, Not leading
-    runners[0].base = BASE_FIRST;
-    runners[0].is_on_base = 0;
-    runners[0].taking_free_walk = 0;
-    runners[0].leading = 0;
+    // Two advancing runners (1st->2nd and 2nd->3rd): throw to 3rd (lead runner's destination).
+    CatchingRunnerInfo runners[2] = {
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_FIRST, .leading = 0, .going_forward = 1},
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
+    };
+    ASSERT_EQ(BASE_THIRD, determine_throw_target_base(runners, 2, 123), "advancing lead runner from 2nd targets 3rd");
 
-    // Runner 2: Base 2, Not leading
-    runners[1].base = BASE_SECOND;
-    runners[1].is_on_base = 0;
-    runners[1].taking_free_walk = 0;
-    runners[1].leading = 0;
+    // Scoring runner heading home from 3rd outranks a runner heading to 3rd.
+    CatchingRunnerInfo scoring[2] = {
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_THIRD, .leading = 0, .going_forward = 1},
+    };
+    ASSERT_EQ(
+        BASE_HOME, determine_throw_target_base(scoring, 2, 123),
+        "runner heading home from 3rd outranks runner heading to 3rd"
+    );
 
-    BaseID result = determine_lead_base(runners, 2, 123);
-    ASSERT_EQ(BASE_SECOND, result, "Lead base should be BASE_SECOND");
+    // No active off-base runners -> return ball to home.
+    CatchingRunnerInfo settled[1] = {
+        {.is_on_base = 1, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 0},
+    };
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(settled, 1, 123), "no threatened runner returns home");
 
     return TEST_PASSED;
 }
 
-int test_determine_lead_base_random(void)
+int test_determine_throw_target_base_retreating_and_pickoff(void)
 {
-    CatchingRunnerInfo runners[1];
-    // Runner: Base 2, Leading
-    runners[0].base = BASE_SECOND;
-    runners[0].is_on_base = 0;
-    runners[0].taking_free_walk = 0;
-    runners[0].leading = 1;
+    // Retreating runner (e.g. turning back to 1st on väärä/koppi): throw to 1st, NOT ahead to 2nd.
+    CatchingRunnerInfo retreating[1] = {
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_FIRST, .leading = 0, .going_forward = 0},
+    };
+    ASSERT_EQ(
+        BASE_FIRST, determine_throw_target_base(retreating, 1, 123),
+        "retreating runner targets the base they are returning to"
+    );
 
-    // Random = 0 -> base - 1 (BASE_FIRST)
-    BaseID result = determine_lead_base(runners, 1, 0);
-    ASSERT_EQ(BASE_FIRST, result, "Should be base - 1 when random is 0");
+    // Leading runner on 2nd: pickoff only on randomValue == 0, else return home.
+    CatchingRunnerInfo leading[1] = {
+        {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 1, .going_forward = 0},
+    };
+    ASSERT_EQ(
+        BASE_SECOND, determine_throw_target_base(leading, 1, 0), "pickoff roll targets the leading runner's base"
+    );
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(leading, 1, 1), "non-pickoff roll returns ball home");
 
-    // Random != 0 -> base (actually it stays leadBase, which init to BASE_NONE)
-    result = determine_lead_base(runners, 1, 1);
-    ASSERT_EQ(BASE_NONE, result, "Should not update leadBase if leading and random != 0");
+    // Free-walk runner is never targeted.
+    CatchingRunnerInfo freeWalk[1] = {
+        {.is_on_base = 0, .taking_free_walk = 1, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
+    };
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(freeWalk, 1, 0), "free-walk runner is ignored");
 
     return TEST_PASSED;
 }

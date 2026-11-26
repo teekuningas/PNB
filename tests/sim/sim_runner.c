@@ -25,6 +25,7 @@ int main(void)
     RUN_TEST(test_retick_diverges_when_engine_seed_is_not_restored);
     RUN_TEST(test_ai_ignores_frame_events);
     RUN_TEST(test_ai_swing_plan_lives_one_pitch);
+    RUN_TEST(test_ai_recalls_third_base_runner_on_vaara);
     RUN_TEST(test_announcements_do_not_depend_on_the_screen);
     RUN_TEST(test_the_info_line_holds_its_message_while_paused);
     RUN_TEST(test_the_screen_writes_nothing_into_the_world);

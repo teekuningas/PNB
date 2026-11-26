@@ -132,6 +132,12 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s  \"pair_count\": %d,\n", sp, scoreboard->pair_count);
         fprintf(f, "%s  \"team0_runs\": %d,\n", sp, scoreboard->teams[0].runs);
         fprintf(f, "%s  \"team1_runs\": %d,\n", sp, scoreboard->teams[1].runs);
+        fprintf(
+            f, "%s  \"period_runs\": [[%d, %d], [%d, %d], [%d, %d], [%d, %d]],\n", sp,
+            scoreboard->teams[0].period0_runs, scoreboard->teams[1].period0_runs, scoreboard->teams[0].period1_runs,
+            scoreboard->teams[1].period1_runs, scoreboard->teams[0].period2_runs, scoreboard->teams[1].period2_runs,
+            scoreboard->teams[0].period3_runs, scoreboard->teams[1].period3_runs
+        );
 
         // Detailed Team Info (Batter Orders)
         for (int t = 0; t < 2; t++) {
@@ -237,6 +243,10 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
     fprintf(
         f, "%s  \"location\": { \"x\": %.2f, \"y\": %.2f, \"z\": %.2f },\n", sp, game->ball.location.x,
         game->ball.location.y, game->ball.location.z
+    );
+    fprintf(
+        f, "%s  \"velocity\": { \"x\": %.4f, \"y\": %.4f, \"z\": %.4f },\n", sp, game->ball.velocity.x,
+        game->ball.velocity.y, game->ball.velocity.z
     );
     fprintf(f, "%s  \"moving\": %d,\n", sp, game->ball.moving);
     fprintf(f, "%s  \"flight_has_hit_ground\": %d,\n", sp, game->ball.flight_has_hit_ground);

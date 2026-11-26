@@ -143,6 +143,7 @@ int main(int argc, char* argv[])
     RUN_TEST(test_batter_seat_verdict_jokers);
     RUN_TEST(test_choose_batter_preference);
     RUN_TEST(test_is_wrong_pitch);
+    RUN_TEST(test_should_advance_on_loose_ball);
     RUN_TEST(test_calculate_ai_batting_angle);
     RUN_TEST(test_decide_swing_profiles);
 
@@ -159,8 +160,8 @@ int main(int argc, char* argv[])
     RUN_TEST(test_should_ai_throw_baseman_to_own_cover);
     RUN_TEST(test_should_ai_drop_ball_scenario);
 
-    RUN_TEST(test_determine_lead_base_simple);
-    RUN_TEST(test_determine_lead_base_random);
+    RUN_TEST(test_determine_throw_target_base_advancing);
+    RUN_TEST(test_determine_throw_target_base_retreating_and_pickoff);
 
     // Pitching AI Strategy tests
     RUN_TEST(test_decide_pitch_aim);

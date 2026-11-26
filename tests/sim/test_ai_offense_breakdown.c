@@ -28,18 +28,17 @@
 // 20%). A slice that legitimately moves one of these will now BREACH, which is the point: a breach
 // is a decision to make, not a failure to route around. The table under the run says which.
 //
-// WHAT THIS TEST STILL CANNOT SEE. Runs are barely reachable here — 3 across 24 seeds — so the award
-// paths, should_period_end, the pool refresh and period transitions remain essentially uncovered by
-// these bands, by the box score and by the determinism hash. For referee scoring and flow work, the
-// scenario tier is the primary net. Deliberately, no band mentions runs: at n=3 a band would be
-// measuring noise, and a green band must not imply coverage it does not have.
+// WHAT THIS TEST STILL CANNOT SEE. Three half-innings per seed stay inside period 1, so period
+// rollovers, super innings, and the home-run contest are covered by dedicated tests rather than
+// here. Runs are now reliably reachable (20 across 24 seeds in Slice 1B), so a coarse floor catches
+// scoring collapses, while the scenario tier remains the primary net for specific referee rules.
 //
 // Set SIM_PBP=1 to also see the play-by-play.
 
 #define SEED_COUNT 24
 #define PERIOD_MAX_FRAMES 120000L
 #define STALL_LIMIT 20000L
-#define BAND_MAX 28
+#define BAND_MAX 32
 
 // Stay strictly inside the first period: it ends at inning == half_innings_in_period (4), and the
 // period boundary hands off to a menu the single-phase sim harness does not yet autopilot
@@ -74,7 +73,8 @@ static double percent(long part, long whole)
 int test_ai_offense_breakdown(void)
 {
     long T_pitches = 0, T_contacts = 0, T_whiffs = 0, T_strikes = 0, T_balls = 0, T_outs = 0;
-    long T_reached_base = 0, T_reached_third = 0, T_ran_third = 0, T_scored_third = 0;
+    long T_koppi = 0, T_wounds = 0, T_pitch_h[3] = {0};
+    long T_reached_base = 0, T_reached_second = 0, T_reached_third = 0, T_ran_third = 0, T_scored_third = 0;
     long T_out_third = 0, T_wound_third = 0, T_runs = 0;
     long T_fouls = 0, T_power_sum = 0, T_power_n = 0, T_dir[5] = {0};
     int T_power_min = 9999, T_power_max = -9999;
@@ -129,12 +129,17 @@ int test_ai_offense_breakdown(void)
         }
 
         T_pitches += box.pitches;
+        for (int b = 0; b < 3; b++)
+            T_pitch_h[b] += box.pitch_height_bins[b];
         T_contacts += box.contacts;
         T_whiffs += box.whiffs;
+        T_koppi += box.koppi_catches;
+        T_wounds += box.wounds;
         T_strikes += box.strikes_called;
         T_balls += box.balls_called;
         T_outs += box.outs_made;
         T_reached_base += box.reached_base;
+        T_reached_second += box.reached_second;
         T_reached_third += box.reached_third;
         T_ran_third += box.ran_from_third;
         T_scored_third += box.scored_from_third;
@@ -198,28 +203,29 @@ int test_ai_offense_breakdown(void)
         T_contacts, percent(T_contacts, T_pitches), T_whiffs, T_strikes, T_balls, T_outs, T_runs
     );
     printf(
-        "    bases: reachedFirst=%ld reachedThird=%ld (in %d seeds)\n", T_reached_base, T_reached_third,
-        seeds_reached_third
+        "    bases: reachedFirst=%ld reachedSecond=%ld reachedThird=%ld (in %d seeds)\n", T_reached_base,
+        T_reached_second, T_reached_third, seeds_reached_third
     );
     printf(
         "    third→home: ranForHome=%ld (in %d seeds) → scored=%ld, OUT=%ld, wounded=%ld\n", T_ran_third,
         seeds_ran_third, T_scored_third, T_out_third, T_wound_third
     );
-    // Style-1 power-meter accuracy (intent vs realized). ≈ +1 means correct meter use.
-    // Actualized out-of-bounds rate: a hit is either OUT OF BOUNDS or not (a caught ball counts as
-    // in-bounds — "else"). Most hits should land fair, but some fouls are wanted for variety.
     printf(
-        "    out of bounds: %ld of %ld contacts = %.0f%% (rest land fair or are caught)\n", T_fouls, T_contacts,
-        percent(T_fouls, T_contacts)
+        "    hit outcomes: koppi=%ld (%.1f%%, wounds=%ld) | out of bounds=%ld (%.1f%%) | fair ground=%ld\n", T_koppi,
+        percent(T_koppi, T_contacts), T_wounds, T_fouls, percent(T_fouls, T_contacts), T_contacts - T_koppi - T_fouls
+    );
+    printf(
+        "    pitch heights L/M/H: [%ld %ld %ld] (%.0f%% / %.0f%% / %.0f%%)\n", T_pitch_h[0], T_pitch_h[1], T_pitch_h[2],
+        percent(T_pitch_h[0], T_pitches), percent(T_pitch_h[1], T_pitches), percent(T_pitch_h[2], T_pitches)
     );
     // Actualized batted-ball power (0..36): the AI should generally hit with real strength.
     printf(
         "    power (all contacts): n=%ld mean=%.1f min=%d max=%d (of 36 max)\n", T_power_n,
         T_power_n ? (double)T_power_sum / T_power_n : 0.0, T_power_n ? T_power_min : 0, T_power_n ? T_power_max : 0
     );
-    // Normal-swing (style-1) direction spread (realized launch angle, right→left, 5 equal buckets):
-    // should be a broad, roughly uniform fan — NOT collapsed to center, NOT piled at the extremes.
-    printf("    style-1 direction R→L: [%ld %ld %ld %ld %ld]\n", T_dir[0], T_dir[1], T_dir[2], T_dir[3], T_dir[4]);
+    // Full-swing (non-bunt) direction spread (realized launch angle, right→left, 5 equal buckets):
+    // observed purely from World swing power and ball velocity — independent of AI strategy internals.
+    printf("    full-swing direction R→L: [%ld %ld %ld %ld %ld]\n", T_dir[0], T_dir[1], T_dir[2], T_dir[3], T_dir[4]);
     printf(
         "    fielding: recoveries=%ld abandoned=%ld meanFrames=%.2f maxFrames=%ld meanChase=%.3f meanStep=%.5f\n",
         T_recoveries, T_abandoned, T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0,
@@ -273,24 +279,32 @@ int test_ai_offense_breakdown(void)
         if (dir_min < 0 || T_dir[b] < dir_min) dir_min = T_dir[b];
         if (T_dir[b] > dir_max) dir_max = T_dir[b];
     }
+    long pitch_h_min = T_pitch_h[0];
+    if (T_pitch_h[1] < pitch_h_min) pitch_h_min = T_pitch_h[1];
+    if (T_pitch_h[2] < pitch_h_min) pitch_h_min = T_pitch_h[2];
 
     Band bands[BAND_MAX];
     int band_count = 0;
 
     band_add(
         bands, &band_count,
-        (Band){"pitches thrown", (double)T_pitches, 600, 1000, "804",
-               "the pitcher stops pitching, or at-bats never end (re-cut 573 -> 804 after Slice 1A stopped "
-               "cover[0] from cheating 5.2u toward home plate during every pitch, extending half-innings)"}
+        (Band){"pitches thrown", (double)T_pitches, 580, 950, "740",
+               "the pitcher stops pitching, or at-bats never end (re-cut 804 -> 740 in Slice 1B as "
+               "cleaner bunts and fewer foul resets sped up at-bats)"}
     );
     band_add(
         bands, &band_count,
-        (Band){"contact rate %", percent(T_contacts, T_pitches), 85, 97, "90.4",
+        (Band){"pitch height variety: smallest tier %", percent(pitch_h_min, T_pitches), 15, 45, "25.0",
+               "pitching collapsing back to a single fixed toss height (measured purely from launch vy)"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"contact rate %", percent(T_contacts, T_pitches), 85, 97, "91.8",
                "the batter stops meeting the ball (a swing that no longer connects)"}
     );
     band_add(
         bands, &band_count,
-        (Band){"balls called", (double)T_balls, 30, 80, "55",
+        (Band){"balls called", (double)T_balls, 30, 85, "61",
                "pitch aim collapsing onto the plate — every pitch a called strike"}
     );
     band_add(
@@ -302,31 +316,45 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"batters reaching first", (double)T_reached_base, 175, 290, "233",
-               "contact that never turns into a runner. Re-cut upward (157 -> 233) after Slice 1A kept "
-               "bottom_right_catcher at his real post instead of pulling him 5.2u toward home on every pitch"}
+        (Band){"batters reaching first", (double)T_reached_base, 190, 320, "257",
+               "contact that never turns into a runner (re-cut 233 -> 257 in Slice 1B after eliminating "
+               "right-pocket suicide bunts and enabling deep fair gap advances on strike-0 probes)"}
     );
     band_add(
         bands, &band_count,
-        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 21.5, 28.5, "25.1",
-               "the swing going soft — the meter starved, as bug #4 did it (re-cut 21.0 -> 25.1 once normal "
-               "swings stayed above SWING_BUNT_MAX_POWER)"}
+        (Band){"runners reaching third", (double)T_reached_third, 30, 95, "56",
+               "base advancement stalling after first base (strategy-independent funnel check)"}
     );
     band_add(
         bands, &band_count,
-        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 3, 10, "7.42",
-               "direction drifting foul, or every ball dumped safely into the field (re-cut 5.0 -> 7.42 "
-               "after Slice 1A produced more runner-on-base normal swings; to be reviewed in Slice 1B)"}
+        (Band){"runs scored", (double)T_runs, 6, 50, "20",
+               "offense collapsing back to near-zero scoring across 72 half-innings"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 7, 20, "10.3",
-               "the fan collapsing — the centre-bias the swing slice removes structurally"}
+        (Band){"batted-ball power mean (of 36)", T_power_n ? (double)T_power_sum / T_power_n : 0.0, 22.0, 29.5, "26.9",
+               "the swing going soft — the meter starved, as bug #4 did it"}
     );
     band_add(
         bands, &band_count,
-        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 20, 38, "27.7",
-               "the fan piling into one direction"}
+        (Band){"koppi catch rate %", percent(T_koppi, T_contacts), 5, 22, "10.8",
+               "fly-ball koppi disappearing (broken catch guard / grounder-only AI) or drowning offense"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"out-of-bounds rate %", percent(T_fouls, T_contacts), 2, 9, "4.57",
+               "direction drifting foul, or every ball dumped safely into the field (re-cut 7.42 -> 4.57 "
+               "in Slice 1B after trimming AI_MAX_BATTING_ANGLE to 0.36 and normal-swing loft tail)"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"direction fan: smallest bucket %", percent(dir_min, dir_total), 7, 20, "10.0",
+               "the full-swing fan collapsing — the centre-bias the swing slice removes structurally"}
+    );
+    band_add(
+        bands, &band_count,
+        (Band){"direction fan: largest bucket %", percent(dir_max, dir_total), 20, 38, "30.1",
+               "the full-swing fan piling into one direction"}
     );
 
     // ---- the fielding bands ----------------------------------------------------------
@@ -339,8 +367,9 @@ int test_ai_offense_breakdown(void)
     band_add(
         bands, &band_count,
         (Band){"mean frames to recover a batted ball",
-               T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0, 85, 118, "97.2",
-               "the defence getting slower end to end — a fielder that sets off late, or not at all"}
+               T_recoveries ? (double)T_recovery_frames / (double)T_recoveries : 0.0, 85, 130, "111.0",
+               "the defence getting slower end to end — a fielder that sets off late, or not at all "
+               "(re-cut 97.2 -> 111.0 as Slice 1B drives more balls cleanly past the infield)"}
     );
     band_add(
         bands, &band_count,
@@ -461,10 +490,10 @@ int test_ai_offense_breakdown(void)
     );
     band_add(
         bands, &band_count,
-        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 150,
-               235, "194.3",
-               "the batting side taking longer to answer, or retrying blindly (re-cut 156.7 -> 194.3 as harder "
-               "gap hits take longer to return home before the next batter is chosen)"}
+        (Band){"mean frames from prompt to seating", T_at_bats ? (double)T_answer_frames / (double)T_at_bats : 0.0, 170,
+               290, "239.0",
+               "the batting side taking longer to answer, or retrying blindly (re-cut 194.3 -> 239.0 as "
+               "Slice 1B's fair deep outfield drives take longer to return home before the next batter is seated)"}
     );
     // §7: "Jokeripelaaja ei vie kenenkään lyöntivuoroa", so §12(2)'s "vuoron aloittanut pelaaja"
     // is the regular whose turn it is, never the joker that happened to swing first. When the

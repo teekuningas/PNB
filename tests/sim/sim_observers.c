@@ -343,12 +343,14 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     int pitch_in_flight = m->ball.pitch_in_flight;
     int batOutcome = (int)r->between_pitch.bat_outcome;
     int foulState = (int)r->referee.foul_state;
+    int woundingEval = r->referee.wounding_evaluation_active;
 
     if (!o->initialized) {
         o->initialized = 1;
         o->p_pitchInFlight = pitch_in_flight;
         o->p_batOutcome = batOutcome;
         o->p_foulState = foulState;
+        o->p_woundingEval = woundingEval;
         o->p_outs = h->outs;
         o->p_balls = h->balls;
         o->p_strikes = h->strikes;
@@ -361,6 +363,9 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             o->p_baseId[i] = (int)m->players[i].batting.presence.base_id;
             o->p_state[i] = (int)m->players[i].batting.presence.state;
         }
+        for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+            o->p_refStatus[i] = (int)r->referee.batting_players[i].status;
+        }
         return;
     }
 
@@ -372,8 +377,13 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
     }
 
     // Pitch released: rising edge into AIRBORNE (events.pitch_released is already cleared).
+    // Also bin realized toss height purely from the physical launch velocity, independent of any
+    // controller's internal strategy representation.
     if (pitch_in_flight && !o->p_pitchInFlight) {
         o->pitches++;
+        float pitchPower = (m->ball.velocity.y - PITCH_BASE_SPEED) / PITCH_POWER_CONSTANT;
+        int hbin = (pitchPower < 0.35f) ? 0 : (pitchPower < 0.65f ? 1 : 2);
+        o->pitch_height_bins[hbin]++;
         pbp(o, g, r, "pitch released");
     }
 
@@ -389,13 +399,12 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
             o->contact_power_n++;
             if (power < o->contact_power_min) o->contact_power_min = power;
             if (power > o->contact_power_max) o->contact_power_max = power;
-            // Realized horizontal launch direction of the batted ball, STYLE-1 only (the normal
-            // swing — the style whose direction is meant to be a uniform fan). We read the ACTUAL
-            // ball velocity, not arc_angle: arc_angle is reset to 0 around contact, so reading
-            // it here would fake a collapse to center. atan2(vx, -vz) is the true flight heading
-            // (0 = straight to centre, + = one side) and is constant after launch (gravity only
-            // touches vy). dir_bins splits ±1.0 rad into 5 buckets (right→left).
-            if (g->state->ai_controller->swing.decided && g->state->ai_controller->swing.style == 1) {
+            // Realized horizontal launch direction of full (non-bunt) swings, read purely from
+            // World state (swing power >= SWING_BUNT_MAX_POWER and actual ball velocity) so this
+            // observer never depends on any controller's internal strategy representation.
+            // atan2(vx, -vz) is the true flight heading (0 = straight to centre) and is constant
+            // after launch. dir_bins splits ±1.0 rad into 5 buckets (right→left).
+            if (m->at_bat.swing.power >= SWING_BUNT_MAX_POWER) {
                 float heading = atan2f(m->ball.velocity.x, -m->ball.velocity.z);
                 int bin = (int)((heading + 1.0f) * 2.5f); // [-1,1] rad -> [0,5)
                 if (bin < 0) bin = 0;
@@ -411,6 +420,12 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         // lock cycle. It is gone because the gap is: the controller declares a power and the engine
         // uses that number. A band whose value is structurally zero measures nothing, and keeping it
         // would read as coverage.
+    }
+
+    // Koppi (fly catch): rising edge into the referee's wounding evaluation period.
+    if (woundingEval == 1 && o->p_woundingEval == 0) {
+        o->koppi_catches++;
+        pbp(o, g, r, "KOPPI (fly ball caught)");
     }
 
     // Count deltas (only increments are real events; resets to 0 are bookkeeping).
@@ -465,24 +480,16 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
                 o->reached_base++;
                 pbp(o, g, r, "batter reached first");
             } else if (base == BASE_SECOND && prev != BASE_SECOND) {
+                o->reached_second++;
                 pbp(o, g, r, "runner reached second");
             } else if (base == BASE_THIRD && prev != BASE_THIRD) {
                 o->reached_third++;
                 pbp(o, g, r, "runner reached third");
-            } else if (base == BASE_HOME_SCORED && prev == BASE_THIRD) {
-                // KNOWN OVERCOUNT (found 2026-08-17 — recorded, not fixed here).
-                // This is a PHYSICAL arrival at home, not a run: body_step.c sets base_id to
-                // BASE_HOME_SCORED even for a runner already WOUNDED or OUT (it only preserves the
-                // state), while §41 / is_regular_run correctly denies the run to a wounded runner. So
-                // this counter — and the word "SCORED" below — can fire with no run awarded, which is
-                // exactly what slice 1a's run first surfaced (scored=1 alongside runs=0). The honest
-                // run counter is `runs_scored`, fed from the scoreboard; the bands and the
-                // both rest on that one. Deliberately left alone in the slice that re-baselines
-                // against this net: changing the instrument and the measurement in one commit makes
-                // neither readable.
-                o->scored_from_third++;
-                pbp(o, g, r, "runner came home from third — SCORED");
             }
+        }
+        if (state == PLAYER_STATE_SCORED && pstate != PLAYER_STATE_SCORED) {
+            o->scored_from_third++;
+            pbp(o, g, r, "runner came home from third — SCORED");
         }
         if ((base == BASE_FIRST || base == BASE_SECOND || base == BASE_THIRD) && base > o->furthest_base) {
             o->furthest_base = base;
@@ -507,9 +514,18 @@ void box_score_observer_hook(const SimGame* g, void* ctx)
         o->p_state[i] = state;
     }
 
+    for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+        int refStatus = (int)r->referee.batting_players[i].status;
+        if (refStatus == PLAYER_STATUS_WOUNDED && o->p_refStatus[i] != PLAYER_STATUS_WOUNDED) {
+            o->wounds++;
+        }
+        o->p_refStatus[i] = refStatus;
+    }
+
     o->p_pitchInFlight = pitch_in_flight;
     o->p_batOutcome = batOutcome;
     o->p_foulState = foulState;
+    o->p_woundingEval = woundingEval;
     o->p_outs = h->outs;
     o->p_balls = h->balls;
     o->p_strikes = h->strikes;

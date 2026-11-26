@@ -68,6 +68,7 @@ int test_batter_seat_verdict_spent_order(void);
 int test_batter_seat_verdict_jokers(void);
 int test_choose_batter_preference(void);
 int test_is_wrong_pitch(void);
+int test_should_advance_on_loose_ball(void);
 int test_calculate_ai_batting_angle(void);
 int test_decide_swing_profiles(void);
 
@@ -83,8 +84,8 @@ int test_should_ai_throw_normal(void);
 int test_should_ai_throw_replacer(void);
 int test_should_ai_throw_baseman_to_own_cover(void);
 int test_should_ai_drop_ball_scenario(void);
-int test_determine_lead_base_simple(void);
-int test_determine_lead_base_random(void);
+int test_determine_throw_target_base_advancing(void);
+int test_determine_throw_target_base_retreating_and_pickoff(void);
 
 // Pitching AI strategy (ai_pure/pitching_ai_strategy.c)
 int test_decide_pitch_aim(void);

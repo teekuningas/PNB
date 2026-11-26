@@ -78,12 +78,15 @@ typedef struct {
     int p_pitchInFlight, p_outs, p_balls, p_strikes, p_runs0, p_runs1, p_inning, p_period;
     int p_batOutcome;
     int p_foulState;
+    int p_woundingEval; // previous frame's referee.wounding_evaluation_active
     int p_throwing; // previous frame's (catching_action.kind == CATCHING_ACTION_THROWING)
     int p_baseId[2 * PLAYERS_IN_TEAM + JOKER_COUNT];
     int p_state[2 * PLAYERS_IN_TEAM + JOKER_COUNT]; // PlayerUnitState last frame
+    int p_refStatus[PLAYERS_IN_TEAM + JOKER_COUNT]; // RefereePlayerStatus last frame
 
     // box score (readable after the run)
     long pitches; // pitches released (rising edge into AIRBORNE)
+    long pitch_height_bins[3]; // toss power at release: [0]=low (<0.35), [1]=mid (<0.65), [2]=high (>=0.65)
     long throws; // throws to a base started (rising edge into CATCHING_ACTION_THROWING — only begin_throw_windup raises
                  // it)
     // NOTE: no `drops` counter. A §30 tactical drop's post-frame state (holder −1, ball moving,
@@ -92,12 +95,15 @@ typedef struct {
     // knighted by construction instead: tests/integration/contracts/test_ai_tactical_drop.c.
     long contacts; // bat made contact (bat_outcome → HIT)
     long whiffs; // swing and a miss (bat_outcome → MISSED)
+    long koppi_catches; // fly balls caught on the fly (wounding_evaluation_active rising edge)
+    long wounds; // runners terminally wounded (PLAYER_STATUS_WOUNDED rising edge)
     long fouls; // hits called foul / out of bounds (foul_state NONE→DETECTED rising edge)
     long strikes_called; // strike-count increments
     long balls_called; // ball-count increments
     long outs_made; // out-count increments
     long runs_scored; // both teams' run increments
     long reached_base; // batters that became runners (HOME → 1st)
+    long reached_second; // distinct arrivals onto 2nd base
     int furthest_base; // furthest base any runner stood on (1..3), 0 if none
 
     // base-running breakdown — the "stranded vs thrown out vs never tried" question

@@ -206,17 +206,12 @@ void update_catching_ai(
             // frame the drop is actualized, which stops any re-issue on its own.
             intent_push(channel, (IntentMessage){.kind = INTENT_DROP_BALL});
         }
-        // otherwise we throw or move towards a base where the lead player is going. if the lead player is
-        // going nowhere we take ball to home base.
+        // otherwise we throw or move towards the target base chosen by the catching strategy.
         else {
-            BaseID leadBase = BASE_NONE;
-            int throwBase = 0;
-
             CatchingRunnerInfo runners[PLAYERS_IN_TEAM + JOKER_COUNT];
             int runnerCount = 0;
-            int i;
 
-            for (i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
+            for (int i = 0; i < PLAYERS_IN_TEAM + JOKER_COUNT; i++) {
                 PlayerUnitState s = match->players[i].batting.presence.state;
                 BaseID bid = match->players[i].batting.presence.base_id;
 
@@ -225,17 +220,13 @@ void update_catching_ai(
                     runners[runnerCount].taking_free_walk = (s == PLAYER_STATE_ADVANCING_FREELY);
                     runners[runnerCount].base = bid;
                     runners[runnerCount].leading = (s == PLAYER_STATE_LEADING);
+                    runners[runnerCount].going_forward = match->players[i].path.going_forward;
                     runnerCount++;
                 }
             }
 
             int randomVal = seeded_rand(&aiController->rng_seed, 500);
-            leadBase = determine_lead_base(runners, runnerCount, randomVal);
-
-            if (leadBase != BASE_NONE && base_cmp(leadBase, BASE_THIRD) < 0)
-                throwBase = (int)base_get_next(leadBase);
-            else
-                throwBase = 0;
+            BaseID throwBase = determine_throw_target_base(runners, runnerCount, randomVal);
 
             if (match->catching_action.kind == CATCHING_ACTION_NONE) {
                 // Two different jobs share this move, and telling them apart is what keeps the
@@ -254,7 +245,7 @@ void update_catching_ai(
                 if (match->catching.controlled_fielder != -1 && baseman != -1) {
                     Vector3D target = match->players[baseman].body.home_location;
                     if (match->catching.controlled_fielder != baseman) {
-                        Vector3D baseTarget = throw_target_point(fieldPositions, (BaseID)throwBase);
+                        Vector3D baseTarget = throw_target_point(fieldPositions, throwBase);
                         target = carry_to_throw_point(
                             &match->players[match->catching.controlled_fielder].body.location, &baseTarget
                         );
@@ -262,7 +253,7 @@ void update_catching_ai(
                     steer_controlled_fielder(match, aiController, &target, channel);
                 }
             }
-            throw_ball_to_base(match, (BaseID)throwBase, channel);
+            throw_ball_to_base(match, throwBase, channel);
         }
     }
 }
