@@ -46,6 +46,8 @@ static unsigned long long rules_projection_hash(const GameRulesState* r)
     RULE_VALUE(r->half_inning.balls);
     RULE_VALUE(r->half_inning.strikes);
     RULE_VALUE(r->half_inning.batter_may_leave_home);
+    RULE_VALUE(r->half_inning.pitch_rights);
+    RULE_VALUE(r->half_inning.batter_in_turn);
     RULE_VALUE(r->half_inning.runs_in_inning);
     RULE_VALUE(r->half_inning.end_period);
     RULE_VALUE(r->half_inning.jokers_left);

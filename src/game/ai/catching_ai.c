@@ -25,13 +25,13 @@ static void update_ai_pitching(
 {
     int pitcherIndex = match->fielding_posts.baseman[0];
 
-    // Try to pitch when: the pitcher holds the ball at home, no catching action is in progress, no pitch
-    // is already going, the batter has had a moment to settle, and the fielders are home. The AI then
-    // DECLARES the pitch's two values directly — no meter to puppeteer, no lock machine to mirror. The
-    // engine owns the windup + release.
+    // Try to pitch when: the pitcher holds the ball at home, §24 pitch rights are granted, no
+    // catching action is in progress, no pitch is already going, the batter has had a moment to
+    // settle, and the fielders are home. The AI then DECLARES the pitch's two values directly — no
+    // meter to puppeteer, no lock machine to mirror. The engine owns the windup + release.
     if (match->ball.holder == pitcherIndex && match->players[pitcherIndex].fielding.near_home == 1 &&
-        match->catching_action.kind == CATCHING_ACTION_NONE && !match->ball.pitch_in_flight &&
-        aiController->batter_ready_timer > AI_PITCH_DELAY) {
+        halfInningState->pitch_rights == PITCH_RIGHTS_GRANTED && match->catching_action.kind == CATCHING_ACTION_NONE &&
+        !match->ball.pitch_in_flight && aiController->batter_ready_timer > AI_PITCH_DELAY) {
 
         int i;
         int fielders_home = 1;
@@ -57,12 +57,13 @@ static void update_ai_pitching(
         }
     }
 
-    // batter_ready_timer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball with a
-    // ready batter; reset whenever the batter is not ready).
-    if (batter_stands_ready(&match->at_bat) && match->fielding_posts.baseman[0] == match->ball.holder &&
-        aiController->batter_ready_timer == -1) {
+    // batter_ready_timer: the AI's pre-pitch pause clock (counts up while the pitcher holds the ball
+    // with pitch rights granted and a ready batter; reset otherwise so a batter never gets quick-
+    // pitched on the frame the return throw lands).
+    const int canSettle = batter_stands_ready(&match->at_bat) && halfInningState->pitch_rights == PITCH_RIGHTS_GRANTED;
+    if (canSettle && match->fielding_posts.baseman[0] == match->ball.holder && aiController->batter_ready_timer == -1) {
         aiController->batter_ready_timer = 0;
-    } else if (!batter_stands_ready(&match->at_bat)) {
+    } else if (!canSettle) {
         aiController->batter_ready_timer = -1;
     }
     if (aiController->batter_ready_timer != -1) {
@@ -104,12 +105,12 @@ static void steer_controlled_fielder(
     ai->frames_since_move_declared = 0;
 }
 
-static void throw_ball_to_base(const MatchSession* match, BaseID base, IntentChannel* channel)
+static void
+throw_ball_to_base(const MatchSession* match, const FieldPositions* fieldPositions, BaseID base, IntentChannel* channel)
 {
-    // Don't start a throw if any catching action is already in progress. We read the real
-    // catching action in progress directly — the AI no longer keeps a duplicate
-    // throwStage/AI_THROW_LOCK state machine that had to mirror (and drifted from) it.
-    if (match->catching_action.kind != CATCHING_ACTION_NONE) {
+    // Ask the shared throw permission first: no catching action in progress, ball in hand, and not
+    // standing inside THROW_TO_BASE_DISTANCE while backing out toward AI_THROW_STANDOFF.
+    if (!throw_may_begin(match, fieldPositions, base).allowed) {
         return;
     }
 
@@ -226,7 +227,11 @@ void update_catching_ai(
             }
 
             int randomVal = seeded_rand(&aiController->rng_seed, 500);
-            BaseID throwBase = determine_throw_target_base(runners, runnerCount, randomVal);
+            int needsFieldBase =
+                (rules->half_inning.pitch_rights == PITCH_RIGHTS_NEED_FIELD_BASE &&
+                 rules->referee.foul_state == FOUL_STATE_NONE &&
+                 rules->referee.end_of_inning_state == END_INNING_STATE_NONE);
+            BaseID throwBase = determine_throw_target_base(runners, runnerCount, randomVal, needsFieldBase);
 
             if (match->catching_action.kind == CATCHING_ACTION_NONE) {
                 // Two different jobs share this move, and telling them apart is what keeps the
@@ -253,7 +258,7 @@ void update_catching_ai(
                     steer_controlled_fielder(match, aiController, &target, channel);
                 }
             }
-            throw_ball_to_base(match, throwBase, channel);
+            throw_ball_to_base(match, fieldPositions, throwBase, channel);
         }
     }
 }

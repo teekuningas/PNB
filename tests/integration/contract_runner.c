@@ -132,6 +132,11 @@ static void run_contract_tests(void)
     RUN_TEST(test_batted_ball_clears_released_by_and_arms_catch_delay);
     RUN_TEST(test_catch_delay_blocks_immediate_clip_then_allows_lukkari_and_close_infield_catch);
     RUN_TEST(test_lukkari_stays_evaded_and_cover0_stays_put_during_pitch_in_flight);
+
+    printf("\n--- §24 pitch rights & AI throw-permission guard ---\n");
+    RUN_TEST(test_pitch_rights_gate_refuses_without_rights);
+    RUN_TEST(test_referee_pitch_rights_lifecycle);
+    RUN_TEST(test_ai_throw_guard_never_emits_too_close_throw);
 }
 
 int main(int argc, char* argv[])

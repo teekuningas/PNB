@@ -13,6 +13,7 @@ int test_scripted_pitch_meter_waits_for_the_batter_to_arrive(void);
 int test_scripted_pitch_dropped_aim_is_valesyotto(void);
 int test_scripted_human_pitch_ai_hit_flies(void);
 int test_scripted_catching_bar_follows_the_pitch_gesture(void);
+int test_scripted_pitch_blocked_until_pitch_rights_reacquired(void);
 int test_scripted_throw_hold_release_to_base(void);
 int test_scripted_throw_committed_power_stays_on_bar(void);
 

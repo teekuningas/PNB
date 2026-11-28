@@ -69,7 +69,7 @@ int test_batter_retreats_to_home_on_koppi(void)
     give_ball_to_pitcher(ctx);
     m->players[m->fielding_posts.baseman[0]].fielding.near_home = 1;
     ASSERT_EQ(
-        1, pitch_may_begin(m, r->half_inning.strikes).allowed,
+        1, pitch_may_begin(m, r->half_inning.strikes, r->half_inning.pitch_rights).allowed,
         "pitcher must be able to deliver the next pitch after a safe home retreat"
     );
 
@@ -136,7 +136,7 @@ int test_batter_retreat_closes_stale_seat_offer(void)
     give_ball_to_pitcher(ctx);
     m->players[m->fielding_posts.baseman[0]].fielding.near_home = 1;
     ASSERT_EQ(
-        1, pitch_may_begin(m, r->half_inning.strikes).allowed,
+        1, pitch_may_begin(m, r->half_inning.strikes, r->half_inning.pitch_rights).allowed,
         "pitcher may pitch once the batter returns and the stale seat offer closes"
     );
 

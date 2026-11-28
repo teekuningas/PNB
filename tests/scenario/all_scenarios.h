@@ -32,5 +32,8 @@ int test_contest_third_strike_foul_advances_pair_cleanly(
 ); // 3rd-strike foul advances pair without teleporting batter
 int test_kotipesakoppi_wounds_off_base_runner(void); // §30/§36 — lukkari catches home pop-up and wounds off-base runner
 int test_close_infield_koppi_within_15_units_of_lukkari(void); // §30/§36 — fielder <15u from lukkari catches fly ball
+int test_pitch_rights_requires_home_base_home_round_trip(void); // §24 — strict Home -> Field Base -> Home round-trip
+int test_pitch_rights_earned_during_bunt_putout_survives_next_batter(void); // §24 — Home -> 1st -> Home before Batter 2
+int test_pitch_rights_preserved_on_early_foul_and_revoked_on_third_strike_foul(void); // §24 — foul resets
 
 #endif // ALL_SCENARIOS_H

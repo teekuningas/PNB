@@ -22,6 +22,7 @@ int main(void)
     RUN_TEST(test_scripted_pitch_dropped_aim_is_valesyotto);
     RUN_TEST(test_scripted_human_pitch_ai_hit_flies);
     RUN_TEST(test_scripted_catching_bar_follows_the_pitch_gesture);
+    RUN_TEST(test_scripted_pitch_blocked_until_pitch_rights_reacquired);
     RUN_TEST(test_scripted_throw_hold_release_to_base);
     RUN_TEST(test_scripted_throw_committed_power_stays_on_bar);
     RUN_TEST(test_scripted_move_held_key_runs_at_run_speed);

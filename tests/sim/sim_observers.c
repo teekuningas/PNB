@@ -79,6 +79,14 @@ void invariant_observer_hook(const SimGame* g, void* ctx)
         sim_fail((SimGame*)g, "invariant: homerun pair counter out of [0, pair_count]");
         return;
     }
+    if (h->pitch_rights < PITCH_RIGHTS_GRANTED || h->pitch_rights > PITCH_RIGHTS_NEED_RETURN_HOME) {
+        sim_fail((SimGame*)g, "invariant: pitch_rights out of enum bounds");
+        return;
+    }
+    if (sb->period >= 4 && h->pitch_rights != PITCH_RIGHTS_GRANTED) {
+        sim_fail((SimGame*)g, "invariant: §8 homerun contest must keep pitch_rights GRANTED");
+        return;
+    }
 
     // Strict flow precedence (END_INNING > NEXT_PAIR > FOUL): no two reset state machines may be
     // active on the same frame, and a burnt batter must never be seated AT_BAT.
@@ -306,6 +314,8 @@ void checksum_observer_hook(const SimGame* g, void* ctx)
     FOLD_INTEGER(h, r->half_inning.last_batter.last_regular_index);
     FOLD_INTEGER(h, r->half_inning.last_batter.has_batted_again);
     FOLD_INTEGER(h, r->half_inning.last_batter.turn_exhausted);
+    FOLD_INTEGER(h, r->half_inning.pitch_rights);
+    FOLD_INTEGER(h, r->half_inning.batter_in_turn);
 
     o->hash = h;
 }

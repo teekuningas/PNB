@@ -208,23 +208,30 @@ int test_determine_throw_target_base_advancing(void)
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_FIRST, .leading = 0, .going_forward = 1},
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
     };
-    ASSERT_EQ(BASE_THIRD, determine_throw_target_base(runners, 2, 123), "advancing lead runner from 2nd targets 3rd");
+    ASSERT_EQ(
+        BASE_THIRD, determine_throw_target_base(runners, 2, 123, 0), "advancing lead runner from 2nd targets 3rd"
+    );
 
-    // Scoring runner heading home from 3rd outranks a runner heading to 3rd.
+    // Scoring runner heading home from 3rd outranks a runner heading to 3rd — even when pitch rights
+    // still need a field-base visit.
     CatchingRunnerInfo scoring[2] = {
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_THIRD, .leading = 0, .going_forward = 1},
     };
     ASSERT_EQ(
-        BASE_HOME, determine_throw_target_base(scoring, 2, 123),
-        "runner heading home from 3rd outranks runner heading to 3rd"
+        BASE_HOME, determine_throw_target_base(scoring, 2, 123, 1),
+        "runner heading home from 3rd outranks runner heading to 3rd and pitch-rights toss"
     );
 
-    // No active off-base runners -> return ball to home.
+    // No active off-base runners -> return ball to home when pitch rights are granted, or toss to
+    // 1st when §24 still needs a field-base visit.
     CatchingRunnerInfo settled[1] = {
         {.is_on_base = 1, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 0, .going_forward = 0},
     };
-    ASSERT_EQ(BASE_HOME, determine_throw_target_base(settled, 1, 123), "no threatened runner returns home");
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(settled, 1, 123, 0), "no threatened runner returns home");
+    ASSERT_EQ(
+        BASE_FIRST, determine_throw_target_base(settled, 1, 123, 1), "idle field with §24 NEED_FIELD_BASE tosses to 1st"
+    );
 
     return TEST_PASSED;
 }
@@ -236,7 +243,7 @@ int test_determine_throw_target_base_retreating_and_pickoff(void)
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_FIRST, .leading = 0, .going_forward = 0},
     };
     ASSERT_EQ(
-        BASE_FIRST, determine_throw_target_base(retreating, 1, 123),
+        BASE_FIRST, determine_throw_target_base(retreating, 1, 123, 0),
         "retreating runner targets the base they are returning to"
     );
 
@@ -245,15 +252,19 @@ int test_determine_throw_target_base_retreating_and_pickoff(void)
         {.is_on_base = 0, .taking_free_walk = 0, .base = BASE_SECOND, .leading = 1, .going_forward = 0},
     };
     ASSERT_EQ(
-        BASE_SECOND, determine_throw_target_base(leading, 1, 0), "pickoff roll targets the leading runner's base"
+        BASE_SECOND, determine_throw_target_base(leading, 1, 0, 0), "pickoff roll targets the leading runner's base"
     );
-    ASSERT_EQ(BASE_HOME, determine_throw_target_base(leading, 1, 1), "non-pickoff roll returns ball home");
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(leading, 1, 1, 0), "non-pickoff roll returns ball home");
 
     // Free-walk runner is never targeted.
     CatchingRunnerInfo freeWalk[1] = {
         {.is_on_base = 0, .taking_free_walk = 1, .base = BASE_SECOND, .leading = 0, .going_forward = 1},
     };
-    ASSERT_EQ(BASE_HOME, determine_throw_target_base(freeWalk, 1, 0), "free-walk runner is ignored");
+    ASSERT_EQ(BASE_HOME, determine_throw_target_base(freeWalk, 1, 0, 0), "free-walk runner is ignored");
+    ASSERT_EQ(
+        BASE_FIRST, determine_throw_target_base(freeWalk, 1, 0, 1),
+        "free-walk runner still lets idle defense toss to 1st for §24 pitch rights"
+    );
 
     return TEST_PASSED;
 }

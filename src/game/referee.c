@@ -13,6 +13,7 @@
 #include "base_control.h"
 #include "rules_side_change.h"
 #include "rules_resolution.h"
+#include "rules_pitch_rights.h"
 
 // Referee-specific timing thresholds (in frames)
 // BASE_RADIUS, HOME_RADIUS, HOME_LINE_Z come from field.h
@@ -225,6 +226,11 @@ static void update_foul_play_logic(
                 referee->batting_players[i].has_pending_run = 0;
                 referee->batting_players[i].has_pending_run_of_honor = 0;
             }
+
+            // §24: 1st/2nd-strike foul restores the same batter with pitch rights intact;
+            // 3rd-strike foul burned the batter (§18(6)), so the next batter needs a fresh round-trip.
+            halfInningState->pitch_rights = pitch_rights_after_foul_reset(referee->strikes_at_pitch_start);
+            halfInningState->batter_in_turn = (referee->strikes_at_pitch_start < 2) ? 1 : 0;
         }
         return;
     }
@@ -983,6 +989,41 @@ static void update_side_change_readiness(
     halfInningState->last_batter.turn_exhausted = turn_concluded && halfInningState->last_batter.regular_order_spent;
 }
 
+static int
+has_active_batter_turn(const MatchSession* game, const RefereeState* referee, const HalfInningState* halfInningState)
+{
+    return get_base_controller(game, referee, BASE_HOME) != -1 &&
+           !batter_has_become_runner_permanently(halfInningState->strikes);
+}
+
+// §24 Syöttöoikeus: once the active batter permanently becomes a runner (§18), revoke pitch rights
+// and require a strict Home → Field Base → Home round-trip in fielders' possession. Exempt in the
+// home-run contest (§8) and paused during a dead foul grace window (resolved on FOUL_STATE_RESETTING).
+static void update_pitch_rights(
+    const MatchSession* game, const RefereeState* referee, HalfInningState* halfInningState,
+    const Scoreboard* scoreboard, int ballAtBase
+)
+{
+    if (scoreboard->period >= 4) {
+        halfInningState->pitch_rights = PITCH_RIGHTS_GRANTED;
+        return;
+    }
+
+    if (referee->foul_state != FOUL_STATE_NONE) {
+        return;
+    }
+
+    const int active_turn_now = has_active_batter_turn(game, referee, halfInningState);
+    if (halfInningState->batter_in_turn && !active_turn_now) {
+        halfInningState->batter_in_turn = 0;
+        halfInningState->pitch_rights = PITCH_RIGHTS_NEED_HOME;
+    } else if (active_turn_now) {
+        halfInningState->batter_in_turn = 1;
+    }
+
+    halfInningState->pitch_rights = advance_pitch_rights(halfInningState->pitch_rights, ballAtBase);
+}
+
 static void update_game_state_flags(const GameEvents* events, BetweenPitchState* betweenPitchState)
 {
     // 6. Game State Flags
@@ -1013,6 +1054,8 @@ static void clear_referee_for_pair_end(
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     halfInningState->batter_may_leave_home = 0;
+    halfInningState->pitch_rights = PITCH_RIGHTS_GRANTED;
+    halfInningState->batter_in_turn = 0;
     clear_between_pitch_state(betweenPitchState);
     refereeState->strikes_at_pitch_start = 0;
     refereeState->wounding_evaluation_active = 0;
@@ -1046,6 +1089,8 @@ static void clear_referee_for_inning_end(
     halfInningState->strikes = 0;
     halfInningState->balls = 0;
     halfInningState->batter_may_leave_home = 0;
+    halfInningState->pitch_rights = PITCH_RIGHTS_GRANTED;
+    halfInningState->batter_in_turn = 0;
     halfInningState->runs_in_inning = 0;
     halfInningState->end_period = 0;
     halfInningState->jokers_left = JOKER_COUNT;
@@ -1090,6 +1135,8 @@ void referee_reset_for_new_inning(RefereeState* ref, HalfInningState* his, Betwe
     his->balls = 0;
     his->strikes = 0;
     his->batter_may_leave_home = 0;
+    his->pitch_rights = PITCH_RIGHTS_GRANTED;
+    his->batter_in_turn = 0;
     his->runs_in_inning = 0;
     his->end_period = 0;
     his->jokers_left = JOKER_COUNT;
@@ -1233,6 +1280,13 @@ void update_referee(
     // 0. Initialization Events (Milestone 17)
     update_initialization_events(game, refereeState, &game->events, betweenPitchState, halfInningState, scoreboard);
 
+    // Latch whether a batter holds an active turn at the top of adjudication, so a same-tick §18
+    // transition revokes §24 pitch rights even without a prior warm-up frame.
+    if (scoreboard->period < 4 && refereeState->foul_state == FOUL_STATE_NONE &&
+        has_active_batter_turn(game, refereeState, halfInningState)) {
+        halfInningState->batter_in_turn = 1;
+    }
+
     // 1. Where is the ball?
     int ballAtBase = get_ball_at_base_index(game, fieldPositions);
 
@@ -1277,6 +1331,9 @@ void update_referee(
 
         // 6. §12 — is the batting turn spent? Last, so it reads this frame's settled runs and outs.
         update_side_change_readiness(game, refereeState, halfInningState, scoreboard);
+
+        // 7. §24 — pitch rights (Home → Field Base → Home after the previous batter becomes a runner).
+        update_pitch_rights(game, refereeState, halfInningState, scoreboard, ballAtBase);
     }
 
     // ========================================================================

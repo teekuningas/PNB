@@ -39,6 +39,9 @@ static void run_scenario_tests(void)
     RUN_TEST(test_contest_third_strike_foul_advances_pair_cleanly);
     RUN_TEST(test_kotipesakoppi_wounds_off_base_runner);
     RUN_TEST(test_close_infield_koppi_within_15_units_of_lukkari);
+    RUN_TEST(test_pitch_rights_requires_home_base_home_round_trip);
+    RUN_TEST(test_pitch_rights_earned_during_bunt_putout_survives_next_batter);
+    RUN_TEST(test_pitch_rights_preserved_on_early_foul_and_revoked_on_third_strike_foul);
 }
 
 int main(int argc, char* argv[])

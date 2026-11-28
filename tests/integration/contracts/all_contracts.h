@@ -131,4 +131,9 @@ int test_batted_ball_clears_released_by_and_arms_catch_delay(void);
 int test_catch_delay_blocks_immediate_clip_then_allows_lukkari_and_close_infield_catch(void);
 int test_lukkari_stays_evaded_and_cover0_stays_put_during_pitch_in_flight(void);
 
+// §24 pitch rights & AI throw-permission guard
+int test_pitch_rights_gate_refuses_without_rights(void);
+int test_referee_pitch_rights_lifecycle(void);
+int test_ai_throw_guard_never_emits_too_close_throw(void);
+
 #endif // ALL_CONTRACTS_H

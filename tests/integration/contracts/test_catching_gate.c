@@ -111,35 +111,75 @@ int test_pitch_permission_names_each_rule(void)
     World ready;
     capture(ctx, &ready);
 
-    ASSERT_EQ(1, pitch_may_begin(m, 0).allowed, "control: a ready pitcher with a ready batter may pitch");
+    ASSERT_EQ(
+        1, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).allowed,
+        "control: a ready pitcher with a ready batter and pitch rights may pitch"
+    );
 
     m->catching_action.kind = CATCHING_ACTION_THROWING;
-    ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0).denied_by, "not while a throw gathers");
+    ASSERT_EQ(
+        RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "not while a throw gathers"
+    );
     restore(ctx, &ready);
     m->catching_action.kind = CATCHING_ACTION_PITCHING;
-    ASSERT_EQ(RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0).denied_by, "not while a pitch winds up");
+    ASSERT_EQ(
+        RULE_CATCHING_ACTION_IN_PROGRESS, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "not while a pitch winds up"
+    );
     restore(ctx, &ready);
 
-    ASSERT_EQ(RULE_PITCH_BATTER_IS_A_RUNNER, pitch_may_begin(m, 3).denied_by, "§18(1): three correct pitches spent");
+    ASSERT_EQ(
+        RULE_PITCH_BATTER_IS_A_RUNNER, pitch_may_begin(m, 3, PITCH_RIGHTS_GRANTED).denied_by,
+        "§18(1): three correct pitches spent"
+    );
 
     m->ball.holder = FIELDER;
-    ASSERT_EQ(RULE_PITCH_NEEDS_BALL_AT_HOME, pitch_may_begin(m, 0).denied_by, "the pitcher must hold the ball");
+    ASSERT_EQ(
+        RULE_PITCH_NEEDS_BALL_AT_HOME, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "the pitcher must hold the ball"
+    );
     restore(ctx, &ready);
 
     m->ball.pitch_in_flight = 1;
-    ASSERT_EQ(RULE_PITCH_PREVIOUS_UNRESOLVED, pitch_may_begin(m, 0).denied_by, "not before the last pitch is judged");
+    ASSERT_EQ(
+        RULE_PITCH_PREVIOUS_UNRESOLVED, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "not before the last pitch is judged"
+    );
     restore(ctx, &ready);
 
     m->at_bat.cycle = BATTING_CYCLE_CLOSED;
-    ASSERT_EQ(RULE_PITCH_NEEDS_A_READY_BATTER, pitch_may_begin(m, 0).denied_by, "nobody to pitch to");
+    ASSERT_EQ(
+        RULE_PITCH_NEEDS_A_READY_BATTER, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by, "nobody to pitch to"
+    );
     restore(ctx, &ready);
 
     m->offers.free_walk = 1;
-    ASSERT_EQ(RULE_PITCH_NOT_DURING_FREE_WALK_OFFER, pitch_may_begin(m, 0).denied_by, "§26: answer the walk first");
+    ASSERT_EQ(
+        RULE_PITCH_NOT_DURING_FREE_WALK_OFFER, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "§26: answer the walk first"
+    );
     restore(ctx, &ready);
 
     m->players[12].fielding.near_home = 0;
-    ASSERT_EQ(RULE_PITCHER_OFF_THE_PLATE, pitch_may_begin(m, 0).denied_by, "the pitcher must be at the plate");
+    ASSERT_EQ(
+        RULE_PITCHER_OFF_THE_PLATE, pitch_may_begin(m, 0, PITCH_RIGHTS_GRANTED).denied_by,
+        "the pitcher must be at the plate"
+    );
+    restore(ctx, &ready);
+
+    ASSERT_EQ(
+        RULE_PITCH_NEEDS_PITCH_RIGHTS, pitch_may_begin(m, 0, PITCH_RIGHTS_NEED_HOME).denied_by,
+        "§24: pitch rights missing (NEED_HOME)"
+    );
+    ASSERT_EQ(
+        RULE_PITCH_NEEDS_PITCH_RIGHTS, pitch_may_begin(m, 0, PITCH_RIGHTS_NEED_FIELD_BASE).denied_by,
+        "§24: pitch rights missing (NEED_FIELD_BASE)"
+    );
+    ASSERT_EQ(
+        RULE_PITCH_NEEDS_PITCH_RIGHTS, pitch_may_begin(m, 0, PITCH_RIGHTS_NEED_RETURN_HOME).denied_by,
+        "§24: pitch rights missing (NEED_RETURN_HOME)"
+    );
 
     cleanup_scenario(ctx);
     return TEST_PASSED;

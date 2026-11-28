@@ -21,7 +21,9 @@
 //   - the pitcher at the plate holds the ball, and the previous pitch has been judged
 //   - a batter stands ready, and no free walk is waiting to be answered
 //   - the pitcher is at the pitching plate
-Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received)
+//   - §24: the lukkari holds pitch rights (Home → Field Base → Home since the previous batter
+//     permanently became a runner; always granted at inning start and in the home-run contest)
+Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received, PitchRightsState pitch_rights)
 {
     const int pitcher = match->fielding_posts.baseman[0];
     if (match->catching_action.kind != CATCHING_ACTION_NONE) {
@@ -44,6 +46,9 @@ Permission pitch_may_begin(const MatchSession* match, int correct_pitches_receiv
     }
     if (match->players[pitcher].fielding.near_home != 1) {
         return (Permission){0, RULE_PITCHER_OFF_THE_PLATE};
+    }
+    if (pitch_rights != PITCH_RIGHTS_GRANTED) {
+        return (Permission){0, RULE_PITCH_NEEDS_PITCH_RIGHTS};
     }
     return (Permission){1, RULE_NONE};
 }

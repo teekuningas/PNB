@@ -123,7 +123,10 @@ void draw_help_menu(HelpMenuState* state, const RenderState* rs, ResourceManager
                       "plate. Where the marker stops sets the horizontal direction of the "
                       "pitch.\n\n"
                       "If you do not press during the aim descent, the pitcher makes a "
-                      "fake pitch and keeps the ball.";
+                      "fake pitch and keeps the ball.\n\n"
+                      "After a batter becomes a runner, earn pitch rights for the next "
+                      "batter by moving the ball from home to any field base and back "
+                      "to home. In the homerun contest, pitch rights are always granted.";
             break;
         case 4:
             title = "Fielding";

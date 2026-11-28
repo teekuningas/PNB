@@ -217,6 +217,7 @@ typedef enum {
     RULE_CATCHING_ACTION_IN_PROGRESS, // the ball-holder is already pitching or throwing
     RULE_ONE_CATCHING_ACTION_PER_TICK, // a throw, a drop and a pitch claim the same hands; one is taken
     RULE_PITCH_NEEDS_BALL_AT_HOME, // the pitcher at the plate must be the one holding the ball
+    RULE_PITCH_NEEDS_PITCH_RIGHTS, // §24: ball must visit Home → Field Base → Home after the previous batter
     RULE_PITCH_PREVIOUS_UNRESOLVED, // the last pitch has not been judged yet
     RULE_PITCH_NEEDS_A_READY_BATTER, // nobody is standing ready to be pitched to
     RULE_PITCHER_OFF_THE_PLATE, // the pitcher has to be at the pitching plate

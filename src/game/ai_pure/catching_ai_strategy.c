@@ -105,9 +105,10 @@ static int target_base_priority(BaseID target, int is_scoring_play)
     return 0;
 }
 
-BaseID determine_throw_target_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue)
+BaseID
+determine_throw_target_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue, int needsFieldBase)
 {
-    BaseID bestTarget = BASE_HOME;
+    BaseID bestTarget = needsFieldBase ? BASE_FIRST : BASE_HOME;
     int bestPriority = 0;
 
     for (int i = 0; i < runnerCount; i++) {

@@ -103,8 +103,10 @@ int should_ai_drop_ball(
 //   - Advancing runner (going_forward=1): target next base (3rd -> BASE_HOME to stop a run).
 //   - Retreating runner (going_forward=0, not leading, base != BASE_HOME): target `base`.
 //   - Leading runner (leading=1): occasional pickoff (randomValue == 0) to `base`.
-//   - Priority: stop a scoring runner at home > 3rd > 2nd > 1st; otherwise return to BASE_HOME.
-BaseID determine_throw_target_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue);
+//   - Priority: stop a scoring runner at home > 3rd > 2nd > 1st; otherwise, if §24 pitch rights
+//     still need a field-base visit (needsFieldBase != 0), toss to BASE_FIRST; else return BASE_HOME.
+BaseID
+determine_throw_target_base(const CatchingRunnerInfo* runners, int runnerCount, int randomValue, int needsFieldBase);
 
 #ifdef __cplusplus
 }

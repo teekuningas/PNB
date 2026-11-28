@@ -196,7 +196,23 @@ static unsigned long long run_once(unsigned int seed)
 // Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): 1st 233 -> 257, 3rd 42 -> 56,
 // runs 10 -> 20, fouls 7.42% -> 4.57%, koppi 10.8%, pitch height tiers 29%/31%/40%, 216 outs,
 // 120/120 half-inning and 120/120 homerun-contest sweep seeds clean (HR pair scoring 18% -> 42%).
-#define SIM_BEHAVIOUR_BASELINE_HASH 0x2caf306cd3882ea4ULL
+// Re-recorded 2026-11-28, deliberately, by Road-to-1.5 Step 1 (§24 syöttöoikeus pitch rights + AI
+// throw-permission guard):
+//   1. Strict Home -> Field Base -> Home pitch rights (HalfInningState.pitch_rights + batter_in_turn,
+//      rules_pure/rules_pitch_rights.c, owned by referee.c; exempt in homerun contest per §8; preserved
+//      across 1st/2nd-strike foul resets, revoked on 3rd-strike foul burn) enforced at pitch_may_begin
+//      (RULE_PITCH_NEEDS_PITCH_RIGHTS).
+//   2. catching_ai tosses to 1st when NEED_FIELD_BASE (while still prioritizing live runner plays)
+//      and gates pitching + batter_ready_timer on PITCH_RIGHTS_GRANTED; batting_ai waits for
+//      PITCH_RIGHTS_GRANTED before leading off bases.
+//   3. catching_ai::throw_ball_to_base guards on throw_may_begin (isolated before §24: bit-for-bit
+//      identical hash 0x2caf306cd3882ea4ULL, dropping RULE_THROW_TARGET_TOO_CLOSE refusals 2 -> 0
+//      over 120 sweep seeds).
+// Measured in test_ai_offense_breakdown (24 seeds x 3 half-innings): all 28 bands hold cleanly
+// (pitches 832, contact 90.6%, 1st 288, 3rd 58, runs 22, outs 216, fouls 4.9%, koppi 12.6%),
+// 120/120 half-inning and 120/120 homerun-contest sweep seeds clean (0 stalls, 0 invariant failures,
+// 432 completed Home -> Field Base -> Home acquisitions, 0 refused throws/pitches).
+#define SIM_BEHAVIOUR_BASELINE_HASH 0xa4175175dd5d03e1ULL
 
 int test_ai_vs_ai_determinism(void)
 {

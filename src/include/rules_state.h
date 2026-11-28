@@ -10,6 +10,16 @@
 
 typedef enum { PITCH_RESULT_NONE = 0, PITCH_RESULT_STRIKE = 1, PITCH_RESULT_BALL = 2 } PitchResult;
 
+// §24 Syöttöoikeus (pitch rights): after the previous batter becomes permanently a runner (§18),
+// the ball must visit Home → Field Base → Home in fielders' possession before the next batter may
+// be pitched to. Always GRANTED at inning start and throughout the home-run contest (§8).
+typedef enum {
+    PITCH_RIGHTS_GRANTED = 0, // lukkari may pitch to the current/next batter
+    PITCH_RIGHTS_NEED_HOME, // §18 fired: waiting for ball to be held at home
+    PITCH_RIGHTS_NEED_FIELD_BASE, // ball visited home after §18: waiting for 1st, 2nd, or 3rd
+    PITCH_RIGHTS_NEED_RETURN_HOME // ball visited a field base after home: waiting for return to home
+} PitchRightsState;
+
 typedef enum {
     GAME_MODE_NORMAL = 0,
     GAME_MODE_SUPER_INNING = 1, // Potential mapping for period 2/3 if distinct
@@ -152,6 +162,14 @@ typedef struct _HalfInningState {
     // batter, cleared when a new batter enters, on a 3rd-strike foul burn, on contest pair end, or
     // at half-inning reset.
     int batter_may_leave_home;
+    // §24: pitch rights for the current/next batter. Starts GRANTED, revoked once when the active
+    // batter permanently becomes a runner (§18), advances Home → Field Base → Home, preserved across
+    // 1st/2nd-strike foul resets, reset to NEED_HOME on 3rd-strike foul burn, exempt in contest (§8).
+    PitchRightsState pitch_rights;
+    // Whether a batter currently holds an active batting turn at home (< 3 strikes), so §24 revokes
+    // pitch rights on the single edge when that batter becomes permanently a runner (§18) and never
+    // re-revokes while waiting for the next batter to enter.
+    int batter_in_turn;
     int runs_in_inning;
     int end_period; // Rule state: period should end
     // §7: "Joukkue voi käyttää jokaisessa sisävuorossa kolmea eri jokeripelaajaa, kerran kutakin."

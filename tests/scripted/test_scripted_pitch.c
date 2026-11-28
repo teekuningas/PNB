@@ -291,3 +291,174 @@ int test_scripted_catching_bar_follows_the_pitch_gesture(void)
     ASSERT(rested, "once the pitch is resolved the bar is back at its left end");
     return TEST_PASSED;
 }
+
+// 5. §24 through the real human input path: after Batter 1 takes a free walk from home (1 wrong
+//    pitch on an empty field -> §18(3)) and Batter 2 arrives at the plate, pressing KEY_2 must NOT
+//    arm the pitch widget while pitch_rights == PITCH_RIGHTS_NEED_FIELD_BASE. Throwing Home -> 1st
+//    -> Home with real keys restores PITCH_RIGHTS_GRANTED, after which KEY_2 arms and pitches.
+int test_scripted_pitch_blocked_until_pitch_rights_reacquired(void)
+{
+    ScriptedGame* g = scripted_create(0, 1, CONTROL_PLAYER_2, HUMAN_PAD, 0x9117C406u);
+    ASSERT_NOT_NULL(g, "scripted_create returned NULL");
+    ASSERT(scripted_tick_until_batter_decision(g, 1200), "Batter 1 seat offer never opened");
+    scripted_tap(g, CONTROL_PLAYER_2, KEY_2);
+    ASSERT(tick_until_pitch_ready(g, 1200), "Batter 1 never became ready");
+
+    MatchSession* m = scripted_match(g);
+    const GameRulesState* r = scripted_state(g)->rules;
+    const ClientInputState* ci = scripted_state(g)->client_input;
+    const int pitcher = m->fielding_posts.baseman[0];
+    const int first_baseman = m->fielding_posts.baseman[1];
+
+    // Pitch an intentional wrong pitch (ball): click aim immediately at the top of the descent so
+    // direction is far off the plate -> empty field -> 1-ball free-walk offer for Batter 1.
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT(tick_until_widget_sweeping(g, 8), "power meter started");
+    scripted_tap(g, HUMAN_PAD, KEY_2); // lock low power, start windup + aim descent
+    scripted_tap(g, HUMAN_PAD, KEY_2); // immediate aim click at far right -> off-plate BALL
+
+    int walk_offered = 0;
+    for (int i = 0; i < 400; i++) {
+        scripted_tick(g);
+        if (m->offers.free_walk == 1) {
+            walk_offered = 1;
+            break;
+        }
+    }
+    ASSERT_EQ(1, walk_offered, "off-plate pitch on empty field must offer a §26 free walk");
+
+    // Batter 1 accepts the free walk (§18(3)).
+    scripted_tap(g, CONTROL_PLAYER_2, KEY_2);
+
+    // Wait for the pitcher to pick up the loose ball at home (walking left/right if needed, or
+    // auto-chasing) and for Batter 2's seat offer to open.
+    int ball_back_home = 0;
+    for (int i = 0; i < 600; i++) {
+        scripted_tick(g);
+        if (m->ball.holder == -1 && m->catching.controlled_fielder != -1) {
+            // Walk controlled fielder toward the ball if needed.
+            float dx = m->ball.location.x - m->players[m->catching.controlled_fielder].body.location.x;
+            float dz = m->ball.location.z - m->players[m->catching.controlled_fielder].body.location.z;
+            if (dx > 0.5f)
+                scripted_hold(g, HUMAN_PAD, KEY_RIGHT);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_RIGHT);
+            if (dx < -0.5f)
+                scripted_hold(g, HUMAN_PAD, KEY_LEFT);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_LEFT);
+            if (dz > 0.5f)
+                scripted_hold(g, HUMAN_PAD, KEY_DOWN);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_DOWN);
+            if (dz < -0.5f)
+                scripted_hold(g, HUMAN_PAD, KEY_UP);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_UP);
+        } else {
+            scripted_release(g, HUMAN_PAD, KEY_LEFT);
+            scripted_release(g, HUMAN_PAD, KEY_RIGHT);
+            scripted_release(g, HUMAN_PAD, KEY_UP);
+            scripted_release(g, HUMAN_PAD, KEY_DOWN);
+        }
+        if (m->offers.batter_seat == 1) {
+            scripted_tap(g, CONTROL_PLAYER_2, KEY_2); // seat Batter 2
+        }
+        if (m->ball.holder == pitcher && m->players[pitcher].fielding.near_home == 1 &&
+            batter_stands_ready(&m->at_bat)) {
+            ball_back_home = 1;
+            break;
+        }
+        // If pitcher caught ball slightly off plate, walk back toward pitcher post.
+        if (m->ball.holder == pitcher && m->players[pitcher].fielding.near_home == 0) {
+            float dx = m->players[pitcher].body.home_location.x - m->players[pitcher].body.location.x;
+            float dz = m->players[pitcher].body.home_location.z - m->players[pitcher].body.location.z;
+            if (dx > 0.4f)
+                scripted_hold(g, HUMAN_PAD, KEY_RIGHT);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_RIGHT);
+            if (dx < -0.4f)
+                scripted_hold(g, HUMAN_PAD, KEY_LEFT);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_LEFT);
+            if (dz > 0.4f)
+                scripted_hold(g, HUMAN_PAD, KEY_DOWN);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_DOWN);
+            if (dz < -0.4f)
+                scripted_hold(g, HUMAN_PAD, KEY_UP);
+            else
+                scripted_release(g, HUMAN_PAD, KEY_UP);
+        }
+    }
+    scripted_release(g, HUMAN_PAD, KEY_LEFT);
+    scripted_release(g, HUMAN_PAD, KEY_RIGHT);
+    scripted_release(g, HUMAN_PAD, KEY_UP);
+    scripted_release(g, HUMAN_PAD, KEY_DOWN);
+    scripted_tick(g);
+
+    ASSERT_EQ(1, ball_back_home, "pitcher recovered ball at home with Batter 2 ready");
+    ASSERT_EQ(
+        PITCH_RIGHTS_NEED_FIELD_BASE, (int)r->half_inning.pitch_rights,
+        "after Batter 1 free walk + ball at home, §24 requires a field-base visit"
+    );
+
+    // Pressing KEY_2 MUST NOT arm the pitch widget while pitch_rights != GRANTED!
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT_EQ(WIDGET_IDLE, (int)ci->pitch_widget.meter.mode, "§24 blocks pitch widget until Home -> Base -> Home");
+    ASSERT_EQ(CATCHING_ACTION_NONE, (int)m->catching_action.kind, "no pitch windup starts without pitch rights");
+
+    // Throw to 1st base (KEY_LEFT + KEY_2 hold, then release).
+    scripted_hold(g, HUMAN_PAD, KEY_LEFT);
+    scripted_hold(g, HUMAN_PAD, KEY_2);
+    for (int i = 0; i < 20; i++)
+        scripted_tick(g);
+    scripted_release(g, HUMAN_PAD, KEY_2);
+    scripted_release(g, HUMAN_PAD, KEY_LEFT);
+
+    int caught_at_first = 0;
+    for (int i = 0; i < 300; i++) {
+        scripted_tick(g);
+        if (m->ball.holder == first_baseman) {
+            caught_at_first = 1;
+            break;
+        }
+    }
+    ASSERT_EQ(1, caught_at_first, "1B caught the pitch-rights throw from home");
+    ASSERT_EQ(
+        PITCH_RIGHTS_NEED_RETURN_HOME, (int)r->half_inning.pitch_rights,
+        "1st base catch advances pitch_rights -> NEED_RETURN_HOME"
+    );
+
+    // Throw back to home (KEY_DOWN + KEY_2 hold, then release).
+    scripted_hold(g, HUMAN_PAD, KEY_DOWN);
+    scripted_hold(g, HUMAN_PAD, KEY_2);
+    for (int i = 0; i < 20; i++)
+        scripted_tick(g);
+    scripted_release(g, HUMAN_PAD, KEY_2);
+    scripted_release(g, HUMAN_PAD, KEY_DOWN);
+
+    int returned_home = 0;
+    for (int i = 0; i < 300; i++) {
+        scripted_tick(g);
+        if (m->ball.holder == pitcher) {
+            returned_home = 1;
+            break;
+        }
+    }
+    ASSERT_EQ(1, returned_home, "pitcher caught the return throw from 1st");
+    ASSERT_EQ(PITCH_RIGHTS_GRANTED, (int)r->half_inning.pitch_rights, "return home grants §24 pitch rights");
+
+    // Now pressing KEY_2 arms the pitch widget and starts a windup!
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT_EQ(WIDGET_PING_PONG, (int)ci->pitch_widget.meter.mode, "KEY_2 arms pitch widget once pitch rights granted");
+    scripted_tap(g, HUMAN_PAD, KEY_2);
+    ASSERT_EQ(CATCHING_ACTION_PITCHING, (int)m->catching_action.kind, "second press starts real pitch windup");
+
+    int failed = scripted_failed(g);
+    char reason[SIM_FAIL_REASON_LEN];
+    snprintf(reason, sizeof(reason), "%s", scripted_fail_reason(g));
+    scripted_destroy(g);
+    ASSERT(!failed, reason);
+    return TEST_PASSED;
+}

@@ -160,7 +160,9 @@ print_game_json(FILE* f, MatchSession* game, GameRulesState* rules, const FieldP
         fprintf(f, "%s  \"runs_in_inning\": %d,\n", sp, rules->half_inning.runs_in_inning);
         fprintf(f, "%s  \"strikes\": %d,\n", sp, rules->half_inning.strikes);
         fprintf(f, "%s  \"balls\": %d,\n", sp, rules->half_inning.balls);
-        fprintf(f, "%s  \"batter_may_leave_home\": %d\n", sp, rules->half_inning.batter_may_leave_home);
+        fprintf(f, "%s  \"batter_may_leave_home\": %d,\n", sp, rules->half_inning.batter_may_leave_home);
+        fprintf(f, "%s  \"pitch_rights\": %d,\n", sp, (int)rules->half_inning.pitch_rights);
+        fprintf(f, "%s  \"batter_in_turn\": %d\n", sp, rules->half_inning.batter_in_turn);
         fprintf(f, "%s},\n", sp);
 
         fprintf(f, "%s\"last_batter\": {\n", sp);
@@ -521,6 +523,24 @@ int state_validator_check(StateInfo* state)
     if (game->chase_replan != CHASE_REPLAN_NONE) {
         printf("\n[STATE ERROR] FATAL: a chase re-plan was requested after the ranking had run this tick\n");
         return 0;
+    }
+
+    if (rules) {
+        if (rules->half_inning.pitch_rights < PITCH_RIGHTS_GRANTED ||
+            rules->half_inning.pitch_rights > PITCH_RIGHTS_NEED_RETURN_HOME) {
+            printf(
+                "\n[STATE ERROR] FATAL: half_inning.pitch_rights out of range (%d)\n",
+                (int)rules->half_inning.pitch_rights
+            );
+            return 0;
+        }
+        if (rules->scoreboard.period >= 4 && rules->half_inning.pitch_rights != PITCH_RIGHTS_GRANTED) {
+            printf(
+                "\n[STATE ERROR] FATAL: §8 — homerun contest must keep pitch_rights GRANTED (got %d)\n",
+                (int)rules->half_inning.pitch_rights
+            );
+            return 0;
+        }
     }
 
     return 1; // Valid

@@ -36,7 +36,8 @@ _OBJ_SCENARIOS = tests/scenario/test_runner_scores_from_third.o \
                  tests/scenario/test_last_batter_ends_half_inning.o \
                  tests/scenario/test_batter_retreat_on_koppi.o \
                  tests/scenario/test_contest_foul_handling.o \
-                 tests/scenario/test_kotipesakoppi.o
+                 tests/scenario/test_kotipesakoppi.o \
+                 tests/scenario/test_pitch_rights.o
 
 # Contract test objects (1-frame pipeline tests, live in tests/integration/contracts/)
 _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
@@ -65,7 +66,8 @@ _OBJ_CONTRACTS = tests/integration/contracts/test_clear_frame_events.o \
                  tests/integration/contracts/test_pitch_in_progress.o \
                  tests/integration/contracts/test_contest_side_change.o \
                  tests/integration/contracts/test_contest_foul_contracts.o \
-                 tests/integration/contracts/test_koppi_catch_guard.o
+                 tests/integration/contracts/test_koppi_catch_guard.o \
+                 tests/integration/contracts/test_pitch_rights_contract.o
 
 # Simulation test objects (headless AI-vs-AI, drive the real pipeline, live in tests/sim/)
 _OBJ_SIMS = tests/sim/sim_harness.o \
@@ -102,7 +104,7 @@ OBJ_SIM      = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_O
 OBJ_SCRIPTED = $(patsubst %,$(ODIR)/int/%,$(_OBJ_COMMON) $(_OBJ_TEST_INFRA) $(_OBJ_SCRIPTED))
 
 # Unit test objects (No OpenGL)
-_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/actions_pure/swing_geometry.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o game/rules_pure/rules_side_change.o game/rules_pure/rules_batting_order.o game/rules_pure/rules_resolution.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_swing_geometry.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_rules_side_change.o tests/unit/test_rules_batting_order.o tests/unit/test_rules_resolution.o tests/unit/test_base_logic.o tests/unit/test_collision.o tests/unit/test_base_control.o tests/unit/test_player_utils.o tests/unit/test_scoring_helpers.o tests/unit/test_rng.o
+_TEST_OBJ = core/fixtures.o core/rng.o core/vector_math.o cup/cup.o physics/collision.o game/actions_pure/batting_physics.o game/actions_pure/pitching_physics.o game/actions_pure/swing_geometry.o game/ai_pure/batting_ai_strategy.o game/ai_pure/catching_ai_strategy.o game/ai_pure/pitching_ai_strategy.o game/rules_pure/rules_outs.o game/rules_pure/rules_runs.o game/rules_pure/rules_strikes.o game/rules_pure/base_logic.o game/referee.o game/rules_pure/base_control.o game/rules_pure/player_utils.o game/rules_pure/scoring_helpers.o game/rules_pure/rules_side_change.o game/rules_pure/rules_batting_order.o game/rules_pure/rules_resolution.o game/rules_pure/rules_pitch_rights.o core/state_validator.o tests/unit/test_cup_logic.o tests/unit/test_batting_physics.o tests/unit/test_swing_geometry.o tests/unit/test_pitching_physics.o tests/unit/test_batting_ai_strategy.o tests/unit/test_catching_ai_strategy.o tests/unit/test_pitching_ai_strategy.o tests/unit/test_rules_outs.o tests/unit/test_rules_runs.o tests/unit/test_rules_side_change.o tests/unit/test_rules_batting_order.o tests/unit/test_rules_resolution.o tests/unit/test_rules_pitch_rights.o tests/unit/test_base_logic.o tests/unit/test_collision.o tests/unit/test_base_control.o tests/unit/test_player_utils.o tests/unit/test_scoring_helpers.o tests/unit/test_rng.o
 TEST_OBJ = $(patsubst %,$(ODIR)/unit/%,$(_TEST_OBJ))
 
 # Generic rules for each build type

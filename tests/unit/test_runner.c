@@ -180,6 +180,8 @@ int main(int argc, char* argv[])
     RUN_TEST(test_designate_last_batter);
     RUN_TEST(test_is_last_batter_turn_reached);
     RUN_TEST(test_player_has_reached_final_resolution);
+    RUN_TEST(test_advance_pitch_rights_round_trip);
+    RUN_TEST(test_pitch_rights_after_foul_reset);
 
     printf("\n--- RNG stream splitting (core/rng.c) ---\n");
     RUN_TEST(test_rng_split_parent_and_child_do_not_share_a_sequence);

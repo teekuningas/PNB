@@ -56,8 +56,8 @@ static void checkChangePlayer(
     const MatchSession* match, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 );
 static void checkPitch(
-    const MatchSession* match, int correct_pitches_received, ClientInputState* clientInput, const KeyStates* key_states,
-    int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, int correct_pitches_received, PitchRightsState pitch_rights,
+    ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 );
 static void checkBatterSelection(
     const MatchSession* match, const Scoreboard* scoreboard, const HalfInningState* halfInningState,
@@ -156,7 +156,8 @@ void action_invocations(
             checkDrop(match, key_states, KEY_2, catchingControl, &channels->catching);
         } else {
             checkPitch(
-                match, halfInningState->strikes, clientInput, key_states, KEY_2, catchingControl, &channels->catching
+                match, halfInningState->strikes, halfInningState->pitch_rights, clientInput, key_states, KEY_2,
+                catchingControl, &channels->catching
             );
         }
     }
@@ -443,8 +444,8 @@ static float charge_to_power(int counter, int counter_max)
 // What it reads of the world is the windup itself — physical, the pitcher's body — and never the values
 // it sent: those it keeps for itself, in the widget. The AI declares values directly and never touches it.
 static void checkPitch(
-    const MatchSession* match, int correct_pitches_received, ClientInputState* clientInput, const KeyStates* key_states,
-    int key, TeamControlMode control, IntentChannel* channel
+    const MatchSession* match, int correct_pitches_received, PitchRightsState pitch_rights,
+    ClientInputState* clientInput, const KeyStates* key_states, int key, TeamControlMode control, IntentChannel* channel
 )
 {
     if (control == CONTROL_AI) {
@@ -467,7 +468,7 @@ static void checkPitch(
         if (w->mode == WIDGET_IDLE) {
             // this click STARTS the power meter (client-local; nothing is declared until power is
             // locked). Only when a pitch could legally begin.
-            if (pitch_may_begin(match, correct_pitches_received).allowed) {
+            if (pitch_may_begin(match, correct_pitches_received, pitch_rights).allowed) {
                 w->mode = WIDGET_PING_PONG;
                 w->counter = 0;
                 w->counter_max = PITCH_POWER_WIDGET_MAX;

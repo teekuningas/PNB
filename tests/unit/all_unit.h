@@ -109,6 +109,10 @@ int test_is_last_batter_turn_reached(void);
 // Rules: the §21 final resolution (rules_pure/rules_resolution.c)
 int test_player_has_reached_final_resolution(void);
 
+// Rules: §24 pitch rights (rules_pure/rules_pitch_rights.c)
+int test_advance_pitch_rights_round_trip(void);
+int test_pitch_rights_after_foul_reset(void);
+
 // RNG stream splitting (core/rng.c)
 int test_rng_split_parent_and_child_do_not_share_a_sequence(void);
 int test_rng_split_siblings_are_independent(void);

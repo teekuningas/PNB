@@ -252,13 +252,15 @@ void update_batting_ai(
     }
 
     // The batter is chosen only once the ball is home, so that in the normal situation the strategy has
-    // more of the play's outcome to choose from.
+    // more of the play's outcome to choose from. Base runners wait for §24 pitch rights before leading
+    // off, since the lukkari must still throw to a field base until pitch rights are granted.
     const int ballHome = ball_is_home(match, fieldPositions);
+    const int readyForPitch = ballHome && rules->half_inning.pitch_rights == PITCH_RIGHTS_GRANTED;
     if (match->offers.batter_seat == 1 && ballHome) {
         declare_batter_choice(match, rules, channel);
-    } else if (batter_stands_ready(&match->at_bat) && !airborne && ballHome) {
+    } else if (batter_stands_ready(&match->at_bat) && !airborne && readyForPitch) {
         arm_runners_for_the_pitch(match, rules, channel);
-    } else if (batter_stands_ready(&match->at_bat) && !airborne && !ballHome) {
+    } else if (batter_stands_ready(&match->at_bat) && !airborne && !readyForPitch) {
         recall_leading_runners(match, rules, channel);
     } else if (airborne) {
         play_the_flight(match, rules, &aiController->swing, channel);

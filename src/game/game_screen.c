@@ -21,6 +21,7 @@
 #include "game_screen.h"
 #include "state_validator.h"
 #include "referee.h"
+#include "base_control.h"
 #include "rules_pure/player_utils.h"
 #include "game_reset.h"
 #include "action_invocations.h" // swing_widget_view — the batter's bar is a client widget, never engine state
@@ -245,6 +246,20 @@ static void draw_skybox(ResourceManager* rm)
     glPopMatrix();
 }
 
+static int should_show_pitch_rights_cue(const SceneView* scene)
+{
+    const Scoreboard* sb = &scene->rules->scoreboard;
+    const int catchingTeam = (get_batting_team_index(sb) + 1) % 2;
+    if (team_is_ai(sb->teams[catchingTeam].control)) return 0;
+    if (scene->rules->half_inning.pitch_rights != PITCH_RIGHTS_NEED_FIELD_BASE) return 0;
+    if (scene->match->offers.batter_seat != 0) return 0;
+    if (scene->rules->referee.foul_state != FOUL_STATE_NONE ||
+        scene->rules->referee.end_of_inning_state != END_INNING_STATE_NONE) {
+        return 0;
+    }
+    return ball_is_home(scene->match, scene->field);
+}
+
 static void draw_statistics_2d(const SceneView* scene, HudState* hud, double alpha, ResourceManager* rm)
 {
     char* str4;
@@ -331,6 +346,8 @@ static void draw_statistics_2d(const SceneView* scene, HudState* hud, double alp
         print_text_2d(msg, (unsigned int)strlen(msg), info_x, TEXT_Y, FONT_SIZE);
     } else if (scene->match->offers.free_walk == 1) {
         print_text_2d("Take a walk", 11, info_x, TEXT_Y, FONT_SIZE);
+    } else if (should_show_pitch_rights_cue(scene)) {
+        print_text_2d("THROW TO A BASE", 15, info_x, TEXT_Y, FONT_SIZE);
     } else {
         // Who the panel is about: the candidate the human is looking at while a decision is open,
         // and otherwise the player actually at the plate.

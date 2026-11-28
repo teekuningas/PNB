@@ -30,8 +30,8 @@ int get_ball_at_base_index(const MatchSession* match, const FieldPositions* fiel
         return -1; // No one has ball
     }
 
-    // Use catcher position directly or ball position?
-    // Legacy logic uses ball.location, assuming ball is with player.
+    // §15/§16 proximity proxy: a held ball tracks its holder's XZ position (snapped on catch and
+    // moved in lockstep by update_ball_to_player), so ball.location is the single position read here.
     Vector3D ballLoc = match->ball.location;
 
     // Check Home Base (Index 0)

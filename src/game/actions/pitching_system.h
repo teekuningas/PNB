@@ -22,7 +22,7 @@ int pitch_is_being_delivered(const MatchSession* match);
 
 // May a pitch begin in the world as it stands? The INGEST gate asks it of a declared power; the answer names
 // the rule that refuses. One home for the rule, asked once, against the world at the top of the tick.
-Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received);
+Permission pitch_may_begin(const MatchSession* match, int correct_pitches_received, PitchRightsState pitch_rights);
 
 // This tick's pitch values, as the INGEST gate let them through. A per-tick command block, never held:
 // what a pitch IS once it has begun lives in the CatchingAction, and these only contribute to it.
